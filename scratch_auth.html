@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Masuk - Teras UMKM Digital</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "surface-tint": "#735c00",
+                        "surface-dim": "#cbdbf5",
+                        "on-surface-variant": "#4d4632",
+                        "inverse-primary": "#eec200",
+                        "primary-container": "#facc15",
+                        "on-error": "#ffffff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "tertiary-fixed": "#d8e2ff",
+                        "outline": "#7f7660",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#ffe083",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#0b1c30",
+                        "tertiary": "#005ac2",
+                        "background": "#f8f9ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-secondary-container": "#5c647a",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container": "#e5eeff",
+                        "secondary-fixed": "#dae2fd",
+                        "tertiary-fixed-dim": "#adc6ff",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-tertiary-fixed-variant": "#004395",
+                        "primary": "#735c00",
+                        "outline-variant": "#d1c6ab",
+                        "on-background": "#0b1c30",
+                        "surface-variant": "#d3e4fe",
+                        "on-tertiary-container": "#0055b9",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#eec200",
+                        "secondary": "#565e74",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#131b2e",
+                        "tertiary-container": "#bed1ff",
+                        "on-primary-container": "#6c5700",
+                        "on-primary-fixed": "#231b00",
+                        "surface": "#f8f9ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-tertiary-fixed": "#001a42",
+                        "secondary-container": "#dae2fd",
+                        "surface-container-high": "#dce9ff",
+                        "inverse-surface": "#213145"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "margin-desktop": "40px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .auth-card-shadow {
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.03);
+        }
+        .auth-card-hover:hover {
+            box-shadow: 0px 8px 24px rgba(0,0,0,0.08);
+        }
+        .glass-accent {
+            background: linear-gradient(135deg, rgba(250, 204, 21, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- Auth Layout Wrapper -->
+<main class="flex-grow flex items-center justify-center px-margin-mobile md:px-margin-desktop py-12 relative overflow-hidden">
+<!-- Background Ornaments -->
+<div class="absolute top-[-10%] right-[-5%] w-96 h-96 bg-primary-container/10 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="absolute bottom-[-10%] left-[-5%] w-80 h-80 bg-tertiary-container/10 rounded-full blur-[80px] pointer-events-none"></div>
+<div class="w-full max-w-[480px] z-10">
+<!-- Branding Header -->
+<div class="text-center mb-10">
+<h1 class="font-headline-md text-headline-md text-primary font-bold tracking-tight mb-2">UMKM Digital</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Pintu gerbang kesuksesan bisnis lokal Anda.</p>
+</div>
+<!-- Auth Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 md:p-10 auth-card-shadow glass-accent">
+<!-- Toggle Switch -->
+<div class="flex p-1 bg-surface-container-low rounded-lg mb-8 relative">
+<div class="absolute h-[calc(100%-8px)] w-[calc(50%-4px)] bg-surface-container-lowest rounded-md shadow-sm transition-all duration-300 ease-in-out left-1" id="active-indicator"></div>
+<button class="relative z-10 flex-1 py-2 font-label-md text-label-md text-primary transition-colors" id="tab-signin" onclick="switchTab('signin')">
+                        Masuk
+                    </button>
+<button class="relative z-10 flex-1 py-2 font-label-md text-label-md text-on-surface-variant transition-colors" id="tab-signup" onclick="switchTab('signup')">
+                        Daftar
+                    </button>
+</div>
+<!-- Auth Title -->
+<div class="mb-8">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-1" id="auth-heading">Selamat Datang Kembali</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant" id="auth-subtext">Silakan masukkan detail akun Anda untuk melanjutkan.</p>
+</div>
+<!-- Form Section -->
+<form class="space-y-6" id="auth-form" onsubmit="event.preventDefault();">
+<div class="hidden animate-in fade-in slide-in-from-top-2 duration-300" id="name-field">
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Nama Lengkap</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">person</span>
+<input class="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none" placeholder="Budi Santoso" type="text"/>
+</div>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface-variant mb-2">Email Bisnis</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">mail</span>
+<input class="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none" placeholder="nama@tokoanda.id" type="email"/>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<label class="block font-label-md text-label-md text-on-surface-variant">Kata Sandi</label>
+<a class="font-label-sm text-label-sm text-primary hover:underline" href="#" id="forgot-password">Lupa sandi?</a>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">lock</span>
+<input class="w-full pl-12 pr-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary-container focus:border-primary transition-all outline-none" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+<button class="w-full py-3 bg-primary-container text-on-primary-container font-label-md text-label-md rounded-lg hover:opacity-90 active:scale-[0.98] transition-all shadow-sm">
+<span id="submit-btn-text">Masuk Sekarang</span>
+</button>
+</form>
+<!-- Divider -->
+<div class="flex items-center my-8">
+<div class="flex-grow border-t border-outline-variant"></div>
+<span class="px-4 font-label-sm text-label-sm text-outline uppercase tracking-wider">Atau</span>
+<div class="flex-grow border-t border-outline-variant"></div>
+</div>
+<!-- Social Auth -->
+<button class="w-full flex items-center justify-center gap-3 py-3 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors group">
+<img alt="Google" class="w-5 h-5 group-hover:scale-110 transition-transform" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDhgk8NQmx9teiIkIspzlrtOLpf2ToJxlCpoLbMAa45Iiicm45_R5_6-baHXNZyiGuY6wuMsaS6XQOk-zml0Arr1u4fiZKp_fWiO18d_v1qB9FVOH6XUn8-hu4y8GNp7UROHGJVve5vbMHVkiqRPhTQlx1TVabzZosxPRM4h1bUGvnUPlElVwd8Om_F-Jp7orpNLvHWbeBkNB9nF3R2EHsOn5TrmhXUB-ypirvAenFrH7DlgN6SMi5ZmEToIxA5W97NK0IMxv7s1i3"/>
+<span class="font-label-md text-label-md text-on-surface">Lanjutkan dengan Google</span>
+</button>
+<!-- Terms -->
+<p class="mt-8 text-center font-body-sm text-body-sm text-on-surface-variant px-4">
+                    Dengan melanjutkan, Anda menyetujui <a class="text-primary hover:underline" href="#">Syarat &amp; Ketentuan</a> serta <a class="text-primary hover:underline" href="#">Kebijakan Privasi</a> kami.
+                </p>
+</div>
+</div>
+</main>
+<!-- Simple Footer for Auth Page -->
+<footer class="py-8 bg-surface-container-highest/30">
+<div class="max-w-container-max mx-auto px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="font-body-sm text-body-sm text-on-surface-variant">© 2024 UMKM Digital Indonesia. Empowering Local Business.</p>
+<div class="flex gap-6">
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Pusat Bantuan</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Tentang Kami</a>
+</div>
+</div>
+</footer>
+<script>
+        function switchTab(type) {
+            const indicator = document.getElementById('active-indicator');
+            const tabSignin = document.getElementById('tab-signin');
+            const tabSignup = document.getElementById('tab-signup');
+            const heading = document.getElementById('auth-heading');
+            const subtext = document.getElementById('auth-subtext');
+            const nameField = document.getElementById('name-field');
+            const submitBtnText = document.getElementById('submit-btn-text');
+            const forgotPassword = document.getElementById('forgot-password');
+
+            if (type === 'signup') {
+                indicator.style.left = 'calc(50% + 1px)';
+                tabSignup.classList.add('text-primary');
+                tabSignup.classList.remove('text-on-surface-variant');
+                tabSignin.classList.add('text-on-surface-variant');
+                tabSignin.classList.remove('text-primary');
+                
+                heading.innerText = 'Buat Akun Baru';
+                subtext.innerText = 'Mulailah perjalanan digital UMKM Anda hari ini.';
+                nameField.classList.remove('hidden');
+                submitBtnText.innerText = 'Daftar Sekarang';
+                forgotPassword.style.opacity = '0';
+                forgotPassword.style.pointerEvents = 'none';
+            } else {
+                indicator.style.left = '4px';
+                tabSignin.classList.add('text-primary');
+                tabSignin.classList.remove('text-on-surface-variant');
+                tabSignup.classList.add('text-on-surface-variant');
+                tabSignup.classList.remove('text-primary');
+
+                heading.innerText = 'Selamat Datang Kembali';
+                subtext.innerText = 'Silakan masukkan detail akun Anda untuk melanjutkan.';
+                nameField.classList.add('hidden');
+                submitBtnText.innerText = 'Masuk Sekarang';
+                forgotPassword.style.opacity = '1';
+                forgotPassword.style.pointerEvents = 'auto';
+            }
+        }
+    </script>
+</body></html>

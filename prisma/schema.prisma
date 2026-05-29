@@ -1,0 +1,384 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  MERCHANT
+  AFFILIATE
+  ADMIN
+  CUSTOMER_SERVICE
+}
+
+enum ProductCategory {
+  TOKO
+  KAFE
+  JASA
+  KERJAAN
+  ELEKTRONIK
+  MAKANAN_MINUMAN
+  KOMPUTER_AKSESORIS
+  PERAWATAN_KECANTIKAN
+  HANDPHONE_AKSESORIS
+  PERLENGKAPAN_RUMAH
+  PAKAIAN_PRIA
+  PAKAIAN_WANITA
+  SEPATU_PRIA
+  FASHION_MUSLIM
+  TAS_PRIA
+  FASHION_BAYI_ANAK
+  AKSESORIS_FASHION
+  IBU_BAYI
+  JAM_TANGAN
+  SEPATU_WANITA
+  KESEHATAN
+  TAS_WANITA
+  HOBI_KOLEKSI
+  OTOMOTIF
+  OLAHRAGA_OUTDOOR
+  BUKU_ALAT_TULIS
+  SOUVENIR_PERLENGKAPAN_PESTA
+  FOTOGRAFI
+  VOUCHER
+  DEALS_SEKITAR
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  SALE
+  COMMISSION
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String
+  passwordHash String
+  role         Role          @default(CUSTOMER)
+  latitude     Float?
+  longitude    Float?
+  level        Int           @default(1)
+  xp           Int           @default(0)
+  points       Float         @default(0.0)
+  landingPageTemplate String?
+  landingPageConfig   String?
+  landingPageSetup    Boolean       @default(false)
+  parentAffiliateId String?
+  parentAffiliate   User?        @relation("AffiliateTree", fields: [parentAffiliateId], references: [id])
+  subAffiliates     User[]       @relation("AffiliateTree")
+  membershipLevel   String       @default("Reseller") // "Reseller", "Agen", "Distributor"
+  membershipAccess  String       @default("Gold")     // "Gold", "Platinum", "Diamond"
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  // Integrations Settings
+  waGatewayKeys    String        @default("")
+  fbPixelId        String?
+  tiktokPixelId    String?
+  zapierWebhookUrl String?
+  googleSheetUrl   String?
+  zoomMeetingUrl   String?
+  emailTemplate    String?
+
+  // Relations
+  products     Product[]     @relation("MerchantProducts")
+  orders       Order[]       @relation("BuyerOrders")
+  progress     Progress[]
+  posts        Post[]
+  comments     Comment[]
+  postLikes    PostLike[]
+  ownedGroups  CommunityGroup[] @relation("GroupAdmin")
+  groupMembers GroupMember[]
+
+  buyerRooms   ChatRoom[]      @relation("BuyerRooms")
+  sellerRooms  ChatRoom[]      @relation("SellerRooms")
+  supportTickets SupportTicket[] @relation("CustomerTickets")
+  assignedTickets SupportTicket[] @relation("CsAgentTickets")
+  
+  // Affiliate relations
+  referrals    AffiliateReferral[] @relation("AffiliateReferrals")
+  purchases    AffiliateReferral[] @relation("ReferredBuyerPurchases")
+  
+  wallet       Wallet?
+}
+
+model Product {
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  price       Float
+  category    ProductCategory @default(TOKO)
+  stock       Int             @default(0)
+  imageUrl    String?
+  latitude    Float?
+  longitude   Float?
+  jvPartnerId String?
+  jvSharePercent Float?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  // Relations
+  merchantId  String
+  merchant    User            @relation("MerchantProducts", fields: [merchantId], references: [id], onDelete: Cascade)
+  orderItems  OrderItem[]
+  chatRooms   ChatRoom[]
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  totalAmount     Float
+  status          OrderStatus @default(PENDING)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  shippingFee     Float?
+  courier         String?
+  shippingAddress String?
+  shippingLabel   String?
+  couponCode      String?
+  discountAmount  Float?
+  bumpSales       String?
+  
+  // Relations
+  buyerId     String
+  buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  quantity  Int
+  price     Float
+  
+  // Relations
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  coverImage  String?
+  accessRequired String   @default("Gold") // "Gold", "Platinum", "Diamond"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  lessons     Lesson[]
+}
+
+model Lesson {
+  id         String     @id @default(uuid())
+  title      String
+  content    String
+  videoUrl   String?
+  duration   Int        @default(0) // In seconds
+  orderIndex Int
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  
+  // Relations
+  courseId   String
+  course     Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress   Progress[]
+}
+
+model Progress {
+  id        String   @id @default(uuid())
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, lessonId])
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  title     String
+  content   String
+  imageUrl  String?
+  videoUrl  String?
+  category  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Relations
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments  Comment[]
+  likes     PostLike[]
+  groupId   String?
+  group     CommunityGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+}
+
+model CommunityGroup {
+  id          String        @id @default(uuid())
+  name        String
+  description String
+  coverUrl    String?
+  avatarUrl   String?
+  isSuspended Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Creator / Admin of this group
+  adminId     String
+  admin       User          @relation("GroupAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  posts       Post[]
+  members     GroupMember[]
+}
+
+model GroupMember {
+  id        String         @id @default(uuid())
+  groupId   String
+  group     CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([groupId, userId])
+}
+
+
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model AffiliateReferral {
+  id          String       @id @default(uuid())
+  amount      Float
+  status      PayoutStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  affiliateId String
+  affiliate   User         @relation("AffiliateReferrals", fields: [affiliateId], references: [id], onDelete: Cascade)
+  buyerId     String
+  buyer       User         @relation("ReferredBuyerPurchases", fields: [buyerId], references: [id], onDelete: Cascade)
+}
+
+model Wallet {
+  id           String              @id @default(uuid())
+  balance      Float               @default(0.0)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  
+  // Relations
+  userId       String              @unique
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String          @id @default(uuid())
+  amount      Float
+  type        TransactionType
+  description String
+  createdAt   DateTime        @default(now())
+  
+  // Relations
+  walletId    String
+  wallet      Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+model ChatRoom {
+  id          String        @id @default(uuid())
+  buyerId     String
+  buyer       User          @relation("BuyerRooms", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId    String
+  seller      User          @relation("SellerRooms", fields: [sellerId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  messages    ChatMessage[]
+
+  @@unique([buyerId, sellerId])
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  roomId     String
+  room       ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId   String
+  content    String
+  imageUrl   String?
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model SupportTicket {
+  id           String           @id @default(uuid())
+  ticketNumber String           @unique
+  customerId   String
+  customer     User             @relation("CustomerTickets", fields: [customerId], references: [id], onDelete: Cascade)
+  csAgentId    String?
+  csAgent      User?            @relation("CsAgentTickets", fields: [csAgentId], references: [id], onDelete: SetNull)
+  status       String           @default("OPEN") // "OPEN", "PENDING", "RESOLVED", "ESCALATED"
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  messages     SupportMessage[]
+}
+
+model SupportMessage {
+  id             String        @id @default(uuid())
+  ticketId       String
+  ticket         SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId       String
+  content        String
+  imageUrl       String?
+  isRead         Boolean       @default(false)
+  isInternalNote Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+}

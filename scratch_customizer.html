@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-headline { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1c6ab; border-radius: 10px; }
+        .preview-canvas { transform: scale(0.9); transform-origin: top center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .builder-shadow { box-shadow: 0px 4px 12px rgba(0,0,0,0.03); }
+        .active-tab-indicator { transition: all 0.2s ease; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#dce9ff",
+                    "background": "#f8f9ff",
+                    "on-tertiary-fixed-variant": "#004395",
+                    "on-tertiary-fixed": "#001a42",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "surface-container-low": "#eff4ff",
+                    "on-primary-fixed": "#231b00",
+                    "surface-container": "#e5eeff",
+                    "on-tertiary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "inverse-primary": "#eec200",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#bed1ff",
+                    "surface-dim": "#cbdbf5",
+                    "on-background": "#0b1c30",
+                    "inverse-surface": "#213145",
+                    "on-primary-container": "#6c5700",
+                    "primary-fixed": "#ffe083",
+                    "tertiary": "#005ac2",
+                    "on-tertiary-container": "#0055b9",
+                    "on-primary-fixed-variant": "#574500",
+                    "on-secondary": "#ffffff",
+                    "surface-tint": "#735c00",
+                    "surface-container-highest": "#d3e4fe",
+                    "primary-fixed-dim": "#eec200",
+                    "on-secondary-fixed": "#131b2e",
+                    "primary-container": "#facc15",
+                    "surface-variant": "#d3e4fe",
+                    "secondary": "#565e74",
+                    "outline": "#7f7660",
+                    "on-error-container": "#93000a",
+                    "primary": "#735c00",
+                    "outline-variant": "#d1c6ab",
+                    "on-secondary-container": "#5c647a",
+                    "on-secondary-fixed-variant": "#3f465c",
+                    "on-surface": "#0b1c30",
+                    "tertiary-fixed": "#d8e2ff",
+                    "secondary-fixed-dim": "#bec6e0",
+                    "on-surface-variant": "#4d4632",
+                    "surface": "#f8f9ff",
+                    "secondary-fixed": "#dae2fd",
+                    "surface-bright": "#f8f9ff",
+                    "tertiary-fixed-dim": "#adc6ff",
+                    "secondary-container": "#dae2fd",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "margin-desktop": "40px",
+                    "gutter": "24px",
+                    "container-max": "1280px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "label-sm": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- TopNavBar (Shared Component) -->
+<nav class="w-full top-0 sticky bg-surface-container-lowest border-b border-outline-variant shadow-sm z-50">
+<div class="flex justify-between items-center px-margin-desktop h-20 max-w-container-max mx-auto">
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">UMKM Digital</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors" href="#">Pasar</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors" href="#">Jasa</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors" href="#">Akademi</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors" href="#">Komunitas</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<button class="p-2 hover:text-primary transition-colors active:opacity-80"><span class="material-symbols-outlined">shopping_cart</span></button>
+<button class="p-2 hover:text-primary transition-colors active:opacity-80"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-2 hover:text-primary transition-colors active:opacity-80"><span class="material-symbols-outlined">account_circle</span></button>
+</div>
+<button class="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-lg font-label-md text-label-md font-bold active:opacity-80 transition-all">Daftar Toko</button>
+</div>
+</div>
+</nav>
+<div class="flex h-[calc(100vh-80px)] overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="h-full w-64 bg-surface-container-low flex flex-col p-4 gap-2 shrink-0 border-r border-outline-variant">
+<div class="flex items-center gap-3 p-2 mb-4">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">store</span>
+</div>
+<div>
+<p class="font-label-md text-label-md font-bold text-on-surface">Toko Maju Jaya</p>
+<p class="text-xs text-on-surface-variant">Premium Merchant</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg font-label-md text-label-md">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+                </button>
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg font-label-md text-label-md">
+<span class="material-symbols-outlined">inventory_2</span> Produk
+                </button>
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg font-label-md text-label-md">
+<span class="material-symbols-outlined">shopping_bag</span> Pesanan
+                </button>
+<button class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high transition-all rounded-lg font-label-md text-label-md">
+<span class="material-symbols-outlined">bar_chart</span> Statistik
+                </button>
+<button class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-bold font-label-md text-label-md">
+<span class="material-symbols-outlined">settings</span> Pengaturan
+                </button>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant">
+<button class="w-full flex items-center justify-center gap-2 py-3 border border-primary text-primary rounded-lg font-bold hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-[20px]">open_in_new</span> Buka Landing Page
+                </button>
+</div>
+</aside>
+<!-- Builder Content -->
+<main class="flex-1 flex overflow-hidden">
+<!-- Customization Sidebar -->
+<div class="w-80 bg-surface-container-lowest border-r border-outline-variant flex flex-col h-full shrink-0">
+<div class="p-6 border-b border-outline-variant">
+<h1 class="font-headline-md text-headline-md text-on-surface">Storefront Editor</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Customize your online appearance</p>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+<!-- Template Gallery Access -->
+<section>
+<button class="w-full group flex items-center justify-between p-4 bg-surface-container-low rounded-xl border border-outline-variant hover:border-primary transition-all" onclick="openGallery()">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">auto_awesome_motion</span>
+<div class="text-left">
+<p class="font-label-md text-label-md text-on-surface">Pilih Template</p>
+<p class="text-xs text-on-surface-variant">Modern Gold Aktif</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+</section>
+<!-- Layout Options -->
+<section class="space-y-4">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">view_quilt</span> Layout
+                        </label>
+<div class="grid grid-cols-2 gap-3">
+<button class="p-3 border-2 border-primary bg-primary/5 rounded-lg flex flex-col items-center gap-2">
+<div class="w-full h-12 bg-outline-variant rounded flex items-center justify-center"><div class="w-8 h-8 bg-white rounded-sm shadow-sm"></div></div>
+<span class="text-xs font-medium">Standard</span>
+</button>
+<button class="p-3 border border-outline-variant rounded-lg flex flex-col items-center gap-2 hover:bg-surface-container-low">
+<div class="w-full h-12 bg-outline-variant rounded flex items-center justify-center"><div class="w-full h-6 px-1 flex gap-1"><div class="flex-1 bg-white rounded-sm"></div><div class="flex-1 bg-white rounded-sm"></div></div></div>
+<span class="text-xs font-medium">Split View</span>
+</button>
+</div>
+</section>
+<!-- Theme Toggle -->
+<section class="space-y-4">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">palette</span> Theme (Light/Dark)
+                        </label>
+<div class="flex bg-surface-container rounded-lg p-1">
+<button class="flex-1 py-2 bg-white rounded shadow-sm text-xs font-bold flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">light_mode</span> Light
+                            </button>
+<button class="flex-1 py-2 text-on-surface-variant text-xs font-medium flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">dark_mode</span> Dark
+                            </button>
+</div>
+</section>
+<!-- Banner Image -->
+<section class="space-y-4">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">image</span> Banner Image
+                        </label>
+<div class="relative group cursor-pointer aspect-video rounded-lg overflow-hidden border border-dashed border-outline hover:border-primary transition-colors">
+<img class="w-full h-full object-cover opacity-80" data-alt="A bright and professional storefront interior of a local handicraft shop with soft golden sunlight streaming through the windows. The space features artisanal wooden shelves holding beautiful ceramic pottery and woven textiles. The atmosphere is warm, inviting, and clean, reflecting a high-end light-mode aesthetic with soft shadows and a professional corporate feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaITYZkmc6L_1XKCS4fqpRs3YoL8ZLot8R_Ygodw4DenCwlBeA5j7rhqHEKINUTocw_63YHqnETRmtW3sxG65jlwg7nT1ijTNJIWavsMPFwj99WCpZ3RF9qhsuRRzRddvRaDQAzW-7rDyaS3JRv2QoFVaI62welKcSNK7QaapBVKj6N-51sktfNABs01JwQGUYbQ1K7NaB2ZwoM1tFYi5m_Z3qE4d2VCqHrTjjB8CwQxebUtQA4gsGbKiTCd_qK9zRqY4pTwpYA99N"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-white">edit</span>
+</div>
+</div>
+</section>
+<!-- Sections Toggle -->
+<section class="space-y-4">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">layers</span> Sections
+                        </label>
+<div class="space-y-2">
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<span class="text-sm font-medium">Hero Section</span>
+<input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<span class="text-sm font-medium">Product Grid</span>
+<input checked="" class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded-lg">
+<span class="text-sm font-medium">Testimonials</span>
+<input class="rounded text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</div>
+</div>
+</section>
+</div>
+<div class="p-6 border-t border-outline-variant bg-surface-container-low">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-bold active:scale-95 transition-all">Simpan Perubahan</button>
+</div>
+</div>
+<!-- Preview Canvas -->
+<div class="flex-1 bg-surface-dim relative overflow-y-auto custom-scrollbar p-12">
+<div class="max-w-[1000px] mx-auto min-h-[1400px] bg-white rounded-2xl shadow-2xl overflow-hidden preview-canvas">
+<!-- Template Preview Header -->
+<header class="h-20 flex items-center justify-between px-10 border-b border-gray-100">
+<span class="font-headline text-xl font-extrabold text-primary">TOKO MAJU JAYA</span>
+<div class="flex gap-6 text-sm font-medium text-gray-500">
+<span>Beranda</span>
+<span>Koleksi</span>
+<span>Tentang</span>
+<span>Hubungi</span>
+</div>
+</header>
+<!-- Template Hero -->
+<section class="h-[500px] relative">
+<img class="w-full h-full object-cover" data-alt="A wide professional shot of a modern artisan marketplace showcasing locally crafted goods under soft, natural lighting. The color palette is composed of warm wood tones, crisp whites, and elegant golden accents. The image conveys a sense of high quality and neighborhood warmth, perfectly aligned with a professional corporate brand identity for small business owners." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmbyjKjd4K7jlwXD3cOVhl5ftUA9uNKv6BJd7zSPRRd8-Gd_0V7cOdmyAbgtWOSsMpG3PMi3TnrkQi3uUlPyQ6qEeza3tnAdlupYZRbn0SWuFEYUTSNUczwPXmKZgJzFem3o6ipbvXrL8gqAfzXl1YTKiiQfEuqkk47zv0Ee7S6uaLs5ovw0zhyBXu61vIKQhq9FJxExYP0jj2uh2LNvaeg0AZK6xQMvQSvGJwp007TXDbEh4Y6JnTErnmLfXjbvZKYkBiftxEGYXa"/>
+<div class="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent flex items-center px-16">
+<div class="max-w-md space-y-6">
+<h2 class="font-headline text-5xl font-bold text-on-background leading-tight">Elevasi Bisnis Lokal Anda</h2>
+<p class="text-lg text-gray-600">Dapatkan koleksi kerajinan tangan terbaik langsung dari pengrajin berbakat di lingkungan Anda.</p>
+<button class="bg-primary-container text-on-primary-container px-8 py-4 rounded-full font-bold shadow-lg hover:shadow-xl transition-all">Belanja Sekarang</button>
+</div>
+</div>
+</section>
+<!-- Template Product Grid -->
+<section class="p-16 space-y-8">
+<div class="flex justify-between items-end">
+<div>
+<p class="text-primary font-bold text-sm tracking-widest uppercase">Katalog Pilihan</p>
+<h3 class="font-headline text-3xl font-bold">Produk Unggulan</h3>
+</div>
+<button class="text-primary font-bold flex items-center gap-1">Lihat Semua <span class="material-symbols-outlined">arrow_forward</span></button>
+</div>
+<div class="grid grid-cols-3 gap-8">
+<div class="space-y-4 group">
+<div class="aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-100 builder-shadow">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A clean, minimalist product shot of a high-end ceramic vase placed on a white marble surface. The lighting is soft and diffused, highlighting the delicate textures of the object. The background is a soft gray, creating a professional and calm aesthetic that emphasizes the quality and craftsmanship of local artisan goods." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXRepciMT1C4odmYI32imX7EceRCGBJaNd2p3npTCXOuUlEzFpAe4n6mJdmYM7Nl4jq73ZmSPnO8gjqWKyECJOvDv-Wj6_bDSs764eh3VSeA1YEWGPz6NCXpD0IBAANBQkwszW_8oz7SdtMF6eDW1qgSabimjIUT6XsOzIglTtd9T2_VMd4H6hsjD11SbxUSwzB5WBZsn6zv5XujKB20N_lzzcDT-k_xr0dn5ml46DiO8yNkoo4E8VTFoard5eKiPCz8jFtfgNYKhK"/>
+</div>
+<div>
+<p class="font-bold text-lg">Vas Keramik Minimalis</p>
+<p class="text-primary font-bold text-xl">Rp 249.000</p>
+<p class="text-xs text-gray-400 mt-1">Stok Tersedia (12)</p>
+</div>
+</div>
+<div class="space-y-4 group">
+<div class="aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-100 builder-shadow">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Close-up of a beautifully textured hand-woven fabric in neutral tones of beige and slate. The lighting reveals the intricate weave patterns and high-quality material. The shot is styled in a modern minimalist fashion, emphasizing the authenticity and tactile nature of the product within a bright light-mode setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGhJFBJsfTd1sg2PB4JWl9wxNHlddcR4Tspx_5LNWHPBpyvhecnASZOLS8nWNdvQ_RqjSIh4akLcz4UxVKt0IOxYCS-kFO8rO2srCaMgwvGyiGl81ov9HQHUhPvnVKFZUlcA9INZGpjygEVpgBOc0XxAR2Or3WBIpTIRijoddouaDGZTOirsGTc6M6IoKsNR5F9697eBKJ8xk8gitMlxFMpg4F2QVk4Lep6b-Qzndh8XpoFODMmZjZJKrU6TGsno5AMPJPY3T3X9bc"/>
+</div>
+<div>
+<p class="font-bold text-lg">Kain Tenun Tradisional</p>
+<p class="text-primary font-bold text-xl">Rp 750.000</p>
+<p class="text-xs text-gray-400 mt-1">Edisi Terbatas</p>
+</div>
+</div>
+<div class="space-y-4 group">
+<div class="aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-100 builder-shadow">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A stylish wooden desk lamp with a warm glowing bulb, placed in a modern workspace. The lighting creates a cozy yet professional atmosphere. The design is clean and functional, fitting the neighborhood warmth brand personality while maintaining a high level of modern corporate professionalism." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOKYb-uhFszhDttiP8qpF2S5Cr5s_dnsy-sXvAytAOyueikO-fHBAKMWt0RnhmNM8h82rBrrbH9oefzySdizeL7N7qrozKoXqSHmpd52GduyyaD_tRruqUM81YyUeQeybV5ey9TvGLAztV6rJABx8RPTWCXUNIafaJwC_n4BrhvOYKW40183JXqsc1TQCj-WDx6LFJbyo0JRmvazwWMLCQkW_OJaAzPTIoKPKfZaX0uqVfzzJjmkcvU78guUNBqNrZ7r8qzn_UJJvs"/>
+</div>
+<div>
+<p class="font-bold text-lg">Lampu Meja Kayu Oak</p>
+<p class="text-primary font-bold text-xl">Rp 420.000</p>
+<p class="text-xs text-gray-400 mt-1">Koleksi Terpopuler</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Floating Canvas Controls -->
+<div class="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 backdrop-blur-md px-6 py-4 rounded-2xl shadow-2xl border border-white/20 z-10">
+<button class="p-2 hover:bg-gray-100 rounded-lg" title="Desktop View"><span class="material-symbols-outlined text-primary">desktop_windows</span></button>
+<button class="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title="Tablet View"><span class="material-symbols-outlined">tablet_mac</span></button>
+<button class="p-2 hover:bg-gray-100 rounded-lg text-gray-400" title="Mobile View"><span class="material-symbols-outlined">smartphone</span></button>
+<div class="w-px h-6 bg-gray-200 mx-2"></div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-gray-400">90%</span>
+<button class="p-1 hover:bg-gray-100 rounded"><span class="material-symbols-outlined text-sm">remove</span></button>
+<button class="p-1 hover:bg-gray-100 rounded"><span class="material-symbols-outlined text-sm">add</span></button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Template Gallery Modal -->
+<div class="fixed inset-0 bg-on-background/40 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-8" id="galleryModal">
+<div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl flex flex-col max-h-[921px] overflow-hidden">
+<div class="p-8 border-b border-gray-100 flex justify-between items-center">
+<div>
+<h2 class="font-headline text-3xl font-bold text-on-surface">Pilih Template Landing Page</h2>
+<p class="text-on-surface-variant">Template siap pakai untuk meningkatkan konversi jualan Anda</p>
+</div>
+<button class="p-2 hover:bg-gray-100 rounded-full transition-colors" onclick="closeGallery()"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Minimal Noir -->
+<div class="group cursor-pointer">
+<div class="aspect-[4/5] bg-gray-900 rounded-2xl overflow-hidden relative border-2 border-transparent group-hover:border-primary transition-all">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/80"></div>
+<div class="absolute bottom-6 left-6 right-6 text-white space-y-2">
+<h3 class="font-bold text-xl">Minimal Noir</h3>
+<p class="text-xs text-white/70">Elegan, berani, dan fokus pada satu produk utama.</p>
+</div>
+</div>
+</div>
+<!-- Clean Professional -->
+<div class="group cursor-pointer">
+<div class="aspect-[4/5] bg-surface-container-high rounded-2xl overflow-hidden relative border-2 border-transparent group-hover:border-primary transition-all">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary/20"></div>
+<div class="absolute bottom-6 left-6 right-6 text-on-surface space-y-2">
+<h3 class="font-bold text-xl">Clean Professional</h3>
+<p class="text-xs text-on-surface-variant">Terorganisir, rapi, dan cocok untuk korporasi lokal.</p>
+</div>
+</div>
+</div>
+<!-- Modern Gold -->
+<div class="group cursor-pointer">
+<div class="aspect-[4/5] bg-white rounded-2xl overflow-hidden relative border-2 border-primary ring-4 ring-primary/10 shadow-xl">
+<div class="absolute top-4 right-4 bg-primary text-on-primary text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-tighter">Aktif</div>
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary/30"></div>
+<div class="absolute bottom-6 left-6 right-6 text-on-surface space-y-2">
+<h3 class="font-bold text-xl">Modern Gold</h3>
+<p class="text-xs text-on-surface-variant">Mewah, hangat, dan sangat mudah digunakan.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-8 border-t border-gray-100 flex justify-end gap-4">
+<button class="px-8 py-3 text-on-surface-variant font-bold" onclick="closeGallery()">Batal</button>
+<button class="px-8 py-3 bg-primary text-on-primary rounded-xl font-bold active:scale-95 transition-all shadow-lg" onclick="closeGallery()">Gunakan Template</button>
+</div>
+</div>
+</div>
+<!-- Footer (Shared Component) -->
+<footer class="w-full py-12 bg-surface-container-highest border-t border-outline-variant">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-desktop max-w-container-max mx-auto gap-8">
+<div class="flex flex-col gap-2 items-center md:items-start">
+<span class="font-headline-md text-headline-md text-on-surface font-bold">UMKM Digital</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">© 2024 UMKM Digital Indonesia. Empowering Local Business.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-primary underline transition-opacity" href="#">Tentang Kami</a>
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-primary underline transition-opacity" href="#">Pusat Bantuan</a>
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-primary underline transition-opacity" href="#">Syarat &amp; Ketentuan</a>
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-primary underline transition-opacity" href="#">Kebijakan Privasi</a>
+</div>
+</div>
+</footer>
+<script>
+        function openGallery() {
+            document.getElementById('galleryModal').classList.remove('hidden');
+            document.getElementById('galleryModal').classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeGallery() {
+            document.getElementById('galleryModal').classList.add('hidden');
+            document.getElementById('galleryModal').classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Add some interactive hover effects to sections in the preview
+        document.querySelectorAll('.preview-canvas > section, .preview-canvas > header').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                el.classList.add('ring-2', 'ring-primary', 'ring-inset', 'cursor-pointer');
+            });
+            el.addEventListener('mouseleave', () => {
+                el.classList.remove('ring-2', 'ring-primary', 'ring-inset', 'cursor-pointer');
+            });
+        });
+
+        // Close modal on escape
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeGallery();
+        });
+    </script>
+</body></html>

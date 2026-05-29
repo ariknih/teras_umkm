@@ -1,0 +1,4861 @@
+import { db } from './db'
+import crypto from 'crypto'
+import { ProductCategory } from '@prisma/client'
+import fs from 'fs'
+import path from 'path'
+
+// Fallback Mock Data Store (In-Memory Sandbox)
+const mockUsers = [
+  {
+    id: 'user-admin-1',
+    email: 'admin@teras.com',
+    name: 'Super Admin Teras',
+    passwordHash: crypto.createHash('sha256').update('admin2026').digest('hex'),
+    role: 'ADMIN' as const,
+    latitude: -6.2088, longitude: 106.8456,
+    level: 99, xp: 99999,
+    landingPageTemplate: null, landingPageConfig: null, landingPageSetup: true,
+    parentAffiliateId: null,
+    membershipLevel: 'Super Admin', membershipAccess: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-1',
+    email: 'merchant@teras.com',
+    name: 'Kala Sourdough Studio',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -6.2088,
+    longitude: 106.8456,
+    level: 5,
+    xp: 450,
+    landingPageTemplate: 'modern-gold',
+    landingPageConfig: '{"title":"Kala Sourdough Studio","bio":"Studio Sourdough Premium Terbaik di Jakarta","phone":"08123456789","instagram":"@kalasourdough","sections":["hero","profile","products","map"]}',
+    landingPageSetup: true,
+    parentAffiliateId: null,
+    membershipLevel: 'Distributor',
+    membershipAccess: 'Diamond',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'user-affiliate-1',
+    email: 'affiliate@teras.com',
+    name: 'Budi Affiliate Marketer',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'AFFILIATE' as const,
+    latitude: -6.2200,
+    longitude: 106.8500,
+    level: 3,
+    xp: 250,
+    landingPageTemplate: null,
+    landingPageConfig: null,
+    landingPageSetup: false,
+    parentAffiliateId: null,
+    membershipLevel: 'Agen',
+    membershipAccess: 'Platinum',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'user-customer-1',
+    email: 'customer@teras.com',
+    name: 'Andi Pembeli',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'CUSTOMER' as const,
+    latitude: -6.2000,
+    longitude: 106.8300,
+    level: 1,
+    xp: 20,
+    landingPageTemplate: null,
+    landingPageConfig: null,
+    landingPageSetup: false,
+    parentAffiliateId: 'user-affiliate-1',
+    membershipLevel: 'Reseller',
+    membershipAccess: 'Gold',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'user-cs-1',
+    email: 'cs@teras.com',
+    name: 'Budi Customer Service',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'CUSTOMER_SERVICE' as const,
+    latitude: -6.2000,
+    longitude: 106.8300,
+    level: 1,
+    xp: 0,
+    landingPageTemplate: null,
+    landingPageConfig: null,
+    landingPageSetup: false,
+    parentAffiliateId: null,
+    membershipLevel: 'Staff',
+    membershipAccess: 'Gold',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  // ─── Additional Mock Merchants ───────────────────────────────────────────────
+  {
+    id: 'user-merchant-2',
+    email: 'nusantara.fashion@teras.com',
+    name: 'Nusantara Fashion House',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -7.7972,
+    longitude: 110.3688,
+    level: 4,
+    xp: 380,
+    landingPageTemplate: 'neo-brutalism',
+    landingPageConfig: '{"title":"Nusantara Fashion House","bio":"Batik & fashion lokal premium dari Jogja","phone":"08567890123","instagram":"@nusantarafashion"}',
+    landingPageSetup: true,
+    parentAffiliateId: null,
+    membershipLevel: 'Agen',
+    membershipAccess: 'Diamond',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-3',
+    email: 'techgeek.id@teras.com',
+    name: 'TechGeek Indonesia',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -6.1751,
+    longitude: 106.8650,
+    level: 6,
+    xp: 600,
+    landingPageTemplate: 'glassmorphism',
+    landingPageConfig: '{"title":"TechGeek Indonesia","bio":"Gadget & aksesoris teknologi terpercaya","phone":"08789012345","instagram":"@techgeek.id"}',
+    landingPageSetup: true,
+    parentAffiliateId: null,
+    membershipLevel: 'Distributor',
+    membershipAccess: 'Diamond',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-4',
+    email: 'dapur.kreatif@teras.com',
+    name: 'Dapur Kreatif Nusantara',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -7.2504,
+    longitude: 112.7688,
+    level: 3,
+    xp: 290,
+    landingPageTemplate: 'modern-gold',
+    landingPageConfig: '{"title":"Dapur Kreatif Nusantara","bio":"Makanan & minuman artisan pilihan dari Surabaya","phone":"08234567890","instagram":"@dapurkreatif"}',
+    landingPageSetup: true,
+    parentAffiliateId: null,
+    membershipLevel: 'Reseller',
+    membershipAccess: 'Platinum',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-5',
+    email: 'kreasi.digital@teras.com',
+    name: 'Kreasi Digital Studio',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -8.4095,
+    longitude: 115.1889,
+    level: 7,
+    xp: 720,
+    landingPageTemplate: 'glassmorphism',
+    landingPageConfig: '{"title":"Kreasi Digital Studio","bio":"Jasa desain, foto, video & IT profesional dari Bali","phone":"08345678901","instagram":"@kreasidigital"}',
+    landingPageSetup: true,
+    parentAffiliateId: null,
+    membershipLevel: 'Distributor',
+    membershipAccess: 'Diamond',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  // ─── 10 New Business Users ────────────────────────────────────────────────────
+  {
+    id: 'user-merchant-6',
+    email: 'herbal.nusantara@teras.com',
+    name: 'Herbal Nusantara Apotik',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -6.9147, longitude: 107.6098,
+    level: 4, xp: 360,
+    landingPageTemplate: 'modern-gold',
+    landingPageConfig: '{"title":"Herbal Nusantara","bio":"Produk herbal dan kesehatan alami pilihan dari Bandung","phone":"08111222333","instagram":"@herbalnusantara"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Agen', membershipAccess: 'Platinum',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-7',
+    email: 'furni.jepara@teras.com',
+    name: 'Furnicraft Jepara',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -6.5896, longitude: 110.6688,
+    level: 5, xp: 480,
+    landingPageTemplate: 'neo-brutalism',
+    landingPageConfig: '{"title":"Furnicraft Jepara","bio":"Furniture kayu jati ukir premium langsung dari pengrajin Jepara","phone":"08222333444","instagram":"@furnicraftjepara"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Distributor', membershipAccess: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-8',
+    email: 'agro.segar@teras.com',
+    name: 'AgroSegar Farm Bogor',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -6.5971, longitude: 106.8060,
+    level: 3, xp: 210,
+    landingPageTemplate: 'modern-gold',
+    landingPageConfig: '{"title":"AgroSegar Farm","bio":"Sayur & buah organik segar dari kebun sendiri di Bogor","phone":"08333444555","instagram":"@agrosegar"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Reseller', membershipAccess: 'Gold',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-9',
+    email: 'aksesoris.silver@teras.com',
+    name: 'Silver Artisan Celuk',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -8.5833, longitude: 115.2667,
+    level: 6, xp: 550,
+    landingPageTemplate: 'glassmorphism',
+    landingPageConfig: '{"title":"Silver Artisan Celuk","bio":"Perhiasan perak handmade asli pengrajin Celuk Bali","phone":"08444555666","instagram":"@silverceluk"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Agen', membershipAccess: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-10',
+    email: 'konveksi.solo@teras.com',
+    name: 'Konveksi Solo Premium',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -7.5755, longitude: 110.8243,
+    level: 4, xp: 420,
+    landingPageTemplate: 'modern-gold',
+    landingPageConfig: '{"title":"Konveksi Solo Premium","bio":"Produksi seragam, kaos, dan jaket sablon berkualitas dari Solo","phone":"08555666777","instagram":"@konveksisolo"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Agen', membershipAccess: 'Platinum',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-11',
+    email: 'edu.kids@teras.com',
+    name: 'EduKids Toy Studio',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -7.2575, longitude: 112.7521,
+    level: 3, xp: 280,
+    landingPageTemplate: 'neo-brutalism',
+    landingPageConfig: '{"title":"EduKids Toy Studio","bio":"Mainan edukasi anak ramah lingkungan buatan lokal Surabaya","phone":"08666777888","instagram":"@edukidstoy"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Reseller', membershipAccess: 'Gold',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-12',
+    email: 'skincare.lokal@teras.com',
+    name: 'Glow Local Skincare',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -6.2146, longitude: 106.8451,
+    level: 5, xp: 510,
+    landingPageTemplate: 'glassmorphism',
+    landingPageConfig: '{"title":"Glow Local Skincare","bio":"Skincare natural berbahan baku lokal Indonesia, BPOM terdaftar","phone":"08777888999","instagram":"@glowlocal"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Distributor', membershipAccess: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-13',
+    email: 'pet.care.id@teras.com',
+    name: 'PetCare Indonesia',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -6.1944, longitude: 106.8229,
+    level: 3, xp: 230,
+    landingPageTemplate: 'modern-gold',
+    landingPageConfig: '{"title":"PetCare Indonesia","bio":"Produk & layanan perawatan hewan peliharaan terpercaya Jakarta","phone":"08888999000","instagram":"@petcareid"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Reseller', membershipAccess: 'Platinum',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-14',
+    email: 'properti.kost@teras.com',
+    name: 'Kost Premium Menteng',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -6.1862, longitude: 106.8355,
+    level: 4, xp: 350,
+    landingPageTemplate: 'modern-gold',
+    landingPageConfig: '{"title":"Kost Premium Menteng","bio":"Kost eksklusif dan jasa properti di kawasan Menteng Jakarta","phone":"08999000111","instagram":"@kostmenteng"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Agen', membershipAccess: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-merchant-15',
+    email: 'otomotif.bengkel@teras.com',
+    name: 'Bengkel Pro Autocare',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'MERCHANT' as const,
+    latitude: -7.2830, longitude: 112.7372,
+    level: 5, xp: 470,
+    landingPageTemplate: 'neo-brutalism',
+    landingPageConfig: '{"title":"Bengkel Pro Autocare","bio":"Servis dan aksesoris kendaraan roda dua & empat Surabaya","phone":"08000111222","instagram":"@bengkelproauto"}',
+    landingPageSetup: true, parentAffiliateId: null,
+    membershipLevel: 'Distributor', membershipAccess: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+]
+
+const mockProducts = [
+  // ─── TOKO & RITEL ────────────────────────────────────────────────────────────
+  {
+    id: 'prod-gayo-coffee',
+    title: 'Kopi Gayo Organik Premium',
+    description: 'Kopi gayo organik dengan proses honey, menghadirkan rasa fruity yang segar dengan body tebal yang lembut.',
+    price: 150000,
+    category: 'TOKO' as const,
+    stock: 50,
+    imageUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-batik-lurik',
+    title: 'Batik Lurik Premium Jogja',
+    description: 'Kain batik lurik tenun tangan asli Jogjakarta, motif klasik dengan warna natural yang elegan.',
+    price: 285000,
+    category: 'PAKAIAN_PRIA' as const,
+    stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -7.7972, longitude: 110.3688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── KAFE & KULINER ──────────────────────────────────────────────────────────
+  {
+    id: 'prod-sourdough',
+    title: 'Artisan Country Sourdough',
+    description: 'Roti sourdough klasik berpori besar dengan kulit renyah (crust) dan rasa asam khas ragi alami.',
+    price: 65000,
+    category: 'KAFE' as const,
+    stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc7b?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-cold-brew',
+    title: 'Cold Brew Coffee Botolan 500ml',
+    description: 'Cold brew 18 jam dengan single origin Ethiopia Yirgacheffe. Cocok untuk coffee shop dan reseller.',
+    price: 45000,
+    category: 'MAKANAN_MINUMAN' as const,
+    stock: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2145, longitude: 106.8272,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-sambal-artisan',
+    title: 'Sambal Bajak Artisan Medan',
+    description: 'Sambal bajak dengan cabe rawit lokal pilihan, dimasak tradisional tanpa MSG, tahan 2 bulan.',
+    price: 38000,
+    category: 'MAKANAN_MINUMAN' as const,
+    stock: 75,
+    imageUrl: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: 3.5952, longitude: 98.6722,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── ELEKTRONIK ──────────────────────────────────────────────────────────────
+  {
+    id: 'prod-earphone-tws',
+    title: 'TWS Earbuds Wireless ANC Pro',
+    description: 'True wireless earbuds dengan Active Noise Cancellation, Bluetooth 5.3, baterai 30 jam, IPX5 waterproof.',
+    price: 299000,
+    category: 'ELEKTRONIK' as const,
+    stock: 45,
+    imageUrl: 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.1751, longitude: 106.8650,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-powerbank-65w',
+    title: 'Powerbank 20.000mAh 65W GaN',
+    description: 'Powerbank GaN 65W dengan 3 port (USB-C PD + 2 USB-A), support fast charging laptop dan ponsel.',
+    price: 449000,
+    category: 'ELEKTRONIK' as const,
+    stock: 28,
+    imageUrl: 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2349, longitude: 106.9896,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── HANDPHONE & AKSESORIS ───────────────────────────────────────────────────
+  {
+    id: 'prod-case-magsafe',
+    title: 'Case iPhone MagSafe Premium Leather',
+    description: 'Casing iPhone full leather Italy dengan slot kartu dan ring holder, compatible MagSafe semua seri.',
+    price: 189000,
+    category: 'HANDPHONE_AKSESORIS' as const,
+    stock: 60,
+    imageUrl: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.1944, longitude: 106.8229,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── KOMPUTER & AKSESORIS ────────────────────────────────────────────────────
+  {
+    id: 'prod-mouse-ergonomic',
+    title: 'Mouse Ergonomik Wireless 4K DPI',
+    description: 'Mouse vertikal ergonomik wireless 2.4G + Bluetooth dual mode, DPI 400-4000, baterai 90 hari.',
+    price: 235000,
+    category: 'KOMPUTER_AKSESORIS' as const,
+    stock: 35,
+    imageUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2480, longitude: 106.7850,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-keyboard-mechanical',
+    title: 'Keyboard Mekanikal 75% RGB Hotswap',
+    description: 'Keyboard 75% layout, hot-swappable switch, backlight RGB per-key, gasket mount anti-bounce.',
+    price: 850000,
+    category: 'KOMPUTER_AKSESORIS' as const,
+    stock: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── PERAWATAN & KECANTIKAN ──────────────────────────────────────────────────
+  {
+    id: 'prod-serum-vitamin-c',
+    title: 'Serum Vitamin C 20% Brightening',
+    description: 'Serum wajah Vitamin C 20% + Niacinamide 5%, mencerahkan flek hitam, dermatologically tested.',
+    price: 175000,
+    category: 'PERAWATAN_KECANTIKAN' as const,
+    stock: 80,
+    imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.1951, longitude: 106.8309,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-masker-matcha',
+    title: 'Clay Mask Matcha & Charcoal',
+    description: 'Masker tanah liat dengan matcha Jepang dan charcoal aktif, membersihkan pori dan mengontrol minyak.',
+    price: 89000,
+    category: 'PERAWATAN_KECANTIKAN' as const,
+    stock: 55,
+    imageUrl: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── PERLENGKAPAN RUMAH ──────────────────────────────────────────────────────
+  {
+    id: 'prod-lilin-aromaterapi',
+    title: 'Lilin Aromaterapi Soy Wax Vanilla',
+    description: 'Lilin kedelai (soy wax) aromaterapi vanilla & sandalwood, burn time 55 jam, handcrafted Bali.',
+    price: 125000,
+    category: 'PERLENGKAPAN_RUMAH' as const,
+    stock: 40,
+    imageUrl: 'https://images.unsplash.com/photo-1602028915047-37269d1a73f7?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-organizer-anyaman',
+    title: 'Keranjang Organizer Anyaman Rotan',
+    description: 'Keranjang serbaguna dari rotan alam pilihan, bisa digunakan untuk pakaian, mainan, atau dekorasi.',
+    price: 145000,
+    category: 'PERLENGKAPAN_RUMAH' as const,
+    stock: 25,
+    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -7.2504, longitude: 112.7688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── PAKAIAN WANITA ──────────────────────────────────────────────────────────
+  {
+    id: 'prod-dress-linen',
+    title: 'Dress Linen Premium Midi Cut',
+    description: 'Dress linen natural breathable midi cut, cocok untuk casual dan formal, tersedia 8 pilihan warna.',
+    price: 325000,
+    category: 'PAKAIAN_WANITA' as const,
+    stock: 35,
+    imageUrl: 'https://images.unsplash.com/photo-1539008835657-9e8e9680c956?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2318, longitude: 106.8243,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── FASHION MUSLIM ──────────────────────────────────────────────────────────
+  {
+    id: 'prod-gamis-syari',
+    title: 'Gamis Syari Premium Wolfis',
+    description: 'Gamis wolly crepe syari modern, jahitan rapi, tersedia ukuran S-3XL dan 10+ pilihan warna muda.',
+    price: 285000,
+    category: 'FASHION_MUSLIM' as const,
+    stock: 50,
+    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4b984d?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -7.2504, longitude: 112.7688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── SEPATU PRIA ─────────────────────────────────────────────────────────────
+  {
+    id: 'prod-sneaker-lokal',
+    title: 'Sneaker Casual Kulit Lokal Bandung',
+    description: 'Sepatu kulit sapi asli Bandung, sole rubber anti-slip, tersedia ukuran 38-44, handmade artisan.',
+    price: 465000,
+    category: 'SEPATU_PRIA' as const,
+    stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.9175, longitude: 107.6191,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── SEPATU WANITA ────────────────────────────────────────────────────────────
+  {
+    id: 'prod-flat-shoes',
+    title: 'Flat Shoes Kulit Ular Python Motif',
+    description: 'Sepatu flat wanita dengan bahan PU kulit motif python, ringan dan elegan untuk segala outfit.',
+    price: 195000,
+    category: 'SEPATU_WANITA' as const,
+    stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2318, longitude: 106.8243,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── KESEHATAN ───────────────────────────────────────────────────────────────
+  {
+    id: 'prod-madu-hutan',
+    title: 'Madu Hutan Kalimantan Pure Raw',
+    description: 'Madu hutan liar murni tanpa campuran dari lebah Apis dorsata Kalimantan, kaya enzim dan antioksidan.',
+    price: 195000,
+    category: 'KESEHATAN' as const,
+    stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: 0.5388, longitude: 116.4194,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-suplemen-herbal',
+    title: 'Kapsul Temulawak + Jahe Merah Organik',
+    description: 'Suplemen herbal temulawak dan jahe merah organik, 60 kapsul, meningkatkan imunitas dan stamina.',
+    price: 85000,
+    category: 'KESEHATAN' as const,
+    stock: 90,
+    imageUrl: 'https://images.unsplash.com/photo-1612197527762-8cfb4b634b73?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -7.7972, longitude: 110.3688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── HOBI & KOLEKSI ──────────────────────────────────────────────────────────
+  {
+    id: 'prod-miniatur-gundam',
+    title: 'Gundam HG 1/144 Barbatos Lupus',
+    description: 'Model kit Gundam HG 1:144 Iron Blooded Orphans series, lengkap dengan runner dan stiker detail.',
+    price: 350000,
+    category: 'HOBI_KOLEKSI' as const,
+    stock: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1608306448197-e83633f1261c?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── OLAHRAGA & OUTDOOR ──────────────────────────────────────────────────────
+  {
+    id: 'prod-carabiner-set',
+    title: 'Carabiner Set Climbing CE Certified',
+    description: 'Set carabiner aluminum alloy CE certified, kapasitas 22kN, untuk panjat tebing dan outdoor adventure.',
+    price: 185000,
+    category: 'OLAHRAGA_OUTDOOR' as const,
+    stock: 40,
+    imageUrl: 'https://images.unsplash.com/photo-1522163182402-834f871fd851?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.9175, longitude: 107.6191,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-yoga-mat',
+    title: 'Yoga Mat NBR 10mm Anti-Slip Premium',
+    description: 'Matras yoga NBR foam tebal 10mm, panjang 183cm, dengan tali pengait dan tas jinjing gratis.',
+    price: 145000,
+    category: 'OLAHRAGA_OUTDOOR' as const,
+    stock: 55,
+    imageUrl: 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── OTOMOTIF ─────────────────────────────────────────────────────────────────
+  {
+    id: 'prod-wax-carnauba',
+    title: 'Carnauba Wax Premium Detailing',
+    description: 'Carnauba wax murni konsentrasi tinggi untuk detailing mobil, memberikan kilap deep gloss tahan 6 bulan.',
+    price: 285000,
+    category: 'OTOMOTIF' as const,
+    stock: 25,
+    imageUrl: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── BUKU & ALAT TULIS ───────────────────────────────────────────────────────
+  {
+    id: 'prod-jurnal-kulit',
+    title: 'Jurnal Kulit Asli A5 Handmade Bali',
+    description: 'Buku jurnal kulit sapi asli A5 handmade Bali, 200 halaman dotted, tersedia dalam 6 warna pilihan.',
+    price: 225000,
+    category: 'BUKU_ALAT_TULIS' as const,
+    stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── TAS WANITA ──────────────────────────────────────────────────────────────
+  {
+    id: 'prod-tote-canvas',
+    title: 'Tote Bag Canvas Premium Motif Wayang',
+    description: 'Totebag kanvas tebal 16oz dengan motif wayang batik eksklusif, ukuran jumbo A4, inner pocket.',
+    price: 155000,
+    category: 'TAS_WANITA' as const,
+    stock: 45,
+    imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -7.7972, longitude: 110.3688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── FOTOGRAFI ───────────────────────────────────────────────────────────────
+  {
+    id: 'prod-filter-nd',
+    title: 'Filter ND Variable 67mm ND2-ND400',
+    description: 'Filter ND variabel 67mm, optical glass multi-coated, cocok untuk video cinematic dan landscape.',
+    price: 245000,
+    category: 'FOTOGRAFI' as const,
+    stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── VOUCHER ─────────────────────────────────────────────────────────────────
+  {
+    id: 'prod-voucher-kopi',
+    title: 'Voucher Minuman Kopi 10x Prepaid',
+    description: 'Voucher minum kopi 10x di jaringan Teras Coffee, berlaku 90 hari, bisa digunakan untuk semua varian.',
+    price: 120000,
+    category: 'VOUCHER' as const,
+    stock: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── DEALS SEKITAR ───────────────────────────────────────────────────────────
+  {
+    id: 'prod-deal-bakso',
+    title: 'Promo Bakso Premium Pak Slamet 2 Porsi',
+    description: 'Dapatkan 2 porsi bakso premium urat + sumsum Pak Slamet dengan harga spesial, hanya di Teras UMKM.',
+    price: 32000,
+    category: 'DEALS_SEKITAR' as const,
+    stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1617196034183-421b4040ed20?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.9175, longitude: 107.6191,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── JASA & LAYANAN ──────────────────────────────────────────────────────────
+  {
+    id: 'prod-branding-service',
+    title: 'Jasa Desain Branding UMKM Full Package',
+    description: 'Paket desain identitas visual lengkap: logo, brosur, kemasan, dan media sosial template.',
+    price: 1500000,
+    category: 'JASA' as const,
+    stock: 5,
+    imageUrl: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2200, longitude: 106.8500,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-foto-produk',
+    title: 'Jasa Fotografi Produk 20 Foto Studio',
+    description: 'Sesi pemotretan produk di studio profesional, 20 foto editing clean background, ready social media.',
+    price: 350000,
+    category: 'JASA' as const,
+    stock: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  // ─── LOWONGAN KERJA ──────────────────────────────────────────────────────────
+  {
+    id: 'prod-loker-admin',
+    title: '[LOKER] Admin Marketplace Freelance WFH',
+    description: 'Dibutuhkan admin toko online freelance WFH, pengalaman Tokopedia/Shopee diutamakan, fee per project.',
+    price: 0,
+    category: 'KERJAAN' as const,
+    stock: 3,
+    imageUrl: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088, longitude: 106.8456,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-loker-kurir',
+    title: '[LOKER] Driver Kurir Motor Harian Bandung',
+    description: 'Butuh driver kurir motor area Bandung kota, jam kerja fleksibel, gaji harian + bonus pengiriman.',
+    price: 0,
+    category: 'KERJAAN' as const,
+    stock: 5,
+    imageUrl: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.9175, longitude: 107.6191,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK DARI MERCHANT-2 (Nusantara Fashion House) ────────────────────────
+  {
+    id: 'prod-batik-tulis-premium',
+    title: 'Batik Tulis Sutra Premium Jogja',
+    description: 'Batik tulis tangan asli Jogjakarta menggunakan bahan sutra murni. Motif parang rusak, semen, atau sesuai pesanan. Proses 3-4 minggu.',
+    price: 1850000,
+    category: 'PAKAIAN_PRIA' as const,
+    stock: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=400&q=80',
+    merchantId: 'user-merchant-2',
+    latitude: -7.7972, longitude: 110.3688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-kebaya-modern',
+    title: 'Kebaya Modern Brokat Premium Set',
+    description: 'Kebaya modern bahan brokat Prancis dengan rok satin. Tersedia warna pastel dan bold, ukuran XS-3XL, bisa custom.',
+    price: 750000,
+    category: 'PAKAIAN_WANITA' as const,
+    stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4b984d?w=400&q=80',
+    merchantId: 'user-merchant-2',
+    latitude: -7.7972, longitude: 110.3688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-tenun-ntt',
+    title: 'Kain Tenun Ikat NTT Asli Motif Sumba',
+    description: 'Kain tenun ikat tangan asli dari Sumba Barat, motif kuda dan mamuli tradisional. 1 lembar kain ukuran 200x70cm.',
+    price: 650000,
+    category: 'TOKO' as const,
+    stock: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
+    merchantId: 'user-merchant-2',
+    latitude: -7.7972, longitude: 110.3688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-tas-anyam-rotan',
+    title: 'Tas Anyam Rotan Handmade Premium',
+    description: 'Tas wanita anyaman rotan alam pilihan, finishing natural oil, ukuran medium 30x25cm, dengan tali kulit.',
+    price: 385000,
+    category: 'TAS_WANITA' as const,
+    stock: 25,
+    imageUrl: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80',
+    merchantId: 'user-merchant-2',
+    latitude: -7.7972, longitude: 110.3688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-jahit-custom',
+    title: 'Jasa Jahit Baju Custom & Alterasi',
+    description: 'Jasa jahit pakaian custom dari kain Anda sendiri atau bahan kami. Termasuk kemeja, gaun, jas, dan seragam. Pengerjaan 7-14 hari.',
+    price: 350000,
+    category: 'JASA' as const,
+    stock: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=80',
+    merchantId: 'user-merchant-2',
+    latitude: -7.7972, longitude: 110.3688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK DARI MERCHANT-3 (TechGeek Indonesia) ─────────────────────────────
+  {
+    id: 'prod-smartwatch-garmin',
+    title: 'Smartwatch GPS Running Premium',
+    description: 'Smartwatch GPS dengan sensor HR 24/7, SpO2, stress tracking, baterai 14 hari, waterproof 5ATM. Cocok untuk pelari dan atlet.',
+    price: 2950000,
+    category: 'ELEKTRONIK' as const,
+    stock: 12,
+    imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80',
+    merchantId: 'user-merchant-3',
+    latitude: -6.1751, longitude: 106.8650,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-laptop-stand',
+    title: 'Laptop Stand Aluminium Adjustable Pro',
+    description: 'Stand laptop aluminium dengan 6 tingkat ketinggian, foldable ultra-tipis, kompatibel 11-17 inch, anti-slip silicone pad.',
+    price: 185000,
+    category: 'KOMPUTER_AKSESORIS' as const,
+    stock: 55,
+    imageUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400&q=80',
+    merchantId: 'user-merchant-3',
+    latitude: -6.1751, longitude: 106.8650,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-webcam-4k',
+    title: 'Webcam 4K UHD Auto-Focus Ring Light Built-in',
+    description: 'Webcam 4K 60fps dengan auto-focus AI, ring light built-in 3 mode warna, microphone noise-cancelling. Plug & play USB-C.',
+    price: 785000,
+    category: 'KOMPUTER_AKSESORIS' as const,
+    stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=400&q=80',
+    merchantId: 'user-merchant-3',
+    latitude: -6.1751, longitude: 106.8650,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-servis-hp',
+    title: 'Jasa Servis HP & Tablet All Brand',
+    description: 'Servis HP dan tablet semua merek: ganti LCD, baterai, IC, board rusak. Bergaransi 30 hari. Antar jemput area Jakarta.',
+    price: 125000,
+    category: 'JASA' as const,
+    stock: 50,
+    imageUrl: 'https://images.unsplash.com/photo-1601972599720-36938d4ecd31?w=400&q=80',
+    merchantId: 'user-merchant-3',
+    latitude: -6.1751, longitude: 106.8650,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-it-support',
+    title: 'Jasa IT Support & Maintenance Bisnis',
+    description: 'Layanan IT support bulanan untuk bisnis: setup jaringan, install software, backup data, troubleshoot. Remote & on-site Jakarta-Depok.',
+    price: 750000,
+    category: 'JASA' as const,
+    stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&q=80',
+    merchantId: 'user-merchant-3',
+    latitude: -6.1751, longitude: 106.8650,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-setup-toko-online',
+    title: 'Jasa Setup Toko Online Tokopedia/Shopee',
+    description: 'Setup toko online lengkap: buat akun, optimasi profil, upload 20 produk dengan foto & deskripsi SEO, setting pengiriman & pembayaran.',
+    price: 450000,
+    category: 'JASA' as const,
+    stock: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80',
+    merchantId: 'user-merchant-3',
+    latitude: -6.1751, longitude: 106.8650,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK DARI MERCHANT-4 (Dapur Kreatif Nusantara) ────────────────────────
+  {
+    id: 'prod-rendang-premium',
+    title: 'Rendang Daging Sapi Premium Padang 500g',
+    description: 'Rendang daging sapi murni khas Padang, dimasak 8 jam dengan rempah pilihan, tahan 1 bulan tanpa kulkas. Halal MUI.',
+    price: 125000,
+    category: 'MAKANAN_MINUMAN' as const,
+    stock: 60,
+    imageUrl: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=400&q=80',
+    merchantId: 'user-merchant-4',
+    latitude: -7.2504, longitude: 112.7688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-keripik-tempe',
+    title: 'Keripik Tempe Malang Renyah 250g',
+    description: 'Keripik tempe khas Malang, dibuat dari tempe murni pilihan, 4 varian rasa: original, BBQ, balado, keju. Tanpa pengawet.',
+    price: 28000,
+    category: 'MAKANAN_MINUMAN' as const,
+    stock: 120,
+    imageUrl: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400&q=80',
+    merchantId: 'user-merchant-4',
+    latitude: -7.2504, longitude: 112.7688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-kopi-toraja',
+    title: 'Kopi Arabika Toraja Sapan 200g Whole Bean',
+    description: 'Kopi Arabika Toraja Sapan single origin, proses natural, dipetik tangan. Profil rasa: dark chocolate, caramel, fruity finish.',
+    price: 98000,
+    category: 'MAKANAN_MINUMAN' as const,
+    stock: 45,
+    imageUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&q=80',
+    merchantId: 'user-merchant-4',
+    latitude: -7.2504, longitude: 112.7688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-catering',
+    title: 'Jasa Catering Prasmanan 50-200 Pax',
+    description: 'Paket catering prasmanan untuk acara kantor, pernikahan, dan ulang tahun. Menu masakan Jawa, Sunda, dan Padang. Include peralatan makan.',
+    price: 85000,
+    category: 'JASA' as const,
+    stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=400&q=80',
+    merchantId: 'user-merchant-4',
+    latitude: -7.2504, longitude: 112.7688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-kue-custom',
+    title: 'Jasa Kue Custom & Wedding Cake',
+    description: 'Custom cake untuk ulang tahun, wedding, baby shower. Bahan premium, fondant atau buttercream. Konsultasi desain gratis. Min order 5 hari sebelum acara.',
+    price: 450000,
+    category: 'JASA' as const,
+    stock: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&q=80',
+    merchantId: 'user-merchant-4',
+    latitude: -7.2504, longitude: 112.7688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK DARI MERCHANT-5 (Kreasi Digital Studio) ─────────────────────────
+  {
+    id: 'prod-jasa-desain-logo',
+    title: 'Jasa Desain Logo Profesional + Guideline',
+    description: 'Desain logo profesional dengan 3 konsep awal, revisi unlimited, file AI/EPS/PNG/PDF, plus brand guideline warna & tipografi. Pengerjaan 5-7 hari.',
+    price: 850000,
+    category: 'JASA' as const,
+    stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&q=80',
+    merchantId: 'user-merchant-5',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-foto-produk-bali',
+    title: 'Jasa Foto Produk Profesional Studio Bali',
+    description: 'Sesi foto produk di studio profesional Bali: 30 foto editan clean background atau lifestyle. Termasuk video pendek 15 detik untuk Reels/TikTok.',
+    price: 750000,
+    category: 'JASA' as const,
+    stock: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=400&q=80',
+    merchantId: 'user-merchant-5',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-kelola-sosmed',
+    title: 'Jasa Kelola Media Sosial UMKM (1 Bulan)',
+    description: 'Paket kelola Instagram + TikTok 1 bulan: 20 konten/bulan, copywriting, edit foto/video, schedule posting, reply komentar & DM.',
+    price: 1500000,
+    category: 'JASA' as const,
+    stock: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&q=80',
+    merchantId: 'user-merchant-5',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-video-iklan',
+    title: 'Jasa Produksi Video Iklan 60 Detik',
+    description: 'Video iklan profesional 60 detik: script, shooting, editing, motion graphic, colour grading. Cocok untuk FB Ads, IG Ads, dan TikTok Ads.',
+    price: 2500000,
+    category: 'JASA' as const,
+    stock: 5,
+    imageUrl: 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400&q=80',
+    merchantId: 'user-merchant-5',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-website-umkm',
+    title: 'Jasa Buat Website Toko Online UMKM',
+    description: 'Website toko online profesional: domain + hosting 1 tahun, desain premium, katalog produk, form order WhatsApp, SEO dasar. Selesai 14 hari.',
+    price: 3500000,
+    category: 'JASA' as const,
+    stock: 6,
+    imageUrl: 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=400&q=80',
+    merchantId: 'user-merchant-5',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-ads-management',
+    title: 'Jasa Kelola Meta Ads & Google Ads (1 Bulan)',
+    description: 'Kelola iklan Facebook, Instagram, dan Google Ads: riset audience, buat campaign, A/B testing kreatif, optimasi harian, laporan mingguan.',
+    price: 2000000,
+    category: 'JASA' as const,
+    stock: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80',
+    merchantId: 'user-merchant-5',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-preset-lightroom',
+    title: 'Preset Lightroom Premium Pack 50 Filter',
+    description: 'Bundle 50 preset Lightroom professional: moody, bright airy, vintage, dark, dan food photography. Cocok untuk HP dan desktop.',
+    price: 75000,
+    category: 'FOTOGRAFI' as const,
+    stock: 999,
+    imageUrl: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400&q=80',
+    merchantId: 'user-merchant-5',
+    latitude: -8.4095, longitude: 115.1889,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-6 (Herbal Nusantara) ────────────────────────────
+  {
+    id: 'prod-madu-hitam',
+    title: 'Madu Hitam Pahit Kalimantan 250ml',
+    description: 'Madu hitam pahit asli Kalimantan, kaya antioksidan, proses cold extraction tanpa pemanas. Berkhasiat untuk imunitas dan stamina. Sertifikat uji lab tersedia.',
+    price: 185000, category: 'KESEHATAN' as const, stock: 40,
+    imageUrl: 'https://images.unsplash.com/photo-1587049352851-8d4e89133924?w=400&q=80',
+    merchantId: 'user-merchant-6', latitude: -6.9147, longitude: 107.6098,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-teh-herbal',
+    title: 'Teh Herbal Racikan Jamu Premium 30 Sachet',
+    description: 'Racikan teh herbal dari 12 tanaman rempah pilihan: jahe merah, kayu manis, cengkeh, dll. Untuk kesehatan pencernaan dan daya tahan tubuh.',
+    price: 75000, category: 'KESEHATAN' as const, stock: 80,
+    imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&q=80',
+    merchantId: 'user-merchant-6', latitude: -6.9147, longitude: 107.6098,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-konsultasi-herbal',
+    title: 'Jasa Konsultasi Herbal & Ramuan Tradisional Online',
+    description: 'Konsultasi kesehatan dengan herbalis berpengalaman via WhatsApp/Zoom, termasuk rekomendasi tanaman herbal dan cara pemakaian yang tepat. Durasi 45 menit.',
+    price: 150000, category: 'JASA' as const, stock: 25,
+    imageUrl: 'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=400&q=80',
+    merchantId: 'user-merchant-6', latitude: -6.9147, longitude: 107.6098,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-7 (Furnicraft Jepara) ───────────────────────────
+  {
+    id: 'prod-kursi-ukir-jepara',
+    title: 'Kursi Tamu Ukir Jepara Set 3+1+1',
+    description: 'Set kursi tamu kayu jati ukir Jepara, motif bunga klasik, finishing melamine glossy. Set terdiri dari: sofa 3 dudukan + 2 sofa 1 dudukan. Custom warna & motif.',
+    price: 8500000, category: 'PERLENGKAPAN_RUMAH' as const, stock: 5,
+    imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&q=80',
+    merchantId: 'user-merchant-7', latitude: -6.5896, longitude: 110.6688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-meja-makan-jati',
+    title: 'Meja Makan Minimalis Kayu Jati 6 Kursi',
+    description: 'Meja makan kayu jati solid minimalis modern, ukuran 180x90cm, finishing natural oil. Include 6 kursi makan. Pengiriman dalam Pulau Jawa gratis.',
+    price: 6200000, category: 'PERLENGKAPAN_RUMAH' as const, stock: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=400&q=80',
+    merchantId: 'user-merchant-7', latitude: -6.5896, longitude: 110.6688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-custom-furniture',
+    title: 'Jasa Custom Furniture Kayu Jati (by Order)',
+    description: 'Pembuatan furniture kayu jati custom sesuai desain dan ukuran Anda: lemari, bufet, meja, rak, dll. Konsultasi desain gratis, estimasi harga dalam 24 jam.',
+    price: 2500000, category: 'JASA' as const, stock: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=400&q=80',
+    merchantId: 'user-merchant-7', latitude: -6.5896, longitude: 110.6688,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-8 (AgroSegar Farm) ──────────────────────────────
+  {
+    id: 'prod-sayur-organik-box',
+    title: 'Box Sayur Organik Mingguan 5kg',
+    description: 'Paket sayur organik segar langsung dari kebun: bayam, kangkung, wortel, brokoli, tomat cherry, dll. Panen hari H, antar ke rumah Jabodetabek. Subscribe mingguan diskon 15%.',
+    price: 95000, category: 'MAKANAN_MINUMAN' as const, stock: 50,
+    imageUrl: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&q=80',
+    merchantId: 'user-merchant-8', latitude: -6.5971, longitude: 106.8060,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-bibit-sayur',
+    title: 'Paket Bibit Sayur Organik 10 Jenis',
+    description: 'Paket bibit sayur organik non-GMO: selada, kangkung, bayam merah, pakcoy, kale, tomat, cabai, terong, timun, labu. Cocok untuk urban farming dan hidroponik.',
+    price: 65000, category: 'MAKANAN_MINUMAN' as const, stock: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&q=80',
+    merchantId: 'user-merchant-8', latitude: -6.5971, longitude: 106.8060,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-urban-farming',
+    title: 'Jasa Setup Urban Farming & Hidroponik Rumah',
+    description: 'Setup sistem hidroponik di rumah atau kantor: NFT, DFT, atau wick system. Include instalasi, media tanam, nutrisi awal, dan pelatihan perawatan. Bergaransi 1 bulan.',
+    price: 1800000, category: 'JASA' as const, stock: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1585336261022-680e295ce3fe?w=400&q=80',
+    merchantId: 'user-merchant-8', latitude: -6.5971, longitude: 106.8060,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-9 (Silver Artisan Celuk) ───────────────────────
+  {
+    id: 'prod-gelang-perak-bali',
+    title: 'Gelang Perak Bali Motif Ukir 925 Sterling',
+    description: 'Gelang perak murni 925 sterling silver handmade pengrajin Celuk Bali. Motif ukir bunga & daun tradisional. Tersedia ukuran 16-20cm, dengan box packaging premium.',
+    price: 385000, category: 'AKSESORIS_FASHION' as const, stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1573408301185-9519f94816f0?w=400&q=80',
+    merchantId: 'user-merchant-9', latitude: -8.5833, longitude: 115.2667,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-kalung-perak-natural',
+    title: 'Kalung Perak Natural Stone Moonstone',
+    description: 'Kalung perak 925 dengan liontin batu moonstone asli, handmade artisan Bali. Panjang rantai 45cm adjustable. Tersedia dalam box kayu berukir.',
+    price: 550000, category: 'AKSESORIS_FASHION' as const, stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&q=80',
+    merchantId: 'user-merchant-9', latitude: -8.5833, longitude: 115.2667,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-custom-perhiasan',
+    title: 'Jasa Custom Perhiasan Perak (Wedding & Special)',
+    description: 'Custom cincin tunangan, cincin nikah, atau perhiasan spesial lainnya dari perak 925. Desain sesuai keinginan, proses 7-14 hari. Sertifikat keaslian tersedia.',
+    price: 850000, category: 'JASA' as const, stock: 10,
+    imageUrl: 'https://images.unsplash.com/photo-1635767798638-3e25273a8236?w=400&q=80',
+    merchantId: 'user-merchant-9', latitude: -8.5833, longitude: 115.2667,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-10 (Konveksi Solo) ──────────────────────────────
+  {
+    id: 'prod-kaos-polo-sablon',
+    title: 'Kaos Polo Custom Sablon DTF Min 12pcs',
+    description: 'Kaos polo cotton combed 30s, sablon DTF full color tahan lama. Min order 12pcs, bisa beda ukuran dalam 1 order. Pengerjaan 5-7 hari kerja.',
+    price: 85000, category: 'PAKAIAN_PRIA' as const, stock: 200,
+    imageUrl: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&q=80',
+    merchantId: 'user-merchant-10', latitude: -7.5755, longitude: 110.8243,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jaket-hoodie-custom',
+    title: 'Jaket Hoodie Fleece Custom Logo Min 6pcs',
+    description: 'Hoodie fleece premium 280gsm, bordir atau sablon logo sesuai permintaan. Tersedia warna hitam, navy, abu-abu. Min 6pcs, beda ukuran S-3XL OK.',
+    price: 165000, category: 'PAKAIAN_PRIA' as const, stock: 150,
+    imageUrl: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?w=400&q=80',
+    merchantId: 'user-merchant-10', latitude: -7.5755, longitude: 110.8243,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-seragam-perusahaan',
+    title: 'Jasa Produksi Seragam Perusahaan & Instansi',
+    description: 'Produksi seragam kantor, sekolah, dan instansi pemerintah: kemeja, kaos, jaket, rompi. Bisa bordir logo, cetak nama, dan nomor punggung. Min 20pcs. Konsultasi gratis.',
+    price: 95000, category: 'JASA' as const, stock: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+    merchantId: 'user-merchant-10', latitude: -7.5755, longitude: 110.8243,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-11 (EduKids Toy Studio) ────────────────────────
+  {
+    id: 'prod-puzzle-kayu-edukasi',
+    title: 'Puzzle Kayu Edukasi Peta Indonesia',
+    description: 'Puzzle kayu premium berbentuk peta Indonesia, 34 provinsi warna-warni, cat food-grade non-toxic, aman untuk anak 3+. Include buku panduan dan flashcard provinsi.',
+    price: 145000, category: 'HOBI_KOLEKSI' as const, stock: 60,
+    imageUrl: 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&q=80',
+    merchantId: 'user-merchant-11', latitude: -7.2575, longitude: 112.7521,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-balok-bangunan-kayu',
+    title: 'Set Balok Bangunan Kayu 100 Pcs STEM',
+    description: 'Set 100 balok bangunan kayu natural dari kayu mahoni, aneka bentuk geometri. Mendukung perkembangan motorik dan kreativitas anak. Ramah lingkungan, tanpa cat.',
+    price: 195000, category: 'HOBI_KOLEKSI' as const, stock: 45,
+    imageUrl: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&q=80',
+    merchantId: 'user-merchant-11', latitude: -7.2575, longitude: 112.7521,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-workshop-edukids',
+    title: 'Jasa Workshop Craft & Edukasi Anak (Offline/Online)',
+    description: 'Workshop seru untuk anak usia 4-12 tahun: membuat puzzle, melukis, origami, atau science experiment. Bisa offline di lokasi atau online via Zoom. Min 10 anak.',
+    price: 75000, category: 'JASA' as const, stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400&q=80',
+    merchantId: 'user-merchant-11', latitude: -7.2575, longitude: 112.7521,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-12 (Glow Local Skincare) ───────────────────────
+  {
+    id: 'prod-serum-vit-c-lokal',
+    title: 'Serum Vitamin C 20% Brightening Local',
+    description: 'Serum Vitamin C murni 20% stabilized L-ascorbic acid, diperkaya niacinamide dan hyaluronic acid. BPOM terdaftar, cocok semua jenis kulit. 30ml dengan dropper.',
+    price: 125000, category: 'PERAWATAN_KECANTIKAN' as const, stock: 80,
+    imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80',
+    merchantId: 'user-merchant-12', latitude: -6.2146, longitude: 106.8451,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-masker-kunyit',
+    title: 'Masker Wajah Kunyit & Temulawak Clay Mask',
+    description: 'Masker wajah clay berbahan kunyit dan temulawak pilihan, efektif mengecilkan pori dan mencerahkan. Formula 100% natural, tanpa paraben. 60ml jar.',
+    price: 65000, category: 'PERAWATAN_KECANTIKAN' as const, stock: 120,
+    imageUrl: 'https://images.unsplash.com/photo-1556229010-6c3f2c9ca5f8?w=400&q=80',
+    merchantId: 'user-merchant-12', latitude: -6.2146, longitude: 106.8451,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-konsultasi-skincare',
+    title: 'Konsultasi Skincare Personal Online 1-on-1',
+    description: 'Sesi konsultasi 60 menit dengan skincare specialist berpengalaman: analisis jenis kulit, rekomendasi routine, dan solusi masalah kulit spesifik. Via Zoom/WhatsApp.',
+    price: 200000, category: 'JASA' as const, stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&q=80',
+    merchantId: 'user-merchant-12', latitude: -6.2146, longitude: 106.8451,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-13 (PetCare Indonesia) ──────────────────────────
+  {
+    id: 'prod-makanan-kucing-premium',
+    title: 'Makanan Kucing Grain-Free Premium 1kg',
+    description: 'Cat food grain-free dengan protein ayam dan ikan 80%, tanpa jagung/kedelai/gandum. Formula untuk bulu sehat dan pencernaan optimal. Tersedia rasa tuna, salmon, ayam.',
+    price: 95000, category: 'TOKO' as const, stock: 100,
+    imageUrl: 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=400&q=80',
+    merchantId: 'user-merchant-13', latitude: -6.1944, longitude: 106.8229,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-vitamin-anjing',
+    title: 'Vitamin & Suplemen Anjing All-in-One 60 Tablet',
+    description: 'Suplemen lengkap untuk anjing: multivitamin, omega 3&6, glucosamine, dan probiotik dalam 1 tablet. Untuk sendi, bulu, imunitas, dan pencernaan. Cocok semua ras.',
+    price: 125000, category: 'KESEHATAN' as const, stock: 60,
+    imageUrl: 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&q=80',
+    merchantId: 'user-merchant-13', latitude: -6.1944, longitude: 106.8229,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-grooming-pet',
+    title: 'Jasa Pet Grooming Home Visit Jakarta',
+    description: 'Grooming anjing & kucing ke rumah Anda: mandi, cukur, gunting kuku, bersihkan telinga. Area Jakarta Pusat, Selatan, Timur. Booking min H-1.',
+    price: 150000, category: 'JASA' as const, stock: 20,
+    imageUrl: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?w=400&q=80',
+    merchantId: 'user-merchant-13', latitude: -6.1944, longitude: 106.8229,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-14 (Kost Premium Menteng) ──────────────────────
+  {
+    id: 'prod-kost-eksklusif',
+    title: 'Sewa Kamar Kost AC WiFi Premium Menteng',
+    description: 'Kamar kost mewah di Menteng Jakarta Pusat: AC, WiFi 100Mbps, kamar mandi dalam, dapur bersama, area parkir. Cocok mahasiswa & karyawan. Harga per bulan.',
+    price: 3500000, category: 'TOKO' as const, stock: 3,
+    imageUrl: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=400&q=80',
+    merchantId: 'user-merchant-14', latitude: -6.1862, longitude: 106.8355,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-cari-kost',
+    title: 'Jasa Cari & Survey Kost/Kontrakan Sesuai Budget',
+    description: 'Tim kami bantu cari dan survey kost/kontrakan sesuai lokasi, budget, dan kebutuhan Anda. Area Jabodetabek. Gratis jika tidak cocok. Fee sukses Rp 150rb.',
+    price: 150000, category: 'JASA' as const, stock: 30,
+    imageUrl: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&q=80',
+    merchantId: 'user-merchant-14', latitude: -6.1862, longitude: 106.8355,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-interior-kamar',
+    title: 'Jasa Dekorasi & Interior Kamar Kost/Apartemen',
+    description: 'Transformasi kamar kost atau apartemen Anda menjadi nyaman dan instagramable. Konsultasi desain, pemilihan furnitur, dekorasi, instalasi. Area Jabodetabek.',
+    price: 1200000, category: 'JASA' as const, stock: 15,
+    imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=80',
+    merchantId: 'user-merchant-14', latitude: -6.1862, longitude: 106.8355,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+
+  // ─── PRODUK & JASA merchant-15 (Bengkel Pro Autocare) ──────────────────────
+  {
+    id: 'prod-aksesoris-motor',
+    title: 'Paket Aksesoris Motor LED Premium Set',
+    description: 'Paket aksesoris motor premium: lampu LED DRL, knalpot racing, handle bar custom, spion oval, footstep racing. Kompatibel Honda, Yamaha, Suzuki. Gratis pasang di bengkel.',
+    price: 850000, category: 'OTOMOTIF' as const, stock: 25,
+    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
+    merchantId: 'user-merchant-15', latitude: -7.2830, longitude: 112.7372,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-oli-mesin-premium',
+    title: 'Oli Mesin Full Synthetic 10W-40 1 Liter',
+    description: 'Oli mesin full synthetic kualitas premium, SAE 10W-40, untuk motor 4-tak segala merek. Tahan suhu ekstrem, mengurangi gesekan mesin, umur pakai lebih lama.',
+    price: 75000, category: 'OTOMOTIF' as const, stock: 200,
+    imageUrl: 'https://images.unsplash.com/photo-1635273051427-81d26c65eb97?w=400&q=80',
+    merchantId: 'user-merchant-15', latitude: -7.2830, longitude: 112.7372,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'prod-jasa-servis-motor',
+    title: 'Jasa Servis Motor Tune-Up Lengkap + Ganti Oli',
+    description: 'Tune-up lengkap motor: bersih karburator/injeksi, stel klep, ganti busi, ganti filter udara, ganti oli mesin + filter. Garansi servis 1 bulan. Antar jemput area Surabaya.',
+    price: 185000, category: 'JASA' as const, stock: 40,
+    imageUrl: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=400&q=80',
+    merchantId: 'user-merchant-15', latitude: -7.2830, longitude: 112.7372,
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+]
+
+const mockCourses = [
+  {
+    id: 'course-brand-1',
+    title: 'Mastering Digital Branding & Packaging',
+    description: 'Panduan lengkap membuat visual identity kelas atas dan kemasan premium yang memikat pelanggan high-end. Dari logo, tipografi, hingga strategi storytelling brand.',
+    coverImage: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80',
+    accessRequired: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'course-sourdough-1',
+    title: 'Artisan Baking & Fermentation Science',
+    description: 'Sains di balik ragi alami, teknik folding, pembentukan gluten, dan cara memanggang roti berkualitas gourmet dari dapur skala UMKM.',
+    coverImage: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc7b?w=800&q=80',
+    accessRequired: 'Platinum',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'course-digital-marketing',
+    title: 'Digital Marketing & Social Media Mastery',
+    description: 'Strategi pemasaran digital untuk UMKM: Reels, TikTok, Meta Ads, Google SEO, dan copywriting persuasif yang mengkonversi follower menjadi pembeli setia.',
+    coverImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
+    accessRequired: 'Gold',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'course-kopi-bisnis',
+    title: 'Bisnis Kopi: Dari Biji ke Cangkir Profit',
+    description: 'Kursus lengkap bisnis kopi UMKM: memilih biji green bean, memahami roasting profile, membuka warung kopi/kedai, dan scaling ke franchise.',
+    coverImage: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&q=80',
+    accessRequired: 'Gold',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'course-ecommerce-pro',
+    title: 'E-Commerce Pro: Jualan Online Tanpa Modal Besar',
+    description: 'Panduan berjualan di marketplace (Tokopedia, Shopee, TikTok Shop) dan membangun toko online sendiri. Termasuk strategi foto produk, pengelolaan stok, dan auto-respond.',
+    coverImage: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80',
+    accessRequired: 'Gold',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'course-keuangan-umkm',
+    title: 'Keuangan UMKM: Laporan & Cash Flow',
+    description: 'Cara mudah mengelola keuangan usaha kecil: membuat laporan laba-rugi sederhana, memahami arus kas, menetapkan harga jual yang benar, dan mengajukan pinjaman UMKM.',
+    coverImage: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=800&q=80',
+    accessRequired: 'Gold',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+]
+
+const mockLessons = [
+  // course-brand-1
+  { id: 'lesson-brand-1', courseId: 'course-brand-1', title: '1. Memahami Audiens Premium & Technical Luxury', content: 'Bagaimana memposisikan brand UMKM Anda agar memiliki daya tarik luxury yang kuat di kalangan menengah ke atas.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 360, orderIndex: 1, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-brand-2', courseId: 'course-brand-1', title: '2. Memilih Palette Warna & Tipografi Sora/Inter', content: 'Mengimplementasikan kombinasi warna gelap/gold dan layout minimalis bergaya Linear pada aset produk digital.', videoUrl: 'https://www.w3schools.com/html/movie.mp4', duration: 480, orderIndex: 2, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-brand-3', courseId: 'course-brand-1', title: '3. Desain Logo di Canva & Figma untuk UMKM', content: 'Langkah-langkah membuat logo sederhana namun berdampak tinggi menggunakan Canva Pro atau Figma gratis.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 540, orderIndex: 3, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-brand-4', courseId: 'course-brand-1', title: '4. Desain Kemasan Produk Print-Ready', content: 'Membuat template kemasan produk (label, box, sticker) yang siap cetak dengan dimensi dan bleed yang benar.', videoUrl: 'https://www.w3schools.com/html/movie.mp4', duration: 420, orderIndex: 4, createdAt: new Date(), updatedAt: new Date() },
+  // course-sourdough-1
+  { id: 'lesson-sourdough-1', courseId: 'course-sourdough-1', title: '1. Membuat Starter Ragi Alami (Lievito Madre)', content: 'Panduan hari demi hari memberi makan tepung dan air untuk menangkap ragi liar yang sehat.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 600, orderIndex: 1, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-sourdough-2', courseId: 'course-sourdough-1', title: '2. Teknik Autolyse, Bulk Fermentation & Folding', content: 'Memahami hidrasi adonan, teknik stretch & fold, dan cold retarding agar roti memiliki tekstur pori yang sempurna.', videoUrl: 'https://www.w3schools.com/html/movie.mp4', duration: 720, orderIndex: 2, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-sourdough-3', courseId: 'course-sourdough-1', title: '3. Shaping & Scoring Teknik Artisan', content: 'Cara membentuk boule dan batard yang tegang (tight crumb) serta teknik skoring (goresan pisau) yang artistik.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 480, orderIndex: 3, createdAt: new Date(), updatedAt: new Date() },
+  // course-digital-marketing
+  { id: 'lesson-dm-1', courseId: 'course-digital-marketing', title: '1. Algoritma Instagram & TikTok untuk UMKM', content: 'Memahami cara kerja algoritma dan taktik organik untuk menjangkau ribuan potensi pembeli tanpa biaya ads.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 450, orderIndex: 1, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-dm-2', courseId: 'course-digital-marketing', title: '2. Membuat Konten Reels Viral dengan HP', content: 'Formula konten viral: hook 3 detik, transisi, B-Roll, dan call-to-action yang mendorong share dan purchase.', videoUrl: 'https://www.w3schools.com/html/movie.mp4', duration: 390, orderIndex: 2, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-dm-3', courseId: 'course-digital-marketing', title: '3. Meta Ads Tingkat Pemula hingga Lanjutan', content: 'Panduan lengkap Meta Business Suite: targeting audience, budgeting harian, A/B testing creative, dan mengukur ROAS.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 660, orderIndex: 3, createdAt: new Date(), updatedAt: new Date() },
+  // course-kopi-bisnis
+  { id: 'lesson-kopi-1', courseId: 'course-kopi-bisnis', title: '1. Mengenal Varietas Biji Kopi Nusantara', content: 'Perbedaan antara Arabika, Robusta, dan Liberika dari berbagai daerah: Gayo, Toraja, Flores, Kintamani, Wamena.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 420, orderIndex: 1, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-kopi-2', courseId: 'course-kopi-bisnis', title: '2. Roasting: Light, Medium, Dark & Specialty', content: 'Prinsip dasar roasting, membaca first crack dan second crack, dan cara menentukan profil roast yang sesuai target pasar.', videoUrl: 'https://www.w3schools.com/html/movie.mp4', duration: 540, orderIndex: 2, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-kopi-3', courseId: 'course-kopi-bisnis', title: '3. Membuka Kedai Kopi Modal Kecil', content: 'Menghitung modal awal, memilih lokasi strategis, SOP pelayanan, dan strategi retensi pelanggan tetap.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 600, orderIndex: 3, createdAt: new Date(), updatedAt: new Date() },
+  // course-ecommerce-pro
+  { id: 'lesson-ec-1', courseId: 'course-ecommerce-pro', title: '1. Optimasi Listing Produk Tokopedia & Shopee', content: 'Cara menulis judul produk dengan keyword yang dicari, memilih kategori, dan mengatur harga bersaing secara strategis.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 480, orderIndex: 1, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-ec-2', courseId: 'course-ecommerce-pro', title: '2. Fotografi Produk Profesional dengan HP', content: 'Setup studio mini di rumah dengan budget minim, teknik lighting natural, dan editing foto agar terlihat premium.', videoUrl: 'https://www.w3schools.com/html/movie.mp4', duration: 360, orderIndex: 2, createdAt: new Date(), updatedAt: new Date() },
+  // course-keuangan-umkm
+  { id: 'lesson-keu-1', courseId: 'course-keuangan-umkm', title: '1. Memisahkan Keuangan Usaha dan Pribadi', content: 'Mengapa rekening terpisah penting, cara membuka rekening bisnis, dan menetapkan gaji untuk diri sendiri sebagai pemilik.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 300, orderIndex: 1, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-keu-2', courseId: 'course-keuangan-umkm', title: '2. Membuat Laporan Laba-Rugi Sederhana', content: 'Template Google Sheets gratis untuk mencatat pemasukan, pengeluaran, HPP, dan laba bersih mingguan/bulanan.', videoUrl: 'https://www.w3schools.com/html/movie.mp4', duration: 420, orderIndex: 2, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'lesson-keu-3', courseId: 'course-keuangan-umkm', title: '3. Cara Menghitung Harga Jual yang Tepat', content: 'Formula HPP + biaya overhead + profit margin yang sehat. Bagaimana menyesuaikan harga tanpa takut kehilangan pelanggan.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', duration: 360, orderIndex: 3, createdAt: new Date(), updatedAt: new Date() },
+]
+
+const mockProgress: Array<{ userId: string; lessonId: string; completed: boolean }> = [
+  { userId: 'user-customer-1', lessonId: 'lesson-brand-1', completed: true },
+  { userId: 'user-customer-1', lessonId: 'lesson-dm-1', completed: true },
+  { userId: 'user-customer-1', lessonId: 'lesson-dm-2', completed: true },
+  { userId: 'user-merchant-1', lessonId: 'lesson-sourdough-1', completed: true },
+  { userId: 'user-merchant-1', lessonId: 'lesson-sourdough-2', completed: true },
+  { userId: 'user-merchant-1', lessonId: 'lesson-kopi-1', completed: true },
+  { userId: 'user-merchant-1', lessonId: 'lesson-kopi-2', completed: true },
+]
+const mockGroups = [
+  {
+    id: 'group-umum',
+    name: 'Forum Umum Teras UMKM',
+    description: 'Grup diskusi utama pelaku usaha Teras UMKM. Bagikan pengalaman, tips bisnis, tanya jawab seputar perpajakan, hukum, logistik, dan pengembangan startup Anda.',
+    coverUrl: null,
+    avatarUrl: null,
+    isSuspended: false,
+    adminId: 'user-admin-1', // Super Admin
+    createdAt: new Date(Date.now() - 3600000 * 240),
+    updatedAt: new Date(Date.now() - 3600000 * 240),
+  },
+  {
+    id: 'group-kopi',
+    name: 'Pedagang Kopi & Roastery Indonesia',
+    description: 'Tempat bertemunya petani kopi, pemilik warung kopi, roastery artisan, dan pecinta kopi se-Indonesia. Diskusikan harga biji kopi, teknik roasting, dan review alat kopi.',
+    coverUrl: null,
+    avatarUrl: null,
+    isSuspended: false,
+    adminId: 'user-merchant-1', // Kala Sourdough
+    createdAt: new Date(Date.now() - 3600000 * 120),
+    updatedAt: new Date(Date.now() - 3600000 * 120),
+  },
+  {
+    id: 'group-fashion',
+    name: 'Komunitas Industri Fashion & Tekstil',
+    description: 'Diskusikan supplier kain murah Bandung, pola jahitan premium, trend warna, konveksi seragam, sablon digital, dan ekspor produk garment lokal.',
+    coverUrl: null,
+    avatarUrl: null,
+    isSuspended: false,
+    adminId: 'user-merchant-2', // Nusantara Fashion
+    createdAt: new Date(Date.now() - 3600000 * 80),
+    updatedAt: new Date(Date.now() - 3600000 * 80),
+  }
+]
+
+const mockGroupMembers = [
+  // Seed all mock users to group-umum
+  ...mockUsers.map((u, i) => ({
+    id: `gm-seed-${i}`,
+    groupId: 'group-umum',
+    userId: u.id,
+    createdAt: new Date()
+  })),
+  // Seed some users to group-kopi
+  { id: 'gm-k1', groupId: 'group-kopi', userId: 'user-merchant-1', createdAt: new Date() },
+  { id: 'gm-k2', groupId: 'group-kopi', userId: 'user-customer-1', createdAt: new Date() },
+  { id: 'gm-k3', groupId: 'group-kopi', userId: 'user-merchant-3', createdAt: new Date() },
+  // Seed some to group-fashion
+  { id: 'gm-f1', groupId: 'group-fashion', userId: 'user-merchant-2', createdAt: new Date() },
+  { id: 'gm-f2', groupId: 'group-fashion', userId: 'user-customer-1', createdAt: new Date() },
+]
+
+const mockPosts = [
+  {
+    id: 'post-komunitas-tukang-1',
+    title: '[Komunitas Tukang] Tips negosiasi harga material bangunan 2026',
+    content: 'Halo teman-teman tukang dan kontraktor! Saya mau berbagi tips: coba bandingkan harga di 3 toko bangunan sebelum beli. Biasanya ada selisih 15-20% untuk pasir, batu, dan besi. Siapa punya pengalaman beli grosir langsung ke pabrik?',
+    authorId: 'user-merchant-1',
+    createdAt: new Date(Date.now() - 3600000 * 1),
+    updatedAt: new Date(Date.now() - 3600000 * 1),
+  },
+  {
+    id: 'post-komunitas-kopi-1',
+    title: '[Komunitas Pedagang Kopi] Roaster lokal vs import — mana lebih untung?',
+    content: 'Setelah 2 tahun jualan kopi, saya akhirnya memilih roaster lokal Gayo. Margin lebih besar, pengiriman lebih cepat, dan bisa custom roast level sesuai pesanan. Teman-teman yang jual kopi, gimana pengalaman kalian?',
+    authorId: 'user-affiliate-1',
+    createdAt: new Date(Date.now() - 3600000 * 3),
+    updatedAt: new Date(Date.now() - 3600000 * 3),
+  },
+  {
+    id: 'post-komunitas-kuliner-1',
+    title: '[Komunitas Kuliner] Cara dapetin sertifikat PIRT untuk produk rumahan',
+    content: 'Proses sertifikasi PIRT (Pangan Industri Rumah Tangga) di dinas setempat ternyata tidak sesulit yang dibayangkan. Butuh sekitar 2 minggu dan biaya sekitar Rp 300rb. Saya bagikan langkah-langkah detailnya di sini.',
+    authorId: 'user-customer-1',
+    createdAt: new Date(Date.now() - 3600000 * 6),
+    updatedAt: new Date(Date.now() - 3600000 * 6),
+  },
+  {
+    id: 'post-komunitas-fashion-1',
+    title: '[Komunitas Fashion Lokal] Supplier bahan kain murah berkualitas Bandung',
+    content: 'Mau share info supplier kain katun premium di Pasar Baru Bandung. Minimum order 5 meter, harga mulai Rp 18.000/meter untuk katun TC 133x72. Cocok banget untuk yang baru mulai usaha baju. DM kalau butuh kontaknya!',
+    authorId: 'user-merchant-1',
+    createdAt: new Date(Date.now() - 3600000 * 10),
+    updatedAt: new Date(Date.now() - 3600000 * 10),
+  },
+  {
+    id: 'post-1',
+    title: 'Bagaimana cara menaikkan harga produk UMKM tanpa kehilangan pelanggan?',
+    content: 'Saya memiliki usaha bakery skala rumahan, ingin mengubah kemasan menjadi premium/luxury dan menaikkan harga jual 50%. Ada saran untuk brandingnya? Sudah coba beberapa kali tapi selalu ada pelanggan yang komplain harga naik.',
+    authorId: 'user-customer-1',
+    createdAt: new Date(Date.now() - 3600000 * 2),
+    updatedAt: new Date(Date.now() - 3600000 * 2),
+  },
+  {
+    id: 'post-2',
+    title: 'Panduan lengkap mendaftarkan sertifikasi Halal dan BPOM 2026',
+    content: 'Halo kawan-kawan, berikut adalah langkah demi langkah gratis bagi pelaku UMKM di Teras untuk mendaftarkan merek produk makanan di sistem dinas. Proses online bisa melalui website BPOM dan Halal.go.id. Anggaran siapkan sekitar Rp 500rb-2jt tergantung jenis produk.',
+    authorId: 'user-merchant-1',
+    createdAt: new Date(Date.now() - 3600000 * 12),
+    updatedAt: new Date(Date.now() - 3600000 * 12),
+  },
+  {
+    id: 'post-komunitas-tukang-2',
+    title: '[Komunitas Tukang] Harga borongan cat rumah per meter persegi 2026',
+    content: 'Update harga borongan cat per Juni 2026: cat dinding dalam Rp 35-45rb/m², luar Rp 50-65rb/m² sudah termasuk cat 2 lapis. Cat kayu Rp 40-55rb/m². Harga sudah naik ~10% dari tahun lalu karena biaya tukang naik.',
+    authorId: 'user-affiliate-1',
+    createdAt: new Date(Date.now() - 3600000 * 20),
+    updatedAt: new Date(Date.now() - 3600000 * 20),
+  },
+  {
+    id: 'post-komunitas-digital-1',
+    title: '[Komunitas Digital] Tips jualan di TikTok Shop tanpa stok barang (dropship)',
+    content: 'Sudah 3 bulan jualan di TikTok Shop dengan sistem dropship dari supplier Cina dan lokal. Omzet bulan ini Rp 8 juta, profit bersih sekitar 25%. Kuncinya: pilih produk trending, buat konten review jujur, dan respon komentar cepat.',
+    authorId: 'user-customer-1',
+    createdAt: new Date(Date.now() - 3600000 * 28),
+    updatedAt: new Date(Date.now() - 3600000 * 28),
+  },
+  // ─── Posts dari 10 merchant baru ────────────────────────────────────────────
+  {
+    id: 'post-herbal-tips',
+    title: '🌿 Herbal Nusantara: 5 Tanaman Obat yang Wajib Ada di Rumah UMKM Kuliner',
+    content: 'Sebagai pengusaha herbal dari Bandung, saya mau share 5 tanaman obat yang selalu saya rekomendasikan: 1) Jahe merah — anti-inflamasi dan imunitas, 2) Temulawak — kesehatan hati, 3) Kunyit — antioksidan alami, 4) Sambiloto — diabetes dan kolesterol, 5) Kayu manis — gula darah stabil. Semua bisa jadi produk UMKM yang laku! Siapa yang sudah coba produksi sendiri?',
+    authorId: 'user-merchant-6',
+    createdAt: new Date(Date.now() - 3600000 * 5),
+    updatedAt: new Date(Date.now() - 3600000 * 5),
+  },
+  {
+    id: 'post-furni-branding',
+    title: '🪑 Furnicraft Jepara: Cara kami jual kursi Rp 8 juta dan tetap laris di marketplace',
+    content: 'Banyak yang tanya, gimana bisa jual produk mahal di marketplace yang penuh perang harga? Jawaban kami: storytelling + foto profesional + video proses pembuatan. Kami rekam pengrajin ukir kami yang sudah 30 tahun berkarya, lalu upload ke TikTok dan Instagram. Hasilnya? Inquiry dari Singapura dan Malaysia juga masuk! Kunci: jual keunikan dan proses, bukan hanya produk.',
+    authorId: 'user-merchant-7',
+    createdAt: new Date(Date.now() - 3600000 * 8),
+    updatedAt: new Date(Date.now() - 3600000 * 8),
+  },
+  {
+    id: 'post-agro-urban',
+    title: '🥦 AgroSegar: Urban farming bisa dimulai dengan lahan 2x2 meter!',
+    content: 'Banyak yang mikir urban farming butuh lahan luas. Padahal dengan sistem vertikal di balkon atau rooftop 2x2 meter, bisa panen 5-8 kg sayur per minggu! Saya mulai dari pot bekas dan paralon PVC, sekarang sudah supply 20+ keluarga langganan di Bogor. Yang mau belajar, saya buka workshop online setiap Sabtu. Gratis untuk member Teras UMKM!',
+    authorId: 'user-merchant-8',
+    createdAt: new Date(Date.now() - 3600000 * 14),
+    updatedAt: new Date(Date.now() - 3600000 * 14),
+  },
+  {
+    id: 'post-silver-ekspor',
+    title: '💍 Silver Artisan Celuk: Pengalaman ekspor perhiasan perak ke Eropa pertama kali',
+    content: 'Tahun lalu kami berhasil ekspor pertama ke buyer dari Belanda — 200 pcs cincin dan gelang perak. Prosesnya tidak mudah: perlu sertifikat uji kandungan logam, phytosanitary, dan invoice khusus. Tapi hasilnya worth it! Margin ekspor 3x lipat dari penjualan lokal. Siapa yang tertarik diskusi soal proses ekspor kerajinan? Saya siap share pengalaman!',
+    authorId: 'user-merchant-9',
+    createdAt: new Date(Date.now() - 3600000 * 22),
+    updatedAt: new Date(Date.now() - 3600000 * 22),
+  },
+  {
+    id: 'post-konveksi-tips',
+    title: '👕 Konveksi Solo: Cara hitung harga jual konveksi agar tidak rugi',
+    content: 'Banyak pemula konveksi yang rugi karena salah hitung HPP. Formula sederhana: HPP = (Biaya Bahan + Upah Jahit + Overhead + Sablon/Bordir) ÷ Jumlah Pcs. Jangan lupa tambah margin 30-40% untuk profit. Contoh: kaos polos bahan Rp 15rb, jahit Rp 8rb, overhead Rp 3rb, sablon Rp 12rb = HPP Rp 38rb. Jual minimal Rp 55rb untuk margin sehat. Semoga membantu!',
+    authorId: 'user-merchant-10',
+    createdAt: new Date(Date.now() - 3600000 * 30),
+    updatedAt: new Date(Date.now() - 3600000 * 30),
+  },
+  {
+    id: 'post-edukids-bisnis',
+    title: '🧩 EduKids: Bisnis mainan edukasi — pasar yang masih sangat terbuka lebar!',
+    content: 'Riset kami menunjukkan pasar mainan edukasi anak Indonesia tumbuh 18% per tahun. Sayangnya 80% masih diisi produk impor. Ini peluang besar untuk UMKM lokal! Kunci sukses kami: 1) Bahan ramah lingkungan (kayu mahoni lokal), 2) Desain bermuatan budaya Indonesia, 3) Kemasan premium dengan panduan bermain. Produk pertama kami puzzle peta Indonesia langsung sold out di minggu pertama!',
+    authorId: 'user-merchant-11',
+    createdAt: new Date(Date.now() - 3600000 * 36),
+    updatedAt: new Date(Date.now() - 3600000 * 36),
+  },
+  {
+    id: 'post-skincare-bpom',
+    title: '✨ Glow Local: Cara daftar BPOM produk skincare UMKM — panduan lengkap 2026',
+    content: 'Setelah 8 bulan perjuangan, serum vitamin C kami akhirnya dapat nomor BPOM! Ini yang perlu disiapkan: 1) Sertifikat CPKB (Cara Produksi Kosmetik yang Baik), 2) Uji stabilitas produk di lab terakreditasi (±Rp 3-5 juta), 3) Uji keamanan (patch test), 4) Notifikasi online di e-bpom.pom.go.id (Rp 100rb/produk). Total biaya sekitar Rp 8-15 juta tapi SANGAT worth it untuk kepercayaan konsumen!',
+    authorId: 'user-merchant-12',
+    createdAt: new Date(Date.now() - 3600000 * 48),
+    updatedAt: new Date(Date.now() - 3600000 * 48),
+  },
+  {
+    id: 'post-petcare-tips',
+    title: '🐾 PetCare: 5 tanda kucing/anjing Anda butuh grooming segera',
+    content: 'Sebagai pet groomer profesional, ini tanda hewan peliharaan Anda butuh grooming: 1) Bulu kusut dan berbau, 2) Kuku panjang sampai melengkung, 3) Telinga berbau atau kotor, 4) Kulit gatal-gatal dan berketombe, 5) Mata berair terus-menerus. Grooming rutin bukan cuma soal penampilan, tapi kesehatan! Anjing idealnya grooming setiap 4-6 minggu, kucing setiap 6-8 minggu.',
+    authorId: 'user-merchant-13',
+    createdAt: new Date(Date.now() - 3600000 * 55),
+    updatedAt: new Date(Date.now() - 3600000 * 55),
+  },
+  {
+    id: 'post-properti-kost',
+    title: '🏠 Tips investasi kost-kostan untuk pemula UMKM properti',
+    content: 'Kost-kostan adalah passive income terbaik untuk UMKM properti. Tips dari pengalaman 5 tahun: 1) Pilih lokasi dekat kampus/perkantoran, 2) Minimal 10 kamar untuk break-even yang baik, 3) Fasilitaskan AC + WiFi = bisa pasang harga premium, 4) Manajemen via aplikasi (ada banyak yang gratis), 5) ROI rata-rata 8-12% per tahun. Siapa yang tertarik mulai bisnis properti skala kecil?',
+    authorId: 'user-merchant-14',
+    createdAt: new Date(Date.now() - 3600000 * 62),
+    updatedAt: new Date(Date.now() - 3600000 * 62),
+  },
+  {
+    id: 'post-bengkel-otomotif',
+    title: '🔧 Bengkel Pro: Tips rawat motor agar awet 10 tahun+ — dari mekanik berpengalaman',
+    content: 'Sebagai bengkel dengan 15 tahun pengalaman, ini rahasia motor awet: 1) Ganti oli setiap 2.000km atau 2 bulan (jangan nunggu hitam!), 2) Cek tekanan ban setiap 2 minggu, 3) Servis rutin setiap 6.000km, 4) Jangan abaikan bunyi aneh — lebih murah servis awal daripada rusak parah, 5) Pakai spare part ori/KW1, jangan KW3. Motor dengan perawatan baik bisa bertahan 15-20 tahun!',
+    authorId: 'user-merchant-15',
+    createdAt: new Date(Date.now() - 3600000 * 70),
+    updatedAt: new Date(Date.now() - 3600000 * 70),
+  },
+]
+
+const mockComments = [
+  {
+    id: 'comment-1',
+    postId: 'post-1',
+    content: 'Coba gunakan box tebal berserat hitam matte, lalu gunakan tinta foil emas (gold hotprint) untuk logo. Sentuhan visual ini instan membuat produk terasa 5x lebih berharga.',
+    authorId: 'user-merchant-1',
+    createdAt: new Date(Date.now() - 3600000),
+    updatedAt: new Date(Date.now() - 3600000),
+  },
+  {
+    id: 'comment-2',
+    postId: 'post-1',
+    content: 'Tambahkan cerita (storytelling) di label kemasan: asal bahan baku, tanggal produksi, dan dedikasi tangan-tangan artisan. Pelanggan premium membeli VALUE, bukan sekadar produk.',
+    authorId: 'user-affiliate-1',
+    createdAt: new Date(Date.now() - 3600000 * 0.5),
+    updatedAt: new Date(Date.now() - 3600000 * 0.5),
+  },
+  {
+    id: 'comment-3',
+    postId: 'post-komunitas-tukang-1',
+    content: 'Saya biasanya langsung ke distributor di kawasan industri. Hemat 20-30% dibanding toko bangunan eceran. Butuh mobil pick-up tapi worth it kalau pesan banyak.',
+    authorId: 'user-customer-1',
+    createdAt: new Date(Date.now() - 3600000 * 0.75),
+    updatedAt: new Date(Date.now() - 3600000 * 0.75),
+  },
+  {
+    id: 'comment-4',
+    postId: 'post-komunitas-kopi-1',
+    content: 'Setuju banget! Roaster lokal juga lebih mudah dikomunikasikan soal SCA score dan flavor notes. Saya pakai roaster dari Toraja, bisa order mulai 2kg. Quality control jauh lebih ketat dari import.',
+    authorId: 'user-customer-1',
+    createdAt: new Date(Date.now() - 3600000 * 2.5),
+    updatedAt: new Date(Date.now() - 3600000 * 2.5),
+  },
+  {
+    id: 'comment-5',
+    postId: 'post-2',
+    content: 'Saya sudah coba daftar PIRT bulan lalu. Prosesnya ada pelatihan keamanan pangan dulu (1 hari), lalu inspeksi dapur, baru sertifikat keluar sekitar 10 hari kerja. Gratis atau biaya sangat murah di beberapa daerah!',
+    authorId: 'user-affiliate-1',
+    createdAt: new Date(Date.now() - 3600000 * 11),
+    updatedAt: new Date(Date.now() - 3600000 * 11),
+  },
+  {
+    id: 'comment-6',
+    postId: 'post-herbal-tips',
+    content: 'Wah, saya ada tanaman jahe merah di belakang rumah dan belum dimanfaatkan optimal. Bisa bantu info cara bikin produk jahe merah siap jual yang awet tanpa pengawet kimia?',
+    authorId: 'user-merchant-8',
+    createdAt: new Date(Date.now() - 3600000 * 4),
+    updatedAt: new Date(Date.now() - 3600000 * 4),
+  },
+  {
+    id: 'comment-7',
+    postId: 'post-herbal-tips',
+    content: 'Kunyit juga bisa dijadikan sabun dan masker loh! Margin produk turunan herbal jauh lebih tinggi dari jual bahan mentah. Saya jual masker kunyit dan hasilnya 5x lebih untung.',
+    authorId: 'user-merchant-12',
+    createdAt: new Date(Date.now() - 3600000 * 3),
+    updatedAt: new Date(Date.now() - 3600000 * 3),
+  },
+  {
+    id: 'comment-8',
+    postId: 'post-furni-branding',
+    content: 'Betul sekali! Kami jual kerajinan perak dan strategi yang sama kami terapkan. Video pengrajin tua kami yang sudah 40 tahun bikin perhiasan bisa jutaan views di Reels. Authentic content memang tak ternilai.',
+    authorId: 'user-merchant-9',
+    createdAt: new Date(Date.now() - 3600000 * 7),
+    updatedAt: new Date(Date.now() - 3600000 * 7),
+  },
+  {
+    id: 'comment-9',
+    postId: 'post-agro-urban',
+    content: 'Urban farming memang seru! Saya sudah 1 tahun tanam sayur di atap rumah kontrakan. Tips tambahan: pakai media sekam bakar + cocopeat untuk hasil maksimal dan drainase bagus.',
+    authorId: 'user-customer-1',
+    createdAt: new Date(Date.now() - 3600000 * 12),
+    updatedAt: new Date(Date.now() - 3600000 * 12),
+  },
+  {
+    id: 'comment-10',
+    postId: 'post-skincare-bpom',
+    content: 'Makasih infonya sangat detail! Satu pertanyaan: apakah produk yang sudah ada PIRT bisa langsung upgrade ke BPOM atau harus mulai dari nol? Produk saya lotion herbal.',
+    authorId: 'user-merchant-6',
+    createdAt: new Date(Date.now() - 3600000 * 45),
+    updatedAt: new Date(Date.now() - 3600000 * 45),
+  },
+  {
+    id: 'comment-11',
+    postId: 'post-skincare-bpom',
+    content: 'PIRT dan BPOM itu jalurnya berbeda. PIRT untuk makanan/minuman, BPOM Notifikasi untuk kosmetik. Jadi lotion herbal langsung ke BPOM Notifikasi, tidak perlu PIRT dulu. Semangat!',
+    authorId: 'user-merchant-12',
+    createdAt: new Date(Date.now() - 3600000 * 44),
+    updatedAt: new Date(Date.now() - 3600000 * 44),
+  },
+  {
+    id: 'comment-12',
+    postId: 'post-konveksi-tips',
+    content: 'Formula HPP-nya sangat membantu! Selama ini saya hitung kasar-kasaran saja dan sering merasa tidak untung padahal orderan banyak. Ternyata biaya overhead yang sering dilupakan.',
+    authorId: 'user-merchant-10',
+    createdAt: new Date(Date.now() - 3600000 * 28),
+    updatedAt: new Date(Date.now() - 3600000 * 28),
+  },
+  {
+    id: 'comment-13',
+    postId: 'post-bengkel-otomotif',
+    content: 'Setuju soal ganti oli rutin! Pelanggan saya yang rajin ganti oli setiap 2000km motornya masih prima di 150.000km. Yang jarang ganti, di 80.000km sudah butuh overhaul mesin.',
+    authorId: 'user-merchant-15',
+    createdAt: new Date(Date.now() - 3600000 * 68),
+    updatedAt: new Date(Date.now() - 3600000 * 68),
+  },
+]
+
+const mockWallets = [
+  {
+    id: 'wallet-merchant',
+    userId: 'user-merchant-1',
+    balance: 4850000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'wallet-affiliate',
+    userId: 'user-affiliate-1',
+    balance: 850000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'wallet-customer',
+    userId: 'user-customer-1',
+    balance: 200000,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  { id: 'wallet-m2', userId: 'user-merchant-2', balance: 2100000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m3', userId: 'user-merchant-3', balance: 3750000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m4', userId: 'user-merchant-4', balance: 1820000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m5', userId: 'user-merchant-5', balance: 5200000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m6', userId: 'user-merchant-6', balance: 980000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m7', userId: 'user-merchant-7', balance: 12500000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m8', userId: 'user-merchant-8', balance: 650000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m9', userId: 'user-merchant-9', balance: 4300000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m10', userId: 'user-merchant-10', balance: 2850000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m11', userId: 'user-merchant-11', balance: 740000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m12', userId: 'user-merchant-12', balance: 3100000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m13', userId: 'user-merchant-13', balance: 1250000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m14', userId: 'user-merchant-14', balance: 8900000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-m15', userId: 'user-merchant-15', balance: 2200000, createdAt: new Date(), updatedAt: new Date() },
+]
+
+const mockWalletTransactions = [
+  {
+    id: 'tx-1',
+    walletId: 'wallet-merchant',
+    amount: 150000,
+    type: 'SALE' as const,
+    description: 'Penjualan Kopi Gayo Organik Premium',
+    createdAt: new Date(Date.now() - 3600000 * 3),
+  },
+  {
+    id: 'tx-2',
+    walletId: 'wallet-affiliate',
+    amount: 75000,
+    type: 'COMMISSION' as const,
+    description: 'Komisi Referal Penjualan Kopi Gayo',
+    createdAt: new Date(Date.now() - 3600000 * 3),
+  }
+]
+
+const mockReferrals = [
+  {
+    id: 'ref-1',
+    affiliateId: 'user-affiliate-1',
+    buyerId: 'user-customer-1',
+    amount: 75000,
+    status: 'PAID' as const,
+    createdAt: new Date(Date.now() - 3600000 * 3),
+    updatedAt: new Date(Date.now() - 3600000 * 3),
+  }
+]
+
+// ─── Filesystem Persistence for Mock DB (survives HMR / process restarts) ────
+const MOCK_DB_FILE = path.join(process.cwd(), '.mock-db.json')
+
+function loadMockDb(): { 
+  products?: any[]; 
+  users?: any[]; 
+  wallets?: any[]; 
+  walletTransactions?: any[]; 
+  courses?: any[]; 
+  lessons?: any[]; 
+  orders?: any[]; 
+  posts?: any[]; 
+  comments?: any[]; 
+  groups?: any[]; 
+  groupMembers?: any[];
+  chatRooms?: any[];
+  chatMessages?: any[];
+  supportTickets?: any[];
+  supportMessages?: any[];
+} {
+  try {
+    if (fs.existsSync(MOCK_DB_FILE)) {
+      const raw = fs.readFileSync(MOCK_DB_FILE, 'utf-8')
+      const parsed = JSON.parse(raw)
+      // Re-hydrate Date fields
+      if (parsed.products) {
+        parsed.products = parsed.products.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
+      }
+      if (parsed.users) {
+        parsed.users = parsed.users.map((u: any) => ({ ...u, createdAt: new Date(u.createdAt), updatedAt: new Date(u.updatedAt) }))
+      }
+      if (parsed.wallets) {
+        parsed.wallets = parsed.wallets.map((w: any) => ({ ...w, createdAt: new Date(w.createdAt), updatedAt: new Date(w.updatedAt) }))
+      }
+      if (parsed.walletTransactions) {
+        parsed.walletTransactions = parsed.walletTransactions.map((tx: any) => ({ ...tx, createdAt: new Date(tx.createdAt) }))
+      }
+      if (parsed.courses) {
+        parsed.courses = parsed.courses.map((c: any) => ({ ...c, createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) }))
+      }
+      if (parsed.lessons) {
+        parsed.lessons = parsed.lessons.map((l: any) => ({ ...l, createdAt: new Date(l.createdAt), updatedAt: new Date(l.updatedAt) }))
+      }
+      if (parsed.orders) {
+        parsed.orders = parsed.orders.map((o: any) => ({ ...o, createdAt: new Date(o.createdAt), updatedAt: new Date(o.updatedAt) }))
+      }
+      if (parsed.posts) {
+        parsed.posts = parsed.posts.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
+      }
+      if (parsed.comments) {
+        parsed.comments = parsed.comments.map((c: any) => ({ ...c, createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) }))
+      }
+      if (parsed.groups) {
+        parsed.groups = parsed.groups.map((g: any) => ({ ...g, createdAt: new Date(g.createdAt), updatedAt: new Date(g.updatedAt) }))
+      }
+      if (parsed.groupMembers) {
+        parsed.groupMembers = parsed.groupMembers.map((gm: any) => ({ ...gm, createdAt: new Date(gm.createdAt) }))
+      }
+      if (parsed.chatRooms) {
+        parsed.chatRooms = parsed.chatRooms.map((cr: any) => ({ ...cr, createdAt: new Date(cr.createdAt), updatedAt: new Date(cr.updatedAt) }))
+      }
+      if (parsed.chatMessages) {
+        parsed.chatMessages = parsed.chatMessages.map((cm: any) => ({ ...cm, createdAt: new Date(cm.createdAt) }))
+      }
+      if (parsed.supportTickets) {
+        parsed.supportTickets = parsed.supportTickets.map((st: any) => ({ ...st, createdAt: new Date(st.createdAt), updatedAt: new Date(st.updatedAt) }))
+      }
+      if (parsed.supportMessages) {
+        parsed.supportMessages = parsed.supportMessages.map((sm: any) => ({ ...sm, createdAt: new Date(sm.createdAt) }))
+      }
+      return parsed
+    }
+  } catch (e) {
+    // ignore read errors
+  }
+  return {}
+}
+
+function mergeMockData(defaultData: any[], persistedData: any[] = []) {
+  const merged = [...defaultData]
+  persistedData.forEach(item => {
+    const idx = merged.findIndex(i => i.id === item.id)
+    if (idx !== -1) {
+      merged[idx] = { ...merged[idx], ...item }
+    } else {
+      merged.push(item)
+    }
+  })
+  return merged
+}
+
+let lastMockDbMtime = 0
+
+function saveMockDb() {
+  try {
+    const data = {
+      products: globalMockProducts,
+      users: globalMockUsers,
+      wallets: globalMockWallets,
+      walletTransactions: globalMockWalletTransactions,
+      courses: globalMockCourses,
+      lessons: globalMockLessons,
+      posts: globalMockPosts,
+      comments: globalMockComments,
+      groups: globalMockGroups,
+      groupMembers: globalMockGroupMembers,
+      chatRooms: globalMockChatRooms,
+      chatMessages: globalMockChatMessages,
+      supportTickets: globalMockSupportTickets,
+      supportMessages: globalMockSupportMessages,
+      orders: globalMockOrders
+    }
+    fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
+    if (fs.existsSync(MOCK_DB_FILE)) {
+      const stat = fs.statSync(MOCK_DB_FILE)
+      lastMockDbMtime = stat.mtimeMs
+    }
+  } catch (e) {
+    // ignore write errors (e.g. read-only environments)
+  }
+}
+
+function syncMockDb() {
+  try {
+    if (fs.existsSync(MOCK_DB_FILE)) {
+      const stat = fs.statSync(MOCK_DB_FILE)
+      const mtime = stat.mtimeMs
+      if (mtime === lastMockDbMtime) {
+        return // no change on disk, skip loading!
+      }
+      lastMockDbMtime = mtime
+      
+      const raw = fs.readFileSync(MOCK_DB_FILE, 'utf-8')
+      const parsed = JSON.parse(raw)
+      
+      if (parsed.products) {
+        globalMockProducts = mergeMockData(mockProducts, parsed.products.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) })))
+      }
+      if (parsed.users) {
+        globalMockUsers = mergeMockData(mockUsers, parsed.users.map((u: any) => ({ ...u, createdAt: new Date(u.createdAt), updatedAt: new Date(u.updatedAt) })))
+      }
+      if (parsed.wallets) {
+        globalMockWallets = mergeMockData(mockWallets, parsed.wallets.map((w: any) => ({ ...w, createdAt: new Date(w.createdAt), updatedAt: new Date(w.updatedAt) })))
+      }
+      if (parsed.walletTransactions) {
+        globalMockWalletTransactions = mergeMockData(mockWalletTransactions, parsed.walletTransactions.map((tx: any) => ({ ...tx, createdAt: new Date(tx.createdAt) })))
+      }
+      if (parsed.courses) {
+        globalMockCourses = mergeMockData(mockCourses, parsed.courses.map((c: any) => ({ ...c, createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) })))
+      }
+      if (parsed.lessons) {
+        globalMockLessons = mergeMockData(mockLessons, parsed.lessons.map((l: any) => ({ ...l, createdAt: new Date(l.createdAt), updatedAt: new Date(l.updatedAt) })))
+      }
+      if (parsed.orders) {
+        globalMockOrders = parsed.orders.map((o: any) => ({ ...o, createdAt: new Date(o.createdAt), updatedAt: new Date(o.updatedAt) }))
+      }
+      if (parsed.posts) {
+        globalMockPosts = mergeMockData(mockPosts, parsed.posts.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) })))
+      }
+      if (parsed.comments) {
+        globalMockComments = mergeMockData(mockComments, parsed.comments.map((c: any) => ({ ...c, createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) })))
+      }
+      if (parsed.groups) {
+        globalMockGroups = mergeMockData(mockGroups, parsed.groups.map((g: any) => ({ ...g, createdAt: new Date(g.createdAt), updatedAt: new Date(g.updatedAt) })))
+      }
+      if (parsed.groupMembers) {
+        globalMockGroupMembers = mergeMockData(mockGroupMembers, parsed.groupMembers.map((gm: any) => ({ ...gm, createdAt: new Date(gm.createdAt), updatedAt: new Date(gm.updatedAt) })))
+      }
+      if (parsed.chatRooms) {
+        globalMockChatRooms = parsed.chatRooms.map((cr: any) => ({ ...cr, createdAt: new Date(cr.createdAt), updatedAt: new Date(cr.updatedAt) }))
+      }
+      if (parsed.chatMessages) {
+        globalMockChatMessages = parsed.chatMessages.map((cm: any) => ({ ...cm, createdAt: new Date(cm.createdAt) }))
+      }
+      if (parsed.supportTickets) {
+        globalMockSupportTickets = parsed.supportTickets.map((st: any) => ({ ...st, createdAt: new Date(st.createdAt), updatedAt: new Date(st.updatedAt) }))
+      }
+      if (parsed.supportMessages) {
+        globalMockSupportMessages = parsed.supportMessages.map((sm: any) => ({ ...sm, createdAt: new Date(sm.createdAt) }))
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Load persisted data and merge with defaults
+const _persistedDb = loadMockDb()
+
+// Global state in-memory database helpers for local updates in sandbox mode
+let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products)
+let globalMockUsers: any[] = mergeMockData(mockUsers, _persistedDb.users)
+let globalMockProgress = [...mockProgress]
+let globalMockGroups: any[] = mergeMockData(mockGroups, _persistedDb.groups)
+let globalMockChatRooms: any[] = _persistedDb.chatRooms || []
+let globalMockChatMessages: any[] = _persistedDb.chatMessages || []
+let globalMockSupportTickets: any[] = _persistedDb.supportTickets || []
+let globalMockSupportMessages: any[] = _persistedDb.supportMessages || []
+let globalMockGroupMembers: any[] = mergeMockData(mockGroupMembers, _persistedDb.groupMembers)
+let globalMockPosts = mergeMockData(mockPosts, _persistedDb.posts)
+let globalMockComments = mergeMockData(mockComments, _persistedDb.comments)
+let globalMockWallets: any[] = mergeMockData(mockWallets, _persistedDb.wallets)
+let globalMockWalletTransactions: any[] = mergeMockData(mockWalletTransactions, _persistedDb.walletTransactions)
+let globalMockReferrals = [...mockReferrals]
+let globalMockCourses: any[] = mergeMockData(mockCourses, _persistedDb.courses)
+let globalMockLessons: any[] = mergeMockData(mockLessons, _persistedDb.lessons)
+let globalMockOrders: any[] = _persistedDb.orders && _persistedDb.orders.length > 0 ? _persistedDb.orders : [
+  {
+    id: 'order-1779515200000',
+    buyerId: 'user-customer-1',
+    totalAmount: 185000,
+    status: 'COMPLETED' as const,
+    createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000),
+    updatedAt: new Date(Date.now() - 3 * 24 * 3600 * 1000),
+    items: [
+      { productId: 'prod-brand-1', quantity: 1, price: 150000, productTitle: 'Premium Box Packaging Template' },
+      { productId: 'prod-sourdough-1', quantity: 1, price: 35000, productTitle: 'Artisan Sourdough Starter Kit' }
+    ]
+  },
+  {
+    id: 'order-1779517100000',
+    buyerId: 'user-merchant-4',
+    totalAmount: 2500000,
+    status: 'COMPLETED' as const,
+    createdAt: new Date(Date.now() - 2 * 24 * 3600 * 1000),
+    updatedAt: new Date(Date.now() - 2 * 24 * 3600 * 1000),
+    items: [
+      { productId: 'jasa-brand-1', quantity: 1, price: 2500000, productTitle: 'Luxury Brand Identity & Logo Design' }
+    ]
+  },
+  {
+    id: 'order-1779518400000',
+    buyerId: 'user-customer-1',
+    totalAmount: 95000,
+    status: 'COMPLETED' as const,
+    createdAt: new Date(Date.now() - 12 * 3600 * 1000),
+    updatedAt: new Date(Date.now() - 12 * 3600 * 1000),
+    items: [
+      { productId: 'prod-brand-2', quantity: 1, price: 95000, productTitle: 'Premium Typography Guidelines Booklet' }
+    ]
+  }
+]
+let globalMockCustomLinks: any[] = []
+let globalMockClickLogs: any[] = []
+let globalMockWaLogs: any[] = []
+
+// Database Access Verification Utility
+export async function isDbConnected(): Promise<boolean> {
+  try {
+    await db.$queryRaw`SELECT 1`
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
+// Unified Store functions with fallback logic
+export const DataStore = {
+  // USER OPERATIONS
+  async findUserByEmail(email: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const u = await db.user.findUnique({ where: { email } })
+        if (u) return u
+      } catch (_) {}
+    }
+    return globalMockUsers.find(u => u.email === email) || null
+  },
+
+  async findUserById(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const u = await db.user.findUnique({ where: { id } })
+        if (u) return u
+      } catch (_) {}
+    }
+    return globalMockUsers.find(u => u.id === id) || null
+  },
+
+  async createUser(data: { email: string; name: string; passwordHash: string; role: string; latitude?: number; longitude?: number; parentAffiliateId?: string }) {
+    if (await isDbConnected()) {
+      try {
+        return await db.$transaction(async (tx) => {
+          const user = await tx.user.create({
+            data: {
+              ...data,
+              role: data.role as any,
+              level: 1,
+              xp: 0,
+              landingPageSetup: false,
+              membershipLevel: 'Reseller',
+              membershipAccess: 'Gold',
+              parentAffiliateId: data.parentAffiliateId || null
+            }
+          })
+          await tx.wallet.create({ data: { userId: user.id, balance: 0.0 } })
+          return user
+        })
+      } catch (_) {}
+    }
+    const newUser = {
+      id: `user-${Date.now()}`,
+      email: data.email,
+      name: data.name,
+      passwordHash: data.passwordHash,
+      role: data.role,
+      latitude: data.latitude || -6.2088,
+      longitude: data.longitude || 106.8456,
+      level: 1,
+      xp: 0,
+      landingPageTemplate: null,
+      landingPageConfig: null,
+      landingPageSetup: false,
+      parentAffiliateId: data.parentAffiliateId || null,
+      membershipLevel: 'Reseller',
+      membershipAccess: 'Gold',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    globalMockUsers.push(newUser)
+    globalMockWallets.push({
+      id: `wallet-${newUser.id}`,
+      userId: newUser.id,
+      balance: 0.0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    saveMockDb()
+    return newUser
+  },
+
+  // ADMIN OPERATIONS
+  async getAllUsers() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.findMany({ orderBy: { createdAt: 'desc' } })
+      } catch (_) {}
+    }
+    return [...globalMockUsers]
+  },
+
+  async getAllOrders() {
+    if (await isDbConnected()) {
+      try {
+        return await db.order.findMany({
+          include: { buyer: true },
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    return [...globalMockOrders]
+  },
+
+  async findOrderById(id: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.order.findUnique({
+          where: { id },
+          include: { buyer: true, items: { include: { product: true } } }
+        })
+      } catch (_) {}
+    }
+    return globalMockOrders.find(o => o.id === id) || null
+  },
+
+  // Course Management
+  async addCourse(title: string, description: string, coverImage: string, accessRequired: string) {
+    const newCourse = {
+      id: `course-${Date.now()}`,
+      title,
+      description,
+      coverImage,
+      accessRequired,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    if (await isDbConnected()) {
+      try {
+        await db.course.create({
+          data: {
+            id: newCourse.id,
+            title,
+            description,
+            coverImage,
+            accessRequired
+          }
+        })
+      } catch (_) {}
+    }
+    globalMockCourses.push(newCourse)
+    saveMockDb()
+    return newCourse
+  },
+
+  async updateCourse(id: string, title: string, description: string, coverImage: string, accessRequired: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.course.update({
+          where: { id },
+          data: { title, description, coverImage, accessRequired }
+        })
+      } catch (_) {}
+    }
+    const idx = globalMockCourses.findIndex(c => c.id === id)
+    if (idx !== -1) {
+      globalMockCourses[idx] = {
+        ...globalMockCourses[idx],
+        title,
+        description,
+        coverImage,
+        accessRequired,
+        updatedAt: new Date()
+      }
+    }
+    saveMockDb()
+    return true
+  },
+
+  async deleteCourse(id: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.course.delete({ where: { id } })
+      } catch (_) {}
+    }
+    globalMockCourses = globalMockCourses.filter(c => c.id !== id)
+    globalMockLessons = globalMockLessons.filter(l => l.courseId !== id)
+    saveMockDb()
+    return true
+  },
+
+  // Lesson Management
+  async addLesson(courseId: string, title: string, content: string, videoUrl: string, duration: number, orderIndex: number) {
+    const newLesson = {
+      id: `lesson-${Date.now()}`,
+      courseId,
+      title,
+      content,
+      videoUrl,
+      duration,
+      orderIndex,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    if (await isDbConnected()) {
+      try {
+        await db.lesson.create({
+          data: {
+            id: newLesson.id,
+            courseId,
+            title,
+            content,
+            videoUrl,
+            duration,
+            orderIndex
+          }
+        })
+      } catch (_) {}
+    }
+    globalMockLessons.push(newLesson)
+    saveMockDb()
+    return newLesson
+  },
+
+  async updateLesson(id: string, title: string, content: string, videoUrl: string, duration: number, orderIndex: number) {
+    if (await isDbConnected()) {
+      try {
+        await db.lesson.update({
+          where: { id },
+          data: { title, content, videoUrl, duration, orderIndex }
+        })
+      } catch (_) {}
+    }
+    const idx = globalMockLessons.findIndex(l => l.id === id)
+    if (idx !== -1) {
+      globalMockLessons[idx] = {
+        ...globalMockLessons[idx],
+        title,
+        content,
+        videoUrl,
+        duration,
+        orderIndex,
+        updatedAt: new Date()
+      }
+    }
+    saveMockDb()
+    return true
+  },
+
+  async deleteLesson(id: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.lesson.delete({ where: { id } })
+      } catch (_) {}
+    }
+    globalMockLessons = globalMockLessons.filter(l => l.id !== id)
+    saveMockDb()
+    return true
+  },
+
+  // User Management Override
+  async updateUserRoleAndLevel(userId: string, role: string, level: number, xp: number, membershipLevel: string, membershipAccess: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.user.update({
+          where: { id: userId },
+          data: {
+            role: role as any,
+            level,
+            xp,
+            membershipLevel,
+            membershipAccess
+          }
+        })
+      } catch (_) {}
+    }
+    const idx = globalMockUsers.findIndex(u => u.id === userId)
+    if (idx !== -1) {
+      globalMockUsers[idx] = {
+        ...globalMockUsers[idx],
+        role,
+        level,
+        xp,
+        membershipLevel,
+        membershipAccess,
+        updatedAt: new Date()
+      }
+    }
+    saveMockDb()
+    return true
+  },
+
+  async updateUserRole(userId: string, role: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({
+          where: { id: userId },
+          data: { role: role as any }
+        })
+      } catch (_) {}
+    }
+    syncMockDb()
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      user.role = role as any
+      user.updatedAt = new Date()
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
+  async recreateMissingUser(data: { id: string; email: string; name: string; role: string }) {
+    if (await isDbConnected()) {
+      try {
+        const u = await db.user.create({
+          data: {
+            id: data.id,
+            email: data.email,
+            name: data.name,
+            role: data.role as any,
+            passwordHash: crypto.randomBytes(16).toString('hex'),
+            level: 1,
+            xp: 0,
+            landingPageSetup: false,
+            membershipLevel: 'Reseller',
+            membershipAccess: 'Gold'
+          }
+        })
+        await db.wallet.create({ data: { userId: u.id, balance: 0.0 } })
+        return u
+      } catch (_) {}
+    }
+    syncMockDb()
+    let user = globalMockUsers.find(u => u.id === data.id || u.email === data.email)
+    if (!user) {
+      user = {
+        id: data.id,
+        email: data.email,
+        name: data.name,
+        passwordHash: crypto.randomBytes(16).toString('hex'),
+        role: data.role as any,
+        latitude: -6.2088,
+        longitude: 106.8456,
+        level: 1,
+        xp: 0,
+        landingPageTemplate: null,
+        landingPageConfig: null,
+        landingPageSetup: false,
+        parentAffiliateId: null,
+        membershipLevel: 'Reseller',
+        membershipAccess: 'Gold',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      globalMockUsers.push(user)
+      
+      // Ensure wallet is created!
+      if (!globalMockWallets.some(w => w.userId === user.id)) {
+        globalMockWallets.push({
+          id: `wallet-${user.id}`,
+          userId: user.id,
+          balance: 0.0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+      }
+      saveMockDb()
+    }
+    return user
+  },
+
+  // PRODUCT OPERATIONS
+  async getProducts(category?: string) {
+    if (await isDbConnected()) {
+      try {
+        if (category) {
+          return await db.product.findMany({
+            where: { category: category as ProductCategory },
+            include: { merchant: true },
+            orderBy: { createdAt: 'desc' }
+          })
+        }
+        return await db.product.findMany({
+          include: { merchant: true },
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    
+    const list = category ? globalMockProducts.filter(p => p.category === category) : globalMockProducts
+    return list.map(p => ({
+      ...p,
+      merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
+    })).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())
+  },
+
+  async getProductById(id: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.product.findUnique({
+          where: { id },
+          include: { merchant: true }
+        })
+      } catch (_) {}
+    }
+    const p = globalMockProducts.find(prod => prod.id === id) || null
+    if (!p) return null
+    return {
+      ...p,
+      merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
+    }
+  },
+
+  async createProduct(data: { 
+    title: string; 
+    description: string; 
+    price: number; 
+    category: any; 
+    stock: number; 
+    imageUrl?: string; 
+    merchantId: string; 
+    latitude?: number; 
+    longitude?: number;
+    jvPartnerId?: string;
+    jvSharePercent?: number;
+  }) {
+    if (await isDbConnected()) {
+      try {
+        return await db.product.create({ data })
+      } catch (_) {}
+    }
+    const newProd = {
+      id: `prod-${Date.now()}`,
+      title: data.title,
+      description: data.description,
+      price: data.price,
+      category: data.category,
+      stock: data.stock,
+      imageUrl: data.imageUrl || null,
+      merchantId: data.merchantId,
+      latitude: data.latitude || null,
+      longitude: data.longitude || null,
+      jvPartnerId: data.jvPartnerId || null,
+      jvSharePercent: data.jvSharePercent || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    globalMockProducts.push(newProd)
+    saveMockDb()
+    return newProd
+  },
+
+  async updateProduct(id: string, merchantId: string, data: Partial<{ title: string; description: string; price: number; category: any; stock: number; imageUrl: string; latitude?: number; longitude?: number }>) {
+    if (await isDbConnected()) {
+      try {
+        return await db.product.update({
+          where: { id, merchantId },
+          data
+        })
+      } catch (_) {}
+    }
+    const idx = globalMockProducts.findIndex(p => p.id === id && p.merchantId === merchantId)
+    if (idx === -1) throw new Error('Product not found or unauthorized')
+    const updated = {
+      ...globalMockProducts[idx],
+      ...data,
+      updatedAt: new Date()
+    }
+    globalMockProducts[idx] = updated
+    saveMockDb()
+    return updated
+  },
+
+  async deleteProduct(id: string, merchantId: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.product.delete({
+          where: { id, merchantId }
+        })
+      } catch (_) {}
+    }
+    const idx = globalMockProducts.findIndex(p => p.id === id && p.merchantId === merchantId)
+    if (idx === -1) throw new Error('Product not found or unauthorized')
+    globalMockProducts.splice(idx, 1)
+    saveMockDb()
+    return true
+  },
+
+  async getCourses() {
+    if (await isDbConnected()) {
+      try {
+        return await db.course.findMany({
+          include: { lessons: { orderBy: { orderIndex: 'asc' } } }
+        })
+      } catch (_) {}
+    }
+    return globalMockCourses.map(c => ({
+      ...c,
+      lessons: globalMockLessons.filter(l => l.courseId === c.id).sort((a,b) => a.orderIndex - b.orderIndex)
+    }))
+  },
+
+  async getCourseById(id: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.course.findUnique({
+          where: { id },
+          include: { lessons: { orderBy: { orderIndex: 'asc' } } }
+        })
+      } catch (_) {}
+    }
+    const course = globalMockCourses.find(c => c.id === id) || null
+    if (!course) return null
+    return {
+      ...course,
+      lessons: globalMockLessons.filter(l => l.courseId === course.id).sort((a,b) => a.orderIndex - b.orderIndex)
+    }
+  },
+
+  async getUserProgress(userId: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.progress.findMany({ where: { userId } })
+      } catch (_) {}
+    }
+    return globalMockProgress.filter(p => p.userId === userId)
+  },
+
+  async toggleLessonProgress(userId: string, lessonId: string, completed: boolean) {
+    if (await isDbConnected()) {
+      try {
+        return await db.progress.upsert({
+          where: { userId_lessonId: { userId, lessonId } },
+          create: { userId, lessonId, completed },
+          update: { completed }
+        })
+      } catch (_) {}
+    }
+    const idx = globalMockProgress.findIndex(p => p.userId === userId && p.lessonId === lessonId)
+    if (idx !== -1) {
+      globalMockProgress[idx].completed = completed
+      return globalMockProgress[idx]
+    } else {
+      const newProgress = { userId, lessonId, completed }
+      globalMockProgress.push(newProgress)
+      return newProgress
+    }
+  },
+
+  // WALLET OPERATIONS
+  async getWalletByUserId(userId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const w = await db.wallet.findUnique({
+          where: { userId },
+          include: { transactions: { orderBy: { createdAt: 'desc' } } }
+        })
+        if (w) return w
+      } catch (_) {}
+    }
+    let wallet = globalMockWallets.find(w => w.userId === userId) || null
+    if (!wallet) {
+      wallet = {
+        id: `wallet-${userId}`,
+        userId,
+        balance: 0.0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      globalMockWallets.push(wallet)
+      saveMockDb()
+    }
+    return {
+      ...wallet,
+      transactions: globalMockWalletTransactions.filter(t => t.walletId === wallet.id).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())
+    }
+  },
+
+  async withdrawFunds(userId: string, amount: number, description: string = 'Penarikan dana dompet digital') {
+    if (await isDbConnected()) {
+      try {
+        return await db.$transaction(async (tx) => {
+          const wallet = await tx.wallet.findUnique({ where: { userId } })
+          if (!wallet || wallet.balance < amount) throw new Error('Saldo tidak mencukupi')
+          const updatedWallet = await tx.wallet.update({
+            where: { userId },
+            data: { balance: { decrement: amount } }
+          })
+          await tx.walletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              amount,
+              type: 'WITHDRAWAL',
+              description
+            }
+          })
+          return updatedWallet
+        })
+      } catch (_) {}
+    }
+    const wallet = globalMockWallets.find(w => w.userId === userId)
+    if (!wallet || wallet.balance < amount) throw new Error('Saldo tidak mencukupi')
+    wallet.balance -= amount
+    globalMockWalletTransactions.push({
+      id: `tx-${Date.now()}`,
+      walletId: wallet.id,
+      amount,
+      type: 'WITHDRAWAL' as const,
+      description,
+      createdAt: new Date(),
+    })
+    saveMockDb()
+    return wallet
+  },
+
+  async depositFunds(userId: string, amount: number, method: string = 'Payment Gateway') {
+    if (await isDbConnected()) {
+      try {
+        return await db.$transaction(async (tx) => {
+          const wallet = await tx.wallet.findUnique({ where: { userId } })
+          if (!wallet) throw new Error('Wallet tidak ditemukan')
+          const updatedWallet = await tx.wallet.update({
+            where: { userId },
+            data: { balance: { increment: amount } }
+          })
+          await tx.walletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              amount,
+              type: 'DEPOSIT',
+              description: `Isi saldo via ${method}`
+            }
+          })
+          return updatedWallet
+        })
+      } catch (_) {}
+    }
+    const wallet = globalMockWallets.find(w => w.userId === userId)
+    if (!wallet) throw new Error('Wallet tidak ditemukan')
+    wallet.balance += amount
+    globalMockWalletTransactions.push({
+      id: `tx-${Date.now()}`,
+      walletId: wallet.id,
+      amount,
+      type: 'DEPOSIT' as const,
+      description: `Isi saldo via ${method}`,
+      createdAt: new Date(),
+    })
+    saveMockDb()
+    return wallet
+  },
+
+  async updateLandingPage(userId: string, template: string, config: string, latitude?: number, longitude?: number) {
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({
+          where: { id: userId },
+          data: {
+            landingPageTemplate: template,
+            landingPageConfig: config,
+            landingPageSetup: true,
+            ...(latitude !== undefined ? { latitude } : {}),
+            ...(longitude !== undefined ? { longitude } : {})
+          }
+        })
+      } catch (_) {}
+    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      user.landingPageTemplate = template
+      user.landingPageConfig = config
+      user.landingPageSetup = true
+      if (latitude !== undefined) user.latitude = latitude
+      if (longitude !== undefined) user.longitude = longitude
+      user.updatedAt = new Date()
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
+  async addXp(userId: string, amount: number) {
+    if (await isDbConnected()) {
+      try {
+        const user = await db.user.findUnique({ where: { id: userId } })
+        if (user) {
+          const newXp = user.xp + amount
+          const newLevel = Math.floor(newXp / 100) + 1
+          return await db.user.update({
+            where: { id: userId },
+            data: { xp: newXp, level: newLevel }
+          })
+        }
+      } catch (_) {}
+    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      user.xp = (user.xp || 0) + amount
+      user.level = Math.floor(user.xp / 100) + 1
+      user.updatedAt = new Date()
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
+  // ORDER / TRANSACTION OPERATIONS
+  async createOrder(
+    buyerId: string,
+    items: Array<{ productId: string; quantity: number }>,
+    affiliateId?: string,
+    paymentMethod: 'MIDTRANS' | 'WALLET' = 'MIDTRANS',
+    shippingDetails?: {
+      shippingFee?: number
+      courier?: string
+      shippingAddress?: string
+      couponCode?: string
+      discountAmount?: number
+      bumpSales?: string
+    }
+  ) {
+    const getProductPriceWithWholesale = (basePrice: number, qty: number) => {
+      if (qty >= 10) return basePrice * 0.80
+      if (qty >= 5) return basePrice * 0.90
+      if (qty >= 3) return basePrice * 0.95
+      return basePrice
+    }
+
+    const pickWaKey = (merchantWaKeys: string | null | undefined): string => {
+      if (!merchantWaKeys) return 'TERAS_DEFAULT_GATEWAY_KEY'
+      const keys = merchantWaKeys.split(',').map(k => k.trim()).filter(Boolean)
+      if (keys.length === 0) return 'TERAS_DEFAULT_GATEWAY_KEY'
+      const randomIndex = Math.floor(Math.random() * keys.length)
+      return keys[randomIndex]
+    }
+
+    const orderId = `order-${Date.now()}`
+
+    if (await isDbConnected()) {
+      try {
+        return await db.$transaction(async (tx) => {
+          let subtotal = 0
+          const orderItemsData = []
+          const productsWithQuantities = []
+
+          for (const item of items) {
+            const product = await tx.product.findUnique({ where: { id: item.productId } })
+            if (!product || product.stock < item.quantity) throw new Error('Stok produk tidak mencukupi')
+
+            // Decrement Stock
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { decrement: item.quantity } }
+            })
+
+            const finalPrice = getProductPriceWithWholesale(product.price, item.quantity)
+            const itemPrice = finalPrice * item.quantity
+            subtotal += itemPrice
+
+            orderItemsData.push({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: finalPrice
+            })
+
+            productsWithQuantities.push({ product, quantity: item.quantity, itemPrice })
+          }
+
+          // Bump sales
+          let bumpSalesTotal = 0
+          if (shippingDetails?.bumpSales) {
+            const activeBumps = shippingDetails.bumpSales.split(',')
+            activeBumps.forEach(bump => {
+              if (bump === 'GARANSI_PREMIUM') bumpSalesTotal += 25000
+              if (bump === 'BOX_KAYU') bumpSalesTotal += 15000
+              if (bump === 'KERTAS_KADO') bumpSalesTotal += 5000
+            })
+          }
+
+          // Coupon discount
+          let computedDiscount = 0
+          if (shippingDetails?.couponCode) {
+            const code = shippingDetails.couponCode.toUpperCase()
+            if (code === 'DISKON10') {
+              computedDiscount = subtotal * 0.1
+            } else if (code === 'TERASUMKM') {
+              computedDiscount = Math.min(20000, subtotal)
+            } else if (code === 'GRATISONGKIR') {
+              computedDiscount = shippingDetails.shippingFee || 0
+            }
+          }
+
+          const shippingFee = shippingDetails?.shippingFee || 0
+          const finalTotal = subtotal + shippingFee + bumpSalesTotal - computedDiscount
+
+          // Wallet payment deduction
+          if (paymentMethod === 'WALLET') {
+            const buyerWallet = await tx.wallet.findUnique({ where: { userId: buyerId } })
+            if (!buyerWallet || buyerWallet.balance < finalTotal) {
+              throw new Error('Saldo dompet tidak mencukupi')
+            }
+            await tx.wallet.update({
+              where: { userId: buyerId },
+              data: { balance: { decrement: finalTotal } }
+            })
+            await tx.walletTransaction.create({
+              data: {
+                walletId: buyerWallet.id,
+                amount: finalTotal,
+                type: 'WITHDRAWAL',
+                description: `Pembayaran Order ${orderId}`
+              }
+            })
+          }
+
+          // Points and Cashback
+          const pointsToAdd = finalTotal * 0.01
+          const cashbackToAdd = finalTotal * 0.05
+
+          // Update buyer points
+          await tx.user.update({
+            where: { id: buyerId },
+            data: { points: { increment: pointsToAdd } }
+          })
+
+          // Update buyer wallet for cashback
+          const buyerWallet = await tx.wallet.findUnique({ where: { userId: buyerId } })
+          if (buyerWallet) {
+            await tx.wallet.update({
+              where: { userId: buyerId },
+              data: { balance: { increment: cashbackToAdd } }
+            })
+            await tx.walletTransaction.create({
+              data: {
+                walletId: buyerWallet.id,
+                amount: cashbackToAdd,
+                type: 'DEPOSIT',
+                description: `Cashback 5% Pembelian Order ${orderId}`
+              }
+            })
+          }
+
+          // Create order
+          const order = await tx.order.create({
+            data: {
+              id: orderId,
+              buyerId,
+              totalAmount: finalTotal,
+              status: 'COMPLETED',
+              shippingFee,
+              courier: shippingDetails?.courier || null,
+              shippingAddress: shippingDetails?.shippingAddress || null,
+              couponCode: shippingDetails?.couponCode || null,
+              discountAmount: computedDiscount,
+              bumpSales: shippingDetails?.bumpSales || null,
+              items: {
+                create: orderItemsData
+              }
+            }
+          })
+
+          // Process affiliate commissions and JV splits
+          const buyerObj = await tx.user.findUnique({ where: { id: buyerId } })
+          const activeAffiliateId = affiliateId || buyerObj?.parentAffiliateId || null
+
+          for (const item of productsWithQuantities) {
+            const { product, itemPrice } = item
+            let merchantEarnings = itemPrice
+
+            // Check product category for digital product auto-activation
+            if (product.category === 'JASA' || product.category === 'KERJAAN') {
+              const targetAccess = product.category === 'KERJAAN' ? 'Diamond' : 'Platinum';
+              const targetLevel = product.category === 'KERJAAN' ? 'Distributor' : 'Agen';
+              const levelsMap: Record<string, number> = { Gold: 1, Platinum: 2, Diamond: 3 };
+              const currentRank = levelsMap[buyerObj?.membershipAccess || 'Gold'] || 1;
+              const targetRank = levelsMap[targetAccess] || 1;
+              if (currentRank < targetRank) {
+                await tx.user.update({
+                  where: { id: buyerId },
+                  data: {
+                    membershipAccess: targetAccess,
+                    membershipLevel: targetLevel
+                  }
+                });
+              }
+            }
+
+            // 1. Handle Multi-Level Affiliate Commission Splits
+            if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
+              const tier1Comm = itemPrice * 0.10
+              merchantEarnings -= tier1Comm
+
+              const tier1Wallet = await tx.wallet.findUnique({ where: { userId: activeAffiliateId } })
+              if (tier1Wallet) {
+                await tx.wallet.update({
+                  where: { userId: activeAffiliateId },
+                  data: { balance: { increment: tier1Comm } }
+                })
+                await tx.walletTransaction.create({
+                  data: {
+                    walletId: tier1Wallet.id,
+                    amount: tier1Comm,
+                    type: 'COMMISSION',
+                    description: `Komisi Affiliate Tier 1 dari penjualan ${product.title}`
+                  }
+                })
+                await tx.affiliateReferral.create({
+                  data: {
+                    affiliateId: activeAffiliateId,
+                    buyerId,
+                    amount: tier1Comm,
+                    status: 'PAID'
+                  }
+                })
+                // Award XP (+30 XP)
+                const affUser = await tx.user.findUnique({ where: { id: activeAffiliateId } })
+                if (affUser) {
+                  await tx.user.update({
+                    where: { id: activeAffiliateId },
+                    data: { xp: affUser.xp + 30, level: Math.floor((affUser.xp + 30) / 100) + 1 }
+                  })
+                }
+              }
+
+              // Trace Parent (Tier 2) - 5%
+              const tier1User = await tx.user.findUnique({ where: { id: activeAffiliateId } })
+              if (tier1User?.parentAffiliateId && tier1User.parentAffiliateId !== product.merchantId) {
+                const tier2Id = tier1User.parentAffiliateId
+                const tier2Comm = itemPrice * 0.05
+                merchantEarnings -= tier2Comm
+
+                const tier2Wallet = await tx.wallet.findUnique({ where: { userId: tier2Id } })
+                if (tier2Wallet) {
+                  await tx.wallet.update({
+                    where: { userId: tier2Id },
+                    data: { balance: { increment: tier2Comm } }
+                  })
+                  await tx.walletTransaction.create({
+                    data: {
+                      walletId: tier2Wallet.id,
+                      amount: tier2Comm,
+                      type: 'COMMISSION',
+                      description: `Komisi Affiliate Tier 2 dari penjualan ${product.title}`
+                    }
+                  })
+                  await tx.affiliateReferral.create({
+                    data: {
+                      affiliateId: tier2Id,
+                      buyerId,
+                      amount: tier2Comm,
+                      status: 'PAID'
+                    }
+                  })
+                  // Award XP (+15 XP)
+                  const tier2User = await tx.user.findUnique({ where: { id: tier2Id } })
+                  if (tier2User) {
+                    await tx.user.update({
+                      where: { id: tier2Id },
+                      data: { xp: tier2User.xp + 15, level: Math.floor((tier2User.xp + 15) / 100) + 1 }
+                    })
+                  }
+                }
+
+                // Trace Grandparent (Tier 3) - 2%
+                const tier2UserObj = await tx.user.findUnique({ where: { id: tier2Id } })
+                if (tier2UserObj?.parentAffiliateId && tier2UserObj.parentAffiliateId !== product.merchantId) {
+                  const tier3Id = tier2UserObj.parentAffiliateId
+                  const tier3Comm = itemPrice * 0.02
+                  merchantEarnings -= tier3Comm
+
+                  const tier3Wallet = await tx.wallet.findUnique({ where: { userId: tier3Id } })
+                  if (tier3Wallet) {
+                    await tx.wallet.update({
+                      where: { userId: tier3Id },
+                      data: { balance: { increment: tier3Comm } }
+                    })
+                    await tx.walletTransaction.create({
+                      data: {
+                        walletId: tier3Wallet.id,
+                        amount: tier3Comm,
+                        type: 'COMMISSION',
+                        description: `Komisi Affiliate Tier 3 dari penjualan ${product.title}`
+                      }
+                    })
+                    await tx.affiliateReferral.create({
+                      data: {
+                        affiliateId: tier3Id,
+                        buyerId,
+                        amount: tier3Comm,
+                        status: 'PAID'
+                      }
+                    })
+                    // Award XP (+5 XP)
+                    const tier3User = await tx.user.findUnique({ where: { id: tier3Id } })
+                    if (tier3User) {
+                      await tx.user.update({
+                        where: { id: tier3Id },
+                        data: { xp: tier3User.xp + 5, level: Math.floor((tier3User.xp + 5) / 100) + 1 }
+                      })
+                    }
+                  }
+                }
+              }
+            }
+
+            // 2. Handle JV Partner splits
+            if (product.jvPartnerId && product.jvSharePercent && product.jvSharePercent > 0) {
+              const jvShare = itemPrice * (product.jvSharePercent / 100)
+              merchantEarnings -= jvShare
+
+              const jvWallet = await tx.wallet.findUnique({ where: { userId: product.jvPartnerId } })
+              if (jvWallet) {
+                await tx.wallet.update({
+                  where: { userId: product.jvPartnerId },
+                  data: { balance: { increment: jvShare } }
+                })
+                await tx.walletTransaction.create({
+                  data: {
+                    walletId: jvWallet.id,
+                    amount: jvShare,
+                    type: 'SALE',
+                    description: `Bagi hasil JV Partner (${product.jvSharePercent}%) untuk produk ${product.title}`
+                  }
+                })
+              }
+            }
+
+            // Update Merchant balance
+            const merchantWallet = await tx.wallet.findUnique({ where: { userId: product.merchantId } })
+            if (merchantWallet) {
+              await tx.wallet.update({
+                where: { userId: product.merchantId },
+                data: { balance: { increment: merchantEarnings } }
+              })
+              await tx.walletTransaction.create({
+                data: {
+                  walletId: merchantWallet.id,
+                  amount: merchantEarnings,
+                  type: 'SALE',
+                  description: `Penjualan produk: ${product.title} (x${item.quantity})`
+                }
+              })
+              // Add XP to merchant (+100 XP)
+              const merch = await tx.user.findUnique({ where: { id: product.merchantId } })
+              if (merch) {
+                await tx.user.update({
+                  where: { id: product.merchantId },
+                  data: { xp: merch.xp + 100, level: Math.floor((merch.xp + 100) / 100) + 1 }
+                })
+              }
+            }
+
+            // WhatsApp Notification simulation
+            const merchantUser = await tx.user.findUnique({ where: { id: product.merchantId } })
+            const waKey = pickWaKey(merchantUser?.waGatewayKeys || '')
+            globalMockWaLogs.push({
+              id: `wa-log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              timestamp: new Date(),
+              merchantId: product.merchantId,
+              merchantName: merchantUser?.name || 'Merchant',
+              apiKeyUsed: waKey,
+              recipient: buyerObj?.name || 'Pembeli',
+              message: `[WA Gateway API Key: ${waKey}] Halo ${buyerObj?.name || 'Pelanggan'}, pesanan Anda dengan ID ${orderId} senilai Rp ${finalTotal.toLocaleString('id-ID')} telah berhasil diproses. Terima kasih!`,
+              status: 'SUCCESS'
+            })
+          }
+
+          // Add XP to buyer (+30 XP)
+          if (buyerObj) {
+            await tx.user.update({
+              where: { id: buyerId },
+              data: { xp: buyerObj.xp + 30, level: Math.floor((buyerObj.xp + 30) / 100) + 1 }
+            })
+          }
+
+          return order
+        })
+      } catch (_) {}
+    }
+
+    // In-memory simulation
+    let subtotal = 0
+    const productsWithQuantities = []
+
+    for (const item of items) {
+      const product = globalMockProducts.find(p => p.id === item.productId)
+      if (!product) throw new Error(`Produk tidak ditemukan. Hapus produk dari keranjang dan coba lagi.`)
+      if (product.merchantId === buyerId) throw new Error(`Anda tidak dapat membeli produk Anda sendiri ("${product.title}"). Hapus produk tersebut dari keranjang.`)
+      if (product.stock < item.quantity) throw new Error('Stok produk tidak mencukupi')
+      product.stock -= item.quantity
+
+      const finalPrice = getProductPriceWithWholesale(product.price, item.quantity)
+      const itemPrice = finalPrice * item.quantity
+      subtotal += itemPrice
+
+      productsWithQuantities.push({ product, quantity: item.quantity, itemPrice })
+    }
+
+    // Bump sales
+    let bumpSalesTotal = 0
+    if (shippingDetails?.bumpSales) {
+      const activeBumps = shippingDetails.bumpSales.split(',')
+      activeBumps.forEach(bump => {
+        if (bump === 'GARANSI_PREMIUM') bumpSalesTotal += 25000
+        if (bump === 'BOX_KAYU') bumpSalesTotal += 15000
+        if (bump === 'KERTAS_KADO') bumpSalesTotal += 5000
+      })
+    }
+
+    // Coupon discount
+    let computedDiscount = 0
+    if (shippingDetails?.couponCode) {
+      const code = shippingDetails.couponCode.toUpperCase()
+      if (code === 'DISKON10') {
+        computedDiscount = subtotal * 0.1
+      } else if (code === 'TERASUMKM') {
+        computedDiscount = Math.min(20000, subtotal)
+      } else if (code === 'GRATISONGKIR') {
+        computedDiscount = shippingDetails.shippingFee || 0
+      }
+    }
+
+    const shippingFee = shippingDetails?.shippingFee || 0
+    const finalTotal = subtotal + shippingFee + bumpSalesTotal - computedDiscount
+
+    // Wallet deduction
+    if (paymentMethod === 'WALLET') {
+      const buyerWallet = globalMockWallets.find(w => w.userId === buyerId)
+      if (!buyerWallet || buyerWallet.balance < finalTotal) {
+        throw new Error('Saldo dompet tidak mencukupi')
+      }
+      buyerWallet.balance -= finalTotal
+      globalMockWalletTransactions.push({
+        id: `tx-${Date.now()}-wallet-pay`,
+        walletId: buyerWallet.id,
+        amount: finalTotal,
+        type: 'WITHDRAWAL' as const,
+        description: `Pembayaran Order ${orderId}`,
+        createdAt: new Date()
+      })
+    }
+
+    // Points and cashback
+    const pointsToAdd = finalTotal * 0.01
+    const cashbackToAdd = finalTotal * 0.05
+
+    const buyerUser = globalMockUsers.find(u => u.id === buyerId)
+    if (buyerUser) {
+      buyerUser.points = (buyerUser.points || 0) + pointsToAdd
+      buyerUser.xp = (buyerUser.xp || 0) + 30
+      buyerUser.level = Math.floor(buyerUser.xp / 100) + 1
+    }
+
+    const buyerWalletObj = globalMockWallets.find(w => w.userId === buyerId)
+    if (buyerWalletObj) {
+      buyerWalletObj.balance += cashbackToAdd
+      globalMockWalletTransactions.push({
+        id: `tx-${Date.now()}-cashback`,
+        walletId: buyerWalletObj.id,
+        amount: cashbackToAdd,
+        type: 'DEPOSIT' as const,
+        description: `Cashback 5% Pembelian Order ${orderId}`,
+        createdAt: new Date()
+      })
+    }
+
+    // Credit merchants and affiliates
+    const activeAffiliateId = affiliateId || buyerUser?.parentAffiliateId || null
+
+    for (const item of productsWithQuantities) {
+      const { product, itemPrice } = item
+      let merchantEarnings = itemPrice
+
+      // Check product category for digital product auto-activation
+      if (product.category === 'JASA' || product.category === 'KERJAAN') {
+        const targetAccess = product.category === 'KERJAAN' ? 'Diamond' : 'Platinum';
+        const targetLevel = product.category === 'KERJAAN' ? 'Distributor' : 'Agen';
+        const levelsMap: Record<string, number> = { Gold: 1, Platinum: 2, Diamond: 3 };
+        const currentRank = levelsMap[buyerUser?.membershipAccess || 'Gold'] || 1;
+        const targetRank = levelsMap[targetAccess] || 1;
+        if (currentRank < targetRank && buyerUser) {
+          buyerUser.membershipAccess = targetAccess;
+          buyerUser.membershipLevel = targetLevel;
+        }
+      }
+
+      // 1. Multi-level commissions
+      if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
+        const tier1Comm = itemPrice * 0.10
+        merchantEarnings -= tier1Comm
+
+        const tier1Wallet = globalMockWallets.find(w => w.userId === activeAffiliateId)
+        if (tier1Wallet) {
+          tier1Wallet.balance += tier1Comm
+          globalMockWalletTransactions.push({
+            id: `tx-${Date.now()}-aff-1`,
+            walletId: tier1Wallet.id,
+            amount: tier1Comm,
+            type: 'COMMISSION' as const,
+            description: `Komisi Affiliate Tier 1 dari penjualan ${product.title}`,
+            createdAt: new Date()
+          })
+          globalMockReferrals.push({
+            id: `ref-${Date.now()}-1`,
+            affiliateId: activeAffiliateId,
+            buyerId,
+            amount: tier1Comm,
+            status: 'PAID' as const,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          const affUser = globalMockUsers.find(u => u.id === activeAffiliateId)
+          if (affUser) {
+            affUser.xp = (affUser.xp || 0) + 30
+            affUser.level = Math.floor(affUser.xp / 100) + 1
+          }
+        }
+
+        // Tier 2
+        const tier1User = globalMockUsers.find(u => u.id === activeAffiliateId)
+        if (tier1User?.parentAffiliateId && tier1User.parentAffiliateId !== product.merchantId) {
+          const tier2Id = tier1User.parentAffiliateId
+          const tier2Comm = itemPrice * 0.05
+          merchantEarnings -= tier2Comm
+
+          const tier2Wallet = globalMockWallets.find(w => w.userId === tier2Id)
+          if (tier2Wallet) {
+            tier2Wallet.balance += tier2Comm
+            globalMockWalletTransactions.push({
+              id: `tx-${Date.now()}-aff-2`,
+              walletId: tier2Wallet.id,
+              amount: tier2Comm,
+              type: 'COMMISSION' as const,
+              description: `Komisi Affiliate Tier 2 dari penjualan ${product.title}`,
+              createdAt: new Date()
+            })
+            globalMockReferrals.push({
+              id: `ref-${Date.now()}-2`,
+              affiliateId: tier2Id,
+              buyerId,
+              amount: tier2Comm,
+              status: 'PAID' as const,
+              createdAt: new Date(),
+              updatedAt: new Date()
+            })
+            const tier2User = globalMockUsers.find(u => u.id === tier2Id)
+            if (tier2User) {
+              tier2User.xp = (tier2User.xp || 0) + 15
+              tier2User.level = Math.floor(tier2User.xp / 100) + 1
+            }
+          }
+
+          // Tier 3
+          const tier2UserObj = globalMockUsers.find(u => u.id === tier2Id)
+          if (tier2UserObj?.parentAffiliateId && tier2UserObj.parentAffiliateId !== product.merchantId) {
+            const tier3Id = tier2UserObj.parentAffiliateId
+            const tier3Comm = itemPrice * 0.02
+            merchantEarnings -= tier3Comm
+
+            const tier3Wallet = globalMockWallets.find(w => w.userId === tier3Id)
+            if (tier3Wallet) {
+              tier3Wallet.balance += tier3Comm
+              globalMockWalletTransactions.push({
+                id: `tx-${Date.now()}-aff-3`,
+                walletId: tier3Wallet.id,
+                amount: tier3Comm,
+                type: 'COMMISSION' as const,
+                description: `Komisi Affiliate Tier 3 dari penjualan ${product.title}`,
+                createdAt: new Date()
+              })
+              globalMockReferrals.push({
+                id: `ref-${Date.now()}-3`,
+                affiliateId: tier3Id,
+                buyerId,
+                amount: tier3Comm,
+                status: 'PAID' as const,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              })
+              const tier3User = globalMockUsers.find(u => u.id === tier3Id)
+              if (tier3User) {
+                tier3User.xp = (tier3User.xp || 0) + 5
+                tier3User.level = Math.floor(tier3User.xp / 100) + 1
+              }
+            }
+          }
+        }
+      }
+
+      // JV split
+      if (product.jvPartnerId && product.jvSharePercent && product.jvSharePercent > 0) {
+        const jvShare = itemPrice * (product.jvSharePercent / 100)
+        merchantEarnings -= jvShare
+
+        const jvWallet = globalMockWallets.find(w => w.userId === product.jvPartnerId)
+        if (jvWallet) {
+          jvWallet.balance += jvShare
+          globalMockWalletTransactions.push({
+            id: `tx-${Date.now()}-jv`,
+            walletId: jvWallet.id,
+            amount: jvShare,
+            type: 'SALE' as const,
+            description: `Bagi hasil JV Partner (${product.jvSharePercent}%) untuk produk ${product.title}`,
+            createdAt: new Date()
+          })
+        }
+      }
+
+      // Credit merchant
+      const merchantWallet = globalMockWallets.find(w => w.userId === product.merchantId)
+      if (merchantWallet) {
+        merchantWallet.balance += merchantEarnings
+        globalMockWalletTransactions.push({
+          id: `tx-${Date.now()}-merch`,
+          walletId: merchantWallet.id,
+          amount: merchantEarnings,
+          type: 'SALE' as const,
+          description: `Penjualan produk: ${product.title} (x${item.quantity})`,
+          createdAt: new Date()
+        })
+        const merch = globalMockUsers.find(u => u.id === product.merchantId)
+        if (merch) {
+          merch.xp = (merch.xp || 0) + 100
+          merch.level = Math.floor(merch.xp / 100) + 1
+        }
+      }
+
+      // WA Notification simulation
+      const merchantUserObj = globalMockUsers.find(u => u.id === product.merchantId)
+      const waKey = pickWaKey(merchantUserObj?.waGatewayKeys || '')
+      globalMockWaLogs.push({
+        id: `wa-log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        timestamp: new Date(),
+        merchantId: product.merchantId,
+        merchantName: merchantUserObj?.name || 'Merchant',
+        apiKeyUsed: waKey,
+        recipient: buyerUser?.name || 'Pembeli',
+        message: `[WA Gateway API Key: ${waKey}] Halo ${buyerUser?.name || 'Pelanggan'}, pesanan Anda dengan ID ${orderId} senilai Rp ${finalTotal.toLocaleString('id-ID')} telah berhasil diproses. Terima kasih!`,
+        status: 'SUCCESS'
+      })
+    }
+
+    const orderObj = {
+      id: orderId,
+      buyerId,
+      totalAmount: finalTotal,
+      status: 'COMPLETED' as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      items: productsWithQuantities.map(item => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+        price: item.product.price,
+        productTitle: item.product.title
+      }))
+    }
+    globalMockOrders.push(orderObj)
+    saveMockDb()
+
+    return orderObj
+  },
+
+  // COMMUNITY / FORUM OPERATIONS
+  async getPosts(groupId?: string) {
+    if (await isDbConnected()) {
+      try {
+        const filter = groupId && groupId !== 'all' ? { groupId } : {}
+        const list = await db.post.findMany({
+          where: filter,
+          include: {
+            author: true,
+            likes: true,
+            _count: { select: { comments: true } }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+        return list.map(p => ({
+          ...p,
+          likes: p.likes.map(l => l.userId),
+          _count: {
+            comments: p._count.comments
+          }
+        }))
+      } catch (_) {}
+    }
+
+    return globalMockPosts
+      .filter(p => {
+        if (groupId && groupId !== 'all') {
+          // If mock post has an explicit groupId or we map it based on prefix/content
+          const postGroupId = p.groupId || (
+            p.id.includes('kopi') ? 'group-kopi' : 
+            p.id.includes('fashion') ? 'group-fashion' : 
+            'group-umum'
+          )
+          return postGroupId === groupId
+        }
+        return true
+      })
+      .map(p => {
+        let imageUrl = p.imageUrl || null
+        let videoUrl = p.videoUrl || null
+        let category = p.category || 'Diskusi'
+        
+        // Inject media into default posts
+        if (p.id === 'post-herbal-tips') {
+          category = 'Tips Bisnis'
+          imageUrl = 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&q=80'
+        } else if (p.id === 'post-furni-branding') {
+          category = 'Tips Bisnis'
+          imageUrl = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80'
+        } else if (p.id === 'post-agro-urban') {
+          category = 'Tips Bisnis'
+          imageUrl = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80'
+        } else if (p.id === 'post-silver-ekspor') {
+          category = 'Diskusi'
+          imageUrl = 'https://images.unsplash.com/photo-1573408301185-9519f94816f0?w=600&q=80'
+        } else if (p.id === 'post-komunitas-kopi-1') {
+          category = 'Diskusi'
+          videoUrl = 'https://www.w3schools.com/html/mov_bbb.mp4'
+        }
+        
+        return {
+          ...p,
+          category,
+          imageUrl,
+          videoUrl,
+          likes: p.likes || [],
+          author: globalMockUsers.find(u => u.id === p.authorId) || null,
+          _count: {
+            comments: globalMockComments.filter(c => c.postId === p.id).length
+          }
+        }
+      })
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+  },
+
+  async getPostById(id: string) {
+    if (await isDbConnected()) {
+      try {
+        const postObj = await db.post.findUnique({
+          where: { id },
+          include: {
+            author: true,
+            likes: true,
+            comments: {
+              include: { author: true },
+              orderBy: { createdAt: 'asc' }
+            }
+          }
+        })
+        if (!postObj) return null
+        return {
+          ...postObj,
+          likes: postObj.likes.map(l => l.userId),
+          comments: postObj.comments
+        }
+      } catch (_) {}
+    }
+    const p = globalMockPosts.find(post => post.id === id) || null
+    if (!p) return null
+    
+    let imageUrl = p.imageUrl || null
+    let videoUrl = p.videoUrl || null
+    let category = p.category || 'Diskusi'
+    
+    // Inject media into default posts
+    if (p.id === 'post-herbal-tips') {
+      category = 'Tips Bisnis'
+      imageUrl = 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&q=80'
+    } else if (p.id === 'post-furni-branding') {
+      category = 'Tips Bisnis'
+      imageUrl = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&q=80'
+    } else if (p.id === 'post-agro-urban') {
+      category = 'Tips Bisnis'
+      imageUrl = 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=600&q=80'
+    } else if (p.id === 'post-silver-ekspor') {
+      category = 'Diskusi'
+      imageUrl = 'https://images.unsplash.com/photo-1573408301185-9519f94816f0?w=600&q=80'
+    } else if (p.id === 'post-komunitas-kopi-1') {
+      category = 'Diskusi'
+      videoUrl = 'https://www.w3schools.com/html/mov_bbb.mp4'
+    }
+    
+    return {
+      ...p,
+      category,
+      imageUrl,
+      videoUrl,
+      likes: p.likes || [],
+      author: globalMockUsers.find(u => u.id === p.authorId) || null,
+      comments: globalMockComments.filter(c => c.postId === p.id).map(c => ({
+        ...c,
+        author: globalMockUsers.find(u => u.id === c.authorId) || null
+      })).sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    }
+  },
+
+  async createPost(userId: string, title: string, content: string, category?: string, imageUrl?: string, videoUrl?: string, groupId?: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.post.create({
+          data: {
+            authorId: userId,
+            title,
+            content,
+            category: category || 'Diskusi',
+            imageUrl: imageUrl || null,
+            videoUrl: videoUrl || null,
+            groupId: groupId || null
+          }
+        })
+      } catch (_) {}
+    }
+    const newPost = {
+      id: `post-${Date.now()}`,
+      title,
+      content,
+      category: category || 'Diskusi',
+      imageUrl: imageUrl || null,
+      videoUrl: videoUrl || null,
+      groupId: groupId || null,
+      likes: [],
+      authorId: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    globalMockPosts.push(newPost)
+    saveMockDb()
+    return newPost
+  },
+
+  async createComment(userId: string, postId: string, content: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.comment.create({
+          data: {
+            authorId: userId,
+            postId,
+            content
+          }
+        })
+      } catch (_) {}
+    }
+    const newComment = {
+      id: `comment-${Date.now()}`,
+      postId,
+      content,
+      authorId: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+    globalMockComments.push(newComment)
+    saveMockDb()
+    return newComment
+  },
+
+  async toggleLikePost(userId: string, postId: string) {
+    if (await isDbConnected()) {
+      try {
+        const existing = await db.postLike.findUnique({
+          where: {
+            postId_userId: { postId, userId }
+          }
+        })
+        if (existing) {
+          await db.postLike.delete({
+            where: {
+              id: existing.id
+            }
+          })
+          return { liked: false }
+        } else {
+          await db.postLike.create({
+            data: {
+              postId,
+              userId
+            }
+          })
+          return { liked: true }
+        }
+      } catch (_) {}
+    }
+    
+    const post = globalMockPosts.find(p => p.id === postId)
+    if (!post) throw new Error('Post not found')
+    
+    if (!post.likes) {
+      post.likes = []
+    }
+    
+    const idx = post.likes.indexOf(userId)
+    let liked = false
+    if (idx !== -1) {
+      post.likes.splice(idx, 1)
+      liked = false
+    } else {
+      post.likes.push(userId)
+      liked = true
+    }
+    saveMockDb()
+    return { liked }
+  },
+
+  async getCommunityMembers(groupId?: string) {
+    if (await isDbConnected()) {
+      try {
+        if (groupId && groupId !== 'all') {
+          const membersList = await db.groupMember.findMany({
+            where: { groupId },
+            include: { user: true },
+            orderBy: { user: { level: 'desc' } }
+          })
+          return membersList.map(gm => gm.user)
+        }
+        return await db.user.findMany({
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            level: true,
+            xp: true,
+            membershipLevel: true,
+            membershipAccess: true,
+            createdAt: true
+          },
+          orderBy: { level: 'desc' }
+        })
+      } catch (_) {}
+    }
+
+    if (groupId && groupId !== 'all') {
+      const activeMembers = globalMockGroupMembers
+        .filter(gm => gm.groupId === groupId)
+        .map(gm => globalMockUsers.find(u => u.id === gm.userId))
+        .filter(Boolean)
+      return activeMembers.sort((a, b) => b.level - a.level)
+    }
+
+    return globalMockUsers.map(u => ({
+      id: u.id,
+      name: u.name,
+      role: u.role,
+      level: u.level,
+      xp: u.xp,
+      membershipLevel: u.membershipLevel,
+      membershipAccess: u.membershipAccess,
+      createdAt: u.createdAt
+    })).sort((a, b) => b.level - a.level)
+  },
+
+  // NEW COMMUNITY GROUP OPERATING FUNCTIONS
+  async getGroups() {
+    if (await isDbConnected()) {
+      try {
+        return await db.communityGroup.findMany({
+          include: {
+            admin: true,
+            _count: {
+              select: { members: true, posts: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+
+    return globalMockGroups.map(g => {
+      const adminUser = globalMockUsers.find(u => u.id === g.adminId) || null
+      const membersCount = globalMockGroupMembers.filter(gm => gm.groupId === g.id).length
+      const postsCount = globalMockPosts.filter(p => {
+        const postGroupId = p.groupId || (p.id.includes('kopi') ? 'group-kopi' : p.id.includes('fashion') ? 'group-fashion' : 'group-umum')
+        return postGroupId === g.id
+      }).length
+
+      return {
+        ...g,
+        admin: adminUser,
+        _count: {
+          members: membersCount,
+          posts: postsCount
+        }
+      }
+    })
+  },
+
+  async getGroupById(id: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.communityGroup.findUnique({
+          where: { id },
+          include: {
+            admin: true,
+            _count: {
+              select: { members: true, posts: true }
+            }
+          }
+        })
+      } catch (_) {}
+    }
+
+    const g = globalMockGroups.find(group => group.id === id) || null
+    if (!g) return null
+
+    const adminUser = globalMockUsers.find(u => u.id === g.adminId) || null
+    const membersCount = globalMockGroupMembers.filter(gm => gm.groupId === g.id).length
+    const postsCount = globalMockPosts.filter(p => {
+      const postGroupId = p.groupId || (p.id.includes('kopi') ? 'group-kopi' : p.id.includes('fashion') ? 'group-fashion' : 'group-umum')
+      return postGroupId === g.id
+    }).length
+
+    return {
+      ...g,
+      admin: adminUser,
+      _count: {
+        members: membersCount,
+        posts: postsCount
+      }
+    }
+  },
+
+  async createGroup(adminId: string, name: string, description: string, avatarUrl?: string, coverUrl?: string) {
+    if (await isDbConnected()) {
+      try {
+        const group = await db.communityGroup.create({
+          data: {
+            adminId,
+            name,
+            description,
+            avatarUrl: avatarUrl || null,
+            coverUrl: coverUrl || null
+          }
+        })
+        // Auto-join the creator as a member
+        await db.groupMember.create({
+          data: {
+            groupId: group.id,
+            userId: adminId
+          }
+        })
+        return group
+      } catch (_) {}
+    }
+
+    const newGroup = {
+      id: `group-${Date.now()}`,
+      name,
+      description,
+      avatarUrl: avatarUrl || null,
+      coverUrl: coverUrl || null,
+      isSuspended: false,
+      adminId,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    
+    globalMockGroups.push(newGroup)
+    
+    // Auto-join membership in mock state
+    globalMockGroupMembers.push({
+      id: `gm-${Date.now()}`,
+      groupId: newGroup.id,
+      userId: adminId,
+      createdAt: new Date()
+    })
+    
+    saveMockDb()
+    return newGroup
+  },
+
+  async toggleJoinGroup(userId: string, groupId: string) {
+    if (await isDbConnected()) {
+      try {
+        const existing = await db.groupMember.findUnique({
+          where: {
+            groupId_userId: { groupId, userId }
+          }
+        })
+        if (existing) {
+          await db.groupMember.delete({
+            where: {
+              id: existing.id
+            }
+          })
+          return { joined: false }
+        } else {
+          await db.groupMember.create({
+            data: {
+              groupId,
+              userId
+            }
+          })
+          return { joined: true }
+        }
+      } catch (_) {}
+    }
+
+    const existingIdx = globalMockGroupMembers.findIndex(gm => gm.groupId === groupId && gm.userId === userId)
+    let joined = false
+    if (existingIdx !== -1) {
+      globalMockGroupMembers.splice(existingIdx, 1)
+      joined = false
+    } else {
+      globalMockGroupMembers.push({
+        id: `gm-${Date.now()}`,
+        groupId,
+        userId,
+        createdAt: new Date()
+      })
+      joined = true
+    }
+    saveMockDb()
+    return { joined }
+  },
+
+  async isGroupMember(userId: string, groupId: string) {
+    if (await isDbConnected()) {
+      try {
+        const existing = await db.groupMember.findUnique({
+          where: {
+            groupId_userId: { groupId, userId }
+          }
+        })
+        return !!existing
+      } catch (_) {}
+    }
+    return globalMockGroupMembers.some(gm => gm.groupId === groupId && gm.userId === userId)
+  },
+
+  async toggleSuspendGroup(groupId: string) {
+    if (await isDbConnected()) {
+      try {
+        const group = await db.communityGroup.findUnique({ where: { id: groupId } })
+        if (!group) throw new Error('Group not found')
+        const updated = await db.communityGroup.update({
+          where: { id: groupId },
+          data: { isSuspended: !group.isSuspended }
+        })
+        return updated
+      } catch (_) {}
+    }
+
+    const group = globalMockGroups.find(g => g.id === groupId)
+    if (!group) throw new Error('Group not found')
+    group.isSuspended = !group.isSuspended
+    saveMockDb()
+    return group
+  },
+
+  async deletePost(postId: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.post.delete({ where: { id: postId } })
+        return { success: true }
+      } catch (_) {}
+    }
+
+    const postIdx = globalMockPosts.findIndex(p => p.id === postId)
+    if (postIdx === -1) return { error: 'Post not found' }
+    globalMockPosts.splice(postIdx, 1)
+    
+    // Cascading comments deletion
+    globalMockComments = globalMockComments.filter(c => c.postId !== postId)
+    saveMockDb()
+    return { success: true }
+  },
+
+  async deleteComment(commentId: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.comment.delete({ where: { id: commentId } })
+        return { success: true }
+      } catch (_) {}
+    }
+
+    const commentIdx = globalMockComments.findIndex(c => c.id === commentId)
+    if (commentIdx === -1) return { error: 'Comment not found' }
+    globalMockComments.splice(commentIdx, 1)
+    saveMockDb()
+    return { success: true }
+  },
+
+
+
+  // AFFILIATE PORTAL DATA
+  async getAffiliateStats(affiliateId: string) {
+    let referralsList: any[] = [];
+    let walletTransactions: any[] = [];
+    
+    if (await isDbConnected()) {
+      try {
+        referralsList = await db.affiliateReferral.findMany({
+          where: { affiliateId },
+          include: { buyer: true },
+          orderBy: { createdAt: 'desc' }
+        });
+        const wallet = await db.wallet.findUnique({
+          where: { userId: affiliateId },
+          include: { transactions: true }
+        });
+        walletTransactions = wallet?.transactions || [];
+      } catch (_) {}
+    } else {
+      referralsList = globalMockReferrals.filter(r => r.affiliateId === affiliateId).map(r => ({
+        ...r,
+        buyer: globalMockUsers.find(u => u.id === r.buyerId) || null
+      })).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+      const wallet = globalMockWallets.find(w => w.userId === affiliateId);
+      if (wallet) {
+        walletTransactions = globalMockWalletTransactions.filter(t => t.walletId === wallet.id);
+      }
+    }
+
+    const totalEarnings = referralsList.reduce((sum, r) => sum + r.amount, 0);
+
+    // Calculate commission breakdown by tier
+    let tier1Earnings = 0;
+    let tier2Earnings = 0;
+    let tier3Earnings = 0;
+
+    walletTransactions.forEach(tx => {
+      if (tx.type === 'COMMISSION') {
+        const desc = tx.description.toLowerCase();
+        if (desc.includes('tier 1')) {
+          tier1Earnings += tx.amount;
+        } else if (desc.includes('tier 2')) {
+          tier2Earnings += tx.amount;
+        } else if (desc.includes('tier 3')) {
+          tier3Earnings += tx.amount;
+        } else {
+          // fallback if no tier listed
+          tier1Earnings += tx.amount;
+        }
+      }
+    });
+
+    // Custom links and click counts
+    const userLinks = globalMockCustomLinks.filter(l => l.userId === affiliateId);
+    const totalClicks = userLinks.reduce((sum, l) => sum + l.clicks, 0);
+
+    // Traffic sources breakdown
+    const sourceBreakdown: Record<string, number> = {};
+    userLinks.forEach(link => {
+      const logs = globalMockClickLogs.filter(log => log.linkId === link.id);
+      logs.forEach(log => {
+        const src = log.source || 'direct';
+        sourceBreakdown[src] = (sourceBreakdown[src] || 0) + 1;
+      });
+    });
+
+    return {
+      referrals: referralsList,
+      totalEarnings,
+      commissionByTier: {
+        tier1: tier1Earnings,
+        tier2: tier2Earnings,
+        tier3: tier3Earnings
+      },
+      clicksCount: totalClicks,
+      customLinks: userLinks,
+      trafficSources: sourceBreakdown
+    };
+  },
+
+  async createCustomAffiliateLink(userId: string, productId: string, customSlug: string, source: string) {
+    // Check if slug already exists
+    const exists = globalMockCustomLinks.some(l => l.customSlug === customSlug);
+    if (exists) throw new Error('Slug kustom sudah digunakan');
+
+    const newLink = {
+      id: `link-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      userId,
+      productId,
+      customSlug,
+      source: source || 'direct',
+      clicks: 0,
+      createdAt: new Date()
+    };
+    globalMockCustomLinks.push(newLink);
+    return newLink;
+  },
+
+  async getCustomAffiliateLinks(userId: string) {
+    return globalMockCustomLinks.filter(l => l.userId === userId);
+  },
+
+  async trackAffiliateClick(slug: string, source: string = 'direct') {
+    const link = globalMockCustomLinks.find(l => l.customSlug === slug);
+    if (link) {
+      link.clicks = (link.clicks || 0) + 1;
+      globalMockClickLogs.push({
+        id: `click-${Date.now()}`,
+        linkId: link.id,
+        source: source || 'direct',
+        createdAt: new Date()
+      });
+      return link;
+    }
+    return null;
+  },
+
+  async upgradeMembershipAccess(userId: string, targetAccess: 'Platinum' | 'Diamond') {
+    const priceMap = {
+      Platinum: 250000,
+      Diamond: 500000
+    };
+    const targetLevelMap = {
+      Platinum: 'Agen',
+      Diamond: 'Distributor'
+    };
+    
+    const price = priceMap[targetAccess];
+    const newLevel = targetLevelMap[targetAccess];
+
+    if (await isDbConnected()) {
+      try {
+        await db.$transaction(async (tx) => {
+          const wallet = await tx.wallet.findUnique({ where: { userId } });
+          if (!wallet || wallet.balance < price) throw new Error('Saldo dompet tidak mencukupi untuk upgrade');
+
+          await tx.wallet.update({
+            where: { userId },
+            data: { balance: { decrement: price } }
+          });
+
+          await tx.walletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              amount: price,
+              type: 'WITHDRAWAL',
+              description: `Upgrade Keanggotaan Akses ${targetAccess} & Level ${newLevel}`
+            }
+          });
+
+          await tx.user.update({
+            where: { id: userId },
+            data: {
+              membershipAccess: targetAccess,
+              membershipLevel: newLevel,
+              // Give bonus XP on upgrade
+              xp: { increment: 100 }
+            }
+          });
+        });
+
+        // Re-fetch user
+        return await db.user.findUnique({ where: { id: userId } });
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal upgrade database');
+      }
+    }
+
+    // Mock upgrade
+    const wallet = globalMockWallets.find(w => w.userId === userId);
+    if (!wallet || wallet.balance < price) throw new Error('Saldo dompet tidak mencukupi untuk upgrade');
+
+    wallet.balance -= price;
+    globalMockWalletTransactions.push({
+      id: `tx-${Date.now()}-upgrade`,
+      walletId: wallet.id,
+      amount: price,
+      type: 'WITHDRAWAL' as const,
+      description: `Upgrade Keanggotaan Akses ${targetAccess} & Level ${newLevel}`,
+      createdAt: new Date()
+    });
+
+    const user = globalMockUsers.find(u => u.id === userId);
+    if (user) {
+      user.membershipAccess = targetAccess;
+      user.membershipLevel = newLevel;
+      user.xp = (user.xp || 0) + 100;
+      user.level = Math.floor(user.xp / 100) + 1;
+      user.updatedAt = new Date();
+      return user;
+    }
+    throw new Error('User tidak ditemukan');
+  },
+
+  async getAffiliateLeaderboard() {
+    const earningsMap: Record<string, number> = {};
+
+    // Group referrals by affiliateId
+    let referralsList: any[] = [];
+    if (await isDbConnected()) {
+      try {
+        referralsList = await db.affiliateReferral.findMany();
+      } catch (_) {}
+    } else {
+      referralsList = globalMockReferrals;
+    }
+
+    referralsList.forEach(r => {
+      earningsMap[r.affiliateId] = (earningsMap[r.affiliateId] || 0) + r.amount;
+    });
+
+    // Populate all active users that have role AFFILIATE or have earnings
+    let usersList: any[] = [];
+    if (await isDbConnected()) {
+      try {
+        usersList = await db.user.findMany();
+      } catch (_) {}
+    } else {
+      usersList = globalMockUsers;
+    }
+
+    const leaderboard = usersList
+      .filter(u => u.role === 'AFFILIATE' || earningsMap[u.id] > 0)
+      .map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        totalEarnings: earningsMap[u.id] || 0,
+        membershipLevel: u.membershipLevel || 'Reseller',
+        level: u.level || 1
+      }))
+      .sort((a, b) => b.totalEarnings - a.totalEarnings)
+      .slice(0, 10);
+
+    return leaderboard;
+  },
+
+  async getAffiliateDownline(userId: string) {
+    const buildTree = async (id: string, depth: number): Promise<any[]> => {
+      if (depth > 3) return [];
+      let children: any[] = [];
+      if (await isDbConnected()) {
+        try {
+          children = await db.user.findMany({ where: { parentAffiliateId: id } });
+        } catch (_) {}
+      } else {
+        children = globalMockUsers.filter(u => u.parentAffiliateId === id);
+      }
+      
+      const treeNodes = [];
+      for (const child of children) {
+        const subTree = await buildTree(child.id, depth + 1);
+        treeNodes.push({
+          id: child.id,
+          name: child.name,
+          email: child.email,
+          role: child.role,
+          membershipLevel: child.membershipLevel || 'Reseller',
+          membershipAccess: child.membershipAccess || 'Gold',
+          level: child.level || 1,
+          children: subTree
+        });
+      }
+      return treeNodes;
+    };
+    
+    return await buildTree(userId, 1);
+  },
+
+  async getReminders(userId: string) {
+    const reminders = [];
+    
+    // 1. LMS Incomplete Lessons Reminder
+    let progressList: any[] = [];
+    let coursesList: any[] = [];
+    let userObj: any = null;
+
+    if (await isDbConnected()) {
+      try {
+        userObj = await db.user.findUnique({ where: { id: userId } });
+        progressList = await db.progress.findMany({ where: { userId } });
+        coursesList = await db.course.findMany({
+          include: { lessons: { orderBy: { orderIndex: 'asc' } } }
+        });
+      } catch (_) {}
+    } else {
+      userObj = globalMockUsers.find(u => u.id === userId);
+      progressList = globalMockProgress.filter(p => p.userId === userId);
+      coursesList = mockCourses.map(c => ({
+        ...c,
+        lessons: mockLessons.filter(l => l.courseId === c.id).sort((a,b) => a.orderIndex - b.orderIndex)
+      }));
+    }
+
+    const completedLessonIds = new Set(progressList.filter(p => p.completed).map(p => p.lessonId));
+
+    // Find any course that user has started but not completed, or recommend lesson 1
+    let foundIncomplete = false;
+    for (const course of coursesList) {
+      // Check if user has access to this course
+      const accessLevels = { Gold: 1, Platinum: 2, Diamond: 3 };
+      const userRank = accessLevels[userObj?.membershipAccess as 'Gold' | 'Platinum' | 'Diamond' || 'Gold'] || 1;
+      const courseRank = accessLevels[course.accessRequired as 'Gold' | 'Platinum' | 'Diamond' || 'Gold'] || 1;
+
+      if (userRank >= courseRank) {
+        const courseLessons = course.lessons || [];
+        for (const lesson of courseLessons) {
+          if (!completedLessonIds.has(lesson.id)) {
+            reminders.push({
+              id: `rem-lms-${lesson.id}`,
+              type: 'LMS',
+              title: 'Lanjutkan Belajar Akademi',
+              description: `Selesaikan materi: "${lesson.title}" di kelas ${course.title}.`,
+              actionUrl: `/academy/course/${course.id}`,
+              createdAt: new Date()
+            });
+            foundIncomplete = true;
+            break; // only remind one lesson at a time
+          }
+        }
+      }
+      if (foundIncomplete) break;
+    }
+
+    // 2. Membership upgrade suggestion
+    if (userObj?.membershipAccess === 'Gold') {
+      reminders.push({
+        id: 'rem-upgrade-plat',
+        type: 'MEMBERSHIP',
+        title: 'Upgrade Keanggotaan Platinum',
+        description: 'Tingkatkan akses Anda ke level Platinum untuk membuka kelas premium Artisan Baking!',
+        actionUrl: '/affiliate?tab=membership',
+        createdAt: new Date()
+      });
+    } else if (userObj?.membershipAccess === 'Platinum') {
+      reminders.push({
+        id: 'rem-upgrade-diam',
+        type: 'MEMBERSHIP',
+        title: 'Upgrade Keanggotaan Diamond',
+        description: 'Buka materi Mastering Digital Branding & Packaging dengan upgrade ke Diamond!',
+        actionUrl: '/affiliate?tab=membership',
+        createdAt: new Date()
+      });
+    }
+
+    // 3. Location-based product reminders (Distance < 10km)
+    let productsList: any[] = [];
+    if (await isDbConnected()) {
+      try {
+        productsList = await db.product.findMany({ include: { merchant: true } });
+      } catch (_) {}
+    } else {
+      productsList = globalMockProducts.map(p => ({
+        ...p,
+        merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
+      }));
+    }
+
+    if (userObj?.latitude && userObj?.longitude) {
+      const uLat = userObj.latitude;
+      const uLng = userObj.longitude;
+
+      // Distance calculation helper (Haversine formula)
+      const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      };
+
+      for (const prod of productsList) {
+        if (prod.latitude && prod.longitude && prod.merchantId !== userId) {
+          const dist = getDistance(uLat, uLng, prod.latitude, prod.longitude);
+          if (dist <= 10) {
+            reminders.push({
+              id: `rem-prod-${prod.id}`,
+              type: 'PRODUCT',
+              title: `Produk Terdekat (${dist.toFixed(1)} km)`,
+              description: `Temukan "${prod.title}" di merchant terdekat ${prod.merchant?.name || 'Teras UMKM'}.`,
+              actionUrl: `/marketplace`,
+              createdAt: new Date()
+            });
+            break; // limit to one nearby product reminder
+          }
+        }
+      }
+    }
+
+    return reminders;
+  },
+
+  async updateUserSettings(userId: string, data: {
+    waGatewayKeys?: string;
+    fbPixelId?: string | null;
+    tiktokPixelId?: string | null;
+    zapierWebhookUrl?: string | null;
+    googleSheetUrl?: string | null;
+    zoomMeetingUrl?: string | null;
+  }) {
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({
+          where: { id: userId },
+          data
+        })
+      } catch (_) {}
+    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      if (data.waGatewayKeys !== undefined) user.waGatewayKeys = data.waGatewayKeys
+      if (data.fbPixelId !== undefined) user.fbPixelId = data.fbPixelId
+      if (data.tiktokPixelId !== undefined) user.tiktokPixelId = data.tiktokPixelId
+      if (data.zapierWebhookUrl !== undefined) user.zapierWebhookUrl = data.zapierWebhookUrl
+      if (data.googleSheetUrl !== undefined) user.googleSheetUrl = data.googleSheetUrl
+      if (data.zoomMeetingUrl !== undefined) user.zoomMeetingUrl = data.zoomMeetingUrl
+      user.updatedAt = new Date()
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
+  async getWaLogs(merchantId: string) {
+    return globalMockWaLogs.filter(log => log.merchantId === merchantId)
+  },
+
+  // CHAT & SUPPORT OPERATIONS
+  async getOrCreateChatRoom(buyerId: string, sellerId: string, productId?: string) {
+    if (await isDbConnected()) {
+      try {
+        let room = await db.chatRoom.findFirst({
+          where: {
+            OR: [
+              { buyerId, sellerId },
+              { buyerId: sellerId, sellerId: buyerId }
+            ]
+          },
+          include: {
+            buyer: true,
+            seller: true,
+            product: true
+          }
+        });
+        if (!room) {
+          room = await db.chatRoom.create({
+            data: {
+              buyerId,
+              sellerId,
+              productId: productId || null
+            },
+            include: {
+              buyer: true,
+              seller: true,
+              product: true
+            }
+          });
+        }
+        return room;
+      } catch (_) {}
+    }
+    let room = globalMockChatRooms.find(
+      r => (r.buyerId === buyerId && r.sellerId === sellerId) || (r.buyerId === sellerId && r.sellerId === buyerId)
+    );
+    if (!room) {
+      room = {
+        id: `room-${Date.now()}`,
+        buyerId,
+        sellerId,
+        productId: productId || null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      globalMockChatRooms.push(room);
+      saveMockDb();
+    }
+    const buyer = globalMockUsers.find(u => u.id === room.buyerId) || null;
+    const seller = globalMockUsers.find(u => u.id === room.sellerId) || null;
+    const product = globalMockProducts.find(p => p.id === room.productId) || null;
+    return { ...room, buyer, seller, product };
+  },
+
+  async sendChatMessage(roomId: string, senderId: string, content: string, imageUrl?: string) {
+    if (await isDbConnected()) {
+      try {
+        const msg = await db.chatMessage.create({
+          data: {
+            roomId,
+            senderId,
+            content,
+            imageUrl: imageUrl || null
+          }
+        });
+        await db.chatRoom.update({
+          where: { id: roomId },
+          data: { updatedAt: new Date() }
+        });
+        return msg;
+      } catch (_) {}
+    }
+    const msg = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      roomId,
+      senderId,
+      content,
+      imageUrl: imageUrl || null,
+      isRead: false,
+      createdAt: new Date()
+    };
+    globalMockChatMessages.push(msg);
+    const roomIdx = globalMockChatRooms.findIndex(r => r.id === roomId);
+    if (roomIdx !== -1) {
+      globalMockChatRooms[roomIdx].updatedAt = new Date();
+    }
+    saveMockDb();
+    return msg;
+  },
+
+  async getChatMessages(roomId: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.chatMessage.findMany({
+          where: { roomId },
+          orderBy: { createdAt: 'asc' }
+        });
+      } catch (_) {}
+    }
+    return globalMockChatMessages
+      .filter(m => m.roomId === roomId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  },
+
+  async markMessagesAsRead(roomId: string, userId: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.chatMessage.updateMany({
+          where: {
+            roomId,
+            senderId: { not: userId },
+            isRead: false
+          },
+          data: { isRead: true }
+        });
+        return true;
+      } catch (_) {}
+    }
+    globalMockChatMessages.forEach(m => {
+      if (m.roomId === roomId && m.senderId !== userId) {
+        m.isRead = true;
+      }
+    });
+    saveMockDb();
+    return true;
+  },
+
+  async getUserConversations(userId: string) {
+    if (await isDbConnected()) {
+      try {
+        const rooms = await db.chatRoom.findMany({
+          where: {
+            OR: [
+              { buyerId: userId },
+              { sellerId: userId }
+            ]
+          },
+          include: {
+            buyer: true,
+            seller: true,
+            product: true,
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 1
+            }
+          },
+          orderBy: { updatedAt: 'desc' }
+        });
+        
+        const roomsWithUnread = await Promise.all(rooms.map(async (r) => {
+          const unreadCount = await db.chatMessage.count({
+            where: {
+              roomId: r.id,
+              senderId: { not: userId },
+              isRead: false
+            }
+          });
+          return {
+            ...r,
+            lastMessage: r.messages[0] || null,
+            unreadCount
+          };
+        }));
+        
+        return roomsWithUnread;
+      } catch (_) {}
+    }
+    return globalMockChatRooms
+      .filter(r => r.buyerId === userId || r.sellerId === userId)
+      .map(r => {
+        const buyer = globalMockUsers.find(u => u.id === r.buyerId) || null;
+        const seller = globalMockUsers.find(u => u.id === r.sellerId) || null;
+        const product = globalMockProducts.find(p => p.id === r.productId) || null;
+        const messages = globalMockChatMessages
+          .filter(m => m.roomId === r.id)
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        const lastMessage = messages[0] || null;
+        const unreadCount = messages.filter(m => m.senderId !== userId && !m.isRead).length;
+        return {
+          ...r,
+          buyer,
+          seller,
+          product,
+          lastMessage,
+          unreadCount
+        };
+      })
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  },
+
+  async createSupportTicket(customerId: string, message: string) {
+    const ticketNumber = `CS-${new Date().getFullYear()}${(new Date().getMonth()+1).toString().padStart(2,'0')}${new Date().getDate().toString().padStart(2,'0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+    if (await isDbConnected()) {
+      try {
+        return await db.$transaction(async (tx) => {
+          const ticket = await tx.supportTicket.create({
+            data: {
+              ticketNumber,
+              customerId,
+              status: 'OPEN'
+            },
+            include: {
+              customer: true,
+              csAgent: true
+            }
+          });
+          await tx.supportMessage.create({
+            data: {
+              ticketId: ticket.id,
+              senderId: 'SYSTEM',
+              content: 'Halo, selamat datang di layanan bantuan TerasUMKM. Mohon tunggu sebentar, kami sedang menghubungkan Anda dengan petugas customer service kami.'
+            }
+          });
+          if (message.trim()) {
+            await tx.supportMessage.create({
+              data: {
+                ticketId: ticket.id,
+                senderId: customerId,
+                content: message
+              }
+            });
+          }
+          return ticket;
+        });
+      } catch (_) {}
+    }
+    const ticket = {
+      id: `ticket-${Date.now()}`,
+      ticketNumber,
+      customerId,
+      csAgentId: null,
+      status: 'OPEN',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    globalMockSupportTickets.push(ticket);
+    globalMockSupportMessages.push({
+      id: `sm-${Date.now()}-sys`,
+      ticketId: ticket.id,
+      senderId: 'SYSTEM',
+      content: 'Halo, selamat datang di layanan bantuan TerasUMKM. Mohon tunggu sebentar, kami sedang menghubungkan Anda dengan petugas customer service kami.',
+      isRead: false,
+      isInternalNote: false,
+      createdAt: new Date()
+    });
+    if (message.trim()) {
+      globalMockSupportMessages.push({
+        id: `sm-${Date.now()}-cust`,
+        ticketId: ticket.id,
+        senderId: customerId,
+        content: message,
+        isRead: false,
+        isInternalNote: false,
+        createdAt: new Date(Date.now() + 1000)
+      });
+    }
+    saveMockDb();
+    const customer = globalMockUsers.find(u => u.id === ticket.customerId) || null;
+    return { ...ticket, customer, csAgent: null };
+  },
+
+  async getSupportTickets(statusFilter?: string, agentId?: string) {
+    if (await isDbConnected()) {
+      try {
+        const whereClause: any = {};
+        if (statusFilter) whereClause.status = statusFilter;
+        if (agentId) whereClause.csAgentId = agentId;
+        return await db.supportTicket.findMany({
+          where: whereClause,
+          include: {
+            customer: true,
+            csAgent: true,
+            messages: {
+              orderBy: { createdAt: 'desc' },
+              take: 1
+            }
+          },
+          orderBy: { updatedAt: 'desc' }
+        });
+      } catch (_) {}
+    }
+    return globalMockSupportTickets
+      .filter(t => {
+        if (statusFilter && t.status !== statusFilter) return false;
+        if (agentId && t.csAgentId !== agentId) return false;
+        return true;
+      })
+      .map(t => {
+        const customer = globalMockUsers.find(u => u.id === t.customerId) || null;
+        const csAgent = globalMockUsers.find(u => u.id === t.csAgentId) || null;
+        const messages = globalMockSupportMessages
+          .filter(m => m.ticketId === t.id)
+          .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        const lastMessage = messages[0] || null;
+        return {
+          ...t,
+          customer,
+          csAgent,
+          lastMessage
+        };
+      })
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+  },
+
+  async assignSupportTicket(ticketId: string, agentId: string) {
+    if (await isDbConnected()) {
+      try {
+        const ticket = await db.supportTicket.update({
+          where: { id: ticketId },
+          data: {
+            csAgentId: agentId,
+            status: 'PENDING',
+            updatedAt: new Date()
+          },
+          include: {
+            customer: true,
+            csAgent: true
+          }
+        });
+        const agent = await db.user.findUnique({ where: { id: agentId } });
+        await db.supportMessage.create({
+          data: {
+            ticketId,
+            senderId: 'SYSTEM',
+            content: `Petugas CS ${agent?.name || 'CS Agent'} telah bergabung dalam percakapan.`
+          }
+        });
+        return ticket;
+      } catch (_) {}
+    }
+    const idx = globalMockSupportTickets.findIndex(t => t.id === ticketId);
+    if (idx !== -1) {
+      globalMockSupportTickets[idx].csAgentId = agentId;
+      globalMockSupportTickets[idx].status = 'PENDING';
+      globalMockSupportTickets[idx].updatedAt = new Date();
+      const agent = globalMockUsers.find(u => u.id === agentId);
+      globalMockSupportMessages.push({
+        id: `sm-${Date.now()}-join`,
+        ticketId,
+        senderId: 'SYSTEM',
+        content: `Petugas CS ${agent?.name || 'CS Agent'} telah bergabung dalam percakapan.`,
+        isRead: false,
+        isInternalNote: false,
+        createdAt: new Date()
+      });
+      saveMockDb();
+      const customer = globalMockUsers.find(u => u.id === globalMockSupportTickets[idx].customerId) || null;
+      return { ...globalMockSupportTickets[idx], customer, csAgent: agent || null };
+    }
+    return null;
+  },
+
+  async sendSupportMessage(ticketId: string, senderId: string, content: string, isInternalNote: boolean = false, imageUrl?: string) {
+    if (await isDbConnected()) {
+      try {
+        const msg = await db.supportMessage.create({
+          data: {
+            ticketId,
+            senderId,
+            content,
+            isInternalNote,
+            imageUrl: imageUrl || null
+          }
+        });
+        await db.supportTicket.update({
+          where: { id: ticketId },
+          data: { updatedAt: new Date() }
+        });
+        return msg;
+      } catch (_) {}
+    }
+    const msg = {
+      id: `sm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      ticketId,
+      senderId,
+      content,
+      isInternalNote,
+      imageUrl: imageUrl || null,
+      isRead: false,
+      createdAt: new Date()
+    };
+    globalMockSupportMessages.push(msg);
+    const idx = globalMockSupportTickets.findIndex(t => t.id === ticketId);
+    if (idx !== -1) {
+      globalMockSupportTickets[idx].updatedAt = new Date();
+    }
+    saveMockDb();
+    return msg;
+  },
+
+  async getSupportMessages(ticketId: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.supportMessage.findMany({
+          where: { ticketId },
+          orderBy: { createdAt: 'asc' }
+        });
+      } catch (_) {}
+    }
+    return globalMockSupportMessages
+      .filter(m => m.ticketId === ticketId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  },
+
+  async resolveSupportTicket(ticketId: string) {
+    if (await isDbConnected()) {
+      try {
+        const ticket = await db.supportTicket.update({
+          where: { id: ticketId },
+          data: {
+            status: 'RESOLVED',
+            updatedAt: new Date()
+          }
+        });
+        await db.supportMessage.create({
+          data: {
+            ticketId,
+            senderId: 'SYSTEM',
+            content: 'Sesi bantuan telah selesai dan tiket telah ditutup. Terima kasih telah menghubungi layanan TerasUMKM!'
+          }
+        });
+        return ticket;
+      } catch (_) {}
+    }
+    const idx = globalMockSupportTickets.findIndex(t => t.id === ticketId);
+    if (idx !== -1) {
+      globalMockSupportTickets[idx].status = 'RESOLVED';
+      globalMockSupportTickets[idx].updatedAt = new Date();
+      globalMockSupportMessages.push({
+        id: `sm-${Date.now()}-close`,
+        ticketId,
+        senderId: 'SYSTEM',
+        content: 'Sesi bantuan telah selesai dan tiket telah ditutup. Terima kasih telah menghubungi layanan TerasUMKM!',
+        isRead: false,
+        isInternalNote: false,
+        createdAt: new Date()
+      });
+      saveMockDb();
+      return globalMockSupportTickets[idx];
+    }
+    return null;
+  },
+
+  async escalateSupportTicket(ticketId: string) {
+    if (await isDbConnected()) {
+      try {
+        const ticket = await db.supportTicket.update({
+          where: { id: ticketId },
+          data: {
+            status: 'ESCALATED',
+            updatedAt: new Date()
+          }
+        });
+        await db.supportMessage.create({
+          data: {
+            ticketId,
+            senderId: 'SYSTEM',
+            content: 'Tiket bantuan Anda telah dieskalasi ke Super Admin untuk penanganan lebih lanjut.'
+          }
+        });
+        return ticket;
+      } catch (_) {}
+    }
+    const idx = globalMockSupportTickets.findIndex(t => t.id === ticketId);
+    if (idx !== -1) {
+      globalMockSupportTickets[idx].status = 'ESCALATED';
+      globalMockSupportTickets[idx].updatedAt = new Date();
+      globalMockSupportMessages.push({
+        id: `sm-${Date.now()}-escalate`,
+        ticketId,
+        senderId: 'SYSTEM',
+        content: 'Tiket bantuan Anda telah dieskalasi ke Super Admin untuk penanganan lebih lanjut.',
+        isRead: false,
+        isInternalNote: false,
+        createdAt: new Date()
+      });
+      saveMockDb();
+      return globalMockSupportTickets[idx];
+    }
+    return null;
+  }
+}
+
+// Global Registry for Midtrans transactions to handle polling/webhooks on local server
+const pendingCheckouts: Record<string, {
+  userId: string,
+  items: Array<{ productId: string, quantity: number }>,
+  affiliateId?: string,
+  shippingDetails?: {
+    shippingFee?: number
+    courier?: string
+    shippingAddress?: string
+    couponCode?: string
+    discountAmount?: number
+    bumpSales?: string
+  }
+}> = {};
+const processedTransactions: Record<string, boolean> = {};
+
+export const MidtransRegistry = {
+  savePendingCheckout(orderId: string, data: {
+    userId: string,
+    items: Array<{ productId: string, quantity: number }>,
+    affiliateId?: string,
+    shippingDetails?: {
+      shippingFee?: number
+      courier?: string
+      shippingAddress?: string
+      couponCode?: string
+      discountAmount?: number
+      bumpSales?: string
+    }
+  }) {
+    pendingCheckouts[orderId] = data;
+  },
+  getPendingCheckout(orderId: string) {
+    return pendingCheckouts[orderId] || null;
+  },
+  isTransactionProcessed(orderId: string) {
+    return !!processedTransactions[orderId];
+  },
+  markTransactionProcessed(orderId: string) {
+    processedTransactions[orderId] = true;
+  }
+};
