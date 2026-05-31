@@ -117,14 +117,23 @@ export async function getCurrentUser() {
   }
 }
 
+import { revalidatePath } from 'next/cache'
+
 export async function updateUserLandingPage(template: string, configStr: string, latitude?: number, longitude?: number) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
   
   try {
-    await DataStore.updateLandingPage(user.id, template, configStr, latitude, longitude)
+    const updated = await DataStore.updateLandingPage(user.id, template, configStr, latitude, longitude)
+    if (!updated) {
+      return { error: 'Gagal memperbarui landing page: Pengguna tidak ditemukan.' }
+    }
     // Reward 50 XP for landing page setup
     await DataStore.addXp(user.id, 50)
+    
+    // Clear layout cache to update userSetupCompleted flag
+    revalidatePath('/')
+    
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal memperbarui landing page.' }

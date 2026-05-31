@@ -193,27 +193,44 @@ export default function CartPage() {
   }, [buyerCoords, selectedMockCity, useGps, cartDetails.length, isLoaded]);
 
   const updateCourierRates = (distKm: number) => {
+    // Each courier has its own speed tier so ETDs differ naturally
     const couriers = [
-      { code: 'jne', name: 'JNE REG', ratePerKm: 2000, minFee: 9000 },
-      { code: 'jnt', name: 'J&T Express', ratePerKm: 2100, minFee: 9000 },
-      { code: 'sicepat', name: 'SiCepat REG', ratePerKm: 2200, minFee: 10000 },
-      { code: 'tiki', name: 'TIKI REG', ratePerKm: 1800, minFee: 9000 },
-      { code: 'pos', name: 'POS Indonesia', ratePerKm: 1500, minFee: 8000 },
+      { code: 'jne',     name: 'JNE REG',       ratePerKm: 2000, minFee: 9000,  speedFactor: 0 },
+      { code: 'jnt',     name: 'J&T Express',   ratePerKm: 2100, minFee: 9000,  speedFactor: -1 },
+      { code: 'sicepat', name: 'SiCepat REG',   ratePerKm: 2200, minFee: 10000, speedFactor: -1 },
+      { code: 'tiki',    name: 'TIKI REG',       ratePerKm: 1800, minFee: 9000,  speedFactor: 1 },
+      { code: 'pos',     name: 'POS Indonesia', ratePerKm: 1500, minFee: 8000,  speedFactor: 2 },
     ];
-    const etdByDist = (km: number) =>
-      km < 50 ? '1-2 hari' : km < 200 ? '2-3 hari' : km < 800 ? '3-5 hari' : '5-7 hari';
+
+    /**
+     * Base ETD bands per distance, then each courier shifts by speedFactor days.
+     * speedFactor < 0 = faster, > 0 = slower.
+     */
+    const getEtd = (km: number, shift: number): string => {
+      // Base min/max days by distance
+      let minD: number, maxD: number
+      if (km < 50)       { minD = 1; maxD = 2 }
+      else if (km < 200) { minD = 2; maxD = 3 }
+      else if (km < 800) { minD = 3; maxD = 5 }
+      else               { minD = 5; maxD = 7 }
+      // Apply shift and clamp to sensible range
+      minD = Math.max(1, minD + shift)
+      maxD = Math.max(minD + 1, maxD + shift)
+      return `${minD}-${maxD} hari`
+    }
 
     const rates = couriers.map((c) => ({
       courier_code: c.code,
       courier_name: c.name,
       price: Math.max(c.minFee, Math.round(distKm * c.ratePerKm / 100) * 100),
-      etd: etdByDist(distKm),
+      etd: getEtd(distKm, c.speedFactor),
     }));
     setCourierRates(rates);
     if (!selectedCourier || !rates.some(r => r.courier_code === selectedCourier)) {
       setSelectedCourier(rates[0].courier_code);
     }
   };
+
 
   const calculateRoute = async (origin: { lat: number, lng: number }, destination: { lat: number, lng: number }) => {
     if (!window.google) return;

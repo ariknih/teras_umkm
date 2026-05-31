@@ -39,7 +39,7 @@ export default function CartButton() {
   return (
     <Link
       href="/cart"
-      className="relative p-2.5 rounded-lg border border-outline-variant/60 hover:bg-surface-container-low transition-colors flex items-center justify-center text-on-surface hover:text-primary group"
+      className="relative w-8 h-8 rounded-full border border-outline-variant/15 hover:border-primary bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-primary transition-all duration-300 cursor-pointer shadow-sm outline-none group"
       id="global-cart-button"
       title="Keranjang Belanja"
     >
@@ -47,9 +47,9 @@ export default function CartButton() {
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
-        strokeWidth={1.5}
+        strokeWidth={1.8}
         stroke="currentColor"
-        className="w-5 h-5 group-hover:scale-110 transition-transform duration-300"
+        className="w-[15px] h-[15px] group-hover:scale-110 transition-transform duration-300"
       >
         <path
           strokeLinecap="round"
@@ -58,7 +58,7 @@ export default function CartButton() {
         />
       </svg>
       {itemCount > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 bg-primary-container text-on-surface font-geist font-bold text-[9px] w-5 h-5 rounded-full flex items-center justify-center border border-white animate-pulse">
+        <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-white font-geist font-black text-[8px] flex items-center justify-center border border-white animate-pulse">
           {itemCount}
         </span>
       )}

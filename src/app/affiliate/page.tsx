@@ -17,6 +17,7 @@ import {
 } from '../actions/auth'
 import { getWalletDetails, getAffiliateStats } from '../actions/wallet-affiliate'
 import { getProducts } from '../actions/products'
+import LandingPageRenderer from '../components/LandingPageRenderer'
 
 interface Referral {
   id: string
@@ -98,105 +99,55 @@ function DownlineNode({ node, depth = 1 }: DownlineNodeProps) {
 }
 
 const TEMPLATE_OPTIONS = [
-  { 
-    id: 'minimal-noir', 
-    name: 'Minimal Noir', 
-    desc: 'Serba hitam minimalis', 
-    bg: 'bg-black text-white', 
-    accent: 'bg-white text-black border border-neutral-700',
-    fontFamily: 'font-mono',
-    borderClass: 'border-neutral-800 bg-neutral-950/30',
-    accentClass: 'bg-white text-black hover:bg-neutral-200 border border-neutral-700'
-  },
-  { 
-    id: 'clean-professional', 
-    name: 'Clean Professional', 
-    desc: 'Biru & abu korporat', 
-    bg: 'bg-slate-900 text-slate-100', 
-    accent: 'bg-blue-600 text-white',
+  {
+    id: 'template1',
+    name: 'Template 1: Premium Elegant',
+    desc: 'Desain Premium: Reverent product photography, clean white/dark alternating tiles, Action Blue accents, rounded-pill CTAs.',
+    bg: 'bg-white text-[#1d1d1f]',
+    accent: 'bg-[#0066cc] text-white',
     fontFamily: 'font-sans',
-    borderClass: 'border-slate-800 bg-slate-950/40',
-    accentClass: 'bg-blue-600 text-white hover:bg-blue-500'
-  },
-  { 
-    id: 'modern-gold', 
-    name: 'Modern Gold', 
-    desc: 'Hitam arang & aksen emas', 
-    bg: 'bg-neutral-950 text-neutral-100', 
-    accent: 'bg-amber-500 text-black',
-    fontFamily: 'font-serif',
-    borderClass: 'border-amber-500/20 bg-amber-950/5',
-    accentClass: 'bg-amber-500 text-black hover:bg-amber-400'
-  },
-  { 
-    id: 'creative-bold', 
-    name: 'Creative Bold', 
-    desc: 'Gradasi ungu-indigo', 
-    bg: 'bg-gradient-to-tr from-purple-950 via-neutral-950 to-indigo-950 text-neutral-100', 
-    accent: 'bg-purple-600 text-white shadow-purple-500/20',
-    fontFamily: 'font-sans',
-    borderClass: 'border-purple-500/20 bg-purple-950/20',
-    accentClass: 'bg-purple-600 text-white hover:bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]'
-  },
-  { 
-    id: 'cyberpunk-dark', 
-    name: 'Cyberpunk Dark', 
-    desc: 'Neon cyan terminal', 
-    bg: 'bg-neutral-950 text-cyan-400 border border-cyan-500/20', 
-    accent: 'bg-cyan-500 text-black',
-    fontFamily: 'font-mono',
-    borderClass: 'border-cyan-500/30 bg-cyan-950/5 shadow-[0_0_10px_rgba(6,182,212,0.1)]',
-    accentClass: 'bg-cyan-500 text-black hover:bg-cyan-400 font-bold'
-  },
-  { 
-    id: 'sunset-gradient', 
-    name: 'Sunset Gradient', 
-    desc: 'Gradasi senja rose-amber', 
-    bg: 'bg-gradient-to-br from-amber-950 via-stone-900 to-rose-950 text-orange-100', 
-    accent: 'bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-full',
-    fontFamily: 'font-sans',
-    borderClass: 'border-orange-500/20 bg-orange-950/20',
-    accentClass: 'bg-gradient-to-r from-amber-500 to-rose-500 text-white hover:from-amber-400 hover:to-rose-400 font-bold rounded-full'
-  },
-  { 
-    id: 'emerald-garden', 
-    name: 'Emerald Garden', 
-    desc: 'Hijau hutan organik', 
-    bg: 'bg-gradient-to-tr from-emerald-950 via-zinc-950 to-teal-950 text-emerald-100', 
-    accent: 'bg-emerald-600 text-white shadow-emerald-500/20',
-    fontFamily: 'font-sans',
-    borderClass: 'border-emerald-500/25 bg-emerald-950/10',
-    accentClass: 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-  },
-  { 
-    id: 'retro-synthwave', 
-    name: 'Retro Synthwave', 
-    desc: 'Fuchsia neon 80-an', 
-    bg: 'bg-zinc-950 text-fuchsia-400 border border-fuchsia-500/20', 
-    accent: 'bg-fuchsia-600 text-white',
-    fontFamily: 'font-mono',
-    borderClass: 'border-fuchsia-500/30 bg-fuchsia-950/5 shadow-[0_0_10px_rgba(217,70,239,0.15)]',
-    accentClass: 'bg-fuchsia-600 text-white hover:bg-fuchsia-500 font-bold'
-  },
-  { 
-    id: 'alabaster-glass', 
-    name: 'Alabaster Glass', 
-    desc: 'Frosted putih transparan', 
-    bg: 'bg-slate-50 text-slate-900 border border-slate-200', 
-    accent: 'bg-slate-900 text-white',
-    fontFamily: 'font-sans',
-    borderClass: 'border-slate-300 bg-white/60 backdrop-blur-md',
-    accentClass: 'bg-slate-900 text-white hover:bg-slate-800 font-bold'
+    borderClass: 'border-neutral-200 bg-white shadow-sm',
+    accentClass: 'bg-[#0066cc] text-white hover:bg-blue-600 rounded-full'
   },
   {
-    id: 'studio',
-    name: 'Studio Design',
-    desc: 'Desain 4: Layout kreatif, margin bulat',
-    bg: 'bg-white text-zinc-900',
-    accent: 'bg-[#78350f] text-white rounded-3xl',
+    id: 'template2',
+    name: 'Template 2: Retro Direct',
+    desc: 'Desain Nostalgia: Catalog-era enterprise style, literal page frame, colored product ribbon cards, beveled yellow stickers.',
+    bg: 'bg-white text-black',
+    accent: 'bg-[#e91d2a] text-white',
+    fontFamily: 'font-serif',
+    borderClass: 'border-black bg-white rounded-none',
+    accentClass: 'bg-[#e91d2a] text-white rounded-none border border-black'
+  },
+  {
+    id: 'template3',
+    name: 'Template 3: Soft Marketplace',
+    desc: 'Desain Marketplace: Soft generous layout, Rausch red primary CTAs, property-card photo grids, search bar pill, rounded corners.',
+    bg: 'bg-white text-[#222222]',
+    accent: 'bg-[#ff385c] text-white',
     fontFamily: 'font-sans',
-    borderClass: 'border-zinc-200 bg-zinc-50/50 rounded-3xl',
-    accentClass: 'bg-[#78350f] text-white hover:bg-[#854d0e] rounded-3xl font-bold'
+    borderClass: 'border-neutral-200 bg-white rounded-2xl shadow-sm',
+    accentClass: 'bg-[#ff385c] text-white hover:bg-[#e00b41] rounded-lg'
+  },
+  {
+    id: 'template4',
+    name: 'Template 4: Sporty Bold',
+    desc: 'Desain Sporty: Near-pure black canvas with confident uppercase display typography, tricolor stripes, and sharp 0px corners.',
+    bg: 'bg-black text-white',
+    accent: 'bg-white text-black',
+    fontFamily: 'font-sans',
+    borderClass: 'border-neutral-800 bg-neutral-900 rounded-none',
+    accentClass: 'bg-white text-black hover:bg-neutral-200 rounded-none'
+  },
+  {
+    id: 'template5',
+    name: 'Template 5: Cinematic Luxury',
+    desc: 'Desain Cinematic: Near-black canvas, Rosso Corsa accents, elegant slim typography, weight 500 display, and sharp 0px corners.',
+    bg: 'bg-[#181818] text-white',
+    accent: 'bg-[#da291c] text-white',
+    fontFamily: 'font-sans',
+    borderClass: 'border-[#303030] bg-[#303030]/20 rounded-none',
+    accentClass: 'bg-[#da291c] text-white hover:bg-[#b01e0a] rounded-none'
   },
   {
     id: 'brutalist',
@@ -207,36 +158,6 @@ const TEMPLATE_OPTIONS = [
     fontFamily: 'font-geist',
     borderClass: 'border-[3px] border-black rounded-none bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]',
     accentClass: 'bg-[#f59e0b] text-black border-2 border-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none rounded-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-black uppercase tracking-wider'
-  },
-  { 
-    id: 'swiss-minimalist', 
-    name: 'Swiss Minimalist', 
-    desc: 'Desain 1: Swiss grid & border tajam', 
-    bg: 'bg-[#F5F1E8] text-black', 
-    accent: 'bg-black text-white border border-black rounded-none',
-    fontFamily: 'font-sans',
-    borderClass: 'border-black bg-white rounded-none',
-    accentClass: 'bg-black text-white hover:bg-neutral-800 rounded-none border border-black'
-  },
-  { 
-    id: 'de-stijl', 
-    name: 'De Stijl Abstract', 
-    desc: 'Desain 2: Grid & aksen warna primer', 
-    bg: 'bg-white text-black', 
-    accent: 'bg-[#FF0000] text-white border-2 border-black rounded-none',
-    fontFamily: 'font-sans',
-    borderClass: 'border-[3px] border-black bg-white rounded-none',
-    accentClass: 'bg-[#FF0000] text-white hover:bg-[#CC0000] border-[2px] border-black rounded-none font-bold'
-  },
-  { 
-    id: 'hpc-tech', 
-    name: 'HPC Performance', 
-    desc: 'Desain 3: Tech server, neon merah', 
-    bg: 'bg-black text-white', 
-    accent: 'bg-[#ED1C24] text-white shadow-red-500/20',
-    fontFamily: 'font-sans',
-    borderClass: 'border-l-[3px] border-l-[#ED1C24] border-t border-r border-b border-neutral-800 bg-[#333333]/50 rounded-none',
-    accentClass: 'bg-[#ED1C24] text-white hover:bg-[#ff3b45] shadow-[0_0_15px_rgba(237,28,36,0.4)] rounded-sm'
   }
 ]
 
@@ -270,7 +191,7 @@ export default function AffiliatePage() {
   const [upgradeSuccess, setUpgradeSuccess] = useState<string | null>(null)
 
   // Customizer Form State
-  const [custTemplate, setCustTemplate] = useState('modern-gold')
+  const [custTemplate, setCustTemplate] = useState('brutalist')
   const [custTitle, setCustTitle] = useState('')
   const [custBio, setCustBio] = useState('')
   const [custPhone, setCustPhone] = useState('')
@@ -289,7 +210,7 @@ export default function AffiliatePage() {
       if (u) {
         setUser(u)
         // Set Customizer defaults
-        setCustTemplate(u.landingPageTemplate || 'modern-gold')
+        setCustTemplate(u.landingPageTemplate || 'brutalist')
         setCustLat(u.latitude || null)
         setCustLng(u.longitude || null)
         if (u.landingPageConfig) {
@@ -1437,78 +1358,32 @@ export default function AffiliatePage() {
                   </div>
                 </div>
 
-                {/* Simulated Content */}
-                {(() => {
-                  const selectedTpl = TEMPLATE_OPTIONS.find(t => t.id === custTemplate) || TEMPLATE_OPTIONS[2]
-                  return (
-                    <div className={`p-8 flex-grow space-y-6 ${selectedTpl.bg} ${selectedTpl.fontFamily} max-h-[550px] overflow-y-auto`}>
-                      <div className="flex justify-between items-center pb-2 border-b border-white/10 text-[9px] uppercase tracking-widest text-primary">
-                        <span>Teras UMKM Verified Profile</span>
-                        <span>Lv {user.level} {user.membershipLevel}</span>
-                      </div>
-
-                      {/* Preview Hero */}
-                      {custSections.includes('hero') && (
-                        <div className="space-y-2">
-                          <h1 className="text-2xl font-bold font-sora">{custTitle || user.name}</h1>
-                          <p className="text-[9px] uppercase tracking-wider text-primary font-bold">
-                            Level {user.membershipLevel} ({user.membershipAccess} Access)
-                          </p>
-                          <div className="w-12 h-0.5 bg-primary" />
-                        </div>
-                      )}
-
-                      {/* Preview Bio & contacts */}
-                      {custSections.includes('profile') && (
-                        <div className={`p-4 rounded border ${selectedTpl.borderClass} space-y-3 bg-white/5`}>
-                          <span className="text-[8px] font-geist font-bold uppercase tracking-wider text-primary block">Bio & Kontak</span>
-                          <p className="text-[10px] leading-relaxed opacity-90">{custBio || 'Selamat datang!'}</p>
-                          
-                          <div className="grid grid-cols-2 gap-2 text-[9px] pt-2 border-t border-white/5">
-                            {custPhone && <span className="truncate">📞 WA: {custPhone}</span>}
-                            {custInstagram && <span className="truncate">📷 IG: {custInstagram}</span>}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Preview Features */}
-                      {custSections.includes('features') && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className={`p-3 rounded border ${selectedTpl.borderClass} bg-white/5`}>
-                            <span className="font-bold text-[9px] block">01 Standard Ekstra</span>
-                            <span className="text-[8px] text-text-secondary block">Produk diolah dengan dedikasi tinggi</span>
-                          </div>
-                          <div className={`p-3 rounded border ${selectedTpl.borderClass} bg-white/5`}>
-                            <span className="font-bold text-[9px] block">02 Logistik Cepat</span>
-                            <span className="text-[8px] text-text-secondary block">Ketersediaan stok diselaraskan lokasi</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Preview GPS map */}
-                      {custSections.includes('map') && custLat && custLng && (
-                        <div className={`p-4 rounded border ${selectedTpl.borderClass} space-y-2 bg-white/5`}>
-                          <span className="text-[8px] font-geist font-bold uppercase tracking-wider text-primary block">Radar Geografis</span>
-                          <div className="h-16 bg-black rounded flex items-center justify-center relative overflow-hidden border border-white/5">
-                            <span className="text-[8px] font-mono text-text-secondary">
-                              LAT: {custLat.toFixed(4)} | LON: {custLng.toFixed(4)}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Preview CTA */}
-                      {custSections.includes('cta') && (
-                        <div className={`p-4 rounded border ${selectedTpl.borderClass} text-center space-y-2 bg-gradient-to-b from-white/5 to-transparent`}>
-                          <span className="text-[9px] text-text-secondary block">Tertarik Bekerjasama?</span>
-                          <span className={`inline-block px-4 py-2 text-[9px] font-bold uppercase tracking-wider rounded ${selectedTpl.accentClass}`}>
-                            Hubungi via WhatsApp
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
+                {/* Real-time Visual Preview Area */}
+                <div className="flex-grow overflow-y-auto scrollbar-thin transition-all duration-300 relative bg-[#121314] max-h-[550px]">
+                  <LandingPageRenderer
+                    templateId={custTemplate}
+                    user={user}
+                    config={{
+                      title: custTitle,
+                      bio: custBio,
+                      phone: custPhone,
+                      instagram: custInstagram,
+                      logoUrl: user.logoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&q=80",
+                      locationName: user.locationName || 'Jakarta, Indonesia',
+                      sections: custSections,
+                      testimonials: [],
+                      faq: [],
+                      galleryTitle: 'Galeri Foto Kami',
+                      galleryDesc: 'Lihat portofolio dan dokumentasi kami...',
+                      galleryItems: [],
+                      footerText: custTitle || user.name,
+                      footerTagline: 'Pilihan terbaik untuk produk dan jasa berkualitas premium.',
+                      footerCopyright: `© 2026 ${custTitle || user.name}. Hak Cipta Dilindungi.`
+                    }}
+                    products={[]}
+                    isEditable={false}
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -6,6 +6,9 @@ import Link from 'next/link'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts, createProduct, updateProduct, deleteProduct } from '@/app/actions/products'
 import { getWalletDetails } from '@/app/actions/wallet-affiliate'
+import { getMerchantOrders, updateOrderTracking } from '@/app/actions/orders'
+import { getMerchantAnalytics } from '@/app/actions/analytics'
+import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard } from 'lucide-react'
 
 interface Product {
   id: string
@@ -58,8 +61,8 @@ export default function MerchantDashboardPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Tabs: 'overview' | 'catalog' | 'add' | 'customization'
-  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'customization'>('overview')
+  // Tabs: 'overview' | 'catalog' | 'add' | 'customization' | 'orders' | 'analytics'
+  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'customization' | 'orders' | 'analytics'>('overview')
   
   // Storefront customization state
   const [storefrontTemplate, setStorefrontTemplate] = useState<'gold' | 'noir' | 'clean' | 'studio' | 'brutalist' | 'swiss' | 'destijl' | 'hpc'>('gold')
@@ -72,6 +75,20 @@ export default function MerchantDashboardPage() {
   const [previewScale, setPreviewScale] = useState<number>(0.9)
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
   const [isGalleryOpen, setIsGalleryOpen] = useState<boolean>(false)
+
+  // Orders & Analytics
+  const [orders, setOrders] = useState<any[]>([])
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [statusNotes, setStatusNotes] = useState('')
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+
+  // AI Copywriter
+  const [generatingAiText, setGeneratingAiText] = useState(false)
+  const [showAiModal, setShowAiModal] = useState(false)
+  const [aiKeywords, setAiKeywords] = useState('')
+  const [aiCategory, setAiCategory] = useState('TOKO')
+  const [targetFormType, setTargetFormType] = useState<'create' | 'edit'>('create')
 
   // Edit states
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -305,6 +322,12 @@ export default function MerchantDashboardPage() {
           setProducts(myProducts as any)
           const w = await getWalletDetails()
           setWallet(w)
+          
+          // Load orders and analytics
+          const oList = await getMerchantOrders()
+          setOrders(oList)
+          const analyticData = await getMerchantAnalytics()
+          setAnalytics(analyticData)
         }
       }
     } catch (err) {
@@ -376,6 +399,45 @@ export default function MerchantDashboardPage() {
         await loadData()
       }
     })
+  }
+
+  const handleGenerateAiText = async () => {
+    setGeneratingAiText(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'product',
+          context: {
+            title: aiKeywords,
+            category: aiCategory,
+            keywords: aiKeywords
+          }
+        })
+      })
+
+      const data = await res.json()
+      if (data.error) {
+        setError(data.error)
+      } else if (data.text) {
+        if (targetFormType === 'create') {
+          const el = document.getElementById('create-description') as HTMLTextAreaElement
+          if (el) el.value = data.text
+        } else {
+          const el = document.getElementById('edit-description') as HTMLTextAreaElement
+          if (el) el.value = data.text
+        }
+        setSuccess('Deskripsi berhasil di-generate menggunakan AI!')
+        setShowAiModal(false)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Gagal generate deskripsi.')
+    } finally {
+      setGeneratingAiText(false)
+    }
   }
 
   if (loading) {
@@ -484,11 +546,11 @@ export default function MerchantDashboardPage() {
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-border-subtle mb-10">
+        <div className="flex border-b border-border-subtle mb-10 overflow-x-auto whitespace-nowrap scrollbar-thin">
           <button
             id="tab-merchant-overview"
             onClick={() => { setActiveTab('overview'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative ${
+            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
               activeTab === 'overview' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
             }`}
           >
@@ -500,7 +562,7 @@ export default function MerchantDashboardPage() {
           <button
             id="tab-merchant-catalog"
             onClick={() => { setActiveTab('catalog'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative ${
+            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
               activeTab === 'catalog' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
             }`}
           >
@@ -512,7 +574,7 @@ export default function MerchantDashboardPage() {
           <button
             id="tab-merchant-add"
             onClick={() => { setActiveTab('add'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative ${
+            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
               activeTab === 'add' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
             }`}
           >
@@ -522,9 +584,33 @@ export default function MerchantDashboardPage() {
             )}
           </button>
           <button
+            id="tab-merchant-orders"
+            onClick={() => { setActiveTab('orders'); setEditingProduct(null); }}
+            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
+              activeTab === 'orders' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            Pesanan Masuk ({orders.length})
+            {activeTab === 'orders' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            id="tab-merchant-analytics"
+            onClick={() => { setActiveTab('analytics'); setEditingProduct(null); }}
+            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
+              activeTab === 'analytics' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            Analitik Bisnis
+            {activeTab === 'analytics' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
             id="tab-merchant-customization"
             onClick={() => { setActiveTab('customization'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative ${
+            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
               activeTab === 'customization' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
             }`}
           >
@@ -701,7 +787,22 @@ export default function MerchantDashboardPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="edit-description" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Deskripsi Produk</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label htmlFor="edit-description" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">Deskripsi Produk</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTargetFormType('edit')
+                          setAiCategory(editingProduct?.category || 'TOKO')
+                          setAiKeywords(editingProduct?.title || '')
+                          setShowAiModal(true)
+                        }}
+                        className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Sparkles size={11} className="animate-pulse" />
+                        Generate dengan AI
+                      </button>
+                    </div>
                     <textarea id="edit-description" name="description" defaultValue={editingProduct.description} required rows={4} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                   </div>
 
@@ -886,7 +987,22 @@ export default function MerchantDashboardPage() {
               </div>
 
               <div>
-                <label htmlFor="create-description" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Deskripsi Produk</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="create-description" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">Deskripsi Produk</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetFormType('create')
+                      setAiCategory((document.getElementById('create-category') as HTMLSelectElement)?.value || 'TOKO')
+                      setAiKeywords((document.getElementById('create-title') as HTMLInputElement)?.value || '')
+                      setShowAiModal(true)
+                    }}
+                    className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <Sparkles size={11} className="animate-pulse" />
+                    Generate dengan AI
+                  </button>
+                </div>
                 <textarea id="create-description" name="description" required placeholder="Jelaskan spesifikasi, material, dan kelebihan premium produk Anda..." rows={5} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
               </div>
 
@@ -899,6 +1015,287 @@ export default function MerchantDashboardPage() {
                 {isPending ? 'Menerbitkan...' : 'Terbitkan Produk Sekarang'}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* ORDERS TAB */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6">
+            {selectedOrder ? (
+              <div className="border border-primary/30 bg-surface-container/50 p-6 rounded-lg">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-sora text-sm font-bold text-text-primary">
+                    Update Status Pesanan: {selectedOrder.id.replace('order-', '#')}
+                  </h3>
+                  <button
+                    onClick={() => { setSelectedOrder(null); setStatusNotes(''); }}
+                    className="text-xs font-semibold text-text-secondary hover:text-text-primary cursor-pointer"
+                  >
+                    Kembali ke Daftar
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+                  <div className="space-y-4 text-xs text-text-secondary">
+                    <p><strong className="text-text-primary">Pembeli:</strong> {selectedOrder.buyer?.name || 'Customer'}</p>
+                    <p><strong className="text-text-primary">Alamat Kirim:</strong> {selectedOrder.shippingAddress || 'Tidak Ada'}</p>
+                    <p><strong className="text-text-primary">Kurir:</strong> {selectedOrder.courier || 'Tidak Ada'}</p>
+                    <p><strong className="text-text-primary">Total Pembayaran:</strong> Rp {selectedOrder.totalAmount.toLocaleString('id-ID')}</p>
+                    
+                    <div className="border-t border-border-subtle/50 pt-4 mt-4">
+                      <h4 className="font-bold text-text-primary mb-2">Item Pesanan:</h4>
+                      {selectedOrder.items?.map((item: any, idx: number) => (
+                        <div key={item.id || idx} className="flex justify-between mb-1.5">
+                          <span>{item.product?.title || item.productTitle} x{item.quantity}</span>
+                          <span className="font-bold">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-sora text-xs font-bold text-text-primary mb-4 uppercase tracking-wider">Pilih Status Baru</h4>
+                    <div className="space-y-3">
+                      {(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const).map((status) => {
+                        const labels = {
+                          PROCESSING: 'Proses Pesanan',
+                          SHIPPED: 'Kirim Barang (Kurir)',
+                          DELIVERED: 'Tandai Selesai (Diterima)',
+                          CANCELLED: 'Batalkan Pesanan'
+                        }
+                        const isCurrent = selectedOrder.tracking?.some((t: any) => t.status === status)
+
+                        return (
+                          <button
+                            key={status}
+                            disabled={updatingStatus || isCurrent}
+                            onClick={async () => {
+                              setUpdatingStatus(true)
+                              const res = await updateOrderTracking(selectedOrder.id, status, statusNotes)
+                              if (res.error) {
+                                setError(res.error)
+                              } else {
+                                setSuccess(`Status pesanan berhasil diperbarui menjadi ${status}!`)
+                                setSelectedOrder(null)
+                                setStatusNotes('')
+                                await loadData()
+                              }
+                              setUpdatingStatus(false)
+                            }}
+                            className={`w-full py-3 px-4 border rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-left flex items-center justify-between cursor-pointer ${
+                              isCurrent
+                                ? 'bg-primary/5 border-primary text-primary opacity-60 cursor-not-allowed'
+                                : 'bg-surface-container hover:bg-surface-container-high border-border-subtle text-text-primary'
+                            }`}
+                          >
+                            <span>{labels[status]}</span>
+                            {isCurrent && <span className="text-[9px] font-bold">SELESAI</span>}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    <div className="mt-6">
+                      <label htmlFor="status-note" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Catatan / Resi Pengiriman (Opsional)
+                      </label>
+                      <textarea
+                        id="status-note"
+                        value={statusNotes}
+                        onChange={(e) => setStatusNotes(e.target.value)}
+                        placeholder="Contoh: Pesanan sedang dipacking / Nomor Resi: JNE123456789"
+                        rows={2}
+                        className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
+                <h3 className="font-sora text-sm font-bold text-text-primary mb-6 uppercase tracking-wider">Pesanan Masuk</h3>
+                {orders.length === 0 ? (
+                  <p className="text-xs text-text-secondary py-8 text-center">Belum ada pesanan masuk untuk produk Anda.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left text-text-secondary border-collapse">
+                      <thead>
+                        <tr className="border-b border-border-subtle text-[10px] uppercase tracking-wider font-bold">
+                          <th className="py-3 px-4">ID Pesanan</th>
+                          <th className="py-3 px-4">Tanggal</th>
+                          <th className="py-3 px-4">Pembeli</th>
+                          <th className="py-3 px-4">Total Penjualan</th>
+                          <th className="py-3 px-4">Status Kurir</th>
+                          <th className="py-3 px-4 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orders.map((o) => {
+                          const dateStr = new Date(o.createdAt).toLocaleDateString('id-ID', {
+                            day: 'numeric', month: 'short', year: 'numeric'
+                          })
+                          const lastTracking = o.tracking?.length > 0 ? o.tracking[o.tracking.length - 1].status : 'CONFIRMED'
+                          
+                          return (
+                            <tr key={o.id} className="border-b border-border-subtle/50 hover:bg-surface-container-low transition-colors">
+                              <td className="py-3 px-4 font-bold text-text-primary">{o.id.replace('order-', '#')}</td>
+                              <td className="py-3 px-4">{dateStr}</td>
+                              <td className="py-3 px-4">{o.buyer?.name || 'Customer'}</td>
+                              <td className="py-3 px-4 font-bold text-primary">Rp {o.totalAmount.toLocaleString('id-ID')}</td>
+                              <td className="py-3 px-4">
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
+                                  lastTracking === 'DELIVERED'
+                                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                                    : lastTracking === 'CANCELLED'
+                                    ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                    : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 animate-pulse'
+                                }`}>
+                                  {lastTracking}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <button
+                                  id={`btn-manage-order-${o.id}`}
+                                  onClick={() => setSelectedOrder(o)}
+                                  className="px-3 py-1.5 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/45 rounded text-[10px] font-geist font-bold uppercase tracking-wider text-text-primary transition-all duration-300 cursor-pointer"
+                                >
+                                  Kelola Status
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ANALYTICS TAB */}
+        {activeTab === 'analytics' && (
+          <div className="space-y-8">
+            {/* Revenue Analytics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md flex items-center justify-between">
+                <div>
+                  <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">Revenue Hari Ini</span>
+                  <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenueToday ?? 0).toLocaleString('id-ID')}</h2>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <DollarSign size={18} />
+                </div>
+              </div>
+
+              <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md flex items-center justify-between">
+                <div>
+                  <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">7 Hari Terakhir</span>
+                  <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenue7Days ?? 0).toLocaleString('id-ID')}</h2>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <TrendingUp size={18} />
+                </div>
+              </div>
+
+              <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md flex items-center justify-between">
+                <div>
+                  <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">30 Hari Terakhir</span>
+                  <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenue30Days ?? 0).toLocaleString('id-ID')}</h2>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <Calendar size={18} />
+                </div>
+              </div>
+
+              <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md flex items-center justify-between">
+                <div>
+                  <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">Total Penjualan</span>
+                  <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.totalRevenue ?? 0).toLocaleString('id-ID')}</h2>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <Award size={18} />
+                </div>
+              </div>
+            </div>
+
+            {/* Charts and stats */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Native SVG Chart */}
+              <div className="lg:col-span-2 border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md">
+                <h3 className="font-sora text-xs font-bold text-text-primary mb-6 uppercase tracking-wider">Tren Pendapatan (7 Hari Terakhir)</h3>
+                
+                {analytics?.dailyRevenue && (
+                  <div className="h-64 flex flex-col justify-end">
+                    {/* SVG Bar Chart */}
+                    <div className="flex-1 flex items-end justify-between gap-3 px-2">
+                      {analytics.dailyRevenue.map((d: any, idx: number) => {
+                        const maxVal = Math.max(...analytics.dailyRevenue.map((x: any) => x.amount), 100000)
+                        const barHeight = `${Math.min(100, Math.max(8, (d.amount / maxVal) * 100))}%`
+                        
+                        return (
+                          <div key={idx} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end relative">
+                            <span className="absolute -top-7 scale-0 group-hover:scale-100 bg-surface-container border border-border-subtle text-[9px] px-2 py-1 rounded text-primary font-bold transition-transform shadow z-25 whitespace-nowrap">
+                              Rp {d.amount.toLocaleString('id-ID')}
+                            </span>
+                            
+                            <div 
+                              style={{ height: barHeight }} 
+                              className="w-full bg-gradient-to-t from-primary to-primary-container rounded-t-md group-hover:opacity-95 transition-all duration-300 shadow shadow-primary/20"
+                            />
+                            
+                            <span className="text-[8px] text-text-secondary font-geist uppercase whitespace-nowrap">{d.label}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Top Selling Products */}
+              <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md">
+                <h3 className="font-sora text-xs font-bold text-text-primary mb-6 uppercase tracking-wider">5 Produk Terlaris</h3>
+                
+                {(!analytics?.topProducts || analytics.topProducts.length === 0) ? (
+                  <p className="text-xs text-text-secondary py-8 text-center">Belum ada data produk terjual.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {analytics.topProducts.map((p: any, idx: number) => (
+                      <div key={p.id || idx} className="flex items-center justify-between border-b border-border-subtle/40 last:border-none pb-3 last:pb-0">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-text-primary truncate">{p.title}</p>
+                          <p className="text-[9px] text-text-secondary font-geist mt-0.5">{p.quantity} Item Terjual</p>
+                        </div>
+                        <span className="text-xs font-bold text-primary whitespace-nowrap pl-2">
+                          Rp {p.revenue.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Inventory Status */}
+            <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md">
+              <h3 className="font-sora text-xs font-bold text-text-primary mb-4 uppercase tracking-wider">Status Inventaris Produk</h3>
+              <div className="grid grid-cols-3 gap-6 text-center text-xs">
+                <div className="bg-surface-container-low p-4 border border-border-subtle rounded-lg">
+                  <span className="text-text-secondary block mb-1">Total Produk</span>
+                  <span className="text-lg font-black text-text-primary">{analytics?.productStats?.total ?? 0}</span>
+                </div>
+                <div className="bg-green-500/5 p-4 border border-green-500/10 rounded-lg">
+                  <span className="text-green-400 block mb-1">Aktif (Tersedia)</span>
+                  <span className="text-lg font-black text-green-400">{analytics?.productStats?.active ?? 0}</span>
+                </div>
+                <div className="bg-red-500/5 p-4 border border-red-500/10 rounded-lg">
+                  <span className="text-red-400 block mb-1">Stok Habis</span>
+                  <span className="text-lg font-black text-red-400">{analytics?.productStats?.soldOut ?? 0}</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1484,6 +1881,63 @@ export default function MerchantDashboardPage() {
               >
                 Batal
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Copywriter Modal */}
+      {showAiModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-surface-dark border border-border-subtle rounded-lg max-w-md w-full p-6 space-y-6 shadow-2xl text-text-primary">
+            <div className="flex justify-between items-center border-b border-border-subtle pb-3">
+              <h3 className="font-sora text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles size={16} className="animate-pulse text-primary" />
+                AI Description Assistant
+              </h3>
+              <button onClick={() => setShowAiModal(false)} className="text-text-secondary hover:text-text-primary">✕</button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Produk / Topik</label>
+                <input
+                  type="text"
+                  value={aiKeywords}
+                  onChange={(e) => setAiKeywords(e.target.value)}
+                  placeholder="Masukkan kata kunci/nama produk..."
+                  className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Kategori Bisnis</label>
+                <select
+                  value={aiCategory}
+                  onChange={(e) => setAiCategory(e.target.value)}
+                  className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                >
+                  {PRODUCT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAiModal(false)}
+                  className="flex-1 py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-text-primary font-bold rounded uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateAiText}
+                  disabled={generatingAiText}
+                  className="flex-1 py-3 bg-primary hover:bg-primary-container text-surface-dark font-bold rounded uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                >
+                  {generatingAiText ? 'Generating...' : 'Generate Deskripsi'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

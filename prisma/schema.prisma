@@ -120,6 +120,8 @@ model User {
   purchases    AffiliateReferral[] @relation("ReferredBuyerPurchases")
   
   wallet       Wallet?
+  notifications Notification[]
+  reviews       ProductReview[]
 }
 
 model Product {
@@ -142,6 +144,7 @@ model Product {
   merchant    User            @relation("MerchantProducts", fields: [merchantId], references: [id], onDelete: Cascade)
   orderItems  OrderItem[]
   chatRooms   ChatRoom[]
+  reviews     ProductReview[]
 }
 
 model Order {
@@ -162,6 +165,7 @@ model Order {
   buyerId     String
   buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
   items       OrderItem[]
+  tracking    OrderTracking[]
 }
 
 model OrderItem {
@@ -381,4 +385,41 @@ model SupportMessage {
   isRead         Boolean       @default(false)
   isInternalNote Boolean       @default(false)
   createdAt      DateTime      @default(now())
+}
+
+// 1. Product Reviews
+model ProductReview {
+  id        String   @id @default(uuid())
+  rating    Int      // 1–5
+  comment   String
+  createdAt DateTime @default(now())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  orderId   String?  // hanya bisa review setelah order
+  @@unique([productId, authorId])
+}
+
+// 2. In-App Notifications
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // ORDER_PLACED, REVIEW_RECEIVED, CHAT_MESSAGE, TICKET_UPDATE
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  linkUrl   String?
+  createdAt DateTime @default(now())
+}
+
+// 3. Order Tracking Steps
+model OrderTracking {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String   // CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  note      String?
+  createdAt DateTime @default(now())
 }

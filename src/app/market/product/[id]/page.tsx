@@ -1,11 +1,46 @@
 import Link from "next/link";
 import { getProductById } from "@/app/actions/products";
+import { getProductReviews } from "@/app/actions/reviews";
 import { notFound } from "next/navigation";
 import ProductActions from "./ProductActions";
+import { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ aff?: string }>;
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params;
+  const product = await getProductById(id);
+  
+  if (!product) {
+    return {
+      title: "Produk Tidak Ditemukan - Teras UMKM",
+      description: "Halaman produk tidak ditemukan di Teras UMKM."
+    };
+  }
+
+  const desc = product.description.substring(0, 150) + (product.description.length > 150 ? '...' : '');
+
+  return {
+    title: `${product.title} - Teras UMKM`,
+    description: desc,
+    openGraph: {
+      title: `${product.title} - Teras UMKM`,
+      description: desc,
+      images: product.imageUrl ? [{ url: product.imageUrl }] : [],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${product.title} - Teras UMKM`,
+      description: desc,
+      images: product.imageUrl ? [product.imageUrl] : [],
+    }
+  };
 }
 
 export default async function ProductDetailPage({ params, searchParams }: PageProps) {
@@ -16,6 +51,11 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   if (!product) {
     notFound();
   }
+
+  const reviews = await getProductReviews(id);
+  const avgRating = reviews.length > 0 
+    ? (reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length).toFixed(1) 
+    : null;
 
   return (
     <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
@@ -69,9 +109,25 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                 </div>
               )}
 
-              <h1 className="font-sora text-2xl md:text-3xl font-bold text-text-primary mb-3">
+              <h1 className="font-sora text-2xl md:text-3xl font-bold text-text-primary mb-2">
                 {product.title}
               </h1>
+
+              {/* Rating and review summary */}
+              {avgRating && (
+                <div className="flex items-center gap-1.5 mb-4">
+                  <div className="flex items-center text-yellow-400">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill={i < Math.round(Number(avgRating)) ? "currentColor" : "none"} stroke="currentColor" className="w-3.5 h-3.5">
+                        <path d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.6 3.1-.214 4.817c-.038.85.85 1.49 1.585 1.02L10 15.747l4.037 2.508c.734.47 1.623-.17 1.585-1.02l-.214-4.817 3.6-3.1c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-text-primary">{avgRating}</span>
+                  <span className="text-neutral-500 text-xs">•</span>
+                  <span className="text-xs text-text-secondary">{reviews.length} Ulasan</span>
+                </div>
+              )}
 
               {/* Price Tag */}
               <div className="font-sora text-xl md:text-2xl font-extrabold text-primary mb-6">
@@ -130,6 +186,51 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             />
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <div className="mt-8 bg-surface-dark border border-border-subtle rounded-lg p-6 md:p-10">
+          <h3 className="font-sora text-sm font-bold text-text-primary mb-6 uppercase tracking-wider">Ulasan Pembeli</h3>
+          
+          {reviews.length === 0 ? (
+            <p className="text-xs text-text-secondary">Belum ada ulasan untuk produk ini.</p>
+          ) : (
+            <div className="space-y-6">
+              {reviews.map((rev: any) => {
+                const authorName = rev.author?.name || "Pelanggan Teras"
+                const initial = authorName.charAt(0).toUpperCase()
+                const dateStr = new Date(rev.createdAt).toLocaleDateString('id-ID', {
+                  day: 'numeric', month: 'long', year: 'numeric'
+                })
+
+                return (
+                  <div key={rev.id} className="border-b border-border-subtle/40 last:border-none pb-6 last:pb-0 flex gap-4">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center font-bold text-white shadow-sm text-sm shrink-0">
+                      {initial}
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-bold text-text-primary">{authorName}</span>
+                        <span className="text-[10px] text-text-secondary">{dateStr}</span>
+                      </div>
+                      
+                      {/* Rating Stars */}
+                      <div className="flex items-center text-yellow-400">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <svg key={i} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill={i < rev.rating ? "currentColor" : "none"} stroke="currentColor" className="w-3.5 h-3.5">
+                            <path d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.6 3.1-.214 4.817c-.038.85.85 1.49 1.585 1.02L10 15.747l4.037 2.508c.734.47 1.623-.17 1.585-1.02l-.214-4.817 3.6-3.1c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" />
+                          </svg>
+                        ))}
+                      </div>
+
+                      <p className="text-xs text-text-secondary leading-relaxed pt-1">{rev.comment}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

@@ -1793,6 +1793,9 @@ function loadMockDb(): {
   chatMessages?: any[];
   supportTickets?: any[];
   supportMessages?: any[];
+  reviews?: any[];
+  notifications?: any[];
+  orderTrackings?: any[];
 } {
   try {
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -1884,7 +1887,10 @@ function saveMockDb() {
       chatMessages: globalMockChatMessages,
       supportTickets: globalMockSupportTickets,
       supportMessages: globalMockSupportMessages,
-      orders: globalMockOrders
+      orders: globalMockOrders,
+      reviews: globalMockReviews,
+      notifications: globalMockNotifications,
+      orderTrackings: globalMockOrderTrackings
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -1954,6 +1960,15 @@ function syncMockDb() {
       if (parsed.supportMessages) {
         globalMockSupportMessages = parsed.supportMessages.map((sm: any) => ({ ...sm, createdAt: new Date(sm.createdAt) }))
       }
+      if (parsed.reviews) {
+        globalMockReviews = parsed.reviews.map((r: any) => ({ ...r, createdAt: new Date(r.createdAt) }))
+      }
+      if (parsed.notifications) {
+        globalMockNotifications = parsed.notifications.map((n: any) => ({ ...n, createdAt: new Date(n.createdAt) }))
+      }
+      if (parsed.orderTrackings) {
+        globalMockOrderTrackings = parsed.orderTrackings.map((ot: any) => ({ ...ot, createdAt: new Date(ot.createdAt) }))
+      }
     }
   } catch (e) {
     // ignore
@@ -2019,6 +2034,9 @@ let globalMockOrders: any[] = _persistedDb.orders && _persistedDb.orders.length 
 let globalMockCustomLinks: any[] = []
 let globalMockClickLogs: any[] = []
 let globalMockWaLogs: any[] = []
+let globalMockReviews: any[] = _persistedDb.reviews || []
+let globalMockNotifications: any[] = _persistedDb.notifications || []
+let globalMockOrderTrackings: any[] = _persistedDb.orderTrackings || []
 
 // Database Access Verification Utility
 export async function isDbConnected(): Promise<boolean> {
@@ -3085,12 +3103,42 @@ export const DataStore = {
             })
           }
 
-          // Add XP to buyer (+30 XP)
-          if (buyerObj) {
-            await tx.user.update({
-              where: { id: buyerId },
-              data: { xp: buyerObj.xp + 30, level: Math.floor((buyerObj.xp + 30) / 100) + 1 }
-            })
+          // Create initial order tracking step
+          await tx.orderTracking.create({
+            data: {
+              orderId: order.id,
+              status: 'CONFIRMED',
+              note: 'Pembayaran telah diterima dan pesanan sedang disiapkan.'
+            }
+          });
+
+          // Send notification to buyer
+          await tx.notification.create({
+            data: {
+              userId: buyerId,
+              type: 'ORDER_PLACED',
+              title: 'Pesanan Berhasil Dibayar',
+              body: `Pesanan #${order.id} senilai Rp ${finalTotal.toLocaleString('id-ID')} sedang disiapkan oleh merchant.`,
+              linkUrl: `/orders/${order.id}`
+            }
+          });
+
+          // Send notification to merchant
+          const notifiedMerchants = new Set<string>();
+          for (const item of productsWithQuantities) {
+            const { product } = item;
+            if (!notifiedMerchants.has(product.merchantId)) {
+              notifiedMerchants.add(product.merchantId);
+              await tx.notification.create({
+                data: {
+                  userId: product.merchantId,
+                  type: 'ORDER_PLACED',
+                  title: 'Ada Pesanan Baru!',
+                  body: `Pesanan #${order.id} dari ${buyerObj?.name || 'Customer'} baru saja diterima.`,
+                  linkUrl: `/merchant/dashboard?tab=orders`
+                }
+              });
+            }
           }
 
           return order
@@ -3374,6 +3422,46 @@ export const DataStore = {
         productTitle: item.product.title
       }))
     }
+    // Create initial order tracking step
+    globalMockOrderTrackings.push({
+      id: `ot-${Date.now()}`,
+      orderId,
+      status: 'CONFIRMED',
+      note: 'Pembayaran telah diterima dan pesanan sedang disiapkan.',
+      createdAt: new Date()
+    });
+
+    // Send notification to buyer
+    globalMockNotifications.push({
+      id: `notif-${Date.now()}-buyer`,
+      userId: buyerId,
+      type: 'ORDER_PLACED',
+      title: 'Pesanan Berhasil Dibayar',
+      body: `Pesanan #${orderId} senilai Rp ${finalTotal.toLocaleString('id-ID')} sedang disiapkan oleh merchant.`,
+      isRead: false,
+      linkUrl: `/orders/${orderId}`,
+      createdAt: new Date()
+    });
+
+    // Send notification to merchants
+    const notifiedMerchants = new Set<string>();
+    for (const item of productsWithQuantities) {
+      const { product } = item;
+      if (!notifiedMerchants.has(product.merchantId)) {
+        notifiedMerchants.add(product.merchantId);
+        globalMockNotifications.push({
+          id: `notif-${Date.now()}-merch-${product.merchantId}`,
+          userId: product.merchantId,
+          type: 'ORDER_PLACED',
+          title: 'Ada Pesanan Baru!',
+          body: `Pesanan #${orderId} dari ${buyerUser?.name || 'Customer'} baru saja diterima.`,
+          isRead: false,
+          linkUrl: `/merchant/dashboard?tab=orders`,
+          createdAt: new Date()
+        });
+      }
+    }
+
     globalMockOrders.push(orderObj)
     saveMockDb()
 
@@ -4814,6 +4902,211 @@ export const DataStore = {
       return globalMockSupportTickets[idx];
     }
     return null;
+  },
+
+  // REVIEW OPERATIONS
+  async createReview(productId: string, authorId: string, rating: number, comment: string, orderId?: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.productReview.create({
+          data: {
+            productId,
+            authorId,
+            rating,
+            comment,
+            orderId
+          },
+          include: {
+            author: true
+          }
+        });
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal membuat ulasan.');
+      }
+    }
+    // Mock DB Fallback
+    const existing = globalMockReviews.find(r => r.productId === productId && r.authorId === authorId);
+    if (existing) throw new Error('Anda sudah memberikan ulasan untuk produk ini.');
+    const review = {
+      id: `rev-${Date.now()}`,
+      productId,
+      authorId,
+      rating,
+      comment,
+      orderId: orderId || null,
+      createdAt: new Date()
+    };
+    globalMockReviews.push(review);
+    saveMockDb();
+    const author = globalMockUsers.find(u => u.id === authorId) || null;
+    return { ...review, author };
+  },
+
+  async getProductReviews(productId: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.productReview.findMany({
+          where: { productId },
+          include: { author: true },
+          orderBy: { createdAt: 'desc' }
+        });
+      } catch (_) {}
+    }
+    return globalMockReviews
+      .filter(r => r.productId === productId)
+      .map(r => ({
+        ...r,
+        author: globalMockUsers.find(u => u.id === r.authorId) || null
+      }))
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  },
+
+  // NOTIFICATION OPERATIONS
+  async createNotification(userId: string, type: string, title: string, body: string, linkUrl?: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.notification.create({
+          data: {
+            userId,
+            type,
+            title,
+            body,
+            linkUrl
+          }
+        });
+      } catch (_) {}
+    }
+    // Mock DB Fallback
+    const notification = {
+      id: `notif-${Date.now()}`,
+      userId,
+      type,
+      title,
+      body,
+      isRead: false,
+      linkUrl: linkUrl || null,
+      createdAt: new Date()
+    };
+    globalMockNotifications.push(notification);
+    saveMockDb();
+    return notification;
+  },
+
+  async getUserNotifications(userId: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.notification.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' }
+        });
+      } catch (_) {}
+    }
+    return globalMockNotifications
+      .filter(n => n.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  },
+
+  async markNotificationsAsRead(userId: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.notification.updateMany({
+          where: { userId, isRead: false },
+          data: { isRead: true }
+        });
+        return true;
+      } catch (_) {}
+    }
+    globalMockNotifications.forEach(n => {
+      if (n.userId === userId) {
+        n.isRead = true;
+      }
+    });
+    saveMockDb();
+    return true;
+  },
+
+  // ORDER TRACKING OPERATIONS
+  async updateOrderTracking(orderId: string, status: string, note?: string) {
+    if (await isDbConnected()) {
+      try {
+        let orderStatus: any = undefined;
+        if (status === 'DELIVERED') orderStatus = 'COMPLETED';
+        if (status === 'CANCELLED') orderStatus = 'CANCELLED';
+        
+        await db.$transaction(async (tx) => {
+          await tx.orderTracking.create({
+            data: {
+              orderId,
+              status,
+              note
+            }
+          });
+          if (orderStatus) {
+            await tx.order.update({
+              where: { id: orderId },
+              data: { status: orderStatus }
+            });
+          }
+        });
+        
+        return await db.order.findUnique({
+          where: { id: orderId },
+          include: { buyer: true, items: { include: { product: true } }, tracking: true }
+        });
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal memperbarui status pelacakan.');
+      }
+    }
+    // Mock DB Fallback
+    const trackingStep = {
+      id: `ot-${Date.now()}`,
+      orderId,
+      status,
+      note: note || null,
+      createdAt: new Date()
+    };
+    globalMockOrderTrackings.push(trackingStep);
+    
+    const idx = globalMockOrders.findIndex(o => o.id === orderId);
+    if (idx !== -1) {
+      if (status === 'DELIVERED') globalMockOrders[idx].status = 'COMPLETED';
+      if (status === 'CANCELLED') globalMockOrders[idx].status = 'CANCELLED';
+      globalMockOrders[idx].updatedAt = new Date();
+    }
+    saveMockDb();
+    
+    const order = globalMockOrders.find(o => o.id === orderId);
+    const tracking = globalMockOrderTrackings.filter(ot => ot.orderId === orderId);
+    return order ? { ...order, tracking } : null;
+  },
+
+  async getOrderTracking(orderId: string) {
+    if (await isDbConnected()) {
+      try {
+        return await db.orderTracking.findMany({
+          where: { orderId },
+          orderBy: { createdAt: 'desc' }
+        });
+      } catch (_) {}
+    }
+    return globalMockOrderTrackings
+      .filter(ot => ot.orderId === orderId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  },
+
+  async addWaLog(merchantId: string, merchantName: string, apiKeyUsed: string, recipient: string, message: string, status: string = 'SUCCESS') {
+    globalMockWaLogs.push({
+      id: `wa-log-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      timestamp: new Date(),
+      merchantId,
+      merchantName,
+      apiKeyUsed,
+      recipient,
+      message,
+      status
+    });
+    saveMockDb();
+    return true;
   }
 }
 

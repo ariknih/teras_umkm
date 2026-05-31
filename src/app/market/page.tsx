@@ -1,8 +1,19 @@
 import Link from "next/link";
 import { getProducts } from "../actions/products";
 import ProductListGrid from "./ProductListGrid";
+import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Teras UMKM - Marketplace Produk & Jasa Premium",
+  description: "Beli produk premium dari mitra UMKM pilihan, temukan penyedia jasa terdekat, atau dapatkan lowongan proyek kerja mandiri di Teras UMKM.",
+  openGraph: {
+    title: "Teras UMKM - Marketplace Produk & Jasa Premium",
+    description: "Beli produk premium dari mitra UMKM pilihan, temukan penyedia jasa terdekat, atau dapatkan lowongan proyek kerja mandiri di Teras UMKM.",
+    type: 'website',
+  }
+};
 
 
 interface PageProps {
@@ -61,6 +72,24 @@ export default async function MarketPage({ searchParams }: PageProps) {
 
   return (
     <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
+      {/* Structured JSON-LD Schema for Marketplace */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Teras UMKM",
+            "url": "https://terasumkm.id",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://terasumkm.id/market?query={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          })
+        }}
+      />
+
       {/* Mesh Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.04)_0%,transparent_70%)] pointer-events-none z-0" />
 

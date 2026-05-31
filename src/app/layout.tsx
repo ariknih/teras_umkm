@@ -5,11 +5,13 @@ import { getCurrentUser, logout } from "./actions/auth";
 import { getWalletDetails } from "./actions/wallet-affiliate";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import CartButton from "./components/CartButton";
 import { DataStore } from "@/lib/data-store";
 import OnboardingGuard from "./components/OnboardingGuard";
 import { headers } from "next/headers";
 import FloatingChat from "@/components/FloatingChat";
+import HeaderNavigation from "./components/HeaderNavigation";
+import ThemeToggle from "@/components/ThemeToggle";
+import { GsapScrollTrigger } from "@/components/GsapScrollTrigger";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -68,7 +70,24 @@ export default async function RootLayout({
       className={`${inter.variable} ${plusJakarta.variable} ${geist.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head />
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (_) {}
+            `,
+          }}
+        />
+        <script src="https://app.sandbox.midtrans.com/snap/snap.js" async />
+      </head>
       <body
         className={`min-h-full flex flex-col text-on-surface font-inter select-none overflow-x-hidden ${
           isAdminRoute ? "bg-[#0c0d0e]" : "bg-bg-dark pb-16 md:pb-0"
@@ -81,129 +100,11 @@ export default async function RootLayout({
           </main>
         ) : (
           <>
+            <GsapScrollTrigger />
             <OnboardingGuard isLoggedIn={!!user} userSetupCompleted={!!userSetupCompleted} />
 
-            {/* ── DYNAMIC ISLAND NAVIGATION HEADER ──────────────────────────── */}
-            <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] transition-all duration-500 ease-in-out max-w-[290px] hover:max-w-[340px] md:max-w-[370px] md:hover:max-w-[780px] lg:max-w-[370px] lg:hover:max-w-[990px] group">
-              <nav className="bg-white/90 backdrop-blur-xl border border-outline-variant/35 rounded-full py-2 px-4 md:px-5 shadow-[0_8px_30px_rgba(11,28,48,0.06)] flex items-center justify-between transition-all duration-300 hover:border-primary/45 h-[56px]">
-                
-                {/* Left: Brand logo */}
-                <div className="flex items-center gap-2">
-                  <Link href="/" className="flex items-center gap-2 group/logo shrink-0">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center shadow-sm">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-white">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <span className="font-sora text-sm font-bold tracking-tight text-text-primary group-hover/logo:text-primary transition-colors">
-                      Teras<span className="text-primary">UMKM</span>
-                    </span>
-                  </Link>
-
-                  {/* Nav links */}
-                  <div className="hidden md:flex gap-1 items-center w-0 opacity-0 overflow-hidden whitespace-nowrap group-hover:w-[350px] group-hover:opacity-100 group-hover:ml-4 transition-all duration-500 ease-in-out">
-                    <Link href="/market" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-text-secondary font-semibold hover:text-primary hover:bg-surface-container-low transition-all duration-200 text-xs">
-                      Marketplace
-                    </Link>
-                    <Link href="/academy" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-text-secondary font-semibold hover:text-primary hover:bg-surface-container-low transition-all duration-200 text-xs">
-                      LMS Academy
-                    </Link>
-                    <Link href="/affiliate" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-text-secondary font-semibold hover:text-primary hover:bg-surface-container-low transition-all duration-200 text-xs">
-                      Affiliate Hub
-                    </Link>
-                    <Link href="/community" className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-text-secondary font-semibold hover:text-primary hover:bg-surface-container-low transition-all duration-200 text-xs">
-                      Community
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Right: Cart, Wallet, User triggers */}
-                <div className="flex items-center gap-3">
-                  <CartButton />
-
-                  {user ? (
-                    <div className="flex items-center gap-3">
-                      {/* Wallet details pill */}
-                      <Link href="/wallet" className="hidden sm:flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 transition-colors">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-                        </svg>
-                        <span className="text-[10px] font-extrabold text-primary">
-                          Rp {(wallet?.balance ?? 0).toLocaleString("id-ID")}
-                        </span>
-                      </Link>
-
-                      {user.role === "MERCHANT" && (
-                        <div className="w-0 opacity-0 overflow-hidden whitespace-nowrap group-hover:w-[85px] group-hover:opacity-100 transition-all duration-500 ease-in-out flex items-center">
-                          <Link href="/merchant/dashboard" className="inline-flex items-center gap-1 px-3.5 py-1 text-[10px] bg-primary hover:bg-primary/90 text-white font-geist font-bold uppercase tracking-wider rounded-full transition-all">
-                            Dashboard
-                          </Link>
-                        </div>
-                      )}
-
-                      {user.role === "ADMIN" && (
-                        <div className="w-0 opacity-0 overflow-hidden whitespace-nowrap group-hover:w-[65px] group-hover:opacity-100 transition-all duration-500 ease-in-out flex items-center">
-                          <Link href="/admin" className="inline-flex items-center gap-1 px-3.5 py-1 text-[10px] bg-red-600 hover:bg-red-700 text-white font-geist font-bold uppercase tracking-wider rounded-full transition-all">
-                            Admin
-                          </Link>
-                        </div>
-                      )}
-
-                      {user.role === "CUSTOMER_SERVICE" && (
-                        <div className="w-0 opacity-0 overflow-hidden whitespace-nowrap group-hover:w-[80px] group-hover:opacity-100 transition-all duration-500 ease-in-out flex items-center">
-                          <Link href="/cs" className="inline-flex items-center gap-1 px-3.5 py-1 text-[10px] bg-[#c6a96b] hover:bg-[#c6a96b]/95 text-surface-dark font-geist font-bold uppercase tracking-wider rounded-full transition-all">
-                            CS Panel
-                          </Link>
-                        </div>
-                      )}
-
-                      {/* Profile info drop menu placeholder */}
-                      <div className="flex items-center gap-2.5">
-                        <div className="hidden lg:flex flex-col items-end text-right w-0 opacity-0 overflow-hidden whitespace-nowrap group-hover:w-[155px] group-hover:opacity-100 group-hover:mr-2 transition-all duration-500 ease-in-out">
-                          <Link href={`/profile/${user.id}`} className="text-[10px] font-bold text-text-primary hover:text-primary leading-tight transition-colors">
-                            {user.name.split(' ').slice(0, 2).join(' ')}
-                          </Link>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[8px] font-geist font-bold text-primary uppercase tracking-wider">{user.role}</span>
-                            <span className="text-outline-variant text-[8px]">•</span>
-                            <Link href="/setup-landing" className="text-[8px] font-geist font-bold text-[#c6a96b] hover:text-[#c6a96b]/80 uppercase tracking-wider transition-colors">
-                              Setup Profil
-                            </Link>
-                            <span className="text-outline-variant text-[8px]">•</span>
-                            <form action={async () => {
-                              'use server'
-                              await logout();
-                              redirect('/');
-                            }}>
-                              <button type="submit" className="text-[8px] font-geist font-bold text-red-500 hover:text-red-600 uppercase tracking-wider cursor-pointer bg-transparent border-none p-0 outline-none">
-                                Keluar
-                              </button>
-                            </form>
-                          </div>
-                        </div>
-
-                        {/* User Avatar Circle */}
-                        <Link href={`/profile/${user.id}`} className="relative w-8 h-8 rounded-full overflow-hidden border border-primary/40 hover:border-primary transition-colors flex items-center justify-center bg-gradient-to-br from-primary to-primary-container shadow shadow-primary/5 shrink-0">
-                          <span className="font-sora font-extrabold text-xs text-white">
-                            {user.name?.charAt(0).toUpperCase() || 'U'}
-                          </span>
-                        </Link>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Link href="/auth?tab=login" className="px-4 py-1.5 bg-transparent border border-outline-variant hover:border-outline text-text-secondary hover:text-text-primary font-bold rounded-full transition-all text-[10px] uppercase tracking-wider">
-                        Masuk
-                      </Link>
-                      <Link href="/auth?tab=register" className="px-4 py-1.5 bg-primary hover:bg-primary/90 text-white font-extrabold rounded-full transition-colors text-[10px] uppercase tracking-wider shadow shadow-primary/10">
-                        Daftar
-                      </Link>
-                    </div>
-                  )}
-                </div>
-
-              </nav>
-            </header>
+            {/* ── RESPONSIVE NAVIGATION HEADER ──────────────────────────── */}
+            <HeaderNavigation user={dbUser} wallet={wallet} logoutAction={logout} />
 
         {/* Page Content */}
         <main className="flex-grow flex flex-col">
@@ -211,7 +112,7 @@ export default async function RootLayout({
         </main>
 
         {/* ── GLOBAL FOOTER ──────────────────────────────────────────────── */}
-        <footer className="w-full py-16 border-t border-outline-variant/20 bg-surface-container-low">
+        <footer className="w-full py-16 border-t border-outline-variant/20 bg-surface-container-low print:hidden">
           <div className="max-w-[1280px] mx-auto px-4 md:px-10 grid grid-cols-1 md:grid-cols-4 gap-10">
             {/* Brand */}
             <div className="md:col-span-1">
@@ -297,10 +198,17 @@ export default async function RootLayout({
             </div>
           </div>
 
-          <div className="max-w-[1280px] mx-auto px-4 md:px-10 mt-12 pt-6 border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-3">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-10 mt-12 pt-6 border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
             <p className="text-xs text-on-surface-variant">© 2026 Teras UMKM. Dibuat dengan ❤️ untuk UMKM Indonesia.</p>
-            <div className="flex items-center gap-6 text-xs text-on-surface-variant">
-              <span>v2.5.0</span>
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 sm:gap-6 text-xs text-on-surface-variant">
+              <a
+                href="https://arikporto.netlify.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-primary hover:underline transition-colors"
+              >
+                Contact Developer
+              </a>
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
                 SYSTEM STABLE
@@ -316,7 +224,7 @@ export default async function RootLayout({
         </footer>
 
         {/* ── MOBILE NAV BAR ──────────────────────────────────────────────── */}
-        <nav className="md:hidden bg-white/95 backdrop-blur-2xl fixed bottom-0 left-0 right-0 w-full z-50 rounded-t-2xl border-t border-outline-variant/20 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-safe">
+        <nav className="md:hidden bg-white/95 backdrop-blur-2xl fixed bottom-0 left-0 right-0 w-full z-50 rounded-t-2xl border-t border-outline-variant/20 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-safe print:hidden">
           <div className="flex justify-around items-center h-16 px-2">
             <Link href="/" className="flex flex-col items-center justify-center text-primary transition-colors flex-1 gap-1">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -351,6 +259,7 @@ export default async function RootLayout({
           </div>
         </nav>
         <FloatingChat />
+        <ThemeToggle />
         </>
         )}
       </body>

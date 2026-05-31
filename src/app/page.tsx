@@ -67,7 +67,7 @@ function ProductCard({ product }: { product: any }) {
   return (
     <Link
       href={`/market/product/${product.id}`}
-      className="group flex flex-col bg-white border border-outline-variant/20 hover:border-primary-container/60 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+      className="group flex flex-col bg-surface-dark border border-outline-variant/20 hover:border-primary-container/60 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
     >
       <div className="aspect-[4/3] w-full bg-surface-container relative overflow-hidden">
         {product.imageUrl ? (
@@ -78,7 +78,7 @@ function ProductCard({ product }: { product: any }) {
           </div>
         )}
         <div className="absolute top-2.5 left-2.5">
-          <span className="px-2 py-0.5 bg-white/90 backdrop-blur border border-outline-variant/30 rounded-full text-[9px] font-geist font-bold text-on-surface-variant uppercase tracking-wider">
+          <span className="px-2 py-0.5 bg-surface-dark/90 backdrop-blur border border-outline-variant/30 rounded-full text-[9px] font-geist font-bold text-on-surface-variant uppercase tracking-wider">
             {product.category?.replace(/_/g, ' ')}
           </span>
         </div>
@@ -104,7 +104,7 @@ function JasaCard({ product }: { product: any }) {
   return (
     <Link
       href={`/market/product/${product.id}`}
-      className="group flex gap-4 p-4 bg-white border border-outline-variant/20 hover:border-primary-container/50 rounded-xl transition-all duration-200 hover:shadow-md"
+      className="group flex gap-4 p-4 bg-surface-dark border border-outline-variant/20 hover:border-primary-container/50 rounded-xl transition-all duration-200 hover:shadow-md"
     >
       <div className="w-20 h-20 rounded-lg bg-surface-container flex-shrink-0 overflow-hidden">
         {product.imageUrl ? (
@@ -154,10 +154,6 @@ export default async function HomePage() {
           <div className="max-w-2xl">
             {user ? (
               <>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-container/20 border border-primary-container/30 rounded-full text-xs font-geist font-bold text-primary uppercase tracking-widest mb-5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
-                  Selamat datang kembali
-                </div>
                 <h1 className="font-sora text-4xl md:text-5xl font-extrabold text-on-surface leading-tight mb-4">
                   Halo, <span className="text-primary">{user.name?.split(' ')[0]}</span>! 👋
                   <br />Apa yang mau kita cari hari ini?
@@ -168,16 +164,16 @@ export default async function HomePage() {
               </>
             ) : (
               <>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-container/20 border border-primary-container/30 rounded-full text-xs font-geist font-bold text-primary uppercase tracking-widest mb-5">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-container/20 border border-primary-container/30 rounded-full text-xs font-geist font-bold text-primary uppercase tracking-widest mb-5 gsap-fade-up">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />
                   Platform UMKM Premium Indonesia
                 </div>
-                <h1 className="font-sora text-4xl md:text-6xl font-extrabold text-on-surface leading-tight mb-4">
+                <h1 className="font-sora text-4xl md:text-6xl font-extrabold text-on-surface leading-tight mb-4 gsap-split-chars">
                   Ekosistem Digital
                   <br /><span className="text-primary">UMKM Terbaik</span>
                   <br />di Indonesia.
                 </h1>
-                <p className="text-base text-on-surface-variant mb-8 leading-relaxed max-w-lg">
+                <p className="text-base text-on-surface-variant mb-8 leading-relaxed max-w-lg gsap-fade-up">
                   Marketplace, Katalog Jasa, LMS Academy, dan Community Forum — semua dalam satu platform premium.
                 </p>
               </>
@@ -188,7 +184,7 @@ export default async function HomePage() {
                 <IconStore />
                 Jelajahi Marketplace
               </Link>
-              <Link href="/market?category=JASA" className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-outline-variant/40 text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl transition-all hover:bg-surface-container hover:shadow-md hover:-translate-y-0.5">
+              <Link href="/market?category=JASA" className="inline-flex items-center gap-2 px-6 py-3 bg-surface-dark border border-outline-variant/40 text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl transition-all hover:bg-surface-container hover:shadow-md hover:-translate-y-0.5">
                 <IconBriefcase />
                 Cari Jasa
               </Link>
@@ -202,7 +198,7 @@ export default async function HomePage() {
             {/* Trust badges */}
             <div className="flex flex-wrap gap-3 mt-8">
               {['Midtrans Payment', 'SSL Secured', 'Komerce Logistik', '12.400+ Merchant'].map(b => (
-                <span key={b} className="flex items-center gap-1.5 text-[10px] font-geist font-semibold text-on-surface-variant bg-white border border-outline-variant/20 px-2.5 py-1 rounded-full">
+                <span key={b} className="flex items-center gap-1.5 text-[10px] font-geist font-semibold text-on-surface-variant bg-surface-dark border border-outline-variant/20 px-2.5 py-1 rounded-full">
                   <span className="w-1 h-1 rounded-full bg-green-400 inline-block" />{b}
                 </span>
               ))}
@@ -213,10 +209,10 @@ export default async function HomePage() {
 
       {/* ── PLATFORM FEATURES GRID ───────────────────────────────────────── */}
       <section className="max-w-[1280px] mx-auto px-4 md:px-10 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 gsap-stagger-container">
           {PLATFORM_FEATURES.map(f => (
             <Link key={f.title} href={f.href}
-              className="group flex flex-col gap-3 p-5 bg-white border border-outline-variant/20 rounded-xl hover:border-primary-container/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+              className="group flex flex-col gap-3 p-5 bg-surface-dark border border-outline-variant/20 rounded-xl hover:border-primary-container/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 gsap-stagger-item"
             >
               <div className="w-10 h-10 rounded-lg bg-primary-container/15 border border-primary-container/20 flex items-center justify-center text-primary group-hover:bg-primary-container/25 transition-colors">
                 {f.icon}
@@ -234,18 +230,18 @@ export default async function HomePage() {
       </section>
 
       {/* ── KATALOG JASA ─────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-surface-container-low to-white border-y border-outline-variant/15 py-14">
+      <section className="bg-gradient-to-br from-surface-container-low to-surface-dark border-y border-outline-variant/15 py-14">
         <div className="max-w-[1280px] mx-auto px-4 md:px-10">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <div className="inline-flex items-center gap-2 text-[10px] font-geist font-bold text-primary uppercase tracking-widest bg-primary-container/15 border border-primary-container/25 px-3 py-1.5 rounded-full mb-3">
+              <div className="inline-flex items-center gap-2 text-[10px] font-geist font-bold text-primary uppercase tracking-widest bg-primary-container/15 border border-primary-container/25 px-3 py-1.5 rounded-full mb-3 gsap-fade-up">
                 <IconBriefcase />
                 Katalog Jasa
               </div>
-              <h2 className="font-sora text-2xl md:text-3xl font-extrabold text-on-surface">
+              <h2 className="font-sora text-2xl md:text-3xl font-extrabold text-on-surface gsap-split-chars">
                 Temukan Penyedia Jasa <span className="text-primary">Profesional.</span>
               </h2>
-              <p className="text-sm text-on-surface-variant mt-1">Desain, IT, foto, catering, social media & lebih banyak lagi.</p>
+              <p className="text-sm text-on-surface-variant mt-1 gsap-fade-up">Desain, IT, foto, catering, social media & lebih banyak lagi.</p>
             </div>
             <Link href="/market?category=JASA" className="hidden md:inline-flex items-center gap-2 text-xs font-geist font-bold text-primary hover:underline">
               Lihat Semua Jasa →
@@ -288,14 +284,14 @@ export default async function HomePage() {
       <section className="max-w-[1280px] mx-auto px-4 md:px-10 py-14">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <div className="inline-flex items-center gap-2 text-[10px] font-geist font-bold text-primary uppercase tracking-widest bg-primary-container/15 border border-primary-container/25 px-3 py-1.5 rounded-full mb-3">
+            <div className="inline-flex items-center gap-2 text-[10px] font-geist font-bold text-primary uppercase tracking-widest bg-primary-container/15 border border-primary-container/25 px-3 py-1.5 rounded-full mb-3 gsap-fade-up">
               <IconStore />
               Featured Products
             </div>
-            <h2 className="font-sora text-2xl md:text-3xl font-extrabold text-on-surface">
+            <h2 className="font-sora text-2xl md:text-3xl font-extrabold text-on-surface gsap-split-chars">
               Produk Unggulan <span className="text-primary">Merchant Terpilih.</span>
             </h2>
-            <p className="text-sm text-on-surface-variant mt-1">Dari berbagai merchant terpercaya di seluruh Indonesia.</p>
+            <p className="text-sm text-on-surface-variant mt-1 gsap-fade-up">Dari berbagai merchant terpercaya di seluruh Indonesia.</p>
           </div>
           <Link href="/market" className="hidden md:inline-flex text-xs font-geist font-bold text-primary hover:underline">
             Lihat Semua →
@@ -330,10 +326,10 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 gsap-stagger-container">
             {featuredCourses.map(course => (
               <Link key={course.id} href="/academy"
-                className="group bg-white/10 backdrop-blur border border-white/10 hover:border-primary-container/40 rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
+                className="group bg-white/10 backdrop-blur border border-white/10 hover:border-primary-container/40 rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl gsap-stagger-item"
               >
                 {course.coverImage && (
                   <div className="aspect-video w-full overflow-hidden">
@@ -383,7 +379,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {lokerProducts.map(p => (
               <Link key={p.id} href={`/market/product/${p.id}`}
-                className="group flex gap-4 p-5 bg-white border border-outline-variant/20 hover:border-primary-container/50 rounded-xl transition-all hover:shadow-md hover:-translate-y-0.5"
+                className="group flex gap-4 p-5 bg-surface-dark border border-outline-variant/20 hover:border-primary-container/50 rounded-xl transition-all hover:shadow-md hover:-translate-y-0.5"
               >
                 {p.imageUrl && (
                   <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
@@ -416,7 +412,7 @@ export default async function HomePage() {
               <Link href="/auth?tab=register" className="px-8 py-3.5 bg-primary-container text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-primary-container/90 hover:shadow-lg transition-all hover:-translate-y-0.5 shadow-md">
                 Daftar Gratis Sekarang
               </Link>
-              <Link href="/market" className="px-8 py-3.5 bg-white border border-outline-variant/40 text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-surface-container transition-all hover:-translate-y-0.5">
+              <Link href="/market" className="px-8 py-3.5 bg-surface-dark border border-outline-variant/40 text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-surface-container transition-all hover:-translate-y-0.5">
                 Jelajahi Marketplace
               </Link>
             </div>

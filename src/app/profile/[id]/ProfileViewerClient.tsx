@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import UserQRCode from '@/components/UserQRCode'
+import LandingPageRenderer from '../../components/LandingPageRenderer'
 import { motion } from 'framer-motion'
 import { 
   Star, 
@@ -81,6 +83,89 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return R * c
 }
 
+function getUserBadges(user: { role: string; level: number; xp: number }) {
+  const badges: { id: string; label: string; icon: string; color: string; desc: string }[] = []
+
+  // 1. Role Badges
+  if (user.role === 'ADMIN') {
+    badges.push({
+      id: 'super-admin',
+      label: '🛡️ Super Admin',
+      icon: 'Shield',
+      color: 'bg-red-500/10 border-red-500/35 text-red-400',
+      desc: 'Administrator utama sistem'
+    })
+  } else if (user.role === 'MERCHANT') {
+    if (user.level >= 5) {
+      badges.push({
+        id: 'star-merchant',
+        label: '⭐ Star Merchant',
+        icon: 'Star',
+        color: 'bg-amber-500/10 border-amber-500/35 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]',
+        desc: 'Merchant berprestasi tingkat tinggi'
+      })
+    } else {
+      badges.push({
+        id: 'premium-seller',
+        label: '✨ Premium Seller',
+        icon: 'Zap',
+        color: 'bg-primary/10 border-primary/35 text-primary',
+        desc: 'Merchant resmi terdaftar'
+      })
+    }
+  } else if (user.role === 'AFFILIATE') {
+    if (user.level >= 3) {
+      badges.push({
+        id: 'affiliate-leader',
+        label: '🏆 Affiliate Leader',
+        icon: 'Award',
+        color: 'bg-purple-500/10 border-purple-500/35 text-purple-400',
+        desc: 'Promotor teratas program kemitraan'
+      })
+    } else {
+      badges.push({
+        id: 'mitra-afiliasi',
+        label: '🤝 Mitra Afiliasi',
+        icon: 'User',
+        color: 'bg-blue-500/10 border-blue-500/35 text-blue-400',
+        desc: 'Mitra afiliasi resmi'
+      })
+    }
+  }
+
+  // 2. Learning & Contribution Badges
+  if (user.xp >= 1000) {
+    badges.push({
+      id: 'academy-graduate',
+      label: '🎓 Academy Graduate',
+      icon: 'BookOpen',
+      color: 'bg-emerald-500/10 border-emerald-500/35 text-emerald-400',
+      desc: 'Sertifikasi lulusan LMS Academy'
+    })
+  } else if (user.xp >= 300) {
+    badges.push({
+      id: 'top-contributor',
+      label: '💡 Top Contributor',
+      icon: 'Flame',
+      color: 'bg-orange-500/10 border-orange-500/35 text-orange-400',
+      desc: 'Kontributor berbagi ilmu aktif'
+    })
+  }
+
+  // 3. Level Badges
+  if (user.level > 1) {
+    badges.push({
+      id: 'level-badge',
+      label: `⚡ Level ${user.level}`,
+      icon: 'Zap',
+      color: 'bg-sky-500/10 border-sky-500/35 text-sky-400',
+      desc: 'Tingkat kemajuan platform'
+    })
+  }
+
+  return badges
+}
+
 export default function ProfileViewerClient({ user, products }: ProfileViewerClientProps) {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [distance, setDistance] = useState<number | null>(null)
@@ -105,38 +190,74 @@ export default function ProfileViewerClient({ user, products }: ProfileViewerCli
   const activeTemplate = user.landingPageTemplate || 'modern-gold'
   const logoUrl = config.logoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&q=80"
 
+  const badges = React.useMemo(() => getUserBadges(user), [user])
+
   // Group templates into the 4 target styles
   // 1. Modern Gold (Dark with glows & luxury glassmorphism - Apple/Stripe-like)
   // 2. Neo Brutalism (Flat pop style, thick borders, solid colors - Figma/Gumroad)
   // 3. Minimal Noir (Developer carbon monospace dark theme - Linear/Vercel/Geist)
   // 4. Clean Professional (Light clean slate SaaS theme - Vercel Light/Notion)
 
-  if (activeTemplate === 'brutalist' || activeTemplate === 'swiss-minimalist' || activeTemplate === 'de-stijl') {
-    return <NeoBrutalistTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} />
+  if (['template1', 'template2', 'template3', 'template4', 'template5', 'brutalist'].includes(activeTemplate)) {
+    return (
+      <LandingPageRenderer
+        templateId={activeTemplate}
+        user={user}
+        config={config}
+        products={products}
+        distance={distance}
+        badges={badges}
+      />
+    )
+  }
+
+  if (activeTemplate === 'swiss-minimalist' || activeTemplate === 'de-stijl') {
+    return <NeoBrutalistTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
   }
 
   if (activeTemplate === 'minimal-noir' || activeTemplate === 'cyberpunk-dark' || activeTemplate === 'retro-synthwave' || activeTemplate === 'hpc-tech') {
-    return <MinimalNoirTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} />
+    return <MinimalNoirTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
   }
 
   if (activeTemplate === 'clean-professional' || activeTemplate === 'alabaster-glass' || activeTemplate === 'studio') {
-    return <CleanProfessionalTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} />
+    return <CleanProfessionalTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
   }
 
   // Default: Modern Gold Template (Premium luxury dark theme)
-  return <ModernGoldTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} />
+  return <ModernGoldTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
 }
 
 /* ==========================================================================
    1. MODERN GOLD TEMPLATE (Charcoal, Gold Accents, Sleek Glassmorphism)
    ========================================================================== */
-function ModernGoldTemplate({ user, products, config, logoUrl, distance }: any) {
+function ModernGoldTemplate({ user, products, config, logoUrl, distance, badges }: any) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null)
   
   const activeTemplate = user.landingPageTemplate || 'modern-gold'
   const isCreative = activeTemplate === 'creative-bold'
   const isSunset = activeTemplate === 'sunset-gradient'
   const isEmerald = activeTemplate === 'emerald-garden'
+  const isStripe = activeTemplate === 'stripe-glow'
+
+  // Parse custom testimonials and FAQ
+  const testimonialsList = (config.testimonials && Array.isArray(config.testimonials) && config.testimonials.length > 0)
+    ? config.testimonials
+    : [
+        { name: 'Ananda N.', quote: 'Kualitasnya benar-benar di luar ekspektasi saya. Rapi, premium, dan proses komunikasinya cepat. Rekomendasi bintang lima!', rating: 5 },
+        { name: 'Dedi H.', quote: 'Bekerjasama dengan mereka untuk kemitraan cafe kami sangat memuaskan. Pengiriman selalu on-time dan konsisten.', rating: 5 }
+      ]
+
+  const faqList = (config.faq && Array.isArray(config.faq) && config.faq.length > 0)
+    ? config.faq.map((f: any) => ({ q: f.question, a: f.answer }))
+    : [
+        { q: 'Bagaimana cara membeli produk/jasa merchant ini?', a: 'Anda dapat mengklik tombol "Lihat Detail" di atas untuk diarahkan ke etalase checkout marketplace, atau klik tombol chat WhatsApp di bawah untuk konsultasi langsung.' },
+        { q: 'Apakah ada minimal pemesanan?', a: 'Tidak ada minimal pemesanan untuk eceran. Namun untuk pemesanan grosir/custom corporate, kami menawarkan harga khusus.' }
+      ]
+
+  // Render ordered sections dynamically
+  const activeSections = (config.sections && Array.isArray(config.sections) && config.sections.length > 0)
+    ? config.sections
+    : ['hero', 'profile', 'features', 'products', 'testimonials', 'map', 'faq', 'cta']
 
   // 1. BG styles & Fonts
   let bgClass = "min-h-screen bg-[#0f0f10] text-[#f5f5f5] font-sora selection:bg-[#c9a227]/30 selection:text-white pb-24 overflow-hidden relative"
@@ -312,6 +433,45 @@ function ModernGoldTemplate({ user, products, config, logoUrl, distance }: any) 
     faqBtn = "w-full p-5 text-left text-xs font-bold text-white flex justify-between items-center hover:bg-emerald-500/10"
     ctaSection = "p-8 md:p-12 rounded-3xl border border-emerald-500/20 text-center space-y-6 bg-gradient-to-b from-emerald-500/5 to-transparent relative overflow-hidden shadow-xl"
     ctaButton = "inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_8px_20px_rgba(16,185,129,0.3)] cursor-pointer"
+  } else if (isStripe) {
+    bgClass = "min-h-screen bg-[#090A0F] text-[#F8FAFC] font-sora selection:bg-indigo-500/30 selection:text-white pb-24 overflow-hidden relative"
+    glow1 = <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08)_0%,transparent_70%)] pointer-events-none z-0" />
+    glow2 = <div className="absolute bottom-10 right-10 w-[400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.06)_0%,transparent_70%)] pointer-events-none z-0" />
+    headerClass = "bg-[#161722]/85 backdrop-blur-xl border border-white/5 rounded-full px-6 py-3 flex items-center justify-between shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
+    logoBorder = "w-8 h-8 rounded-lg overflow-hidden border border-white/10"
+    verifiedBadge = "text-[9px] font-bold font-geist text-indigo-400 bg-indigo-500/10 border border-indigo-500/35 rounded px-2.5 py-1 uppercase tracking-wider"
+    verifiedHeroBadge = "inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/15 border border-indigo-500/25 rounded-full text-[10px] text-indigo-300 font-semibold uppercase tracking-wider mb-2"
+    heroTitleText = "Grow Your "
+    titleHighlight = "text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-emerald-400"
+    titleHighlightText = "Premium Business."
+    buttonClass = "inline-flex items-center gap-2 px-8 py-3.5 bg-indigo-600 text-white hover:bg-indigo-500 font-extrabold text-xs uppercase tracking-wider rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_8px_20px_rgba(99,102,241,0.3)] cursor-pointer"
+    aboutCardClass = "bg-[#161722]/40 border border-white/5 rounded-3xl p-8 md:p-10 backdrop-blur-md relative overflow-hidden shadow-2xl"
+    aboutHeaderGlow = <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+    aboutAccentBar = "w-1.5 h-6 bg-indigo-500 rounded-full"
+    aboutTitle = "text-xs font-extrabold uppercase tracking-widest text-indigo-400"
+    phoneCard = "flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/30 transition-all hover:bg-white/[0.04]"
+    instaCard = "flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-indigo-500/30 transition-all hover:bg-white/[0.04]"
+    bentoClass1 = "md:col-span-2 bg-[#161722]/30 border border-white/5 rounded-3xl p-6 hover:border-indigo-500/25 transition-all flex flex-col justify-between group"
+    bentoClass2 = "bg-[#161722]/30 border border-white/5 rounded-3xl p-6 hover:border-indigo-500/25 transition-all flex flex-col justify-between group"
+    bentoIconClass = "p-3 w-fit rounded-xl bg-indigo-500/10 text-indigo-400 mb-6"
+    sectionHeaderSub = "text-[9px] font-bold text-indigo-400 uppercase tracking-widest block"
+    sectionHeaderSpan = "text-[10px] text-[#b8b8b8] bg-[#161722] border border-white/5 px-3 py-1 rounded-full font-mono"
+    productCard = "group bg-[#161722]/25 border border-white/5 rounded-3xl p-5 hover:border-indigo-500/30 transition-all duration-300 flex flex-col justify-between shadow-lg"
+    productCat = "text-[8px] font-bold tracking-widest text-indigo-400 uppercase bg-indigo-500/5 px-2 py-1 rounded border border-indigo-500/20"
+    productTitle = "text-sm font-bold text-white mt-3 group-hover:text-indigo-300 transition-colors line-clamp-1"
+    productPrice = "text-sm font-bold text-indigo-300"
+    productButton = "px-4 py-2 bg-white/5 group-hover:bg-indigo-600 text-white text-[10px] font-bold uppercase rounded-lg border border-white/10 group-hover:border-transparent transition-all"
+    testimonialCard = "p-6 bg-[#161722]/20 border border-white/5 rounded-3xl space-y-4"
+    starClass = "w-3.5 h-3.5 fill-indigo-400 text-indigo-400"
+    avatarClass = "w-7 h-7 rounded-full bg-indigo-500/20 flex items-center justify-center text-[9px] font-bold text-indigo-400"
+    mapSection = "bg-[#161722]/25 border border-white/5 p-6 rounded-3xl space-y-4"
+    distanceClass = "px-3 py-1 bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 text-[10px] rounded-lg font-bold flex items-center gap-1.5"
+    radarBg = "relative w-8 h-8 rounded-full border border-indigo-500/50 overflow-hidden bg-[#090A0F] shadow"
+    radarText = "text-[9px] font-bold text-indigo-300"
+    radarSweeper = "absolute w-[2px] h-1/2 bg-gradient-to-b from-indigo-500 to-transparent origin-bottom animate-[spin_8s_linear_infinite] pointer-events-none"
+    faqBtn = "w-full p-5 text-left text-xs font-bold text-white flex justify-between items-center hover:bg-indigo-500/10"
+    ctaSection = "p-8 md:p-12 rounded-3xl border border-white/5 text-center space-y-6 bg-gradient-to-b from-indigo-500/5 to-transparent relative overflow-hidden shadow-xl"
+    ctaButton = "inline-flex items-center gap-2.5 px-8 py-3.5 bg-indigo-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl hover:scale-105 active:scale-95 transition-all shadow-[0_8px_20px_rgba(99,102,241,0.3)] cursor-pointer"
   }
 
   return (
@@ -331,10 +491,23 @@ function ModernGoldTemplate({ user, products, config, logoUrl, distance }: any) 
               {config.title || user.name}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <span className={verifiedBadge}>
               {user.membershipLevel} Verified
             </span>
+            {badges && badges.map((b: any) => (
+              <span key={b.id} title={b.desc} className={`px-2 py-0.5 rounded text-[8px] font-geist font-black border uppercase tracking-wider ${b.color}`}>
+                {b.label}
+              </span>
+            ))}
+            <UserQRCode
+              userId={user.id}
+              userName={user.name}
+              accentColor={isCreative ? '#a855f7' : isSunset ? '#f97316' : isEmerald ? '#10b981' : isStripe ? '#6366f1' : '#c9a227'}
+              qrDarkColor="#1a1a1a"
+              qrLightColor="#ffffff"
+              variant="icon-only"
+            />
           </div>
         </div>
       </header>
@@ -342,314 +515,412 @@ function ModernGoldTemplate({ user, products, config, logoUrl, distance }: any) 
       {/* Main container */}
       <main className="max-w-4xl mx-auto px-6 mt-16 space-y-24 relative z-10">
         
-        {/* HERO SECTION */}
-        <section className="text-center space-y-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className={verifiedHeroBadge}
-          >
-            <span>Teras UMKM Premium Merchant</span>
-          </motion.div>
-
-          <motion.h1 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight"
-          >
-            {heroTitleText}<span className={titleHighlight}>{titleHighlightText}</span>
-          </motion.h1>
-
-          <motion.p 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-sm md:text-base text-[#b8b8b8] max-w-xl mx-auto leading-relaxed"
-          >
-            Membawa kelezatan khas artisan, keunikan kreativitas lokal, dan kualitas layanan terverifikasi langsung ke depan pintu rumah Anda.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="pt-4"
-          >
-            <a
-              href="#products"
-              className={buttonClass}
-            >
-              Jelajahi Produk Kami
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </motion.div>
-        </section>
-
-        {/* BIO / ABOUT CARD (Glassmorphic) */}
-        <section className={aboutCardClass}>
-          {aboutHeaderGlow}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className={aboutAccentBar} />
-              <span className={aboutTitle}>
-                Tentang Usaha Kami
-              </span>
-            </div>
-            <p className="text-sm md:text-base text-[#f5f5f5] leading-relaxed whitespace-pre-line font-light">
-              {config.bio || 'Kami menyajikan kurasi produk berkualitas tinggi yang dikerjakan dengan penuh dedikasi oleh pengrajin lokal profesional.'}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-white/5">
-              {config.phone && (
-                <a 
-                  href={`https://wa.me/${config.phone}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={phoneCard}
+        {activeSections.map((secName: string) => {
+          if (secName === 'hero') {
+            return (
+              <section key="hero" className="text-center space-y-6">
+                <motion.div 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className={verifiedHeroBadge}
                 >
-                  <Phone className="w-5 h-5 text-green-400" />
-                  <div>
-                    <span className="block text-[8px] uppercase text-[#b8b8b8] font-bold tracking-wider">WhatsApp Hotline</span>
-                    <span className="font-bold text-xs text-white">{config.phone}</span>
-                  </div>
-                </a>
-              )}
-              {config.instagram && (
-                <a 
-                  href={`https://instagram.com/${config.instagram.replace('@', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={instaCard}
+                  <span>Teras UMKM Premium Merchant</span>
+                </motion.div>
+
+                <motion.h1 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="text-4xl md:text-6xl font-extrabold tracking-tight text-white leading-tight"
                 >
-                  <Instagram className="w-5 h-5 text-pink-400" />
-                  <div>
-                    <span className="block text-[8px] uppercase text-[#b8b8b8] font-bold tracking-wider">Instagram Brand</span>
-                    <span className="font-bold text-xs text-white">{config.instagram}</span>
-                  </div>
-                </a>
-              )}
-            </div>
-          </div>
-        </section>
+                  {heroTitleText}<span className={titleHighlight}>{titleHighlightText}</span>
+                </motion.h1>
 
-        {/* BENTO GRID FEATURES */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className={bentoClass1}>
-            <div className={bentoIconClass}>
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white mb-2">Jaminan Kualitas Premium</h4>
-              <p className="text-xs text-[#b8b8b8] leading-relaxed">
-                Setiap produk yang kami pasarkan telah melalui audit kelayakan mutu berkala dari platform Teras UMKM untuk memastikan pengalaman belanja terbaik.
-              </p>
-            </div>
-          </div>
-
-          <div className={bentoClass2}>
-            <div className={bentoIconClass}>
-              <Zap className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white mb-2">Dukungan Cepat</h4>
-              <p className="text-xs text-[#b8b8b8] leading-relaxed">
-                Hotline terintegrasi langsung untuk merespon pertanyaan pemesanan kustomisasi Anda.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* PRODUCTS SECTION */}
-        <section id="products" className="space-y-6">
-          <div className={sectionHeaderClass}>
-            <div>
-              <span className={sectionHeaderSub}>Collection</span>
-              <h3 className="text-lg font-bold text-white uppercase tracking-wider mt-1">Etalase Produk Pilihan</h3>
-            </div>
-            <span className={sectionHeaderSpan}>
-              {products.length} Items
-            </span>
-          </div>
-
-          {products.length === 0 ? (
-            <div className="p-12 text-center border border-white/5 bg-[#171717]/20 rounded-3xl text-xs text-[#b8b8b8]">
-              Belum ada produk yang diterbitkan.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {products.map((p: any) => (
-                <div 
-                  key={p.id}
-                  className={productCard}
+                <motion.p 
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="text-sm md:text-base text-[#b8b8b8] max-w-xl mx-auto leading-relaxed"
                 >
-                  <div>
-                    {p.imageUrl && (
-                      <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 border border-white/5 relative bg-[#171717]">
-                        <img 
-                          src={p.imageUrl} 
-                          alt={p.title} 
-                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
-                        />
-                      </div>
-                    )}
-                    <span className={productCat}>
-                      {p.category}
+                  Membawa kelezatan khas artisan, keunikan kreativitas lokal, dan kualitas layanan terverifikasi langsung ke depan pintu rumah Anda.
+                </motion.p>
+
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  className="pt-4"
+                >
+                  <a
+                    href="#products"
+                    className={buttonClass}
+                  >
+                    Jelajahi Produk Kami
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </motion.div>
+              </section>
+            )
+          }
+
+          if (secName === 'profile') {
+            return (
+              <section key="profile" className={aboutCardClass}>
+                {aboutHeaderGlow}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className={aboutAccentBar} />
+                    <span className={aboutTitle}>
+                      Tentang Usaha Kami
                     </span>
-                    <h4 className={productTitle}>
-                      {p.title}
-                    </h4>
-                    <p className="text-xs text-[#b8b8b8] mt-1.5 line-clamp-2 leading-relaxed">
-                      {p.description}
+                  </div>
+                  <p className="text-sm md:text-base text-[#f5f5f5] leading-relaxed whitespace-pre-line font-light">
+                    {config.bio || 'Kami menyajikan kurasi produk berkualitas tinggi yang dikerjakan dengan penuh dedikasi oleh pengrajin lokal profesional.'}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-white/5">
+                    {config.phone && (
+                      <a 
+                        href={`https://wa.me/${config.phone}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={phoneCard}
+                      >
+                        <Phone className="w-5 h-5 text-green-400" />
+                        <div>
+                          <span className="block text-[8px] uppercase text-[#b8b8b8] font-bold tracking-wider">WhatsApp Hotline</span>
+                          <span className="font-bold text-xs text-white">{config.phone}</span>
+                        </div>
+                      </a>
+                    )}
+                    {config.instagram && (
+                      <a 
+                        href={`https://instagram.com/${config.instagram.replace('@', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={instaCard}
+                      >
+                        <Instagram className="w-5 h-5 text-pink-400" />
+                        <div>
+                          <span className="block text-[8px] uppercase text-[#b8b8b8] font-bold tracking-wider">Instagram Brand</span>
+                          <span className="font-bold text-xs text-white">{config.instagram}</span>
+                        </div>
+                      </a>
+                    )}
+                  </div>
+
+                  {badges && badges.length > 0 && (
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+                      <h4 className="text-[10px] font-bold text-[#f5d76e] uppercase tracking-widest font-sora">Sertifikasi & Prestasi</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {badges.map((b: any) => (
+                          <div key={b.id} className="flex gap-3 p-3 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-amber-500/20 transition-colors">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 text-xs ${b.color}`}>
+                              {b.id.includes('admin') ? '🛡️' : b.id.includes('merchant') ? '⭐' : b.id.includes('graduate') ? '🎓' : '⚡'}
+                            </div>
+                            <div>
+                              <span className="block text-[10px] font-bold text-white font-sora">{b.label}</span>
+                              <span className="block text-[9px] text-[#b8b8b8] mt-0.5">{b.desc}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )
+          }
+
+          if (secName === 'features') {
+            return (
+              <section key="features" className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className={bentoClass1}>
+                  <div className={bentoIconClass}>
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-2">Jaminan Kualitas Premium</h4>
+                    <p className="text-xs text-[#b8b8b8] leading-relaxed">
+                      Setiap produk yang kami pasarkan telah melalui audit kelayakan mutu berkala dari platform Teras UMKM untuk memastikan pengalaman belanja terbaik.
                     </p>
                   </div>
+                </div>
 
-                  <div className="flex justify-between items-center mt-5 pt-3.5 border-t border-white/5">
-                    <span className={productPrice}>
-                      Rp {p.price.toLocaleString('id-ID')}
-                    </span>
-                    <a 
-                      href={`/market/product/${p.id}`}
-                      className={productButton}
-                    >
-                      Lihat Detail
-                    </a>
+                <div className={bentoClass2}>
+                  <div className={bentoIconClass}>
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-2">Dukungan Cepat</h4>
+                    <p className="text-xs text-[#b8b8b8] leading-relaxed">
+                      Hotline terintegrasi langsung untuk merespon pertanyaan pemesanan kustomisasi Anda.
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+              </section>
+            )
+          }
 
-        {/* TESTIMONIALS */}
-        <section className="space-y-6">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-2 border-b border-white/10">
-            Ulasan Klien & Pembeli
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className={testimonialCard}>
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => <Star key={i} className={starClass} />)}
-              </div>
-              <p className="text-xs text-[#f5f5f5] leading-relaxed italic font-light">
-                "Kualitasnya benar-benar di luar ekspektasi saya. Rapi, premium, dan proses komunikasinya cepat. Rekomendasi bintang lima!"
-              </p>
-              <div className="flex items-center gap-3">
-                <div className={avatarClass}>
-                  AN
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-white">Ananda N.</span>
-                  <span className="block text-[8px] text-[#b8b8b8]">Mitra Pengguna</span>
-                </div>
-              </div>
-            </div>
-
-            <div className={testimonialCard}>
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => <Star key={i} className={starClass} />)}
-              </div>
-              <p className="text-xs text-[#f5f5f5] leading-relaxed italic font-light">
-                "Bekerjasama dengan mereka untuk kemitraan cafe kami sangat memuaskan. Pengiriman selalu on-time dan konsisten."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className={avatarClass}>
-                  DH
-                </div>
-                <div>
-                  <span className="block text-xs font-bold text-white">Dedi H.</span>
-                  <span className="block text-[8px] text-[#b8b8b8]">Merchant Cafe</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* MAP & GEOLOCATION */}
-        {user.latitude && user.longitude && (
-          <section className={mapSection}>
-            <div className="flex justify-between items-center">
-              <div>
-                <span className="text-[9px] font-bold text-[#c9a227] uppercase tracking-widest block">Geografi</span>
-                <h4 className="text-xs font-bold text-white mt-1">Lokasi Merchant Terverifikasi</h4>
-              </div>
-              {distance !== null && (
-                <div className={distanceClass}>
-                  <MapPin className="w-3 h-3 text-[#f5d76e]" />
-                  Jarak: {distance.toFixed(1)} km dari Anda
-                </div>
-              )}
-            </div>
-
-            {/* Radar Simulation */}
-            <div className="relative aspect-[21/9] rounded-2xl bg-black border border-white/10 overflow-hidden flex items-center justify-center">
-              <div className="absolute w-52 h-52 rounded-full border border-amber-500/5 animate-pulse" />
-              <div className="absolute w-32 h-32 rounded-full border border-amber-500/10" />
-              <div className="absolute w-full h-[1px] bg-white/5" />
-              <div className="absolute h-full w-[1px] bg-white/5" />
-              <div className={radarSweeper} />
-
-              <div className="absolute z-10 flex flex-col items-center gap-2">
-                <div className="relative">
-                  <span className="animate-ping absolute inline-flex h-10 w-10 rounded-full bg-amber-500/25 opacity-75" />
-                  <div className={radarBg}>
-                    <img src={logoUrl} alt="merchant" className="w-full h-full object-cover" />
+          if (secName === 'products') {
+            return (
+              <section key="products" id="products" className="space-y-6">
+                <div className={sectionHeaderClass}>
+                  <div>
+                    <span className={sectionHeaderSub}>Collection</span>
+                    <h3 className="text-lg font-bold text-white uppercase tracking-wider mt-1">Etalase Produk Pilihan</h3>
                   </div>
+                  <span className={sectionHeaderSpan}>
+                    {products.length} Items
+                  </span>
                 </div>
-                <div className="bg-neutral-950/90 border border-white/10 px-3 py-1 rounded text-center">
-                  <span className={radarText}>{config.locationName || 'Jakarta'}</span>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
 
-        {/* FAQ ACCORDION */}
-        <section className="space-y-4">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-2 border-b border-white/10">
-            Pertanyaan yang Sering Diajukan
-          </h3>
-          <div className="space-y-3">
-            {[
-              { q: 'Bagaimana cara membeli produk/jasa merchant ini?', a: 'Anda dapat mengklik tombol "Lihat Detail" di atas untuk diarahkan ke etalase checkout marketplace, atau klik tombol chat WhatsApp di bawah untuk konsultasi langsung.' },
-              { q: 'Apakah ada minimal pemesanan?', a: 'Tidak ada minimal pemesanan untuk eceran. Namun untuk pemesanan grosir/custom corporate, kami menawarkan harga khusus.' }
-            ].map((faq, i) => (
-              <div key={i} className="border border-white/5 rounded-2xl overflow-hidden bg-white/[0.01]">
-                <button
-                  onClick={() => setActiveFaq(activeFaq === i ? null : i)}
-                  className={faqBtn}
-                >
-                  <span>{faq.q}</span>
-                  <ChevronDown className={`w-4 h-4 text-[#c9a227] transition-transform ${activeFaq === i ? 'rotate-180' : ''}`} />
-                </button>
-                {activeFaq === i && (
-                  <p className="px-5 pb-5 text-xs text-[#b8b8b8] leading-relaxed">
-                    {faq.a}
-                  </p>
+                {products.length === 0 ? (
+                  <div className="p-12 text-center border border-white/5 bg-[#171717]/20 rounded-3xl text-xs text-[#b8b8b8]">
+                    Belum ada produk yang diterbitkan.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {products.map((p: any) => (
+                      <div 
+                        key={p.id}
+                        className={productCard}
+                      >
+                        <div>
+                          {p.imageUrl && (
+                            <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 border border-white/5 relative bg-[#171717]">
+                              <img 
+                                src={p.imageUrl} 
+                                alt={p.title} 
+                                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
+                              />
+                            </div>
+                          )}
+                          <span className={productCat}>
+                            {p.category}
+                          </span>
+                          <h4 className={productTitle}>
+                            {p.title}
+                          </h4>
+                          <p className="text-xs text-[#b8b8b8] mt-1.5 line-clamp-2 leading-relaxed">
+                            {p.description}
+                          </p>
+                        </div>
+
+                        <div className="flex justify-between items-center mt-5 pt-3.5 border-t border-white/5">
+                          <span className={productPrice}>
+                            Rp {p.price.toLocaleString('id-ID')}
+                          </span>
+                          <a 
+                            href={`/market/product/${p.id}`}
+                            className={productButton}
+                          >
+                            Lihat Detail
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
-              </div>
-            ))}
-          </div>
-        </section>
+              </section>
+            )
+          }
 
-        {/* FAQ & CTA */}
-        <section className={ctaSection}>
-          <div className="space-y-3">
-            <h3 className="text-xl font-bold text-white">Ingin Kustomisasi Pesanan?</h3>
-            <p className="text-xs text-[#b8b8b8] max-w-sm mx-auto leading-relaxed">
-              Diskusikan kebutuhan spesifik Anda langsung dengan merchant terverifikasi kami untuk mendapatkan penawaran spesial.
-            </p>
-          </div>
-          <a
-            href={`https://wa.me/${config.phone || ''}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={ctaButton}
-          >
-            Hubungi via WhatsApp
-          </a>
-        </section>
+          if (secName === 'testimonials') {
+            return (
+              <section key="testimonials" className="space-y-6">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-2 border-b border-white/10">
+                  Ulasan Klien & Pembeli
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {testimonialsList.map((t: any, i: number) => (
+                    <div key={i} className={testimonialCard}>
+                      <div className="flex gap-1 text-amber-500">
+                        {[...Array(t.rating || 5)].map((_, starIdx) => <Star key={starIdx} className={starClass} />)}
+                      </div>
+                      <p className="text-xs text-[#f5f5f5] leading-relaxed italic font-light">
+                        "{t.quote || 'Ulasan pelanggan...'}"
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className={avatarClass}>
+                          {t.name?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <span className="block text-xs font-bold text-white">{t.name || 'User'}</span>
+                          <span className="block text-[8px] text-[#b8b8b8]">Pelanggan Terverifikasi</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )
+          }
+
+          if (secName === 'map' && user.latitude && user.longitude) {
+            return (
+              <section key="map" className={mapSection}>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-[9px] font-bold text-[#c9a227] uppercase tracking-widest block">Geografi</span>
+                    <h4 className="text-xs font-bold text-white mt-1">Lokasi Merchant Terverifikasi</h4>
+                  </div>
+                  {distance !== null && (
+                    <div className={distanceClass}>
+                      <MapPin className="w-3 h-3 text-[#f5d76e]" />
+                      Jarak: {distance.toFixed(1)} km dari Anda
+                    </div>
+                  )}
+                </div>
+
+                {/* Radar Simulation */}
+                <div className="relative aspect-[21/9] rounded-2xl bg-black border border-white/10 overflow-hidden flex items-center justify-center">
+                  <div className="absolute w-52 h-52 rounded-full border border-amber-500/5 animate-pulse" />
+                  <div className="absolute w-32 h-32 rounded-full border border-amber-500/10" />
+                  <div className="absolute w-full h-[1px] bg-white/5" />
+                  <div className="absolute h-full w-[1px] bg-white/5" />
+                  <div className={radarSweeper} />
+
+                  <div className="absolute z-10 flex flex-col items-center gap-2">
+                    <div className="relative">
+                      <span className="animate-ping absolute inline-flex h-10 w-10 rounded-full bg-amber-500/25 opacity-75" />
+                      <div className={radarBg}>
+                        <img src={logoUrl} alt="merchant" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                    <div className="bg-neutral-950/90 border border-white/10 px-3 py-1 rounded text-center">
+                      <span className={radarText}>{config.locationName || 'Jakarta'}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )
+          }
+
+          if (secName === 'faq') {
+            return (
+              <section key="faq" className="space-y-4">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider pb-2 border-b border-white/10">
+                  Pertanyaan yang Sering Diajukan
+                </h3>
+                <div className="space-y-3">
+                  {faqList.map((faq: any, i: number) => (
+                    <div key={i} className="border border-white/5 rounded-2xl overflow-hidden bg-white/[0.01]">
+                      <button
+                        onClick={() => setActiveFaq(activeFaq === i ? null : i)}
+                        className={faqBtn}
+                      >
+                        <span>{faq.q}</span>
+                        <ChevronDown className={`w-4 h-4 text-[#c9a227] transition-transform ${activeFaq === i ? 'rotate-180' : ''}`} />
+                      </button>
+                      {activeFaq === i && (
+                        <p className="px-5 pb-5 text-xs text-[#b8b8b8] leading-relaxed">
+                          {faq.a}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )
+          }
+
+          if (secName === 'cta') {
+            return (
+              <section key="cta" className={ctaSection}>
+                <div className="space-y-3">
+                  <h3 className="text-xl font-bold text-white">Ingin Kustomisasi Pesanan?</h3>
+                  <p className="text-xs text-[#b8b8b8] max-w-sm mx-auto leading-relaxed">
+                    Diskusikan kebutuhan spesifik Anda langsung dengan merchant terverifikasi kami untuk mendapatkan penawaran spesial.
+                  </p>
+                </div>
+                <a
+                  href={`https://wa.me/${config.phone || ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={ctaButton}
+                >
+                  Hubungi via WhatsApp
+                </a>
+              </section>
+            )
+          }
+
+          if (secName === 'gallery' && config.galleryItems && config.galleryItems.length > 0) {
+            const gItems = config.galleryItems
+            return (
+              <section key="gallery" className="space-y-6">
+                <div className={sectionHeaderClass}>
+                  <div>
+                    <span className={sectionHeaderSub}>Portfolio</span>
+                    <h3 className="text-lg font-bold text-white uppercase tracking-wider mt-1">{config.galleryTitle || 'Galeri Foto Kami'}</h3>
+                  </div>
+                  <span className={sectionHeaderSpan}>{gItems.length} Foto</span>
+                </div>
+                {config.galleryDesc && <p className="text-xs text-[#b8b8b8] leading-relaxed">{config.galleryDesc}</p>}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {gItems.map((item: any) => (
+                    <div key={item.id} className={productCard + ' !p-0 overflow-hidden'}>
+                      <div className="aspect-[4/3] w-full bg-neutral-900 overflow-hidden">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-neutral-600">No Image</div>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h4 className="text-xs font-bold text-white line-clamp-1">{item.title}</h4>
+                        {item.description && <p className="text-[10px] text-[#b8b8b8] mt-1 line-clamp-2">{item.description}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )
+          }
+
+          if (secName === 'footer') {
+            const ftName = config.footerText || config.title || user.name
+            const ftTagline = config.footerTagline || config.bio || ''
+            const ftCopyright = config.footerCopyright || `© ${new Date().getFullYear()} ${ftName}. All Rights Reserved.`
+            return (
+              <section key="footer" className="pt-10 border-t border-white/10 space-y-8">
+                <div className="flex flex-col md:flex-row justify-between gap-8">
+                  {/* Brand */}
+                  <div className="flex flex-col gap-4 max-w-xs">
+                    <div className="flex items-center gap-3">
+                      <div className={logoBorder}>
+                        <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                      </div>
+                      <span className="font-bold text-sm text-white">{ftName}</span>
+                    </div>
+                    <p className="text-xs text-[#b8b8b8] leading-relaxed">{ftTagline}</p>
+                  </div>
+                  {/* Social contact links */}
+                  <div className="flex flex-col gap-3">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-[#c9a227]">Hubungi Kami</span>
+                    {config.phone && (
+                      <a href={`https://wa.me/${config.phone}`} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-bold text-green-400 hover:text-green-300 transition-colors">
+                        📱 {config.phone}
+                      </a>
+                    )}
+                    {config.instagram && (
+                      <a href={`https://instagram.com/${config.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-bold text-pink-400 hover:text-pink-300 transition-colors">
+                        📸 @{config.instagram.replace('@', '')}
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <p className="text-center text-[10px] text-[#b8b8b8]/50 border-t border-white/5 pt-6">{ftCopyright}</p>
+              </section>
+            )
+          }
+
+          return null
+        })}
 
       </main>
     </div>
@@ -659,7 +930,7 @@ function ModernGoldTemplate({ user, products, config, logoUrl, distance }: any) 
 /* ==========================================================================
    2. NEO BRUTALIST TEMPLATE (Pop Colors, Thick Black Borders, Offsets)
    ========================================================================== */
-function NeoBrutalistTemplate({ user, products, config, logoUrl, distance }: any) {
+function NeoBrutalistTemplate({ user, products, config, logoUrl, distance, badges }: any) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null)
 
   const activeTemplate = user.landingPageTemplate || 'brutalist'
@@ -803,9 +1074,24 @@ function NeoBrutalistTemplate({ user, products, config, logoUrl, distance }: any
               {config.title || user.name}
             </span>
           </div>
-          <span className={verifiedBadge}>
-            {user.membershipLevel}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <span className={verifiedBadge}>
+              {user.membershipLevel}
+            </span>
+            {badges && badges.map((b: any) => (
+              <span key={b.id} title={b.desc} className="bg-white border-2 border-black px-2 py-1 text-[8px] font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                {b.label}
+              </span>
+            ))}
+            <UserQRCode
+              userId={user.id}
+              userName={user.name}
+              accentColor={isSwiss ? '#111111' : isDeStijl ? '#2563eb' : '#ffcc00'}
+              qrDarkColor="#111111"
+              qrLightColor="#ffffff"
+              variant="icon-only"
+            />
+          </div>
         </div>
       </header>
 
@@ -876,6 +1162,23 @@ function NeoBrutalistTemplate({ user, products, config, logoUrl, distance }: any
               </a>
             )}
           </div>
+          
+          {badges && badges.length > 0 && (
+            <div className="pt-6 border-t-2 border-black space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-wider text-[#ff5c5c]">Lencana & Prestasi</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {badges.map((b: any) => (
+                  <div key={b.id} className="flex items-center gap-3 p-3 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] rounded-none">
+                    <span className="text-lg">{b.id.includes('admin') ? '🛡️' : b.id.includes('merchant') ? '⭐' : b.id.includes('graduate') ? '🎓' : '⚡'}</span>
+                    <div>
+                      <span className="block text-[10px] font-black uppercase">{b.label}</span>
+                      <span className="block text-[8px] text-zinc-500 font-bold uppercase tracking-tight mt-0.5">{b.desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* PRODUCTS SECTION */}
@@ -1004,6 +1307,58 @@ function NeoBrutalistTemplate({ user, products, config, logoUrl, distance }: any
           </a>
         </section>
 
+        {/* GALLERY SECTION */}
+        {config.galleryItems && config.galleryItems.length > 0 && (
+          <section className="space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b-4 border-black">
+              <h3 className="text-xl font-black uppercase tracking-tight">{config.galleryTitle || 'GALERI FOTO'}</h3>
+              <span className="border-2 border-black px-3 py-1 text-[9px] font-black uppercase">{config.galleryItems.length} Foto</span>
+            </div>
+            {config.galleryDesc && <p className="text-sm font-bold leading-relaxed">{config.galleryDesc}</p>}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {config.galleryItems.map((item: any) => (
+                <div key={item.id} className="border-4 border-black rounded-none overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group">
+                  <div className="aspect-[4/3] bg-neutral-200 overflow-hidden">
+                    {item.imageUrl
+                      ? <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      : <div className="w-full h-full flex items-center justify-center text-xs font-bold">No Image</div>
+                    }
+                  </div>
+                  <div className="p-3 border-t-4 border-black bg-white">
+                    <h4 className="text-xs font-black uppercase line-clamp-1">{item.title}</h4>
+                    {item.description && <p className="text-[10px] font-bold text-zinc-600 mt-1 line-clamp-2">{item.description}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* BRANDED FOOTER */}
+        <section className="border-t-4 border-black pt-10 space-y-8">
+          <div className="flex flex-col md:flex-row justify-between gap-8 items-start">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 border-4 border-black overflow-hidden">
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+                <span className="font-black text-base uppercase">{config.footerText || config.title || user.name}</span>
+              </div>
+              {(config.footerTagline || config.bio) && (
+                <p className="text-xs font-bold text-zinc-700 max-w-xs leading-relaxed">{config.footerTagline || config.bio}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-[8px] font-black uppercase tracking-widest">Kontak</span>
+              {config.phone && <a href={`https://wa.me/${config.phone}`} target="_blank" rel="noopener noreferrer" className="border-2 border-black px-4 py-2 text-xs font-black uppercase hover:bg-black hover:text-white transition-colors">📱 WhatsApp</a>}
+              {config.instagram && <a href={`https://instagram.com/${config.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="border-2 border-black px-4 py-2 text-xs font-black uppercase hover:bg-black hover:text-white transition-colors">📸 Instagram</a>}
+            </div>
+          </div>
+          <p className="text-[10px] font-bold text-zinc-500 border-t-2 border-black pt-4">
+            {config.footerCopyright || `© ${new Date().getFullYear()} ${config.footerText || config.title || user.name}. Hak Cipta Dilindungi.`}
+          </p>
+        </section>
+
       </main>
     </div>
   )
@@ -1012,7 +1367,7 @@ function NeoBrutalistTemplate({ user, products, config, logoUrl, distance }: any
 /* ==========================================================================
    3. MINIMAL NOIR TEMPLATE (Pitch Black, Monospace Codes, Indigo Glows)
    ========================================================================== */
-function MinimalNoirTemplate({ user, products, config, logoUrl, distance }: any) {
+function MinimalNoirTemplate({ user, products, config, logoUrl, distance, badges }: any) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null)
 
   const activeTemplate = user.landingPageTemplate || 'minimal-noir'
@@ -1272,9 +1627,24 @@ function MinimalNoirTemplate({ user, products, config, logoUrl, distance }: any)
               {config.title || user.name}
             </span>
           </div>
-          <span className={navBadgeClass}>
-            LV-{user.level} // verified
-          </span>
+          <div className="flex items-center gap-2 flex-wrap justify-end text-[9px] font-mono">
+            <span className={navBadgeClass}>
+              LV-{user.level} // verified
+            </span>
+            {badges && badges.map((b: any) => (
+              <span key={b.id} title={b.desc} className="text-[#dc2626] border border-[#dc2626]/40 px-2 py-0.5 rounded-none font-bold">
+                [{b.label.replace(/[^a-zA-Z0-9 ]/g, '').trim()}]
+              </span>
+            ))}
+            <UserQRCode
+              userId={user.id}
+              userName={user.name}
+              accentColor="#22d3ee"
+              qrDarkColor="#0a0a0b"
+              qrLightColor="#f0f0f0"
+              variant="icon-only"
+            />
+          </div>
         </div>
       </header>
 
@@ -1345,6 +1715,23 @@ function MinimalNoirTemplate({ user, products, config, logoUrl, distance }: any)
               </a>
             )}
           </div>
+          
+          {badges && badges.length > 0 && (
+            <div className="pt-6 border-t border-neutral-800 space-y-4 font-mono text-[10px]">
+              <div className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">// ACHIEVEMENTS_LOG</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {badges.map((b: any) => (
+                  <div key={b.id} className="flex items-center gap-3 p-3 border border-neutral-800 bg-[#1f2833]/5 rounded-none">
+                    <span className="text-[#dc2626] font-bold">[{b.id.includes('admin') ? 'ADMIN' : b.id.includes('merchant') ? 'SELLER' : b.id.includes('graduate') ? 'ACADEMY' : 'LEVEL'}]</span>
+                    <div>
+                      <span className="block font-bold text-white uppercase">{b.label}</span>
+                      <span className="block opacity-60 text-[9px] mt-0.5">{b.desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* PRODUCTS */}
@@ -1474,6 +1861,61 @@ function MinimalNoirTemplate({ user, products, config, logoUrl, distance }: any)
           </a>
         </section>
 
+        {/* GALLERY SECTION */}
+        {config.galleryItems && config.galleryItems.length > 0 && (
+          <section className="space-y-6">
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
+              <div>
+                <span className="block text-[9px] font-mono text-[#7c7cff] uppercase tracking-widest mb-1">$ ls gallery/</span>
+                <h3 className="text-sm font-bold text-white">{config.galleryTitle || 'Galeri Foto'}</h3>
+              </div>
+              <span className="font-mono text-[9px] text-neutral-500 border border-neutral-800 px-2 py-1 rounded">[{config.galleryItems.length} FILES]</span>
+            </div>
+            {config.galleryDesc && <p className="text-xs text-neutral-400 font-mono leading-relaxed"># {config.galleryDesc}</p>}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {config.galleryItems.map((item: any) => (
+                <div key={item.id} className="border border-neutral-800 rounded-lg overflow-hidden group hover:border-neutral-600 transition-colors">
+                  <div className="aspect-[4/3] bg-neutral-900 overflow-hidden">
+                    {item.imageUrl
+                      ? <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      : <div className="w-full h-full flex items-center justify-center text-[9px] font-mono text-neutral-600">null</div>
+                    }
+                  </div>
+                  <div className="p-3 border-t border-neutral-800">
+                    <h4 className="text-xs font-bold text-neutral-200 line-clamp-1">{item.title}</h4>
+                    {item.description && <p className="text-[9px] font-mono text-neutral-500 mt-1 line-clamp-2"># {item.description}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* BRANDED FOOTER */}
+        <section className="border-t border-neutral-800 pt-10 space-y-8">
+          <div className="flex flex-col md:flex-row justify-between gap-8 items-start">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded border border-neutral-700 overflow-hidden">
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+                <span className="font-bold text-sm text-neutral-100">{config.footerText || config.title || user.name}</span>
+              </div>
+              {(config.footerTagline || config.bio) && (
+                <p className="text-xs font-mono text-neutral-500 max-w-xs leading-relaxed"># {config.footerTagline || config.bio}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-[8px] font-mono text-neutral-600 uppercase tracking-widest">$ contact --all</span>
+              {config.phone && <a href={`https://wa.me/${config.phone}`} target="_blank" rel="noopener noreferrer" className="text-xs font-mono text-green-400 hover:text-green-300 transition-colors">📱 {config.phone}</a>}
+              {config.instagram && <a href={`https://instagram.com/${config.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-xs font-mono text-pink-400 hover:text-pink-300 transition-colors">📸 @{config.instagram.replace('@', '')}</a>}
+            </div>
+          </div>
+          <p className="text-[10px] font-mono text-neutral-700 border-t border-neutral-900 pt-4">
+            {config.footerCopyright || `// © ${new Date().getFullYear()} ${config.footerText || config.title || user.name}. MIT LICENSE.`}
+          </p>
+        </section>
+
       </main>
     </div>
   )
@@ -1482,7 +1924,7 @@ function MinimalNoirTemplate({ user, products, config, logoUrl, distance }: any)
 /* ==========================================================================
    4. CLEAN PROFESSIONAL TEMPLATE (Light theme Slate SaaS - Vercel/Notion Style)
    ========================================================================== */
-function CleanProfessionalTemplate({ user, products, config, logoUrl, distance }: any) {
+function CleanProfessionalTemplate({ user, products, config, logoUrl, distance, badges }: any) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null)
 
   const activeTemplate = user.landingPageTemplate || 'clean-professional'
@@ -1712,9 +2154,24 @@ function CleanProfessionalTemplate({ user, products, config, logoUrl, distance }
               {config.title || user.name}
             </span>
           </div>
-          <span className={verifiedBadge}>
-            {user.membershipLevel} Verified
-          </span>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <span className={verifiedBadge}>
+              {user.membershipLevel} Verified
+            </span>
+            {badges && badges.map((b: any) => (
+              <span key={b.id} title={b.desc} className={`px-2 py-0.5 rounded text-[8px] font-geist font-bold border uppercase tracking-wider ${b.color}`}>
+                {b.label}
+              </span>
+            ))}
+            <UserQRCode
+              userId={user.id}
+              userName={user.name}
+              accentColor={isGlass ? '#0ea5e9' : isStudio ? '#8c7851' : '#6366f1'}
+              qrDarkColor="#1e1b4b"
+              qrLightColor="#f8fafc"
+              variant="icon-only"
+            />
+          </div>
         </div>
       </header>
 
@@ -1786,6 +2243,23 @@ function CleanProfessionalTemplate({ user, products, config, logoUrl, distance }
               </a>
             )}
           </div>
+          
+          {badges && badges.length > 0 && (
+            <div className="pt-6 border-t border-slate-100 space-y-4">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sertifikasi & Prestasi</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {badges.map((b: any) => (
+                  <div key={b.id} className="flex items-center gap-3 p-3 bg-slate-50/50 border border-slate-100 rounded-lg">
+                    <span className="text-lg">{b.id.includes('admin') ? '🛡️' : b.id.includes('merchant') ? '⭐' : b.id.includes('graduate') ? '🎓' : '⚡'}</span>
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-700">{b.label}</span>
+                      <span className="block text-[9px] text-slate-400 mt-0.5">{b.desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* BENTO FEATURES */}
@@ -1947,6 +2421,61 @@ function CleanProfessionalTemplate({ user, products, config, logoUrl, distance }
           >
             Hubungi via WhatsApp
           </a>
+        </section>
+
+        {/* GALLERY SECTION */}
+        {config.galleryItems && config.galleryItems.length > 0 && (
+          <section className="space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div>
+                <span className="block text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1">Portfolio</span>
+                <h3 className="text-lg font-bold text-slate-900">{config.galleryTitle || 'Galeri Foto Kami'}</h3>
+              </div>
+              <span className="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1 rounded-full">{config.galleryItems.length} Foto</span>
+            </div>
+            {config.galleryDesc && <p className="text-sm text-slate-600 leading-relaxed">{config.galleryDesc}</p>}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {config.galleryItems.map((item: any) => (
+                <div key={item.id} className="border border-slate-200 rounded-2xl overflow-hidden group hover:shadow-md transition-shadow bg-white">
+                  <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
+                    {item.imageUrl
+                      ? <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      : <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">No Image</div>
+                    }
+                  </div>
+                  <div className="p-4 border-t border-slate-100">
+                    <h4 className="text-xs font-bold text-slate-900 line-clamp-1">{item.title}</h4>
+                    {item.description && <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">{item.description}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* BRANDED FOOTER */}
+        <section className="border-t border-slate-200 pt-12 space-y-8">
+          <div className="flex flex-col md:flex-row justify-between gap-8 items-start">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200">
+                  <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                </div>
+                <span className="font-bold text-sm text-slate-900">{config.footerText || config.title || user.name}</span>
+              </div>
+              {(config.footerTagline || config.bio) && (
+                <p className="text-xs text-slate-500 max-w-xs leading-relaxed">{config.footerTagline || config.bio}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Hubungi Kami</span>
+              {config.phone && <a href={`https://wa.me/${config.phone}`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-green-600 hover:text-green-500 transition-colors">📱 {config.phone}</a>}
+              {config.instagram && <a href={`https://instagram.com/${config.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-pink-600 hover:text-pink-500 transition-colors">📸 @{config.instagram.replace('@', '')}</a>}
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-400 border-t border-slate-100 pt-6 text-center">
+            {config.footerCopyright || `© ${new Date().getFullYear()} ${config.footerText || config.title || user.name}. All Rights Reserved.`}
+          </p>
         </section>
 
       </main>

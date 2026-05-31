@@ -37,6 +37,7 @@ export default function AdminDashboardClient({
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [isPending, startTransition] = useTransition()
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // State lists
   const [users, setUsers] = useState(initialUsers)
@@ -301,9 +302,19 @@ export default function AdminDashboardClient({
   })
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f4f5f7] text-[#334155] font-sans antialiased">
+    <div className="flex h-screen overflow-hidden bg-[#f4f5f7] text-[#334155] font-sans antialiased relative">
+      {/* Sidebar mobile overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden transition-all duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* ─── SIDEBAR (Minimal Luxury Light Style) ─────────────────────────── */}
-      <aside className="w-[280px] bg-white border-r border-[#e2e8f0] flex flex-col justify-between flex-shrink-0">
+      <aside className={`fixed inset-y-0 left-0 z-40 w-[280px] bg-white border-r border-[#e2e8f0] flex flex-col justify-between transition-transform duration-300 lg:translate-x-0 lg:static lg:flex-shrink-0 ${
+        isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         <div>
           {/* Sidebar Brand Logo */}
           <div className="h-[74px] border-b border-[#e2e8f0] flex items-center px-6 gap-3">
@@ -333,7 +344,7 @@ export default function AdminDashboardClient({
               return (
                 <button
                   key={item.id}
-                  onClick={() => { setActiveTab(item.id as TabType); setSelectedTx(null); }}
+                  onClick={() => { setActiveTab(item.id as TabType); setSelectedTx(null); setIsSidebarOpen(false); }}
                   className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
                     isActive 
                       ? 'bg-[#fbf7ee] text-[#8c6d12] border-l-4 border-[#8c6d12] shadow-sm' 
@@ -376,9 +387,17 @@ export default function AdminDashboardClient({
       {/* ─── MAIN CONTENT (Light theme) ───────────────────────────────────── */}
       <main className="flex-grow flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="h-[74px] border-b border-[#e2e8f0] bg-white px-8 flex items-center justify-between flex-shrink-0">
+        <header className="h-[74px] border-b border-[#e2e8f0] bg-white px-4 md:px-8 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <h2 className="font-sora text-sm font-black text-slate-800 tracking-wider uppercase">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 -ml-2 rounded-lg hover:bg-slate-50 lg:hidden text-[#475569] focus:outline-none cursor-pointer"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h2 className="font-sora text-xs md:text-sm font-black text-slate-800 tracking-wider uppercase">
               {activeTab === 'overview' && 'Dashboard Overview'}
               {activeTab === 'users' && 'Kelola User & Role'}
               {activeTab === 'products' && 'Katalog Produk & Jasa'}
@@ -552,8 +571,8 @@ export default function AdminDashboardClient({
               </div>
 
               {/* Users table */}
-              <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-xs text-left">
+              <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-x-auto shadow-sm">
+                <table className="w-full min-w-[800px] text-xs text-left">
                   <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="px-6 py-3.5">Nama & Email</th>
@@ -736,8 +755,8 @@ export default function AdminDashboardClient({
               </div>
 
               {/* Products table */}
-              <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-xs text-left">
+              <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-x-auto shadow-sm">
+                <table className="w-full min-w-[800px] text-xs text-left">
                   <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
                     <tr>
                       <th className="px-6 py-3.5">ID & Gambar</th>

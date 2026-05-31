@@ -2,9 +2,51 @@ import { getUserProfileById } from "@/app/actions/auth";
 import { getProducts } from "@/app/actions/products";
 import { notFound } from "next/navigation";
 import ProfileViewerClient from "./ProfileViewerClient";
+import { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata(
+  { params }: PageProps
+): Promise<Metadata> {
+  const { id } = await params;
+  const user = await getUserProfileById(id);
+  
+  if (!user) {
+    return {
+      title: "Profil Tidak Ditemukan - Teras UMKM",
+      description: "Halaman profil merchant tidak ditemukan."
+    };
+  }
+
+  let bio = `Selamat datang di profil resmi ${user.name}. Kami adalah pelaku usaha terdaftar di ekosistem premium Teras UMKM.`;
+  if (user.landingPageConfig) {
+    try {
+      const cfg = JSON.parse(user.landingPageConfig);
+      if (cfg.bio) {
+        bio = cfg.bio;
+      }
+    } catch (e) {}
+  }
+
+  const desc = bio.substring(0, 150) + (bio.length > 150 ? '...' : '');
+
+  return {
+    title: `${user.name} - Profil Merchant Teras UMKM`,
+    description: desc,
+    openGraph: {
+      title: `${user.name} - Profil Merchant Teras UMKM`,
+      description: desc,
+      type: 'profile',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${user.name} - Profil Merchant Teras UMKM`,
+      description: desc,
+    }
+  };
 }
 
 export default async function ProfilePage({ params }: PageProps) {
