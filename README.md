@@ -109,6 +109,8 @@ Teras UMKM is a premium all-in-one platform designed specifically to help Micro,
    npx prisma db push
    node prisma/seed-db.js
    ```
+   > [!NOTE]
+   > Since this project uses **Prisma 7**, database configurations are managed in `prisma.config.ts`. If you are using a connection pooler (such as Supabase Transaction Mode on port 6543) and want to run migrations or `db push`, temporarily change `DATABASE_URL` in `.env` to point to the direct session connection (port 5432) for the operation to succeed.
 
 5. **Start Development Server**
    ```bash
@@ -221,6 +223,8 @@ Teras UMKM adalah platform *all-in-one* premium yang dirancang khusus untuk memb
    npx prisma db push
    node prisma/seed-db.js
    ```
+   > [!NOTE]
+   > Karena proyek ini menggunakan **Prisma 7**, konfigurasi database dikelola di `prisma.config.ts`. Jika Anda menggunakan connection pooler (seperti Supabase Transaction Mode port 6543) dan ingin melakukan migrasi atau `db push`, ubah sementara nilai `DATABASE_URL` di berkas `.env` Anda menjadi link koneksi langsung (direct connection port 5432) agar perintah berjalan dengan sukses.
 
 5. **Jalankan Aplikasi Web**
    ```bash
