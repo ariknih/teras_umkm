@@ -121,10 +121,10 @@ export default async function MarketPage({ searchParams }: PageProps) {
                   id={`cat-tab-${cat.value || "all"}`}
                   key={cat.value}
                   href={cat.value ? `/market?category=${cat.value}${queryParam ? `&query=${encodeURIComponent(queryParam)}` : ''}` : "/market"}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full text-[11px] font-semibold tracking-wider transition-all duration-200 whitespace-nowrap border ${
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-[11px] font-semibold tracking-wider transition-all duration-200 whitespace-nowrap ${
                     isActive
-                      ? "bg-primary text-surface-dark border-primary shadow-md shadow-primary/20"
-                      : "bg-surface-container hover:bg-surface-container-high text-text-secondary hover:text-text-primary border-border-subtle"
+                      ? "bg-primary text-white shadow-sm"
+                      : "bg-white hover:bg-slate-50 text-text-secondary hover:text-text-primary border border-slate-100"
                   }`}
                 >
                   {cat.name}
@@ -137,7 +137,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
         </div>
 
         {/* Search Bar */}
-        <div className="mb-10 border border-border-subtle bg-surface-dark rounded-lg p-4">
+        <div className="mb-10 bg-white rounded-lg p-4 shadow-sm">
           <form method="GET" action="/market" className="flex gap-2">
             {categoryParam && <input type="hidden" name="category" value={categoryParam} />}
             <input
@@ -146,7 +146,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
               name="query"
               defaultValue={resolvedParams.query || ""}
               placeholder="Cari produk, jasa, lowongan kerja..."
-              className="flex-grow px-4 py-2 bg-surface-container border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50"
+              className="flex-grow px-4 py-2 bg-slate-50 border border-slate-100 rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50"
             />
             <button
               id="search-submit"

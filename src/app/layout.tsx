@@ -108,7 +108,7 @@ export default async function RootLayout({
             <HeaderNavigation user={dbUser} wallet={wallet} logoutAction={logout} />
 
         {/* Page Content */}
-        <main className="flex-grow flex flex-col">
+        <main className="flex-grow flex flex-col pt-[104px]">
           {children}
         </main>
 
@@ -123,7 +123,7 @@ export default async function RootLayout({
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                   </svg>
                 </div>
-                <span className="font-sora font-bold text-secondary text-lg">Saloka<span className="text-tertiary">.id</span></span>
+                <span className="font-poppins font-bold text-secondary text-lg">Saloka<span className="text-tertiary">.id</span></span>
               </div>
               <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
                 Platform ekosistem digital terlengkap untuk pelaku UMKM Indonesia yang ingin berkembang.

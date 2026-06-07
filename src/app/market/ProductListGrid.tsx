@@ -190,7 +190,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
   return (
     <div className="space-y-6">
       {/* Geolocation Banner & Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-surface-dark border border-border-subtle p-4 rounded-lg">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-4 rounded-lg shadow-sm">
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
             locStatus === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-primary/10 text-primary'
@@ -226,7 +226,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
           )}
 
           {locStatus === 'success' && (
-            <label className="flex items-center gap-2 cursor-pointer border border-border-subtle bg-surface-container/60 hover:border-primary/40 px-3 py-2 rounded text-xs select-none transition-colors">
+            <label className="flex items-center gap-2 cursor-pointer bg-slate-100 hover:bg-slate-200/60 px-3 py-2 rounded text-xs select-none transition-colors">
               <input
                 type="checkbox"
                 checked={sortBy === 'distance-asc'}
@@ -240,7 +240,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
       </div>
 
       {/* ── Search bar + Filter/Sort ── */}
-      <div className="bg-surface-dark/60 backdrop-blur-md border border-border-subtle p-4 rounded-xl shadow-sm">
+      <div className="bg-white p-4 rounded-xl shadow-sm">
         <div className="flex gap-3 items-center">
 
           {/* Search */}
@@ -271,8 +271,8 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
               onClick={() => setFilterOpen(v => !v)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-bold font-geist transition-all ${
                 filterOpen || activeFilterCount > 0
-                  ? 'bg-primary/10 border-primary text-primary shadow-[0_0_12px_rgba(250,204,21,0.12)]'
-                  : 'bg-surface-dark/80 border-border-subtle text-text-secondary hover:border-primary/40 hover:text-text-primary'
+                  ? 'bg-primary/10 border-primary text-primary'
+                  : 'bg-white border-slate-200 text-text-secondary hover:border-primary/40 hover:text-text-primary'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -448,10 +448,10 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold font-geist whitespace-nowrap transition-all border shrink-0 ${
+                className={`px-4 py-1.5 rounded-full text-xs font-bold font-geist whitespace-nowrap transition-all shrink-0 ${
                   isSelected
-                    ? 'bg-primary/10 border-primary text-primary shadow-[0_0_10px_rgba(250,204,21,0.1)]'
-                    : 'bg-surface-dark/50 border-border-subtle text-text-secondary hover:border-primary/30 hover:text-text-primary'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'bg-slate-100 hover:bg-slate-200 text-text-secondary hover:text-text-primary'
                 }`}
               >
                 {cat === 'Semua' ? '🛍️ Semua' : cat}
@@ -520,10 +520,10 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
               <Link
                 key={product.id}
                 href={`/market/product/${product.id}`}
-                className="group flex flex-col bg-surface-dark border border-border-subtle hover:border-primary/45 rounded-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                className="group flex flex-col bg-white rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] hover:-translate-y-0.5"
               >
                 {/* Product Image Panel */}
-                <div className="aspect-[4/3] w-full bg-surface-container relative overflow-hidden border-b border-border-subtle flex items-center justify-center">
+                <div className="aspect-[4/3] w-full bg-slate-50 relative overflow-hidden flex items-center justify-center">
                   {product.imageUrl ? (
                     <img
                       src={product.imageUrl}
@@ -539,7 +539,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
                   )}
                   {/* Category Pill */}
                   <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
-                    <span className="px-2 py-0.5 bg-surface-dark/80 backdrop-blur border border-primary/20 rounded text-[9px] font-geist font-bold text-primary uppercase tracking-wider">
+                    <span className="px-2 py-0.5 bg-white/95 backdrop-blur rounded text-[9px] font-bold text-primary uppercase tracking-wider">
                       {product.category}
                     </span>
                     {currentUser && product.merchantId === currentUser.id && (
@@ -551,11 +551,11 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
                   
                   {/* Stock tag */}
                   {product.stock <= 0 ? (
-                    <span className="absolute top-3 right-3 px-2 py-0.5 bg-red-950/80 backdrop-blur border border-red-500/35 rounded text-[9px] font-geist font-bold text-red-400 uppercase tracking-wider">
+                    <span className="absolute top-3 right-3 px-2 py-0.5 bg-red-500 text-white rounded text-[9px] font-bold uppercase tracking-wider">
                       Habis
                     </span>
                   ) : (
-                    <span className="absolute top-3 right-3 px-2 py-0.5 bg-green-950/80 backdrop-blur border border-green-500/35 rounded text-[9px] font-geist font-bold text-green-400 uppercase tracking-wider">
+                    <span className="absolute top-3 right-3 px-2 py-0.5 bg-primary text-white rounded text-[9px] font-bold uppercase tracking-wider">
                       Stok: {product.stock}
                     </span>
                   )}
@@ -572,7 +572,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
                     
                     {/* Geolocation Distance Badge */}
                     {dist !== undefined && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-geist font-semibold text-primary bg-primary/10 border border-primary/20 rounded px-1.5 py-0.5 mb-3">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 rounded px-1.5 py-0.5 mb-3">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-2.5 h-2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
@@ -585,7 +585,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
                       {product.description}
                     </p>
                   </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-border-subtle">
+                  <div className="flex justify-between items-center pt-3">
                     <span className="text-xs font-geist text-text-secondary">Harga</span>
                     <span className="text-sm font-bold text-primary">
                       Rp {product.price.toLocaleString("id-ID")}

@@ -56,43 +56,98 @@ const JASA_HIGHLIGHTS = [
 ]
 
 const PLATFORM_FEATURES = [
-  { icon: <IconStore />, title: 'Marketplace', desc: 'Ribuan produk UMKM pilihan dari merchant terpercaya seluruh Indonesia.', href: '/market', cta: 'Belanja Sekarang' },
-  { icon: <IconBriefcase />, title: 'Katalog Jasa', desc: 'Temukan penyedia jasa profesional: desain, IT, foto, catering, dan lebih banyak.', href: '/market?category=JASA', cta: 'Cari Jasa' },
-  { icon: <IconGradCap />, title: 'LMS Academy', desc: 'Kursus bisnis eksklusif dari pakar industri untuk tingkatkan level usaha Anda.', href: '/academy', cta: 'Mulai Belajar' },
-  { icon: <IconShare />, title: 'Affiliate Hub', desc: 'Hasilkan komisi multi-tier otomatis dari setiap rekomendasi produk Anda.', href: '/affiliate', cta: 'Bergabung' },
+  { icon: <IconStore />, title: 'Marketplace', desc: 'Ribuan produk UMKM pilihan dari merchant terpercaya seluruh Indonesia.', href: '/market', cta: 'Belanja' },
+  { icon: <IconBriefcase />, title: 'Katalog Jasa', desc: 'Temukan penyedia jasa profesional: desain, IT, catering, dll.', href: '/market?category=JASA', cta: 'Cari Jasa' },
+  { icon: <IconGradCap />, title: 'LMS Academy', desc: 'Kursus bisnis eksklusif dari pakar industri tingkatkan level usaha.', href: '/academy', cta: 'Mulai Belajar' },
+  { icon: <IconShare />, title: 'Affiliate Hub', desc: 'Hasilkan komisi multi-tier otomatis dari rekomendasi produk.', href: '/affiliate', cta: 'Bergabung' },
 ]
 
 // ─── Product Card (server component) ─────────────────────────────────────────
 function ProductCard({ product }: { product: any }) {
+  // Generate some realistic mock data based on ID to make the Tokopedia aesthetic alive
+  const idNum = parseInt(product.id.slice(-3), 36) || 0
+  const discount = (idNum % 3 === 0) ? (10 + (idNum % 5) * 5) : 0
+  const originalPrice = discount ? Math.round(product.price * (100 / (100 - discount))) : product.price
+  const rating = (4.5 + (idNum % 5) * 0.1).toFixed(1)
+  const sold = (idNum % 10) * 25 + 10
+  const locations = ['Jakarta Pusat', 'Jakarta Barat', 'Tangerang', 'Bandung', 'Surabaya', 'Bekasi']
+  const location = locations[idNum % locations.length]
+
+  const storeNames = ['Moell Store', 'Gallery Gadget Shop', 'Wuben Light Indonesia', 'Stanley Indonesia Official', 'OMG Store_NEW', 'Infiniti Gadget']
+  const storeName = storeNames[idNum % storeNames.length]
+  const isOfficial = idNum % 2 === 0
+
   return (
     <Link
       href={`/market/product/${product.id}`}
-      className="group flex flex-col bg-surface-dark border border-outline-variant/20 hover:border-primary-container/60 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+      className="group flex flex-col bg-white border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] h-full"
     >
-      <div className="aspect-[4/3] w-full bg-surface-container relative overflow-hidden">
+      <div className="aspect-square w-full bg-slate-50 relative overflow-hidden">
         {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
+          <img src={product.imageUrl} alt={product.title} className="object-cover w-full h-full group-hover:scale-102 transition-transform duration-300" />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary-container/10 to-transparent flex items-center justify-center">
-            <span className="text-[10px] font-geist font-bold text-primary/30 uppercase tracking-widest">{product.category}</span>
+          <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+            <span className="text-[9px] font-bold text-text-secondary/30 uppercase tracking-widest">{product.category}</span>
           </div>
         )}
-        <div className="absolute top-2.5 left-2.5">
-          <span className="px-2 py-0.5 bg-surface-dark/90 backdrop-blur border border-outline-variant/30 rounded-full text-[9px] font-geist font-bold text-on-surface-variant uppercase tracking-wider">
-            {product.category?.replace(/_/g, ' ')}
-          </span>
-        </div>
+        
+        {/* Discount badge */}
+        {discount > 0 && (
+          <div className="absolute top-1.5 left-1.5 bg-red-500 text-white font-extrabold text-[8px] px-1 py-0.5 rounded">
+            {discount}%
+          </div>
+        )}
       </div>
-      <div className="p-4 flex-1 flex flex-col justify-between">
+      <div className="p-2.5 flex-1 flex flex-col justify-between">
         <div>
-          <h3 className="font-sora text-sm font-bold text-on-surface line-clamp-1 group-hover:text-primary transition-colors mb-1">{product.title}</h3>
-          <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">{product.description}</p>
+          {/* Product Title */}
+          <h3 className="text-[11px] font-medium text-text-primary line-clamp-2 h-[32px] leading-snug group-hover:text-[#2DB24A] transition-colors mb-0.5">
+            {product.title}
+          </h3>
+          
+          {/* Price */}
+          <div className="mt-1">
+            <span className="text-xs font-extrabold text-text-primary">
+              {product.price === 0 ? 'Gratis' : `Rp${product.price.toLocaleString('id-ID')}`}
+            </span>
+            {discount > 0 && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-[9px] text-text-secondary line-through">
+                  Rp{originalPrice.toLocaleString('id-ID')}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Promo label - clean, no outline */}
+          <p className="text-[9px] font-bold text-[#FF5722] mt-1">
+            {idNum % 2 === 0 ? `Hemat s.d ${5 + (idNum % 3) * 5}% Pakai Bonus` : 'Bisa COD'}
+          </p>
         </div>
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-outline-variant/20">
-          <span className="text-xs text-on-surface-variant">Harga</span>
-          <span className="text-sm font-bold text-primary">
-            {product.price === 0 ? 'Gratis' : `Rp ${product.price.toLocaleString('id-ID')}`}
-          </span>
+
+        <div className="mt-2 pt-2">
+          {/* Rating and Sold */}
+          <div className="flex items-center gap-1 text-[9px] text-[#6b7280]">
+            <span className="text-[#FFC107]">★</span>
+            <span className="font-bold text-text-primary">{rating}</span>
+            <span>•</span>
+            <span>{sold}+ terjual</span>
+          </div>
+          
+          {/* Store & Location details */}
+          <div className="mt-1.5 text-[9px] text-[#6b7280] flex flex-col gap-0.5">
+            <div className="flex items-center gap-1 truncate">
+              {isOfficial && (
+                <span className="w-3.5 h-3.5 rounded bg-purple-600 text-white flex items-center justify-center text-[7px] font-black scale-90 shrink-0">
+                  ✔
+                </span>
+              )}
+              <span className="truncate">{storeName}</span>
+            </div>
+            <p className="truncate text-[#6b7280]">
+              {location}
+            </p>
+          </div>
         </div>
       </div>
     </Link>
@@ -104,24 +159,26 @@ function JasaCard({ product }: { product: any }) {
   return (
     <Link
       href={`/market/product/${product.id}`}
-      className="group flex gap-4 p-4 bg-surface-dark border border-outline-variant/20 hover:border-primary-container/50 rounded-xl transition-all duration-200 hover:shadow-md"
+      className="group flex gap-3 p-3 bg-white border-0 rounded-lg transition-all duration-200 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)]"
     >
-      <div className="w-20 h-20 rounded-lg bg-surface-container flex-shrink-0 overflow-hidden">
+      <div className="w-16 h-16 rounded-lg bg-slate-50 flex-shrink-0 overflow-hidden">
         {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300" />
         ) : (
           <div className="w-full h-full bg-primary-container/10 flex items-center justify-center">
-            <span className="text-primary/30 text-xl">🛠️</span>
+            <span className="text-primary/30 text-lg">🛠️</span>
           </div>
         )}
       </div>
-      <div className="flex-1 min-w-0">
-        <h3 className="font-sora text-sm font-bold text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{product.title}</h3>
-        <p className="text-xs text-on-surface-variant line-clamp-2 mt-1 leading-relaxed">{product.description}</p>
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-xs font-bold text-primary">Rp {product.price.toLocaleString('id-ID')}</span>
-          <span className="text-[9px] px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-full font-geist font-semibold">
-            Stok: {product.stock}
+      <div className="flex-1 min-w-0 flex flex-col justify-between">
+        <div>
+          <h3 className="font-sora text-xs font-bold text-text-primary line-clamp-1 group-hover:text-primary transition-colors">{product.title}</h3>
+          <p className="text-[10px] text-text-secondary line-clamp-2 mt-0.5 leading-snug">{product.description}</p>
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="text-xs font-extrabold text-primary">Rp{product.price.toLocaleString('id-ID')}</span>
+          <span className="text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary rounded font-semibold">
+            Ready
           </span>
         </div>
       </div>
@@ -136,7 +193,7 @@ export default async function HomePage() {
   const courses = await getCourses()
 
   // Filter & slice
-  const featuredProducts = allProducts.filter(p => p.category !== 'KERJAAN' && p.category !== 'JASA').slice(0, 8)
+  const featuredProducts = allProducts.filter(p => p.category !== 'KERJAAN' && p.category !== 'JASA').slice(0, 12)
   const jasaProducts = allProducts.filter(p => p.category === 'JASA').slice(0, 6)
   const lokerProducts = allProducts.filter(p => p.category === 'KERJAAN').slice(0, 4)
   const featuredCourses = courses.slice(0, 3)
@@ -144,276 +201,222 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-bg-dark">
 
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative bg-gradient-to-br from-white via-surface-container-low to-surface-container overflow-hidden">
-        {/* Subtle pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage: 'radial-gradient(circle at 1px 1px, #735c00 1px, transparent 0)', backgroundSize: '32px 32px'}} />
-        <div className="absolute top-0 right-0 w-[500px] h-[400px] bg-gradient-to-bl from-primary-container/20 to-transparent pointer-events-none" />
-
-        <div className="relative max-w-[1280px] mx-auto px-4 md:px-10 py-16 md:py-24">
-          <div className="max-w-2xl">
-            {user ? (
-              <>
-                <h1 className="font-sora text-4xl md:text-5xl font-extrabold text-on-surface leading-tight mb-4">
-                  Halo, <span className="text-primary">{user.name?.split(' ')[0]}</span>! 👋
-                  <br />Apa yang mau kita cari hari ini?
-                </h1>
-                <p className="text-base text-on-surface-variant mb-8 leading-relaxed">
-                  Marketplace, Jasa, Academy, & Community — semua ada di sini untuk tumbuhkan bisnis Anda.
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-container/20 border border-primary-container/30 rounded-full text-xs font-geist font-bold text-primary uppercase tracking-widest mb-5 gsap-fade-up">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block" />
-                  Platform UMKM Premium Indonesia
-                </div>
-                <h1 className="font-sora text-4xl md:text-6xl font-extrabold text-on-surface leading-tight mb-4 gsap-split-chars">
-                  Ekosistem Digital
-                  <br /><span className="text-primary">UMKM Terbaik</span>
-                  <br />di Indonesia.
-                </h1>
-                <p className="text-base text-on-surface-variant mb-8 leading-relaxed max-w-lg gsap-fade-up">
-                  Marketplace, Katalog Jasa, LMS Academy, dan Community Forum — semua dalam satu platform premium.
-                </p>
-              </>
-            )}
-
-            <div className="flex flex-wrap gap-3">
-              <Link href="/market" className="inline-flex items-center gap-2 px-6 py-3 bg-primary-container text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl transition-all hover:bg-primary-container/90 hover:shadow-lg hover:-translate-y-0.5 shadow-md">
-                <IconStore />
-                Jelajahi Marketplace
+      {/* ── HERO PROMO BANNER ────────────────────────────────────────────── */}
+      <section className="relative bg-white pt-6 pb-6 print:hidden">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Left: Main Slider Mock */}
+            <div className="md:col-span-2 relative h-[240px] md:h-[280px] rounded-xl overflow-hidden bg-gradient-to-r from-[#2DB24A] to-[#0F5132] p-8 text-white flex flex-col justify-between shadow-sm">
+              <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '16px 16px'}} />
+              <div>
+                <span className="bg-white/20 text-white font-bold text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider">Promo Juni 2026</span>
+                <h2 className="font-sora text-2xl md:text-3xl font-extrabold mt-3 leading-tight">
+                  Digitalisasi UMKM<br />
+                  Lebih Mudah & Cepat
+                </h2>
+                <p className="text-xs text-white/80 mt-2">Dapatkan website toko online gratis, domain pribadi, & gratis pelatihan!</p>
+              </div>
+              <Link href="/setup-landing" className="bg-[#FFC107] hover:bg-[#FFC107]/95 text-secondary font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-lg w-fit transition-all shadow-md">
+                Setup Toko Sekarang
               </Link>
-              <Link href="/market?category=JASA" className="inline-flex items-center gap-2 px-6 py-3 bg-surface-dark border border-outline-variant/40 text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl transition-all hover:bg-surface-container hover:shadow-md hover:-translate-y-0.5">
-                <IconBriefcase />
-                Cari Jasa
-              </Link>
-              {!user && (
-                <Link href="/auth?tab=register" className="inline-flex items-center gap-2 px-6 py-3 bg-on-surface text-white font-geist font-bold text-sm uppercase tracking-wider rounded-xl transition-all hover:opacity-90 hover:-translate-y-0.5">
-                  Daftar Gratis →
-                </Link>
-              )}
             </div>
-
-            {/* Trust badges */}
-            <div className="flex flex-wrap gap-3 mt-8">
-              {['Midtrans Payment', 'SSL Secured', 'Komerce Logistik', '12.400+ Merchant'].map(b => (
-                <span key={b} className="flex items-center gap-1.5 text-[10px] font-geist font-semibold text-on-surface-variant bg-surface-dark border border-outline-variant/20 px-2.5 py-1 rounded-full">
-                  <span className="w-1 h-1 rounded-full bg-green-400 inline-block" />{b}
-                </span>
-              ))}
+            {/* Right: Side banners */}
+            <div className="flex flex-col gap-3">
+              <div className="flex-1 rounded-xl bg-[#E8F5E9] p-4 flex flex-col justify-between shadow-sm relative overflow-hidden min-h-[110px]">
+                <div className="absolute right-[-10px] bottom-[-10px] w-20 h-20 bg-green-500/10 rounded-full" />
+                <div>
+                  <h3 className="font-sora text-sm font-extrabold text-[#0F5132]">Gabung Koperasi</h3>
+                  <p className="text-[11px] text-green-700/80 mt-1">Dapatkan legalitas NIB & akses permodalan usaha.</p>
+                </div>
+                <Link href="/community" className="text-xs font-bold text-[#0F5132] hover:underline mt-2">Daftar Komunitas →</Link>
+              </div>
+              <div className="flex-1 rounded-xl bg-[#FFFDE7] p-4 flex flex-col justify-between shadow-sm relative overflow-hidden min-h-[110px]">
+                <div className="absolute right-[-10px] bottom-[-10px] w-20 h-20 bg-yellow-500/10 rounded-full" />
+                <div>
+                  <h3 className="font-sora text-sm font-extrabold text-[#7F6000]">LMS Academy</h3>
+                  <p className="text-[11px] text-[#7F6000]/80 mt-1">Belajar pemasaran digital langsung dari ahlinya.</p>
+                </div>
+                <Link href="/academy" className="text-xs font-bold text-[#7F6000] hover:underline mt-2">Mulai Belajar →</Link>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ── PLATFORM FEATURES GRID ───────────────────────────────────────── */}
-      <section className="max-w-[1280px] mx-auto px-4 md:px-10 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 gsap-stagger-container">
+      <section className="max-w-[1280px] mx-auto px-4 md:px-10 py-6 bg-white">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {PLATFORM_FEATURES.map(f => (
             <Link key={f.title} href={f.href}
-              className="group flex flex-col gap-3 p-5 bg-surface-dark border border-outline-variant/20 rounded-xl hover:border-primary-container/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 gsap-stagger-item"
+              className="group flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-all"
             >
-              <div className="w-10 h-10 rounded-lg bg-primary-container/15 border border-primary-container/20 flex items-center justify-center text-primary group-hover:bg-primary-container/25 transition-colors">
+              <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
                 {f.icon}
               </div>
-              <div>
-                <h3 className="font-sora text-sm font-bold text-on-surface mb-1">{f.title}</h3>
-                <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2">{f.desc}</p>
+              <div className="min-w-0">
+                <h3 className="font-sora text-xs font-bold text-text-primary leading-tight">{f.title}</h3>
+                <p className="text-[9px] text-text-secondary truncate mt-0.5">{f.cta} →</p>
               </div>
-              <span className="text-[10px] font-geist font-bold text-primary uppercase tracking-wider mt-auto group-hover:gap-2 transition-all">
-                {f.cta} →
-              </span>
             </Link>
           ))}
         </div>
       </section>
 
+      {/* ── FEATURED PRODUCTS (MARKETPLACE - TOKOPEDIA FOR YOU) ──────────── */}
+      <section className="max-w-[1280px] mx-auto px-4 md:px-10 py-10">
+        {/* Tokopedia style tabs */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 pb-2 border-b border-slate-100/50">
+          <div className="flex items-center gap-6 overflow-x-auto select-none no-scrollbar">
+            <span className="text-sm font-extrabold text-[#2DB24A] pb-2 border-b-2 border-[#2DB24A] whitespace-nowrap cursor-pointer">For You</span>
+            <span className="text-xs font-semibold text-text-secondary hover:text-text-primary pb-2 whitespace-nowrap cursor-pointer">Teras Mall</span>
+            <span className="text-xs font-semibold text-text-secondary hover:text-text-primary pb-2 whitespace-nowrap cursor-pointer">Produk Incaranmu</span>
+          </div>
+          <Link href="/market" className="text-xs font-bold text-[#2DB24A] hover:underline mt-2 md:mt-0 md:pb-2 shrink-0">
+            Lihat Semua →
+          </Link>
+        </div>
+
+        {/* Compact, smaller product grid (Tokopedia style) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {featuredProducts.map(p => <ProductCard key={p.id} product={p} />)}
+        </div>
+      </section>
+
       {/* ── KATALOG JASA ─────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-surface-container-low to-surface-dark border-y border-outline-variant/15 py-14">
+      <section className="bg-white py-10">
         <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex items-end justify-between mb-6">
             <div>
-              <div className="inline-flex items-center gap-2 text-[10px] font-geist font-bold text-primary uppercase tracking-widest bg-primary-container/15 border border-primary-container/25 px-3 py-1.5 rounded-full mb-3 gsap-fade-up">
-                <IconBriefcase />
-                Katalog Jasa
-              </div>
-              <h2 className="font-sora text-2xl md:text-3xl font-extrabold text-on-surface gsap-split-chars">
-                Temukan Penyedia Jasa <span className="text-primary">Profesional.</span>
+              <h2 className="font-sora text-lg font-extrabold text-text-primary">
+                Katalog Jasa <span className="text-primary">Profesional</span>
               </h2>
-              <p className="text-sm text-on-surface-variant mt-1 gsap-fade-up">Desain, IT, foto, catering, social media & lebih banyak lagi.</p>
+              <p className="text-xs text-text-secondary mt-0.5">Desain, IT, foto, catering, social media & lebih banyak lagi.</p>
             </div>
-            <Link href="/market?category=JASA" className="hidden md:inline-flex items-center gap-2 text-xs font-geist font-bold text-primary hover:underline">
-              Lihat Semua Jasa →
+            <Link href="/market?category=JASA" className="text-xs font-bold text-[#2DB24A] hover:underline">
+              Semua Jasa →
             </Link>
           </div>
 
           {/* Jasa category chips */}
-          <div className="flex flex-wrap gap-2 mb-8">
+          <div className="flex flex-wrap gap-2 mb-6">
             {JASA_HIGHLIGHTS.map(j => (
               <Link key={j.label}
                 href={`/market?category=JASA&query=${j.query}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-geist font-semibold border border-border-subtle bg-surface-dark text-text-secondary hover:text-primary hover:border-primary/45 transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-semibold bg-slate-100 text-[#4b5563] hover:bg-green-50 hover:text-primary transition-all"
               >
-                <span className="scale-90 text-primary">{j.icon}</span>
+                <span className="scale-75 text-primary">{j.icon}</span>
                 {j.label}
               </Link>
             ))}
           </div>
 
-          {/* Jasa product list */}
+          {/* Jasa list */}
           {jasaProducts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {jasaProducts.map(p => <JasaCard key={p.id} product={p} />)}
             </div>
           ) : (
-            <div className="text-center py-12 border border-dashed border-outline-variant/30 rounded-xl">
-              <p className="text-sm text-on-surface-variant">Belum ada jasa tersedia. <Link href="/merchant/dashboard" className="text-primary underline">Tambahkan jasa Anda.</Link></p>
+            <div className="text-center py-8 border border-dashed border-border/60 rounded-lg">
+              <p className="text-xs text-text-secondary">Belum ada jasa tersedia.</p>
             </div>
           )}
-
-          <div className="mt-6 text-center md:hidden">
-            <Link href="/market?category=JASA" className="inline-flex items-center gap-2 text-sm font-geist font-bold text-primary hover:underline">
-              Lihat Semua Jasa →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURED PRODUCTS ────────────────────────────────────────────── */}
-      <section className="max-w-[1280px] mx-auto px-4 md:px-10 py-14">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <div className="inline-flex items-center gap-2 text-[10px] font-geist font-bold text-primary uppercase tracking-widest bg-primary-container/15 border border-primary-container/25 px-3 py-1.5 rounded-full mb-3 gsap-fade-up">
-              <IconStore />
-              Featured Products
-            </div>
-            <h2 className="font-sora text-2xl md:text-3xl font-extrabold text-on-surface gsap-split-chars">
-              Produk Unggulan <span className="text-primary">Merchant Terpilih.</span>
-            </h2>
-            <p className="text-sm text-on-surface-variant mt-1 gsap-fade-up">Dari berbagai merchant terpercaya di seluruh Indonesia.</p>
-          </div>
-          <Link href="/market" className="hidden md:inline-flex text-xs font-geist font-bold text-primary hover:underline">
-            Lihat Semua →
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {featuredProducts.map(p => <ProductCard key={p.id} product={p} />)}
-        </div>
-
-        <div className="mt-6 text-center md:hidden">
-          <Link href="/market" className="inline-flex items-center gap-2 text-sm font-geist font-bold text-primary hover:underline">Lihat Semua Produk →</Link>
         </div>
       </section>
 
       {/* ── LMS ACADEMY PREVIEW ──────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-on-surface to-slate-800 py-14">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-10">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <div className="inline-flex items-center gap-2 text-[10px] font-geist font-bold text-primary-container uppercase tracking-widest bg-primary-container/20 border border-primary-container/30 px-3 py-1.5 rounded-full mb-3">
-                <IconGradCap />
-                LMS Academy
-              </div>
-              <h2 className="font-sora text-2xl md:text-3xl font-extrabold text-white">
-                Tingkatkan Skill Bisnis <span className="text-primary-container">Anda.</span>
-              </h2>
-              <p className="text-sm text-white/60 mt-1">Kursus premium dari pakar bisnis dan UMKM terpercaya.</p>
-            </div>
-            <Link href="/academy" className="hidden md:inline-flex text-xs font-geist font-bold text-primary-container hover:underline">
-              Lihat Semua Kursus →
-            </Link>
+      <section className="max-w-[1280px] mx-auto px-4 md:px-10 py-10">
+        <div className="flex items-end justify-between mb-6">
+          <div>
+            <h2 className="font-sora text-lg font-extrabold text-text-primary">
+              Teras <span className="text-[#2DB24A]">Academy</span>
+            </h2>
+            <p className="text-xs text-text-secondary mt-0.5">Tingkatkan keahlian bisnis langsung dari mentor berpengalaman.</p>
           </div>
+          <Link href="/academy" className="text-xs font-bold text-[#2DB24A] hover:underline">
+            Semua Kursus →
+          </Link>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 gsap-stagger-container">
-            {featuredCourses.map(course => (
-              <Link key={course.id} href="/academy"
-                className="group bg-white/10 backdrop-blur border border-white/10 hover:border-primary-container/40 rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl gsap-stagger-item"
-              >
-                {course.coverImage && (
-                  <div className="aspect-video w-full overflow-hidden">
-                    <img src={course.coverImage} alt={course.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-80" />
-                  </div>
-                )}
-                <div className="p-5">
-                  <span className="text-[9px] font-geist font-bold text-primary-container uppercase tracking-widest bg-primary-container/20 px-2 py-0.5 rounded border border-primary-container/20">
-                    {course.accessRequired} Access
-                  </span>
-                  <h3 className="font-sora text-sm font-bold text-white mt-3 mb-2 line-clamp-2 group-hover:text-primary-container transition-colors">{course.title}</h3>
-                  <p className="text-xs text-white/50 line-clamp-2 leading-relaxed">{course.description}</p>
-                  <div className="mt-4 flex items-center gap-2 text-[10px] font-geist font-bold text-primary-container">
-                    <IconGradCap />
-                    {(course.lessons || []).length} Pelajaran · Mulai Belajar →
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {featuredCourses.map(course => (
+            <Link key={course.id} href="/academy"
+              className="group bg-white border-0 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)]"
+            >
+              {course.coverImage && (
+                <div className="aspect-video w-full overflow-hidden">
+                  <img src={course.coverImage} alt={course.title} className="object-cover w-full h-full group-hover:scale-102 transition-transform duration-300" />
                 </div>
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-8 text-center">
-            <Link href="/academy" className="inline-flex items-center gap-2 px-8 py-3 bg-primary-container text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-primary-container/90 hover:shadow-lg transition-all hover:-translate-y-0.5 shadow-md">
-              <IconGradCap />
-              Lihat Semua Kursus Academy
+              )}
+              <div className="p-4">
+                <span className="text-[8px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                  {course.accessRequired} Access
+                </span>
+                <h3 className="font-sora text-xs font-bold text-text-primary mt-2 mb-1 line-clamp-1 group-hover:text-primary transition-colors">{course.title}</h3>
+                <p className="text-[10px] text-text-secondary line-clamp-2 leading-relaxed">{course.description}</p>
+                <div className="mt-3 text-[9px] font-bold text-primary flex items-center gap-1">
+                  Mulai Belajar · {(course.lessons || []).length} Materi →
+                </div>
+              </div>
             </Link>
-          </div>
+          ))}
         </div>
       </section>
 
       {/* ── LOWONGAN KERJA ───────────────────────────────────────────────── */}
       {lokerProducts.length > 0 && (
-        <section className="max-w-[1280px] mx-auto px-4 md:px-10 py-14">
-          <div className="flex items-end justify-between mb-6">
-            <div>
-              <div className="inline-flex items-center gap-2 text-[10px] font-geist font-bold text-primary uppercase tracking-widest bg-primary-container/15 border border-primary-container/25 px-3 py-1.5 rounded-full mb-3">
-                <IconTrendUp />
-                Lowongan Kerja
+        <section className="bg-white py-10">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-10">
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <h2 className="font-sora text-lg font-extrabold text-text-primary">
+                  Peluang Kerja <span className="text-primary">Lokal & Proyek</span>
+                </h2>
+                <p className="text-xs text-text-secondary mt-0.5">Bantu bisnis UMKM berkembang dengan skill Anda.</p>
               </div>
-              <h2 className="font-sora text-2xl font-extrabold text-on-surface">
-                Peluang Kerja <span className="text-primary">Freelance & Proyek.</span>
-              </h2>
+              <Link href="/market?category=KERJAAN" className="text-xs font-bold text-[#2DB24A] hover:underline">Lihat Semua →</Link>
             </div>
-            <Link href="/market?category=KERJAAN" className="hidden md:inline-flex text-xs font-geist font-bold text-primary hover:underline">Lihat Semua →</Link>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {lokerProducts.map(p => (
-              <Link key={p.id} href={`/market/product/${p.id}`}
-                className="group flex gap-4 p-5 bg-surface-dark border border-outline-variant/20 hover:border-primary-container/50 rounded-xl transition-all hover:shadow-md hover:-translate-y-0.5"
-              >
-                {p.imageUrl && (
-                  <div className="w-14 h-14 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src={p.imageUrl} alt={p.title} className="w-full h-full object-cover" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {lokerProducts.map(p => (
+                <Link key={p.id} href={`/market/product/${p.id}`}
+                  className="group flex gap-3 p-3 bg-slate-50 hover:bg-slate-100/50 rounded-lg transition-all"
+                >
+                  {p.imageUrl && (
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                      <img src={p.imageUrl} alt={p.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <h3 className="font-sora text-xs font-bold text-text-primary line-clamp-1 group-hover:text-primary transition-colors">{p.title}</h3>
+                      <p className="text-[10px] text-text-secondary line-clamp-2 mt-0.5">{p.description}</p>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[8px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">Lowongan Proyek</span>
+                      <span className="text-[9px] text-text-secondary">{p.stock} slot tersisa</span>
+                    </div>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-sora text-sm font-bold text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{p.title}</h3>
-                  <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">{p.description}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[9px] font-geist font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">Buka Lowongan</span>
-                    <span className="text-[10px] text-on-surface-variant">{p.stock} posisi tersisa</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
       {/* ── CTA FOR NON LOGGED IN ─────────────────────────────────────────── */}
       {!user && (
-        <section className="bg-gradient-to-r from-primary-container/10 via-surface-container to-primary-container/5 border-y border-outline-variant/15 py-16">
+        <section className="bg-gradient-to-r from-primary/5 via-white to-primary/10 py-12">
           <div className="max-w-2xl mx-auto px-4 text-center">
-            <h2 className="font-sora text-3xl font-extrabold text-on-surface mb-3">
-              Siap gabung bersama <span className="text-primary">12.400+ merchant?</span>
+            <h2 className="font-sora text-2xl font-extrabold text-text-primary mb-2">
+              Siap gabung bersama <span className="text-primary">12.400+ Mitra UMKM?</span>
             </h2>
-            <p className="text-sm text-on-surface-variant mb-8">Daftar gratis, buka toko, dan mulai hasilkan dari hari ini.</p>
+            <p className="text-xs text-text-secondary mb-6">Daftar secara gratis, buka toko online Anda, dan capai sukses digital Anda.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/auth?tab=register" className="px-8 py-3.5 bg-primary-container text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-primary-container/90 hover:shadow-lg transition-all hover:-translate-y-0.5 shadow-md">
-                Daftar Gratis Sekarang
+              <Link href="/auth?tab=register" className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-all shadow shadow-green-500/10">
+                Daftar Toko Gratis
               </Link>
-              <Link href="/market" className="px-8 py-3.5 bg-surface-dark border border-outline-variant/40 text-on-surface font-geist font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-surface-container transition-all hover:-translate-y-0.5">
-                Jelajahi Marketplace
+              <Link href="/market" className="px-6 py-2.5 bg-white border border-border hover:bg-surface text-text-primary font-bold text-xs uppercase tracking-wider rounded-lg transition-all">
+                Jelajahi Produk
               </Link>
             </div>
           </div>

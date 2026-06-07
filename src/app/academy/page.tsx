@@ -42,11 +42,11 @@ export default async function AcademyPage() {
             return (
               <div
                 key={course.id}
-                className="group bg-surface-dark border border-border-subtle hover:border-primary/45 rounded-lg overflow-hidden transition-all duration-300 flex flex-col justify-between"
+                className="group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] transition-all duration-300 flex flex-col justify-between"
               >
                 {/* Course Header with Image */}
                 <div>
-                  <div className="aspect-[21/9] w-full bg-surface-container relative overflow-hidden border-b border-border-subtle flex items-center justify-center">
+                  <div className="aspect-[21/9] w-full bg-slate-50 relative overflow-hidden flex items-center justify-center">
                     {course.coverImage ? (
                       <img
                         src={course.coverImage}
@@ -56,7 +56,7 @@ export default async function AcademyPage() {
                     ) : (
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-60" />
                     )}
-                    <span className="absolute top-4 left-4 px-2 py-0.5 bg-surface-dark/95 border border-primary/20 rounded text-[9px] font-geist font-bold text-primary uppercase tracking-wider">
+                    <span className="absolute top-4 left-4 px-2 py-0.5 bg-white/95 rounded text-[9px] font-bold text-primary uppercase tracking-wider">
                       Academy Module
                     </span>
                   </div>
@@ -77,7 +77,7 @@ export default async function AcademyPage() {
                           <span>Progress Belajar</span>
                           <span className="text-primary font-bold">{percent}% Selesai</span>
                         </div>
-                        <div className="w-full h-1 bg-surface-container rounded-full overflow-hidden border border-border-subtle">
+                        <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-primary transition-all duration-500"
                             style={{ width: `${percent}%` }}
@@ -88,7 +88,7 @@ export default async function AcademyPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="px-4 py-3 bg-surface-container border border-border-subtle rounded flex items-center gap-2.5 text-xs text-text-secondary">
+                      <div className="px-4 py-3 bg-slate-50 rounded flex items-center gap-2.5 text-xs text-text-secondary">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           fill="none"
@@ -114,7 +114,7 @@ export default async function AcademyPage() {
                   <Link
                     id={`btn-course-${course.id}`}
                     href={`/academy/course/${course.id}`}
-                    className="w-full py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/40 text-text-primary hover:text-primary font-geist font-bold text-xs uppercase tracking-wider rounded transition-all duration-300 flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-[#E8F5E9] hover:bg-[#E8F5E9]/80 text-[#0F5132] font-geist font-bold text-xs uppercase tracking-wider rounded transition-all duration-300 flex items-center justify-center gap-2"
                   >
                     Mulai Belajar
                     <svg
