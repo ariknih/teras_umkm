@@ -15,11 +15,11 @@ export default function OnboardingGuard({ userSetupCompleted, isLoggedIn }: Onbo
   useEffect(() => {
     if (isLoggedIn && !userSetupCompleted) {
       const isAuthPage = pathname === '/auth'
-      const isSetupPage = pathname === '/setup-landing'
+      const isOnboardingPage = pathname === '/onboarding'
       const isApi = pathname.startsWith('/api')
 
-      if (!isAuthPage && !isSetupPage && !isApi) {
-        router.push('/setup-landing')
+      if (!isAuthPage && !isOnboardingPage && !isApi) {
+        router.push('/onboarding')
       }
     }
   }, [isLoggedIn, userSetupCompleted, pathname, router])

@@ -188,3 +188,62 @@ export async function sendOtpWhatsApp(phone: string, otp: string) {
     return { error: err.message || 'Gagal mengirim OTP' }
   }
 }
+
+export async function checkSubdomainAvailability(subdomain: string) {
+  const user = await getCurrentUser()
+  const taken = await DataStore.isSubdomainTaken(subdomain, user?.id)
+  return { available: !taken }
+}
+
+export async function saveOnboardingData(data: {
+  whatsapp: string
+  storeName: string
+  picName: string
+  phone: string
+  locationName: string
+  detailAddress: string
+  subdomain: string
+  latitude?: number
+  longitude?: number
+}) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const taken = await DataStore.isSubdomainTaken(data.subdomain, user.id)
+  if (taken) {
+    return { error: 'Subdomain sudah digunakan oleh pengguna lain.' }
+  }
+
+  try {
+    const config = JSON.stringify({
+      title: data.storeName,
+      bio: `Selamat datang di toko ${data.storeName}! Kami menyediakan produk dan jasa terbaik secara lokal.`,
+      phone: data.phone,
+      whatsapp: data.whatsapp,
+      picName: data.picName,
+      subdomain: data.subdomain.toLowerCase().trim(),
+      locationName: data.locationName,
+      detailAddress: data.detailAddress,
+      sections: ['hero', 'profile', 'products', 'map', 'footer']
+    })
+
+    const updated = await DataStore.updateLandingPage(
+      user.id,
+      'template1',
+      config,
+      data.latitude || -6.2088,
+      data.longitude || 106.8456
+    )
+
+    if (!updated) {
+      return { error: 'Gagal memperbarui data profil onboarding.' }
+    }
+
+    await DataStore.addXp(user.id, 100)
+    
+    revalidatePath('/')
+    return { success: true }
+  } catch (err: any) {
+    return { error: err.message || 'Gagal menyimpan data onboarding.' }
+  }
+}

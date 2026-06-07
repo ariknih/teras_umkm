@@ -2357,6 +2357,40 @@ export const DataStore = {
     return null
   },
 
+  async isSubdomainTaken(subdomain: string, excludeUserId?: string): Promise<boolean> {
+    const cleanSub = subdomain.toLowerCase().trim()
+    if (['test', 'admin', 'saloka', 'buat', 'web', 'system', 'api', 'dev', 'portal'].includes(cleanSub)) {
+      return true
+    }
+
+    if (await isDbConnected()) {
+      try {
+        const users = await db.user.findMany({
+          where: {
+            landingPageConfig: {
+              contains: `"subdomain":"${cleanSub}"`
+            },
+            NOT: excludeUserId ? { id: excludeUserId } : undefined
+          }
+        })
+        if (users.length > 0) return true
+      } catch (_) {}
+    }
+
+    const matchedMock = globalMockUsers.find(u => {
+      if (excludeUserId && u.id === excludeUserId) return false
+      if (!u.landingPageConfig) return false
+      try {
+        const config = JSON.parse(u.landingPageConfig)
+        return config.subdomain?.toLowerCase().trim() === cleanSub
+      } catch (_) {
+        return false
+      }
+    })
+
+    return !!matchedMock
+  },
+
   async recreateMissingUser(data: { id: string; email: string; name: string; role: string }) {
     if (await isDbConnected()) {
       try {
