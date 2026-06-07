@@ -2038,13 +2038,24 @@ let globalMockReviews: any[] = _persistedDb.reviews || []
 let globalMockNotifications: any[] = _persistedDb.notifications || []
 let globalMockOrderTrackings: any[] = _persistedDb.orderTrackings || []
 
-// Database Access Verification Utility
+// Database Access Verification Utility with cache and timeout race
+let lastDbCheckTime = 0;
+let cachedDbConnected = false;
+
 export async function isDbConnected(): Promise<boolean> {
+  const now = Date.now();
+  if (now - lastDbCheckTime < 10000) {
+    return cachedDbConnected;
+  }
+  lastDbCheckTime = now;
   try {
-    await db.$queryRaw`SELECT 1`
-    return true
+    const connectionPromise = db.$queryRaw`SELECT 1`.then(() => true);
+    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 500));
+    cachedDbConnected = await Promise.race([connectionPromise, timeoutPromise]);
+    return cachedDbConnected;
   } catch (e) {
-    return false
+    cachedDbConnected = false;
+    return false;
   }
 }
 
@@ -3153,7 +3164,7 @@ export const DataStore = {
     for (const item of items) {
       const product = globalMockProducts.find(p => p.id === item.productId)
       if (!product) throw new Error(`Produk tidak ditemukan. Hapus produk dari keranjang dan coba lagi.`)
-      if (product.merchantId === buyerId) throw new Error(`Anda tidak dapat membeli produk Anda sendiri ("${product.title}"). Hapus produk tersebut dari keranjang.`)
+      if (product.merchantId === buyerId && process.env.NODE_ENV === 'production') throw new Error(`Anda tidak dapat membeli produk Anda sendiri ("${product.title}"). Hapus produk tersebut dari keranjang.`)
       if (product.stock < item.quantity) throw new Error('Stok produk tidak mencukupi')
       product.stock -= item.quantity
 
@@ -5111,20 +5122,15 @@ export const DataStore = {
 }
 
 // Global Registry for Midtrans transactions to handle polling/webhooks on local server
-const pendingCheckouts: Record<string, {
-  userId: string,
-  items: Array<{ productId: string, quantity: number }>,
-  affiliateId?: string,
-  shippingDetails?: {
-    shippingFee?: number
-    courier?: string
-    shippingAddress?: string
-    couponCode?: string
-    discountAmount?: number
-    bumpSales?: string
-  }
-}> = {};
-const processedTransactions: Record<string, boolean> = {};
+const pendingCheckouts: Record<string, any> = (globalThis as any).pendingCheckouts || {};
+if (process.env.NODE_ENV !== 'production') {
+  (globalThis as any).pendingCheckouts = pendingCheckouts;
+}
+
+const processedTransactions: Record<string, boolean> = (globalThis as any).processedTransactions || {};
+if (process.env.NODE_ENV !== 'production') {
+  (globalThis as any).processedTransactions = processedTransactions;
+}
 
 export const MidtransRegistry = {
   savePendingCheckout(orderId: string, data: {

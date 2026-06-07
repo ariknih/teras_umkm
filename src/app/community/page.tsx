@@ -124,6 +124,13 @@ export default function CommunityPage() {
   const [newGroupDesc, setNewGroupDesc] = useState('')
   const [newGroupAvatar, setNewGroupAvatar] = useState('')
   const [newGroupCover, setNewGroupCover] = useState('')
+  
+  // Community Cooperative Registration States
+  const [groupType, setGroupType] = useState<'REGULER' | 'KOPERASI'>('REGULER')
+  const [nib, setNib] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'QRIS' | 'BANK'>('QRIS')
+  const [paymentStatus, setPaymentStatus] = useState<'IDLE' | 'PENDING' | 'SUCCESS'>('IDLE')
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false)
 
   // Composer
   const [composerExpanded, setComposerExpanded] = useState(false)
@@ -207,6 +214,15 @@ export default function CommunityPage() {
     }
   }, [groupId])
 
+  // Simulate cooperative registration payment
+  const handleSimulatePayment = () => {
+    setIsVerifyingPayment(true)
+    setTimeout(() => {
+      setIsVerifyingPayment(false)
+      setPaymentStatus('SUCCESS')
+    }, 1500)
+  }
+
   // Create Group Handler
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -217,12 +233,25 @@ export default function CommunityPage() {
       return
     }
 
+    if (groupType === 'KOPERASI') {
+      if (!nib) {
+        setActionError('Nomor NIB / Legalitas wajib diisi untuk tipe Koperasi.')
+        return
+      }
+      if (paymentStatus !== 'SUCCESS') {
+        setActionError('Pembayaran pendaftaran Rp 150.000 wajib diselesaikan dan diverifikasi.')
+        return
+      }
+    }
+
     startTransition(async () => {
       const formData = new FormData()
       formData.append('name', newGroupName)
       formData.append('description', newGroupDesc)
       formData.append('avatarUrl', newGroupAvatar)
       formData.append('coverUrl', newGroupCover)
+      formData.append('groupType', groupType)
+      formData.append('nib', nib)
 
       const res = await createGroup(formData)
       if (res.error) {
@@ -232,6 +261,9 @@ export default function CommunityPage() {
         setNewGroupDesc('')
         setNewGroupAvatar('')
         setNewGroupCover('')
+        setNib('')
+        setGroupType('REGULER')
+        setPaymentStatus('IDLE')
         setCreateModalOpen(false)
         
         // Refresh list and navigate to new group
@@ -719,7 +751,7 @@ export default function CommunityPage() {
                       value={newGroupAvatar}
                       onChange={(e) => setNewGroupAvatar(e.target.value)}
                       placeholder="https://example.com/logo.png"
-                      className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                      className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none"
                     />
                   </div>
                   <div className="space-y-2">
@@ -729,23 +761,136 @@ export default function CommunityPage() {
                       value={newGroupCover}
                       onChange={(e) => setNewGroupCover(e.target.value)}
                       placeholder="https://example.com/cover.jpg"
-                      className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                      className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none"
                     />
                   </div>
                 </div>
+
+                {/* Tipe Komunitas & NIB */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider">Tipe Komunitas</label>
+                    <select
+                      value={groupType}
+                      onChange={(e) => {
+                        setGroupType(e.target.value as any)
+                        setPaymentStatus('IDLE')
+                      }}
+                      className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary/50 cursor-pointer"
+                    >
+                      <option value="REGULER">Reguler (Gratis)</option>
+                      <option value="KOPERASI">Koperasi (Paid - Rp 150.000)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider">No. NIB / Legalitas</label>
+                    <input
+                      type="text"
+                      required={groupType === 'KOPERASI'}
+                      value={nib}
+                      onChange={(e) => setNib(e.target.value)}
+                      placeholder="e.g. 1234567890123"
+                      className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary/50"
+                    />
+                  </div>
+                </div>
+
+                {/* Cooperative Paid Module */}
+                {groupType === 'KOPERASI' && (
+                  <div className="p-4 border border-border-subtle bg-surface-container/50 rounded-xl space-y-4 animate-in fade-in duration-300">
+                    <div className="flex justify-between items-center border-b border-border-subtle/50 pb-2">
+                      <span className="text-xs font-bold text-text-primary">Invoice Registrasi Koperasi</span>
+                      <span className="text-sm font-extrabold text-primary">Rp 150.000</span>
+                    </div>
+
+                    {paymentStatus !== 'SUCCESS' ? (
+                      <div className="space-y-3">
+                        {/* Selector */}
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod('QRIS')}
+                            className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
+                              paymentMethod === 'QRIS'
+                                ? 'bg-primary/10 border-primary text-primary'
+                                : 'bg-surface-container border-border-subtle text-text-secondary hover:text-text-primary'
+                            }`}
+                          >
+                            QRIS
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod('BANK')}
+                            className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
+                              paymentMethod === 'BANK'
+                                ? 'bg-primary/10 border-primary text-primary'
+                                : 'bg-surface-container border-border-subtle text-text-secondary hover:text-text-primary'
+                            }`}
+                          >
+                            Transfer Bank
+                          </button>
+                        </div>
+
+                        {/* QRIS Display */}
+                        {paymentMethod === 'QRIS' && (
+                          <div className="flex flex-col items-center py-4 bg-white rounded-xl border border-neutral-200">
+                            {/* SVG Mock QR Code */}
+                            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" className="text-[#111111]">
+                              <rect width="24" height="24" fill="white" />
+                              <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm1 1h2v2H5V5zm9-3h8v8h-8V2zm2 2v4h4V4h-4zm1 1h2v2h-2V5zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm1 1h2v2H5v-2zm12-3h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm-2-2h2v2h-2v-2zm0 4h2v2h-2v-2zm4 0h2v2h-2v-2zm-8-4h2v2H9v-2zm2 2h2v2h-2v-2zm2-2h2v2h-2v-2z" fill="currentColor" />
+                              <rect x="9.5" y="9.5" width="5" height="5" fill="#2DB24A" />
+                            </svg>
+                            <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-wider mt-2">Saloka QRIS Auto-Verify</span>
+                          </div>
+                        )}
+
+                        {/* Bank Display */}
+                        {paymentMethod === 'BANK' && (
+                          <div className="p-3 bg-surface-dark border border-border-subtle rounded-xl space-y-1 text-center">
+                            <span className="text-[10px] text-text-secondary block font-bold">Transfer ke rekening berikut:</span>
+                            <span className="text-xs font-black text-text-primary block font-mono">Bank Mandiri: 123-456-789-012</span>
+                            <span className="text-[10px] text-text-secondary block">a/n Saloka.id (Koperasi Register)</span>
+                          </div>
+                        )}
+
+                        {/* Confirm Button */}
+                        <button
+                          type="button"
+                          onClick={handleSimulatePayment}
+                          disabled={isVerifyingPayment}
+                          className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                        >
+                          {isVerifyingPayment ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                              Memverifikasi Pembayaran...
+                            </>
+                          ) : (
+                            'Konfirmasi & Verifikasi Pembayaran'
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-center text-xs text-green-600 font-bold flex items-center justify-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                        Pembayaran Rp 150.000 Terverifikasi!
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-3 pt-3">
                   <button
                     type="button"
                     onClick={() => setCreateModalOpen(false)}
-                    className="px-4 py-2 hover:bg-surface-container border border-border-subtle text-text-secondary hover:text-text-primary rounded text-[10px] font-bold uppercase tracking-wider transition-colors"
+                    className="px-4 py-2 hover:bg-surface-container border border-border-subtle text-text-secondary hover:text-text-primary rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    disabled={isPending}
-                    className="px-5 py-2 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-colors shadow-md disabled:opacity-50"
+                    disabled={isPending || (groupType === 'KOPERASI' && paymentStatus !== 'SUCCESS')}
+                    className="px-5 py-2 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-[10px] uppercase tracking-wider rounded-xl transition-colors shadow-md disabled:opacity-50"
                   >
                     {isPending ? 'Mendaftarkan...' : 'Daftarkan Komunitas'}
                   </button>

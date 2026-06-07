@@ -100,3 +100,32 @@ export async function getTransactionStatus(orderId: string) {
     throw error;
   }
 }
+
+/**
+ * Helper to encode user ID for Midtrans order ID to stay within 50 characters limit.
+ * If user ID is a UUID (36 chars, with hyphens), we strip hyphens to get 32 chars.
+ */
+export function encodeUserIdForMidtrans(userId: string): string {
+  if (userId.length === 36 && userId.includes('-')) {
+    return userId.replace(/-/g, '');
+  }
+  return userId;
+}
+
+/**
+ * Helper to decode user ID from Midtrans order ID back to its original form.
+ * If the encoded string is 32 characters hex, it represents a stripped UUID, so we insert the hyphens.
+ */
+export function decodeUserIdFromMidtrans(encodedId: string): string {
+  if (encodedId.length === 32 && /^[0-9a-fA-F]{32}$/.test(encodedId)) {
+    return [
+      encodedId.slice(0, 8),
+      encodedId.slice(8, 12),
+      encodedId.slice(12, 16),
+      encodedId.slice(16, 20),
+      encodedId.slice(20)
+    ].join('-');
+  }
+  return encodedId;
+}
+

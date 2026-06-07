@@ -60,8 +60,8 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <span className="font-sora text-sm font-bold tracking-tight text-text-primary group-hover/logo:text-primary transition-colors whitespace-nowrap hidden min-[400px]:inline">
-                Teras<span className="text-primary">UMKM</span>
+              <span className="font-sora text-sm font-bold tracking-tight text-secondary dark:text-primary transition-colors whitespace-nowrap hidden min-[400px]:inline">
+                Saloka<span className="text-tertiary">.id</span>
               </span>
             </Link>
 

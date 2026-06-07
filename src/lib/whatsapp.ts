@@ -17,26 +17,48 @@ export async function sendWhatsAppMessage({
   message,
   gatewayKey
 }: WaMessageOptions) {
-  const activeKey = gatewayKey || 'TERAS_DEFAULT_GATEWAY_KEY'
+  const activeKey = gatewayKey || process.env.FONNTE_API_TOKEN || 'TERAS_DEFAULT_GATEWAY_KEY'
   
   console.log(`[WA Gateway API - ${activeKey}] Mengirim ke ${recipientPhone} (${recipientName}): ${message}`)
 
   try {
-    // If the gateway key looks like a real API key, we could send a real HTTP request here:
-    if (gatewayKey && gatewayKey !== 'TERAS_DEFAULT_GATEWAY_KEY' && !gatewayKey.includes('demo')) {
-      const response = await fetch('https://api.komerce.id/wa-gateway/send', {
+    const fonnteToken = process.env.FONNTE_API_TOKEN || (gatewayKey && gatewayKey !== 'TERAS_DEFAULT_GATEWAY_KEY' && !gatewayKey.includes('demo') ? gatewayKey : null)
+
+    if (fonnteToken) {
+      const response = await fetch('https://api.fonnte.com/send', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${gatewayKey}`
+          'Authorization': fonnteToken,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          phone: recipientPhone,
+          target: recipientPhone,
           message: message
         })
       })
       if (!response.ok) {
-        console.warn('Real WA gateway returned error status:', response.status)
+        console.warn('Fonnte WA gateway returned error status:', response.status)
+      } else {
+        const resData = await response.json()
+        console.log('Fonnte send response:', resData)
+      }
+    } else {
+      // Demo placeholder
+      if (gatewayKey && gatewayKey !== 'TERAS_DEFAULT_GATEWAY_KEY' && !gatewayKey.includes('demo')) {
+        const response = await fetch('https://api.komerce.id/wa-gateway/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${gatewayKey}`
+          },
+          body: JSON.stringify({
+            phone: recipientPhone,
+            message: message
+          })
+        })
+        if (!response.ok) {
+          console.warn('Real WA gateway returned error status:', response.status)
+        }
       }
     }
 

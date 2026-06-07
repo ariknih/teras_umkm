@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/app/actions/auth';
 import { DataStore, MidtransRegistry } from '@/lib/data-store';
-import { createSnapTransaction } from '@/lib/midtrans';
+import { createSnapTransaction, encodeUserIdForMidtrans } from '@/lib/midtrans';
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Jumlah pengisian tidak valid.' }, { status: 400 });
       }
 
-      const orderId = `deposit-${user.id}-${Date.now()}`;
+      const orderId = `dep-${encodeUserIdForMidtrans(user.id)}-${Date.now().toString(36)}`;
       
       const snapResult = await createSnapTransaction({
         orderId,
@@ -63,8 +63,8 @@ export async function POST(req: NextRequest) {
         if (!product) {
           return NextResponse.json({ error: `Produk tidak ditemukan. Mungkin produk sudah dihapus atau tidak tersedia. Hapus produk dari keranjang dan coba lagi.` }, { status: 404 });
         }
-        // Block purchasing own products
-        if (product.merchantId === user.id) {
+        // Block purchasing own products in production
+        if (product.merchantId === user.id && process.env.NODE_ENV === 'production') {
           return NextResponse.json({ error: `Anda tidak dapat membeli produk Anda sendiri ("${product.title}"). Hapus produk tersebut dari keranjang terlebih dahulu.` }, { status: 400 });
         }
         if (product.stock < item.quantity) {
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       }
 
       const totalAmount = subtotal + shippingFee + bumpSalesTotal - computedDiscount;
-      const orderId = `checkout-${user.id}-${Date.now()}`;
+      const orderId = `chk-${encodeUserIdForMidtrans(user.id)}-${Date.now().toString(36)}`;
 
       // Save checkout details in registry so we can settle it when payment is verified
       MidtransRegistry.savePendingCheckout(orderId, {
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
           first_name: user.name,
           email: user.email,
         },
-        itemDetails: itemDetailsList,
+        itemDetails: computedDiscount > 0 ? undefined : itemDetailsList,
       });
 
       return NextResponse.json({

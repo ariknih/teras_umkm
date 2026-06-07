@@ -594,7 +594,9 @@ export default function CartPage() {
   }
 
   const total = Math.max(0, subtotal + shippingFee + bumpSalesTotal - activeCouponDiscount)
-  const hasOwnProduct = cartDetails.some((item) => currentUser && item.merchantId === currentUser.id)
+  const hasOwnProduct = process.env.NODE_ENV === 'production'
+    ? cartDetails.some((item) => currentUser && item.merchantId === currentUser.id)
+    : false
 
   const handleApplyCoupon = (code: string) => {
     setCouponError(null)

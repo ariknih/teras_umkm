@@ -68,9 +68,21 @@ export async function register(formData: FormData) {
   if (existing) {
     return { error: 'Email sudah terdaftar' }
   }
-  
+
+  const referralCode = formData.get('referralCode') as string || undefined
+  let parentAffiliateId: string | undefined = undefined
+  if (referralCode) {
+    let referrer = await DataStore.findUserById(referralCode)
+    if (!referrer) {
+      referrer = await DataStore.findUserByEmail(referralCode)
+    }
+    if (referrer) {
+      parentAffiliateId = referrer.id
+    }
+  }
+
   const passwordHash = hashPassword(password)
-  const user = await DataStore.createUser({ email, name, passwordHash, role })
+  const user = await DataStore.createUser({ email, name, passwordHash, role, parentAffiliateId })
   
   // Create Session JWT
   const token = await new SignJWT({ id: user.id, email: user.email, role: user.role, name: user.name })
@@ -158,4 +170,21 @@ export async function getCurrentUserProfile() {
 
 export async function getUserProfileById(userId: string) {
   return await DataStore.findUserById(userId)
+}
+
+import { sendWhatsAppMessage } from '@/lib/whatsapp'
+
+export async function sendOtpWhatsApp(phone: string, otp: string) {
+  try {
+    await sendWhatsAppMessage({
+      merchantId: 'SYSTEM',
+      merchantName: 'Teras UMKM Registration',
+      recipientName: 'Registrant',
+      recipientPhone: phone,
+      message: `Kode OTP verifikasi WhatsApp Teras UMKM Anda adalah: ${otp}. Harap tidak membagikan kode ini kepada siapapun.`
+    })
+    return { success: true }
+  } catch (err: any) {
+    return { error: err.message || 'Gagal mengirim OTP' }
+  }
 }

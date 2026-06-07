@@ -143,6 +143,27 @@ export default function SetupLandingPage() {
   const [phone, setPhone] = useState('')
   const [instagram, setInstagram] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
+
+  // Subdomain & Custom Domain States
+  const [subdomain, setSubdomain] = useState('')
+  const [customDomain, setCustomDomain] = useState('')
+  const [checkingSubdomain, setCheckingSubdomain] = useState(false)
+  const [subdomainAvailable, setSubdomainAvailable] = useState<boolean | null>(null)
+
+  // Simulate Subdomain Availability Check
+  useEffect(() => {
+    if (!subdomain) {
+      setSubdomainAvailable(null)
+      return
+    }
+    setCheckingSubdomain(true)
+    const timer = setTimeout(() => {
+      setCheckingSubdomain(false)
+      const taken = ['test', 'admin', 'saloka', 'buat', 'web'].includes(subdomain.toLowerCase().trim())
+      setSubdomainAvailable(!taken)
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [subdomain])
   
   // Geolocation & Address
   const [latitude, setLatitude] = useState<number | null>(null)
@@ -265,6 +286,8 @@ export default function SetupLandingPage() {
           setPhone(config.phone || '')
           setInstagram(config.instagram || '')
           setLogoUrl(config.logoUrl || '')
+          setSubdomain(config.subdomain || '')
+          setCustomDomain(config.customDomain || '')
           if (config.locationName) {
             setLocationName(config.locationName)
           }
@@ -562,6 +585,8 @@ export default function SetupLandingPage() {
         phone,
         instagram,
         logoUrl,
+        subdomain,
+        customDomain,
         locationName,
         sections: sectionOrder.filter((key) => activeSections.includes(key)),
         testimonials,
@@ -830,6 +855,105 @@ export default function SetupLandingPage() {
                       placeholder="Contoh: @kala.sourdough"
                       className="w-full px-3.5 py-2 bg-surface-container border border-border-subtle rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary/50 transition-colors"
                     />
+                  </div>
+                </div>
+
+                {/* Subdomain & Custom Domain Configuration */}
+                <div className="pt-4 border-t border-border-subtle space-y-4">
+                  <span className="block text-[9px] font-geist font-black text-text-secondary uppercase tracking-widest">
+                    Subdomain & Kustom Domain (.id)
+                  </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-[9px] font-geist font-black text-text-secondary uppercase tracking-widest">
+                          Subdomain Saloka
+                        </label>
+                        <span className="px-1.5 py-0.2 bg-primary/10 border border-primary/20 text-primary text-[7px] font-black rounded uppercase">
+                          Gratis
+                        </span>
+                      </div>
+                      <div className="relative flex items-center">
+                        <input
+                          type="text"
+                          value={subdomain}
+                          onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                          placeholder="e.g. tokobudi"
+                          className="w-full pl-3 pr-20 py-2 bg-surface-container border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary/50 transition-colors"
+                        />
+                        <span className="absolute right-3 text-[10px] text-text-secondary font-semibold font-mono pointer-events-none">
+                          .saloka.id
+                        </span>
+                      </div>
+                      {checkingSubdomain && (
+                        <span className="text-[9px] text-text-secondary mt-1 block animate-pulse">Mengecek ketersediaan...</span>
+                      )}
+                      {!checkingSubdomain && subdomainAvailable === true && (
+                        <span className="text-[9px] text-green-500 mt-1 block">✓ Subdomain tersedia</span>
+                      )}
+                      {!checkingSubdomain && subdomainAvailable === false && (
+                        <span className="text-[9px] text-red-500 mt-1 block">✗ Subdomain sudah digunakan</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className="block text-[9px] font-geist font-black text-text-secondary uppercase tracking-widest">
+                          Domain Sendiri (Custom)
+                        </label>
+                        <span className="px-1.5 py-0.2 bg-tertiary/25 border border-tertiary/35 text-tertiary text-[7px] font-black rounded uppercase">
+                          PRO
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        value={customDomain}
+                        onChange={(e) => setCustomDomain(e.target.value.toLowerCase().replace(/[^a-z0-9.-]/g, ''))}
+                        placeholder="e.g. www.tokobudi.com"
+                        className="w-full px-3 py-2 bg-surface-container border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Live Domain Preview Card */}
+                  <div className="p-3 border border-border-subtle bg-surface-dark/60 rounded-xl space-y-2">
+                    <span className="block text-[8px] font-geist font-black text-text-secondary uppercase tracking-widest">
+                      Live Domain Preview
+                    </span>
+                    {/* Simulated Browser Address Bar */}
+                    <div className="flex items-center gap-2 px-3 py-2 bg-surface-container border border-border-subtle rounded-xl text-xs">
+                      {/* Browser buttons */}
+                      <div className="flex gap-1 shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                      </div>
+                      
+                      {/* Address Input bar */}
+                      <div className="flex-grow flex items-center bg-surface-dark border border-border-subtle/50 px-3 py-1 rounded-xl text-[10px] text-text-secondary select-all font-mono truncate gap-1">
+                        <span className="text-primary">https://</span>
+                        <span className="text-text-primary font-bold">
+                          {customDomain ? customDomain : `${subdomain || 'username'}.saloka.id`}
+                        </span>
+                      </div>
+
+                      {/* Mock copy icon */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = customDomain ? `https://${customDomain}` : `https://${subdomain || 'username'}.saloka.id`
+                          navigator.clipboard.writeText(url)
+                          alert('URL Domain disalin!')
+                        }}
+                        className="p-1 hover:bg-surface-dark rounded-lg text-text-secondary hover:text-text-primary shrink-0 transition-colors"
+                        title="Salin URL Domain"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5A3.375 3.375 0 0 0 6.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0 0 15 2.25h-1.5a2.251 2.251 0 0 0-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v12c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 0 0-9-9Z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
 

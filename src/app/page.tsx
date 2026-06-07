@@ -47,12 +47,12 @@ const IconPen = () => (
 
 // ─── Service catalog data ─────────────────────────────────────────────────────
 const JASA_HIGHLIGHTS = [
-  { icon: <IconPen />, label: 'Desain & Branding', query: 'desain', color: 'from-amber-50 to-amber-100/50', border: 'border-amber-200/60', text: 'text-amber-700' },
-  { icon: <IconCamera />, label: 'Foto & Video', query: 'foto', color: 'from-rose-50 to-rose-100/50', border: 'border-rose-200/60', text: 'text-rose-700' },
-  { icon: <IconCode />, label: 'IT & Website', query: 'website', color: 'from-blue-50 to-blue-100/50', border: 'border-blue-200/60', text: 'text-blue-700' },
-  { icon: <IconShare />, label: 'Social Media', query: 'sosmed', color: 'from-purple-50 to-purple-100/50', border: 'border-purple-200/60', text: 'text-purple-700' },
-  { icon: <IconBriefcase />, label: 'Catering & Event', query: 'catering', color: 'from-green-50 to-green-100/50', border: 'border-green-200/60', text: 'text-green-700' },
-  { icon: <IconTrendUp />, label: 'Iklan & Ads', query: 'ads', color: 'from-orange-50 to-orange-100/50', border: 'border-orange-200/60', text: 'text-orange-700' },
+  { icon: <IconPen />, label: 'Desain & Branding', query: 'desain' },
+  { icon: <IconCamera />, label: 'Foto & Video', query: 'foto' },
+  { icon: <IconCode />, label: 'IT & Website', query: 'website' },
+  { icon: <IconShare />, label: 'Social Media', query: 'sosmed' },
+  { icon: <IconBriefcase />, label: 'Catering & Event', query: 'catering' },
+  { icon: <IconTrendUp />, label: 'Iklan & Ads', query: 'ads' },
 ]
 
 const PLATFORM_FEATURES = [
@@ -120,7 +120,7 @@ function JasaCard({ product }: { product: any }) {
         <p className="text-xs text-on-surface-variant line-clamp-2 mt-1 leading-relaxed">{product.description}</p>
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs font-bold text-primary">Rp {product.price.toLocaleString('id-ID')}</span>
-          <span className="text-[9px] px-2 py-0.5 bg-green-50 text-green-700 border border-green-200/60 rounded-full font-geist font-semibold">
+          <span className="text-[9px] px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-full font-geist font-semibold">
             Stok: {product.stock}
           </span>
         </div>
@@ -253,9 +253,9 @@ export default async function HomePage() {
             {JASA_HIGHLIGHTS.map(j => (
               <Link key={j.label}
                 href={`/market?category=JASA&query=${j.query}`}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-geist font-semibold border bg-gradient-to-r ${j.color} ${j.border} ${j.text} hover:shadow-sm transition-all`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-geist font-semibold border border-border-subtle bg-surface-dark text-text-secondary hover:text-primary hover:border-primary/45 transition-all"
               >
-                <span className="scale-90">{j.icon}</span>
+                <span className="scale-90 text-primary">{j.icon}</span>
                 {j.label}
               </Link>
             ))}
@@ -390,7 +390,7 @@ export default async function HomePage() {
                   <h3 className="font-sora text-sm font-bold text-on-surface line-clamp-1 group-hover:text-primary transition-colors">{p.title}</h3>
                   <p className="text-xs text-on-surface-variant line-clamp-2 mt-1">{p.description}</p>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[9px] font-geist font-bold text-green-700 bg-green-50 border border-green-200/60 px-2 py-0.5 rounded-full">Buka Lowongan</span>
+                    <span className="text-[9px] font-geist font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">Buka Lowongan</span>
                     <span className="text-[10px] text-on-surface-variant">{p.stock} posisi tersisa</span>
                   </div>
                 </div>

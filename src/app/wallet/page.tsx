@@ -468,7 +468,7 @@ export default function WalletPage() {
                 type="text"
                 value={manualOrderId || pendingOrderId || ''}
                 onChange={(e) => setManualOrderId(e.target.value)}
-                placeholder="Masukkan Order ID (contoh: deposit-user-...)"
+                placeholder="Masukkan Order ID (contoh: dep-user-...)"
                 className="flex-grow h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary/50"
               />
               <button

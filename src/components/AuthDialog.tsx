@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useTransition, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
-import { login, register } from "@/app/actions/auth";
+import { login, register, sendOtpWhatsApp } from "@/app/actions/auth";
 
 interface AuthDialogProps {
   trigger: React.ReactNode;
@@ -15,6 +15,7 @@ interface AuthDialogProps {
 
 export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"login" | "register">(defaultTab);
   
@@ -24,6 +25,56 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
   const [role, setRole] = useState<"CUSTOMER" | "MERCHANT" | "AFFILIATE">("CUSTOMER");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // WhatsApp OTP Verification States
+  const [whatsapp, setWhatsapp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [countdown, setCountdown] = useState(60);
+  const [isVerified, setIsVerified] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+
+  // Handle countdown timer
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (otpSent && countdown > 0 && !isVerified) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpSent, countdown, isVerified]);
+
+  // Pre-fill referral code from URL
+  useEffect(() => {
+    const ref = searchParams?.get("ref") || searchParams?.get("aff");
+    if (ref) {
+      setReferralCode(ref);
+    }
+  }, [searchParams]);
+
+  const handleSendOtp = async () => {
+    if (!whatsapp) {
+      alert("Silakan masukkan nomor WhatsApp terlebih dahulu.");
+      return;
+    }
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(code);
+    setOtpSent(true);
+    setCountdown(60);
+    setOtpCode("");
+    setError(null);
+
+    // Call the server action to send the actual WhatsApp message
+    await sendOtpWhatsApp(whatsapp, code);
+  };
+
+  const handleVerifyOtp = (val: string) => {
+    setOtpCode(val);
+    if (val === generatedOtp) {
+      setIsVerified(true);
+      setError(null);
+    }
+  };
 
   const handleGoogleLogin = () => {
     setError(null);
@@ -39,6 +90,23 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
     e.preventDefault();
     setError(null);
 
+    if (tab === "register") {
+      if (!name || !email || !password || !whatsapp) {
+        setError("Semua kolom wajib diisi.");
+        return;
+      }
+
+      if (!otpSent) {
+        handleSendOtp();
+        return;
+      }
+
+      if (otpCode !== generatedOtp) {
+        setError("Kode OTP WhatsApp salah.");
+        return;
+      }
+    }
+
     startTransition(async () => {
       const formData = new FormData();
       formData.append("email", email);
@@ -47,6 +115,9 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
       if (tab === "register") {
         formData.append("name", name);
         formData.append("role", role);
+        if (referralCode) {
+          formData.append("referralCode", referralCode);
+        }
         const result = await register(formData);
         if (result.error) {
           setError(result.error);
@@ -185,19 +256,105 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
           </div>
 
           {tab === "register" && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <Label htmlFor="dialog-role" className="text-xs font-semibold text-text-secondary">Tipe Keanggotaan</Label>
-              <select
-                id="dialog-role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as any)}
-                className="w-full px-4 py-2.5 bg-surface-dark border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none text-text-primary text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
-              >
-                <option value="CUSTOMER">Customer (Pembeli & Pelajar)</option>
-                <option value="MERCHANT">Merchant (Penjual & Mitra UMKM)</option>
-                <option value="AFFILIATE">Affiliate (Pemasar Digital)</option>
-              </select>
-            </div>
+            <>
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Label htmlFor="dialog-role" className="text-xs font-semibold text-text-secondary">Tipe Keanggotaan</Label>
+                <select
+                  id="dialog-role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as any)}
+                  className="w-full px-4 py-2.5 bg-surface-dark border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none text-text-primary text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
+                >
+                  <option value="CUSTOMER">Customer (Pembeli & Pelajar)</option>
+                  <option value="MERCHANT">Merchant (Penjual & Mitra UMKM)</option>
+                  <option value="AFFILIATE">Affiliate (Pemasar Digital)</option>
+                </select>
+              </div>
+
+              {/* WhatsApp OTP Verification Block */}
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="dialog-whatsapp" className="text-xs font-semibold text-text-secondary">Nomor WhatsApp</Label>
+                  {otpSent && !isVerified && (
+                    <button
+                      type="button"
+                      onClick={() => { setOtpSent(false); setOtpCode(''); setIsVerified(false); }}
+                      className="text-[10px] text-primary hover:underline font-bold"
+                    >
+                      Ubah Nomor
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    id="dialog-whatsapp"
+                    type="tel"
+                    required
+                    disabled={otpSent}
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    placeholder="081234567890"
+                    className="pl-4 py-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {otpSent && !isVerified && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <Label htmlFor="dialog-otp" className="text-xs font-semibold text-text-secondary">Kode Verifikasi WA</Label>
+                  <Input
+                    id="dialog-otp"
+                    type="text"
+                    maxLength={4}
+                    value={otpCode}
+                    onChange={(e) => handleVerifyOtp(e.target.value)}
+                    placeholder="Masukkan 4 digit kode"
+                    className="px-4 py-3 text-center tracking-widest font-mono placeholder:tracking-normal placeholder:text-xs"
+                  />
+                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-[10px] text-primary font-medium flex justify-between items-center">
+                    <span>Simulasi WA OTP: <span className="font-bold font-mono">{generatedOtp}</span></span>
+                    {countdown > 0 ? (
+                      <span className="text-[10px] text-text-secondary">{countdown}s</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        className="text-[10px] text-primary font-bold hover:underline"
+                      >
+                        Kirim Ulang
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {isVerified && (
+                <div className="p-2.5 bg-green-500/10 border border-green-500/20 rounded-lg text-[11px] text-green-600 font-bold flex items-center gap-2 animate-in fade-in duration-300">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  WhatsApp terverifikasi!
+                </div>
+              )}
+
+              {/* Referral Code Block */}
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Label htmlFor="dialog-referral" className="text-xs font-semibold text-text-secondary">Kode Referral (Opsional)</Label>
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/60">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12h9c.621 0 1.125.504 1.125 1.125V17c0 .621-.504 1.125-1.125 1.125h-9A1.125 1.125 0 0 1 3.5 17V7.125C3.5 6.504 4.004 6 4.625 6Z" />
+                    </svg>
+                  </div>
+                  <Input
+                    id="dialog-referral"
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="Masukkan kode referral / email"
+                    className="pl-10 py-3"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           <button
@@ -211,7 +368,9 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                 Memproses...
               </>
             ) : (
-              tab === "login" ? "Masuk Sekarang" : "Daftar Akun Baru"
+              tab === "login" 
+                ? "Masuk Sekarang" 
+                : (otpSent && !isVerified ? "Verifikasi & Daftar Baru" : "Daftar Akun Baru")
             )}
           </button>
         </form>

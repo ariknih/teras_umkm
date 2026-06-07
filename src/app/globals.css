@@ -38,78 +38,79 @@
   --color-border-subtle: var(--border-subtle);
   --color-glow-gold: var(--glow-gold);
 
-  --font-plus-jakarta: "Plus Jakarta Sans", sans-serif;
-  --font-sora: "Plus Jakarta Sans", sans-serif;
-  --font-inter: "Inter", sans-serif;
+  --font-plus-jakarta: var(--font-poppins), "Poppins", sans-serif;
+  --font-sora: var(--font-poppins), "Poppins", sans-serif;
+  --font-inter: var(--font-poppins), "Poppins", sans-serif;
   --font-geist: var(--font-geist), sans-serif;
+  --font-poppins: var(--font-poppins), "Poppins", sans-serif;
 }
 
 :root {
-  --background: #f8f9ff;
-  --foreground: #0b1c30;
+  --background: #F5F7F9;
+  --foreground: #111111;
 
-  --primary: #735c00;
-  --primary-container: #facc15;
-  --on-primary-container: #231b00;
-  --secondary: #565e74;
-  --secondary-container: #dae2fd;
-  --on-secondary-container: #131b2c;
-  --tertiary: #005ac2;
-  --tertiary-container: #bed1ff;
-  --on-tertiary-container: #001b3f;
+  --primary: #2DB24A;
+  --primary-container: #2DB24A;
+  --on-primary-container: #FFFFFF;
+  --secondary: #0F5132;
+  --secondary-container: #0F5132;
+  --on-secondary-container: #FFFFFF;
+  --tertiary: #FFC107;
+  --tertiary-container: #FFC107;
+  --on-tertiary-container: #0F5132;
 
-  --bg-dark: #f8f9ff;
-  --surface-dark: #ffffff;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #eff4ff;
-  --surface-container: #e5eeff;
-  --surface-container-high: #dce9ff;
-  --surface-container-highest: #d3e4fe;
+  --bg-dark: #F5F7F9;
+  --surface-dark: #FFFFFF;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #F0F2F5;
+  --surface-container: #E5E8EB;
+  --surface-container-high: #DADFE3;
+  --surface-container-highest: #D0D5DA;
 
-  --on-surface: #0b1c30;
-  --on-surface-variant: #4d4632;
-  --inverse-surface: #213145;
-  --inverse-on-surface: #eaf1ff;
+  --on-surface: #111111;
+  --on-surface-variant: #6B7280;
+  --inverse-surface: #111111;
+  --inverse-on-surface: #FFFFFF;
 
-  --text-primary: #0b1c30;
-  --text-secondary: #565e74;
-  --border-subtle: #eff4ff;
-  --outline-variant: #d1c6ab;
-  --glow-gold: rgba(115, 92, 0, 0.05);
+  --text-primary: #111111;
+  --text-secondary: #6B7280;
+  --border-subtle: #E5E7EB;
+  --outline-variant: #E5E7EB;
+  --glow-gold: rgba(45, 178, 74, 0.05);
 }
 
 .dark {
-  --background: #0f1013;
-  --foreground: #e3e6ee;
+  --background: #091a10;
+  --foreground: #e3f2e8;
 
-  --primary: #e2b714; /* premium gold */
-  --primary-container: #544300;
-  --on-primary-container: #ffe264;
-  --secondary: #bfc6dc;
-  --secondary-container: #3e475c;
-  --on-secondary-container: #dae2fd;
-  --tertiary: #adc6ff;
-  --tertiary-container: #004397;
-  --on-tertiary-container: #bed1ff;
+  --primary: #2DB24A;
+  --primary-container: #0F5132;
+  --on-primary-container: #e3f2e8;
+  --secondary: #0F5132;
+  --secondary-container: #143825;
+  --on-secondary-container: #e3f2e8;
+  --tertiary: #FFC107;
+  --tertiary-container: #544300;
+  --on-tertiary-container: #FFC107;
 
-  --bg-dark: #0f1013;
-  --surface-dark: #16181f;
-  --surface-container-lowest: #16181f;
-  --surface-container-low: #1c202b;
-  --surface-container: #222635;
-  --surface-container-high: #292e40;
-  --surface-container-highest: #31374d;
+  --bg-dark: #091a10;
+  --surface-dark: #0e2a1b;
+  --surface-container-lowest: #0e2a1b;
+  --surface-container-low: #143825;
+  --surface-container: #1a4630;
+  --surface-container-high: #20543a;
+  --surface-container-highest: #266245;
 
-  --on-surface: #e3e6ee;
-  --on-surface-variant: #b0a790;
-  --inverse-surface: #eaf1ff;
-  --inverse-on-surface: #213145;
+  --on-surface: #e3f2e8;
+  --on-surface-variant: #8ba594;
+  --inverse-surface: #e3f2e8;
+  --inverse-on-surface: #091a10;
 
-  --text-primary: #e3e6ee;
-  --text-secondary: #9ca3af;
-  --border-subtle: #1c202b;
-  --outline-variant: #374151;
-  --glow-gold: rgba(250, 204, 21, 0.03);
+  --text-primary: #e3f2e8;
+  --text-secondary: #8ba594;
+  --border-subtle: #143825;
+  --outline-variant: #20543a;
+  --glow-gold: rgba(45, 178, 74, 0.03);
 }
 
 html, body {
@@ -120,7 +121,7 @@ html, body {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-poppins), "Poppins", sans-serif;
   min-height: 100vh;
 }
 

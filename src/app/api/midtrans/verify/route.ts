@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DataStore, MidtransRegistry } from '@/lib/data-store';
-import { getTransactionStatus } from '@/lib/midtrans';
+import { getTransactionStatus, decodeUserIdFromMidtrans } from '@/lib/midtrans';
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,9 +29,9 @@ export async function POST(req: NextRequest) {
       status = 'settlement';
       
       // Attempt to get amount from registry or orderId
-      if (orderId.startsWith('deposit-')) {
+      if (orderId.startsWith('deposit-') || orderId.startsWith('dep-')) {
         const parts = orderId.split('-');
-        // Format: deposit-[userId]-[timestamp]
+        // Format: deposit-[userId]-[timestamp] or dep-[userId]-[timestamp]
         // Let's check if the amount was passed, otherwise default to 50000 for simulation
         grossAmount = body.amount ? parseFloat(body.amount) : 50000;
       }
@@ -53,9 +53,10 @@ export async function POST(req: NextRequest) {
 
       const parts = orderId.split('-');
       // Reconstruct userId from deposit-[userId]-[timestamp] or checkout-[userId]-[timestamp]
-      const userId = parts.slice(1, parts.length - 1).join('-');
+      const rawUserId = parts.slice(1, parts.length - 1).join('-');
+      const userId = decodeUserIdFromMidtrans(rawUserId);
 
-      if (orderId.startsWith('deposit-')) {
+      if (orderId.startsWith('deposit-') || orderId.startsWith('dep-')) {
         // Process deposit
         await DataStore.depositFunds(userId, grossAmount, 'Midtrans Sandbox');
         await DataStore.addXp(userId, 30); // Reward 30 XP for deposit
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
           message: 'Top-up berhasil diselesaikan dan saldo ditambahkan.',
           processed: true,
         });
-      } else if (orderId.startsWith('checkout-')) {
+      } else if (orderId.startsWith('checkout-') || orderId.startsWith('chk-')) {
         // Process checkout
         const pending = MidtransRegistry.getPendingCheckout(orderId);
         if (!pending) {

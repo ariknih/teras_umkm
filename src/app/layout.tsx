@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans, Geist } from "next/font/google";
+import { Inter, Poppins, Geist } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser, logout } from "./actions/auth";
 import { getWalletDetails } from "./actions/wallet-affiliate";
@@ -18,9 +18,10 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-sora",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const geist = Geist({
@@ -29,11 +30,11 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Teras UMKM | Platform Digital UMKM Premium Indonesia",
+  title: "Saloka.id | Platform Digital UMKM Premium Indonesia",
   description: "Ekosistem digital terlengkap untuk UMKM Indonesia: Marketplace, LMS Academy, Affiliate Hub, dan Community Forum dalam satu platform premium.",
   keywords: "UMKM, marketplace, toko online, jasa, affiliate, kursus bisnis, Indonesia",
   openGraph: {
-    title: "Teras UMKM | Platform Digital UMKM Premium",
+    title: "Saloka.id | Platform Digital UMKM Premium",
     description: "Marketplace, LMS Academy, Affiliate & Community untuk UMKM Indonesia.",
     type: "website",
     locale: "id_ID",
@@ -67,7 +68,7 @@ export default async function RootLayout({
   return (
     <html
       lang="id"
-      className={`${inter.variable} ${plusJakarta.variable} ${geist.variable} h-full antialiased`}
+      className={`${inter.variable} ${poppins.variable} ${geist.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -122,7 +123,7 @@ export default async function RootLayout({
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                   </svg>
                 </div>
-                <span className="font-sora font-bold text-on-surface text-lg">Teras<span className="text-primary-container"> UMKM</span></span>
+                <span className="font-sora font-bold text-secondary text-lg">Saloka<span className="text-tertiary">.id</span></span>
               </div>
               <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
                 Platform ekosistem digital terlengkap untuk pelaku UMKM Indonesia yang ingin berkembang.
@@ -199,7 +200,7 @@ export default async function RootLayout({
           </div>
 
           <div className="max-w-[1280px] mx-auto px-4 md:px-10 mt-12 pt-6 border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
-            <p className="text-xs text-on-surface-variant">© 2026 Teras UMKM. Dibuat dengan ❤️ untuk UMKM Indonesia.</p>
+            <p className="text-xs text-on-surface-variant">© 2026 Saloka.id. Dibuat dengan ❤️ untuk UMKM Indonesia.</p>
             <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 sm:gap-6 text-xs text-on-surface-variant">
               <a
                 href="https://arikporto.netlify.app"
