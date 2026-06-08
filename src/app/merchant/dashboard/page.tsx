@@ -1,14 +1,14 @@
 'use client'
 
-import React, { useState, useEffect, useTransition } from 'react'
+import React, { useState, useEffect, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getCurrentUser } from '@/app/actions/auth'
-import { getProducts, createProduct, updateProduct, deleteProduct } from '@/app/actions/products'
+import { getCurrentUser, getCurrentUserProfile, updateUserLandingPage } from '@/app/actions/auth'
+import { getProducts, createProduct, updateProduct, deleteProduct, updateAllProductsAffiliateSettingsAction } from '@/app/actions/products'
 import { getWalletDetails } from '@/app/actions/wallet-affiliate'
 import { getMerchantOrders, updateOrderTracking } from '@/app/actions/orders'
 import { getMerchantAnalytics } from '@/app/actions/analytics'
-import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard } from 'lucide-react'
+import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X } from 'lucide-react'
 
 interface Product {
   id: string
@@ -19,6 +19,9 @@ interface Product {
   stock: number
   imageUrl?: string | null
   merchantId: string
+  isAffiliateEnabled?: boolean
+  affiliateCommissionType?: string
+  affiliateCommissionValue?: number
 }
 
 const PRODUCT_CATEGORIES = [
@@ -60,9 +63,24 @@ export default function MerchantDashboardPage() {
   const [wallet, setWallet] = useState<any>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<any>(null)
   
-  // Tabs: 'overview' | 'catalog' | 'add' | 'customization' | 'orders' | 'analytics'
-  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'customization' | 'orders' | 'analytics'>('overview')
+  // Page list and custom domain states
+  const [editingPage, setEditingPage] = useState<any | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showDomainModal, setShowDomainModal] = useState(false)
+  const [searchPageQuery, setSearchPageQuery] = useState('')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [customDomainInput, setCustomDomainInput] = useState('')
+  const [pageThumbUrl, setPageThumbUrl] = useState('')
+
+  // Create page states
+  const [createPageName, setCreatePageName] = useState('')
+  const [createPageTemplate, setCreatePageTemplate] = useState('template1')
+  const [createPagePreview, setCreatePagePreview] = useState<'mobile' | 'desktop'>('mobile')
+  
+  // Tabs: 'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages'
+  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization'>('overview')
   
   // Storefront customization state
   const [storefrontTemplate, setStorefrontTemplate] = useState<'gold' | 'noir' | 'clean' | 'studio' | 'brutalist' | 'swiss' | 'destijl' | 'hpc'>('gold')
@@ -96,6 +114,13 @@ export default function MerchantDashboardPage() {
   // Image upload states
   const [createImageUrl, setCreateImageUrl] = useState<string>('')
   const [editImageUrl, setEditImageUrl] = useState<string>('')
+
+  // Global Affiliate Settings State
+  const [globalAffEnabled, setGlobalAffEnabled] = useState(false)
+  const [globalCommType, setGlobalCommType] = useState('PERCENT')
+  const [globalCommValue, setGlobalCommValue] = useState(0)
+  const [globalStatus, setGlobalStatus] = useState<string | null>(null)
+  const [isApplyingGlobal, startApplyGlobal] = useTransition()
 
   const handleImageUpload = (file: File, callback: (base64: string) => void) => {
     const reader = new FileReader()
@@ -148,6 +173,20 @@ export default function MerchantDashboardPage() {
     if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
       handleImageUpload(file, callback)
     }
+  }
+
+  const handleApplyGlobalAffiliate = (e: React.FormEvent) => {
+    e.preventDefault()
+    setGlobalStatus(null)
+    startApplyGlobal(async () => {
+      const res = await updateAllProductsAffiliateSettingsAction(globalAffEnabled, globalCommType, globalCommValue)
+      if (res.error) {
+        setGlobalStatus(`Gagal: ${res.error}`)
+      } else {
+        setGlobalStatus('Berhasil: Pengaturan affiliate telah diterapkan ke semua produk Anda.')
+        loadData()
+      }
+    })
   }
   
   // Error / Success notifications
@@ -316,6 +355,8 @@ export default function MerchantDashboardPage() {
       const u = await getCurrentUser()
       if (u) {
         setUser(u)
+        const fullProfile = await getCurrentUserProfile()
+        setProfile(fullProfile)
         if (u.role === 'MERCHANT') {
           const list = await getProducts()
           const myProducts = list.filter((p) => p.merchantId === u.id)
@@ -340,6 +381,314 @@ export default function MerchantDashboardPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    if (editingPage) {
+      setPageThumbUrl(editingPage.imageUrl || '')
+    } else {
+      setPageThumbUrl('')
+    }
+  }, [editingPage])
+
+const getDefaultComponents = (templateId: string, pageName: string, profileName: string) => {
+  const defaultStyle = { textAlign: 'left', fontSize: 'default', fontWeight: 'default', color: '', bgColor: '', paddingTop: 16, paddingBottom: 16, paddingLeft: 16, paddingRight: 16, opacity: 100, textDecoration: 'none', textTransform: 'none', borderRadius: 0 }
+  const defaultAdvance = { marginTop: 0, marginBottom: 0, animation: 'none', showDesktop: true, showTablet: true, showMobile: true, customClass: '', customId: '' }
+
+  const makeComp = (type: string, content: any, style = {}, advance = {}) => ({
+    id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    type,
+    content,
+    style: { ...defaultStyle, ...style },
+    advance: { ...defaultAdvance, ...advance }
+  })
+
+  switch (templateId) {
+    case 'template2': // Simple Storefront
+      return [
+        makeComp('banner_announcement', { text: '🔥 Promo Hari Ini! Dapatkan penawaran menarik.', bgColor: '#2DB24A', textColor: '#FFFFFF', link: '' }),
+        makeComp('navigation', { links: [{ label: 'Beranda', url: '#' }, { label: 'Produk', url: '#produk' }, { label: 'Hubungi Kami', url: '#kontak' }], logoText: profileName || 'Toko Saya' }),
+        makeComp('headline', { text: `Selamat Datang di ${profileName || 'Toko Kami'}`, tag: 'h1' }, { textAlign: 'center', paddingTop: 32, paddingBottom: 8 }),
+        makeComp('subheadline', { text: 'Kami menyediakan barang & jasa berkualitas tinggi dengan pelayanan prima.', tag: 'h2' }, { textAlign: 'center', paddingTop: 8, paddingBottom: 24, color: '#6B7280' }),
+        makeComp('product_showcase', { productIds: [], layout: 'grid', columns: 2, title: 'Katalog Produk Pilihan', showPrice: true, showStock: true, showBuyBtn: true, buyBtnLabel: 'Beli Sekarang' }),
+        makeComp('space', { height: 32 }),
+        makeComp('testimonials', { items: [{ name: 'Ahmad Santoso', role: 'Pelanggan Setia', text: 'Kualitas barangnya sangat bagus dan pengirimannya cepat sekali!' }, { name: 'Dewi Lestari', role: 'Customer', text: 'Penjual sangat ramah dan responsif saat ditanya-tanya.' }] }),
+      ]
+    case 'template3': // Product Solution
+      return [
+        makeComp('headline', { text: 'Solusi Praktis & Efektif untuk Kebutuhan Anda', tag: 'h1' }, { textAlign: 'center', paddingTop: 40, paddingBottom: 8 }),
+        makeComp('subheadline', { text: 'Temukan kemudahan hidup dengan produk inovatif terbaru kami.', tag: 'h2' }, { textAlign: 'center', paddingTop: 8, paddingBottom: 32, color: '#6B7280' }),
+        makeComp('feature_list', { items: ['Kualitas Terjamin & Bergaransi Resmi', 'Mudah Digunakan & Ramah Lingkungan', 'Dukungan Layanan Pelanggan 24 Jam'], icon: 'check' }),
+        makeComp('space', { height: 24 }),
+        makeComp('rating', { score: 4.9, total: 328, label: 'Kepuasan Pengguna' }, { textAlign: 'center' }),
+        makeComp('space', { height: 16 }),
+        makeComp('whatsapp_button', { label: 'Konsultasi & Pesan Sekarang', phone: '6281234567890', message: `Halo, saya tertarik dengan halaman ${pageName}.` }, { textAlign: 'center' }),
+        makeComp('space', { height: 32 }),
+        makeComp('testimonials', { items: [{ name: 'Budi Raharjo', role: 'Wiraswasta', text: 'Produk ini benar-benar menyelesaikan masalah harian saya. Sangat berharga!' }] }),
+      ]
+    case 'template4': // Product Fisik
+      return [
+        makeComp('navigation', { links: [{ label: 'Katalog', url: '#' }, { label: 'Cara Order', url: '#order' }], logoText: profileName || 'Katalog Usaha' }),
+        makeComp('headline', { text: 'Katalog Produk Fisik Terbaru', tag: 'h1' }, { paddingTop: 32, paddingBottom: 8 }),
+        makeComp('subheadline', { text: 'Pilih produk favorit Anda dari koleksi lengkap kami.', tag: 'h2' }, { paddingTop: 8, paddingBottom: 24, color: '#6B7280' }),
+        makeComp('product_showcase', { productIds: [], layout: 'grid', columns: 2, title: 'Koleksi Barang', showPrice: true, showStock: true, showBuyBtn: true, buyBtnLabel: 'Pesan Sekarang' }),
+        makeComp('space', { height: 24 }),
+        makeComp('visitor_counter', { count: 1420, label: 'pengunjung telah melihat katalog ini' }),
+        makeComp('space', { height: 16 }),
+        makeComp('faq', { items: [{ question: 'Apakah pengiriman bisa COD?', answer: 'Ya, kami melayani sistem Cash on Delivery (COD) untuk wilayah tertentu.' }, { question: 'Berapa lama garansi produk?', answer: 'Kami memberikan garansi penukaran produk selama 7 hari jika terdapat cacat produksi.' }] }),
+      ]
+    case 'template1':
+    default:
+      return []
+  }
+}
+
+  // Page management helper actions
+  const handleCreatePage = (pageName: string, templateId: string) => {
+    if (!profile) return
+    try {
+      const config = JSON.parse(profile.landingPageConfig || '{}')
+      const currentPages = config.pages && Array.isArray(config.pages) ? [...config.pages] : [
+        {
+          id: 'page-main',
+          name: 'Main Storefront',
+          slug: '',
+          template: profile.landingPageTemplate || 'template1',
+          status: 'PUBLISHED',
+          customDomain: config.customDomain || '',
+          headDesktop: '',
+          headMobile: '',
+          footerAny: '',
+          footerDesktop: '',
+          footerMobile: '',
+          allowSearch: 'Yes',
+          followLinks: 'Yes',
+          lastModified: new Date().toISOString()
+        }
+      ]
+
+      const slug = pageName.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-')
+      
+      const newPage = {
+        id: `page-${Date.now()}`,
+        name: pageName,
+        slug: slug,
+        template: templateId,
+        status: 'PUBLISHED',
+        customDomain: '',
+        headDesktop: '',
+        headMobile: '',
+        footerAny: '',
+        footerDesktop: '',
+        footerMobile: '',
+        allowSearch: 'Yes',
+        followLinks: 'Yes',
+        lastModified: new Date().toISOString(),
+        builderComponents: getDefaultComponents(templateId, pageName, profile.name)
+      }
+
+      config.pages = [...currentPages, newPage]
+
+      startTransition(async () => {
+        const res = await updateUserLandingPage(
+          profile.landingPageTemplate || 'template1',
+          JSON.stringify(config),
+          profile.latitude || -6.2088,
+          profile.longitude || 106.8456
+        )
+        if (res.error) {
+          setError(res.error)
+        } else {
+          setSuccess('Halaman baru berhasil dibuat!')
+          setShowCreateModal(false)
+          setCreatePageName('')
+          await loadData()
+        }
+      })
+    } catch (e: any) {
+      setError(e.message || 'Gagal membuat halaman.')
+    }
+  }
+
+  const handleDuplicatePage = (page: any) => {
+    if (!profile) return
+    try {
+      const config = JSON.parse(profile.landingPageConfig || '{}')
+      const currentPages = config.pages && Array.isArray(config.pages) ? [...config.pages] : [
+        {
+          id: 'page-main',
+          name: 'Main Storefront',
+          slug: '',
+          template: profile.landingPageTemplate || 'template1',
+          status: 'PUBLISHED',
+          customDomain: config.customDomain || '',
+          headDesktop: '',
+          headMobile: '',
+          footerAny: '',
+          footerDesktop: '',
+          footerMobile: '',
+          allowSearch: 'Yes',
+          followLinks: 'Yes',
+          lastModified: new Date().toISOString()
+        }
+      ]
+
+      const duplicated = {
+        ...page,
+        id: `page-${Date.now()}`,
+        name: `${page.name} (Copy)`,
+        slug: page.slug ? `${page.slug}-copy` : 'copy',
+        lastModified: new Date().toISOString()
+      }
+
+      config.pages = [...currentPages, duplicated]
+
+      startTransition(async () => {
+        const res = await updateUserLandingPage(
+          profile.landingPageTemplate || 'template1',
+          JSON.stringify(config),
+          profile.latitude || -6.2088,
+          profile.longitude || 106.8456
+        )
+        if (res.error) {
+          setError(res.error)
+        } else {
+          setSuccess('Halaman berhasil diduplikasi!')
+          await loadData()
+        }
+      })
+    } catch (e: any) {
+      setError(e.message || 'Gagal menduplikasi halaman.')
+    }
+  }
+
+  const handleSavePageSettings = (updatedPage: any) => {
+    if (!profile) return
+    try {
+      const config = JSON.parse(profile.landingPageConfig || '{}')
+      const currentPages = config.pages && Array.isArray(config.pages) ? [...config.pages] : [
+        {
+          id: 'page-main',
+          name: 'Main Storefront',
+          slug: '',
+          template: profile.landingPageTemplate || 'template1',
+          status: 'PUBLISHED',
+          customDomain: config.customDomain || '',
+          headDesktop: '',
+          headMobile: '',
+          footerAny: '',
+          footerDesktop: '',
+          footerMobile: '',
+          allowSearch: 'Yes',
+          followLinks: 'Yes',
+          lastModified: new Date().toISOString()
+        }
+      ]
+
+      const idx = currentPages.findIndex(p => p.id === updatedPage.id)
+      if (idx !== -1) {
+        currentPages[idx] = {
+          ...updatedPage,
+          imageUrl: pageThumbUrl,
+          lastModified: new Date().toISOString()
+        }
+      } else {
+        currentPages.push({
+          ...updatedPage,
+          imageUrl: pageThumbUrl,
+          lastModified: new Date().toISOString()
+        } as any)
+      }
+
+      config.pages = currentPages
+      if (updatedPage.id === 'page-main') {
+        config.title = updatedPage.name
+        config.customDomain = updatedPage.customDomain
+      }
+
+      startTransition(async () => {
+        const res = await updateUserLandingPage(
+          profile.landingPageTemplate || 'template1',
+          JSON.stringify(config),
+          profile.latitude || -6.2088,
+          profile.longitude || 106.8456
+        )
+        if (res.error) {
+          setError(res.error)
+        } else {
+          setSuccess('Pengaturan halaman berhasil disimpan!')
+          setEditingPage(null)
+          await loadData()
+        }
+      })
+    } catch (e: any) {
+      setError(e.message || 'Gagal menyimpan pengaturan halaman.')
+    }
+  }
+
+  const handleDeletePage = (pageId: string) => {
+    if (pageId === 'page-main') {
+      alert('Halaman utama (Main Storefront) tidak dapat dihapus.')
+      return
+    }
+    if (!confirm('Apakah Anda yakin ingin menghapus halaman ini secara permanen?')) return
+    if (!profile) return
+
+    try {
+      const config = JSON.parse(profile.landingPageConfig || '{}')
+      const currentPages = config.pages && Array.isArray(config.pages) ? [...config.pages] : []
+      const updatedPages = currentPages.filter(p => p.id !== pageId)
+      config.pages = updatedPages
+
+      startTransition(async () => {
+        const res = await updateUserLandingPage(
+          profile.landingPageTemplate || 'template1',
+          JSON.stringify(config),
+          profile.latitude || -6.2088,
+          profile.longitude || 106.8456
+        )
+        if (res.error) {
+          setError(res.error)
+        } else {
+          setSuccess('Halaman berhasil dihapus.')
+          await loadData()
+        }
+      })
+    } catch (e: any) {
+      setError(e.message || 'Gagal menghapus halaman.')
+    }
+  }
+
+  const handleSaveCustomDomain = (domainName: string) => {
+    if (!profile) return
+    try {
+      const config = JSON.parse(profile.landingPageConfig || '{}')
+      config.customDomain = domainName.toLowerCase().trim()
+      
+      if (config.pages && Array.isArray(config.pages)) {
+        const main = config.pages.find((p: any) => p.id === 'page-main')
+        if (main) main.customDomain = domainName.toLowerCase().trim()
+      }
+
+      startTransition(async () => {
+        const res = await updateUserLandingPage(
+          profile.landingPageTemplate || 'template1',
+          JSON.stringify(config),
+          profile.latitude || -6.2088,
+          profile.longitude || 106.8456
+        )
+        if (res.error) {
+          setError(res.error)
+        } else {
+          setSuccess(`Custom domain berhasil dikonfigurasi ke: ${domainName}`)
+          setShowDomainModal(false)
+          setCustomDomainInput('')
+          await loadData()
+        }
+      })
+    } catch (e: any) {
+      setError(e.message || 'Gagal mengonfigurasi custom domain.')
+    }
+  }
 
   // Create Product Submit
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
@@ -513,129 +862,114 @@ export default function MerchantDashboardPage() {
   const outOfStockItems = products.filter((p) => p.stock <= 0).length
   const totalItems = products.length
 
-  return (
-    <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.04)_0%,transparent_70%)] pointer-events-none z-0" />
+  // Pages management helpers
+  const pagesList = (() => {
+    if (!profile) return []
+    try {
+      const config = JSON.parse(profile.landingPageConfig || '{}')
+      if (config.pages && Array.isArray(config.pages)) {
+        return config.pages
+      }
+    } catch (e) {
+      console.error(e)
+    }
+    return [
+      {
+        id: 'page-main',
+        name: 'Main Storefront',
+        slug: '',
+        template: profile?.landingPageTemplate || 'template1',
+        status: 'PUBLISHED',
+        customDomain: profile?.customDomain || '',
+        headDesktop: '',
+        headMobile: '',
+        footerAny: '',
+        footerDesktop: '',
+        footerMobile: '',
+        allowSearch: 'Yes',
+        followLinks: 'Yes',
+        lastModified: new Date().toISOString()
+      }
+    ]
+  })()
 
+  const filteredPages = pagesList.filter((p: any) => {
+    const matchesSearch = p.name.toLowerCase().includes(searchPageQuery.toLowerCase()) || 
+                          (p.slug || '').toLowerCase().includes(searchPageQuery.toLowerCase())
+    const matchesStatus = filterStatus === 'all' || p.status === filterStatus
+    return matchesSearch && matchesStatus
+  })
+
+  return (
+    <div className="relative min-h-screen bg-[#F5F7F9] pt-12 pb-24 px-6 md:px-10">
       <div className="relative z-10 max-w-[1200px] mx-auto">
         {/* Title Header */}
-        <div className="mb-12 pb-6 border-b border-border-subtle flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        <div className="mb-10 pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
-            <h1 className="font-sora text-3xl font-bold text-text-primary mb-1">
-              Merchant <span className="text-primary">Center.</span>
+            <h1 className="font-poppins text-2xl font-bold text-[#0F5132] mb-1">
+              Merchant <span className="text-[#2DB24A]">Center</span>
             </h1>
             <p className="text-xs text-text-secondary">
               Kelola katalog produk, edit rincian stok barang, dan periksa buku penjualan Anda.
             </p>
           </div>
-          <span className="px-3 py-1.5 bg-primary/10 border border-primary/25 rounded text-[10px] font-geist font-bold text-primary uppercase tracking-wider">
+          <span className="px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-geist font-bold text-[#0F5132] uppercase tracking-wider shadow-sm">
             Merchant: {user.name}
           </span>
         </div>
 
         {/* Global Notifications */}
         {error && (
-          <div className="mb-6 p-4 rounded bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-medium">
+          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-xs text-red-600 font-medium">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-6 p-4 rounded bg-green-500/10 border border-green-500/20 text-xs text-green-400 font-medium">
+          <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-100 text-xs text-primary font-medium">
             {success}
           </div>
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-border-subtle mb-10 overflow-x-auto whitespace-nowrap scrollbar-thin">
-          <button
-            id="tab-merchant-overview"
-            onClick={() => { setActiveTab('overview'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
-              activeTab === 'overview' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            Ringkasan Toko
-            {activeTab === 'overview' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </button>
-          <button
-            id="tab-merchant-catalog"
-            onClick={() => { setActiveTab('catalog'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
-              activeTab === 'catalog' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            Katalog Produk ({totalItems})
-            {activeTab === 'catalog' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </button>
-          <button
-            id="tab-merchant-add"
-            onClick={() => { setActiveTab('add'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
-              activeTab === 'add' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            Tambah Produk
-            {activeTab === 'add' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </button>
-          <button
-            id="tab-merchant-orders"
-            onClick={() => { setActiveTab('orders'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
-              activeTab === 'orders' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            Pesanan Masuk ({orders.length})
-            {activeTab === 'orders' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </button>
-          <button
-            id="tab-merchant-analytics"
-            onClick={() => { setActiveTab('analytics'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
-              activeTab === 'analytics' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            Analitik Bisnis
-            {activeTab === 'analytics' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </button>
-          <button
-            id="tab-merchant-customization"
-            onClick={() => { setActiveTab('customization'); setEditingProduct(null); }}
-            className={`pb-4 px-6 text-xs font-geist font-bold tracking-wider uppercase transition-colors relative shrink-0 ${
-              activeTab === 'customization' ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            Kustomisasi Toko
-            {activeTab === 'customization' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </button>
+        <div className="flex gap-2 border-b border-slate-100 mb-8 overflow-x-auto whitespace-nowrap scrollbar-none pb-px">
+          {[
+            { id: 'overview', label: 'Ringkasan Toko' },
+            { id: 'catalog', label: `Katalog Produk (${totalItems})` },
+            { id: 'add', label: 'Tambah Produk' },
+            { id: 'orders', label: `Pesanan Masuk (${orders.length})` },
+            { id: 'analytics', label: 'Analitik Bisnis' },
+            { id: 'pages', label: 'Daftar Halaman & Domain' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              id={`tab-merchant-${tab.id}`}
+              onClick={() => { setActiveTab(tab.id as any); setEditingProduct(null); setEditingPage(null); }}
+              className={`pb-3 px-5 text-xs font-bold transition-all relative shrink-0 cursor-pointer ${
+                activeTab === tab.id
+                  ? 'text-[#2DB24A] font-extrabold border-b-2 border-[#2DB24A]'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Tab Contents */}
         {activeTab === 'overview' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Quick Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
-                <span className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+                <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Saldo Penjualan Merchant
                 </span>
-                <h2 className="font-sora text-3xl font-extrabold text-primary mb-4">
+                <h2 className="font-sora text-2xl font-black text-[#2DB24A] mb-4">
                   Rp {(wallet?.balance ?? 0).toLocaleString('id-ID')}
                 </h2>
                 <Link
                   href="/wallet"
-                  className="text-[10px] font-geist font-bold text-primary uppercase tracking-wider hover:opacity-80 flex items-center gap-1"
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-[#2DB24A] uppercase tracking-wider flex items-center gap-1 transition-colors"
                 >
                   Buka Ledger Penarikan
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
@@ -644,39 +978,39 @@ export default function MerchantDashboardPage() {
                 </Link>
               </div>
 
-              <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
-                <span className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-4">
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+                <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Jumlah Produk Aktif
                 </span>
-                <h2 className="font-sora text-3xl font-extrabold text-text-primary mb-4">
+                <h2 className="font-sora text-2xl font-black text-text-primary mb-4">
                   {totalItems} Item
                 </h2>
                 <button
                   onClick={() => setActiveTab('catalog')}
-                  className="text-[10px] font-geist font-bold text-primary uppercase tracking-wider hover:opacity-80 flex items-center gap-1"
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-[#2DB24A] uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   Lihat Semua Produk
                 </button>
               </div>
 
-              <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
-                <span className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-4">
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+                <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Stok Menipis / Habis
                 </span>
-                <h2 className={`font-sora text-3xl font-extrabold mb-4 ${outOfStockItems > 0 ? 'text-red-400 animate-pulse' : 'text-text-primary'}`}>
+                <h2 className={`font-sora text-2xl font-black mb-4 ${outOfStockItems > 0 ? 'text-red-500 animate-pulse' : 'text-text-primary'}`}>
                   {outOfStockItems} Item
                 </h2>
-                <span className="text-[10px] text-text-secondary font-geist">
+                <span className="text-[10px] text-text-secondary">
                   Lakukan pembaruan inventaris secara berkala.
                 </span>
               </div>
             </div>
 
             {/* Showcase Quick Banner */}
-            <div className="border border-border-subtle bg-surface-dark p-6 md:p-8 rounded-lg">
-              <h3 className="font-sora text-base font-bold text-text-primary mb-2">Pecinta Brand Visual Identity</h3>
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+              <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Pecinta Brand Visual Identity</h3>
               <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
-                Setiap merchant di Teras UMKM Premium memiliki visual storefront eksklusif. Pelajari tips mendesain brand premium Anda di modul LMS Academy kami untuk menarik lebih banyak pembeli high-end.
+                Setiap merchant di Teras UMKM Premium memiliki visual storefront storefront eksklusif. Pelajari tips mendesain brand premium Anda di modul LMS Academy kami untuk menarik lebih banyak pembeli high-end.
               </p>
             </div>
           </div>
@@ -806,6 +1140,46 @@ export default function MerchantDashboardPage() {
                     <textarea id="edit-description" name="description" defaultValue={editingProduct.description} required rows={4} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                   </div>
 
+                  {/* Affiliate Settings */}
+                  <div className="border border-border-subtle bg-surface-container/30 p-4 rounded-lg space-y-4">
+                    <h4 className="text-xs font-bold text-primary font-sora">Pengaturan Program Affiliate</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                      <div className="flex items-center gap-2 h-11">
+                        <input
+                          id="edit-isAffiliateEnabled"
+                          type="checkbox"
+                          name="isAffiliateEnabled"
+                          defaultChecked={editingProduct.isAffiliateEnabled || false}
+                          className="w-4 h-4 text-primary focus:ring-primary border-border-subtle rounded cursor-pointer"
+                        />
+                        <label htmlFor="edit-isAffiliateEnabled" className="text-xs font-bold text-text-primary cursor-pointer">Aktifkan Affiliate</label>
+                      </div>
+                      <div>
+                        <label htmlFor="edit-affiliateCommissionType" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Tipe Komisi</label>
+                        <select
+                          id="edit-affiliateCommissionType"
+                          name="affiliateCommissionType"
+                          defaultValue={editingProduct.affiliateCommissionType || 'PERCENT'}
+                          className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                        >
+                          <option value="PERCENT">Persentase (%)</option>
+                          <option value="FIXED">Fix Komisi (Rupiah)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label htmlFor="edit-affiliateCommissionValue" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Nilai Komisi</label>
+                        <input
+                          id="edit-affiliateCommissionValue"
+                          type="number"
+                          step="any"
+                          name="affiliateCommissionValue"
+                          defaultValue={editingProduct.affiliateCommissionValue || 0}
+                          className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <button
                     id="edit-submit"
                     type="submit"
@@ -817,6 +1191,83 @@ export default function MerchantDashboardPage() {
                 </form>
               </div>
             )}
+
+            {/* Pengaturan Affiliate Global */}
+            <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg mb-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+                <div>
+                  <h3 className="font-sora text-sm font-bold text-text-primary flex items-center gap-2">
+                    <Award size={16} className="text-primary" />
+                    Pengaturan Affiliate Global
+                  </h3>
+                  <p className="text-[11px] text-text-secondary">
+                    Terapkan pengaturan affiliate ke seluruh produk katalog Anda sekaligus.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleApplyGlobalAffiliate} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                  <div className="flex items-center gap-2 h-11">
+                    <input
+                      id="global-aff-enabled"
+                      type="checkbox"
+                      checked={globalAffEnabled}
+                      onChange={(e) => setGlobalAffEnabled(e.target.checked)}
+                      className="w-4 h-4 text-primary focus:ring-primary border-border-subtle rounded cursor-pointer"
+                    />
+                    <label htmlFor="global-aff-enabled" className="text-xs font-bold text-text-primary cursor-pointer">
+                      Aktifkan Affiliate Global
+                    </label>
+                  </div>
+
+                  <div>
+                    <label htmlFor="global-aff-type" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
+                      Tipe Komisi
+                    </label>
+                    <select
+                      id="global-aff-type"
+                      value={globalCommType}
+                      onChange={(e) => setGlobalCommType(e.target.value)}
+                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                    >
+                      <option value="PERCENT">Persentase (%)</option>
+                      <option value="FIXED">Fix Komisi (Rupiah)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="global-aff-value" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
+                      Nilai Komisi
+                    </label>
+                    <input
+                      id="global-aff-value"
+                      type="number"
+                      step="any"
+                      value={globalCommValue}
+                      onChange={(e) => setGlobalCommValue(Number(e.target.value))}
+                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <button
+                      type="submit"
+                      disabled={isApplyingGlobal}
+                      className="w-full h-11 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-lg disabled:opacity-50"
+                    >
+                      {isApplyingGlobal ? 'Menerapkan...' : 'Terapkan Masal'}
+                    </button>
+                  </div>
+                </div>
+
+                {globalStatus && (
+                  <p className={`text-[11px] font-semibold ${globalStatus.startsWith('Berhasil') ? 'text-green-400' : 'text-red-400'}`}>
+                    {globalStatus}
+                  </p>
+                )}
+              </form>
+            </div>
 
             {/* Catalog Grid list */}
             {products.length === 0 ? (
@@ -1004,6 +1455,45 @@ export default function MerchantDashboardPage() {
                   </button>
                 </div>
                 <textarea id="create-description" name="description" required placeholder="Jelaskan spesifikasi, material, dan kelebihan premium produk Anda..." rows={5} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
+              </div>
+
+              {/* Affiliate Settings */}
+              <div className="border border-border-subtle bg-surface-container/30 p-4 rounded-lg space-y-4">
+                <h4 className="text-xs font-bold text-primary font-sora">Pengaturan Program Affiliate</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                  <div className="flex items-center gap-2 h-11">
+                    <input
+                      id="create-isAffiliateEnabled"
+                      type="checkbox"
+                      name="isAffiliateEnabled"
+                      className="w-4 h-4 text-primary focus:ring-primary border-border-subtle rounded cursor-pointer"
+                    />
+                    <label htmlFor="create-isAffiliateEnabled" className="text-xs font-bold text-text-primary cursor-pointer">Aktifkan Affiliate</label>
+                  </div>
+                  <div>
+                    <label htmlFor="create-affiliateCommissionType" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Tipe Komisi</label>
+                    <select
+                      id="create-affiliateCommissionType"
+                      name="affiliateCommissionType"
+                      defaultValue="PERCENT"
+                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                    >
+                      <option value="PERCENT">Persentase (%)</option>
+                      <option value="FIXED">Fix Komisi (Rupiah)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="create-affiliateCommissionValue" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Nilai Komisi</label>
+                    <input
+                      id="create-affiliateCommissionValue"
+                      type="number"
+                      step="any"
+                      name="affiliateCommissionValue"
+                      defaultValue={0}
+                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
               </div>
 
               <button
@@ -1697,6 +2187,820 @@ export default function MerchantDashboardPage() {
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                     </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {activeTab === 'pages' && (
+          <div className="space-y-6">
+            {/* Custom Domain Connected Status */}
+            {(() => {
+              try {
+                const config = JSON.parse(profile?.landingPageConfig || '{}')
+                if (config.customDomain) {
+                  return (
+                    <div className="bg-[#2DB24A]/5 border border-[#2DB24A]/10 rounded-2xl p-5 flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                          <Globe size={18} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-text-primary">Custom Domain Terhubung</p>
+                          <p className="text-text-secondary mt-0.5">
+                            Domain kustom Anda <strong className="text-primary">{config.customDomain}</strong> berhasil dipetakan ke storefront.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setCustomDomainInput(config.customDomain)
+                          setShowDomainModal(true)
+                        }}
+                        className="px-4 py-2 border border-primary text-primary hover:bg-primary/5 font-bold rounded-xl transition-all cursor-pointer outline-none"
+                      >
+                        Kelola Domain
+                      </button>
+                    </div>
+                  )
+                }
+              } catch (e) {}
+              return null
+            })()}
+
+            {editingPage ? (
+              /* PAGE SETTINGS DETAILED SCREEN */
+              <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] p-6 md:p-8">
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setEditingPage(null)}
+                    className="p-2 hover:bg-slate-50 rounded-xl text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    <ArrowLeft size={16} />
+                  </button>
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-text-primary">
+                      Edit Pengaturan Halaman: {editingPage.name}
+                    </h3>
+                    <p className="text-[11px] text-text-secondary">Konfigurasi data identitas halaman, custom scripts header/footer, dan SEO indexing</p>
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    const fd = new FormData(e.currentTarget)
+                    const updated = {
+                      ...editingPage,
+                      name: fd.get('pageName') as string,
+                      slug: editingPage.id === 'page-main' ? '' : (fd.get('pageSlug') as string).toLowerCase().trim().replace(/[^a-z0-9-]/g, '-'),
+                      status: fd.get('pageStatus') as string,
+                      headDesktop: fd.get('headDesktop') as string,
+                      headMobile: fd.get('headMobile') as string,
+                      footerAny: fd.get('footerAny') as string,
+                      footerDesktop: fd.get('footerDesktop') as string,
+                      footerMobile: fd.get('footerMobile') as string,
+                      allowSearch: fd.get('allowSearch') as string,
+                      followLinks: fd.get('followLinks') as string,
+                    }
+                    handleSavePageSettings(updated)
+                  }}
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column: General & SEO */}
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Informasi Halaman</h4>
+                        <div>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Halaman</label>
+                          <input
+                            type="text"
+                            name="pageName"
+                            defaultValue={editingPage.name}
+                            required
+                            className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Slug URL Halaman</label>
+                          <div className="flex items-center">
+                            <span className="h-11 px-3 bg-slate-100 border border-r-0 border-slate-100 rounded-l-xl text-xs text-text-secondary flex items-center">
+                              {profile?.subdomain ? `${profile.subdomain}.saloka.id/` : 'saloka.id/'}
+                            </span>
+                            <input
+                              type="text"
+                              name="pageSlug"
+                              defaultValue={editingPage.slug}
+                              disabled={editingPage.id === 'page-main'}
+                              placeholder={editingPage.id === 'page-main' ? '(Halaman Utama Storefront)' : 'slug-path-halaman'}
+                              className="flex-grow h-11 px-4 bg-slate-50 border border-slate-100 rounded-r-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-60 disabled:cursor-not-allowed font-mono text-[11px]"
+                            />
+                          </div>
+                          {editingPage.id === 'page-main' && (
+                            <p className="text-[10px] text-text-secondary mt-1.5">Halaman utama (Main Storefront) tidak menggunakan slug URL tambahan.</p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Status Publikasi Halaman</label>
+                          <select
+                            name="pageStatus"
+                            defaultValue={editingPage.status}
+                            className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                          >
+                            <option value="PUBLISHED">Aktif & Publikasikan (PUBLISHED)</option>
+                            <option value="DRAFT">Simpan sebagai Draft (DRAFT)</option>
+                            <option value="ARCHIVED">Arsipkan (ARCHIVED)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Thumbnail Preview */}
+                      <div className="space-y-4 pt-2">
+                        <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Gambar Thumbnail / Cover Halaman</h4>
+                        <div className="flex-grow">
+                          <input
+                            type="file"
+                            accept="image/png, image/jpeg, image/jpg"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                handleImageUpload(file, setPageThumbUrl)
+                              }
+                            }}
+                            className="hidden"
+                            id="page-edit-thumb-upload"
+                          />
+                          
+                          {pageThumbUrl ? (
+                            <div className="relative group border border-slate-100 bg-slate-50 rounded-2xl overflow-hidden h-36 flex items-center justify-center shadow-inner">
+                              <img src={pageThumbUrl} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-300">
+                                <label
+                                  htmlFor="page-edit-thumb-upload"
+                                  className="px-3.5 py-1.5 bg-white hover:bg-neutral-100 text-black rounded-xl text-[10px] font-bold transition-all cursor-pointer shadow-md uppercase tracking-wider"
+                                >
+                                  Ganti Gambar
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => setPageThumbUrl('')}
+                                  className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-bold transition-all cursor-pointer shadow-md uppercase tracking-wider"
+                                >
+                                  Hapus
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <label
+                              htmlFor="page-edit-thumb-upload"
+                              className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-primary/50 bg-slate-50 hover:bg-slate-100/50 rounded-2xl p-6 h-36 cursor-pointer transition-all group"
+                            >
+                              <div className="flex flex-col items-center gap-2">
+                                <div className="p-2 bg-white rounded-full border border-slate-100 group-hover:border-primary/30 group-hover:text-primary transition-all">
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-text-secondary group-hover:text-primary">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                                  </svg>
+                                </div>
+                                <div className="text-center">
+                                  <p className="text-[10px] font-bold text-text-primary group-hover:text-primary transition-colors">
+                                    Pilih atau Tarik File Gambar Cover
+                                  </p>
+                                  <p className="text-[9px] text-text-secondary mt-0.5">PNG, JPG, JPEG (Maks. 5MB)</p>
+                                </div>
+                              </div>
+                            </label>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* SEO Settings Option Block */}
+                      <div className="space-y-4 pt-2">
+                        <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">SEO Settings</h4>
+                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
+                          <div>
+                            <p className="text-xs font-semibold text-text-primary mb-2.5">Allow search engines to display this post in search results?</p>
+                            <div className="flex gap-4">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name="allowSearch"
+                                  value="Yes"
+                                  defaultChecked={editingPage.allowSearch !== 'No'}
+                                  className="w-4 h-4 text-primary focus:ring-primary"
+                                />
+                                <span>Yes</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name="allowSearch"
+                                  value="No"
+                                  defaultChecked={editingPage.allowSearch === 'No'}
+                                  className="w-4 h-4 text-primary focus:ring-primary"
+                                />
+                                <span>No</span>
+                              </label>
+                            </div>
+                          </div>
+                          <div className="border-t border-slate-100 pt-3">
+                            <p className="text-xs font-semibold text-text-primary mb-2.5">Should search engines follow the links in this post?</p>
+                            <div className="flex gap-4">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name="followLinks"
+                                  value="Yes"
+                                  defaultChecked={editingPage.followLinks !== 'No'}
+                                  className="w-4 h-4 text-primary focus:ring-primary"
+                                />
+                                <span>Yes</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
+                                <input
+                                  type="radio"
+                                  name="followLinks"
+                                  value="No"
+                                  defaultChecked={editingPage.followLinks === 'No'}
+                                  className="w-4 h-4 text-primary focus:ring-primary"
+                                />
+                                <span>No</span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Custom scripts header/footers */}
+                    <div className="space-y-6">
+                      <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Custom Head & Footer Scripts</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Header Script - Desktop (Facebook Pixel, GTM, CSS Kustom)</label>
+                          <textarea
+                            name="headDesktop"
+                            defaultValue={editingPage.headDesktop}
+                            rows={3}
+                            placeholder="Contoh: <script>...</script> atau <style>...</style>"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Header Script - Mobile Only</label>
+                          <textarea
+                            name="headMobile"
+                            defaultValue={editingPage.headMobile}
+                            rows={3}
+                            placeholder="Contoh: <script>...</script>"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer Script - All Devices (Chat Widget, Analytics)</label>
+                          <textarea
+                            name="footerAny"
+                            defaultValue={editingPage.footerAny}
+                            rows={3}
+                            placeholder="Contoh: <script>...</script>"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer Script - Desktop Only</label>
+                          <textarea
+                            name="footerDesktop"
+                            defaultValue={editingPage.footerDesktop}
+                            rows={3}
+                            placeholder="Contoh: <script>...</script>"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer - Mobile Only</label>
+                          <textarea
+                            name="footerMobile"
+                            defaultValue={editingPage.footerMobile}
+                            rows={3}
+                            placeholder="Contoh: <script>...</script>"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-slate-100 flex justify-end gap-3.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditingPage(null)}
+                      className="px-5 py-2.5 text-text-secondary hover:text-text-primary font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                    >
+                      {isPending ? 'Menyimpan...' : 'Simpan Pengaturan Halaman'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              /* NORMAL PAGE LISTING VIEW */
+              <>
+                {/* Stats cards grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Total Halaman</span>
+                    <h3 className="font-sora text-2xl font-black text-text-primary mt-2">{pagesList.length}</h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Halaman Terbit</span>
+                    <h3 className="font-sora text-2xl font-black text-[#2DB24A] mt-2">
+                      {pagesList.filter((p: any) => p.status === 'PUBLISHED').length}
+                    </h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Draft</span>
+                    <h3 className="font-sora text-2xl font-black text-amber-500 mt-2">
+                      {pagesList.filter((p: any) => p.status === 'DRAFT').length}
+                    </h3>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Diarsipkan</span>
+                    <h3 className="font-sora text-2xl font-black text-text-secondary mt-2">
+                      {pagesList.filter((p: any) => p.status === 'ARCHIVED').length}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Toolbar options */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 flex-grow max-w-md">
+                    <div className="relative flex-grow">
+                      <input
+                        type="text"
+                        placeholder="Cari nama atau slug halaman..."
+                        value={searchPageQuery}
+                        onChange={(e) => setSearchPageQuery(e.target.value)}
+                        className="w-full h-10 pl-10 pr-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                      />
+                      <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
+                    </div>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="h-10 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer"
+                    >
+                      <option value="all">Semua Status</option>
+                      <option value="PUBLISHED">Diterbitkan</option>
+                      <option value="DRAFT">Draft</option>
+                      <option value="ARCHIVED">Diarsipkan</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        try {
+                          const config = JSON.parse(profile?.landingPageConfig || '{}')
+                          setCustomDomainInput(config.customDomain || '')
+                        } catch (e) {}
+                        setShowDomainModal(true)
+                      }}
+                      className="h-10 px-4 border border-[#2DB24A] text-[#2DB24A] hover:bg-primary/5 font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer outline-none"
+                    >
+                      <Globe size={14} />
+                      Hubungkan Domain
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCreatePageName('')
+                        setCreatePageTemplate('template1')
+                        setShowCreateModal(true)
+                      }}
+                      className="h-10 px-4 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer outline-none shadow-sm"
+                    >
+                      <Plus size={14} />
+                      Buat Halaman Baru
+                    </button>
+                  </div>
+                </div>
+
+                {/* Page list table */}
+                <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left text-text-secondary border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-[10px] uppercase tracking-wider font-bold text-text-secondary bg-slate-50/50">
+                          <th className="py-4 px-5">Halaman</th>
+                          <th className="py-4 px-5">URL / Alamat Web</th>
+                          <th className="py-4 px-5">Status</th>
+                          <th className="py-4 px-5">Terakhir Diubah</th>
+                          <th className="py-4 px-5 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPages.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-16 text-center text-text-secondary">
+                              Tidak ada halaman toko yang cocok dengan filter pencarian.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredPages.map((page: any) => {
+                            const customDomain = (() => {
+                              try {
+                                return JSON.parse(profile?.landingPageConfig || '{}').customDomain || ''
+                              } catch (e) {
+                                return ''
+                              }
+                            })()
+                            
+                            const displayDomain = customDomain || `${profile?.subdomain || 'mitra'}.saloka.id`
+                            const displayUrl = page.slug ? `${displayDomain}/${page.slug}` : displayDomain
+                            const dateStr = new Date(page.lastModified || new Date()).toLocaleDateString('id-ID', {
+                              day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                            })
+
+                            return (
+                              <tr key={page.id} className="border-b border-slate-50 hover:bg-slate-50/40 transition-colors">
+                                <td className="py-4 px-5">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-12 h-9 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                                      {page.imageUrl ? (
+                                        <img src={page.imageUrl} alt={page.name} className="object-cover w-full h-full" />
+                                      ) : (
+                                        <Layers className="text-slate-300" size={16} />
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-text-primary">{page.name}</p>
+                                      {page.id === 'page-main' && (
+                                        <span className="text-[8px] bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded-full font-black uppercase tracking-wider mt-1 inline-block">Halaman Utama</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-4 px-5 font-mono text-[11px] text-[#2DB24A] hover:underline">
+                                  <a href={`/store/${profile?.id}/${page.slug || ''}`} target="_blank" rel="noreferrer">
+                                    {displayUrl}
+                                  </a>
+                                </td>
+                                <td className="py-4 px-5">
+                                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border ${
+                                    page.status === 'PUBLISHED'
+                                      ? 'bg-green-500/10 border-green-500/25 text-[#2DB24A]'
+                                      : page.status === 'DRAFT'
+                                      ? 'bg-amber-500/10 border-amber-500/25 text-amber-500'
+                                      : 'bg-slate-100 border-slate-200 text-text-secondary'
+                                  }`}>
+                                    {page.status || 'PUBLISHED'}
+                                  </span>
+                                </td>
+                                <td className="py-4 px-5 text-text-secondary">{dateStr}</td>
+                                <td className="py-4 px-5 text-right">
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      onClick={() => setEditingPage(page)}
+                                      className="px-2.5 py-1.5 hover:bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-wider text-text-primary transition-all cursor-pointer"
+                                      title="Edit Info & SEO"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => router.push(`/merchant/builder/${page.id}`)}
+                                      className="px-2.5 py-1.5 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-bold uppercase tracking-wider text-primary transition-all cursor-pointer"
+                                      title="Buka Builder Visual"
+                                    >
+                                      Builder
+                                    </button>
+                                    <button
+                                      onClick={() => handleDuplicatePage(page)}
+                                      className="px-2.5 py-1.5 hover:bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-wider text-text-secondary transition-all cursor-pointer"
+                                      title="Duplikat Halaman"
+                                    >
+                                      Duplicate
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeletePage(page.id)}
+                                      disabled={page.id === 'page-main'}
+                                      className="px-2.5 py-1.5 hover:bg-red-500/5 border border-slate-100 hover:border-red-500/20 rounded-xl text-[10px] font-bold uppercase tracking-wider text-red-500 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-slate-100 cursor-pointer"
+                                      title="Hapus Halaman"
+                                    >
+                                      Hapus
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Create Page Modal Overlay */}
+        {showCreateModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[99] flex items-center justify-center p-6">
+            <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden text-text-primary">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                <div>
+                  <h3 className="font-sora text-base font-bold text-text-primary">Buat Halaman Baru</h3>
+                  <p className="text-[11px] text-text-secondary">Pilih template awal dan tentukan nama halaman Anda</p>
+                </div>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="p-1.5 hover:bg-slate-50 rounded-full transition-colors flex items-center justify-center cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6 bg-slate-50/50">
+                {/* Left side settings */}
+                <div className="flex-grow space-y-5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Halaman</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Landing Page Promo Domestik"
+                      value={createPageName}
+                      onChange={(e) => setCreatePageName(e.target.value)}
+                      className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">Pilih Template Awal</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { id: 'template1', title: 'Blank Template', desc: 'Mulai dari halaman kosong' },
+                        { id: 'template2', title: 'Simple Storefront', desc: 'Layout minimalis bersih' },
+                        { id: 'template3', title: 'Product Solution', desc: 'Fokus konversi promosi tunggal' },
+                        { id: 'template4', title: 'Product Fisik', desc: 'Katalog grid produk beruntun' },
+                      ].map(tpl => (
+                        <div
+                          key={tpl.id}
+                          onClick={() => setCreatePageTemplate(tpl.id)}
+                          className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                            createPageTemplate === tpl.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-slate-100 bg-white hover:border-slate-200'
+                          }`}
+                        >
+                          <p className="font-bold text-xs text-text-primary">{tpl.title}</p>
+                          <p className="text-[10px] text-text-secondary mt-1">{tpl.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right side preview block */}
+                <div className="w-full md:w-80 shrink-0 flex flex-col">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Preview Layout</span>
+                    <div className="flex bg-white rounded-lg p-0.5 border border-slate-100 text-[9px] font-bold">
+                      <button
+                        onClick={() => setCreatePagePreview('mobile')}
+                        className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'mobile' ? 'bg-[#2DB24A] text-white' : 'text-text-secondary'}`}
+                      >
+                        Mobile
+                      </button>
+                      <button
+                        onClick={() => setCreatePagePreview('desktop')}
+                        className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'desktop' ? 'bg-[#2DB24A] text-white' : 'text-text-secondary'}`}
+                      >
+                        Desktop
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex-grow bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-center min-h-[300px] max-h-[320px] relative overflow-hidden shadow-inner">
+                    <div 
+                      className={`transition-all duration-300 bg-white border border-slate-200 shadow-sm flex flex-col justify-between overflow-y-auto overflow-x-hidden ${
+                        createPagePreview === 'mobile' 
+                          ? 'w-[160px] h-[260px] rounded-[24px] border-4 border-slate-800 p-2.5 relative' 
+                          : 'w-full h-full p-4 rounded-lg'
+                      }`}
+                    >
+                      {createPagePreview === 'mobile' && (
+                        <div className="absolute top-1 left-1/2 -translate-x-1/2 w-12 h-3 bg-slate-800 rounded-full z-10 flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 rounded-full bg-slate-900 absolute right-2" />
+                        </div>
+                      )}
+                      <div className={`w-full h-full flex flex-col justify-between ${createPagePreview === 'mobile' ? 'pt-2' : ''}`}>
+                        {createPageTemplate === 'template1' && (
+                          <div className="text-center space-y-2 my-auto flex flex-col items-center justify-center h-full">
+                            <Layers className="mx-auto text-slate-300 animate-pulse" size={24} />
+                            <p className="font-bold text-[10px]">Blank Template</p>
+                            <p className="text-[8px] text-text-secondary max-w-[120px]">Halaman kosong tanpa bagian default.</p>
+                          </div>
+                        )}
+                        {createPageTemplate === 'template2' && (
+                          <div className="w-full h-full flex flex-col justify-between py-1 space-y-1.5">
+                            <div className="h-3 bg-slate-100 rounded-sm w-1/3"></div>
+                            <div className="h-10 bg-slate-50 border border-dashed border-slate-200 rounded flex items-center justify-center text-[7px] text-text-secondary">Hero Banner</div>
+                            <div className="grid grid-cols-2 gap-1">
+                              <div className="h-8 bg-slate-50 rounded"></div>
+                              <div className="h-8 bg-slate-50 rounded"></div>
+                            </div>
+                          </div>
+                        )}
+                        {createPageTemplate === 'template3' && (
+                          <div className="w-full h-full flex flex-col justify-between py-1 space-y-1.5">
+                            <div className="h-3 bg-slate-100 rounded-sm w-1/3"></div>
+                            <div className="flex gap-1 items-center">
+                              <div className="w-1/2 h-12 bg-slate-50 rounded"></div>
+                              <div className="w-1/2 space-y-1">
+                                <div className="h-2 bg-slate-100 rounded"></div>
+                                <div className="h-1.5 bg-slate-100 rounded w-5/6"></div>
+                                <div className="h-3 bg-primary/20 rounded"></div>
+                              </div>
+                            </div>
+                            <div className="h-6 bg-slate-50 rounded flex items-center justify-center text-[7px] text-text-secondary">Testimonial</div>
+                          </div>
+                        )}
+                        {createPageTemplate === 'template4' && (
+                          <div className="w-full h-full flex flex-col justify-between py-1 space-y-1.5">
+                            <div className="h-3 bg-slate-100 rounded-sm w-full"></div>
+                            <div className="grid grid-cols-3 gap-1 flex-1 items-center">
+                              <div className="h-10 bg-slate-50 rounded border border-slate-100"></div>
+                              <div className="h-10 bg-slate-50 rounded border border-slate-100"></div>
+                              <div className="h-10 bg-slate-50 rounded border border-slate-100"></div>
+                            </div>
+                            <div className="h-3 bg-slate-100 rounded w-1/2 mx-auto"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-white">
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-5 py-2.5 text-text-secondary hover:text-text-primary font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    if (!createPageName.trim()) {
+                      alert('Masukkan nama halaman terlebih dahulu.')
+                      return
+                    }
+                    handleCreatePage(createPageName, createPageTemplate)
+                  }}
+                  disabled={isPending}
+                  className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                >
+                  {isPending ? 'Memproses...' : 'Buat Halaman'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Domain Modal Overlay */}
+        {showDomainModal && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[99] flex items-center justify-center p-6">
+            <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden text-text-primary">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                <div>
+                  <h3 className="font-sora text-base font-bold text-text-primary">Hubungkan Custom Domain</h3>
+                  <p className="text-[11px] text-text-secondary">Gunakan domain Anda sendiri untuk landing page Anda</p>
+                </div>
+                <button
+                  onClick={() => setShowDomainModal(false)}
+                  className="p-1.5 hover:bg-slate-50 rounded-full transition-colors flex items-center justify-center cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/50">
+                <div>
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Domain</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: www.tokosaya.com atau katalog.bisnis.id"
+                    value={customDomainInput}
+                    onChange={(e) => setCustomDomainInput(e.target.value)}
+                    className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                  />
+                  <p className="text-[9px] text-text-secondary mt-1.5">Masukkan nama domain Anda tanpa protokol https://</p>
+                </div>
+
+                <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-4">
+                  <h4 className="font-sora text-xs font-bold text-[#0F5132] flex items-center gap-1.5">
+                    <Globe size={14} className="text-primary" />
+                    Panduan Konfigurasi DNS
+                  </h4>
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
+                    Masuk ke panel domain provider Anda (Niagahoster, Rumahweb, Domainesia, dsb) lalu tambahkan record berikut pada pengaturan DNS Anda:
+                  </p>
+
+                  <div className="border border-slate-100 rounded-xl overflow-hidden text-[11px] font-geist">
+                    <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 grid grid-cols-3 font-bold text-text-secondary uppercase tracking-wider text-[9px]">
+                      <span>Tipe (Type)</span>
+                      <span>Nama (Host)</span>
+                      <span>Target (Value)</span>
+                    </div>
+                    <div className="px-4 py-3 grid grid-cols-3 items-center border-b border-slate-50">
+                      <span className="font-bold text-text-primary">CNAME</span>
+                      <span className="font-mono text-text-secondary">www</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-primary font-bold">cname.saloka.id</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText('cname.saloka.id')
+                            alert('Target CNAME disalin ke clipboard!')
+                          }}
+                          className="p-1 hover:bg-slate-50 border border-slate-100 rounded-lg text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                          title="Salin Target"
+                        >
+                          <Copy size={10} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="px-4 py-3 grid grid-cols-3 items-center">
+                      <span className="font-bold text-text-primary">CNAME</span>
+                      <span className="font-mono text-text-secondary">@</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-primary font-bold">cname.saloka.id</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText('cname.saloka.id')
+                            alert('Target CNAME disalin ke clipboard!')
+                          }}
+                          className="p-1 hover:bg-slate-50 border border-slate-100 rounded-lg text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                          title="Salin Target"
+                        >
+                          <Copy size={10} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl text-[10px] text-amber-700 leading-relaxed">
+                    <strong>Catatan:</strong> Proses propagasi DNS CNAME biasanya memerlukan waktu 5 menit hingga maksimal 24 jam tergantung penyedia domain Anda.
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-slate-100 flex justify-between gap-3 bg-white">
+                {(() => {
+                  try {
+                    const config = JSON.parse(profile?.landingPageConfig || '{}')
+                    if (config.customDomain) {
+                      return (
+                        <button
+                          onClick={() => {
+                            if (confirm('Apakah Anda yakin ingin menghapus custom domain ini?')) {
+                              handleSaveCustomDomain('')
+                            }
+                          }}
+                          disabled={isPending}
+                          className="px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          Hapus Domain
+                        </button>
+                      )
+                    }
+                  } catch (e) {}
+                  return null
+                })()}
+                <div className="flex gap-3 ml-auto">
+                  <button
+                    onClick={() => setShowDomainModal(false)}
+                    className="px-5 py-2.5 text-text-secondary hover:text-text-primary font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!customDomainInput.trim()) {
+                        alert('Masukkan nama domain terlebih dahulu.')
+                        return
+                      }
+                      handleSaveCustomDomain(customDomainInput)
+                    }}
+                    disabled={isPending}
+                    className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    {isPending ? 'Menyimpan...' : 'Hubungkan Domain'}
                   </button>
                 </div>
               </div>

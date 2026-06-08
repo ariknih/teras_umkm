@@ -17,7 +17,11 @@ export async function sendWhatsAppMessage({
   message,
   gatewayKey
 }: WaMessageOptions) {
-  const activeKey = gatewayKey || process.env.TWILIO_ACCOUNT_SID || process.env.FONNTE_API_TOKEN || 'TERAS_DEFAULT_GATEWAY_KEY'
+  const kirimiUserCode = process.env.KIRIMI_USER_CODE
+  const kirimiSecret = process.env.KIRIMI_SECRET
+  const kirimiDeviceId = process.env.KIRIMI_DEVICE_ID
+
+  const activeKey = gatewayKey || kirimiUserCode || process.env.TWILIO_ACCOUNT_SID || process.env.FONNTE_API_TOKEN || 'TERAS_DEFAULT_GATEWAY_KEY'
   
   console.log(`[WA Gateway API - ${activeKey}] Mengirim ke ${recipientPhone} (${recipientName}): ${message}`)
 
@@ -28,7 +32,35 @@ export async function sendWhatsAppMessage({
 
     const fonnteToken = process.env.FONNTE_API_TOKEN || (gatewayKey && gatewayKey !== 'TERAS_DEFAULT_GATEWAY_KEY' && !gatewayKey.includes('demo') ? gatewayKey : null)
 
-    if (twilioSid && twilioToken && twilioFrom) {
+    if (kirimiUserCode && kirimiSecret && kirimiDeviceId) {
+      let formattedPhone = recipientPhone.replace(/[^0-9]/g, '')
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '62' + formattedPhone.slice(1)
+      }
+
+      const response = await fetch('https://api.kirimi.id/v1/send-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          user_code: kirimiUserCode,
+          secret: kirimiSecret,
+          device_id: kirimiDeviceId,
+          receiver: formattedPhone,
+          message: message
+        })
+      })
+
+      if (!response.ok) {
+        console.warn('Kirimi WA gateway returned error status:', response.status)
+        const errText = await response.text()
+        console.warn('Kirimi error details:', errText)
+      } else {
+        const resData = await response.json()
+        console.log('Kirimi send response:', resData)
+      }
+    } else if (twilioSid && twilioToken && twilioFrom) {
       // Format recipient phone number to have country code if missing
       let formattedPhone = recipientPhone
       if (formattedPhone.startsWith('0')) {

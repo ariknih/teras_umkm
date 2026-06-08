@@ -71,7 +71,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
   );
 
   return (
-    <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
+    <div className="relative min-h-screen bg-[#F5F7FA] pb-24">
       {/* Structured JSON-LD Schema for Marketplace */}
       <script
         type="application/ld+json"
@@ -81,37 +81,24 @@ export default async function MarketPage({ searchParams }: PageProps) {
             "@type": "WebSite",
             "name": "Teras UMKM",
             "url": "https://terasumkm.id",
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": "https://terasumkm.id/market?query={search_term_string}",
-              "query-input": "required name=search_term_string"
-            }
           })
         }}
       />
 
-      {/* Mesh Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.04)_0%,transparent_70%)] pointer-events-none z-0" />
-
-      <div className="relative z-10 max-w-[1440px] mx-auto">
-        {/* Header */}
-        <div className="mb-10 text-center max-w-2xl mx-auto">
-          <span className="text-[10px] font-geist font-bold text-primary tracking-[0.2em] mb-4 uppercase bg-primary/10 border border-primary/20 px-3 py-1 rounded inline-block">
-            Teras Premium Marketplace
-          </span>
-          <h1 className="font-sora text-3xl md:text-5xl font-bold text-text-primary mb-4">
-            Curated Merchant <span className="text-primary">Catalog.</span>
-          </h1>
-          <p className="text-xs md:text-sm text-text-secondary">
-            Beli produk premium, temukan penyedia jasa terdekat, atau dapatkan lowongan proyek kerja mandiri.
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-6">
+        {/* ─── Compact header ──────────────────────────────────── */}
+        <div className="mb-4">
+          <h1 className="text-base font-bold text-gray-800 mb-0.5">Marketplace</h1>
+          <p className="text-xs text-gray-400">
+            Beli produk UMKM, temukan jasa terdekat, atau lowongan kerja mandiri.
           </p>
         </div>
 
-        {/* ─── Horizontal Scrollable Category Pill Bar ─────────────────── */}
-        <div className="mb-6 relative">
+        {/* ─── Horizontal Scrollable Category Pill Bar ─────────── */}
+        <div className="mb-4 relative">
           <div
             id="category-scroll"
-            className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide"
+            className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {ALL_CATEGORIES.map((cat) => {
@@ -121,10 +108,10 @@ export default async function MarketPage({ searchParams }: PageProps) {
                   id={`cat-tab-${cat.value || "all"}`}
                   key={cat.value}
                   href={cat.value ? `/market?category=${cat.value}${queryParam ? `&query=${encodeURIComponent(queryParam)}` : ''}` : "/market"}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full text-[11px] font-semibold tracking-wider transition-all duration-200 whitespace-nowrap ${
+                  className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-200 whitespace-nowrap ${
                     isActive
-                      ? "bg-primary text-white shadow-sm"
-                      : "bg-white hover:bg-slate-50 text-text-secondary hover:text-text-primary border border-slate-100"
+                      ? "bg-[#2DB24A] text-white shadow-sm"
+                      : "bg-white hover:bg-slate-50 text-gray-500 hover:text-gray-800 border border-gray-200"
                   }`}
                 >
                   {cat.name}
@@ -132,46 +119,44 @@ export default async function MarketPage({ searchParams }: PageProps) {
               );
             })}
           </div>
-          {/* Fade gradient on right */}
-          <div className="absolute right-0 top-0 bottom-2 w-16 bg-gradient-to-l from-bg-dark to-transparent pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-[#F5F7FA] to-transparent pointer-events-none" />
         </div>
 
         {/* Search Bar */}
-        <div className="mb-10 bg-white rounded-lg p-4 shadow-sm">
+        <div className="mb-4 bg-white rounded-xl p-3 shadow-sm border border-gray-100">
           <form method="GET" action="/market" className="flex gap-2">
             {categoryParam && <input type="hidden" name="category" value={categoryParam} />}
-            <input
-              id="search-input"
-              type="text"
-              name="query"
-              defaultValue={resolvedParams.query || ""}
-              placeholder="Cari produk, jasa, lowongan kerja..."
-              className="flex-grow px-4 py-2 bg-slate-50 border border-slate-100 rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50"
-            />
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35"/></svg>
+              <input
+                id="search-input"
+                type="text"
+                name="query"
+                defaultValue={resolvedParams.query || ""}
+                placeholder="Cari produk, jasa, lowongan kerja..."
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-800 placeholder:text-gray-400 focus:outline-none focus:border-[#2DB24A]/50 transition-colors"
+              />
+            </div>
             <button
               id="search-submit"
               type="submit"
-              className="px-5 py-2 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+              className="px-5 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors"
             >
               Cari
             </button>
           </form>
           {(categoryParam || queryParam) && (
-            <div className="mt-2 flex items-center gap-2 text-[10px] text-text-secondary">
+            <div className="mt-2 flex items-center gap-2 text-[10px] text-gray-500">
               <span>Filter aktif:</span>
               {categoryParam && (
-                <span className="px-2 py-0.5 bg-primary/10 border border-primary/20 rounded text-primary font-semibold">
+                <span className="px-2 py-0.5 bg-[#2DB24A]/10 border border-[#2DB24A]/20 rounded-full text-[#2DB24A] font-semibold">
                   {ALL_CATEGORIES.find(c => c.value === categoryParam)?.name || categoryParam}
                 </span>
               )}
               {queryParam && (
-                <span className="px-2 py-0.5 bg-surface-container border border-border-subtle rounded">
-                  &ldquo;{queryParam}&rdquo;
-                </span>
+                <span className="px-2 py-0.5 bg-gray-100 border border-gray-200 rounded-full">&ldquo;{queryParam}&rdquo;</span>
               )}
-              <Link href="/market" className="text-red-400 hover:text-red-300 underline ml-1">
-                Reset
-              </Link>
+              <Link href="/market" className="text-red-400 hover:text-red-500 underline ml-1">Reset</Link>
             </div>
           )}
         </div>

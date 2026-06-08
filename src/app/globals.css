@@ -14,6 +14,7 @@
   --color-on-tertiary-container: var(--on-tertiary-container);
   
   --color-bg-dark: var(--bg-dark);
+  --color-surface: var(--surface-dark);
   --color-surface-dark: var(--surface-dark);
   --color-surface-dim: #cbdbf5;
   --color-surface-bright: var(--bg-dark);

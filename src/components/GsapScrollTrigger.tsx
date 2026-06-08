@@ -32,7 +32,7 @@ export function GsapScrollTrigger() {
           const charSpan = document.createElement("span");
           charSpan.textContent = char;
           charSpan.style.display = "inline-block";
-          charSpan.className = "split-char inline-block translate-y-[100px] opacity-0";
+          charSpan.className = "split-char inline-block opacity-0";
           wordSpan.appendChild(charSpan);
         });
 
@@ -47,20 +47,23 @@ export function GsapScrollTrigger() {
       
       el.setAttribute("data-split-done", "true");
 
-      // Set up staggered char slide-up animation
+      // Set up staggered char slide-up animation (using premium power4.out and small translation)
       const targetChars = el.querySelectorAll(".split-char");
-      gsap.to(targetChars, {
-        scrollTrigger: {
-          trigger: el,
-          start: "top 85%",
-          toggleActions: "play none none none",
-        },
-        y: 0,
-        opacity: 1,
-        duration: 0.6,
-        ease: "circ.out",
-        stagger: 0.015,
-      });
+      gsap.fromTo(targetChars, 
+        { y: 15, opacity: 0 },
+        {
+          scrollTrigger: {
+            trigger: el,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+          y: 0,
+          opacity: 1,
+          duration: 0.8,
+          ease: "power4.out",
+          stagger: 0.012,
+        }
+      );
     });
 
     // 3. Staggered Items Animation
@@ -69,18 +72,18 @@ export function GsapScrollTrigger() {
       const items = container.querySelectorAll(".gsap-stagger-item");
       gsap.fromTo(
         items,
-        { opacity: 0, y: 30 },
+        { opacity: 0, y: 20 },
         {
           scrollTrigger: {
             trigger: container,
-            start: "top 80%",
+            start: "top 82%",
             toggleActions: "play none none none",
           },
           opacity: 1,
           y: 0,
-          duration: 0.5,
-          ease: "power2.out",
-          stagger: 0.1,
+          duration: 0.8,
+          ease: "power4.out",
+          stagger: 0.08,
         }
       );
     });
@@ -90,17 +93,17 @@ export function GsapScrollTrigger() {
     fadeUpElements.forEach((el) => {
       gsap.fromTo(
         el,
-        { opacity: 0, y: 50 },
+        { opacity: 0, y: 25 },
         {
           scrollTrigger: {
             trigger: el,
-            start: "top 80%",
+            start: "top 82%",
             toggleActions: "play none none none",
           },
           opacity: 1,
           y: 0,
-          duration: 0.7,
-          ease: "power3.out",
+          duration: 0.9,
+          ease: "power4.out",
         }
       );
     });
@@ -110,17 +113,17 @@ export function GsapScrollTrigger() {
     scaleUpElements.forEach((el) => {
       gsap.fromTo(
         el,
-        { opacity: 0, scale: 0.9 },
+        { opacity: 0, scale: 0.96 },
         {
           scrollTrigger: {
             trigger: el,
-            start: "top 80%",
+            start: "top 82%",
             toggleActions: "play none none none",
           },
           opacity: 1,
           scale: 1,
-          duration: 0.8,
-          ease: "back.out(1.5)",
+          duration: 0.9,
+          ease: "back.out(1.15)",
         }
       );
     });
@@ -130,17 +133,17 @@ export function GsapScrollTrigger() {
     slideLeftElements.forEach((el) => {
       gsap.fromTo(
         el,
-        { opacity: 0, x: -60 },
+        { opacity: 0, x: -30 },
         {
           scrollTrigger: {
             trigger: el,
-            start: "top 80%",
+            start: "top 82%",
             toggleActions: "play none none none",
           },
           opacity: 1,
           x: 0,
-          duration: 0.7,
-          ease: "power3.out",
+          duration: 0.9,
+          ease: "power4.out",
         }
       );
     });
@@ -150,17 +153,17 @@ export function GsapScrollTrigger() {
     slideRightElements.forEach((el) => {
       gsap.fromTo(
         el,
-        { opacity: 0, x: 60 },
+        { opacity: 0, x: 30 },
         {
           scrollTrigger: {
             trigger: el,
-            start: "top 80%",
+            start: "top 82%",
             toggleActions: "play none none none",
           },
           opacity: 1,
           x: 0,
-          duration: 0.7,
-          ease: "power3.out",
+          duration: 0.9,
+          ease: "power4.out",
         }
       );
     });

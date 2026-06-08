@@ -47,6 +47,17 @@ interface Product {
   id: string
   title: string
   price: number
+  isAffiliateEnabled?: boolean
+  category?: string
+  description?: string
+  affiliateCommissionType?: string
+  affiliateCommissionValue?: number
+  imageUrl?: string | null
+  merchant?: {
+    id: string
+    name?: string | null
+    businessName?: string | null
+  }
 }
 
 interface DownlineNodeProps {
@@ -185,6 +196,10 @@ export default function AffiliatePage() {
   const [isCreatingLink, startCreateLink] = useTransition()
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
+  // Find Products Tab State
+  const [affSearchQuery, setAffSearchQuery] = useState('')
+  const [affSelectedCategory, setAffSelectedCategory] = useState('ALL')
+
   // Upgrade State
   const [isUpgrading, startUpgrade] = useTransition()
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
@@ -232,7 +247,7 @@ export default function AffiliatePage() {
         const w = await getWalletDetails()
         setWallet(w)
 
-        if (u.role === 'AFFILIATE') {
+        if (u.role === 'AFFILIATE' || u.role === 'CUSTOMER') {
           const s = await getAffiliateStats()
           setStats(s as any)
           
@@ -420,7 +435,7 @@ export default function AffiliatePage() {
     )
   }
 
-  if (user.role !== 'AFFILIATE') {
+  if (user.role !== 'CUSTOMER' && user.role !== 'AFFILIATE') {
     return (
       <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark py-12 px-6">
         <div className="relative z-10 w-full max-w-md text-center border border-border-subtle bg-surface-dark p-8 rounded-lg">
@@ -431,7 +446,7 @@ export default function AffiliatePage() {
           </div>
           <h2 className="font-sora text-xl font-bold text-text-primary mb-3">Tipe Akun Tidak Sesuai</h2>
           <p className="text-xs text-text-secondary leading-relaxed mb-8">
-            Halaman ini eksklusif bagi mitra dengan peran <span className="text-primary font-bold">AFFILIATE</span>. Anda saat ini bertindak sebagai <span className="text-primary font-bold">{user.role}</span>.
+            Halaman ini eksklusif bagi mitra dengan peran <span className="text-primary font-bold">CUSTOMER</span> atau <span className="text-primary font-bold">AFFILIATE</span>. Anda saat ini bertindak sebagai <span className="text-primary font-bold">{user.role}</span>.
           </p>
           <div className="flex flex-col gap-3">
             <Link
@@ -492,6 +507,7 @@ export default function AffiliatePage() {
         <div className="flex border-b border-border-subtle mb-8 overflow-x-auto pb-px scrollbar-none gap-2">
           {[
             { id: 'dashboard', name: 'Dashboard' },
+            { id: 'find_products', name: 'Cari Barang Affiliate' },
             { id: 'links', name: 'Link Kustom' },
             { id: 'network', name: 'Downline Jaringan' },
             { id: 'leaderboard', name: 'Leaderboard' },
@@ -757,6 +773,182 @@ export default function AffiliatePage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 1.5. FIND PRODUCTS TAB */}
+        {activeTab === 'find_products' && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Search & Filter Header */}
+            <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
+              <h3 className="font-sora text-base font-bold text-text-primary mb-2">
+                Katalog Produk Program Affiliate
+              </h3>
+              <p className="text-xs text-text-secondary mb-6">
+                Temukan produk premium untuk dipromosikan dan dapatkan komisi instan yang langsung masuk ke dompet digital Anda.
+              </p>
+
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary"><circle cx="11" cy="11" r="8"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35"/></svg>
+                  <input
+                    type="text"
+                    value={affSearchQuery}
+                    onChange={(e) => setAffSearchQuery(e.target.value)}
+                    placeholder="Cari produk..."
+                    className="w-full h-11 pl-10 pr-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+                <div className="w-full md:w-56">
+                  <select
+                    value={affSelectedCategory}
+                    onChange={(e) => setAffSelectedCategory(e.target.value)}
+                    className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary/50 transition-colors"
+                  >
+                    <option value="ALL">Semua Kategori</option>
+                    <option value="TOKO">Toko & Ritel</option>
+                    <option value="KAFE">Kafe & Kuliner</option>
+                    <option value="JASA">Jasa & Layanan</option>
+                    <option value="ELEKTRONIK">Elektronik</option>
+                    <option value="MAKANAN_MINUMAN">Makanan & Minuman</option>
+                    <option value="KOMPUTER_AKSESORIS">Komputer & Aksesoris</option>
+                    <option value="PERAWATAN_KECANTIKAN">Perawatan & Kecantikan</option>
+                    <option value="HANDPHONE_AKSESORIS">Handphone & Aksesoris</option>
+                    <option value="PERLENGKAPAN_RUMAH">Perlengkapan Rumah</option>
+                    <option value="PAKAIAN_PRIA">Pakaian Pria</option>
+                    <option value="PAKAIAN_WANITA">Pakaian Wanita</option>
+                    <option value="SEPATU_PRIA">Sepatu Pria</option>
+                    <option value="FASHION_MUSLIM">Fashion Muslim</option>
+                    <option value="TAS_PRIA">Tas Pria</option>
+                    <option value="FASHION_BAYI_ANAK">Fashion Bayi/Anak</option>
+                    <option value="AKSESORIS_FASHION">Aksesoris Fashion</option>
+                    <option value="IBU_BAYI">Ibu & Bayi</option>
+                    <option value="JAM_TANGAN">Jam Tangan</option>
+                    <option value="SEPATU_WANITA">Sepatu Wanita</option>
+                    <option value="KESEHATAN">Kesehatan</option>
+                    <option value="TAS_WANITA">Tas Wanita</option>
+                    <option value="HOBI_KOLEKSI">Hobi & Koleksi</option>
+                    <option value="OTOMOTIF">Otomotif</option>
+                    <option value="OLAHRAGA_OUTDOOR">Olahraga & Outdoor</option>
+                    <option value="BUKU_ALAT_TULIS">Buku & Alat Tulis</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Grid List */}
+            {(() => {
+              const filtered = products.filter(p => {
+                if (!p.isAffiliateEnabled) return false
+                if (affSelectedCategory !== 'ALL' && p.category !== affSelectedCategory) return false
+                if (affSearchQuery) {
+                  return p.title.toLowerCase().includes(affSearchQuery.toLowerCase()) || 
+                         (p.description || '').toLowerCase().includes(affSearchQuery.toLowerCase())
+                }
+                return true
+              })
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center py-16 border border-border-subtle rounded bg-surface-dark text-xs text-text-secondary">
+                    Tidak ada produk affiliate yang cocok dengan pencarian Anda.
+                  </div>
+                )
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {filtered.map(p => {
+                    const isPercent = p.affiliateCommissionType === 'PERCENT'
+                    const commValue = p.affiliateCommissionValue || 0
+                    
+                    // Auto-calculated: Promoter receives 60% of total commission set by merchant
+                    const netCommPercent = isPercent ? (commValue * 0.6) : null
+                    const netCommValue = isPercent 
+                      ? (p.price * (commValue / 100) * 0.6)
+                      : (commValue * 0.6)
+
+                    const affLink = `${originUrl}/market/product/${p.id}?aff=${user?.id || ''}`
+
+                    return (
+                      <div key={p.id} className="border border-border-subtle bg-surface-dark rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                          <div className="aspect-[16/10] bg-surface-container relative overflow-hidden">
+                            {p.imageUrl ? (
+                              <img src={p.imageUrl} alt={p.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
+                            )}
+                            <div className="absolute top-2 right-2 bg-primary px-2 py-0.5 rounded text-[8px] font-bold text-white uppercase tracking-wider">
+                              {p.category}
+                            </div>
+                          </div>
+                          <div className="p-4 space-y-2">
+                            <p className="text-[10px] text-text-secondary font-geist font-bold uppercase tracking-wider">
+                              Seller: {p.merchant?.name || 'Teras Merchant'}
+                            </p>
+                            <h4 className="font-sora text-xs font-bold text-text-primary line-clamp-1">
+                              {p.title}
+                            </h4>
+                            <p className="text-[10px] text-text-secondary line-clamp-2 leading-relaxed">
+                              {p.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-4 border-t border-border-subtle bg-surface-container/20 space-y-3.5">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-text-secondary font-geist uppercase tracking-wider">Harga Barang</span>
+                            <span className="text-xs font-black text-text-primary font-geist">
+                              Rp {p.price.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+
+                          {/* Commission Rate & Payout info */}
+                          <div className="p-3 bg-primary/5 border border-primary/15 rounded-lg space-y-1.5">
+                            <div className="flex justify-between items-center text-[10px] font-bold text-primary">
+                              <span>Komisi Anda (Net)</span>
+                              <span>
+                                {isPercent ? `${netCommPercent?.toFixed(1)}%` : 'Fix Komisi'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-end">
+                              <span className="text-[8px] text-text-secondary leading-none font-geist">Auto calculated (60% cut)</span>
+                              <span className="text-xs font-black text-primary leading-none">
+                                + Rp {netCommValue.toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Action Link Copy */}
+                          <div className="space-y-1.5">
+                            <label className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-wider">Tautan Promosi Anda</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                readOnly
+                                value={affLink}
+                                className="flex-1 h-8 px-2 bg-surface-container border border-border-subtle rounded text-[9px] font-mono text-text-secondary focus:outline-none"
+                              />
+                              <button
+                                onClick={() => handleCopyText(affLink, p.id)}
+                                className={`h-8 px-3 font-geist font-bold text-[9px] uppercase tracking-wider rounded transition-all duration-300 ${
+                                  copiedId === p.id
+                                    ? 'bg-green-950 border border-green-500/50 text-green-400'
+                                    : 'bg-primary hover:bg-primary-container text-white'
+                                }`}
+                              >
+                                {copiedId === p.id ? 'Copied' : 'Salin'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </div>
         )}
 

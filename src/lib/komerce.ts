@@ -181,26 +181,31 @@ export interface MockCourierRate {
   etd: string;
 }
 
-export function getMockShippingRates(distanceKm: number): MockCourierRate[] {
+export function getMockShippingRates(distanceKm: number, weightGram: number = 1000): MockCourierRate[] {
+  const weightKg = Math.max(1, Math.ceil(weightGram / 1000));
   const couriers = [
-    { code: 'jne', name: 'JNE REG', ratePerKm: 2000, minFee: 9000 },
-    { code: 'jnt', name: 'J&T Express', ratePerKm: 2100, minFee: 9000 },
-    { code: 'sicepat', name: 'SiCepat REG', ratePerKm: 2200, minFee: 10000 },
-    { code: 'tiki', name: 'TIKI REG', ratePerKm: 1800, minFee: 9000 },
-    { code: 'pos', name: 'POS Indonesia', ratePerKm: 1500, minFee: 8000 },
-    { code: 'anteraja', name: 'Anteraja', ratePerKm: 1900, minFee: 8500 },
-    { code: 'ninja', name: 'Ninja Express', ratePerKm: 2050, minFee: 9500 },
+    { code: 'jne', name: 'JNE REG', ratePerKm: 40, baseFee: 15000, minFee: 9000 },
+    { code: 'jnt', name: 'J&T Express', ratePerKm: 45, baseFee: 16000, minFee: 9000 },
+    { code: 'sicepat', name: 'SiCepat REG', ratePerKm: 50, baseFee: 18000, minFee: 10000 },
+    { code: 'tiki', name: 'TIKI REG', ratePerKm: 35, baseFee: 14000, minFee: 9000 },
+    { code: 'pos', name: 'POS Indonesia', ratePerKm: 30, baseFee: 12000, minFee: 8000 },
+    { code: 'anteraja', name: 'Anteraja', ratePerKm: 42, baseFee: 15500, minFee: 8500 },
+    { code: 'ninja', name: 'Ninja Express', ratePerKm: 46, baseFee: 16500, minFee: 9500 },
   ];
 
   const etdByDist = (km: number) =>
     km < 50 ? '1-2 hari' : km < 200 ? '2-3 hari' : km < 800 ? '3-5 hari' : '5-7 hari';
 
-  return couriers.map((c) => ({
-    courier_code: c.code,
-    courier_name: c.name,
-    price: Math.max(c.minFee, Math.round(distanceKm * c.ratePerKm / 100) * 100),
-    etd: etdByDist(distanceKm),
-  }));
+  return couriers.map((c) => {
+    const costPerKg = c.baseFee + Math.round(distanceKm * c.ratePerKm / 100) * 100;
+    const price = Math.max(c.minFee, costPerKg * weightKg);
+    return {
+      courier_code: c.code,
+      courier_name: c.name,
+      price: price,
+      etd: etdByDist(distanceKm),
+    };
+  });
 }
 
 // ─── Haversine distance helper ────────────────────────────────────────────────

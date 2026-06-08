@@ -22,8 +22,6 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
   const profileRef = useRef<HTMLDivElement>(null)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedLocation, setSelectedLocation] = useState('Jakarta Pusat')
-  const [showLocationModal, setShowLocationModal] = useState(false)
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -57,7 +55,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 w-full h-[72px] bg-white border-b border-slate-100 flex items-center justify-between px-4 md:px-10 shadow-sm print:hidden">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full h-[72px] bg-surface border-b border-border-subtle flex items-center justify-between px-4 md:px-10 shadow-sm print:hidden">
         {/* Left: Brand logo & Kategori */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-1 group/logo shrink-0">
@@ -186,13 +184,24 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                         <span>Profil Saya</span>
                       </Link>
 
+                      {(user.role === 'CUSTOMER' || user.role === 'AFFILIATE') && (
+                        <Link
+                          href="/affiliate"
+                          onClick={() => setIsOpenProfile(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors"
+                        >
+                          <Wallet size={14} className="text-primary" />
+                          <span>Dashboard Affiliate</span>
+                        </Link>
+                      )}
+
                       <Link
-                        href="/setup-landing"
+                        href="/merchant/dashboard"
                         onClick={() => setIsOpenProfile(false)}
                         className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors"
                       >
                         <Settings size={14} className="text-text-secondary" />
-                        <span>Setup Storefront</span>
+                        <span>Dashboard Merchant</span>
                       </Link>
                     </div>
 
@@ -201,7 +210,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                         id="logout-btn"
                         onClick={handleLogout}
                         disabled={isPending}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-red-400 hover:bg-red-500/5 hover:text-red-500 transition-colors cursor-pointer bg-transparent border-none text-left"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-red-400 hover:bg-red-500/5 hover:text-red-500 dark:hover:bg-red-950/20 transition-colors cursor-pointer bg-transparent border-none text-left"
                       >
                         <LogOut size={14} />
                         <span>{isPending ? 'Keluar...' : 'Keluar'}</span>
@@ -243,51 +252,9 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
         </div>
       </header>
 
-      {/* Sub-header Location Bar */}
-      <div className="fixed top-[72px] left-0 right-0 h-[32px] bg-white border-b border-slate-100/50 flex items-center px-4 md:px-10 text-[11px] text-text-secondary z-40 print:hidden select-none">
-        <button 
-          onClick={() => setShowLocationModal(true)} 
-          className="flex items-center gap-1 hover:text-primary transition-colors cursor-pointer"
-        >
-          <MapPin size={11} className="text-red-500" />
-          <span>Dikirim ke <strong className="text-text-primary font-bold">{selectedLocation}</strong></span>
-          <span className="text-[8px] opacity-70">▼</span>
-        </button>
-      </div>
-
-      {/* Location Picker Modal */}
-      {showLocationModal && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center animate-in fade-in duration-200">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-[90%] max-w-[360px] relative animate-in zoom-in-95 duration-200">
-            <button 
-              onClick={() => setShowLocationModal(false)}
-              className="absolute right-4 top-4 text-text-secondary hover:text-text-primary"
-            >
-              <X size={16} />
-            </button>
-            <h3 className="font-sora text-sm font-bold mb-4">Pilih Lokasi Pengiriman</h3>
-            <div className="grid grid-cols-2 gap-2">
-              {['Jakarta Pusat', 'Jakarta Selatan', 'Jakarta Barat', 'Jakarta Utara', 'Tangerang', 'Bekasi', 'Depok', 'Bandung', 'Surabaya', 'Medan'].map(loc => (
-                <button
-                  key={loc}
-                  onClick={() => { setSelectedLocation(loc); setShowLocationModal(false); }}
-                  className={`py-2 px-3 border rounded-lg text-xs font-semibold text-center transition-colors cursor-pointer ${
-                    selectedLocation === loc 
-                      ? 'border-[#2DB24A] bg-[#2DB24A]/5 text-[#2DB24A]' 
-                      : 'border-border hover:bg-surface-container-low text-text-secondary'
-                  }`}
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Mobile Drawer Overlay */}
       {isOpenMobile && (
-        <div className="lg:hidden fixed inset-0 top-[104px] left-0 w-full h-[calc(100vh-104px)] bg-bg-dark/98 backdrop-blur-lg z-40 py-8 px-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+        <div className="lg:hidden fixed inset-0 top-[72px] left-0 w-full h-[calc(100vh-72px)] bg-bg-dark/98 backdrop-blur-lg z-40 py-8 px-6 overflow-y-auto animate-in slide-in-from-right duration-300">
           <div className="flex flex-col gap-6 pb-10">
             <Link
               href="/market"
@@ -361,11 +328,11 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     Profil Saya
                   </Link>
                   <Link
-                    href="/setup-landing"
+                    href="/merchant/dashboard"
                     onClick={() => setIsOpenMobile(false)}
                     className="w-full py-2.5 px-4 bg-surface border border-border-subtle text-text-primary text-center font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-surface-container-low transition-colors"
                   >
-                    Setup Storefront
+                    Dashboard Merchant
                   </Link>
                 </div>
 

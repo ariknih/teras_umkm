@@ -136,6 +136,9 @@ model Product {
   longitude   Float?
   jvPartnerId String?
   jvSharePercent Float?
+  isAffiliateEnabled      Boolean @default(false)
+  affiliateCommissionType String  @default("PERCENT") // "PERCENT" or "FIXED"
+  affiliateCommissionValue Float  @default(0.0)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   

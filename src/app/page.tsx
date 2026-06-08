@@ -216,7 +216,7 @@ export default async function HomePage() {
                 </h2>
                 <p className="text-xs text-white/80 mt-2">Dapatkan website toko online gratis, domain pribadi, & gratis pelatihan!</p>
               </div>
-              <Link href="/setup-landing" className="bg-[#FFC107] hover:bg-[#FFC107]/95 text-secondary font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-lg w-fit transition-all shadow-md">
+              <Link href="/merchant/dashboard" className="bg-[#FFC107] hover:bg-[#FFC107]/95 text-secondary font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded-lg w-fit transition-all shadow-md">
                 Setup Toko Sekarang
               </Link>
             </div>

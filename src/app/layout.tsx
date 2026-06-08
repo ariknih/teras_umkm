@@ -64,6 +64,7 @@ export default async function RootLayout({
   const headerList = await headers();
   const pathname = headerList.get("x-pathname") || "";
   const isAdminRoute = pathname.startsWith("/admin");
+  const isBuilderRoute = pathname.startsWith("/merchant/builder");
 
   return (
     <html
@@ -91,24 +92,24 @@ export default async function RootLayout({
       </head>
       <body
         className={`min-h-full flex flex-col text-on-surface font-inter select-none overflow-x-hidden ${
-          isAdminRoute ? "bg-[#0c0d0e]" : "bg-bg-dark pb-16 md:pb-0"
+          isAdminRoute ? "bg-[#0c0d0e]" : isBuilderRoute ? "bg-[#e8eaed]" : "bg-bg-dark pb-16 md:pb-0"
         }`}
         suppressHydrationWarning
       >
-        {isAdminRoute ? (
+        {isAdminRoute || isBuilderRoute ? (
           <main className="flex-grow flex flex-col">
             {children}
           </main>
         ) : (
           <>
             <GsapScrollTrigger />
-            <OnboardingGuard isLoggedIn={!!user} userSetupCompleted={!!userSetupCompleted} />
+            <OnboardingGuard isLoggedIn={!!user} userSetupCompleted={!!userSetupCompleted} userId={dbUser?.id || ''} />
 
             {/* ── RESPONSIVE NAVIGATION HEADER ──────────────────────────── */}
             <HeaderNavigation user={dbUser} wallet={wallet} logoutAction={logout} />
 
         {/* Page Content */}
-        <main className="flex-grow flex flex-col pt-[104px]">
+        <main className="flex-grow flex flex-col pt-[72px]">
           {children}
         </main>
 

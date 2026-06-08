@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
-import { login, register, sendOtpWhatsApp } from "@/app/actions/auth";
+import { login, register } from "@/app/actions/auth";
 
 interface AuthDialogProps {
   trigger: React.ReactNode;
@@ -26,23 +26,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // WhatsApp OTP Verification States
-  const [whatsapp, setWhatsapp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
-  const [countdown, setCountdown] = useState(60);
-  const [isVerified, setIsVerified] = useState(false);
   const [referralCode, setReferralCode] = useState("");
-
-  // Handle countdown timer
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (otpSent && countdown > 0 && !isVerified) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [otpSent, countdown, isVerified]);
 
   // Pre-fill referral code from URL
   useEffect(() => {
@@ -51,30 +35,6 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
       setReferralCode(ref);
     }
   }, [searchParams]);
-
-  const handleSendOtp = async () => {
-    if (!whatsapp) {
-      alert("Silakan masukkan nomor WhatsApp terlebih dahulu.");
-      return;
-    }
-    const code = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(code);
-    setOtpSent(true);
-    setCountdown(60);
-    setOtpCode("");
-    setError(null);
-
-    // Call the server action to send the actual WhatsApp message
-    await sendOtpWhatsApp(whatsapp, code);
-  };
-
-  const handleVerifyOtp = (val: string) => {
-    setOtpCode(val);
-    if (val === generatedOtp) {
-      setIsVerified(true);
-      setError(null);
-    }
-  };
 
   const handleGoogleLogin = () => {
     setError(null);
@@ -91,18 +51,8 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
     setError(null);
 
     if (tab === "register") {
-      if (!name || !email || !password || !whatsapp) {
+      if (!name || !email || !password) {
         setError("Semua kolom wajib diisi.");
-        return;
-      }
-
-      if (!otpSent) {
-        handleSendOtp();
-        return;
-      }
-
-      if (otpCode !== generatedOtp) {
-        setError("Kode OTP WhatsApp salah.");
         return;
       }
     }
@@ -267,73 +217,8 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                 >
                   <option value="CUSTOMER">Customer (Pembeli & Pelajar)</option>
                   <option value="MERCHANT">Merchant (Penjual & Mitra UMKM)</option>
-                  <option value="AFFILIATE">Affiliate (Pemasar Digital)</option>
                 </select>
               </div>
-
-              {/* WhatsApp OTP Verification Block */}
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="flex justify-between items-center">
-                  <Label htmlFor="dialog-whatsapp" className="text-xs font-semibold text-text-secondary">Nomor WhatsApp</Label>
-                  {otpSent && !isVerified && (
-                    <button
-                      type="button"
-                      onClick={() => { setOtpSent(false); setOtpCode(''); setIsVerified(false); }}
-                      className="text-[10px] text-primary hover:underline font-bold"
-                    >
-                      Ubah Nomor
-                    </button>
-                  )}
-                </div>
-                <div className="relative">
-                  <Input
-                    id="dialog-whatsapp"
-                    type="tel"
-                    required
-                    disabled={otpSent}
-                    value={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.value)}
-                    placeholder="081234567890"
-                    className="pl-4 py-3 disabled:opacity-60 disabled:cursor-not-allowed"
-                  />
-                </div>
-              </div>
-
-              {otpSent && !isVerified && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <Label htmlFor="dialog-otp" className="text-xs font-semibold text-text-secondary">Kode Verifikasi WA</Label>
-                  <Input
-                    id="dialog-otp"
-                    type="text"
-                    maxLength={4}
-                    value={otpCode}
-                    onChange={(e) => handleVerifyOtp(e.target.value)}
-                    placeholder="Masukkan 4 digit kode"
-                    className="px-4 py-3 text-center tracking-widest font-mono placeholder:tracking-normal placeholder:text-xs"
-                  />
-                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-[10px] text-primary font-medium flex justify-between items-center">
-                    <span>Simulasi WA OTP: <span className="font-bold font-mono">{generatedOtp}</span></span>
-                    {countdown > 0 ? (
-                      <span className="text-[10px] text-text-secondary">{countdown}s</span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        className="text-[10px] text-primary font-bold hover:underline"
-                      >
-                        Kirim Ulang
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {isVerified && (
-                <div className="p-2.5 bg-green-500/10 border border-green-500/20 rounded-lg text-[11px] text-green-600 font-bold flex items-center gap-2 animate-in fade-in duration-300">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
-                  WhatsApp terverifikasi!
-                </div>
-              )}
 
               {/* Referral Code Block */}
               <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -370,7 +255,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
             ) : (
               tab === "login" 
                 ? "Masuk Sekarang" 
-                : (otpSent && !isVerified ? "Verifikasi & Daftar Baru" : "Daftar Akun Baru")
+                : "Daftar Akun Baru"
             )}
           </button>
         </form>

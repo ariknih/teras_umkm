@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     // Fallback: use haversine-based mock rates
     const distKm = haversineKm(shipperLat, shipperLng, receiverLat, receiverLng);
-    const mockRates = getMockShippingRates(distKm);
+    const mockRates = getMockShippingRates(distKm, weight);
     return NextResponse.json({
       data: mockRates.map((r) => ({
         courier_name: r.courier_name,
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     // Always return a fallback so the cart doesn't break
     const distKm = haversineKm(shipperLat, shipperLng, receiverLat, receiverLng);
-    const mockRates = getMockShippingRates(distKm);
+    const mockRates = getMockShippingRates(distKm, weight);
     return NextResponse.json({
       data: mockRates,
       source: 'mock_fallback',

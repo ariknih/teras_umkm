@@ -327,6 +327,9 @@ const mockProducts = [
     imageUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&q=80',
     merchantId: 'user-merchant-1',
     latitude: -6.2088, longitude: 106.8456,
+    isAffiliateEnabled: true,
+    affiliateCommissionType: 'PERCENT',
+    affiliateCommissionValue: 5.0,
     createdAt: new Date(), updatedAt: new Date(),
   },
   {
@@ -1916,7 +1919,14 @@ function syncMockDb() {
       const parsed = JSON.parse(raw)
       
       if (parsed.products) {
-        globalMockProducts = mergeMockData(mockProducts, parsed.products.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) })))
+        globalMockProducts = mergeMockData(mockProducts, parsed.products.map((p: any) => ({
+          ...p,
+          isAffiliateEnabled: p.isAffiliateEnabled !== undefined ? p.isAffiliateEnabled : false,
+          affiliateCommissionType: p.affiliateCommissionType || 'PERCENT',
+          affiliateCommissionValue: p.affiliateCommissionValue !== undefined ? p.affiliateCommissionValue : 0.0,
+          createdAt: new Date(p.createdAt),
+          updatedAt: new Date(p.updatedAt)
+        })))
       }
       if (parsed.users) {
         globalMockUsers = mergeMockData(mockUsers, parsed.users.map((u: any) => ({ ...u, createdAt: new Date(u.createdAt), updatedAt: new Date(u.updatedAt) })))
@@ -1979,7 +1989,12 @@ function syncMockDb() {
 const _persistedDb = loadMockDb()
 
 // Global state in-memory database helpers for local updates in sandbox mode
-let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products)
+let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products).map((p: any) => ({
+  ...p,
+  isAffiliateEnabled: p.isAffiliateEnabled !== undefined ? p.isAffiliateEnabled : false,
+  affiliateCommissionType: p.affiliateCommissionType || 'PERCENT',
+  affiliateCommissionValue: p.affiliateCommissionValue !== undefined ? p.affiliateCommissionValue : 0.0
+}))
 let globalMockUsers: any[] = mergeMockData(mockUsers, _persistedDb.users)
 let globalMockProgress = [...mockProgress]
 let globalMockGroups: any[] = mergeMockData(mockGroups, _persistedDb.groups)
@@ -2505,6 +2520,9 @@ export const DataStore = {
     longitude?: number;
     jvPartnerId?: string;
     jvSharePercent?: number;
+    isAffiliateEnabled?: boolean;
+    affiliateCommissionType?: string;
+    affiliateCommissionValue?: number;
   }) {
     if (await isDbConnected()) {
       try {
@@ -2524,6 +2542,9 @@ export const DataStore = {
       longitude: data.longitude || null,
       jvPartnerId: data.jvPartnerId || null,
       jvSharePercent: data.jvSharePercent || null,
+      isAffiliateEnabled: data.isAffiliateEnabled || false,
+      affiliateCommissionType: data.affiliateCommissionType || 'PERCENT',
+      affiliateCommissionValue: data.affiliateCommissionValue || 0.0,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -2532,7 +2553,23 @@ export const DataStore = {
     return newProd
   },
 
-  async updateProduct(id: string, merchantId: string, data: Partial<{ title: string; description: string; price: number; category: any; stock: number; imageUrl: string; latitude?: number; longitude?: number }>) {
+  async updateProduct(
+    id: string, 
+    merchantId: string, 
+    data: Partial<{ 
+      title: string; 
+      description: string; 
+      price: number; 
+      category: any; 
+      stock: number; 
+      imageUrl: string; 
+      latitude?: number; 
+      longitude?: number;
+      isAffiliateEnabled?: boolean;
+      affiliateCommissionType?: string;
+      affiliateCommissionValue?: number;
+    }>
+  ) {
     if (await isDbConnected()) {
       try {
         return await db.product.update({
@@ -2551,6 +2588,39 @@ export const DataStore = {
     globalMockProducts[idx] = updated
     saveMockDb()
     return updated
+  },
+
+  async updateAllProductsAffiliateSettings(
+    merchantId: string, 
+    isAffiliateEnabled: boolean, 
+    affiliateCommissionType: string, 
+    affiliateCommissionValue: number
+  ) {
+    if (await isDbConnected()) {
+      try {
+        await db.product.updateMany({
+          where: { merchantId },
+          data: {
+            isAffiliateEnabled,
+            affiliateCommissionType,
+            affiliateCommissionValue
+          }
+        })
+        return true
+      } catch (_) {}
+    }
+    
+    // In-memory simulation
+    globalMockProducts.forEach(p => {
+      if (p.merchantId === merchantId) {
+        p.isAffiliateEnabled = isAffiliateEnabled
+        p.affiliateCommissionType = affiliateCommissionType
+        p.affiliateCommissionValue = affiliateCommissionValue
+        p.updatedAt = new Date()
+      }
+    })
+    saveMockDb()
+    return true
   },
 
   async deleteProduct(id: string, merchantId: string) {
@@ -2968,120 +3038,108 @@ export const DataStore = {
               }
             }
 
-            // 1. Handle Multi-Level Affiliate Commission Splits
-            if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
-              const tier1Comm = itemPrice * 0.10
-              merchantEarnings -= tier1Comm
-
-              const tier1Wallet = await tx.wallet.findUnique({ where: { userId: activeAffiliateId } })
-              if (tier1Wallet) {
-                await tx.wallet.update({
-                  where: { userId: activeAffiliateId },
-                  data: { balance: { increment: tier1Comm } }
-                })
-                await tx.walletTransaction.create({
-                  data: {
-                    walletId: tier1Wallet.id,
-                    amount: tier1Comm,
-                    type: 'COMMISSION',
-                    description: `Komisi Affiliate Tier 1 dari penjualan ${product.title}`
-                  }
-                })
-                await tx.affiliateReferral.create({
-                  data: {
-                    affiliateId: activeAffiliateId,
-                    buyerId,
-                    amount: tier1Comm,
-                    status: 'PAID'
-                  }
-                })
-                // Award XP (+30 XP)
-                const affUser = await tx.user.findUnique({ where: { id: activeAffiliateId } })
-                if (affUser) {
-                  await tx.user.update({
-                    where: { id: activeAffiliateId },
-                    data: { xp: affUser.xp + 30, level: Math.floor((affUser.xp + 30) / 100) + 1 }
-                  })
-                }
+            // 1. Handle Affiliate Commission Splits (60/20/20)
+            if (product.isAffiliateEnabled) {
+              let totalComm = 0
+              if (product.affiliateCommissionType === 'PERCENT') {
+                totalComm = itemPrice * ((product.affiliateCommissionValue || 0) / 100)
+              } else {
+                totalComm = (product.affiliateCommissionValue || 0) * item.quantity
               }
 
-              // Trace Parent (Tier 2) - 5%
-              const tier1User = await tx.user.findUnique({ where: { id: activeAffiliateId } })
-              if (tier1User?.parentAffiliateId && tier1User.parentAffiliateId !== product.merchantId) {
-                const tier2Id = tier1User.parentAffiliateId
-                const tier2Comm = itemPrice * 0.05
-                merchantEarnings -= tier2Comm
+              if (totalComm > 0) {
+                merchantEarnings -= totalComm
 
-                const tier2Wallet = await tx.wallet.findUnique({ where: { userId: tier2Id } })
-                if (tier2Wallet) {
-                  await tx.wallet.update({
-                    where: { userId: tier2Id },
-                    data: { balance: { increment: tier2Comm } }
-                  })
-                  await tx.walletTransaction.create({
-                    data: {
-                      walletId: tier2Wallet.id,
-                      amount: tier2Comm,
-                      type: 'COMMISSION',
-                      description: `Komisi Affiliate Tier 2 dari penjualan ${product.title}`
-                    }
-                  })
-                  await tx.affiliateReferral.create({
-                    data: {
-                      affiliateId: tier2Id,
-                      buyerId,
-                      amount: tier2Comm,
-                      status: 'PAID'
-                    }
-                  })
-                  // Award XP (+15 XP)
-                  const tier2User = await tx.user.findUnique({ where: { id: tier2Id } })
-                  if (tier2User) {
-                    await tx.user.update({
-                      where: { id: tier2Id },
-                      data: { xp: tier2User.xp + 15, level: Math.floor((tier2User.xp + 15) / 100) + 1 }
-                    })
-                  }
-                }
+                const promoterComm = totalComm * 0.60
+                const parentComm = totalComm * 0.20
+                const adminComm = totalComm * 0.20
 
-                // Trace Grandparent (Tier 3) - 2%
-                const tier2UserObj = await tx.user.findUnique({ where: { id: tier2Id } })
-                if (tier2UserObj?.parentAffiliateId && tier2UserObj.parentAffiliateId !== product.merchantId) {
-                  const tier3Id = tier2UserObj.parentAffiliateId
-                  const tier3Comm = itemPrice * 0.02
-                  merchantEarnings -= tier3Comm
-
-                  const tier3Wallet = await tx.wallet.findUnique({ where: { userId: tier3Id } })
-                  if (tier3Wallet) {
+                // Promoter (Tier 1) - 60%
+                if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
+                  const promoterWallet = await tx.wallet.findUnique({ where: { userId: activeAffiliateId } })
+                  if (promoterWallet) {
                     await tx.wallet.update({
-                      where: { userId: tier3Id },
-                      data: { balance: { increment: tier3Comm } }
+                      where: { userId: activeAffiliateId },
+                      data: { balance: { increment: promoterComm } }
                     })
                     await tx.walletTransaction.create({
                       data: {
-                        walletId: tier3Wallet.id,
-                        amount: tier3Comm,
+                        walletId: promoterWallet.id,
+                        amount: promoterComm,
                         type: 'COMMISSION',
-                        description: `Komisi Affiliate Tier 3 dari penjualan ${product.title}`
+                        description: `Komisi Affiliate Tier 1 dari penjualan ${product.title}`
                       }
                     })
                     await tx.affiliateReferral.create({
                       data: {
-                        affiliateId: tier3Id,
+                        affiliateId: activeAffiliateId,
                         buyerId,
-                        amount: tier3Comm,
+                        amount: promoterComm,
                         status: 'PAID'
                       }
                     })
-                    // Award XP (+5 XP)
-                    const tier3User = await tx.user.findUnique({ where: { id: tier3Id } })
-                    if (tier3User) {
+                    // Award XP (+30 XP)
+                    const affUser = await tx.user.findUnique({ where: { id: activeAffiliateId } })
+                    if (affUser) {
                       await tx.user.update({
-                        where: { id: tier3Id },
-                        data: { xp: tier3User.xp + 5, level: Math.floor((tier3User.xp + 5) / 100) + 1 }
+                        where: { id: activeAffiliateId },
+                        data: { xp: affUser.xp + 30, level: Math.floor((affUser.xp + 30) / 100) + 1 }
                       })
                     }
                   }
+                }
+
+                // Inviter / Parent (Tier 2) - 20%
+                const buyerParentId = buyerObj?.parentAffiliateId
+                if (buyerParentId && buyerParentId !== product.merchantId) {
+                  const parentWallet = await tx.wallet.findUnique({ where: { userId: buyerParentId } })
+                  if (parentWallet) {
+                    await tx.wallet.update({
+                      where: { userId: buyerParentId },
+                      data: { balance: { increment: parentComm } }
+                    })
+                    await tx.walletTransaction.create({
+                      data: {
+                        walletId: parentWallet.id,
+                        amount: parentComm,
+                        type: 'COMMISSION',
+                        description: `Komisi Affiliate Tier 2 dari penjualan ${product.title}`
+                      }
+                    })
+                    await tx.affiliateReferral.create({
+                      data: {
+                        affiliateId: buyerParentId,
+                        buyerId,
+                        amount: parentComm,
+                        status: 'PAID'
+                      }
+                    })
+                    // Award XP (+15 XP)
+                    const parentUser = await tx.user.findUnique({ where: { id: buyerParentId } })
+                    if (parentUser) {
+                      await tx.user.update({
+                        where: { id: buyerParentId },
+                        data: { xp: parentUser.xp + 15, level: Math.floor((parentUser.xp + 15) / 100) + 1 }
+                      })
+                    }
+                  }
+                }
+
+                // Admin - 20%
+                const adminWallet = await tx.wallet.findUnique({ where: { userId: 'user-admin-1' } })
+                if (adminWallet) {
+                  await tx.wallet.update({
+                    where: { userId: 'user-admin-1' },
+                    data: { balance: { increment: adminComm } }
+                  })
+                  await tx.walletTransaction.create({
+                    data: {
+                      walletId: adminWallet.id,
+                      amount: adminComm,
+                      type: 'COMMISSION',
+                      description: `Komisi Admin (Affiliate Cut) dari penjualan ${product.title}`
+                    }
+                  })
                 }
               }
             }
@@ -3297,105 +3355,95 @@ export const DataStore = {
         }
       }
 
-      // 1. Multi-level commissions
-      if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
-        const tier1Comm = itemPrice * 0.10
-        merchantEarnings -= tier1Comm
-
-        const tier1Wallet = globalMockWallets.find(w => w.userId === activeAffiliateId)
-        if (tier1Wallet) {
-          tier1Wallet.balance += tier1Comm
-          globalMockWalletTransactions.push({
-            id: `tx-${Date.now()}-aff-1`,
-            walletId: tier1Wallet.id,
-            amount: tier1Comm,
-            type: 'COMMISSION' as const,
-            description: `Komisi Affiliate Tier 1 dari penjualan ${product.title}`,
-            createdAt: new Date()
-          })
-          globalMockReferrals.push({
-            id: `ref-${Date.now()}-1`,
-            affiliateId: activeAffiliateId,
-            buyerId,
-            amount: tier1Comm,
-            status: 'PAID' as const,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          })
-          const affUser = globalMockUsers.find(u => u.id === activeAffiliateId)
-          if (affUser) {
-            affUser.xp = (affUser.xp || 0) + 30
-            affUser.level = Math.floor(affUser.xp / 100) + 1
-          }
+      // 1. Handle Affiliate Commission Splits (60/20/20)
+      if (product.isAffiliateEnabled) {
+        let totalComm = 0
+        if (product.affiliateCommissionType === 'PERCENT') {
+          totalComm = itemPrice * ((product.affiliateCommissionValue || 0) / 100)
+        } else {
+          totalComm = (product.affiliateCommissionValue || 0) * item.quantity
         }
 
-        // Tier 2
-        const tier1User = globalMockUsers.find(u => u.id === activeAffiliateId)
-        if (tier1User?.parentAffiliateId && tier1User.parentAffiliateId !== product.merchantId) {
-          const tier2Id = tier1User.parentAffiliateId
-          const tier2Comm = itemPrice * 0.05
-          merchantEarnings -= tier2Comm
+        if (totalComm > 0) {
+          merchantEarnings -= totalComm
 
-          const tier2Wallet = globalMockWallets.find(w => w.userId === tier2Id)
-          if (tier2Wallet) {
-            tier2Wallet.balance += tier2Comm
-            globalMockWalletTransactions.push({
-              id: `tx-${Date.now()}-aff-2`,
-              walletId: tier2Wallet.id,
-              amount: tier2Comm,
-              type: 'COMMISSION' as const,
-              description: `Komisi Affiliate Tier 2 dari penjualan ${product.title}`,
-              createdAt: new Date()
-            })
-            globalMockReferrals.push({
-              id: `ref-${Date.now()}-2`,
-              affiliateId: tier2Id,
-              buyerId,
-              amount: tier2Comm,
-              status: 'PAID' as const,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            })
-            const tier2User = globalMockUsers.find(u => u.id === tier2Id)
-            if (tier2User) {
-              tier2User.xp = (tier2User.xp || 0) + 15
-              tier2User.level = Math.floor(tier2User.xp / 100) + 1
-            }
-          }
+          const promoterComm = totalComm * 0.60
+          const parentComm = totalComm * 0.20
+          const adminComm = totalComm * 0.20
 
-          // Tier 3
-          const tier2UserObj = globalMockUsers.find(u => u.id === tier2Id)
-          if (tier2UserObj?.parentAffiliateId && tier2UserObj.parentAffiliateId !== product.merchantId) {
-            const tier3Id = tier2UserObj.parentAffiliateId
-            const tier3Comm = itemPrice * 0.02
-            merchantEarnings -= tier3Comm
-
-            const tier3Wallet = globalMockWallets.find(w => w.userId === tier3Id)
-            if (tier3Wallet) {
-              tier3Wallet.balance += tier3Comm
+          // Promoter (Tier 1) - 60%
+          if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
+            const promoterWallet = globalMockWallets.find(w => w.userId === activeAffiliateId)
+            if (promoterWallet) {
+              promoterWallet.balance += promoterComm
               globalMockWalletTransactions.push({
-                id: `tx-${Date.now()}-aff-3`,
-                walletId: tier3Wallet.id,
-                amount: tier3Comm,
+                id: `tx-${Date.now()}-aff-1`,
+                walletId: promoterWallet.id,
+                amount: promoterComm,
                 type: 'COMMISSION' as const,
-                description: `Komisi Affiliate Tier 3 dari penjualan ${product.title}`,
+                description: `Komisi Affiliate Tier 1 dari penjualan ${product.title}`,
                 createdAt: new Date()
               })
               globalMockReferrals.push({
-                id: `ref-${Date.now()}-3`,
-                affiliateId: tier3Id,
+                id: `ref-${Date.now()}-1`,
+                affiliateId: activeAffiliateId,
                 buyerId,
-                amount: tier3Comm,
+                amount: promoterComm,
                 status: 'PAID' as const,
                 createdAt: new Date(),
                 updatedAt: new Date()
               })
-              const tier3User = globalMockUsers.find(u => u.id === tier3Id)
-              if (tier3User) {
-                tier3User.xp = (tier3User.xp || 0) + 5
-                tier3User.level = Math.floor(tier3User.xp / 100) + 1
+              const affUser = globalMockUsers.find(u => u.id === activeAffiliateId)
+              if (affUser) {
+                affUser.xp = (affUser.xp || 0) + 30
+                affUser.level = Math.floor(affUser.xp / 100) + 1
               }
             }
+          }
+
+          // Inviter / Parent (Tier 2) - 20%
+          const buyerParentId = buyerUser?.parentAffiliateId
+          if (buyerParentId && buyerParentId !== product.merchantId) {
+            const parentWallet = globalMockWallets.find(w => w.userId === buyerParentId)
+            if (parentWallet) {
+              parentWallet.balance += parentComm
+              globalMockWalletTransactions.push({
+                id: `tx-${Date.now()}-aff-2`,
+                walletId: parentWallet.id,
+                amount: parentComm,
+                type: 'COMMISSION' as const,
+                description: `Komisi Affiliate Tier 2 dari penjualan ${product.title}`,
+                createdAt: new Date()
+              })
+              globalMockReferrals.push({
+                id: `ref-${Date.now()}-2`,
+                affiliateId: buyerParentId,
+                buyerId,
+                amount: parentComm,
+                status: 'PAID' as const,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              })
+              const parentUser = globalMockUsers.find(u => u.id === buyerParentId)
+              if (parentUser) {
+                parentUser.xp = (parentUser.xp || 0) + 15
+                parentUser.level = Math.floor(parentUser.xp / 100) + 1
+              }
+            }
+          }
+
+          // Admin - 20%
+          const adminWallet = globalMockWallets.find(w => w.userId === 'user-admin-1')
+          if (adminWallet) {
+            adminWallet.balance += adminComm
+            globalMockWalletTransactions.push({
+              id: `tx-${Date.now()}-aff-admin`,
+              walletId: adminWallet.id,
+              amount: adminComm,
+              type: 'COMMISSION' as const,
+              description: `Komisi Admin (Affiliate Cut) dari penjualan ${product.title}`,
+              createdAt: new Date()
+            })
           }
         }
       }

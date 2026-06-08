@@ -6,30 +6,9 @@ import Link from 'next/link'
 import Script from 'next/script'
 import { getProducts } from '../actions/products'
 import { checkoutCart, getWalletDetails } from '../actions/wallet-affiliate'
-import { getCurrentUser } from '../actions/auth'
-import { useJsApiLoader, GoogleMap, Marker, DirectionsRenderer } from '@react-google-maps/api'
+import { getCurrentUser, getCurrentUserProfile } from '../actions/auth'
+import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api'
 
-// Premium Dark Theme Style for Google Maps
-const mapStyles = [
-  { elementType: 'geometry', stylers: [{ color: '#1e1d1a' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#1e1d1a' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#c6a96b' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#e5c178' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#c6a96b' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#1a1f16' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#688c53' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c2925' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1d1b18' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8c8070' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#4a4135' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#2d271f' }] },
-  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#dfc08b' }] },
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#262421' }] },
-  { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#c6a96b' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#12151a' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#3a4454' }] },
-  { featureType: 'water', elementType: 'labels.text.stroke', stylers: [{ color: '#12151a' }] }
-];
 
 interface CartItem {
   productId: string
@@ -97,8 +76,6 @@ export default function CartPage() {
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // A/B Testing Variant Selection
-  const [variant, setVariant] = useState<'A' | 'B' | 'C' | 'D' | 'E' | 'F'>('A')
 
   // Shipping & Geolocation
   const [useGps, setUseGps] = useState(false)
@@ -127,11 +104,6 @@ export default function CartPage() {
   }
   const [selectedMockCity, setSelectedMockCity] = useState('jakarta')
 
-  // Bump Sales Options
-  const [garansiPremium, setGaransiPremium] = useState(false)
-  const [boxKayu, setBoxKayu] = useState(false)
-  const [kertasKado, setKertasKado] = useState(false)
-
   // Coupons
   const [couponCode, setCouponCode] = useState('')
   const [couponDiscount, setCouponDiscount] = useState(0)
@@ -141,12 +113,8 @@ export default function CartPage() {
   // Payment Method
   const [paymentMethod, setPaymentMethod] = useState<'MIDTRANS' | 'WALLET'>('MIDTRANS')
 
-  // Wizard Steps (Variant B)
-  const [wizardStep, setWizardStep] = useState<number>(1)
-
   // Google Maps state
   const [map, setMap] = useState<any>(null)
-  const [directionsResponse, setDirectionsResponse] = useState<any>(null)
   const [distanceText, setDistanceText] = useState('')
   const [durationText, setDurationText] = useState('')
   const [addressSearchQuery, setAddressSearchQuery] = useState('')
@@ -175,85 +143,55 @@ export default function CartPage() {
     };
   };
 
-  useEffect(() => {
-    if (cartDetails.length > 0) {
-      const seller = getSellerCoords();
-      const buyer = getBuyerCoordsObj();
-      
-      if (window.google && apiKey) {
-        calculateRoute(seller, buyer);
-      } else {
-        const dist = getDistance(buyer.lat, buyer.lng, seller.lat, seller.lng);
-        setShippingDistKm(dist);
-        setDistanceText(`${dist.toFixed(1)} km`);
-        setDurationText(dist < 50 ? '1 jam' : dist < 200 ? '4 jam' : '1 hari');
-        updateCourierRates(dist);
-      }
-    }
-  }, [buyerCoords, selectedMockCity, useGps, cartDetails.length, isLoaded]);
-
   const updateCourierRates = (distKm: number) => {
-    // Each courier has its own speed tier so ETDs differ naturally
+    const totalWeight = cartDetails.reduce((sum, item) => sum + item.quantity * 1000, 0);
+    const weightKg = Math.max(1, Math.ceil(totalWeight / 1000));
     const couriers = [
-      { code: 'jne',     name: 'JNE REG',       ratePerKm: 2000, minFee: 9000,  speedFactor: 0 },
-      { code: 'jnt',     name: 'J&T Express',   ratePerKm: 2100, minFee: 9000,  speedFactor: -1 },
-      { code: 'sicepat', name: 'SiCepat REG',   ratePerKm: 2200, minFee: 10000, speedFactor: -1 },
-      { code: 'tiki',    name: 'TIKI REG',       ratePerKm: 1800, minFee: 9000,  speedFactor: 1 },
-      { code: 'pos',     name: 'POS Indonesia', ratePerKm: 1500, minFee: 8000,  speedFactor: 2 },
+      { code: 'jne',     name: 'JNE REG',       ratePerKm: 40, baseFee: 15000, minFee: 9000,  speedFactor: 0 },
+      { code: 'jnt',     name: 'J&T Express',   ratePerKm: 45, baseFee: 16000, minFee: 9000,  speedFactor: -1 },
+      { code: 'sicepat', name: 'SiCepat REG',   ratePerKm: 50, baseFee: 18000, minFee: 10000, speedFactor: -1 },
+      { code: 'tiki',    name: 'TIKI REG',       ratePerKm: 35, baseFee: 14000, minFee: 9000,  speedFactor: 1 },
+      { code: 'pos',     name: 'POS Indonesia', ratePerKm: 30, baseFee: 12000, minFee: 8000,  speedFactor: 2 },
     ];
-
-    /**
-     * Base ETD bands per distance, then each courier shifts by speedFactor days.
-     * speedFactor < 0 = faster, > 0 = slower.
-     */
     const getEtd = (km: number, shift: number): string => {
-      // Base min/max days by distance
-      let minD: number, maxD: number
-      if (km < 50)       { minD = 1; maxD = 2 }
-      else if (km < 200) { minD = 2; maxD = 3 }
-      else if (km < 800) { minD = 3; maxD = 5 }
-      else               { minD = 5; maxD = 7 }
-      // Apply shift and clamp to sensible range
-      minD = Math.max(1, minD + shift)
-      maxD = Math.max(minD + 1, maxD + shift)
-      return `${minD}-${maxD} hari`
-    }
-
-    const rates = couriers.map((c) => ({
-      courier_code: c.code,
-      courier_name: c.name,
-      price: Math.max(c.minFee, Math.round(distKm * c.ratePerKm / 100) * 100),
-      etd: getEtd(distKm, c.speedFactor),
-    }));
+      let minD: number, maxD: number;
+      if (km < 50)       { minD = 1; maxD = 2; }
+      else if (km < 200) { minD = 2; maxD = 3; }
+      else if (km < 800) { minD = 3; maxD = 5; }
+      else               { minD = 5; maxD = 7; }
+      minD = Math.max(1, minD + shift);
+      maxD = Math.max(minD + 1, maxD + shift);
+      return `${minD}-${maxD} hari`;
+    };
+    const rates = couriers.map((c) => {
+      const costPerKg = c.baseFee + Math.round(distKm * c.ratePerKm / 100) * 100;
+      const price = Math.max(c.minFee, costPerKg * weightKg);
+      return { courier_code: c.code, courier_name: c.name, price, etd: getEtd(distKm, c.speedFactor) };
+    });
     setCourierRates(rates);
     if (!selectedCourier || !rates.some(r => r.courier_code === selectedCourier)) {
       setSelectedCourier(rates[0].courier_code);
     }
   };
 
-
-  const calculateRoute = async (origin: { lat: number, lng: number }, destination: { lat: number, lng: number }) => {
-    if (!window.google) return;
-    const directionsService = new window.google.maps.DirectionsService();
-    try {
-      const results = await directionsService.route({
-        origin,
-        destination,
-        travelMode: window.google.maps.TravelMode.DRIVING,
+  // Recalculate distance & courier rates whenever buyer/cart location changes (haversine only - no Directions API)
+  useEffect(() => {
+    if (cartDetails.length === 0) return;
+    const buyer = getBuyerCoordsObj();
+    const seller = getSellerCoords();
+    const dist = getDistance(buyer.lat, buyer.lng, seller.lat, seller.lng);
+    setShippingDistKm(dist);
+    setDistanceText(`${dist.toFixed(1)} km`);
+    setDurationText(dist < 50 ? '< 1 jam' : dist < 200 ? '2–4 jam' : dist < 800 ? '1–2 hari' : '2–3 hari');
+    updateCourierRates(dist);
+    // Geocode to readable address via Google Geocoding (no Directions needed)
+    if (useGps && buyerCoords && window.google && apiKey && (!shippingAddress || shippingAddress.startsWith('Lokasi Terdaftar'))) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat: buyer.lat, lng: buyer.lng } }, (results, status) => {
+        if (status === 'OK' && results?.[0]) setShippingAddress(results[0].formatted_address);
       });
-      setDirectionsResponse(results);
-      if (results.routes[0]?.legs[0]) {
-        const leg = results.routes[0].legs[0];
-        const distKm = (leg.distance?.value ?? 0) / 1000;
-        setShippingDistKm(distKm);
-        setDistanceText(leg.distance?.text || `${distKm.toFixed(1)} km`);
-        setDurationText(leg.duration?.text || '');
-        updateCourierRates(distKm);
-      }
-    } catch (err) {
-      console.error('Directions request failed:', err);
     }
-  };
+  }, [buyerCoords, selectedMockCity, useGps, cartDetails.length]);
 
   const handleMarkerDragEnd = (e: any) => {
     if (e.latLng) {
@@ -441,6 +379,27 @@ export default function CartPage() {
         const list = await getProducts()
         setProducts(list as any)
 
+        // Load full user profile coordinates
+        const profile = await getCurrentUserProfile()
+        if (profile && profile.latitude && profile.longitude) {
+          const coords = { latitude: profile.latitude, longitude: profile.longitude }
+          setBuyerCoords(coords)
+          setUseGps(true)
+          
+          if (window.google) {
+            const geocoder = new window.google.maps.Geocoder();
+            geocoder.geocode({ location: { lat: profile.latitude, lng: profile.longitude } }, (results, status) => {
+              if (status === 'OK' && results?.[0]) {
+                setShippingAddress(results[0].formatted_address);
+              } else {
+                setShippingAddress(`Lokasi Terdaftar di Profil (${profile.latitude.toFixed(4)}, ${profile.longitude.toFixed(4)})`);
+              }
+            });
+          } else {
+            setShippingAddress(`Lokasi Terdaftar di Profil (${profile.latitude.toFixed(4)}, ${profile.longitude.toFixed(4)})`);
+          }
+        }
+
         // Clean up cart from items that do not exist in database products list
         const storedCart = localStorage.getItem('teras_cart')
         if (storedCart) {
@@ -468,6 +427,23 @@ export default function CartPage() {
     }
     loadData()
   }, [])
+
+  // Auto-calculate courier rates once cart items are loaded
+  useEffect(() => {
+    if (cartDetails.length > 0 && courierRates.length === 0) {
+      const buyer = {
+        lat: useGps && buyerCoords ? buyerCoords.latitude : mockCities[selectedMockCity].lat,
+        lng: useGps && buyerCoords ? buyerCoords.longitude : mockCities[selectedMockCity].lng,
+      }
+      const seller = {
+        lat: cartDetails[0].latitude ?? cartDetails[0].merchant?.latitude ?? -6.2088,
+        lng: cartDetails[0].longitude ?? cartDetails[0].merchant?.longitude ?? 106.8456,
+      }
+      const dist = getDistance(buyer.lat, buyer.lng, seller.lat, seller.lng)
+      setShippingDistKm(dist)
+      updateCourierRates(dist)
+    }
+  }, [cartDetails.length])
 
   const saveCart = (newCart: CartItem[]) => {
     setCart(newCart)
@@ -550,15 +526,21 @@ export default function CartPage() {
     const shipperLat = cartDetails[0].latitude ?? -6.2088
     const shipperLng = cartDetails[0].longitude ?? 106.8456
     const dist = getDistance(activeBuyerLat, activeBuyerLng, shipperLat, shipperLng)
-    const courierRateMap: Record<string, { ratePerKm: number; minFee: number }> = {
-      jne: { ratePerKm: 2000, minFee: 9000 },
-      pos: { ratePerKm: 1500, minFee: 8000 },
-      tiki: { ratePerKm: 1800, minFee: 9000 },
-      sicepat: { ratePerKm: 2200, minFee: 10000 },
-      jnt: { ratePerKm: 2100, minFee: 9000 },
+    
+    const totalWeight = cartDetails.reduce((sum, item) => sum + item.quantity * 1000, 0)
+    const weightKg = Math.max(1, Math.ceil(totalWeight / 1000))
+    
+    const courierRateMap: Record<string, { ratePerKm: number; baseFee: number; minFee: number }> = {
+      jne: { ratePerKm: 40, baseFee: 15000, minFee: 9000 },
+      jnt: { ratePerKm: 45, baseFee: 16000, minFee: 9000 },
+      sicepat: { ratePerKm: 50, baseFee: 18000, minFee: 10000 },
+      tiki: { ratePerKm: 35, baseFee: 14000, minFee: 9000 },
+      pos: { ratePerKm: 30, baseFee: 12000, minFee: 8000 },
     }
+    
     const cr = courierRateMap[selectedCourier] || courierRateMap.jne
-    return Math.max(cr.minFee, Math.round(dist * cr.ratePerKm))
+    const costPerKg = cr.baseFee + Math.round(dist * cr.ratePerKm / 100) * 100
+    return Math.max(cr.minFee, costPerKg * weightKg)
   })()
 
   // Display distance
@@ -571,12 +553,6 @@ export default function CartPage() {
     const sLng = lngs.reduce((a, b) => a + b, 0) / lngs.length
     return getDistance(activeBuyerLat, activeBuyerLng, sLat, sLng)
   })()
-
-  // Bump Sales Sum
-  let bumpSalesTotal = 0
-  if (garansiPremium) bumpSalesTotal += 25000
-  if (boxKayu) bumpSalesTotal += 15000
-  if (kertasKado) bumpSalesTotal += 5000
 
   // Recalculate coupon discount reactively
   let activeCouponDiscount = couponDiscount
@@ -593,7 +569,7 @@ export default function CartPage() {
     activeCouponDiscount = 0
   }
 
-  const total = Math.max(0, subtotal + shippingFee + bumpSalesTotal - activeCouponDiscount)
+  const total = Math.max(0, subtotal + shippingFee - activeCouponDiscount)
   const hasOwnProduct = process.env.NODE_ENV === 'production'
     ? cartDetails.some((item) => currentUser && item.merchantId === currentUser.id)
     : false
@@ -623,18 +599,12 @@ export default function CartPage() {
       return
     }
 
-    const activeBumps = []
-    if (garansiPremium) activeBumps.push('GARANSI_PREMIUM')
-    if (boxKayu) activeBumps.push('BOX_KAYU')
-    if (kertasKado) activeBumps.push('KERTAS_KADO')
-
     const shippingDetails = {
       shippingFee,
       courier: selectedCourier.toUpperCase(),
       shippingAddress: shippingAddress || `Terkirim ke ${useGps ? 'GPS Lokasi' : mockCities[selectedMockCity].name}`,
       couponCode: couponSuccess ? couponCode.toUpperCase() : undefined,
       discountAmount: activeCouponDiscount,
-      bumpSales: activeBumps.join(',') || undefined
     }
 
     if (paymentMethod === 'WALLET') {
@@ -765,340 +735,6 @@ export default function CartPage() {
     )
   }
 
-  // RENDER SELLER & CART DETAILS COMMON VIEW FOR SIMPLE RETRIEVAL
-  const renderItemRows = () => (
-    <div className="space-y-4">
-      {cartDetails.map((item) => {
-        const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity)
-        const hasDiscount = wholesalePrice < item.price
-        const isOwnProduct = currentUser && item.merchantId === currentUser.id
-        return (
-          <div
-            key={item.id}
-            className="flex items-center gap-4 p-4 border border-border-subtle bg-surface-dark/90 rounded-lg justify-between"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-surface-container rounded border border-border-subtle overflow-hidden relative flex items-center justify-center flex-shrink-0">
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
-                ) : (
-                  <span className="text-[8px] font-bold text-primary/40 uppercase">{item.category}</span>
-                )}
-              </div>
-              <div>
-                <h3 className="font-sora text-xs font-bold text-text-primary mb-1 line-clamp-1">
-                  {item.title}
-                </h3>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="inline-block px-1.5 py-0.2 bg-primary/10 border border-primary/20 rounded text-[7px] font-geist font-bold text-primary uppercase tracking-wider">
-                    {item.category}
-                  </span>
-                  {isOwnProduct && (
-                    <span className="inline-block px-1.5 py-0.2 bg-red-500/20 border border-red-500/35 rounded text-[7px] font-geist font-bold text-red-400 uppercase tracking-wider animate-pulse">
-                      Produk Anda
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs font-bold text-primary">
-                  {hasDiscount ? (
-                    <span className="flex items-center gap-1.5">
-                      <span className="line-through text-text-secondary/60 text-[10px]">Rp {item.price.toLocaleString('id-ID')}</span>
-                      <span>Rp {wholesalePrice.toLocaleString('id-ID')}</span>
-                      <span className="text-[9px] text-green-400 font-normal">(Grosir Qty {item.quantity})</span>
-                    </span>
-                  ) : (
-                    <span>Rp {item.price.toLocaleString('id-ID')}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex items-center border border-border-subtle bg-surface-container rounded">
-                <button
-                  onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
-                  className="px-2 py-0.5 hover:text-primary transition-colors text-xs font-bold"
-                >
-                  -
-                </button>
-                <span className="px-2.5 py-0.5 text-[10px] text-text-primary font-bold">
-                  {item.quantity}
-                </span>
-                <button
-                  onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
-                  className="px-2 py-0.5 hover:text-primary transition-colors text-xs font-bold"
-                >
-                  +
-                </button>
-              </div>
-              <button
-                onClick={() => handleRemoveItem(item.id)}
-                className="text-[10px] font-semibold text-red-400 hover:text-red-300 transition-colors"
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-
-  const renderShippingOptions = () => (
-    <div className="bg-surface-container/30 border border-border-subtle p-5 rounded-lg space-y-4">
-      <div className="flex justify-between items-center">
-        <h4 className="font-sora text-xs font-bold text-text-primary flex items-center gap-2">
-          🚚 Hitung Ongkos Kirim Real
-          {apiKey && isLoaded && (
-            <span className="px-1.5 py-0.5 bg-primary/10 border border-primary/30 text-primary rounded text-[8px] font-geist">GOOGLE MAPS</span>
-          )}
-        </h4>
-        <button
-          type="button"
-          onClick={handleRequestGps}
-          className={`px-2.5 py-1 rounded text-[9px] font-geist font-bold uppercase tracking-wider transition-colors border ${
-            useGps
-              ? 'bg-green-500/20 border-green-500/30 text-green-400'
-              : 'bg-primary/10 border-primary/20 hover:bg-primary/25 text-primary'
-          }`}
-        >
-          {useGps ? '📍 GPS AKTIF' : 'GUNAKAN GPS'}
-        </button>
-      </div>
-
-      {/* Geocoding Address Search Bar */}
-      <div className="space-y-2 relative">
-        <label className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider">Cari Alamat Tujuan</label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={addressSearchQuery}
-            onChange={e => setAddressSearchQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleGeocodeSearch() }}
-            placeholder="Masukkan alamat pengiriman... (Cari via Google Geocoding)"
-            className="flex-1 px-3 py-2 bg-surface-dark border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50"
-          />
-          <button
-            type="button"
-            onClick={handleGeocodeSearch}
-            className="px-4 py-2 bg-primary hover:bg-primary/95 text-surface-dark font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-all"
-          >
-            Cari
-          </button>
-        </div>
-      </div>
-
-      {/* 🗺️ DYNAMIC GOOGLE MAPS CARD */}
-      <div className="border border-border-subtle bg-neutral-950 rounded-lg p-4 space-y-3 shadow-inner">
-        <div className="flex justify-between items-center text-[10px]">
-          <span className="font-bold text-text-primary flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            Peta Rute Pengiriman
-          </span>
-          <span className="text-[9px] text-text-secondary/70 font-geist">
-            Toko: {cartDetails[0]?.merchant?.name || 'Artisan Toko'}
-          </span>
-        </div>
-
-        {apiKey && isLoaded ? (
-          <div className="w-full h-64 bg-[#12151a] border border-border-subtle/50 rounded overflow-hidden relative shadow">
-            <GoogleMap
-              mapContainerStyle={{ width: '100%', height: '100%' }}
-              center={getBuyerCoordsObj()}
-              zoom={12}
-              options={{
-                styles: mapStyles,
-                disableDefaultUI: true,
-                zoomControl: true,
-              }}
-              onLoad={map => setMap(map)}
-            >
-              {/* Seller marker */}
-              <Marker
-                position={getSellerCoords()}
-                label={{ text: '🏪', fontSize: '16px' }}
-                title={cartDetails[0]?.merchant?.name || 'Toko'}
-              />
-
-              {/* Draggable Buyer marker */}
-              <Marker
-                position={getBuyerCoordsObj()}
-                draggable={true}
-                onDragEnd={handleMarkerDragEnd}
-                label={{ text: '📍', fontSize: '16px' }}
-                title="Tujuan Anda (Seret Pin)"
-              />
-
-              {/* Render route lines */}
-              {directionsResponse && (
-                <DirectionsRenderer
-                  directions={directionsResponse}
-                  options={{
-                    suppressMarkers: true,
-                    polylineOptions: {
-                      strokeColor: '#c6a96b',
-                      strokeWeight: 4.5,
-                      strokeOpacity: 0.85
-                    }
-                  }}
-                />
-              )}
-            </GoogleMap>
-          </div>
-        ) : (
-          /* PRESTIGE FALLBACK WITH VECTOR RADAR SIMULATION */
-          <div className="relative w-full h-44 bg-[#0a0c10] border border-border-subtle/50 rounded overflow-hidden flex flex-col items-center justify-center p-6 text-center">
-            <div className="absolute inset-0 bg-[linear-gradient(rgba(198,169,107,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(198,169,107,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10 opacity-70">
-              <circle cx="20%" cy="50%" r="5" fill="#c6a96b" className="animate-pulse" />
-              <text x="20%" y="35%" fill="#c6a96b" fontSize="8" fontWeight="bold" textAnchor="middle">🏪 Toko</text>
-              <line x1="20%" y1="50%" x2="80%" y2="50%" stroke="#c6a96b" strokeWidth="1.5" strokeDasharray="4,4" />
-              <circle cx="80%" cy="50%" r="5" fill="#3b82f6" />
-              <text x="80%" y="35%" fill="#3b82f6" fontSize="8" fontWeight="bold" textAnchor="middle">📍 Tujuan (Draggable Fallback)</text>
-            </svg>
-            <div className="relative z-20 max-w-xs mt-16 bg-neutral-950/80 border border-primary/20 backdrop-blur px-3 py-2 rounded">
-              <p className="text-[9px] text-[#e5c178] leading-relaxed">
-                {apiKey ? 'Menghubungkan ke layanan Google Maps...' : 'Google Maps API Key belum dipasang di .env. Menggunakan penghitungan rute jarak presisi (Haversine & Presets).'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic route duration and distance summary banner */}
-        <div className="flex justify-between items-center bg-surface-dark border border-border-subtle p-3 rounded-lg text-xs">
-          <div>
-            <p className="text-[9px] text-text-secondary uppercase">Jarak Tempuh</p>
-            <p className="font-extrabold text-primary">{distanceText || `${avgDistance.toFixed(1)} km`}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[9px] text-text-secondary uppercase">Estimasi Waktu</p>
-            <p className="font-bold text-text-primary">{durationText || '1 jam 30 menit'}</p>
-          </div>
-        </div>
-
-        {/* Presets selectors */}
-        <div className="space-y-1.5 pt-1">
-          <p className="text-[8px] font-bold text-text-secondary uppercase tracking-wider">Ganti Lokasi Cepat (Kota Mock):</p>
-          <div className="flex flex-wrap gap-1.5">
-            {Object.keys(mockCities).map(key => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => {
-                  const city = mockCities[key];
-                  setBuyerCoords({ latitude: city.lat, longitude: city.lng });
-                  setSelectedMockCity(key);
-                  setUseGps(true);
-                  setShippingAddress(city.name);
-                }}
-                className={`px-2 py-0.5 border rounded text-[8px] font-bold transition-all ${
-                  selectedMockCity === key
-                    ? 'bg-primary border-primary text-surface-dark'
-                    : 'bg-surface-dark border-border-subtle text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                {mockCities[key].name.split(' ')[0]}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Courier Options List */}
-      <div className="space-y-2">
-        <label className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider">
-          Pilih Layanan Kurir Pengiriman
-        </label>
-        <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
-          {courierRates.map((rate) => (
-            <button
-              key={`${rate.courier_code}-${rate.price}`}
-              type="button"
-              onClick={() => setSelectedCourier(rate.courier_code)}
-              className={`w-full flex justify-between items-center px-3 py-2 border rounded text-xs transition-colors ${
-                selectedCourier === rate.courier_code
-                  ? 'bg-primary/15 border-primary/50 text-text-primary'
-                  : 'bg-surface-dark border-border-subtle text-text-secondary hover:border-primary/30'
-              }`}
-            >
-              <span className="font-bold">{rate.courier_name || rate.courier_code.toUpperCase()}</span>
-              <span className="flex items-center gap-2">
-                <span className="text-[10px] text-text-secondary">{rate.etd}</span>
-                <span className={`font-extrabold ${selectedCourier === rate.courier_code ? 'text-primary' : 'text-text-primary'}`}>
-                  Rp {rate.price.toLocaleString('id-ID')}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider">Alamat Pengiriman Lengkap</label>
-        <input
-          type="text"
-          value={shippingAddress}
-          onChange={(e) => setShippingAddress(e.target.value)}
-          placeholder="Nama Jalan, Blok, RT/RW, Kelurahan, Kecamatan, Kota..."
-          className="w-full px-3 py-2 bg-surface-dark border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50"
-        />
-      </div>
-
-      <div className="flex justify-between items-center text-[11px] border-t border-border-subtle pt-3">
-        <span className="text-text-secondary">Est. Jarak:</span>
-        <span className="font-semibold text-text-primary">{distanceText || `${avgDistance.toFixed(1)} km`}</span>
-      </div>
-      <div className="flex justify-between items-center text-[11px]">
-        <span className="text-text-secondary">Ongkir ({selectedCourier?.toUpperCase()}):</span>
-        <span className="font-bold text-primary">Rp {shippingFee.toLocaleString('id-ID')}</span>
-      </div>
-    </div>
-  )
-
-  const renderBumpSales = () => (
-    <div className="bg-surface-container/30 border border-border-subtle p-5 rounded-lg space-y-3">
-      <h4 className="font-sora text-xs font-bold text-text-primary mb-1">🎁 Tambah Bump Sale (Add-on Product)</h4>
-      
-      <label className="flex items-center gap-3 p-2 bg-surface-dark border border-border-subtle rounded hover:border-primary/40 cursor-pointer transition-colors">
-        <input
-          type="checkbox"
-          checked={garansiPremium}
-          onChange={(e) => setGaransiPremium(e.target.checked)}
-          className="accent-primary w-4 h-4 rounded cursor-pointer"
-        />
-        <div className="flex-1 text-[11px]">
-          <div className="font-bold text-text-primary">Garansi Premium 1 Tahun (+Rp 25.000)</div>
-          <div className="text-[9px] text-text-secondary">Garansi rusak ganti baru instan.</div>
-        </div>
-      </label>
-
-      <label className="flex items-center gap-3 p-2 bg-surface-dark border border-border-subtle rounded hover:border-primary/40 cursor-pointer transition-colors">
-        <input
-          type="checkbox"
-          checked={boxKayu}
-          onChange={(e) => setBoxKayu(e.target.checked)}
-          className="accent-primary w-4 h-4 rounded cursor-pointer"
-        />
-        <div className="flex-1 text-[11px]">
-          <div className="font-bold text-text-primary">Kemasan Box Kayu Premium (+Rp 15.000)</div>
-          <div className="text-[9px] text-text-secondary">Proteksi ekstra kokoh dan elegan.</div>
-        </div>
-      </label>
-
-      <label className="flex items-center gap-3 p-2 bg-surface-dark border border-border-subtle rounded hover:border-primary/40 cursor-pointer transition-colors">
-        <input
-          type="checkbox"
-          checked={kertasKado}
-          onChange={(e) => setKertasKado(e.target.checked)}
-          className="accent-primary w-4 h-4 rounded cursor-pointer"
-        />
-        <div className="flex-1 text-[11px]">
-          <div className="font-bold text-text-primary">Bungkus Kertas Kado (+Rp 5.000)</div>
-          <div className="text-[9px] text-text-secondary">Sertakan pita dan kartu ucapan.</div>
-        </div>
-      </label>
-    </div>
-  )
 
   const renderCoupons = () => (
     <div className="bg-surface-container/30 border border-border-subtle p-5 rounded-lg space-y-3">
@@ -1128,115 +764,6 @@ export default function CartPage() {
     </div>
   )
 
-  const renderOrderSummary = () => (
-    <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg space-y-4 shadow-lg relative overflow-hidden">
-      {paymentMethod === 'WALLET' && (
-        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
-      )}
-      
-      <h3 className="font-sora text-sm font-bold text-text-primary mb-2 pb-3 border-b border-border-subtle">
-        Ringkasan Tagihan
-      </h3>
-      
-      <div className="space-y-3 text-xs">
-        <div className="flex justify-between text-text-secondary">
-          <span>Subtotal (Grosir include)</span>
-          <span>Rp {subtotal.toLocaleString('id-ID')}</span>
-        </div>
-        
-        <div className="flex justify-between text-text-secondary">
-          <span>Ongkir ({selectedCourier.toUpperCase()})</span>
-          <span>Rp {shippingFee.toLocaleString('id-ID')}</span>
-        </div>
-
-        {bumpSalesTotal > 0 && (
-          <div className="flex justify-between text-text-secondary">
-            <span>Add-ons (Bump Sales)</span>
-            <span>Rp {bumpSalesTotal.toLocaleString('id-ID')}</span>
-          </div>
-        )}
-
-        {couponSuccess && activeCouponDiscount > 0 && (
-          <div className="flex justify-between text-green-400 font-medium bg-green-500/5 px-2 py-1.5 rounded border border-green-500/10">
-            <span>Kupon Potongan</span>
-            <span>-Rp {activeCouponDiscount.toLocaleString('id-ID')}</span>
-          </div>
-        )}
-
-        {affiliateId && (
-          <div className="flex justify-between text-primary font-medium bg-primary/5 px-2 py-1.5 rounded border border-primary/10">
-            <span>Komisi Afiliasi (10% include)</span>
-            <span>Rp {(subtotal * 0.1).toLocaleString('id-ID')}</span>
-          </div>
-        )}
-
-        <div className="border-t border-border-subtle pt-3 space-y-3">
-          <div className="flex justify-between items-center text-text-primary font-bold">
-            <span>Total Bayar</span>
-            <span className="text-primary font-extrabold text-sm">
-              Rp {total.toLocaleString('id-ID')}
-            </span>
-          </div>
-
-          <div className="text-[10px] text-text-secondary/70 flex justify-between">
-            <span>Points Diperoleh (1%):</span>
-            <span className="text-primary font-bold">+{Math.round(total * 0.01)} Poin</span>
-          </div>
-          <div className="text-[10px] text-text-secondary/70 flex justify-between">
-            <span>Estimasi Cashback (5%):</span>
-            <span className="text-primary font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Method Selector */}
-      <div className="bg-surface-container/60 p-3 rounded-lg border border-border-subtle space-y-2 mt-4">
-        <label className="block text-[9px] font-bold text-text-secondary uppercase tracking-wider">Metode Pembayaran</label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('MIDTRANS')}
-            className={`py-2.5 border rounded text-[10px] font-geist font-bold uppercase tracking-wider transition-colors ${
-              paymentMethod === 'MIDTRANS'
-                ? 'bg-primary border-primary text-surface-dark'
-                : 'bg-surface-dark border-border-subtle text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            Midtrans Snap
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('WALLET')}
-            className={`py-2.5 border rounded text-[10px] font-geist font-bold uppercase tracking-wider transition-colors flex flex-col items-center justify-center ${
-              paymentMethod === 'WALLET'
-                ? 'bg-primary border-primary text-surface-dark'
-                : 'bg-surface-dark border-border-subtle text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            <span>Dompet Teras</span>
-            {walletBalance !== null && (
-              <span className="text-[8px] opacity-75 font-normal">Saldo: Rp {walletBalance.toLocaleString('id-ID')}</span>
-            )}
-          </button>
-        </div>
-      </div>
-
-      <button
-        id="cart-checkout"
-        onClick={handleCheckout}
-        disabled={isPending || isPendingCheckout || isVerifying || cart.length === 0 || hasOwnProduct}
-        className="w-full py-4 bg-primary hover:bg-primary/95 text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-      >
-        {isPendingCheckout ? 'Memproses Transaksi...' : (isVerifying ? 'Memverifikasi Pembayaran...' : (paymentMethod === 'WALLET' ? '⚡ 1-Click Checkout via Dompet' : 'Bayar & Selesaikan Order (Midtrans)'))}
-      </button>
-
-      {hasOwnProduct && (
-        <p className="text-[10px] text-red-400 font-semibold text-center mt-3 leading-relaxed bg-red-500/10 border border-red-500/25 p-2.5 rounded">
-          ⚠️ Terdapat produk Anda sendiri di keranjang belanja. Harap hapus produk Anda terlebih dahulu untuk checkout.
-        </p>
-      )}
-    </div>
-  )
 
   const renderSimulatePanel = () => (
     (pendingOrderId || manualOrderId) && (
@@ -1282,26 +809,21 @@ export default function CartPage() {
     )
   )
 
-  const renderAffiliateIdCard = () => (
-    <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
-      <span className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-3">
-        Kode Referensi Afiliasi
-      </span>
-      <input
-        id="cart-affiliate"
-        type="text"
-        value={affiliateId}
-        onChange={(e) => setAffiliateId(e.target.value)}
-        placeholder="Masukkan ID Afiliasi (opsional)"
-        className="w-full px-4 py-2.5 bg-surface-container border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50 transition-colors mb-2"
-      />
-      {affiliateId && (
-        <p className="text-[10px] text-primary font-medium">
-          ✓ Afiliasi terdeteksi. Komisi 10% akan dialokasikan saat checkout.
+  const renderAffiliateIdCard = () => {
+    if (!affiliateId) return null;
+    return (
+      <div className="border border-primary/20 bg-primary/5 p-5 rounded-xl">
+        <div className="flex items-center gap-2 text-primary font-sora font-extrabold text-xs">
+          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          Tautan Referral Teman Aktif
+        </div>
+        <p className="text-[11px] text-text-secondary mt-1.5 leading-relaxed">
+          Pesanan ini terhubung dengan kode referensi <strong className="text-text-primary">{affiliateId}</strong>. Komisi belanja akan otomatis dialokasikan ke teman Anda.
         </p>
-      )}
-    </div>
-  )
+      </div>
+    );
+  };
+
 
   return (
     <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
@@ -1311,267 +833,443 @@ export default function CartPage() {
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-sFQP1v53tr2M3CQd'}
         strategy="afterInteractive"
       />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.04)_0%,transparent_70%)] pointer-events-none z-0" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(45,178,74,0.03)_0%,transparent_70%)] pointer-events-none z-0" />
 
       <div className="relative z-10 max-w-[1200px] mx-auto">
-        
-
-        <h1 className="font-sora text-3xl font-bold text-text-primary mb-2">
-          Keranjang <span className="text-primary">Belanja.</span>
+        <h1 className="font-sora text-2xl font-bold text-text-primary mb-1">
+          Checkout <span className="text-[#0F5132]">Pesanan.</span>
         </h1>
-        <p className="text-xs text-text-secondary mb-10">
-          Pilih kurir, gunakan kupon, dan selesaikan pembayaran dengan aman.
+        <p className="text-xs text-text-secondary mb-8 font-geist">
+          Selesaikan pesanan Anda dengan data pengiriman dan opsi kurir real-time.
         </p>
 
         {error && (
-          <div className="mb-6 p-4 rounded bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-medium">
+          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 font-medium">
             {error}
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 rounded bg-green-500/10 border border-green-500/20 text-xs text-green-400 font-medium">
+          <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-xs text-green-600 font-medium">
             {successMessage}
           </div>
         )}
 
         {cartDetails.length === 0 ? (
-          <div className="text-center py-20 border border-border-subtle bg-surface-dark rounded-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-text-secondary/30 mx-auto mb-4">
+          <div className="text-center py-20 border border-border-subtle bg-surface rounded-2xl shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-slate-300 mx-auto mb-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
             </svg>
-            <h3 className="font-sora text-lg font-bold text-text-primary mb-2">Keranjang Anda Kosong</h3>
-            <p className="text-xs text-text-secondary max-w-xs mx-auto mb-8">
-              Jelajahi pasar premium kami dan temukan produk terbaik untuk kebutuhan Anda.
+            <h3 className="font-sora text-base font-bold text-text-primary mb-2">Keranjang Anda Kosong</h3>
+            <p className="text-xs text-text-secondary max-w-xs mx-auto mb-6">
+              Jelajahi pasar kami dan temukan produk terbaik untuk kebutuhan Anda.
             </p>
             <Link
               href="/market"
-              className="px-6 py-3 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors inline-block"
+              className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-colors inline-block shadow-sm"
             >
               Belanja Sekarang
             </Link>
           </div>
         ) : (
-          /* ========================================================
-             RENDER RATHER THAN BASIC LAYOUT, DIVERGE ON SELECTED VARIANT
-             ======================================================== */
-          <div>
-            {/* VARIANT A: Modern Glassmorphism Gold */}
-            {variant === 'A' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start animate-fadeIn">
-                <div className="lg:col-span-2 space-y-6">
-                  {renderItemRows()}
-                  {renderShippingOptions()}
-                  {renderBumpSales()}
-                  {renderCoupons()}
-                </div>
-                <div className="space-y-6">
-                  {renderAffiliateIdCard()}
-                  {renderOrderSummary()}
-                  {renderSimulatePanel()}
-                </div>
-              </div>
-            )}
-
-            {/* VARIANT B: Multi-step Checkout Wizard */}
-            {variant === 'B' && (
-              <div className="border border-border-subtle bg-surface-dark/95 backdrop-blur rounded-lg p-6 md:p-8 animate-fadeIn">
-                {/* Wizard Head Navigation */}
-                <div className="flex items-center justify-between border-b border-border-subtle pb-6 mb-8">
-                  {([
-                    { num: 1, label: 'Audit Keranjang' },
-                    { num: 2, label: 'Alamat & Kurir' },
-                    { num: 3, label: 'Pembayaran' }
-                  ] as const).map((step) => (
-                    <div key={step.num} className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-geist font-bold text-xs transition-colors ${
-                        wizardStep >= step.num ? 'bg-primary text-surface-dark' : 'bg-surface-container text-text-secondary'
-                      }`}>
-                        {step.num}
-                      </div>
-                      <span className={`text-[10px] font-geist font-bold uppercase tracking-wider hidden sm:inline ${
-                        wizardStep >= step.num ? 'text-primary' : 'text-text-secondary'
-                      }`}>
-                        {step.label}
-                      </span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-fadeIn text-text-primary">
+            
+            {/* Left Column: Delivery Address & Shop Groups */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* 1. Shopee-Style Shipping Address Card */}
+              <div className="bg-surface border border-border-subtle rounded-xl shadow-sm overflow-hidden relative">
+                {/* Diagonal repeating blue/red Shopee-style address ribbon */}
+                <div 
+                />
+                
+                <div className="p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-secondary font-sora font-extrabold text-sm">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-red-500"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                      Alamat Pengiriman
                     </div>
-                  ))}
-                </div>
+                    <button
+                      type="button"
+                      onClick={handleRequestGps}
+                      className={`px-3 py-1 rounded-full text-[10px] font-geist font-bold uppercase tracking-wider transition-colors border ${
+                        useGps
+                          ? 'bg-green-500/10 border-green-500/30 text-green-600'
+                          : 'bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary'
+                      }`}
+                    >
+                      {useGps ? '📍 GPS Aktif' : 'Gunakan GPS'}
+                    </button>
+                  </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                  <div className="lg:col-span-2 space-y-6">
-                    {wizardStep === 1 && (
-                      <div className="space-y-4">
-                        <h3 className="font-sora text-sm font-bold text-text-primary">Step 1: Audit & Atur Kuantitas Produk</h3>
-                        {renderItemRows()}
-                      </div>
-                    )}
-                    {wizardStep === 2 && (
-                      <div className="space-y-4">
-                        <h3 className="font-sora text-sm font-bold text-text-primary">Step 2: Hitung Jarak & Ongkir</h3>
-                        {renderShippingOptions()}
-                      </div>
-                    )}
-                    {wizardStep === 3 && (
-                      <div className="space-y-4 animate-fadeIn">
-                        <h3 className="font-sora text-sm font-bold text-text-primary">Step 3: Tambahkan Add-ons & Selesaikan Checkout</h3>
-                        {renderBumpSales()}
-                        {renderCoupons()}
-                      </div>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    {/* Name & Phone */}
+                    <div className="font-bold border-r border-border-subtle pr-4">
+                      <p className="text-text-primary text-[13px]">{currentUser?.name || 'Nama Penerima'}</p>
+                      <p className="text-text-secondary text-[11px] mt-1 font-geist">{currentUser?.email || ''}</p>
+                    </div>
 
-                    {/* Navigation Buttons */}
-                    <div className="flex justify-between items-center pt-4">
-                      <button
-                        type="button"
-                        disabled={wizardStep === 1}
-                        onClick={() => setWizardStep(prev => prev - 1)}
-                        className="px-6 py-2.5 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-text-primary font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-colors disabled:opacity-50"
-                      >
-                        Kembali
-                      </button>
-                      {wizardStep < 3 ? (
+                    {/* Detail Address & Maps preview */}
+                    <div className="md:col-span-2 space-y-3">
+                      {/* Address query search */}
+                      <div className="flex gap-1.5">
+                        <input
+                          type="text"
+                          value={addressSearchQuery}
+                          onChange={e => setAddressSearchQuery(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleGeocodeSearch() }}
+                          placeholder="Cari lokasi/alamat tujuan..."
+                          className="flex-1 px-3 py-1.5 bg-surface-container-low border border-border-subtle rounded-lg text-xs placeholder:text-text-secondary/40 text-text-primary focus:outline-none focus:border-primary"
+                        />
                         <button
                           type="button"
-                          onClick={() => setWizardStep(prev => prev + 1)}
-                          className="px-6 py-2.5 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-colors"
+                          onClick={handleGeocodeSearch}
+                          className="px-3 py-1.5 bg-[#0F5132] hover:bg-[#0F5132]/95 text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all"
                         >
-                          Lanjut
+                          Cari
                         </button>
-                      ) : (
-                        <div className="text-[10px] text-text-secondary">Siap melakukan pembayaran.</div>
+                      </div>
+
+                      {/* Detailed Shipping Address Textarea */}
+                      <textarea
+                        rows={2}
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        placeholder="Detail alamat (Nama jalan, RT/RW, no rumah, kelurahan, kecamatan)..."
+                        className="w-full px-3 py-2 bg-surface-container-low border border-border-subtle rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary placeholder:text-text-secondary/40"
+                      />
+
+                      {/* Draggable Map Preview (Compact & Light theme) */}
+                      <div className="border border-border-subtle rounded-xl overflow-hidden shadow-sm">
+                        <div className="px-3 py-2 bg-surface-container-low border-b border-border-subtle flex justify-between items-center text-[10px] font-geist text-text-secondary">
+                          <span>Geser pin peta untuk titik jemput akurat:</span>
+                          <span className="font-bold text-primary">{distanceText || `${avgDistance.toFixed(1)} km`}</span>
+                        </div>
+                        
+                        {apiKey && isLoaded ? (
+                          <div className="w-full h-40">
+                            <GoogleMap
+                              mapContainerStyle={{ width: '100%', height: '100%' }}
+                              center={getBuyerCoordsObj()}
+                              zoom={13}
+                              options={{
+                                styles: [],
+                                disableDefaultUI: true,
+                                zoomControl: true,
+                                mapTypeControl: false,
+                                streetViewControl: false,
+                              }}
+                              onLoad={map => setMap(map)}
+                            >
+                              <Marker
+                                position={getSellerCoords()}
+                                label={{ text: '🏪', fontSize: '14px' }}
+                                title="Merchant"
+                              />
+                              <Marker
+                                position={getBuyerCoordsObj()}
+                                draggable={true}
+                                onDragEnd={handleMarkerDragEnd}
+                                label={{ text: '📍', fontSize: '14px' }}
+                                title="Tujuan Anda (Seret Pin)"
+                              />
+                            </GoogleMap>
+                          </div>
+                        ) : (
+                          <div className="relative w-full h-32 bg-[#EEF2F7] flex flex-col items-center justify-center p-4 text-center">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-7 h-7 text-slate-400"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25A7.5 7.5 0 1119.5 10.5z"/></svg>
+                            <p className="text-[10px] text-text-secondary mt-1.5 leading-relaxed">
+                              Estimasi jarak: <strong className="text-text-primary">{distanceText || `${avgDistance.toFixed(1)} km`}</strong> ({durationText || '1 jam 30 menit'})
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Cities preset selector */}
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold text-text-secondary uppercase tracking-wider">Kota Tujuan Cepat:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {Object.keys(mockCities).map(key => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => {
+                                const city = mockCities[key];
+                                setBuyerCoords({ latitude: city.lat, longitude: city.lng });
+                                setSelectedMockCity(key);
+                                setUseGps(true);
+                                setShippingAddress(city.name);
+                              }}
+                              className={`px-2 py-0.5 border rounded-md text-[9px] font-bold transition-all ${
+                                selectedMockCity === key
+                                  ? 'bg-[#0F5132] border-[#0F5132] text-white'
+                                  : 'bg-surface border-border-subtle text-text-secondary hover:text-text-primary'
+                              }`}
+                            >
+                              {mockCities[key].name.split(' ')[0]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Shop Groupings (Produk Dipesan) */}
+              <div className="space-y-4">
+                {(() => {
+                  // Group items by merchantId
+                  const groups: Record<string, typeof cartDetails> = {};
+                  cartDetails.forEach(item => {
+                    const mId = item.merchantId || 'unknown';
+                    if (!groups[mId]) groups[mId] = [];
+                    groups[mId].push(item);
+                  });
+
+                  return Object.entries(groups).map(([mId, items]) => {
+                    const shopName = items[0]?.merchant?.name || 'Toko UMKM';
+                    
+                    return (
+                      <div key={mId} className="bg-surface border border-border-subtle rounded-xl shadow-sm p-5 space-y-4">
+                        {/* Shop Header */}
+                        <div className="flex items-center gap-2 border-b border-border-subtle pb-3">
+                          <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-secondary"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4L3 12v2c0 1.66 1.34 3 3 3h12c1.66 0 3-1.34 3-3zm-12 1H6v-2h3v2zm5 0h-3v-2h3v2zm4 0h-3v-2h3v2z"/></svg>
+                          <span className="font-sora font-extrabold text-xs text-secondary">{shopName}</span>
+                        </div>
+
+                        {/* Items rows */}
+                        <div className="space-y-4">
+                          {items.map(item => {
+                            const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
+                            const hasDiscount = wholesalePrice < item.price;
+                            const isOwnProduct = currentUser && item.merchantId === currentUser.id;
+
+                            return (
+                              <div key={item.id} className="flex items-center gap-4 justify-between border-b border-border-subtle/50 pb-4 last:border-b-0 last:pb-0">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-16 h-16 bg-surface-container-low rounded-lg border border-border-subtle overflow-hidden flex-shrink-0 relative">
+                                    {item.imageUrl ? (
+                                      <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
+                                    )}
+                                  </div>
+                                  <div className="space-y-1">
+                                    <h4 className="font-bold text-xs text-text-primary line-clamp-1">{item.title}</h4>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="px-1.5 py-0.2 bg-[#2DB24A]/10 border border-[#2DB24A]/25 text-[7px] text-[#2DB24A] font-bold rounded uppercase">
+                                        {item.category}
+                                      </span>
+                                      {isOwnProduct && (
+                                        <span className="px-1.5 py-0.2 bg-red-500/10 border border-red-500/25 text-[7px] text-red-500 font-bold rounded uppercase">
+                                          Own Product
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-xs font-bold text-secondary">
+                                      {hasDiscount ? (
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="line-through text-text-secondary/50 text-[10px]">Rp {item.price.toLocaleString('id-ID')}</span>
+                                          <span>Rp {wholesalePrice.toLocaleString('id-ID')}</span>
+                                        </div>
+                                      ) : (
+                                        <span>Rp {item.price.toLocaleString('id-ID')}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                  {/* Qty selector */}
+                                  <div className="flex items-center border border-border-subtle bg-surface-container-low rounded-md">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
+                                      className="px-2 py-1 text-xs hover:text-primary font-bold text-text-secondary"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="px-2 text-[10px] text-text-primary font-bold">{item.quantity}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
+                                      className="px-2 py-1 text-xs hover:text-primary font-bold text-text-secondary"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+
+                                  {/* Delete item */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveItem(item.id)}
+                                    className="text-red-500 hover:text-red-600 text-[10px] font-bold"
+                                  >
+                                    Hapus
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* Courier / Shipping cost selection block inside this shop */}
+                        <div className="bg-surface-container-low border border-border-subtle rounded-xl p-4 mt-2 space-y-2.5">
+                          <label className="block text-xs font-bold text-secondary">
+                            Pilih Opsi Pengiriman ({shopName})
+                          </label>
+                          <div className="relative">
+                            <select
+                              value={selectedCourier}
+                              onChange={(e) => setSelectedCourier(e.target.value)}
+                              className="w-full px-3.5 py-3 bg-surface border border-border-subtle rounded-xl text-xs text-text-primary font-medium focus:outline-none focus:border-primary/50 cursor-pointer appearance-none pr-10 shadow-sm"
+                            >
+                              {courierRates.length === 0 ? (
+                                <option value="" disabled>Menghitung ongkos kirim...</option>
+                              ) : (
+                                courierRates.map(rate => (
+                                  <option key={rate.courier_code} value={rate.courier_code} className="bg-surface text-text-primary">
+                                    {rate.courier_name} ({rate.etd}) — Rp {rate.price.toLocaleString('id-ID')}
+                                  </option>
+                                ))
+                              )}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary">
+                              <svg className="fill-current h-4 w-4 text-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* 3. Coupon / Voucher */}
+              <div className="bg-surface border border-border-subtle rounded-xl shadow-sm p-5">
+                <div className="flex items-center gap-2 text-secondary font-sora font-extrabold text-sm border-b border-border-subtle pb-3 mb-4">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-yellow-500"><path d="M2 17h20v2H2zm11.84-5.43L11.02 8.75l1.41-1.41 2.83 2.83zm-2.02-4.24l-2.83-2.83 1.41-1.41 2.83 2.83zM10 20c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2z"/></svg>
+                  Kupon Diskon
+                </div>
+                {renderCoupons()}
+              </div>
+
+            </div>
+
+            {/* Right Column: Order Payout Summary & Payment Selectors */}
+            <div className="space-y-6">
+              
+              {/* 4. Ledger Billing Summary */}
+              <div className="bg-surface border border-border-subtle rounded-xl shadow-sm p-5 space-y-4">
+                <h3 className="font-sora font-extrabold text-secondary text-sm border-b border-border-subtle pb-3">
+                  Ringkasan Belanja
+                </h3>
+                
+                <div className="space-y-3.5 text-xs">
+                  <div className="flex justify-between text-text-secondary">
+                    <span>Subtotal Produk</span>
+                    <span>Rp {subtotal.toLocaleString('id-ID')}</span>
+                  </div>
+
+                  <div className="flex justify-between text-text-secondary">
+                    <span>Total Ongkir</span>
+                    <span>Rp {shippingFee.toLocaleString('id-ID')}</span>
+                  </div>
+
+
+                  {couponSuccess && activeCouponDiscount > 0 && (
+                    <div className="flex justify-between text-[#2DB24A] bg-[#2DB24A]/5 px-2 py-1.5 rounded border border-[#2DB24A]/10 font-bold">
+                      <span>Potongan Voucher</span>
+                      <span>-Rp {activeCouponDiscount.toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+
+                  {affiliateId && (
+                    <div className="flex justify-between text-secondary bg-secondary/5 px-2 py-1.5 rounded border border-secondary/10 font-bold">
+                      <span>Komisi Referral (10% include)</span>
+                      <span>Rp {(subtotal * 0.1).toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-border-subtle pt-3.5 space-y-3">
+                    <div className="flex justify-between items-center text-text-primary font-bold">
+                      <span className="text-sm">Total Pembayaran</span>
+                      <span className="text-secondary font-black text-base font-geist">
+                        Rp {total.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    
+                    <div className="text-[10px] text-text-secondary/70 flex justify-between">
+                      <span>Poin UMKM Diperoleh:</span>
+                      <span className="text-primary font-bold">+{Math.round(total * 0.01)} Poin</span>
+                    </div>
+                    <div className="text-[10px] text-text-secondary/70 flex justify-between">
+                      <span>Cashback Saloka (5%):</span>
+                      <span className="text-secondary font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment selector */}
+                <div className="border-t border-border-subtle pt-4 space-y-3">
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider">Pilih Metode Pembayaran</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('MIDTRANS')}
+                      className={`py-3 px-2.5 border rounded-xl text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1.5 ${
+                        paymentMethod === 'MIDTRANS'
+                          ? 'bg-secondary border-secondary text-white shadow-md'
+                          : 'bg-surface border-border-subtle text-text-secondary hover:border-slate-300'
+                      }`}
+                    >
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                      Midtrans Snap
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('WALLET')}
+                      className={`py-3 px-2.5 border rounded-xl text-[10px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
+                        paymentMethod === 'WALLET'
+                          ? 'bg-secondary border-secondary text-white shadow-md'
+                          : 'bg-surface border-border-subtle text-text-secondary hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h1.08c-.05.32-.08.66-.08 1 0 2.21 1.79 4 4 4 .76 0 1.47-.22 2-.59.53.37 1.24.59 2 .59 2.21 0 4-1.79 4-4 0-.34-.03-.68-.08-1H20v6z"/></svg>
+                        Dompet Teras
+                      </span>
+                      {walletBalance !== null && (
+                        <span className="text-[8px] font-normal opacity-90">Sld: Rp {walletBalance.toLocaleString('id-ID')}</span>
                       )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    {renderAffiliateIdCard()}
-                    {renderOrderSummary()}
-                    {renderSimulatePanel()}
+                    </button>
                   </div>
                 </div>
+
+                <button
+                  id="cart-checkout"
+                  onClick={handleCheckout}
+                  disabled={isPending || isPendingCheckout || isVerifying || cart.length === 0 || hasOwnProduct}
+                  className="w-full py-3.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPendingCheckout ? 'Memproses Transaksi...' : (isVerifying ? 'Memverifikasi Pembayaran...' : (paymentMethod === 'WALLET' ? '⚡ 1-Click Checkout via Dompet' : 'Bayar & Selesaikan Order (Midtrans)'))}
+                </button>
+
+                {hasOwnProduct && (
+                  <p className="text-[10px] text-red-500 font-semibold text-center mt-3 leading-relaxed bg-red-50 border border-red-200 p-2.5 rounded-lg">
+                    ⚠️ Terdapat produk Anda sendiri di keranjang belanja. Harap hapus produk Anda terlebih dahulu untuk checkout.
+                  </p>
+                )}
               </div>
-            )}
 
-            {/* VARIANT C: Minimalist Slate/Contrast */}
-            {variant === 'C' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start font-mono animate-fadeIn text-xs text-text-primary">
-                <div className="lg:col-span-2 space-y-6">
-                  <div className="border-2 border-text-primary p-4 rounded-none bg-surface-container">
-                    <h3 className="font-bold text-sm uppercase tracking-wider mb-4 border-b border-text-primary pb-2">01 / CART ITEMS</h3>
-                    {renderItemRows()}
-                  </div>
-                  <div className="border-2 border-text-primary p-4 rounded-none bg-surface-container">
-                    <h3 className="font-bold text-sm uppercase tracking-wider mb-4 border-b border-text-primary pb-2">02 / LOGISTICS CALCULATOR</h3>
-                    {renderShippingOptions()}
-                  </div>
-                  <div className="border-2 border-text-primary p-4 rounded-none bg-surface-container">
-                    <h3 className="font-bold text-sm uppercase tracking-wider mb-4 border-b border-text-primary pb-2">03 / PROMOS & BUMPS</h3>
-                    <div className="space-y-4">
-                      {renderBumpSales()}
-                      {renderCoupons()}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div className="border-2 border-text-primary p-4 rounded-none bg-surface-container">
-                    <h3 className="font-bold text-sm uppercase tracking-wider mb-4 border-b border-text-primary pb-2">04 / LEDGER SUMMARY</h3>
-                    {renderAffiliateIdCard()}
-                    <div className="mt-4">
-                      {renderOrderSummary()}
-                    </div>
-                    {renderSimulatePanel()}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* VARIANT D: Split screen with right sidebar summary */}
-            {variant === 'D' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fadeIn">
-                <div className="lg:col-span-7 space-y-6">
-                  <div className="bg-surface-dark border border-border-subtle p-6 rounded-xl">
-                    <h3 className="font-sora text-sm font-bold text-text-primary mb-4">Audit Keranjang</h3>
-                    {renderItemRows()}
-                  </div>
-                  <div className="bg-surface-dark border border-border-subtle p-6 rounded-xl">
-                    <h3 className="font-sora text-sm font-bold text-text-primary mb-4">Logistik & Lokasi</h3>
-                    {renderShippingOptions()}
-                  </div>
-                </div>
-                <div className="lg:col-span-5 space-y-6">
-                  {renderAffiliateIdCard()}
-                  {renderBumpSales()}
-                  {renderCoupons()}
-                  {renderOrderSummary()}
-                  {renderSimulatePanel()}
-                </div>
-              </div>
-            )}
-
-            {/* VARIANT E: Retro Monospace Terminal Console */}
-            {variant === 'E' && (
-              <div className="bg-black border border-green-500 font-mono text-green-500 p-6 md:p-8 rounded shadow-[0_0_20px_rgba(34,197,94,0.15)] animate-fadeIn">
-                <div className="text-[10px] mb-6 flex justify-between border-b border-green-500/30 pb-3">
-                  <span>TERAS UMKM POS v3.4.1</span>
-                  <span>DATE: {new Date().toISOString().substring(0, 10)}</span>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                  <div className="lg:col-span-2 space-y-6">
-                    <div className="border border-green-500/40 p-4 rounded bg-black">
-                      <span className="block text-[11px] font-bold text-green-400 mb-3">{'>'} CAT /ETC/CART_ITEMS</span>
-                      {renderItemRows()}
-                    </div>
-                    <div className="border border-green-500/40 p-4 rounded bg-black">
-                      <span className="block text-[11px] font-bold text-green-400 mb-3">{'>'} SH LOGISTICS_PING.SH</span>
-                      {renderShippingOptions()}
-                    </div>
-                    <div className="border border-green-500/40 p-4 rounded bg-black">
-                      <span className="block text-[11px] font-bold text-green-400 mb-3">{'>'} RUN OPTIMIZATIONS --PROMO --BUMP</span>
-                      <div className="space-y-4">
-                        {renderBumpSales()}
-                        {renderCoupons()}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="border border-green-500/40 p-4 rounded bg-black">
-                      <span className="block text-[11px] font-bold text-green-400 mb-3">{'>'} CAT BILLING_LEDGER.TXT</span>
-                      {renderAffiliateIdCard()}
-                      <div className="mt-4 text-green-500">
-                        {renderOrderSummary()}
-                      </div>
-                      {renderSimulatePanel()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* VARIANT F: Floating glass card overlay */}
-            {variant === 'F' && (
-              <div className="relative border border-white/10 bg-white/5 backdrop-blur-xl p-6 md:p-10 rounded-2xl max-w-4xl mx-auto shadow-2xl animate-fadeIn">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-purple-500/5 rounded-2xl pointer-events-none" />
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                  <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-surface-dark/40 border border-white/5 p-4 rounded-xl">
-                      <h4 className="font-sora text-xs font-bold text-text-primary mb-3">Item Keranjang</h4>
-                      {renderItemRows()}
-                    </div>
-                    {renderShippingOptions()}
-                    {renderBumpSales()}
-                    {renderCoupons()}
-                  </div>
-                  <div className="space-y-6">
-                    {renderAffiliateIdCard()}
-                    {renderOrderSummary()}
-                    {renderSimulatePanel()}
-                  </div>
-                </div>
-              </div>
-            )}
+              {renderAffiliateIdCard()}
+              {renderSimulatePanel()}
+            </div>
 
           </div>
         )}

@@ -506,90 +506,93 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
 
       {/* Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="text-center py-20 border border-border-subtle rounded-lg bg-surface-dark">
-          <h3 className="font-sora text-lg font-bold text-text-primary mb-2">Produk Tidak Ditemukan</h3>
-          <p className="text-xs text-text-secondary max-w-xs mx-auto">
-            Silakan periksa kata kunci Anda atau ganti kategori penyaringan.
-          </p>
+        <div className="text-center py-20 rounded-lg bg-white">
+          <div className="text-4xl mb-3">🔍</div>
+          <h3 className="font-semibold text-sm text-gray-700 mb-1">Produk Tidak Ditemukan</h3>
+          <p className="text-xs text-gray-400 max-w-xs mx-auto">Coba kata kunci lain atau ganti kategori.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {filteredProducts.map((product) => {
             const dist = (product as any).distance
+            const idNum = parseInt(product.id.slice(-3), 36) || 0
+            const discount = (idNum % 3 === 0) ? (10 + (idNum % 5) * 5) : 0
+            const originalPrice = discount ? Math.round(product.price * (100 / (100 - discount))) : product.price
+            const rating = (4.5 + (idNum % 5) * 0.1).toFixed(1)
+            const sold = (idNum % 10) * 25 + 10
+            const locations = ['Jakarta Pusat', 'Jakarta Barat', 'Tangerang', 'Bandung', 'Surabaya', 'Bekasi']
+            const location = locations[idNum % locations.length]
+            const storeNames = ['Moell Store', 'Gallery Gadget', 'Wuben Light ID', 'Stanley ID', 'OMG Store', 'Infiniti Gadget']
+            const storeName = storeNames[idNum % storeNames.length]
+            const isOfficial = idNum % 2 === 0
             return (
               <Link
                 key={product.id}
                 href={`/market/product/${product.id}`}
-                className="group flex flex-col bg-white rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] hover:-translate-y-0.5"
+                className="group flex flex-col bg-white border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] h-full"
               >
-                {/* Product Image Panel */}
-                <div className="aspect-[4/3] w-full bg-slate-50 relative overflow-hidden flex items-center justify-center">
+                {/* Square image */}
+                <div className="aspect-square w-full bg-slate-100 relative overflow-hidden">
                   {product.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.title}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700"
-                    />
+                    <img src={product.imageUrl} alt={product.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-60 flex items-center justify-center">
-                      <span className="text-[10px] font-geist font-bold text-primary/40 uppercase tracking-widest">
-                        {product.category} IMAGE
-                      </span>
+                    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">{product.category}</span>
                     </div>
                   )}
-                  {/* Category Pill */}
-                  <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
-                    <span className="px-2 py-0.5 bg-white/95 backdrop-blur rounded text-[9px] font-bold text-primary uppercase tracking-wider">
-                      {product.category}
-                    </span>
-                    {currentUser && product.merchantId === currentUser.id && (
-                      <span className="px-2 py-0.5 bg-red-500/20 border border-red-500/35 rounded text-[9px] font-geist font-bold text-red-400 uppercase tracking-wider animate-pulse">
-                        Produk Anda
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Stock tag */}
-                  {product.stock <= 0 ? (
-                    <span className="absolute top-3 right-3 px-2 py-0.5 bg-red-500 text-white rounded text-[9px] font-bold uppercase tracking-wider">
-                      Habis
-                    </span>
-                  ) : (
-                    <span className="absolute top-3 right-3 px-2 py-0.5 bg-primary text-white rounded text-[9px] font-bold uppercase tracking-wider">
-                      Stok: {product.stock}
-                    </span>
+                  {discount > 0 && (
+                    <div className="absolute top-1.5 left-1.5 bg-red-500 text-white font-extrabold text-[8px] px-1 py-0.5 rounded">{discount}%</div>
+                  )}
+                  {currentUser && product.merchantId === currentUser.id && (
+                    <div className="absolute top-1.5 left-1.5 bg-red-500/80 text-white text-[8px] font-bold px-1 py-0.5 rounded">Produk Anda</div>
+                  )}
+                  {product.stock <= 0 && (
+                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-wider bg-white px-2 py-0.5 rounded">Habis</span>
+                    </div>
                   )}
                 </div>
 
-                {/* Content */}
-                <div className="p-5 flex-grow flex flex-col justify-between">
+                {/* Content — compact like homepage */}
+                <div className="p-2.5 flex-1 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <h3 className="font-sora text-sm font-bold text-text-primary line-clamp-1 group-hover:text-primary transition-colors">
-                        {product.title}
-                      </h3>
+                    <h3 className="text-[11px] font-medium text-gray-800 line-clamp-2 h-[32px] leading-snug group-hover:text-[#2DB24A] transition-colors mb-0.5">
+                      {product.title}
+                    </h3>
+                    <div className="mt-1">
+                      <span className="text-xs font-extrabold text-gray-900">
+                        {product.price === 0 ? 'Gratis' : `Rp${product.price.toLocaleString('id-ID')}`}
+                      </span>
+                      {discount > 0 && (
+                        <span className="text-[9px] text-gray-400 line-through ml-1">Rp{originalPrice.toLocaleString('id-ID')}</span>
+                      )}
                     </div>
-                    
-                    {/* Geolocation Distance Badge */}
+                    <p className="text-[9px] font-bold text-[#FF5722] mt-1">
+                      {idNum % 2 === 0 ? `Hemat s.d ${5 + (idNum % 3) * 5}% Pakai Bonus` : 'Bisa COD'}
+                    </p>
                     {dist !== undefined && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 rounded px-1.5 py-0.5 mb-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-2.5 h-2.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-                        </svg>
-                        {dist.toFixed(1)} km dari Anda
+                      <span className="inline-flex items-center gap-0.5 mt-1 text-[9px] font-semibold text-[#2DB24A] bg-[#2DB24A]/10 rounded px-1 py-0.5">
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
+                        {dist.toFixed(1)} km
                       </span>
                     )}
-
-                    <p className="text-xs text-text-secondary line-clamp-2 mb-4 leading-relaxed">
-                      {product.description}
-                    </p>
                   </div>
-                  <div className="flex justify-between items-center pt-3">
-                    <span className="text-xs font-geist text-text-secondary">Harga</span>
-                    <span className="text-sm font-bold text-primary">
-                      Rp {product.price.toLocaleString("id-ID")}
-                    </span>
+                  <div className="mt-2 pt-2">
+                    <div className="flex items-center gap-1 text-[9px] text-gray-400">
+                      <span className="text-[#FFC107]">★</span>
+                      <span className="font-bold text-gray-700">{rating}</span>
+                      <span>•</span>
+                      <span>{sold}+ terjual</span>
+                    </div>
+                    <div className="mt-1 text-[9px] text-gray-400 flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1 truncate">
+                        {isOfficial && (
+                          <span className="w-3 h-3 rounded bg-purple-600 text-white flex items-center justify-center text-[6px] font-black shrink-0">✔</span>
+                        )}
+                        <span className="truncate">{storeName}</span>
+                      </div>
+                      <p className="truncate">{location}</p>
+                    </div>
                   </div>
                 </div>
               </Link>

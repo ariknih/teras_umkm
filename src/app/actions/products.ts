@@ -44,6 +44,10 @@ export async function createProduct(formData: FormData) {
   }
   
   try {
+    const isAffiliateEnabled = formData.get('isAffiliateEnabled') === 'on' || formData.get('isAffiliateEnabled') === 'true'
+    const affiliateCommissionType = formData.get('affiliateCommissionType') as string || 'PERCENT'
+    const affiliateCommissionValue = parseFloat(formData.get('affiliateCommissionValue') as string || '0')
+
     const product = await DataStore.createProduct({
       title,
       description,
@@ -53,7 +57,10 @@ export async function createProduct(formData: FormData) {
       imageUrl,
       merchantId: user.id,
       latitude,
-      longitude
+      longitude,
+      isAffiliateEnabled,
+      affiliateCommissionType,
+      affiliateCommissionValue
     })
     
     // Reward 50 XP for posting a product or job request
@@ -82,6 +89,10 @@ export async function updateProduct(id: string, formData: FormData) {
   const latitudeStr = formData.get('latitude') as string
   const longitudeStr = formData.get('longitude') as string
   
+  const isAffiliateEnabledStr = formData.get('isAffiliateEnabled') as string
+  const affiliateCommissionType = formData.get('affiliateCommissionType') as string
+  const affiliateCommissionValueStr = formData.get('affiliateCommissionValue') as string
+
   const data: any = {}
   if (title) data.title = title
   if (description) data.description = description
@@ -92,6 +103,16 @@ export async function updateProduct(id: string, formData: FormData) {
   if (latitudeStr) data.latitude = parseFloat(latitudeStr)
   if (longitudeStr) data.longitude = parseFloat(longitudeStr)
   
+  if (isAffiliateEnabledStr !== null) {
+    data.isAffiliateEnabled = isAffiliateEnabledStr === 'on' || isAffiliateEnabledStr === 'true'
+  }
+  if (affiliateCommissionType) {
+    data.affiliateCommissionType = affiliateCommissionType
+  }
+  if (affiliateCommissionValueStr !== null) {
+    data.affiliateCommissionValue = parseFloat(affiliateCommissionValueStr || '0')
+  }
+  
   try {
     const product = await DataStore.updateProduct(id, user.id, data)
     revalidatePath('/market')
@@ -100,6 +121,26 @@ export async function updateProduct(id: string, formData: FormData) {
     return { success: true, product }
   } catch (e: any) {
     return { error: e.message || 'Gagal memperbarui produk.' }
+  }
+}
+
+export async function updateAllProductsAffiliateSettingsAction(
+  isAffiliateEnabled: boolean,
+  commissionType: string,
+  commissionValue: number
+) {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'MERCHANT') {
+    return { error: 'Anda harus masuk sebagai merchant untuk mengelola pengaturan affiliate.' }
+  }
+  
+  try {
+    await DataStore.updateAllProductsAffiliateSettings(user.id, isAffiliateEnabled, commissionType, commissionValue)
+    revalidatePath('/merchant/dashboard')
+    revalidatePath('/market')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengubah pengaturan affiliate global.' }
   }
 }
 

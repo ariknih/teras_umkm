@@ -30,7 +30,7 @@ export async function withdrawFunds(amount: number, method: string, accountNumbe
 
 export async function getAffiliateStats() {
   const user = await getCurrentUser()
-  if (!user || user.role !== 'AFFILIATE') return null
+  if (!user || (user.role !== 'AFFILIATE' && user.role !== 'CUSTOMER')) return null
   return await DataStore.getAffiliateStats(user.id)
 }
 
