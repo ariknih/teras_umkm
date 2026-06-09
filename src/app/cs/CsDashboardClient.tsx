@@ -168,7 +168,7 @@ export default function CsDashboardClient({ currentUser, initialTickets }: CsDas
       {/* CS Top Navigation Header */}
       <header className="w-full bg-surface-dark border-b border-border-subtle px-6 py-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm">
+          <div className="btn-primary w-8 bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm">
             🎧
           </div>
           <div>
@@ -219,7 +219,7 @@ export default function CsDashboardClient({ currentUser, initialTickets }: CsDas
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               <div className="flex justify-between items-center text-[10px] text-text-secondary/70 uppercase tracking-wider pb-1">
                 <span>Daftar Sesi {selectedFilter}</span>
-                <span className="bg-primary/10 border border-primary/20 text-primary font-bold px-1.5 py-0.5 rounded text-[8px]">
+                <span className="btn-primary bg-primary/10 border border-primary/20 text-primary text-[8px]">
                   {filteredTickets.length} Tiket
                 </span>
               </div>
@@ -312,7 +312,7 @@ export default function CsDashboardClient({ currentUser, initialTickets }: CsDas
                   {activeTicket.status === 'OPEN' && (
                     <button
                       onClick={() => handleAssignTicket(activeTicket.id)}
-                      className="px-4 py-2 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg shadow transition-all"
+                      className="btn-primary text-[10px] shadow"
                     >
                       ✓ Ambil Tiket
                     </button>
@@ -465,7 +465,7 @@ export default function CsDashboardClient({ currentUser, initialTickets }: CsDas
                   
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-xs uppercase rounded-xl transition-all"
+                    className="btn-primary text-xs"
                   >
                     Kirim
                   </button>
@@ -497,7 +497,7 @@ export default function CsDashboardClient({ currentUser, initialTickets }: CsDas
                 <h4 className="text-xs font-bold text-text-primary">{activeTicket.customer?.name || 'Pelanggan'}</h4>
                 <p className="text-[9px] text-text-secondary mt-1">{activeTicket.customer?.email}</p>
                 <div className="flex gap-2 mt-3">
-                  <span className="px-2 py-0.5 bg-primary/10 border border-primary/20 text-primary rounded-full text-[8px] font-bold uppercase">
+                  <span className="btn-primary bg-primary/10 border border-primary/20 text-primary text-[8px]">
                     Level {activeTicket.customer?.level || 1}
                   </span>
                   <span className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-full text-[8px] font-bold uppercase">

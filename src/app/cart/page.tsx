@@ -690,7 +690,7 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark">
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-surface">
         <span className="text-xs font-geist font-bold text-primary tracking-widest uppercase animate-pulse">
           Memuat Keranjang Belanja Premium...
         </span>
@@ -700,32 +700,32 @@ export default function CartPage() {
 
   if (checkoutSuccess) {
     return (
-      <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark py-12 px-6">
+      <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-surface py-12 px-6">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.06)_0%,transparent_65%)] pointer-events-none z-0" />
-        <div className="relative z-10 w-full max-w-md text-center border border-border-subtle bg-surface-dark glow-card p-8 rounded-lg">
-          <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
+        <div className="relative z-10 w-full max-w-md text-center border border-border-subtle bg-surface shadow-[var(--shadow-md)] p-8 rounded-[var(--radius-brand)]">
+          <div className="btn-primary w-16 bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
             </svg>
           </div>
-          <h2 className="font-sora text-2xl font-bold text-text-primary mb-3">Transaksi Berhasil!</h2>
-          <p className="text-xs text-text-secondary leading-relaxed mb-4">
+          <h2 className="font-sora text-2xl font-bold text-foreground mb-3">Transaksi Berhasil!</h2>
+          <p className="text-xs text-foreground/70 leading-relaxed mb-4">
             Pembayaran Anda telah diaudit dan disinkronkan ke ledger kami. 
           </p>
-          <div className="bg-primary/5 border border-primary/10 rounded p-3 mb-8 text-left text-[11px] text-text-secondary space-y-1">
-            <div className="flex justify-between"><span className="text-text-secondary/60">Points Diperoleh (1%):</span><span className="text-primary font-bold">+{Math.round(total * 0.01)} Poin</span></div>
-            <div className="flex justify-between"><span className="text-text-secondary/60">Cashback Wallet (5%):</span><span className="text-primary font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span></div>
+          <div className="btn-primary bg-primary/5 border border-primary/10 p-3 mb-8 text-left text-[11px] text-foreground/70 space-y-1">
+            <div className="flex justify-between"><span className="text-foreground/70/60">Points Diperoleh (1%):</span><span className="text-primary font-bold">+{Math.round(total * 0.01)} Poin</span></div>
+            <div className="flex justify-between"><span className="text-foreground/70/60">Cashback Wallet (5%):</span><span className="text-primary font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span></div>
           </div>
           <div className="flex flex-col gap-3">
             <Link
               href="/wallet"
-              className="py-3 bg-primary hover:bg-primary/95 text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+              className="btn-primary text-xs"
             >
               Buka Dompet / Ledger
             </Link>
             <Link
               href="/market"
-              className="py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+              className="py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-foreground font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
             >
               Kembali Belanja
             </Link>
@@ -737,20 +737,20 @@ export default function CartPage() {
 
 
   const renderCoupons = () => (
-    <div className="bg-surface-container/30 border border-border-subtle p-5 rounded-lg space-y-3">
-      <h4 className="font-sora text-xs font-bold text-text-primary mb-1">🏷️ Kupon Diskon</h4>
+    <div className="bg-surface-container/30 border border-border-subtle p-5 rounded-[var(--radius-brand)] space-y-3">
+      <h4 className="font-sora text-xs font-bold text-foreground mb-1">🏷️ Kupon Diskon</h4>
       <div className="flex gap-2">
         <input
           type="text"
           value={couponCode}
           onChange={(e) => setCouponCode(e.target.value)}
           placeholder="Contoh: DISKON10, TERASUMKM"
-          className="flex-1 px-3 py-2 bg-surface-dark border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50"
+          className="flex-1 px-3 py-2 bg-surface border border-border-subtle rounded text-xs text-foreground placeholder:text-foreground/70/40 focus:outline-none focus:border-primary/50"
         />
         <button
           type="button"
           onClick={() => handleApplyCoupon(couponCode)}
-          className="px-4 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-[11px] uppercase tracking-wider rounded transition-colors"
+          className="btn-primary text-[11px]"
         >
           PASANG
         </button>
@@ -758,7 +758,7 @@ export default function CartPage() {
 
       {couponError && <p className="text-[10px] text-red-400 font-semibold">{couponError}</p>}
       {couponSuccess && <p className="text-[10px] text-green-400 font-semibold">{couponSuccess}</p>}
-      <div className="text-[9px] text-text-secondary/60 leading-relaxed">
+      <div className="text-[9px] text-foreground/70/60 leading-relaxed">
         Kupon Demo: <strong>DISKON10</strong> (10%), <strong>TERASUMKM</strong> (Rp 20.000), <strong>GRATISONGKIR</strong>.
       </div>
     </div>
@@ -767,16 +767,16 @@ export default function CartPage() {
 
   const renderSimulatePanel = () => (
     (pendingOrderId || manualOrderId) && (
-      <div className="border border-yellow-500/20 bg-yellow-500/5 p-6 rounded-lg mt-6">
+      <div className="border border-yellow-500/20 bg-yellow-500/5 p-6 rounded-[var(--radius-brand)] mt-6">
         <span className="block text-[10px] font-geist font-bold text-yellow-500 uppercase tracking-widest mb-2">
           🛠️ Panel Simulasi & Verifikasi Midtrans Sandbox / Offline
         </span>
-        <p className="text-[10px] text-text-secondary mb-4 leading-relaxed">
+        <p className="text-[10px] text-foreground/70 mb-4 leading-relaxed">
           Gunakan panel ini untuk memverifikasi transaksi secara manual atau klik <strong>Simulasikan Berhasil</strong> untuk memproses checkout secara instan untuk pengujian offline.
         </p>
         
         <div className="flex flex-col gap-2">
-          <div className="text-[10px] text-text-secondary font-mono break-all bg-surface-container/55 p-2 rounded border border-border-subtle">
+          <div className="text-[10px] text-foreground/70 font-mono break-all bg-surface-container/55 p-2 rounded border border-border-subtle">
             <strong>Order ID:</strong> {pendingOrderId || 'Belum ada'}
           </div>
           <input
@@ -784,7 +784,7 @@ export default function CartPage() {
             value={manualOrderId || pendingOrderId || ''}
             onChange={(e) => setManualOrderId(e.target.value)}
             placeholder="Masukkan Order ID manual jika ada"
-            className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary/50"
+            className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-foreground focus:outline-none focus:border-primary/50"
           />
           <div className="flex gap-2 mt-1">
             <button
@@ -812,13 +812,13 @@ export default function CartPage() {
   const renderAffiliateIdCard = () => {
     if (!affiliateId) return null;
     return (
-      <div className="border border-primary/20 bg-primary/5 p-5 rounded-xl">
+      <div className="btn-primary border border-primary/20 bg-primary/5 p-5">
         <div className="flex items-center gap-2 text-primary font-sora font-extrabold text-xs">
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          <span className="btn-primary w-2 animate-pulse" />
           Tautan Referral Teman Aktif
         </div>
-        <p className="text-[11px] text-text-secondary mt-1.5 leading-relaxed">
-          Pesanan ini terhubung dengan kode referensi <strong className="text-text-primary">{affiliateId}</strong>. Komisi belanja akan otomatis dialokasikan ke teman Anda.
+        <p className="text-[11px] text-foreground/70 mt-1.5 leading-relaxed">
+          Pesanan ini terhubung dengan kode referensi <strong className="text-foreground">{affiliateId}</strong>. Komisi belanja akan otomatis dialokasikan ke teman Anda.
         </p>
       </div>
     );
@@ -826,7 +826,7 @@ export default function CartPage() {
 
 
   return (
-    <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
+    <div className="relative min-h-screen bg-surface pt-12 pb-24 px-6 md:px-10">
       {/* Load Midtrans Snap dynamically */}
       <Script
         src="https://app.sandbox.midtrans.com/snap/snap.js"
@@ -836,49 +836,49 @@ export default function CartPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(45,178,74,0.03)_0%,transparent_70%)] pointer-events-none z-0" />
 
       <div className="relative z-10 max-w-[1200px] mx-auto">
-        <h1 className="font-sora text-2xl font-bold text-text-primary mb-1">
+        <h1 className="font-sora text-2xl font-bold text-foreground mb-1">
           Checkout <span className="text-[#0F5132]">Pesanan.</span>
         </h1>
-        <p className="text-xs text-text-secondary mb-8 font-geist">
+        <p className="text-xs text-foreground/70 mb-8 font-geist">
           Selesaikan pesanan Anda dengan data pengiriman dan opsi kurir real-time.
         </p>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-600 font-medium">
+          <div className="mb-6 p-4 rounded-[var(--radius-brand)] bg-red-500/10 border border-red-500/20 text-xs text-red-600 font-medium">
             {error}
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20 text-xs text-green-600 font-medium">
+          <div className="mb-6 p-4 rounded-[var(--radius-brand)] bg-green-500/10 border border-green-500/20 text-xs text-green-600 font-medium">
             {successMessage}
           </div>
         )}
 
         {cartDetails.length === 0 ? (
-          <div className="text-center py-20 border border-border-subtle bg-surface rounded-2xl shadow-sm">
+          <div className="text-center py-20 border border-border-subtle bg-surface rounded-[var(--radius-brand)] shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-slate-300 mx-auto mb-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
             </svg>
-            <h3 className="font-sora text-base font-bold text-text-primary mb-2">Keranjang Anda Kosong</h3>
-            <p className="text-xs text-text-secondary max-w-xs mx-auto mb-6">
+            <h3 className="font-sora text-base font-bold text-foreground mb-2">Keranjang Anda Kosong</h3>
+            <p className="text-xs text-foreground/70 max-w-xs mx-auto mb-6">
               Jelajahi pasar kami dan temukan produk terbaik untuk kebutuhan Anda.
             </p>
             <Link
               href="/market"
-              className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-colors inline-block shadow-sm"
+              className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-[var(--radius-brand)] transition-colors inline-block shadow-sm"
             >
               Belanja Sekarang
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-fadeIn text-text-primary">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-fadeIn text-foreground">
             
             {/* Left Column: Delivery Address & Shop Groups */}
             <div className="lg:col-span-2 space-y-6">
               
               {/* 1. Shopee-Style Shipping Address Card */}
-              <div className="bg-surface border border-border-subtle rounded-xl shadow-sm overflow-hidden relative">
+              <div className="bg-surface border border-border-subtle rounded-[var(--radius-brand)] shadow-sm overflow-hidden relative">
                 {/* Diagonal repeating blue/red Shopee-style address ribbon */}
                 <div 
                 />
@@ -905,8 +905,8 @@ export default function CartPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                     {/* Name & Phone */}
                     <div className="font-bold border-r border-border-subtle pr-4">
-                      <p className="text-text-primary text-[13px]">{currentUser?.name || 'Nama Penerima'}</p>
-                      <p className="text-text-secondary text-[11px] mt-1 font-geist">{currentUser?.email || ''}</p>
+                      <p className="text-foreground text-[13px]">{currentUser?.name || 'Nama Penerima'}</p>
+                      <p className="text-foreground/70 text-[11px] mt-1 font-geist">{currentUser?.email || ''}</p>
                     </div>
 
                     {/* Detail Address & Maps preview */}
@@ -919,12 +919,12 @@ export default function CartPage() {
                           onChange={e => setAddressSearchQuery(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') handleGeocodeSearch() }}
                           placeholder="Cari lokasi/alamat tujuan..."
-                          className="flex-1 px-3 py-1.5 bg-surface-container-low border border-border-subtle rounded-lg text-xs placeholder:text-text-secondary/40 text-text-primary focus:outline-none focus:border-primary"
+                          className="flex-1 px-3 py-1.5 bg-surface-container-low border border-border-subtle rounded-[var(--radius-brand)] text-xs placeholder:text-foreground/70/40 text-foreground focus:outline-none focus:border-primary"
                         />
                         <button
                           type="button"
                           onClick={handleGeocodeSearch}
-                          className="px-3 py-1.5 bg-[#0F5132] hover:bg-[#0F5132]/95 text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all"
+                          className="px-3 py-1.5 bg-[#0F5132] hover:bg-[#0F5132]/95 text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-[var(--radius-brand)] transition-all"
                         >
                           Cari
                         </button>
@@ -936,12 +936,12 @@ export default function CartPage() {
                         value={shippingAddress}
                         onChange={(e) => setShippingAddress(e.target.value)}
                         placeholder="Detail alamat (Nama jalan, RT/RW, no rumah, kelurahan, kecamatan)..."
-                        className="w-full px-3 py-2 bg-surface-container-low border border-border-subtle rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary placeholder:text-text-secondary/40"
+                        className="w-full px-3 py-2 bg-surface-container-low border border-border-subtle rounded-[var(--radius-brand)] text-xs text-foreground focus:outline-none focus:border-primary placeholder:text-foreground/70/40"
                       />
 
                       {/* Draggable Map Preview (Compact & Light theme) */}
-                      <div className="border border-border-subtle rounded-xl overflow-hidden shadow-sm">
-                        <div className="px-3 py-2 bg-surface-container-low border-b border-border-subtle flex justify-between items-center text-[10px] font-geist text-text-secondary">
+                      <div className="border border-border-subtle rounded-[var(--radius-brand)] overflow-hidden shadow-sm">
+                        <div className="px-3 py-2 bg-surface-container-low border-b border-border-subtle flex justify-between items-center text-[10px] font-geist text-foreground/70">
                           <span>Geser pin peta untuk titik jemput akurat:</span>
                           <span className="font-bold text-primary">{distanceText || `${avgDistance.toFixed(1)} km`}</span>
                         </div>
@@ -978,8 +978,8 @@ export default function CartPage() {
                         ) : (
                           <div className="relative w-full h-32 bg-[#EEF2F7] flex flex-col items-center justify-center p-4 text-center">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-7 h-7 text-slate-400"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25s-7.5-4.108-7.5-11.25A7.5 7.5 0 1119.5 10.5z"/></svg>
-                            <p className="text-[10px] text-text-secondary mt-1.5 leading-relaxed">
-                              Estimasi jarak: <strong className="text-text-primary">{distanceText || `${avgDistance.toFixed(1)} km`}</strong> ({durationText || '1 jam 30 menit'})
+                            <p className="text-[10px] text-foreground/70 mt-1.5 leading-relaxed">
+                              Estimasi jarak: <strong className="text-foreground">{distanceText || `${avgDistance.toFixed(1)} km`}</strong> ({durationText || '1 jam 30 menit'})
                             </p>
                           </div>
                         )}
@@ -987,7 +987,7 @@ export default function CartPage() {
                       
                       {/* Cities preset selector */}
                       <div className="space-y-1">
-                        <p className="text-[9px] font-bold text-text-secondary uppercase tracking-wider">Kota Tujuan Cepat:</p>
+                        <p className="text-[9px] font-bold text-foreground/70 uppercase tracking-wider">Kota Tujuan Cepat:</p>
                         <div className="flex flex-wrap gap-1">
                           {Object.keys(mockCities).map(key => (
                             <button
@@ -1003,7 +1003,7 @@ export default function CartPage() {
                               className={`px-2 py-0.5 border rounded-md text-[9px] font-bold transition-all ${
                                 selectedMockCity === key
                                   ? 'bg-[#0F5132] border-[#0F5132] text-white'
-                                  : 'bg-surface border-border-subtle text-text-secondary hover:text-text-primary'
+                                  : 'bg-surface border-border-subtle text-foreground/70 hover:text-foreground'
                               }`}
                             >
                               {mockCities[key].name.split(' ')[0]}
@@ -1032,7 +1032,7 @@ export default function CartPage() {
                     const shopName = items[0]?.merchant?.name || 'Toko UMKM';
                     
                     return (
-                      <div key={mId} className="bg-surface border border-border-subtle rounded-xl shadow-sm p-5 space-y-4">
+                      <div key={mId} className="bg-surface border border-border-subtle rounded-[var(--radius-brand)] shadow-sm p-5 space-y-4">
                         {/* Shop Header */}
                         <div className="flex items-center gap-2 border-b border-border-subtle pb-3">
                           <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-secondary"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4L3 12v2c0 1.66 1.34 3 3 3h12c1.66 0 3-1.34 3-3zm-12 1H6v-2h3v2zm5 0h-3v-2h3v2zm4 0h-3v-2h3v2z"/></svg>
@@ -1049,7 +1049,7 @@ export default function CartPage() {
                             return (
                               <div key={item.id} className="flex items-center gap-4 justify-between border-b border-border-subtle/50 pb-4 last:border-b-0 last:pb-0">
                                 <div className="flex items-center gap-4">
-                                  <div className="w-16 h-16 bg-surface-container-low rounded-lg border border-border-subtle overflow-hidden flex-shrink-0 relative">
+                                  <div className="w-16 h-16 bg-surface-container-low rounded-[var(--radius-brand)] border border-border-subtle overflow-hidden flex-shrink-0 relative">
                                     {item.imageUrl ? (
                                       <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
                                     ) : (
@@ -1057,7 +1057,7 @@ export default function CartPage() {
                                     )}
                                   </div>
                                   <div className="space-y-1">
-                                    <h4 className="font-bold text-xs text-text-primary line-clamp-1">{item.title}</h4>
+                                    <h4 className="font-bold text-xs text-foreground line-clamp-1">{item.title}</h4>
                                     <div className="flex items-center gap-1.5">
                                       <span className="px-1.5 py-0.2 bg-[#2DB24A]/10 border border-[#2DB24A]/25 text-[7px] text-[#2DB24A] font-bold rounded uppercase">
                                         {item.category}
@@ -1071,7 +1071,7 @@ export default function CartPage() {
                                     <div className="text-xs font-bold text-secondary">
                                       {hasDiscount ? (
                                         <div className="flex items-center gap-1.5">
-                                          <span className="line-through text-text-secondary/50 text-[10px]">Rp {item.price.toLocaleString('id-ID')}</span>
+                                          <span className="line-through text-foreground/70/50 text-[10px]">Rp {item.price.toLocaleString('id-ID')}</span>
                                           <span>Rp {wholesalePrice.toLocaleString('id-ID')}</span>
                                         </div>
                                       ) : (
@@ -1087,15 +1087,15 @@ export default function CartPage() {
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
-                                      className="px-2 py-1 text-xs hover:text-primary font-bold text-text-secondary"
+                                      className="px-2 py-1 text-xs hover:text-primary font-bold text-foreground/70"
                                     >
                                       -
                                     </button>
-                                    <span className="px-2 text-[10px] text-text-primary font-bold">{item.quantity}</span>
+                                    <span className="px-2 text-[10px] text-foreground font-bold">{item.quantity}</span>
                                     <button
                                       type="button"
                                       onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
-                                      className="px-2 py-1 text-xs hover:text-primary font-bold text-text-secondary"
+                                      className="px-2 py-1 text-xs hover:text-primary font-bold text-foreground/70"
                                     >
                                       +
                                     </button>
@@ -1116,7 +1116,7 @@ export default function CartPage() {
                         </div>
                         
                         {/* Courier / Shipping cost selection block inside this shop */}
-                        <div className="bg-surface-container-low border border-border-subtle rounded-xl p-4 mt-2 space-y-2.5">
+                        <div className="bg-surface-container-low border border-border-subtle rounded-[var(--radius-brand)] p-4 mt-2 space-y-2.5">
                           <label className="block text-xs font-bold text-secondary">
                             Pilih Opsi Pengiriman ({shopName})
                           </label>
@@ -1124,20 +1124,20 @@ export default function CartPage() {
                             <select
                               value={selectedCourier}
                               onChange={(e) => setSelectedCourier(e.target.value)}
-                              className="w-full px-3.5 py-3 bg-surface border border-border-subtle rounded-xl text-xs text-text-primary font-medium focus:outline-none focus:border-primary/50 cursor-pointer appearance-none pr-10 shadow-sm"
+                              className="w-full px-3.5 py-3 bg-surface border border-border-subtle rounded-[var(--radius-brand)] text-xs text-foreground font-medium focus:outline-none focus:border-primary/50 cursor-pointer appearance-none pr-10 shadow-sm"
                             >
                               {courierRates.length === 0 ? (
                                 <option value="" disabled>Menghitung ongkos kirim...</option>
                               ) : (
                                 courierRates.map(rate => (
-                                  <option key={rate.courier_code} value={rate.courier_code} className="bg-surface text-text-primary">
+                                  <option key={rate.courier_code} value={rate.courier_code} className="bg-surface text-foreground">
                                     {rate.courier_name} ({rate.etd}) — Rp {rate.price.toLocaleString('id-ID')}
                                   </option>
                                 ))
                               )}
                             </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-secondary">
-                              <svg className="fill-current h-4 w-4 text-text-secondary" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-foreground/70">
+                              <svg className="fill-current h-4 w-4 text-foreground/70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                 <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
                               </svg>
                             </div>
@@ -1151,7 +1151,7 @@ export default function CartPage() {
               </div>
 
               {/* 3. Coupon / Voucher */}
-              <div className="bg-surface border border-border-subtle rounded-xl shadow-sm p-5">
+              <div className="bg-surface border border-border-subtle rounded-[var(--radius-brand)] shadow-sm p-5">
                 <div className="flex items-center gap-2 text-secondary font-sora font-extrabold text-sm border-b border-border-subtle pb-3 mb-4">
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-yellow-500"><path d="M2 17h20v2H2zm11.84-5.43L11.02 8.75l1.41-1.41 2.83 2.83zm-2.02-4.24l-2.83-2.83 1.41-1.41 2.83 2.83zM10 20c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2z"/></svg>
                   Kupon Diskon
@@ -1165,18 +1165,18 @@ export default function CartPage() {
             <div className="space-y-6">
               
               {/* 4. Ledger Billing Summary */}
-              <div className="bg-surface border border-border-subtle rounded-xl shadow-sm p-5 space-y-4">
+              <div className="bg-surface border border-border-subtle rounded-[var(--radius-brand)] shadow-sm p-5 space-y-4">
                 <h3 className="font-sora font-extrabold text-secondary text-sm border-b border-border-subtle pb-3">
                   Ringkasan Belanja
                 </h3>
                 
                 <div className="space-y-3.5 text-xs">
-                  <div className="flex justify-between text-text-secondary">
+                  <div className="flex justify-between text-foreground/70">
                     <span>Subtotal Produk</span>
                     <span>Rp {subtotal.toLocaleString('id-ID')}</span>
                   </div>
 
-                  <div className="flex justify-between text-text-secondary">
+                  <div className="flex justify-between text-foreground/70">
                     <span>Total Ongkir</span>
                     <span>Rp {shippingFee.toLocaleString('id-ID')}</span>
                   </div>
@@ -1197,18 +1197,18 @@ export default function CartPage() {
                   )}
 
                   <div className="border-t border-border-subtle pt-3.5 space-y-3">
-                    <div className="flex justify-between items-center text-text-primary font-bold">
+                    <div className="flex justify-between items-center text-foreground font-bold">
                       <span className="text-sm">Total Pembayaran</span>
                       <span className="text-secondary font-black text-base font-geist">
                         Rp {total.toLocaleString('id-ID')}
                       </span>
                     </div>
                     
-                    <div className="text-[10px] text-text-secondary/70 flex justify-between">
+                    <div className="text-[10px] text-foreground/70/70 flex justify-between">
                       <span>Poin UMKM Diperoleh:</span>
                       <span className="text-primary font-bold">+{Math.round(total * 0.01)} Poin</span>
                     </div>
-                    <div className="text-[10px] text-text-secondary/70 flex justify-between">
+                    <div className="text-[10px] text-foreground/70/70 flex justify-between">
                       <span>Cashback Saloka (5%):</span>
                       <span className="text-secondary font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span>
                     </div>
@@ -1217,15 +1217,15 @@ export default function CartPage() {
 
                 {/* Payment selector */}
                 <div className="border-t border-border-subtle pt-4 space-y-3">
-                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider">Pilih Metode Pembayaran</label>
+                  <label className="block text-[10px] font-bold text-foreground/70 uppercase tracking-wider">Pilih Metode Pembayaran</label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('MIDTRANS')}
-                      className={`py-3 px-2.5 border rounded-xl text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1.5 ${
+                      className={`py-3 px-2.5 border rounded-[var(--radius-brand)] text-[10px] font-bold uppercase transition-all flex items-center justify-center gap-1.5 ${
                         paymentMethod === 'MIDTRANS'
                           ? 'bg-secondary border-secondary text-white shadow-md'
-                          : 'bg-surface border-border-subtle text-text-secondary hover:border-slate-300'
+                          : 'bg-surface border-border-subtle text-foreground/70 hover:border-slate-300'
                       }`}
                     >
                       <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
@@ -1234,10 +1234,10 @@ export default function CartPage() {
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('WALLET')}
-                      className={`py-3 px-2.5 border rounded-xl text-[10px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
+                      className={`py-3 px-2.5 border rounded-[var(--radius-brand)] text-[10px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-0.5 ${
                         paymentMethod === 'WALLET'
                           ? 'bg-secondary border-secondary text-white shadow-md'
-                          : 'bg-surface border-border-subtle text-text-secondary hover:border-slate-300'
+                          : 'bg-surface border-border-subtle text-foreground/70 hover:border-slate-300'
                       }`}
                     >
                       <span className="flex items-center gap-1">
@@ -1255,13 +1255,13 @@ export default function CartPage() {
                   id="cart-checkout"
                   onClick={handleCheckout}
                   disabled={isPending || isPendingCheckout || isVerifying || cart.length === 0 || hasOwnProduct}
-                  className="w-full py-3.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-[var(--radius-brand)] shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isPendingCheckout ? 'Memproses Transaksi...' : (isVerifying ? 'Memverifikasi Pembayaran...' : (paymentMethod === 'WALLET' ? '⚡ 1-Click Checkout via Dompet' : 'Bayar & Selesaikan Order (Midtrans)'))}
                 </button>
 
                 {hasOwnProduct && (
-                  <p className="text-[10px] text-red-500 font-semibold text-center mt-3 leading-relaxed bg-red-50 border border-red-200 p-2.5 rounded-lg">
+                  <p className="text-[10px] text-red-500 font-semibold text-center mt-3 leading-relaxed bg-red-50 border border-red-200 p-2.5 rounded-[var(--radius-brand)]">
                     ⚠️ Terdapat produk Anda sendiri di keranjang belanja. Harap hapus produk Anda terlebih dahulu untuk checkout.
                   </p>
                 )}

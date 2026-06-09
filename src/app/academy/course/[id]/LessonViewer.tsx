@@ -109,10 +109,10 @@ export default function LessonViewer({
         {isLocked ? (
           <div className="border border-border-subtle bg-surface-dark/40 backdrop-blur-md rounded-lg p-8 md:p-12 text-center flex flex-col items-center justify-center space-y-6 border-primary/20 relative overflow-hidden">
             {/* Ambient gold glow */}
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="btn-primary absolute -top-12 left-1/2 -translate-x-1/2 w-48 bg-primary/10 blur-3xl pointer-events-none" />
             
             {/* Lock Icon */}
-            <div className="w-16 h-16 bg-primary/10 border border-primary/30 rounded-full flex items-center justify-center text-primary mb-2 shadow-[0_0_20px_rgba(198,169,107,0.1)]">
+            <div className="btn-primary w-16 bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mb-2 shadow-[0_0_20px_rgba(198,169,107,0.1)]">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" />
               </svg>
@@ -140,7 +140,7 @@ export default function LessonViewer({
             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xs justify-center pt-2">
               <Link
                 href="/affiliate"
-                className="w-full py-3 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded text-center transition-all duration-300 shadow-md shadow-primary/10 hover:shadow-primary/20"
+                className="btn-primary w-full text-xs text-center shadow-md shadow-primary/10 hover:shadow-primary/20"
               >
                 Upgrade Keanggotaan
               </Link>
@@ -176,7 +176,7 @@ export default function LessonViewer({
             {/* Meta headers */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-5">
               <div>
-                <span className="text-[9px] font-geist font-bold text-primary bg-primary/10 border border-primary/25 rounded px-2 py-0.5 uppercase tracking-wider mb-2 inline-block">
+                <span className="btn-primary text-[9px] text-primary bg-primary/10 border border-primary/25 mb-2 inline-block">
                   Pelajaran {activeLesson.orderIndex}
                 </span>
                 <h2 className="font-sora text-xl font-bold text-text-primary">
@@ -203,7 +203,7 @@ export default function LessonViewer({
                 <button
                   id="btn-login-to-track"
                   onClick={() => router.push('/auth')}
-                  className="px-4 py-2 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+                  className="btn-primary text-xs"
                 >
                   Masuk untuk Simpan Progres
                 </button>

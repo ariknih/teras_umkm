@@ -12,6 +12,8 @@ import FloatingChat from "@/components/FloatingChat";
 import HeaderNavigation from "./components/HeaderNavigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import { GsapScrollTrigger } from "@/components/GsapScrollTrigger";
+import Script from "next/script";
+import { Logo } from "@/components/Logo";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -75,7 +77,9 @@ export default async function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <script
+        <Script
+          id="theme-script"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -88,7 +92,7 @@ export default async function RootLayout({
             `,
           }}
         />
-        <script src="https://app.sandbox.midtrans.com/snap/snap.js" async />
+        <Script src="https://app.sandbox.midtrans.com/snap/snap.js" strategy="beforeInteractive" />
       </head>
       <body
         className={`min-h-full flex flex-col text-on-surface font-inter select-none overflow-x-hidden ${
@@ -109,7 +113,7 @@ export default async function RootLayout({
             <HeaderNavigation user={dbUser} wallet={wallet} logoutAction={logout} />
 
         {/* Page Content */}
-        <main className="flex-grow flex flex-col pt-[72px]">
+        <main className="flex-grow flex flex-col pt-[100px]">
           {children}
         </main>
 
@@ -119,10 +123,8 @@ export default async function RootLayout({
             {/* Brand */}
             <div className="md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-md bg-primary-container flex items-center justify-center">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-on-primary-container">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                  </svg>
+                <div className="transform scale-[0.3] origin-left w-[28px] h-[38px]">
+                  <Logo />
                 </div>
                 <span className="font-poppins font-bold text-secondary text-lg">Saloka<span className="text-tertiary">.id</span></span>
               </div>
@@ -195,7 +197,7 @@ export default async function RootLayout({
               <p className="text-sm text-on-surface-variant leading-relaxed">Insight bisnis UMKM setiap minggu, gratis.</p>
               <div className="flex bg-white border border-outline-variant/30 rounded-lg p-1 overflow-hidden">
                 <input className="bg-transparent border-none focus:ring-0 text-on-surface flex-1 px-3 text-sm outline-none" placeholder="Email Anda" type="email" />
-                <button className="bg-primary-container text-on-surface px-4 py-2 rounded-md font-bold text-xs transition-all hover:bg-primary-container/90">Daftar</button>
+                <button className="btn-primary bg-primary-container text-on-surface rounded-md text-xs hover:bg-primary-container/90">Daftar</button>
               </div>
             </div>
           </div>

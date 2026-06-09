@@ -195,7 +195,7 @@ export default function WalletPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark">
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-surface">
         <span className="text-xs font-geist font-bold text-primary tracking-widest uppercase animate-pulse">
           Connecting to Ledger...
         </span>
@@ -205,22 +205,22 @@ export default function WalletPage() {
 
   if (!userProfile) {
     return (
-      <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark py-12 px-6">
+      <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-surface py-12 px-6">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.06)_0%,transparent_65%)] pointer-events-none z-0" />
-        <div className="relative z-10 w-full max-w-md text-center border border-border-subtle bg-surface-dark glow-card p-8 rounded-lg">
-          <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
+        <div className="relative z-10 w-full max-w-md text-center border border-border-subtle bg-surface shadow-[var(--shadow-md)] p-8 rounded-[var(--radius-brand)]">
+          <div className="btn-primary w-16 bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" />
             </svg>
           </div>
-          <h2 className="font-sora text-2xl font-bold text-text-primary mb-3">Akses Dibatasi</h2>
-          <p className="text-xs text-text-secondary leading-relaxed mb-8">
+          <h2 className="font-sora text-2xl font-bold text-foreground mb-3">Akses Dibatasi</h2>
+          <p className="text-xs text-foreground/70 leading-relaxed mb-8">
             Silakan masuk dengan akun Anda untuk melihat dompet digital, buku kas masuk, dan melakukan penarikan saldo.
           </p>
           <Link
             id="wallet-login-btn"
             href="/auth"
-            className="w-full py-4 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors inline-block"
+            className="btn-primary w-full text-xs inline-block"
           >
             Masuk Sekarang
           </Link>
@@ -236,22 +236,22 @@ export default function WalletPage() {
   const nextLevelXp = 100
 
   return (
-    <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
+    <div className="relative min-h-screen bg-surface pt-12 pb-24 px-6 md:px-10">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.04)_0%,transparent_70%)] pointer-events-none z-0" />
 
       <div className="relative z-10 max-w-[1200px] mx-auto">
         {/* Header summary */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 pb-6 border-b border-border-subtle">
           <div>
-            <h1 className="font-sora text-3xl font-bold text-text-primary mb-1">
+            <h1 className="font-sora text-3xl font-bold text-foreground mb-1">
               Buku Ledger <span className="text-primary">Keuangan.</span>
             </h1>
-            <p className="text-xs text-text-secondary">
+            <p className="text-xs text-foreground/70">
               Kelola saldo, deposit payment gateway, dan tarik dana ke berbagai bank & e-wallet.
             </p>
           </div>
           <div className="flex flex-wrap gap-4 items-center">
-            <span className="px-3 py-1.5 bg-primary/10 border border-primary/25 rounded text-[10px] font-geist font-bold text-primary uppercase tracking-wider">
+            <span className="btn-primary bg-primary/10 border border-primary/25 text-[10px] text-primary">
               {userProfile.name} ({userProfile.role})
             </span>
             <button
@@ -265,23 +265,23 @@ export default function WalletPage() {
         </div>
 
         {/* Level Progression Banner */}
-        <div className="mb-10 border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent p-5 rounded-lg flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="mb-10 border border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-transparent p-5 rounded-[var(--radius-brand)] flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-full bg-amber-500/10 border-2 border-amber-500 flex items-center justify-center text-amber-500 font-sora font-extrabold text-xl shadow-[0_0_15px_rgba(245,158,11,0.2)]">
               {currentLevel}
             </div>
             <div>
               <span className="text-[10px] font-geist font-bold text-amber-500 uppercase tracking-widest">Prestige Level System</span>
-              <h3 className="font-sora text-sm font-bold text-text-primary">
+              <h3 className="font-sora text-sm font-bold text-foreground">
                 Level Entrepreneur {currentLevel}
               </h3>
-              <p className="text-[11px] text-text-secondary">
+              <p className="text-[11px] text-foreground/70">
                 Dapatkan XP dengan menjual produk, melakukan checkout order, dan melengkapi profil Anda.
               </p>
             </div>
           </div>
           <div className="w-full md:w-72">
-            <div className="flex justify-between text-[10px] font-geist font-semibold text-text-secondary mb-1">
+            <div className="flex justify-between text-[10px] font-geist font-semibold text-foreground/70 mb-1">
               <span>Progress XP</span>
               <span className="text-amber-500">{xpInCurrentLevel} / {nextLevelXp} XP</span>
             </div>
@@ -311,33 +311,33 @@ export default function WalletPage() {
           {/* Left Column: Balance & Deposit */}
           <div className="lg:col-span-4 space-y-8">
             {/* Balance Board */}
-            <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg flex flex-col justify-between min-h-[160px] relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="border border-border-subtle bg-surface p-6 rounded-[var(--radius-brand)] flex flex-col justify-between min-h-[160px] relative overflow-hidden">
+              <div className="btn-primary absolute top-0 right-0 w-24 bg-primary/5 blur-2xl pointer-events-none" />
               <div>
-                <span className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-4">
+                <span className="block text-[10px] font-geist font-bold text-foreground/70 uppercase tracking-widest mb-4">
                   Total Saldo Tersedia
                 </span>
                 <h2 className="font-sora text-3xl md:text-4xl font-extrabold text-primary">
                   Rp {(wallet?.balance ?? 0).toLocaleString('id-ID')}
                 </h2>
               </div>
-              <div className="flex gap-2 items-center text-[10px] text-text-secondary font-geist font-semibold pt-4">
+              <div className="flex gap-2 items-center text-[10px] text-foreground/70 font-geist font-semibold pt-4">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                 Ledger Kas Sinkron Otomatis
               </div>
             </div>
 
             {/* Deposit Box */}
-            <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
-              <span className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-4">
+            <div className="border border-border-subtle bg-surface p-6 rounded-[var(--radius-brand)]">
+              <span className="block text-[10px] font-geist font-bold text-foreground/70 uppercase tracking-widest mb-4">
                 Top Up / Isi Saldo
               </span>
-              <p className="text-[11px] text-text-secondary mb-4 leading-relaxed">
+              <p className="text-[11px] text-foreground/70 mb-4 leading-relaxed">
                 Isi saldo instan menggunakan Midtrans Payment Gateway (Virtual Account, E-Wallet, Kartu Kredit).
               </p>
               <form onSubmit={handleDeposit} className="space-y-4">
                 <div>
-                  <label className="block text-[9px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1">
+                  <label className="block text-[9px] font-geist font-bold text-foreground/70 uppercase tracking-wider mb-1">
                     Jumlah Pengisian (Rp)
                   </label>
                   <input
@@ -347,7 +347,7 @@ export default function WalletPage() {
                     value={depositAmount}
                     onChange={(e) => setDepositAmount(e.target.value)}
                     placeholder="Minimal Rp 10.000"
-                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50 transition-colors"
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-foreground placeholder:text-foreground/70/40 focus:outline-none focus:border-primary/50 transition-colors"
                   />
                 </div>
                 <button
@@ -364,21 +364,21 @@ export default function WalletPage() {
           {/* Right Column: Withdrawal */}
           <div className="lg:col-span-8 space-y-8">
             {/* Withdrawal Box */}
-            <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
-              <span className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-4">
+            <div className="border border-border-subtle bg-surface p-6 rounded-[var(--radius-brand)]">
+              <span className="block text-[10px] font-geist font-bold text-foreground/70 uppercase tracking-widest mb-4">
                 Tarik Saldo ke Rekening Bank / E-Wallet
               </span>
               
               <form onSubmit={handleWithdraw} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[9px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1">
+                    <label className="block text-[9px] font-geist font-bold text-foreground/70 uppercase tracking-wider mb-1">
                       Metode Penarikan
                     </label>
                     <select
                       value={withdrawMethod}
                       onChange={(e) => setWithdrawMethod(e.target.value)}
-                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary/50 cursor-pointer"
+                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-foreground focus:outline-none focus:border-primary/50 cursor-pointer"
                     >
                       <optgroup label="Bank Transfer">
                         <option value="BCA">BCA (Bank Central Asia)</option>
@@ -395,7 +395,7 @@ export default function WalletPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[9px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1">
+                    <label className="block text-[9px] font-geist font-bold text-foreground/70 uppercase tracking-wider mb-1">
                       Jumlah Penarikan (Rp)
                     </label>
                     <input
@@ -404,14 +404,14 @@ export default function WalletPage() {
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
                       placeholder="Contoh: 100000"
-                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50 transition-colors"
+                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-foreground placeholder:text-foreground/70/40 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[9px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1">
+                    <label className="block text-[9px] font-geist font-bold text-foreground/70 uppercase tracking-wider mb-1">
                       Nomor Rekening / No. HP E-Wallet
                     </label>
                     <input
@@ -420,11 +420,11 @@ export default function WalletPage() {
                       value={accountNumber}
                       onChange={(e) => setAccountNumber(e.target.value)}
                       placeholder="Masukkan nomor tujuan transfer"
-                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50 transition-colors"
+                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-foreground placeholder:text-foreground/70/40 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1">
+                    <label className="block text-[9px] font-geist font-bold text-foreground/70 uppercase tracking-wider mb-1">
                       Nama Pemilik Rekening
                     </label>
                     <input
@@ -433,7 +433,7 @@ export default function WalletPage() {
                       value={accountName}
                       onChange={(e) => setAccountName(e.target.value)}
                       placeholder="Nama lengkap pemilik"
-                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:border-primary/50 transition-colors"
+                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-foreground placeholder:text-foreground/70/40 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                   </div>
                 </div>
@@ -446,7 +446,7 @@ export default function WalletPage() {
                   {isPending ? 'Mengaudit Transaksi...' : 'Tarik Saldo Rekening'}
                 </button>
               </form>
-              <p className="text-[10px] text-text-secondary mt-3">
+              <p className="text-[10px] text-foreground/70 mt-3">
                 * Penarikan saldo diproses secara instan tanpa biaya admin transfer (Rp 0).
               </p>
             </div>
@@ -455,11 +455,11 @@ export default function WalletPage() {
 
         {/* MIDTRANS TRANSACTION SIMULATION PANEL */}
         {(pendingOrderId || manualOrderId || pendingOrderId === null) && (
-          <div className="border border-yellow-500/20 bg-yellow-500/5 p-6 rounded-lg mb-12">
+          <div className="border border-yellow-500/20 bg-yellow-500/5 p-6 rounded-[var(--radius-brand)] mb-12">
             <span className="block text-[10px] font-geist font-bold text-yellow-500 uppercase tracking-widest mb-2">
               🛠️ Panel Simulasi & Verifikasi Midtrans Sandbox / Offline
             </span>
-            <p className="text-xs text-text-secondary mb-4 leading-relaxed">
+            <p className="text-xs text-foreground/70 mb-4 leading-relaxed">
               Karena server development lokal tidak bisa menerima webhook langsung dari Midtrans, Anda dapat menggunakan formulir di bawah untuk memverifikasi transaksi secara manual. Anda juga dapat memilih <strong>Simulasikan Berhasil</strong> untuk memverifikasi transaksi tanpa bayar kartu kredit (offline testing).
             </p>
             
@@ -469,7 +469,7 @@ export default function WalletPage() {
                 value={manualOrderId || pendingOrderId || ''}
                 onChange={(e) => setManualOrderId(e.target.value)}
                 placeholder="Masukkan Order ID (contoh: dep-user-...)"
-                className="flex-grow h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary/50"
+                className="flex-grow h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-foreground focus:outline-none focus:border-primary/50"
               />
               <button
                 type="button"
@@ -492,25 +492,25 @@ export default function WalletPage() {
         )}
 
         {/* Transaction History Table */}
-        <div className="border border-border-subtle bg-surface-dark rounded-lg overflow-hidden">
+        <div className="border border-border-subtle bg-surface rounded-[var(--radius-brand)] overflow-hidden">
           <div className="px-6 py-5 border-b border-border-subtle bg-surface-container/50 flex justify-between items-center">
-            <h3 className="font-sora text-sm font-bold text-text-primary">
+            <h3 className="font-sora text-sm font-bold text-foreground">
               Log Histori Transaksi
             </h3>
-            <span className="text-[10px] text-text-secondary font-mono">
+            <span className="text-[10px] text-foreground/70 font-mono">
               Total: {wallet?.transactions?.length ?? 0} Transaksi
             </span>
           </div>
 
           <div className="overflow-x-auto">
             {!wallet?.transactions || wallet.transactions.length === 0 ? (
-              <div className="text-center py-16 text-xs text-text-secondary">
+              <div className="text-center py-16 text-xs text-foreground/70">
                 Belum ada transaksi tercatat di akun Anda.
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-border-subtle text-text-secondary bg-surface-container/20">
+                  <tr className="border-b border-border-subtle text-foreground/70 bg-surface-container/20">
                     <th className="p-4 font-geist font-bold uppercase tracking-wider">Tanggal & Waktu</th>
                     <th className="p-4 font-geist font-bold uppercase tracking-wider">Tipe</th>
                     <th className="p-4 font-geist font-bold uppercase tracking-wider">Deskripsi Transaksi</th>
@@ -524,7 +524,7 @@ export default function WalletPage() {
 
                     return (
                       <tr key={tx.id} className="hover:bg-surface-container/10 transition-colors">
-                        <td className="p-4 text-text-secondary font-geist">
+                        <td className="p-4 text-foreground/70 font-geist">
                           {date.toLocaleDateString('id-ID')}{' '}
                           <span className="opacity-50 text-[10px]">
                             {date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
@@ -543,7 +543,7 @@ export default function WalletPage() {
                             {tx.type}
                           </span>
                         </td>
-                        <td className="p-4 text-text-primary font-medium">{tx.description}</td>
+                        <td className="p-4 text-foreground font-medium">{tx.description}</td>
                         <td className={`p-4 text-right font-geist font-bold text-sm ${isDebit ? 'text-red-400' : 'text-primary'}`}>
                           {isDebit ? '-' : '+'} Rp {tx.amount.toLocaleString('id-ID')}
                         </td>

@@ -414,7 +414,7 @@ export default function AffiliatePage() {
       <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark py-12 px-6">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.06)_0%,transparent_65%)] pointer-events-none z-0" />
         <div className="relative z-10 w-full max-w-md text-center border border-border-subtle bg-surface-dark glow-card p-8 rounded-lg">
-          <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
+          <div className="btn-primary w-16 bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" />
             </svg>
@@ -426,7 +426,7 @@ export default function AffiliatePage() {
           <Link
             id="aff-login-btn"
             href="/auth"
-            className="w-full py-4 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors inline-block"
+            className="btn-primary w-full text-xs inline-block"
           >
             Masuk Ke Terminal
           </Link>
@@ -452,7 +452,7 @@ export default function AffiliatePage() {
             <Link
               id="aff-switch-account"
               href="/auth"
-              className="py-3.5 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+              className="btn-primary text-xs"
             >
               Beralih Akun / Daftar
             </Link>
@@ -497,7 +497,7 @@ export default function AffiliatePage() {
               </svg>
               Lihat Halaman Landing Anda
             </Link>
-            <span className="px-3 py-2 bg-primary/10 border border-primary/25 rounded text-[10px] font-geist font-bold text-primary uppercase tracking-wider">
+            <span className="btn-primary bg-primary/10 border border-primary/25 text-[10px] text-primary">
               Akses: {user.membershipAccess} ({user.membershipLevel})
             </span>
           </div>
@@ -569,7 +569,7 @@ export default function AffiliatePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Earnings */}
               <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg flex flex-col justify-between min-h-[140px] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl pointer-events-none" />
+                <div className="btn-primary absolute top-0 right-0 w-24 bg-primary/5 blur-xl pointer-events-none" />
                 <div>
                   <span className="block text-[9px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-3">
                     Total Komisi Akumulatif
@@ -648,7 +648,7 @@ export default function AffiliatePage() {
                     </div>
                     <div className="h-2 bg-surface-container rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-primary"
+                        className="btn-primary"
                         style={{
                           width: `${stats?.totalEarnings ? ((stats.commissionByTier.tier1 / stats.totalEarnings) * 100) : 0}%`
                         }}
@@ -879,7 +879,7 @@ export default function AffiliatePage() {
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-3xl">📦</div>
                             )}
-                            <div className="absolute top-2 right-2 bg-primary px-2 py-0.5 rounded text-[8px] font-bold text-white uppercase tracking-wider">
+                            <div className="btn-primary absolute top-2 right-2 text-[8px]">
                               {p.category}
                             </div>
                           </div>
@@ -905,7 +905,7 @@ export default function AffiliatePage() {
                           </div>
 
                           {/* Commission Rate & Payout info */}
-                          <div className="p-3 bg-primary/5 border border-primary/15 rounded-lg space-y-1.5">
+                          <div className="btn-primary p-3 bg-primary/5 border border-primary/15 space-y-1.5">
                             <div className="flex justify-between items-center text-[10px] font-bold text-primary">
                               <span>Komisi Anda (Net)</span>
                               <span>
@@ -1029,7 +1029,7 @@ export default function AffiliatePage() {
                 <button
                   type="submit"
                   disabled={isCreatingLink}
-                  className="px-6 py-3 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors disabled:opacity-50"
+                  className="btn-primary text-xs disabled:opacity-50"
                 >
                   {isCreatingLink ? 'Membuat...' : 'Terbitkan Tautan Kustom'}
                 </button>
@@ -1292,7 +1292,7 @@ export default function AffiliatePage() {
               }`}>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="px-2.5 py-1 bg-primary/10 border border-primary/25 text-primary text-[10px] font-bold rounded uppercase tracking-wider">
+                    <span className="btn-primary bg-primary/10 border border-primary/25 text-primary text-[10px]">
                       DIAMOND ACCESS
                     </span>
                     <span className="text-xs font-geist text-text-secondary">Level: Distributor</span>
@@ -1491,7 +1491,7 @@ export default function AffiliatePage() {
                     <button
                       type="button"
                       onClick={getGpsCoords}
-                      className="px-2 py-1 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-[9px] uppercase tracking-wider rounded transition-colors"
+                      className="btn-primary text-[9px]"
                     >
                       Dapatkan GPS Anda
                     </button>
@@ -1523,7 +1523,7 @@ export default function AffiliatePage() {
                 <button
                   type="submit"
                   disabled={isSavingCust}
-                  className="w-full py-4 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors disabled:opacity-50"
+                  className="btn-primary w-full text-xs disabled:opacity-50"
                 >
                   {isSavingCust ? 'Menyimpan...' : 'Simpan & Publikasikan Landing Page (+50 XP)'}
                 </button>

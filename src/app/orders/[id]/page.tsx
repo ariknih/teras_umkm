@@ -104,7 +104,7 @@ export default function OrderDetailPage({ params }: PageProps) {
         <p className="text-xs text-text-secondary max-w-xs mb-6">
           Maaf, data rincian pesanan dengan ID tersebut tidak ditemukan di sistem kami.
         </p>
-        <Link href="/orders" className="px-5 py-2.5 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors">
+        <Link href="/orders" className="btn-primary text-xs">
           Kembali ke Pesanan Saya
         </Link>
       </div>
@@ -225,7 +225,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                 return (
                   <div key={step.id || idx} className="relative">
                     {/* Circle Dot indicator */}
-                    <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-surface-dark" />
+                    <div className="btn-primary absolute -left-[21px] top-1.5 w-2.5 border-2 border-surface-dark" />
                     
                     <div className="flex justify-between items-start gap-3 flex-wrap">
                       <span className="text-xs font-bold text-text-primary">{step.status}</span>
@@ -355,7 +355,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                         <button
                           type="submit"
                           disabled={submittingReview}
-                          className="px-4 py-2 bg-primary hover:bg-primary-container text-surface-dark font-geist font-black text-[9px] uppercase tracking-wider rounded-lg transition-colors shadow disabled:opacity-50 cursor-pointer"
+                          className="btn-primary font-black text-[9px] shadow disabled:opacity-50 cursor-pointer"
                         >
                           {submittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
                         </button>

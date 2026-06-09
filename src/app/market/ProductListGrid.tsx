@@ -219,7 +219,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
             <button
               onClick={requestLocation}
               disabled={locStatus === 'loading'}
-              className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-surface-dark text-xs font-bold font-geist rounded uppercase tracking-wider transition-colors"
+              className="btn-primary disabled:opacity-50 text-xs"
             >
               {locStatus === 'loading' ? 'Mengakses...' : 'Akses Lokasi'}
             </button>
@@ -278,7 +278,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Filter</span>
               {activeFilterCount > 0 && (
-                <span className="flex items-center justify-center w-4 h-4 bg-primary text-surface-dark text-[9px] font-black rounded-full">
+                <span className="btn-primary flex items-center justify-center w-4 text-[9px] font-black">
                   {activeFilterCount}
                 </span>
               )}
@@ -430,7 +430,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
                 <div className="px-4 pb-4">
                   <button
                     onClick={() => setFilterOpen(false)}
-                    className="w-full py-2.5 bg-primary text-surface-dark text-xs font-bold font-geist rounded-lg hover:bg-primary/90 transition-colors uppercase tracking-wider"
+                    className="btn-primary w-full text-xs"
                   >
                     Terapkan Filter
                   </button>

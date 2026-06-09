@@ -1,0 +1,274 @@
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { getCurrentUser } from '../actions/auth'
+import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2 } from 'lucide-react'
+
+type TabType = 'profile' | 'security' | 'address' | 'notifications' | 'preferences'
+
+export default function SettingsPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<TabType>('profile')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const u = await getCurrentUser()
+        if (!u) {
+          router.push('/?login=true')
+          return
+        }
+        setUser(u)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [router])
+
+  const handleSave = () => {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 3000)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+          <span className="text-xs font-geist font-bold text-text-secondary tracking-widest uppercase">
+            Memuat Pengaturan...
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  const tabs = [
+    { id: 'profile', label: 'Profil & Biodata', icon: User },
+    { id: 'security', label: 'Akun & Keamanan', icon: Shield },
+    { id: 'address', label: 'Buku Alamat', icon: MapPin },
+    { id: 'notifications', label: 'Notifikasi', icon: Bell },
+    { id: 'preferences', label: 'Preferensi Tampilan', icon: Palette },
+  ]
+
+  return (
+    <div className="w-full max-w-[1280px] mx-auto px-4 md:px-10 py-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="font-sora text-2xl md:text-3xl font-bold text-foreground">Pengaturan Akun</h1>
+        <p className="text-sm text-foreground/70 mt-2">
+          Kelola preferensi, keamanan, dan informasi profil Anda.
+        </p>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-8 items-start">
+        {/* Sidebar */}
+        <div className="w-full md:w-64 shrink-0 flex flex-col gap-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as TabType)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius-brand)] text-sm font-medium transition-colors outline-none cursor-pointer ${
+                  isActive 
+                    ? 'bg-primary text-white shadow-md' 
+                    : 'text-foreground/70 hover:bg-surface-container hover:text-foreground'
+                }`}
+              >
+                <Icon size={18} className={isActive ? 'text-white' : 'text-foreground/50'} />
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 w-full bg-surface border border-border-subtle shadow-[var(--shadow-md)] rounded-[var(--radius-brand)] p-6 md:p-8 min-h-[500px]">
+          
+          {/* PROFILE TAB */}
+          {activeTab === 'profile' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h2 className="font-sora text-xl font-bold text-foreground mb-6">Profil & Biodata</h2>
+              
+              <div className="flex items-center gap-6 mb-8 pb-8 border-b border-border-subtle">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-container text-white flex items-center justify-center text-2xl font-extrabold shadow-lg">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div>
+                  <button className="px-4 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle rounded-full text-xs font-bold transition-colors cursor-pointer outline-none">
+                    Ubah Foto
+                  </button>
+                  <p className="text-[10px] text-foreground/50 mt-2">JPG, GIF atau PNG maksimal 2MB.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">Nama Lengkap</label>
+                  <input type="text" defaultValue={user?.name} className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">Email</label>
+                  <input type="email" defaultValue={user?.email} disabled className="w-full h-11 px-4 bg-surface-container/50 border border-border-subtle rounded-[var(--radius-brand)] text-sm text-foreground/50 cursor-not-allowed" />
+                  <p className="text-[10px] text-primary">Email tidak dapat diubah (Terverifikasi)</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">Nomor Telepon</label>
+                  <input type="tel" defaultValue="+62" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">Bio Singkat</label>
+                  <textarea rows={3} placeholder="Ceritakan sedikit tentang Anda..." className="w-full p-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECURITY TAB */}
+          {activeTab === 'security' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h2 className="font-sora text-xl font-bold text-foreground mb-6">Akun & Keamanan</h2>
+              
+              <div className="space-y-6">
+                <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)]">
+                  <h3 className="text-sm font-bold text-foreground mb-4">Ubah Kata Sandi</h3>
+                  <div className="space-y-4">
+                    <input type="password" placeholder="Kata Sandi Saat Ini" className="w-full max-w-md h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50" />
+                    <input type="password" placeholder="Kata Sandi Baru" className="w-full max-w-md h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50" />
+                    <input type="password" placeholder="Konfirmasi Kata Sandi Baru" className="w-full max-w-md h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50" />
+                  </div>
+                </div>
+
+                <div className="p-5 border border-red-500/20 bg-red-500/5 rounded-[var(--radius-brand)]">
+                  <h3 className="text-sm font-bold text-red-500 mb-2">Zona Berbahaya</h3>
+                  <p className="text-xs text-foreground/70 mb-4">Menghapus akun akan menghilangkan seluruh data Anda secara permanen. Tindakan ini tidak dapat dibatalkan.</p>
+                  <button className="px-4 py-2 bg-red-500 text-white rounded-[var(--radius-brand)] text-xs font-bold hover:bg-red-600 transition-colors cursor-pointer outline-none">
+                    Hapus Akun Saya
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ADDRESS TAB */}
+          {activeTab === 'address' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="font-sora text-xl font-bold text-foreground">Buku Alamat</h2>
+                <button className="px-4 py-2 bg-primary text-white rounded-full text-xs font-bold shadow-sm hover:bg-primary/90 transition-colors cursor-pointer outline-none">
+                  + Tambah Alamat Baru
+                </button>
+              </div>
+
+              <div className="p-5 border border-primary bg-primary/5 rounded-[var(--radius-brand)] relative">
+                <div className="absolute top-5 right-5 flex items-center gap-2">
+                  <span className="px-2 py-1 bg-primary text-white text-[9px] font-black uppercase tracking-wider rounded">Utama</span>
+                </div>
+                <h3 className="font-bold text-sm text-foreground mb-1">Rumah (GPS Aktif)</h3>
+                <p className="text-xs text-foreground/70 font-medium mb-2">{user?.name} — 081234567890</p>
+                <p className="text-xs text-foreground/70 leading-relaxed mb-4">
+                  Jl. Contoh Alamat No. 123, Kelurahan Teras, Kecamatan UMKM<br />
+                  Kota Jakarta Selatan, DKI Jakarta 12345
+                </p>
+                <div className="flex gap-3">
+                  <button className="text-xs font-bold text-primary hover:underline cursor-pointer outline-none">Ubah</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* NOTIFICATIONS TAB */}
+          {activeTab === 'notifications' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h2 className="font-sora text-xl font-bold text-foreground mb-6">Preferensi Notifikasi</h2>
+              
+              <div className="space-y-4">
+                {[
+                  { title: 'Promo & Penawaran Spesial', desc: 'Dapatkan informasi diskon, kupon, dan penawaran menarik lainnya.', defaultChecked: true },
+                  { title: 'Update Pesanan', desc: 'Notifikasi saat pesanan Anda diproses, dikirim, atau selesai.', defaultChecked: true },
+                  { title: 'Aktivitas Komunitas', desc: 'Pemberitahuan saat ada diskusi baru atau balasan di forum komunitas.', defaultChecked: false },
+                  { title: 'Buletin Teras UMKM', desc: 'Berita bulanan dan tips berbisnis dari Teras UMKM.', defaultChecked: false },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 border border-border-subtle rounded-[var(--radius-brand)]">
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">{item.title}</h4>
+                      <p className="text-xs text-foreground/70 mt-1">{item.desc}</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" defaultChecked={item.defaultChecked} className="sr-only peer" />
+                      <div className="w-11 h-6 bg-surface-container peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary border border-border-subtle"></div>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* PREFERENCES TAB */}
+          {activeTab === 'preferences' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <h2 className="font-sora text-xl font-bold text-foreground mb-6">Preferensi Tampilan</h2>
+              
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-foreground/70">Tema Visual</label>
+                  <div className="grid grid-cols-3 gap-4 max-w-md">
+                    <button className="p-4 border-2 border-primary bg-surface rounded-[var(--radius-brand)] flex flex-col items-center gap-2 outline-none cursor-pointer">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-white to-gray-200 border border-gray-300"></div>
+                      <span className="text-xs font-bold text-foreground">Terang</span>
+                    </button>
+                    <button className="p-4 border border-border-subtle bg-surface-container opacity-50 rounded-[var(--radius-brand)] flex flex-col items-center gap-2 outline-none cursor-not-allowed" disabled title="Sedang dikembangkan">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gray-800 to-black border border-gray-700"></div>
+                      <span className="text-xs font-bold text-foreground">Gelap</span>
+                    </button>
+                    <button className="p-4 border border-border-subtle bg-surface-container opacity-50 rounded-[var(--radius-brand)] flex flex-col items-center gap-2 outline-none cursor-not-allowed" disabled title="Sedang dikembangkan">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gray-400 to-gray-600 border border-gray-500"></div>
+                      <span className="text-xs font-bold text-foreground">Otomatis</span>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-foreground/50">Saat ini hanya tema Terang yang tersedia secara komprehensif.</p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-foreground/70">Bahasa</label>
+                  <select className="w-full max-w-md h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 appearance-none">
+                    <option value="id">Bahasa Indonesia</option>
+                    <option value="en">English (US)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Footer */}
+          <div className="mt-10 pt-6 border-t border-border-subtle flex items-center justify-between">
+            {saved ? (
+              <span className="text-xs font-bold text-[#2DB24A] flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 size={16} />
+                Pengaturan berhasil disimpan!
+              </span>
+            ) : (
+              <span />
+            )}
+            <button 
+              onClick={handleSave}
+              className="px-8 py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-full text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer outline-none"
+            >
+              Simpan Perubahan
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  )
+}

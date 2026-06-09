@@ -139,7 +139,7 @@ export default function ProductActions({ product, affCode }: ProductActionsProps
             <button
               id="btn-buy-now"
               onClick={handleBuyNow}
-              className="flex-1 py-4 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded shadow-lg transition-all duration-300"
+              className="btn-primary flex-1 text-xs shadow-lg"
             >
               Beli Sekarang
             </button>

@@ -103,8 +103,8 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             <div>
               {/* Affiliate notification banner if active */}
               {aff && (
-                <div className="mb-6 px-4 py-2.5 bg-primary/10 border border-primary/25 rounded text-[11px] text-primary font-medium flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <div className="btn-primary mb-6 bg-primary/10 border border-primary/25 text-[11px] text-primary flex items-center gap-2">
+                  <span className="btn-primary w-1.5 animate-pulse" />
                   Link Afiliasi Aktif (ID Pemasar: {aff})
                 </div>
               )}

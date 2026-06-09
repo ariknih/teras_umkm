@@ -804,7 +804,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
       <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark py-12 px-6">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.06)_0%,transparent_65%)] pointer-events-none z-0" />
         <div className="relative z-10 w-full max-w-md text-center border border-border-subtle bg-surface-dark glow-card p-8 rounded-lg">
-          <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
+          <div className="btn-primary w-16 bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" />
             </svg>
@@ -816,7 +816,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
           <Link
             id="merchant-login-btn"
             href="/auth"
-            className="w-full py-4 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors inline-block"
+            className="btn-primary w-full text-xs inline-block"
           >
             Masuk Ke Terminal
           </Link>
@@ -842,7 +842,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             <Link
               id="merchant-switch-account"
               href="/auth"
-              className="py-3.5 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+              className="btn-primary text-xs"
             >
               Ganti Akun Demo (Gunakan Merchant)
             </Link>
@@ -913,7 +913,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               Kelola katalog produk, edit rincian stok barang, dan periksa buku penjualan Anda.
             </p>
           </div>
-          <span className="px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-geist font-bold text-[#0F5132] uppercase tracking-wider shadow-sm">
+          <span className="btn-primary bg-primary/10 border border-primary/20 text-[10px] text-[#0F5132] shadow-sm">
             Merchant: {user.name}
           </span>
         </div>
@@ -1131,7 +1131,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           setAiKeywords(editingProduct?.title || '')
                           setShowAiModal(true)
                         }}
-                        className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors"
+                        className="btn-primary bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] flex items-center gap-1 cursor-pointer"
                       >
                         <Sparkles size={11} className="animate-pulse" />
                         Generate dengan AI
@@ -1184,7 +1184,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     id="edit-submit"
                     type="submit"
                     disabled={isPending}
-                    className="px-6 h-11 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-lg disabled:opacity-50"
+                    className="btn-primary text-xs shadow-lg disabled:opacity-50"
                   >
                     {isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>
@@ -1278,7 +1278,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </p>
                 <button
                   onClick={() => setActiveTab('add')}
-                  className="px-5 py-2.5 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+                  className="btn-primary text-xs"
                 >
                   Tambah Produk Baru
                 </button>
@@ -1304,7 +1304,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           {p.title}
                         </h4>
                         <div className="flex gap-2 items-center mb-1">
-                          <span className="px-1.5 py-0.2 bg-primary/10 border border-primary/25 rounded text-[8px] font-bold text-primary font-geist uppercase tracking-wider">
+                          <span className="btn-primary bg-primary/10 border border-primary/25 text-[8px] text-primary">
                             {p.category}
                           </span>
                           <span className={`text-[10px] font-semibold ${p.stock <= 0 ? 'text-red-400' : 'text-text-secondary'}`}>
@@ -1448,7 +1448,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       setAiKeywords((document.getElementById('create-title') as HTMLInputElement)?.value || '')
                       setShowAiModal(true)
                     }}
-                    className="px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer transition-colors"
+                    className="btn-primary bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles size={11} className="animate-pulse" />
                     Generate dengan AI
@@ -1500,7 +1500,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 id="create-submit"
                 type="submit"
                 disabled={isPending}
-                className="w-full py-4 mt-2 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-lg disabled:opacity-50"
+                className="btn-primary w-full mt-2 text-xs shadow-lg disabled:opacity-50"
               >
                 {isPending ? 'Menerbitkan...' : 'Terbitkan Produk Sekarang'}
               </button>
@@ -1674,7 +1674,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">Revenue Hari Ini</span>
                   <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenueToday ?? 0).toLocaleString('id-ID')}</h2>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <DollarSign size={18} />
                 </div>
               </div>
@@ -1684,7 +1684,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">7 Hari Terakhir</span>
                   <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenue7Days ?? 0).toLocaleString('id-ID')}</h2>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <TrendingUp size={18} />
                 </div>
               </div>
@@ -1694,7 +1694,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">30 Hari Terakhir</span>
                   <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenue30Days ?? 0).toLocaleString('id-ID')}</h2>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <Calendar size={18} />
                 </div>
               </div>
@@ -1704,7 +1704,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">Total Penjualan</span>
                   <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.totalRevenue ?? 0).toLocaleString('id-ID')}</h2>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <Award size={18} />
                 </div>
               </div>
@@ -1969,7 +1969,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               <button
                 type="button"
                 onClick={handleSaveStorefront}
-                className="w-full bg-primary hover:bg-primary-container text-surface-dark py-3 rounded-lg font-bold text-xs uppercase tracking-wider active:scale-95 transition-all shadow-md"
+                className="btn-primary w-full text-xs active:scale-95 shadow-md"
               >
                 Simpan Perubahan
               </button>
@@ -2203,7 +2203,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   return (
                     <div className="bg-[#2DB24A]/5 border border-[#2DB24A]/10 rounded-2xl p-5 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                        <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                           <Globe size={18} />
                         </div>
                         <div>
@@ -2218,7 +2218,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           setCustomDomainInput(config.customDomain)
                           setShowDomainModal(true)
                         }}
-                        className="px-4 py-2 border border-primary text-primary hover:bg-primary/5 font-bold rounded-xl transition-all cursor-pointer outline-none"
+                        className="btn-primary border border-primary text-primary hover:bg-primary/5 cursor-pointer outline-none"
                       >
                         Kelola Domain
                       </button>
@@ -2572,7 +2572,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         } catch (e) {}
                         setShowDomainModal(true)
                       }}
-                      className="h-10 px-4 border border-[#2DB24A] text-[#2DB24A] hover:bg-primary/5 font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer outline-none"
+                      className="btn-primary border border-[#2DB24A] text-[#2DB24A] hover:bg-primary/5 text-xs flex items-center gap-1.5 cursor-pointer outline-none"
                     >
                       <Globe size={14} />
                       Hubungkan Domain
@@ -2583,7 +2583,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         setCreatePageTemplate('template1')
                         setShowCreateModal(true)
                       }}
-                      className="h-10 px-4 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer outline-none shadow-sm"
+                      className="btn-primary text-xs flex items-center gap-1.5 cursor-pointer outline-none shadow-sm"
                     >
                       <Plus size={14} />
                       Buat Halaman Baru
@@ -2641,7 +2641,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                     <div>
                                       <p className="font-bold text-text-primary">{page.name}</p>
                                       {page.id === 'page-main' && (
-                                        <span className="text-[8px] bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded-full font-black uppercase tracking-wider mt-1 inline-block">Halaman Utama</span>
+                                        <span className="btn-primary text-[8px] bg-primary/10 border border-primary/20 text-primary font-black mt-1 inline-block">Halaman Utama</span>
                                       )}
                                     </div>
                                   </div>
@@ -2674,7 +2674,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                     </button>
                                     <button
                                       onClick={() => router.push(`/merchant/builder/${page.id}`)}
-                                      className="px-2.5 py-1.5 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl text-[10px] font-bold uppercase tracking-wider text-primary transition-all cursor-pointer"
+                                      className="btn-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[10px] text-primary cursor-pointer"
                                       title="Buka Builder Visual"
                                     >
                                       Builder
@@ -2825,7 +2825,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               <div className="w-1/2 space-y-1">
                                 <div className="h-2 bg-slate-100 rounded"></div>
                                 <div className="h-1.5 bg-slate-100 rounded w-5/6"></div>
-                                <div className="h-3 bg-primary/20 rounded"></div>
+                                <div className="btn-primary bg-primary/20"></div>
                               </div>
                             </div>
                             <div className="h-6 bg-slate-50 rounded flex items-center justify-center text-[7px] text-text-secondary">Testimonial</div>
@@ -3040,7 +3040,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-gray-900 flex flex-col justify-end p-6 text-white relative">
                     {storefrontTemplate === 'noir' && (
-                      <span className="absolute top-4 right-4 bg-primary text-surface-dark text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
+                      <span className="btn-primary absolute top-4 right-4 text-[8px]">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
                       <h4 className="font-bold text-sm">Minimal Noir</h4>
@@ -3058,7 +3058,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-surface-container flex flex-col justify-end p-6 text-text-primary relative">
                     {storefrontTemplate === 'clean' && (
-                      <span className="absolute top-4 right-4 bg-primary text-surface-dark text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
+                      <span className="btn-primary absolute top-4 right-4 text-[8px]">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
                       <h4 className="font-bold text-sm">Clean Professional</h4>
@@ -3076,7 +3076,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-white flex flex-col justify-end p-6 text-text-primary relative">
                     {storefrontTemplate === 'gold' && (
-                      <span className="absolute top-4 right-4 bg-primary text-surface-dark text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
+                      <span className="btn-primary absolute top-4 right-4 text-[8px]">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
                       <h4 className="font-bold text-sm">Modern Gold</h4>
@@ -3094,7 +3094,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-zinc-800 flex flex-col justify-end p-6 text-white relative">
                     {storefrontTemplate === 'studio' && (
-                      <span className="absolute top-4 right-4 bg-primary text-surface-dark text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
+                      <span className="btn-primary absolute top-4 right-4 text-[8px]">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
                       <h4 className="font-bold text-sm">Studio Design</h4>
@@ -3237,7 +3237,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   type="button"
                   onClick={handleGenerateAiText}
                   disabled={generatingAiText}
-                  className="flex-1 py-3 bg-primary hover:bg-primary-container text-surface-dark font-bold rounded uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                  className="btn-primary flex-1 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
                 >
                   {generatingAiText ? 'Generating...' : 'Generate Deskripsi'}
                 </button>

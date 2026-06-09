@@ -20,7 +20,7 @@ export default async function AcademyPage() {
       <div className="relative z-10 max-w-[1200px] mx-auto">
         {/* Header */}
         <div className="mb-16 text-center max-w-2xl mx-auto">
-          <span className="text-[10px] font-geist font-bold text-primary tracking-[0.2em] mb-4 uppercase bg-primary/10 border border-primary/20 px-3 py-1 rounded inline-block">
+          <span className="btn-primary text-[10px] text-primary tracking-[0.2em] mb-4 bg-primary/10 border border-primary/20 inline-block">
             Teras Premium LMS Academy
           </span>
           <h1 className="font-sora text-3xl md:text-5xl font-bold text-text-primary mb-4">
@@ -79,7 +79,7 @@ export default async function AcademyPage() {
                         </div>
                         <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-primary transition-all duration-500"
+                            className="btn-primary duration-500"
                             style={{ width: `${percent}%` }}
                           />
                         </div>
@@ -114,7 +114,7 @@ export default async function AcademyPage() {
                   <Link
                     id={`btn-course-${course.id}`}
                     href={`/academy/course/${course.id}`}
-                    className="w-full py-3 bg-[#E8F5E9] hover:bg-[#E8F5E9]/80 text-[#0F5132] font-geist font-bold text-xs uppercase tracking-wider rounded transition-all duration-300 flex items-center justify-center gap-2"
+                    className="w-full btn-primary flex items-center justify-center gap-2"
                   >
                     Mulai Belajar
                     <svg

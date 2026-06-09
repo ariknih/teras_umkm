@@ -318,7 +318,7 @@ export default function AdminDashboardClient({
         <div>
           {/* Sidebar Brand Logo */}
           <div className="h-[74px] border-b border-[#e2e8f0] flex items-center px-6 gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0F5132] to-[#2DB24A] flex items-center justify-center shadow-md">
+            <div className="w-8 h-8 rounded-[var(--radius-brand)] bg-gradient-to-br from-[#0F5132] to-[#2DB24A] flex items-center justify-center shadow-md">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white stroke-current" strokeWidth="2.5">
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -345,7 +345,7 @@ export default function AdminDashboardClient({
                 <button
                   key={item.id}
                   onClick={() => { setActiveTab(item.id as TabType); setSelectedTx(null); setIsSidebarOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                  className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-[var(--radius-brand)] text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
                     isActive 
                       ? 'bg-[#E8F5E9] text-[#0F5132] border-l-4 border-[#0F5132] shadow-sm' 
                       : 'text-[#475569] hover:text-[#0f172a] hover:bg-slate-50'
@@ -375,7 +375,7 @@ export default function AdminDashboardClient({
           <button
             onClick={handleLogout}
             title="Log Out"
-            className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer transition-colors border border-red-100"
+            className="p-2 rounded-[var(--radius-brand)] bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer transition-colors border border-red-100"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
@@ -391,7 +391,7 @@ export default function AdminDashboardClient({
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 -ml-2 rounded-lg hover:bg-slate-50 lg:hidden text-[#475569] focus:outline-none cursor-pointer"
+              className="p-2 -ml-2 rounded-[var(--radius-brand)] hover:bg-slate-50 lg:hidden text-[#475569] focus:outline-none cursor-pointer"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 6h16M4 12h16M4 18h16" />
@@ -412,7 +412,7 @@ export default function AdminDashboardClient({
               <span className="w-1.5 h-1.5 bg-[#0F5132] rounded-full animate-pulse inline-block" />
               Realtime Sandbox
             </span>
-            <Link href="/" className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 rounded-lg transition-colors border border-[#e2e8f0] uppercase tracking-wider shadow-sm">
+            <Link href="/" className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 rounded-[var(--radius-brand)] transition-colors border border-[#e2e8f0] uppercase tracking-wider shadow-sm">
               Kembali ke Landing
             </Link>
           </div>
@@ -423,12 +423,12 @@ export default function AdminDashboardClient({
           
           {/* Notifications */}
           {actionError && (
-            <div className="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-medium">
+            <div className="mb-6 p-4 rounded-[var(--radius-brand)] bg-red-50 border border-red-200 text-xs text-red-700 font-medium">
               ⚠️ {actionError}
             </div>
           )}
           {actionSuccess && (
-            <div className="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-xs text-green-700 font-medium">
+            <div className="mb-6 p-4 rounded-[var(--radius-brand)] bg-green-50 border border-green-200 text-xs text-green-700 font-medium">
               ✅ {actionSuccess}
             </div>
           )}
@@ -444,7 +444,7 @@ export default function AdminDashboardClient({
                   { label: 'Total Produk & Jasa', value: totalProducts, sub: 'Aktif di catalog', color: 'text-green-600' },
                   { label: 'Postingan Komunitas', value: totalPosts, sub: 'Artikel & tanya jawab', color: 'text-purple-600' }
                 ].map((stat, i) => (
-                  <div key={i} className="p-6 bg-white border border-[#e2e8f0] rounded-xl hover:shadow-md transition-all duration-300">
+                  <div key={i} className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-md transition-all duration-300">
                     <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">{stat.label}</p>
                     <p className={`text-2xl font-sora font-extrabold ${stat.color} tracking-tight`}>{stat.value}</p>
                     <p className="text-[10px] text-[#64748b] mt-1.5">{stat.sub}</p>
@@ -454,7 +454,7 @@ export default function AdminDashboardClient({
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* User Distribution */}
-                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-xl p-6">
+                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6">
                   <h3 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">Distribusi Pengguna</h3>
                   <div className="grid grid-cols-3 gap-4">
                     {[
@@ -464,7 +464,7 @@ export default function AdminDashboardClient({
                     ].map((item, idx) => {
                       const pct = Math.round((item.count / totalUsers) * 100)
                       return (
-                        <div key={idx} className="p-4 bg-[#f8f9fa] rounded-lg border border-[#e2e8f0]">
+                        <div key={idx} className="p-4 bg-[#f8f9fa] rounded-[var(--radius-brand)] border border-[#e2e8f0]">
                           <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">{item.role}</p>
                           <p className="text-xl font-extrabold text-[#0f172a] mt-1">{item.count} <span className="text-xs text-[#64748b] font-normal">({pct}%)</span></p>
                           <p className="text-[10px] text-[#64748b] mt-0.5 leading-none">{item.desc}</p>
@@ -478,7 +478,7 @@ export default function AdminDashboardClient({
                 </div>
 
                 {/* Top categories */}
-                <div className="bg-white border border-[#e2e8f0] rounded-xl p-6">
+                <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6">
                   <h3 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">Top Kategori</h3>
                   <div className="space-y-3.5">
                     {Array.from(new Set(products.map(p => p.category))).map(cat => {
@@ -501,7 +501,7 @@ export default function AdminDashboardClient({
               </div>
 
               {/* Latest Transactions Overview */}
-              <div className="bg-white border border-[#e2e8f0] rounded-xl p-6">
+              <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6">
                 <div className="flex justify-between items-center mb-4 border-b border-[#e2e8f0] pb-3">
                   <h3 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider text-[#0F5132]">5 Transaksi Terkini</h3>
                   <button onClick={() => setActiveTab('transactions')} className="text-[10px] text-[#0F5132] hover:underline font-bold uppercase tracking-wider">Semua Transaksi →</button>
@@ -548,18 +548,18 @@ export default function AdminDashboardClient({
           {activeTab === 'users' && (
             <div className="space-y-6">
               {/* Filter controls */}
-              <div className="flex flex-col md:flex-row gap-4 bg-white border border-[#e2e8f0] p-4 rounded-xl shadow-sm">
+              <div className="flex flex-col md:flex-row gap-4 bg-white border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)] shadow-sm">
                 <input
                   type="text"
                   placeholder="Cari user berdasarkan nama atau email..."
                   value={userSearch}
                   onChange={e => setUserSearch(e.target.value)}
-                  className="flex-grow bg-white border border-[#cbd5e1] rounded-lg px-4 py-2.5 text-xs text-slate-800 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                  className="flex-grow bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                 />
                 <select
                   value={userRoleFilter}
                   onChange={e => setUserRoleFilter(e.target.value)}
-                  className="bg-white border border-[#cbd5e1] rounded-lg px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
+                  className="bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
                 >
                   <option value="ALL">Semua Role</option>
                   <option value="ADMIN">ADMIN</option>
@@ -571,7 +571,7 @@ export default function AdminDashboardClient({
               </div>
 
               {/* Users table */}
-              <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-x-auto shadow-sm">
+              <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-x-auto shadow-sm">
                 <table className="w-full min-w-[800px] text-xs text-left">
                   <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
                     <tr>
@@ -626,7 +626,7 @@ export default function AdminDashboardClient({
               {/* Edit User Modal */}
               {editUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4">
-                  <div className="bg-white border border-[#0F5132]/25 rounded-xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+                  <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">Edit Pengguna</h3>
                       <button onClick={() => setEditUser(null)} className="text-slate-400 hover:text-slate-600">✕</button>
@@ -639,7 +639,7 @@ export default function AdminDashboardClient({
                           type="text"
                           disabled
                           value={editUser.name}
-                          className="w-full bg-[#f8f9fa] border border-[#cbd5e1] rounded-lg px-3.5 py-2.5 text-slate-500 outline-none"
+                          className="w-full bg-[#f8f9fa] border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-500 outline-none"
                         />
                       </div>
                       
@@ -649,7 +649,7 @@ export default function AdminDashboardClient({
                           type="text"
                           disabled
                           value={editUser.email}
-                          className="w-full bg-[#f8f9fa] border border-[#cbd5e1] rounded-lg px-3.5 py-2.5 text-slate-500 outline-none"
+                          className="w-full bg-[#f8f9fa] border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-500 outline-none"
                         />
                       </div>
 
@@ -659,7 +659,7 @@ export default function AdminDashboardClient({
                           <select
                             value={editUser.role}
                             onChange={e => setEditUser({ ...editUser, role: e.target.value })}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                           >
                             <option value="ADMIN">ADMIN</option>
                             <option value="MERCHANT">MERCHANT</option>
@@ -675,7 +675,7 @@ export default function AdminDashboardClient({
                             type="number"
                             value={editUser.level}
                             onChange={e => setEditUser({ ...editUser, level: Number(e.target.value), xp: Number(e.target.value) * 100 })}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                           />
                         </div>
                       </div>
@@ -686,7 +686,7 @@ export default function AdminDashboardClient({
                           <select
                             value={editUser.membershipLevel}
                             onChange={e => setEditUser({ ...editUser, membershipLevel: e.target.value })}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2 text-slate-855 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-855 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                           >
                             <option value="Reseller">Reseller</option>
                             <option value="Agen">Agen</option>
@@ -699,7 +699,7 @@ export default function AdminDashboardClient({
                           <select
                             value={editUser.membershipAccess}
                             onChange={e => setEditUser({ ...editUser, membershipAccess: e.target.value })}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2 text-slate-855 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-855 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                           >
                             <option value="Gold">Gold</option>
                             <option value="Platinum">Platinum</option>
@@ -712,14 +712,14 @@ export default function AdminDashboardClient({
                         <button
                           type="button"
                           onClick={() => setEditUser(null)}
-                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-lg uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
@@ -735,18 +735,18 @@ export default function AdminDashboardClient({
           {activeTab === 'products' && (
             <div className="space-y-6">
               {/* Product catalog filters */}
-              <div className="flex flex-col md:flex-row gap-4 bg-white border border-[#e2e8f0] p-4 rounded-xl shadow-sm">
+              <div className="flex flex-col md:flex-row gap-4 bg-white border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)] shadow-sm">
                 <input
                   type="text"
                   placeholder="Cari produk berdasarkan nama / SKU..."
                   value={productSearch}
                   onChange={e => setProductSearch(e.target.value)}
-                  className="flex-grow bg-white border border-[#cbd5e1] rounded-lg px-4 py-2.5 text-xs text-slate-800 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                  className="flex-grow bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                 />
                 <select
                   value={productCatFilter}
                   onChange={e => setProductCatFilter(e.target.value)}
-                  className="bg-white border border-[#cbd5e1] rounded-lg px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
+                  className="bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
                 >
                   <option value="ALL">Semua Tipe</option>
                   <option value="PRODUCT">PRODUCT (Fisik / Digital)</option>
@@ -755,7 +755,7 @@ export default function AdminDashboardClient({
               </div>
 
               {/* Products table */}
-              <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-x-auto shadow-sm">
+              <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-x-auto shadow-sm">
                 <table className="w-full min-w-[800px] text-xs text-left">
                   <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
                     <tr>
@@ -801,14 +801,14 @@ export default function AdminDashboardClient({
           {activeTab === 'academy' && (
             <div className="space-y-8">
               {/* Header Action */}
-              <div className="flex justify-between items-center bg-white border border-[#e2e8f0] p-5 rounded-xl shadow-sm">
+              <div className="flex justify-between items-center bg-white border border-[#e2e8f0] p-5 rounded-[var(--radius-brand)] shadow-sm">
                 <div>
                   <h3 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Kurikulum Akademi Premium</h3>
                   <p className="text-[11px] text-[#64748b]">Manajemen kelas, edit silabus, tambahkan bab/pelajaran materi pembelajaran digital.</p>
                 </div>
                 <button
                   onClick={() => { resetCourseForm(); setCourseModal({ open: true, mode: 'add' }); }}
-                  className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold uppercase text-xs tracking-wider rounded-lg transition-colors cursor-pointer shadow-md"
+                  className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold uppercase text-xs tracking-wider rounded-[var(--radius-brand)] transition-colors cursor-pointer shadow-md"
                 >
                   + Tambah Kelas Baru
                 </button>
@@ -817,9 +817,9 @@ export default function AdminDashboardClient({
               {/* Courses Grid */}
               <div className="grid grid-cols-1 gap-6">
                 {courses.map(course => (
-                  <div key={course.id} className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden hover:border-[#0F5132]/20 transition-all duration-300 shadow-sm">
+                  <div key={course.id} className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-hidden hover:border-[#0F5132]/20 transition-all duration-300 shadow-sm">
                     <div className="p-6 md:flex gap-6 border-b border-[#e2e8f0]">
-                      <div className="w-full md:w-[220px] aspect-[16/9] md:aspect-auto rounded-lg bg-slate-50 overflow-hidden border border-[#cbd5e1] flex-shrink-0 flex items-center justify-center">
+                      <div className="w-full md:w-[220px] aspect-[16/9] md:aspect-auto rounded-[var(--radius-brand)] bg-slate-50 overflow-hidden border border-[#cbd5e1] flex-shrink-0 flex items-center justify-center">
                         {course.coverImage ? (
                           <img src={course.coverImage} alt={course.title} className="object-cover w-full h-full" />
                         ) : (
@@ -866,7 +866,7 @@ export default function AdminDashboardClient({
                       {course.lessons && course.lessons.length > 0 ? (
                         <div className="space-y-2">
                           {course.lessons.map((lesson: any) => (
-                            <div key={lesson.id} className="flex justify-between items-center p-3.5 bg-white border border-[#e2e8f0] rounded-lg hover:border-[#cbd5e1] transition-colors shadow-sm">
+                            <div key={lesson.id} className="flex justify-between items-center p-3.5 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:border-[#cbd5e1] transition-colors shadow-sm">
                               <div>
                                 <div className="flex items-center gap-2">
                                   <span className="font-mono text-[9px] font-bold text-[#0F5132] bg-[#E8F5E9] px-1.5 py-0.2 border border-[#0F5132]/10 rounded">
@@ -909,7 +909,7 @@ export default function AdminDashboardClient({
               {/* Course Create/Edit Modal */}
               {courseModal.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4">
-                  <div className="bg-white border border-[#0F5132]/25 rounded-xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+                  <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
                         {courseModal.mode === 'add' ? 'Tambah Kelas Baru' : 'Edit Kelas'}
@@ -926,7 +926,7 @@ export default function AdminDashboardClient({
                           value={courseTitle}
                           onChange={e => setCourseTitle(e.target.value)}
                           placeholder="e.g. Mastering Luxury Commerce"
-                          className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                         />
                       </div>
 
@@ -938,7 +938,7 @@ export default function AdminDashboardClient({
                           value={courseDesc}
                           onChange={e => setCourseDesc(e.target.value)}
                           placeholder="Tulis ringkasan kurikulum..."
-                          className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                         />
                       </div>
 
@@ -948,7 +948,7 @@ export default function AdminDashboardClient({
                           <select
                             value={courseAccess}
                             onChange={e => setCourseAccess(e.target.value)}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                           >
                             <option value="Gold">Gold</option>
                             <option value="Platinum">Platinum</option>
@@ -963,7 +963,7 @@ export default function AdminDashboardClient({
                             value={courseCover}
                             onChange={e => setCourseCover(e.target.value)}
                             placeholder="https://unsplash..."
-                            className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                           />
                         </div>
                       </div>
@@ -972,14 +972,14 @@ export default function AdminDashboardClient({
                         <button
                           type="button"
                           onClick={() => setCourseModal({ open: false, mode: 'add' })}
-                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-850 font-bold rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-850 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
@@ -992,7 +992,7 @@ export default function AdminDashboardClient({
               {/* Lesson Create/Edit Modal */}
               {lessonModal.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4">
-                  <div className="bg-white border border-[#0F5132]/25 rounded-xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+                  <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                       <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
                         {lessonModal.mode === 'add' ? 'Tambah Pelajaran Baru' : 'Edit Pelajaran'}
@@ -1009,7 +1009,7 @@ export default function AdminDashboardClient({
                           value={lessonTitle}
                           onChange={e => setLessonTitle(e.target.value)}
                           placeholder="e.g. 1. Dasar Pembuatan Brand"
-                          className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                         />
                       </div>
 
@@ -1021,7 +1021,7 @@ export default function AdminDashboardClient({
                           value={lessonContent}
                           onChange={e => setLessonContent(e.target.value)}
                           placeholder="Tulis narasi pembelajaran materi secara rinci..."
-                          className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                         />
                       </div>
 
@@ -1032,7 +1032,7 @@ export default function AdminDashboardClient({
                           value={lessonVideo}
                           onChange={e => setLessonVideo(e.target.value)}
                           placeholder="https://www.w3schools.com/html/mov_bbb.mp4"
-                          className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                         />
                       </div>
 
@@ -1044,7 +1044,7 @@ export default function AdminDashboardClient({
                             required
                             value={lessonDuration}
                             onChange={e => setLessonDuration(e.target.value)}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                           />
                         </div>
 
@@ -1055,7 +1055,7 @@ export default function AdminDashboardClient({
                             required
                             value={lessonOrderIndex}
                             onChange={e => setLessonOrderIndex(e.target.value)}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-lg px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
                           />
                         </div>
                       </div>
@@ -1064,14 +1064,14 @@ export default function AdminDashboardClient({
                         <button
                           type="button"
                           onClick={() => setLessonModal({ open: false, mode: 'add', courseId: '' })}
-                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-850 font-bold rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-850 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
@@ -1086,7 +1086,7 @@ export default function AdminDashboardClient({
           {/* ─── TAB 5: DAFTAR KOMUNITAS ───────────────────────────────────── */}
           {activeTab === 'community' && (
             <div className="space-y-6">
-              <div className="bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm">
+              <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-hidden shadow-sm">
                 <div className="px-6 py-4 border-b border-[#e2e8f0] bg-[#f8f9fa]">
                   <h3 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Aktivitas Forum Komunitas</h3>
                   <p className="text-[11px] text-[#64748b]">Daftar postingan diskusi bisnis UMKM dan komentar terhubung.</p>
@@ -1109,7 +1109,7 @@ export default function AdminDashboardClient({
                           </span>
                         </div>
                         <h4 className="font-sora text-sm font-bold text-slate-850 mt-3">{post.title}</h4>
-                        <p className="text-xs text-[#475569] leading-relaxed mt-2 bg-[#f8f9fa] p-3 rounded-lg border border-[#e2e8f0]">{post.content}</p>
+                        <p className="text-xs text-[#475569] leading-relaxed mt-2 bg-[#f8f9fa] p-3 rounded-[var(--radius-brand)] border border-[#e2e8f0]">{post.content}</p>
                       </div>
                     )
                   })}
@@ -1122,7 +1122,7 @@ export default function AdminDashboardClient({
           {activeTab === 'transactions' && (
             <div className="space-y-6">
               {/* Search Order Input */}
-              <div className="bg-white border border-[#e2e8f0] p-5 rounded-xl shadow-sm flex flex-col md:flex-row gap-4">
+              <div className="bg-white border border-[#e2e8f0] p-5 rounded-[var(--radius-brand)] shadow-sm flex flex-col md:flex-row gap-4">
                 <div className="flex-grow">
                   <h3 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider mb-1">Pelacakan Transaksi Jual Beli</h3>
                   <p className="text-[11px] text-[#64748b] mb-3">Masukkan ID Transaksi (Order ID) untuk melakukan trace pembagian laba, komisi afliasi multi-level, cashback, dan points.</p>
@@ -1131,7 +1131,7 @@ export default function AdminDashboardClient({
                     placeholder="Masukkan ID Transaksi, e.g. order-1779515200000"
                     value={txSearch}
                     onChange={e => setTxSearch(e.target.value)}
-                    className="w-full bg-white border border-[#cbd5e1] rounded-lg px-4 py-2.5 text-xs text-slate-850 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132] font-mono"
+                    className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-850 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132] font-mono"
                   />
                 </div>
               </div>
@@ -1139,7 +1139,7 @@ export default function AdminDashboardClient({
               {/* Transactions grid & Detail */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* List of Orders */}
-                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm h-[500px] overflow-y-auto">
+                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-hidden shadow-sm h-[500px] overflow-y-auto">
                   <div className="px-5 py-3.5 border-b border-[#e2e8f0] bg-[#f8f9fa] sticky top-0 z-10 flex justify-between items-center">
                     <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Daftar Transaksi Sandbox</h4>
                     <span className="text-[10px] font-mono text-[#64748b]">{searchedOrders.length} transaksi</span>
@@ -1176,7 +1176,7 @@ export default function AdminDashboardClient({
                 </div>
 
                 {/* Audit details panel */}
-                <div className="bg-white border border-[#e2e8f0] rounded-xl p-6 shadow-sm">
+                <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6 shadow-sm">
                   {selectedTx ? (
                     <div className="space-y-6 text-xs">
                       <div className="border-b border-[#e2e8f0] pb-3 text-center">
@@ -1187,7 +1187,7 @@ export default function AdminDashboardClient({
                       {/* Summary item */}
                       <div>
                         <span className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Item Pembelian:</span>
-                        <div className="mt-2 space-y-1.5 bg-[#f8f9fa] p-2.5 rounded-lg border border-[#e2e8f0]">
+                        <div className="mt-2 space-y-1.5 bg-[#f8f9fa] p-2.5 rounded-[var(--radius-brand)] border border-[#e2e8f0]">
                           {selectedTx.items?.map((item: any, i: number) => (
                             <div key={i} className="flex justify-between leading-tight text-[11px]">
                               <span className="text-slate-800 truncate max-w-[140px] font-medium">{item.productTitle}</span>
@@ -1237,7 +1237,7 @@ export default function AdminDashboardClient({
                       </div>
 
                       {/* Audit verification stamp */}
-                      <div className="p-3 bg-gradient-to-br from-[#E8F5E9] to-white border border-[#0F5132]/20 rounded-lg text-center">
+                      <div className="p-3 bg-gradient-to-br from-[#E8F5E9] to-white border border-[#0F5132]/20 rounded-[var(--radius-brand)] text-center">
                         <span className="text-[9px] font-bold text-[#0F5132] uppercase tracking-widest block">Midtrans / Wallet Secured</span>
                         <span className="text-[9px] text-[#64748b] block mt-0.5 font-mono">Audit Stamp Hash: Verified Ledger 2026</span>
                       </div>
@@ -1259,7 +1259,7 @@ export default function AdminDashboardClient({
           {activeTab === 'certificates' && (
             <div className="space-y-6">
               {/* User Selector */}
-              <div className="bg-white border border-[#e2e8f0] p-5 rounded-xl shadow-sm flex flex-col md:flex-row gap-4">
+              <div className="bg-white border border-[#e2e8f0] p-5 rounded-[var(--radius-brand)] shadow-sm flex flex-col md:flex-row gap-4">
                 <div className="flex-grow">
                   <h3 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider mb-1">Generate Sertifikat Level Up</h3>
                   <p className="text-[11px] text-[#64748b] mb-3">Pilih user bisnis yang telah mencapai minimal Level 3 untuk mengunduh / generate sertifikat resmi mereka secara otomatis.</p>
@@ -1268,14 +1268,14 @@ export default function AdminDashboardClient({
                     placeholder="Cari user (e.g. Kala Sourdough, Herba, dll)..."
                     value={certUserSearch}
                     onChange={e => setCertUserSearch(e.target.value)}
-                    className="w-full bg-white border border-[#cbd5e1] rounded-lg px-4 py-2.5 text-xs text-slate-850 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132]"
+                    className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-850 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Users List for Cert */}
-                <div className="lg:col-span-1 bg-white border border-[#e2e8f0] rounded-xl overflow-hidden shadow-sm h-[420px] overflow-y-auto">
+                <div className="lg:col-span-1 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-hidden shadow-sm h-[420px] overflow-y-auto">
                   <div className="px-4 py-3 bg-[#f8f9fa] border-b border-[#e2e8f0] text-[10px] font-bold text-[#64748b] uppercase tracking-wider sticky top-0 z-10">
                     Pengguna Level 3+ Terkualifikasi
                   </div>
@@ -1303,10 +1303,10 @@ export default function AdminDashboardClient({
                 </div>
 
                 {/* Live Certificate Design Rendering */}
-                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-xl p-6 shadow-sm flex flex-col items-center">
+                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6 shadow-sm flex flex-col items-center">
                   {selectedCertUser ? (
                     <div className="w-full flex flex-col items-center">
-                      <div className="w-full border-4 border-double border-[#0F5132]/60 bg-black text-[#e2e8f0] rounded-xl p-8 shadow-2xl max-w-lg aspect-[1.414/1] relative overflow-hidden flex flex-col justify-between items-center text-center">
+                      <div className="w-full border-4 border-double border-[#0F5132]/60 bg-black text-[#e2e8f0] rounded-[var(--radius-brand)] p-8 shadow-2xl max-w-lg aspect-[1.414/1] relative overflow-hidden flex flex-col justify-between items-center text-center">
                         {/* Gold Filigree Ornaments */}
                         <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-[#0F5132]/40 pointer-events-none" />
                         <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-[#0F5132]/40 pointer-events-none" />
@@ -1345,7 +1345,7 @@ export default function AdminDashboardClient({
                       </div>
                       <button
                         onClick={() => alert(`Unduhan Sertifikat untuk "${selectedCertUser.name}" berhasil diproses!`)}
-                        className="mt-6 px-6 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white text-xs font-bold uppercase tracking-widest rounded-lg shadow-lg cursor-pointer transition-colors"
+                        className="mt-6 px-6 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white text-xs font-bold uppercase tracking-widest rounded-[var(--radius-brand)] shadow-lg cursor-pointer transition-colors"
                       >
                         Cetak / Download PDF Sertifikat
                       </button>

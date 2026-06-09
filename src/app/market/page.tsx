@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getProducts } from "../actions/products";
 import ProductListGrid from "./ProductListGrid";
 import { Metadata } from "next";
+import Script from "next/script";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,8 @@ export default async function MarketPage({ searchParams }: PageProps) {
   return (
     <div className="relative min-h-screen bg-[#F5F7FA] pb-24">
       {/* Structured JSON-LD Schema for Marketplace */}
-      <script
+      <Script
+        id="json-ld-market"
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({

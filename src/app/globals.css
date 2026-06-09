@@ -1,7 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
 
-
 @theme {
   --color-primary: var(--primary);
   --color-primary-container: var(--primary-container);
@@ -13,7 +12,15 @@
   --color-tertiary-container: var(--tertiary-container);
   --color-on-tertiary-container: var(--on-tertiary-container);
   
+  --color-market-green-500: #54AD21;
+  --color-market-green-600: #438A1A;
+  --color-market-green-700: #326814;
+  --color-market-green-800: #22450D;
+  --color-market-green-900: #112307;
+  --color-market-green-950: #081103;
+
   --color-bg-dark: var(--bg-dark);
+  --color-background: var(--bg-dark);
   --color-surface: var(--surface-dark);
   --color-surface-dark: var(--surface-dark);
   --color-surface-dim: #cbdbf5;
@@ -37,13 +44,38 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-border-subtle: var(--border-subtle);
+  --color-border: var(--border-subtle);
   --color-glow-gold: var(--glow-gold);
 
   --font-plus-jakarta: var(--font-poppins), "Poppins", sans-serif;
   --font-sora: var(--font-poppins), "Poppins", sans-serif;
-  --font-inter: var(--font-poppins), "Poppins", sans-serif;
+  --font-inter: var(--font-inter), sans-serif;
   --font-geist: var(--font-geist), sans-serif;
   --font-poppins: var(--font-poppins), "Poppins", sans-serif;
+  
+  --radius-brand: 24px;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center text-white font-poppins font-semibold transition-colors duration-200;
+    background-color: var(--color-market-green-500);
+    border-radius: var(--radius-brand);
+    padding: 12px 24px; /* Standardized balanced padding */
+  }
+  .btn-primary:hover {
+    background-color: var(--color-market-green-600);
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center bg-white font-poppins font-semibold border-2 transition-colors duration-200;
+    color: var(--color-market-green-500);
+    border-color: var(--color-market-green-500);
+    border-radius: var(--radius-brand);
+    padding: 10px 22px; /* Accounting for border width */
+  }
+  .btn-secondary:hover {
+    background-color: #f0fdf4; /* A light green for hover, equivalent to market-green-50 approx */
+  }
 }
 
 :root {
@@ -120,9 +152,9 @@ html, body {
 }
 
 body {
-  background-color: var(--background);
+  background-color: var(--bg-dark);
   color: var(--foreground);
-  font-family: var(--font-poppins), "Poppins", sans-serif;
+  font-family: var(--font-inter), sans-serif;
   min-height: 100vh;
 }
 
@@ -155,9 +187,6 @@ body {
   background: linear-gradient(135deg, rgba(250, 204, 21, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
-/* QR modal loading spinner */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
-

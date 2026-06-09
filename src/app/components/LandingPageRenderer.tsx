@@ -166,7 +166,7 @@ export default function LandingPageRenderer({
   const editBadge = (field: string) => {
     if (!isEditable) return null
     return (
-      <span className="absolute -top-3.5 -left-1 px-1 bg-primary text-black font-geist font-black text-[7px] uppercase tracking-wider rounded z-20 pointer-events-none">
+      <span className="btn-primary absolute -top-3.5 -left-1 text-black font-black text-[7px] z-20 pointer-events-none">
         Edit {field}
       </span>
     )
@@ -224,7 +224,7 @@ export default function LandingPageRenderer({
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
           </div>
           <div className="flex gap-3">
-            <span className="text-[9px] font-bold text-primary uppercase border border-primary/20 bg-primary/5 px-2 py-0.5 rounded">PREMIUM MERCHANT</span>
+            <span className="btn-primary text-[9px] text-primary border border-primary/20 bg-primary/5">PREMIUM MERCHANT</span>
           </div>
         </div>
 

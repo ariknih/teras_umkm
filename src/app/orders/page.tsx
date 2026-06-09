@@ -61,7 +61,7 @@ export default function OrdersPage() {
               >
                 {labels[tab]}
                 {filter === tab && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+                  <span className="btn-primary absolute bottom-0 left-0 right-0" />
                 )}
               </button>
             )
@@ -71,7 +71,7 @@ export default function OrdersPage() {
         {/* Orders list */}
         {filteredOrders.length === 0 ? (
           <div className="text-center py-20 border border-border-subtle rounded-xl bg-surface-dark/40 backdrop-blur-md">
-            <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-4">
+            <div className="btn-primary w-12 bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-4">
               <ShoppingBag size={20} />
             </div>
             <h3 className="font-sora text-sm font-bold text-text-primary mb-1">Belum Ada Transaksi</h3>
@@ -80,7 +80,7 @@ export default function OrdersPage() {
             </p>
             <Link
               href="/market"
-              className="px-5 py-2.5 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors inline-block"
+              className="btn-primary text-xs inline-block"
             >
               Belanja Sekarang
             </Link>

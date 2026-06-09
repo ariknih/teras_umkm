@@ -510,10 +510,43 @@ export default function CommunityPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark">
-        <span className="text-xs font-geist font-bold text-primary tracking-widest uppercase animate-pulse">
-          Membuka Jaringan Komunitas Teras...
-        </span>
+      <div className="relative min-h-screen bg-bg-dark pt-28 pb-24 px-4 md:px-10">
+        <div className="relative z-10 max-w-[1240px] mx-auto space-y-8 animate-pulse">
+          {/* Header Banner Skeleton */}
+          <div className="h-48 md:h-64 bg-surface-container-low rounded-xl w-full" />
+          
+          {/* Search & Filter Skeleton */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border-subtle/50 pb-4">
+            <div className="h-6 w-48 bg-surface-container-low rounded" />
+            <div className="h-10 w-full md:w-80 bg-surface-container-low rounded-lg" />
+          </div>
+
+          {/* Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="border border-border-subtle rounded-xl bg-surface-dark overflow-hidden flex flex-col justify-between shadow-md h-[320px]">
+                <div className="h-28 w-full bg-surface-container-low" />
+                <div className="p-5 flex-grow space-y-4">
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-surface-container-high -mt-10 z-10 shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 bg-surface-container-high rounded w-3/4" />
+                      <div className="h-3 bg-surface-container-low rounded w-1/2" />
+                    </div>
+                  </div>
+                  <div className="space-y-2 pt-2">
+                    <div className="h-3 bg-surface-container-low rounded w-full" />
+                    <div className="h-3 bg-surface-container-low rounded w-full" />
+                    <div className="h-3 bg-surface-container-low rounded w-2/3" />
+                  </div>
+                </div>
+                <div className="px-5 pb-5 pt-2">
+                  <div className="h-9 w-full bg-surface-container-low rounded-lg" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -531,9 +564,9 @@ export default function CommunityPage() {
           {/* Header Banner */}
           <div className="border border-border-subtle bg-surface-dark p-8 md:p-12 rounded-xl text-center space-y-4 shadow-xl relative overflow-hidden">
             <div className="absolute inset-0 bg-[linear-gradient(rgba(198,169,107,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(198,169,107,0.03)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
-            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="btn-primary absolute -top-24 left-1/2 -translate-x-1/2 w-96 bg-primary/5 blur-3xl pointer-events-none" />
             
-            <span className="px-3 py-1 border border-primary/20 bg-primary/5 text-primary text-[10px] font-bold rounded-full tracking-widest uppercase inline-block">
+            <span className="btn-primary border border-primary/20 bg-primary/5 text-primary text-[10px] tracking-widest inline-block">
               Teras Business Network
             </span>
             <h1 className="font-sora text-2xl md:text-4xl font-extrabold text-text-primary tracking-tight">
@@ -547,7 +580,7 @@ export default function CommunityPage() {
               {user ? (
                 <button
                   onClick={() => setCreateModalOpen(true)}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded-lg transition-colors shadow-lg shadow-primary/10 flex items-center gap-2"
+                  className="btn-primary text-xs shadow-lg shadow-primary/10 flex items-center gap-2"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -557,7 +590,7 @@ export default function CommunityPage() {
               ) : (
                 <Link
                   href="/auth"
-                  className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded-lg transition-colors shadow-lg"
+                  className="btn-primary text-xs shadow-lg"
                 >
                   Masuk Untuk Membuat Komunitas
                 </Link>
@@ -618,7 +651,7 @@ export default function CommunityPage() {
 
                       {/* Creator badge */}
                       {isOwner && (
-                        <span className="absolute top-3 right-3 px-2 py-0.5 bg-primary/20 border border-primary/30 text-primary text-[8px] font-bold rounded uppercase">
+                        <span className="btn-primary absolute top-3 right-3 bg-primary/20 border border-primary/30 text-primary text-[8px]">
                           Pemilik
                         </span>
                       )}
@@ -666,7 +699,7 @@ export default function CommunityPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => router.push(`/community?groupId=${g.id}`)}
-                            className="flex-1 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary hover:text-primary/90 font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg transition-colors text-center"
+                            className="btn-primary flex-1 bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary hover:text-primary/90 text-[10px] text-center"
                           >
                             Masuk Komunitas
                           </button>
@@ -858,7 +891,7 @@ export default function CommunityPage() {
                           type="button"
                           onClick={handleSimulatePayment}
                           disabled={isVerifyingPayment}
-                          className="w-full py-2 bg-primary text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                          className="btn-primary w-full text-xs hover:opacity-90 flex items-center justify-center gap-2"
                         >
                           {isVerifyingPayment ? (
                             <>
@@ -890,7 +923,7 @@ export default function CommunityPage() {
                   <button
                     type="submit"
                     disabled={isPending || (groupType === 'KOPERASI' && paymentStatus !== 'SUCCESS')}
-                    className="px-5 py-2 bg-primary hover:bg-primary/90 text-surface-dark font-geist font-bold text-[10px] uppercase tracking-wider rounded-xl transition-colors shadow-md disabled:opacity-50"
+                    className="btn-primary text-[10px] shadow-md disabled:opacity-50"
                   >
                     {isPending ? 'Mendaftarkan...' : 'Daftarkan Komunitas'}
                   </button>
@@ -970,7 +1003,7 @@ export default function CommunityPage() {
               <>
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(198,169,107,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(198,169,107,0.05)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
                 <div className="absolute inset-0 bg-gradient-to-t from-surface-dark via-surface-dark/10 to-transparent" />
-                <div className="absolute -top-10 left-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+                <div className="btn-primary absolute -top-10 left-1/4 w-72 bg-primary/5 blur-3xl" />
                 <div className="absolute bottom-0 right-1/4 w-80 h-40 bg-yellow-950/20 rounded-full blur-2xl" />
               </>
             )}
@@ -984,7 +1017,7 @@ export default function CommunityPage() {
             )}
 
             <div className="absolute top-6 left-6 md:left-10 px-4 py-2 border border-primary/20 bg-surface-dark/80 backdrop-blur rounded-lg flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="btn-primary w-2 animate-pulse" />
               <span className="text-[10px] font-geist font-bold text-primary tracking-widest uppercase">TERAS BUSINESS GRUP</span>
             </div>
           </div>
@@ -1043,7 +1076,7 @@ export default function CommunityPage() {
                 >
                   {tab}
                   {active && (
-                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
+                    <span className="btn-primary absolute bottom-0 left-0 right-0" />
                   )}
                 </button>
               );
@@ -1062,7 +1095,7 @@ export default function CommunityPage() {
               {user && isMember && (
                 <div className="border border-border-subtle bg-surface-dark p-5 rounded-xl space-y-4 shadow-md">
                   <div className="flex gap-4 items-center">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-sora font-extrabold text-xs text-primary flex-shrink-0">
+                    <div className="btn-primary w-10 bg-primary/10 border border-primary/20 flex items-center justify-center font-sora font-extrabold text-xs text-primary flex-shrink-0">
                       {user.name.charAt(0)}
                     </div>
                     
@@ -1174,7 +1207,7 @@ export default function CommunityPage() {
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="px-5 py-2 bg-primary hover:bg-primary/90 text-surface-dark rounded text-[10px] font-bold uppercase tracking-wider transition-colors shadow-md disabled:opacity-50"
+                          className="btn-primary text-[10px] shadow-md disabled:opacity-50"
                         >
                           {isPending ? 'Menerbitkan...' : 'Terbitkan'}
                         </button>
@@ -1235,7 +1268,7 @@ export default function CommunityPage() {
                                 )}
                                 
                                 {post.author?.role && (
-                                  <span className="px-1.5 py-0.2 bg-primary/10 border border-primary/20 text-primary font-bold rounded uppercase text-[8px]">
+                                  <span className="btn-primary bg-primary/10 border border-primary/20 text-primary text-[8px]">
                                     {post.author.role}
                                   </span>
                                 )}
@@ -1321,7 +1354,7 @@ export default function CommunityPage() {
                                   className="absolute inset-0 group flex items-center justify-center cursor-pointer bg-neutral-900/40"
                                 >
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-                                  <div className="w-16 h-16 rounded-full bg-primary text-surface-dark flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 z-10">
+                                  <div className="btn-primary w-16 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform z-10">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 ml-1">
                                       <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.529-2.33 2.779-1.643l11.54 6.347c1.295.712 1.295 2.573 0 3.286L7.28 19.99c-1.25.687-2.779-.217-2.779-1.643V5.653Z" clipRule="evenodd" />
                                     </svg>
@@ -1346,7 +1379,7 @@ export default function CommunityPage() {
                         {/* Likes & Comments Counters */}
                         <div className="px-5 py-3 flex justify-between items-center text-[10px] text-text-secondary/70 font-semibold border-b border-border-subtle/50">
                           <div className="flex items-center gap-1.5">
-                            <span className="w-4 h-4 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-[8px] text-primary">👍</span>
+                            <span className="btn-primary w-4 bg-primary/10 border border-primary/20 flex items-center justify-center text-[8px] text-primary">👍</span>
                             <span>{post.likes.length} menyukai</span>
                           </div>
                           <button onClick={() => handleExpand(post.id)} className="hover:text-primary transition-colors">
@@ -1417,7 +1450,7 @@ export default function CommunityPage() {
                                               <span className="font-bold text-text-primary">Anonim</span>
                                             )}
                                             {comment.author?.role && (
-                                              <span className="px-1.5 py-0.2 bg-primary/10 border border-primary/20 text-primary text-[8px] font-bold rounded uppercase">
+                                              <span className="btn-primary bg-primary/10 border border-primary/20 text-primary text-[8px]">
                                                 {comment.author.role}
                                               </span>
                                             )}
@@ -1459,7 +1492,7 @@ export default function CommunityPage() {
                                   )}
                                   
                                   <div className="flex gap-3 items-start">
-                                    <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-sora font-extrabold text-[10px] text-primary flex-shrink-0">
+                                    <div className="btn-primary w-8 bg-primary/10 border border-primary/20 flex items-center justify-center font-sora font-extrabold text-[10px] text-primary flex-shrink-0">
                                       {user.name.charAt(0)}
                                     </div>
                                     
@@ -1477,7 +1510,7 @@ export default function CommunityPage() {
                                         id="reply-submit-btn"
                                         type="submit"
                                         disabled={isReplyPending}
-                                        className="px-4 py-2 bg-primary hover:bg-primary/95 text-surface-dark font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-colors shadow disabled:opacity-50"
+                                        className="btn-primary text-[10px] shadow disabled:opacity-50"
                                       >
                                         {isReplyPending ? 'Mengirim...' : 'Kirim Balasan'}
                                       </button>
@@ -1514,15 +1547,15 @@ export default function CommunityPage() {
                 </p>
                 <div className="text-[10px] font-semibold text-text-secondary space-y-2 pt-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <span className="btn-primary w-1.5" />
                     <span>Tipe Komunitas: <strong>Sektoral Bisnis</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <span className="btn-primary w-1.5" />
                     <span>Status: <strong>{selectedGroup.isSuspended ? '🚫 Ditangguhkan' : '🟢 Aktif'}</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <span className="btn-primary w-1.5" />
                     <span>Dibuat: <strong>{new Date(selectedGroup.createdAt).toLocaleDateString('id-ID')}</strong></span>
                   </div>
                 </div>
@@ -1537,7 +1570,7 @@ export default function CommunityPage() {
                   {members.slice(0, 5).map((m) => (
                     <div key={m.id} className="flex justify-between items-center gap-2">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-sora font-extrabold text-[10px] text-primary">
+                        <div className="btn-primary w-8 bg-primary/10 border border-primary/20 flex items-center justify-center font-sora font-extrabold text-[10px] text-primary">
                           {m.name.charAt(0)}
                         </div>
                         <div>
@@ -1658,7 +1691,7 @@ export default function CommunityPage() {
                   >
                     <div className="flex items-center gap-3">
                       {/* Avatar */}
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center font-sora font-extrabold text-sm text-primary">
+                      <div className="btn-primary w-10 bg-primary/10 border border-primary/20 flex items-center justify-center font-sora font-extrabold text-sm text-primary">
                         {member.name.charAt(0)}
                       </div>
                       
@@ -1709,7 +1742,7 @@ export default function CommunityPage() {
                 
                 <div className="space-y-4 pt-2">
                   <div className="flex gap-4 items-start">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 border border-primary/25 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0">1</div>
+                    <div className="btn-primary w-6 bg-primary/10 border border-primary/25 text-primary flex items-center justify-center text-xs flex-shrink-0">1</div>
                     <div>
                       <h4 className="text-xs font-bold text-text-primary mb-1">Diskusi Relevan & Profesional</h4>
                       <p className="text-[11px] text-text-secondary">Posting dan komentar harus relevan dengan topik industri grup ini. Hormati hak cipta, merek dagang, dan hindari spamming.</p>
@@ -1717,7 +1750,7 @@ export default function CommunityPage() {
                   </div>
 
                   <div className="flex gap-4 items-start">
-                    <div className="w-6 h-6 rounded-full bg-primary/10 border border-primary/25 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0">2</div>
+                    <div className="btn-primary w-6 bg-primary/10 border border-primary/25 text-primary flex items-center justify-center text-xs flex-shrink-0">2</div>
                     <div>
                       <h4 className="text-xs font-bold text-text-primary mb-1">Dilarang Penipuan / SARA</h4>
                       <p className="text-[11px] text-text-secondary">Tindakan penipuan, penghinaan SARA, dan share link berbahaya akan langsung dihapus oleh moderator/admin dengan sanksi banned.</p>

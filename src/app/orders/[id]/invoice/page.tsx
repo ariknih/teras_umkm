@@ -54,7 +54,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
         </p>
         <Link
           href="/orders"
-          className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+          className="btn-primary text-xs"
         >
           Kembali ke Pesanan Saya
         </Link>
@@ -91,7 +91,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
 
           <button
             onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-surface-dark text-xs font-bold font-geist rounded uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
+            className="btn-primary inline-flex items-center gap-2 text-xs shadow-sm cursor-pointer"
           >
             <Printer size={14} />
             Cetak / Simpan PDF

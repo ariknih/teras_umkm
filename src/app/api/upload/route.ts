@@ -7,7 +7,7 @@ const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50 MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/mov', 'video/quicktime']
 
-const BUCKET = 'uploads' // nama bucket di Supabase Storage
+const BUCKET = 'penyimpanan' // nama bucket di Supabase Storage
 
 export async function POST(request: NextRequest) {
   try {

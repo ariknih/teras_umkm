@@ -46,7 +46,7 @@ export default async function CoursePage({ params }: PageProps) {
         <div className="mb-10 pb-6 border-b border-border-subtle flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-geist font-bold text-primary tracking-[0.2em] uppercase bg-primary/10 border border-primary/20 px-2 py-0.5 rounded inline-block">
+              <span className="btn-primary text-[10px] text-primary tracking-[0.2em] bg-primary/10 border border-primary/20 inline-block">
                 {course.lessons?.length || 0} Materi
               </span>
               <span className={`text-[10px] font-geist font-bold tracking-[0.1em] uppercase border px-2 py-0.5 rounded inline-block ${
