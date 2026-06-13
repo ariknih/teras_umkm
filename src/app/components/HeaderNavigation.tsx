@@ -171,7 +171,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
               </div>
             )}
 
-            <button onClick={() => setIsOpenMobile(!isOpenMobile)} className="lg:hidden w-8 h-8 rounded-full border border-outline-variant/15 bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-[#2DB24A] transition-all cursor-pointer">
+            <button onClick={() => setIsOpenMobile(!isOpenMobile)} className="hidden w-8 h-8 rounded-full border border-outline-variant/15 bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-[#2DB24A] transition-all cursor-pointer">
               {isOpenMobile ? <X size={16} /> : <Menu size={16} />}
             </button>
           </div>
