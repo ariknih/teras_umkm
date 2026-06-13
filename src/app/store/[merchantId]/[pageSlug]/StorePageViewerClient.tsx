@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { 
   ArrowLeft,
@@ -500,7 +500,9 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
       </div>
     )
     case 'html': return (
-      <div style={p} dangerouslySetInnerHTML={{ __html: c.code || '' }} />
+      <div style={p}>
+        <SafeIframe html={c.code || ''} />
+      </div>
     )
     case 'floating_whatsapp': return (
       <div className="fixed bottom-6 right-6 z-50 animate-bounce">
@@ -543,6 +545,100 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
       </div>
     )
   }
+}
+
+function SafeIframe({ html, pointerEventsNone = false }: { html: string; pointerEventsNone?: boolean }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [height, setHeight] = useState('100px')
+
+  useEffect(() => {
+    const iframe = iframeRef.current
+    if (!iframe) return
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!doc) return
+
+    // Convert vh units to fixed px based on parent viewport height to prevent loop feedback
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 800
+    const sanitizedHtml = html.replace(/(\d+)vh/g, (match, p1) => {
+      const val = parseInt(p1)
+      return `${(val / 100) * screenHeight}px`
+    })
+
+    doc.open()
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+              height: auto !important;
+              min-height: auto !important;
+            }
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="iframe-content-root">${sanitizedHtml}</div>
+          <script>
+            function sendHeight() {
+              const el = document.getElementById("iframe-content-root");
+              if (el) {
+                const height = el.offsetHeight;
+                window.parent.postMessage({ 
+                  type: 'IFRAME_HEIGHT', 
+                  iframeId: '${html.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '')}', 
+                  height: height 
+                }, '*');
+              }
+            }
+            window.addEventListener('load', sendHeight);
+            window.addEventListener('resize', sendHeight);
+            setTimeout(sendHeight, 100);
+            setTimeout(sendHeight, 500);
+            
+            if (window.ResizeObserver) {
+              const resizeObserver = new ResizeObserver(sendHeight);
+              resizeObserver.observe(document.body);
+            }
+          </script>
+        </body>
+      </html>
+    `)
+    doc.close()
+  }, [html])
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const matchId = html.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '')
+      if (event.data && event.data.type === 'IFRAME_HEIGHT' && event.data.iframeId === matchId) {
+        setHeight(event.data.height + 'px')
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [html])
+
+  return (
+    <iframe
+      ref={iframeRef}
+      style={{
+        width: '100%',
+        height: height,
+        border: 'none',
+        overflow: 'hidden',
+        pointerEvents: pointerEventsNone ? 'none' : 'auto',
+      }}
+      title="Custom HTML Sandbox"
+    />
+  )
 }
 
 // ─── Main Store Page Viewer Client Component ──────────────────────────────────
@@ -603,7 +699,7 @@ export default function StorePageViewerClient({ pageName, components, user }: {
 
       {/* Footer */}
       <footer className="py-8 bg-slate-50 border-t border-slate-200/50 text-center text-xs text-gray-400">
-        <p>© 2026 {user.name} • Halaman Dibuat Menggunakan Teras UMKM Builder</p>
+        <p>© 2026 {user.name} • Halaman Dibuat Menggunakan Saloka.id Builder</p>
       </footer>
     </div>
   )

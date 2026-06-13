@@ -48,13 +48,8 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
       <header className="fixed top-4 left-0 right-0 z-50 w-full flex justify-center px-4 md:px-10 print:hidden pointer-events-none">
         <div className="w-full max-w-[1280px] bg-surface/95 backdrop-blur-md rounded-[9999px] shadow-sm border border-border-subtle px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between pointer-events-auto">
           {/* Left: Brand logo */}
-          <Link href="/" className="flex items-center gap-2 group/logo shrink-0">
-            <div className="transform scale-[0.3] origin-left w-[28px] h-[38px]">
-              <Logo />
-            </div>
-            <span className="font-poppins text-lg font-bold tracking-tight text-secondary transition-colors">
-              Saloka<span className="text-tertiary">.id</span>
-            </span>
+          <Link href="/" className="flex items-center shrink-0">
+            <img src="/images/logo+nama_saloka.png" alt="Saloka.id" className="h-8 md:h-9 object-contain" />
           </Link>
 
           {/* Middle: Links */}
@@ -67,7 +62,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
-            {user && <CartButton />}
+            {user && <CartButton userId={user.id} />}
             {user && <NotificationBell />}
 
             {user && <div className="w-[1px] h-5 bg-border/80 mx-1 hidden sm:block" />}
@@ -284,7 +279,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   trigger={
                     <button
                       onClick={() => setIsOpenMobile(false)}
-                      className="w-full py-3 text-center border border-outline-variant text-text-primary font-bold rounded-xl text-xs uppercase tracking-wider cursor-pointer bg-transparent outline-none"
+                      className="w-full py-3 text-center bg-[#2DB24A] text-white font-extrabold rounded-xl text-xs uppercase tracking-wider cursor-pointer outline-none shadow-sm"
                     >
                       Masuk
                     </button>
@@ -295,7 +290,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   trigger={
                     <button
                       onClick={() => setIsOpenMobile(false)}
-                      className="w-full py-3 text-center bg-[#2DB24A] text-white font-extrabold rounded-xl text-xs uppercase tracking-wider cursor-pointer outline-none"
+                      className="w-full py-3 text-center border border-outline-variant text-text-primary font-bold rounded-xl text-xs uppercase tracking-wider cursor-pointer bg-transparent outline-none"
                     >
                       Daftar
                     </button>

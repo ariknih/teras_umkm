@@ -135,3 +135,14 @@ export async function trackTransactionAction(orderId: string) {
     return { error: e.message || 'Gagal melacak transaksi.' }
   }
 }
+
+export async function generateDummyAffiliatesAction(count: number = 10) {
+  await ensureAdmin()
+  try {
+    await DataStore.generateDummyAffiliates(count)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal membuat dummy affiliate.' }
+  }
+}

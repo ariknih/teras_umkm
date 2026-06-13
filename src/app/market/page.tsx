@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getProducts } from "../actions/products";
+import { getProducts } from "@/app/actions/products";
+import { getCurrentUser } from "@/app/actions/auth";
 import ProductListGrid from "./ProductListGrid";
 import { Metadata } from "next";
 import Script from "next/script";
@@ -7,11 +8,11 @@ import Script from "next/script";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Teras UMKM - Marketplace Produk & Jasa Premium",
-  description: "Beli produk premium dari mitra UMKM pilihan, temukan penyedia jasa terdekat, atau dapatkan lowongan proyek kerja mandiri di Teras UMKM.",
+  title: "Saloka.id - Marketplace Produk & Jasa Premium",
+  description: "Beli produk premium dari mitra UMKM pilihan, temukan penyedia jasa terdekat, atau dapatkan lowongan proyek kerja mandiri di Saloka.id.",
   openGraph: {
-    title: "Teras UMKM - Marketplace Produk & Jasa Premium",
-    description: "Beli produk premium dari mitra UMKM pilihan, temukan penyedia jasa terdekat, atau dapatkan lowongan proyek kerja mandiri di Teras UMKM.",
+    title: "Saloka.id - Marketplace Produk & Jasa Premium",
+    description: "Beli produk premium dari mitra UMKM pilihan, temukan penyedia jasa terdekat, atau dapatkan lowongan proyek kerja mandiri di Saloka.id.",
     type: 'website',
   }
 };
@@ -61,8 +62,11 @@ export default async function MarketPage({ searchParams }: PageProps) {
   const categoryParam = resolvedParams.category as string | undefined;
   const queryParam = resolvedParams.query ? resolvedParams.query.toLowerCase() : "";
 
-  // Fetch all or filtered products
-  const allProducts = await getProducts(categoryParam || undefined);
+  // Fetch all products and current user in parallel
+  const [allProducts, currentUser] = await Promise.all([
+    getProducts(categoryParam || undefined),
+    getCurrentUser()
+  ]);
 
   // Search filter
   const products = allProducts.filter(
@@ -81,8 +85,8 @@ export default async function MarketPage({ searchParams }: PageProps) {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebSite",
-            "name": "Teras UMKM",
-            "url": "https://terasumkm.id",
+            "name": "Saloka.id",
+            "url": "https://Saloka.id.id",
           })
         }}
       />
@@ -164,7 +168,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
         </div>
 
         {/* Product List Grid */}
-        <ProductListGrid initialProducts={products as any} />
+        <ProductListGrid initialProducts={products as any} currentUser={currentUser} />
       </div>
 
       <style>{`

@@ -4,9 +4,9 @@ import React, { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Script from 'next/script'
-import { getProducts } from '../actions/products'
-import { checkoutCart, getWalletDetails } from '../actions/wallet-affiliate'
-import { getCurrentUser, getCurrentUserProfile } from '../actions/auth'
+import { getProducts } from '@/app/actions/products'
+import { checkoutCart, getWalletDetails } from '@/app/actions/wallet-affiliate'
+import { getCurrentUser, getCurrentUserProfile } from '@/app/actions/auth'
 import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api'
 
 
@@ -358,23 +358,22 @@ export default function CartPage() {
 
   // Load cart, affiliate, wallet data
   useEffect(() => {
-    try {
-      const storedCart = localStorage.getItem('teras_cart')
-      const storedAff = localStorage.getItem('teras_affiliate_id')
-      if (storedCart) {
-        setCart(JSON.parse(storedCart))
-      }
-      if (storedAff) {
-        setAffiliateId(storedAff)
-      }
-    } catch (e) {
-      console.error('Failed to parse cart items', e)
-    }
-
     async function loadData() {
       try {
         const u = await getCurrentUser()
         setCurrentUser(u)
+        
+        const cartKey = u?.id ? `teras_cart_${u.id}` : 'teras_cart'
+        const storedCart = localStorage.getItem(cartKey)
+        const storedAff = localStorage.getItem('teras_affiliate_id')
+        if (storedCart) {
+          try {
+            setCart(JSON.parse(storedCart))
+          } catch (e) {}
+        }
+        if (storedAff) {
+          setAffiliateId(storedAff)
+        }
         
         const list = await getProducts()
         setProducts(list as any)
@@ -401,14 +400,13 @@ export default function CartPage() {
         }
 
         // Clean up cart from items that do not exist in database products list
-        const storedCart = localStorage.getItem('teras_cart')
         if (storedCart) {
           try {
             const parsedCart: CartItem[] = JSON.parse(storedCart)
             const validCart = parsedCart.filter(item => list.some((p: any) => p.id === item.productId))
             if (validCart.length !== parsedCart.length) {
               setCart(validCart)
-              localStorage.setItem('teras_cart', JSON.stringify(validCart))
+              localStorage.setItem(cartKey, JSON.stringify(validCart))
             }
           } catch (err) {
             console.error('Error parsing cart logic', err)
@@ -447,7 +445,8 @@ export default function CartPage() {
 
   const saveCart = (newCart: CartItem[]) => {
     setCart(newCart)
-    localStorage.setItem('teras_cart', JSON.stringify(newCart))
+    const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+    localStorage.setItem(cartKey, JSON.stringify(newCart))
   }
 
   const handleUpdateQuantity = (productId: string, quantity: number, maxStock: number) => {
@@ -481,7 +480,8 @@ export default function CartPage() {
       }
 
       if (data.processed) {
-        localStorage.removeItem('teras_cart')
+        const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+        localStorage.removeItem(cartKey)
         localStorage.removeItem('teras_affiliate_id')
         setCart([])
         setAffiliateId('')
@@ -560,7 +560,7 @@ export default function CartPage() {
     const upper = couponCode.toUpperCase()
     if (upper === 'DISKON10') {
       activeCouponDiscount = subtotal * 0.1
-    } else if (upper === 'TERASUMKM') {
+    } else if (upper === 'Saloka.id') {
       activeCouponDiscount = Math.min(20000, subtotal)
     } else if (upper === 'GRATISONGKIR') {
       activeCouponDiscount = shippingFee
@@ -580,8 +580,8 @@ export default function CartPage() {
     const upperCode = code.trim().toUpperCase()
     if (upperCode === 'DISKON10') {
       setCouponSuccess('Kupon DISKON10 berhasil dipasang! (Diskon 10%)')
-    } else if (upperCode === 'TERASUMKM') {
-      setCouponSuccess('Kupon TERASUMKM berhasil dipasang! (Diskon Rp 20.000)')
+    } else if (upperCode === 'Saloka.id') {
+      setCouponSuccess('Kupon Saloka.id berhasil dipasang! (Diskon Rp 20.000)')
     } else if (upperCode === 'GRATISONGKIR') {
       setCouponSuccess('Kupon GRATISONGKIR berhasil dipasang! (Gratis Ongkir)')
     } else {
@@ -620,7 +620,8 @@ export default function CartPage() {
           throw new Error(res.error)
         }
 
-        localStorage.removeItem('teras_cart')
+        const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+        localStorage.removeItem(cartKey)
         localStorage.removeItem('teras_affiliate_id')
         setCart([])
         setAffiliateId('')
@@ -744,7 +745,7 @@ export default function CartPage() {
           type="text"
           value={couponCode}
           onChange={(e) => setCouponCode(e.target.value)}
-          placeholder="Contoh: DISKON10, TERASUMKM"
+          placeholder="DISKON10, Saloka.id"
           className="flex-1 px-3 py-2 bg-surface border border-border-subtle rounded text-xs text-foreground placeholder:text-foreground/70/40 focus:outline-none focus:border-primary/50"
         />
         <button
@@ -759,7 +760,7 @@ export default function CartPage() {
       {couponError && <p className="text-[10px] text-red-400 font-semibold">{couponError}</p>}
       {couponSuccess && <p className="text-[10px] text-green-400 font-semibold">{couponSuccess}</p>}
       <div className="text-[9px] text-foreground/70/60 leading-relaxed">
-        Kupon Demo: <strong>DISKON10</strong> (10%), <strong>TERASUMKM</strong> (Rp 20.000), <strong>GRATISONGKIR</strong>.
+        Kupon Demo: <strong>DISKON10</strong> (10%), <strong>Saloka.id</strong> (Rp 20.000), <strong>GRATISONGKIR</strong>.
       </div>
     </div>
   )
@@ -1242,7 +1243,7 @@ export default function CartPage() {
                     >
                       <span className="flex items-center gap-1">
                         <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h1.08c-.05.32-.08.66-.08 1 0 2.21 1.79 4 4 4 .76 0 1.47-.22 2-.59.53.37 1.24.59 2 .59 2.21 0 4-1.79 4-4 0-.34-.03-.68-.08-1H20v6z"/></svg>
-                        Dompet Teras
+                        Dompet Saloka
                       </span>
                       {walletBalance !== null && (
                         <span className="text-[8px] font-normal opacity-90">Sld: Rp {walletBalance.toLocaleString('id-ID')}</span>

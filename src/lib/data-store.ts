@@ -1,3 +1,4 @@
+
 import { db } from './db'
 import crypto from 'crypto'
 import { ProductCategory } from '@prisma/client'
@@ -8,8 +9,8 @@ import path from 'path'
 const mockUsers = [
   {
     id: 'user-admin-1',
-    email: 'admin@teras.com',
-    name: 'Super Admin Teras',
+    email: 'admin@saloka.com',
+    name: 'Super Admin Saloka',
     passwordHash: crypto.createHash('sha256').update('admin2026').digest('hex'),
     role: 'ADMIN' as const,
     latitude: -6.2088, longitude: 106.8456,
@@ -21,7 +22,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-1',
-    email: 'merchant@teras.com',
+    email: 'merchant@saloka.com',
     name: 'Kala Sourdough Studio',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -40,7 +41,7 @@ const mockUsers = [
   },
   {
     id: 'user-affiliate-1',
-    email: 'affiliate@teras.com',
+    email: 'affiliate@saloka.com',
     name: 'Budi Affiliate Marketer',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'AFFILIATE' as const,
@@ -59,7 +60,7 @@ const mockUsers = [
   },
   {
     id: 'user-customer-1',
-    email: 'customer@teras.com',
+    email: 'customer@saloka.com',
     name: 'Andi Pembeli',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'CUSTOMER' as const,
@@ -78,7 +79,7 @@ const mockUsers = [
   },
   {
     id: 'user-cs-1',
-    email: 'cs@teras.com',
+    email: 'cs@saloka.com',
     name: 'Budi Customer Service',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'CUSTOMER_SERVICE' as const,
@@ -98,7 +99,7 @@ const mockUsers = [
   // ─── Additional Mock Merchants ───────────────────────────────────────────────
   {
     id: 'user-merchant-2',
-    email: 'nusantara.fashion@teras.com',
+    email: 'nusantara.fashion@saloka.com',
     name: 'Nusantara Fashion House',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -117,7 +118,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-3',
-    email: 'techgeek.id@teras.com',
+    email: 'techgeek.id@saloka.com',
     name: 'TechGeek Indonesia',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -136,7 +137,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-4',
-    email: 'dapur.kreatif@teras.com',
+    email: 'dapur.kreatif@saloka.com',
     name: 'Dapur Kreatif Nusantara',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -155,7 +156,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-5',
-    email: 'kreasi.digital@teras.com',
+    email: 'kreasi.digital@saloka.com',
     name: 'Kreasi Digital Studio',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -175,7 +176,7 @@ const mockUsers = [
   // ─── 10 New Business Users ────────────────────────────────────────────────────
   {
     id: 'user-merchant-6',
-    email: 'herbal.nusantara@teras.com',
+    email: 'herbal.nusantara@saloka.com',
     name: 'Herbal Nusantara Apotik',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -189,7 +190,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-7',
-    email: 'furni.jepara@teras.com',
+    email: 'furni.jepara@saloka.com',
     name: 'Furnicraft Jepara',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -203,7 +204,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-8',
-    email: 'agro.segar@teras.com',
+    email: 'agro.segar@saloka.com',
     name: 'AgroSegar Farm Bogor',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -217,7 +218,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-9',
-    email: 'aksesoris.silver@teras.com',
+    email: 'aksesoris.silver@saloka.com',
     name: 'Silver Artisan Celuk',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -231,7 +232,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-10',
-    email: 'konveksi.solo@teras.com',
+    email: 'konveksi.solo@saloka.com',
     name: 'Konveksi Solo Premium',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -245,7 +246,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-11',
-    email: 'edu.kids@teras.com',
+    email: 'edu.kids@saloka.com',
     name: 'EduKids Toy Studio',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -259,7 +260,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-12',
-    email: 'skincare.lokal@teras.com',
+    email: 'skincare.lokal@saloka.com',
     name: 'Glow Local Skincare',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -273,7 +274,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-13',
-    email: 'pet.care.id@teras.com',
+    email: 'pet.care.id@saloka.com',
     name: 'PetCare Indonesia',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -287,7 +288,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-14',
-    email: 'properti.kost@teras.com',
+    email: 'properti.kost@saloka.com',
     name: 'Kost Premium Menteng',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -301,7 +302,7 @@ const mockUsers = [
   },
   {
     id: 'user-merchant-15',
-    email: 'otomotif.bengkel@teras.com',
+    email: 'otomotif.bengkel@saloka.com',
     name: 'Bengkel Pro Autocare',
     passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
     role: 'MERCHANT' as const,
@@ -311,6 +312,58 @@ const mockUsers = [
     landingPageConfig: '{"title":"Bengkel Pro Autocare","bio":"Servis dan aksesoris kendaraan roda dua & empat Surabaya","phone":"08000111222","instagram":"@bengkelproauto"}',
     landingPageSetup: true, parentAffiliateId: null,
     membershipLevel: 'Distributor', membershipAccess: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-affiliate-2',
+    email: 'affiliate2@saloka.com',
+    name: 'Siti Affiliate Marketer',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'AFFILIATE' as const,
+    latitude: -6.2300, longitude: 106.8600,
+    level: 2, xp: 150,
+    landingPageTemplate: null, landingPageConfig: null, landingPageSetup: false,
+    parentAffiliateId: 'user-affiliate-1',
+    membershipLevel: 'Reseller', membershipAccess: 'Platinum',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-affiliate-3',
+    email: 'affiliate3@saloka.com',
+    name: 'Bambang Sub-Affiliate',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'AFFILIATE' as const,
+    latitude: -6.2400, longitude: 106.8700,
+    level: 1, xp: 50,
+    landingPageTemplate: null, landingPageConfig: null, landingPageSetup: false,
+    parentAffiliateId: 'user-affiliate-2',
+    membershipLevel: 'Agen', membershipAccess: 'Gold',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-customer-2',
+    email: 'customer2@saloka.com',
+    name: 'Joko Pembeli',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'CUSTOMER' as const,
+    latitude: -6.2500, longitude: 106.8800,
+    level: 1, xp: 10,
+    landingPageTemplate: null, landingPageConfig: null, landingPageSetup: false,
+    parentAffiliateId: 'user-affiliate-2',
+    membershipLevel: 'Reseller', membershipAccess: 'Gold',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-customer-3',
+    email: 'customer3@saloka.com',
+    name: 'Dewi Pembeli',
+    passwordHash: crypto.createHash('sha256').update('password123').digest('hex'),
+    role: 'CUSTOMER' as const,
+    latitude: -6.2600, longitude: 106.8900,
+    level: 1, xp: 5,
+    landingPageTemplate: null, landingPageConfig: null, landingPageSetup: false,
+    parentAffiliateId: 'user-affiliate-3',
+    membershipLevel: 'Reseller', membershipAccess: 'Gold',
     createdAt: new Date(), updatedAt: new Date(),
   },
 ]
@@ -665,7 +718,7 @@ const mockProducts = [
   {
     id: 'prod-voucher-kopi',
     title: 'Voucher Minuman Kopi 10x Prepaid',
-    description: 'Voucher minum kopi 10x di jaringan Teras Coffee, berlaku 90 hari, bisa digunakan untuk semua varian.',
+    description: 'Voucher minum kopi 10x di jaringan Saloka Coffee, berlaku 90 hari, bisa digunakan untuk semua varian.',
     price: 120000,
     category: 'VOUCHER' as const,
     stock: 100,
@@ -678,7 +731,7 @@ const mockProducts = [
   {
     id: 'prod-deal-bakso',
     title: 'Promo Bakso Premium Pak Slamet 2 Porsi',
-    description: 'Dapatkan 2 porsi bakso premium urat + sumsum Pak Slamet dengan harga spesial, hanya di Teras UMKM.',
+    description: 'Dapatkan 2 porsi bakso premium urat + sumsum Pak Slamet dengan harga spesial, hanya di Saloka.id.',
     price: 32000,
     category: 'DEALS_SEKITAR' as const,
     stock: 30,
@@ -1403,8 +1456,8 @@ const mockProgress: Array<{ userId: string; lessonId: string; completed: boolean
 const mockGroups = [
   {
     id: 'group-umum',
-    name: 'Forum Umum Teras UMKM',
-    description: 'Grup diskusi utama pelaku usaha Teras UMKM. Bagikan pengalaman, tips bisnis, tanya jawab seputar perpajakan, hukum, logistik, dan pengembangan startup Anda.',
+    name: 'Forum Umum Saloka.id',
+    description: 'Grup diskusi utama pelaku usaha Saloka.id. Bagikan pengalaman, tips bisnis, tanya jawab seputar perpajakan, hukum, logistik, dan pengembangan startup Anda.',
     coverUrl: null,
     avatarUrl: null,
     isSuspended: false,
@@ -1497,7 +1550,7 @@ const mockPosts = [
   {
     id: 'post-2',
     title: 'Panduan lengkap mendaftarkan sertifikasi Halal dan BPOM 2026',
-    content: 'Halo kawan-kawan, berikut adalah langkah demi langkah gratis bagi pelaku UMKM di Teras untuk mendaftarkan merek produk makanan di sistem dinas. Proses online bisa melalui website BPOM dan Halal.go.id. Anggaran siapkan sekitar Rp 500rb-2jt tergantung jenis produk.',
+    content: 'Halo kawan-kawan, berikut adalah langkah demi langkah gratis bagi pelaku UMKM di Saloka untuk mendaftarkan merek produk makanan di sistem dinas. Proses online bisa melalui website BPOM dan Halal.go.id. Anggaran siapkan sekitar Rp 500rb-2jt tergantung jenis produk.',
     authorId: 'user-merchant-1',
     createdAt: new Date(Date.now() - 3600000 * 12),
     updatedAt: new Date(Date.now() - 3600000 * 12),
@@ -1538,7 +1591,7 @@ const mockPosts = [
   {
     id: 'post-agro-urban',
     title: '🥦 AgroSegar: Urban farming bisa dimulai dengan lahan 2x2 meter!',
-    content: 'Banyak yang mikir urban farming butuh lahan luas. Padahal dengan sistem vertikal di balkon atau rooftop 2x2 meter, bisa panen 5-8 kg sayur per minggu! Saya mulai dari pot bekas dan paralon PVC, sekarang sudah supply 20+ keluarga langganan di Bogor. Yang mau belajar, saya buka workshop online setiap Sabtu. Gratis untuk member Teras UMKM!',
+    content: 'Banyak yang mikir urban farming butuh lahan luas. Padahal dengan sistem vertikal di balkon atau rooftop 2x2 meter, bisa panen 5-8 kg sayur per minggu! Saya mulai dari pot bekas dan paralon PVC, sekarang sudah supply 20+ keluarga langganan di Bogor. Yang mau belajar, saya buka workshop online setiap Sabtu. Gratis untuk member Saloka.id!',
     authorId: 'user-merchant-8',
     createdAt: new Date(Date.now() - 3600000 * 14),
     updatedAt: new Date(Date.now() - 3600000 * 14),
@@ -1744,6 +1797,10 @@ const mockWallets = [
   { id: 'wallet-m13', userId: 'user-merchant-13', balance: 1250000, createdAt: new Date(), updatedAt: new Date() },
   { id: 'wallet-m14', userId: 'user-merchant-14', balance: 8900000, createdAt: new Date(), updatedAt: new Date() },
   { id: 'wallet-m15', userId: 'user-merchant-15', balance: 2200000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-affiliate-2', userId: 'user-affiliate-2', balance: 350000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-affiliate-3', userId: 'user-affiliate-3', balance: 150000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-customer-2', userId: 'user-customer-2', balance: 50000, createdAt: new Date(), updatedAt: new Date() },
+  { id: 'wallet-customer-3', userId: 'user-customer-3', balance: 25000, createdAt: new Date(), updatedAt: new Date() },
 ]
 
 const mockWalletTransactions = [
@@ -1762,6 +1819,38 @@ const mockWalletTransactions = [
     type: 'COMMISSION' as const,
     description: 'Komisi Referal Penjualan Kopi Gayo',
     createdAt: new Date(Date.now() - 3600000 * 3),
+  },
+  {
+    id: 'tx-3',
+    walletId: 'wallet-affiliate',
+    amount: 15000,
+    type: 'COMMISSION' as const,
+    description: 'Komisi Affiliate Tier 2 dari penjualan Jasa Konsultasi',
+    createdAt: new Date(Date.now() - 3600000 * 2),
+  },
+  {
+    id: 'tx-4',
+    walletId: 'wallet-affiliate-2',
+    amount: 50000,
+    type: 'COMMISSION' as const,
+    description: 'Komisi Affiliate Tier 1 dari penjualan Jasa Konsultasi',
+    createdAt: new Date(Date.now() - 3600000 * 2),
+  },
+  {
+    id: 'tx-5',
+    walletId: 'wallet-affiliate-2',
+    amount: 10000,
+    type: 'COMMISSION' as const,
+    description: 'Komisi Affiliate Tier 2 dari penjualan Kemeja Batik',
+    createdAt: new Date(Date.now() - 3600000 * 1),
+  },
+  {
+    id: 'tx-6',
+    walletId: 'wallet-affiliate-3',
+    amount: 35000,
+    type: 'COMMISSION' as const,
+    description: 'Komisi Affiliate Tier 1 dari penjualan Kemeja Batik',
+    createdAt: new Date(Date.now() - 3600000 * 1),
   }
 ]
 
@@ -1774,6 +1863,42 @@ const mockReferrals = [
     status: 'PAID' as const,
     createdAt: new Date(Date.now() - 3600000 * 3),
     updatedAt: new Date(Date.now() - 3600000 * 3),
+  },
+  {
+    id: 'ref-2',
+    affiliateId: 'user-affiliate-2',
+    buyerId: 'user-customer-2',
+    amount: 50000,
+    status: 'PAID' as const,
+    createdAt: new Date(Date.now() - 3600000 * 2),
+    updatedAt: new Date(Date.now() - 3600000 * 2),
+  },
+  {
+    id: 'ref-3',
+    affiliateId: 'user-affiliate-1',
+    buyerId: 'user-customer-2',
+    amount: 15000,
+    status: 'PAID' as const,
+    createdAt: new Date(Date.now() - 3600000 * 2),
+    updatedAt: new Date(Date.now() - 3600000 * 2),
+  },
+  {
+    id: 'ref-4',
+    affiliateId: 'user-affiliate-3',
+    buyerId: 'user-customer-3',
+    amount: 35000,
+    status: 'PAID' as const,
+    createdAt: new Date(Date.now() - 3600000 * 1),
+    updatedAt: new Date(Date.now() - 3600000 * 1),
+  },
+  {
+    id: 'ref-5',
+    affiliateId: 'user-affiliate-2',
+    buyerId: 'user-customer-3',
+    amount: 10000,
+    status: 'PAID' as const,
+    createdAt: new Date(Date.now() - 3600000 * 1),
+    updatedAt: new Date(Date.now() - 3600000 * 1),
   }
 ]
 
@@ -2065,7 +2190,7 @@ export async function isDbConnected(): Promise<boolean> {
   lastDbCheckTime = now;
   try {
     const connectionPromise = db.$queryRaw`SELECT 1`.then(() => true);
-    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 500));
+    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000));
     cachedDbConnected = await Promise.race([connectionPromise, timeoutPromise]);
     return cachedDbConnected;
   } catch (e) {
@@ -2097,6 +2222,98 @@ export const DataStore = {
       } catch (_) {}
     }
     return globalMockUsers.find(u => u.id === id) || null
+  },
+
+  async findUserByWhatsApp(whatsappNum: string) {
+    syncMockDb()
+    const cleanNum = whatsappNum.replace(/[^0-9]/g, '')
+    if (!cleanNum) return null
+
+    if (await isDbConnected()) {
+      try {
+        const users = await db.user.findMany({
+          where: {
+            landingPageSetup: true,
+            landingPageConfig: {
+              not: null
+            }
+          }
+        })
+        
+        for (const user of users) {
+          if (user.landingPageConfig) {
+            try {
+              const config = JSON.parse(user.landingPageConfig)
+              if (config && config.whatsapp) {
+                const configWa = config.whatsapp.replace(/[^0-9]/g, '')
+                if (configWa === cleanNum) {
+                  return user
+                }
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    }
+    
+    // Fallback to mock users
+    for (const user of globalMockUsers) {
+      if (user.landingPageConfig) {
+        try {
+          const config = JSON.parse(user.landingPageConfig)
+          if (config && config.whatsapp) {
+            const configWa = config.whatsapp.replace(/[^0-9]/g, '')
+            if (configWa === cleanNum) {
+              return user
+            }
+          }
+        } catch (_) {}
+      }
+    }
+    return null
+  },
+
+  async findUserBySubdomain(subdomain: string) {
+    syncMockDb()
+    const cleanSub = subdomain.toLowerCase().trim()
+    if (!cleanSub) return null
+
+    if (await isDbConnected()) {
+      try {
+        const users = await db.user.findMany({
+          where: {
+            landingPageSetup: true,
+            landingPageConfig: {
+              not: null
+            }
+          }
+        })
+        
+        for (const user of users) {
+          if (user.landingPageConfig) {
+            try {
+              const config = JSON.parse(user.landingPageConfig)
+              if (config && config.subdomain && config.subdomain.toLowerCase().trim() === cleanSub) {
+                return user
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    }
+    
+    // Fallback to mock users
+    for (const user of globalMockUsers) {
+      if (user.landingPageConfig) {
+        try {
+          const config = JSON.parse(user.landingPageConfig)
+          if (config && config.subdomain && config.subdomain.toLowerCase().trim() === cleanSub) {
+            return user
+          }
+        } catch (_) {}
+      }
+    }
+    return null
   },
 
   async createUser(data: { email: string; name: string; passwordHash: string; role: string; latitude?: number; longitude?: number; parentAffiliateId?: string }) {
@@ -2166,7 +2383,7 @@ export const DataStore = {
     if (await isDbConnected()) {
       try {
         return await db.order.findMany({
-          include: { buyer: true },
+          include: { buyer: true, items: true },
           orderBy: { createdAt: 'desc' }
         })
       } catch (_) {}
@@ -2691,10 +2908,12 @@ export const DataStore = {
     const idx = globalMockProgress.findIndex(p => p.userId === userId && p.lessonId === lessonId)
     if (idx !== -1) {
       globalMockProgress[idx].completed = completed
+      saveMockDb()
       return globalMockProgress[idx]
     } else {
       const newProgress = { userId, lessonId, completed }
       globalMockProgress.push(newProgress)
+      saveMockDb()
       return newProgress
     }
   },
@@ -2728,6 +2947,35 @@ export const DataStore = {
       transactions: globalMockWalletTransactions.filter(t => t.walletId === wallet.id).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())
     }
   },
+
+  async getAllWithdrawals() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const txs = await db.walletTransaction.findMany({
+          where: { type: 'WITHDRAWAL', description: { startsWith: 'Tarik ke' } },
+          include: { wallet: { include: { user: true } } },
+          orderBy: { createdAt: 'desc' }
+        })
+        return txs.map(t => ({
+          ...t,
+          user: t.wallet?.user
+        }))
+      } catch (_) {}
+    }
+    
+    // Mock DB logic
+    const withdrawals = globalMockWalletTransactions
+      .filter(t => t.type === 'WITHDRAWAL' && t.description.startsWith('Tarik ke'))
+      .sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())
+    
+    return withdrawals.map(w => {
+      const wallet = globalMockWallets.find(wl => wl.id === w.walletId)
+      const user = wallet ? globalMockUsers.find(u => u.id === wallet.userId) : null
+      return { ...w, user }
+    })
+  },
+
 
   async withdrawFunds(userId: string, amount: number, description: string = 'Penarikan dana dompet digital') {
     if (await isDbConnected()) {
@@ -2936,7 +3184,7 @@ export const DataStore = {
             const code = shippingDetails.couponCode.toUpperCase()
             if (code === 'DISKON10') {
               computedDiscount = subtotal * 0.1
-            } else if (code === 'TERASUMKM') {
+            } else if (code === 'Saloka.id') {
               computedDiscount = Math.min(20000, subtotal)
             } else if (code === 'GRATISONGKIR') {
               computedDiscount = shippingDetails.shippingFee || 0
@@ -3040,21 +3288,26 @@ export const DataStore = {
 
             // 1. Handle Affiliate Commission Splits (60/20/20)
             if (product.isAffiliateEnabled) {
-              let totalComm = 0
-              if (product.affiliateCommissionType === 'PERCENT') {
-                totalComm = itemPrice * ((product.affiliateCommissionValue || 0) / 100)
-              } else {
-                totalComm = (product.affiliateCommissionValue || 0) * item.quantity
-              }
+              const hasPromoter = activeAffiliateId && activeAffiliateId !== product.merchantId;
+              const hasParent = buyerObj?.parentAffiliateId && buyerObj?.parentAffiliateId !== product.merchantId;
 
-              if (totalComm > 0) {
-                merchantEarnings -= totalComm
+              if (hasPromoter || hasParent) {
+                let totalComm = 0
+                if (product.affiliateCommissionType === 'PERCENT') {
+                  totalComm = itemPrice * ((product.affiliateCommissionValue || 0) / 100)
+                } else {
+                  totalComm = (product.affiliateCommissionValue || 0) * item.quantity
+                }
+
+                if (totalComm > 0) {
+                  merchantEarnings -= totalComm
 
                 const promoterComm = totalComm * 0.60
                 const parentComm = totalComm * 0.20
-                const adminComm = totalComm * 0.20
+                let adminComm = totalComm * 0.20
 
                 // Promoter (Tier 1) - 60%
+                let promoterPaid = false
                 if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
                   const promoterWallet = await tx.wallet.findUnique({ where: { userId: activeAffiliateId } })
                   if (promoterWallet) {
@@ -3086,10 +3339,13 @@ export const DataStore = {
                         data: { xp: affUser.xp + 30, level: Math.floor((affUser.xp + 30) / 100) + 1 }
                       })
                     }
+                    promoterPaid = true
                   }
                 }
+                if (!promoterPaid) adminComm += promoterComm
 
                 // Inviter / Parent (Tier 2) - 20%
+                let parentPaid = false
                 const buyerParentId = buyerObj?.parentAffiliateId
                 if (buyerParentId && buyerParentId !== product.merchantId) {
                   const parentWallet = await tx.wallet.findUnique({ where: { userId: buyerParentId } })
@@ -3122,10 +3378,12 @@ export const DataStore = {
                         data: { xp: parentUser.xp + 15, level: Math.floor((parentUser.xp + 15) / 100) + 1 }
                       })
                     }
+                    parentPaid = true
                   }
                 }
+                if (!parentPaid) adminComm += parentComm
 
-                // Admin - 20%
+                // Admin - 20% + Absorbed
                 const adminWallet = await tx.wallet.findUnique({ where: { userId: 'user-admin-1' } })
                 if (adminWallet) {
                   await tx.wallet.update({
@@ -3138,6 +3396,26 @@ export const DataStore = {
                       amount: adminComm,
                       type: 'COMMISSION',
                       description: `Komisi Admin (Affiliate Cut) dari penjualan ${product.title}`
+                    }
+                  })
+                }
+              }
+              } else {
+                // Orphan Sale: No affiliates. Just charge 1% admin tax instead.
+                const adminTax = itemPrice * 0.01;
+                merchantEarnings -= adminTax;
+                const adminWallet = await tx.wallet.findUnique({ where: { userId: 'user-admin-1' } })
+                if (adminWallet) {
+                  await tx.wallet.update({
+                    where: { userId: 'user-admin-1' },
+                    data: { balance: { increment: adminTax } }
+                  })
+                  await tx.walletTransaction.create({
+                    data: {
+                      walletId: adminWallet.id,
+                      amount: adminTax,
+                      type: 'COMMISSION',
+                      description: `Admin Tax 1% (Organik) dari penjualan ${product.title}`
                     }
                   })
                 }
@@ -3284,7 +3562,7 @@ export const DataStore = {
       const code = shippingDetails.couponCode.toUpperCase()
       if (code === 'DISKON10') {
         computedDiscount = subtotal * 0.1
-      } else if (code === 'TERASUMKM') {
+      } else if (code === 'Saloka.id') {
         computedDiscount = Math.min(20000, subtotal)
       } else if (code === 'GRATISONGKIR') {
         computedDiscount = shippingDetails.shippingFee || 0
@@ -3357,21 +3635,26 @@ export const DataStore = {
 
       // 1. Handle Affiliate Commission Splits (60/20/20)
       if (product.isAffiliateEnabled) {
-        let totalComm = 0
-        if (product.affiliateCommissionType === 'PERCENT') {
-          totalComm = itemPrice * ((product.affiliateCommissionValue || 0) / 100)
-        } else {
-          totalComm = (product.affiliateCommissionValue || 0) * item.quantity
-        }
+        const hasPromoter = activeAffiliateId && activeAffiliateId !== product.merchantId;
+        const hasParent = buyerUser?.parentAffiliateId && buyerUser?.parentAffiliateId !== product.merchantId;
 
-        if (totalComm > 0) {
-          merchantEarnings -= totalComm
+        if (hasPromoter || hasParent) {
+          let totalComm = 0
+          if (product.affiliateCommissionType === 'PERCENT') {
+            totalComm = itemPrice * ((product.affiliateCommissionValue || 0) / 100)
+          } else {
+            totalComm = (product.affiliateCommissionValue || 0) * item.quantity
+          }
+
+          if (totalComm > 0) {
+            merchantEarnings -= totalComm
 
           const promoterComm = totalComm * 0.60
           const parentComm = totalComm * 0.20
-          const adminComm = totalComm * 0.20
+          let adminComm = totalComm * 0.20
 
           // Promoter (Tier 1) - 60%
+          let promoterPaid = false
           if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
             const promoterWallet = globalMockWallets.find(w => w.userId === activeAffiliateId)
             if (promoterWallet) {
@@ -3398,10 +3681,13 @@ export const DataStore = {
                 affUser.xp = (affUser.xp || 0) + 30
                 affUser.level = Math.floor(affUser.xp / 100) + 1
               }
+              promoterPaid = true
             }
           }
+          if (!promoterPaid) adminComm += promoterComm
 
           // Inviter / Parent (Tier 2) - 20%
+          let parentPaid = false
           const buyerParentId = buyerUser?.parentAffiliateId
           if (buyerParentId && buyerParentId !== product.merchantId) {
             const parentWallet = globalMockWallets.find(w => w.userId === buyerParentId)
@@ -3429,8 +3715,10 @@ export const DataStore = {
                 parentUser.xp = (parentUser.xp || 0) + 15
                 parentUser.level = Math.floor(parentUser.xp / 100) + 1
               }
+              parentPaid = true
             }
           }
+          if (!parentPaid) adminComm += parentComm
 
           // Admin - 20%
           const adminWallet = globalMockWallets.find(w => w.userId === 'user-admin-1')
@@ -3442,6 +3730,23 @@ export const DataStore = {
               amount: adminComm,
               type: 'COMMISSION' as const,
               description: `Komisi Admin (Affiliate Cut) dari penjualan ${product.title}`,
+              createdAt: new Date()
+            })
+          }
+        }
+        } else {
+          // Orphan Sale: No affiliates. Just charge 1% admin tax.
+          const adminTax = itemPrice * 0.01;
+          merchantEarnings -= adminTax;
+          const adminWallet = globalMockWallets.find(w => w.userId === 'user-admin-1')
+          if (adminWallet) {
+            adminWallet.balance += adminTax
+            globalMockWalletTransactions.push({
+              id: `tx-${Date.now()}-aff-admin-tax`,
+              walletId: adminWallet.id,
+              amount: adminTax,
+              type: 'COMMISSION' as const,
+              description: `Admin Tax 1% (Organik) dari penjualan ${product.title}`,
               createdAt: new Date()
             })
           }
@@ -4085,6 +4390,7 @@ export const DataStore = {
 
   // AFFILIATE PORTAL DATA
   async getAffiliateStats(affiliateId: string) {
+    syncMockDb()
     let referralsList: any[] = [];
     let walletTransactions: any[] = [];
     
@@ -4165,6 +4471,7 @@ export const DataStore = {
   },
 
   async createCustomAffiliateLink(userId: string, productId: string, customSlug: string, source: string) {
+    syncMockDb()
     // Check if slug already exists
     const exists = globalMockCustomLinks.some(l => l.customSlug === customSlug);
     if (exists) throw new Error('Slug kustom sudah digunakan');
@@ -4179,14 +4486,17 @@ export const DataStore = {
       createdAt: new Date()
     };
     globalMockCustomLinks.push(newLink);
+    saveMockDb()
     return newLink;
   },
 
   async getCustomAffiliateLinks(userId: string) {
+    syncMockDb()
     return globalMockCustomLinks.filter(l => l.userId === userId);
   },
 
   async trackAffiliateClick(slug: string, source: string = 'direct') {
+    syncMockDb()
     const link = globalMockCustomLinks.find(l => l.customSlug === slug);
     if (link) {
       link.clicks = (link.clicks || 0) + 1;
@@ -4196,6 +4506,7 @@ export const DataStore = {
         source: source || 'direct',
         createdAt: new Date()
       });
+      saveMockDb()
       return link;
     }
     return null;
@@ -4353,6 +4664,143 @@ export const DataStore = {
     return await buildTree(userId, 1);
   },
 
+  async generateDummyAffiliates(count: number = 10) {
+    let parentId = 'user-affiliate-1'
+    let dbConnected = false
+    try {
+      dbConnected = await isDbConnected()
+    } catch (_) {}
+    
+    if (dbConnected) {
+      const parent = await db.user.findFirst({ where: { role: 'AFFILIATE' } }) || await db.user.findFirst()
+      if (parent) parentId = parent.id
+      
+      const newUsers = []
+      const newOrders = []
+      
+      for (let i = 0; i < count; i++) {
+        const id = `dummy-aff-${Date.now()}-${i}`
+        const createdAt = new Date(Date.now() - Math.random() * 10000000000)
+        newUsers.push({
+          id,
+          name: `Dummy User ${i + 1}`,
+          email: `dummy${i + 1}@saloka.id`,
+          passwordHash: 'hashedpassword',
+          role: 'CUSTOMER' as any,
+          level: 1,
+          xp: 0,
+          parentAffiliateId: parentId,
+          createdAt
+        })
+      }
+      
+      try {
+        await db.user.createMany({ data: newUsers, skipDuplicates: true })
+        
+        // Ensure wallet exists for parent if needed later
+        let parentWallet = await db.wallet.findUnique({ where: { userId: parentId } })
+        if (!parentWallet) {
+          parentWallet = await db.wallet.create({ data: { userId: parentId, balance: 0 } })
+        }
+        
+        for (const u of newUsers) {
+          const orderId = `dummy-ord-${Date.now()}-${Math.random().toString(36).substring(7)}`
+          
+          // Get a random product to assign to order
+          const product = await db.product.findFirst() || null
+          
+          await db.order.create({
+            data: {
+              id: orderId,
+              buyerId: u.id,
+              totalAmount: 150000,
+              status: 'COMPLETED',
+              createdAt: u.createdAt,
+              updatedAt: u.createdAt,
+              items: product ? {
+                create: [
+                  { productId: product.id, quantity: 1, price: 150000 }
+                ]
+              } : undefined
+            }
+          })
+          
+          // Use AffiliateReferral model to track commissions
+          await db.affiliateReferral.create({
+            data: {
+              affiliateId: parentId,
+              buyerId: u.id,
+              amount: 15000,
+              status: 'PAID',
+              createdAt: u.createdAt,
+              updatedAt: u.createdAt
+            }
+          })
+          
+          // Also add to wallet transaction
+          await db.walletTransaction.create({
+            data: {
+              walletId: parentWallet.id,
+              amount: 15000,
+              type: 'COMMISSION',
+              description: `Komisi Referral dari ${u.name}`,
+              createdAt: u.createdAt
+            }
+          })
+        }
+      } catch (e) {
+        console.error('Failed to seed dummy to DB', e)
+      }
+      
+      return true
+    }
+
+    // Fallback to mock arrays
+    const mainAffiliateId = 'user-affiliate-1'
+    let parent = globalMockUsers.find(u => u.id === mainAffiliateId)
+    if (!parent) parent = globalMockUsers.find(u => u.role === 'AFFILIATE') || globalMockUsers[0]
+    
+    for (let i = 0; i < count; i++) {
+      const id = `dummy-aff-${Date.now()}-${i}`
+      const user = {
+        id,
+        name: `Dummy User ${i + 1}`,
+        email: `dummy${i + 1}@saloka.id`,
+        role: 'CUSTOMER',
+        level: 1,
+        xp: 0,
+        parentAffiliateId: parent.id,
+        createdAt: new Date(Date.now() - Math.random() * 10000000000)
+      }
+      globalMockUsers.push(user as any)
+      
+      globalMockOrders.push({
+        id: `dummy-ord-${Date.now()}-${i}`,
+        buyerId: user.id,
+        merchantId: 'user-merchant-1',
+        totalAmount: 150000,
+        status: 'COMPLETED',
+        createdAt: user.createdAt,
+        updatedAt: user.createdAt,
+        items: [
+          { productId: 'prod-gayo-coffee', quantity: 1, price: 150000 }
+        ]
+      } as any)
+      
+      globalMockReferrals.push({
+        id: `dummy-ref-${Date.now()}-${i}`,
+        affiliateId: parent.id,
+        buyerId: user.id,
+        commissionAmount: 150000 * 0.1, // 10%
+        status: 'PAID',
+        createdAt: user.createdAt
+      } as any)
+    }
+    
+    saveMockDb()
+    return true
+  },
+
   async getReminders(userId: string) {
     const reminders = [];
     
@@ -4466,7 +4914,7 @@ export const DataStore = {
               id: `rem-prod-${prod.id}`,
               type: 'PRODUCT',
               title: `Produk Terdekat (${dist.toFixed(1)} km)`,
-              description: `Temukan "${prod.title}" di merchant terdekat ${prod.merchant?.name || 'Teras UMKM'}.`,
+              description: `Temukan "${prod.title}" di merchant terdekat ${prod.merchant?.name || 'Saloka.id'}.`,
               actionUrl: `/marketplace`,
               createdAt: new Date()
             });
@@ -4480,6 +4928,9 @@ export const DataStore = {
   },
 
   async updateUserSettings(userId: string, data: {
+    name?: string;
+    whatsapp?: string;
+    bio?: string;
     waGatewayKeys?: string;
     fbPixelId?: string | null;
     tiktokPixelId?: string | null;
@@ -4497,6 +4948,9 @@ export const DataStore = {
     }
     const user = globalMockUsers.find(u => u.id === userId)
     if (user) {
+      if (data.name !== undefined) user.name = data.name
+      if (data.whatsapp !== undefined) user.whatsapp = data.whatsapp
+      if (data.bio !== undefined) user.bio = data.bio
       if (data.waGatewayKeys !== undefined) user.waGatewayKeys = data.waGatewayKeys
       if (data.fbPixelId !== undefined) user.fbPixelId = data.fbPixelId
       if (data.tiktokPixelId !== undefined) user.tiktokPixelId = data.tiktokPixelId
@@ -4725,7 +5179,7 @@ export const DataStore = {
             data: {
               ticketId: ticket.id,
               senderId: 'SYSTEM',
-              content: 'Halo, selamat datang di layanan bantuan TerasUMKM. Mohon tunggu sebentar, kami sedang menghubungkan Anda dengan petugas customer service kami.'
+              content: 'Halo, selamat datang di layanan bantuan Saloka.id. Mohon tunggu sebentar, kami sedang menghubungkan Anda dengan petugas customer service kami.'
             }
           });
           if (message.trim()) {
@@ -4755,7 +5209,7 @@ export const DataStore = {
       id: `sm-${Date.now()}-sys`,
       ticketId: ticket.id,
       senderId: 'SYSTEM',
-      content: 'Halo, selamat datang di layanan bantuan TerasUMKM. Mohon tunggu sebentar, kami sedang menghubungkan Anda dengan petugas customer service kami.',
+      content: 'Halo, selamat datang di layanan bantuan Saloka.id. Mohon tunggu sebentar, kami sedang menghubungkan Anda dengan petugas customer service kami.',
       isRead: false,
       isInternalNote: false,
       createdAt: new Date()
@@ -4933,7 +5387,7 @@ export const DataStore = {
           data: {
             ticketId,
             senderId: 'SYSTEM',
-            content: 'Sesi bantuan telah selesai dan tiket telah ditutup. Terima kasih telah menghubungi layanan TerasUMKM!'
+            content: 'Sesi bantuan telah selesai dan tiket telah ditutup. Terima kasih telah menghubungi layanan Saloka.id!'
           }
         });
         return ticket;
@@ -4947,7 +5401,7 @@ export const DataStore = {
         id: `sm-${Date.now()}-close`,
         ticketId,
         senderId: 'SYSTEM',
-        content: 'Sesi bantuan telah selesai dan tiket telah ditutup. Terima kasih telah menghubungi layanan TerasUMKM!',
+        content: 'Sesi bantuan telah selesai dan tiket telah ditutup. Terima kasih telah menghubungi layanan Saloka.id!',
         isRead: false,
         isInternalNote: false,
         createdAt: new Date()
@@ -5119,6 +5573,27 @@ export const DataStore = {
   },
 
   // ORDER TRACKING OPERATIONS
+  async updateOrderShippingLabel(orderId: string, shippingLabel: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.order.update({
+          where: { id: orderId },
+          data: { shippingLabel }
+        });
+        return true;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const idx = globalMockOrders.findIndex(o => o.id === orderId);
+    if (idx !== -1) {
+      globalMockOrders[idx].shippingLabel = shippingLabel;
+      globalMockOrders[idx].updatedAt = new Date();
+      saveMockDb();
+    }
+    return true;
+  },
+
   async updateOrderTracking(orderId: string, status: string, note?: string) {
     if (await isDbConnected()) {
       try {

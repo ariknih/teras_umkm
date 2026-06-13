@@ -63,6 +63,9 @@ export async function checkoutCart(
 }
 
 export async function updateUserSettingsAction(data: {
+  name?: string;
+  whatsapp?: string;
+  bio?: string;
   waGatewayKeys?: string;
   fbPixelId?: string | null;
   tiktokPixelId?: string | null;
@@ -75,6 +78,7 @@ export async function updateUserSettingsAction(data: {
   try {
     const updatedUser = await DataStore.updateUserSettings(user.id, data)
     revalidatePath('/merchant/dashboard')
+    revalidatePath('/settings')
     return { success: true, user: updatedUser }
   } catch (e: any) {
     return { error: e.message || 'Gagal menyimpan pengaturan.' }

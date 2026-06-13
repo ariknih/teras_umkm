@@ -154,7 +154,7 @@ export default function LandingPageRenderer({
   const timelineEvents = [
     { year: '2022', title: 'Pendirian Pertama', desc: 'Memulai dari dapur rumahan kecil dengan 2 produk unggulan.' },
     { year: '2024', title: 'Kemitraan UMKM', desc: 'Tumbuh ke 10+ retail dan meresmikan logo premium terdaftar.' },
-    { year: '2026', title: 'Platform Digital', desc: 'Bergabung di ekosistem digital terintegrasi Teras UMKM.' }
+    { year: '2026', title: 'Platform Digital', desc: 'Bergabung di ekosistem digital terintegrasi Saloka.id.' }
   ]
 
   // Hover helper for WYSIWYG elements
@@ -667,7 +667,7 @@ export default function LandingPageRenderer({
         <footer className="bg-[#f5f5f7] border-t border-neutral-200 py-12 px-6 md:px-12 text-left">
           <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 text-xs text-[#1d1d1f]/60 font-light pb-8 border-b border-neutral-200">
             <div className="space-y-2">
-              <span className="font-semibold text-[#1d1d1f] block uppercase tracking-wider text-[10px]">Teras UMKM</span>
+              <span className="font-semibold text-[#1d1d1f] block uppercase tracking-wider text-[10px]">Saloka.id</span>
               <p className="leading-relaxed">{footerTagline}</p>
             </div>
             <div className="space-y-2">
@@ -1163,7 +1163,7 @@ export default function LandingPageRenderer({
         
         {/* Top Header */}
         <header className="sticky top-0 z-30 bg-white border-b border-neutral-100 py-3.5 px-6 flex justify-between items-center shadow-sm">
-          <span className="text-[#ff385c] font-black text-lg tracking-tight select-none">Teras UMKM</span>
+          <span className="text-[#ff385c] font-black text-lg tracking-tight select-none">Saloka.id</span>
           
           {/* Mock Pill search bar */}
           <div className="hidden md:flex items-center gap-2 border border-neutral-200 shadow-sm rounded-full py-2 px-4 text-xs font-medium cursor-pointer hover:shadow-md transition-shadow">
@@ -1378,7 +1378,7 @@ export default function LandingPageRenderer({
                   return (
                     <div className="text-left py-4 border-b border-neutral-100">
                       <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest block mb-2">Social Validation</span>
-                      <p className="text-xs text-[#222222] font-semibold">Telah Diverifikasi Resmi oleh Teras UMKM untuk Pengiriman Domestik.</p>
+                      <p className="text-xs text-[#222222] font-semibold">Telah Diverifikasi Resmi oleh Saloka.id untuk Pengiriman Domestik.</p>
                     </div>
                   )
 
@@ -1517,7 +1517,7 @@ export default function LandingPageRenderer({
         <footer className="border-t border-neutral-200 bg-[#f7f7f7] py-12 px-6 md:px-12 text-left mt-16">
           <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 text-xs text-neutral-500 font-light pb-8 border-b border-neutral-200">
             <div className="space-y-2">
-              <span className="font-bold text-[#222222] block uppercase tracking-wider text-[9px]">Platform Teras UMKM</span>
+              <span className="font-bold text-[#222222] block uppercase tracking-wider text-[9px]">Platform Saloka.id</span>
               <p className="leading-relaxed">{footerTagline}</p>
             </div>
             <div className="space-y-2">
@@ -2858,7 +2858,7 @@ export default function LandingPageRenderer({
         <footer className="bg-white border-t-[4px] border-black py-12 px-6 md:px-12 text-left mt-16 font-sans text-xs text-black">
           <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 pb-8 border-b-2 border-black">
             <div className="space-y-2">
-              <span className="font-black text-black block uppercase tracking-wider text-[10px]">Teras UMKM</span>
+              <span className="font-black text-black block uppercase tracking-wider text-[10px]">Saloka.id</span>
               <p className="leading-relaxed font-bold text-zinc-600">{footerTagline}</p>
             </div>
             <div className="space-y-2">

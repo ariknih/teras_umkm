@@ -93,7 +93,7 @@ export async function updateOrderTracking(orderId: string, status: string, note?
       if (merchant && buyer) {
         await sendWhatsAppMessage({
           merchantId: merchant.id,
-          merchantName: merchant.name || 'Merchant Teras',
+          merchantName: merchant.name || 'Merchant Saloka',
           recipientName: buyer.name || 'Pelanggan',
           recipientPhone: '628123456789',
           message: `Halo ${buyer.name || 'Pelanggan'}, status pesanan Anda #${orderId} telah diperbarui menjadi: ${status}. Catatan: ${defaultNote}`,
@@ -112,6 +112,24 @@ export async function updateOrderTracking(orderId: string, status: string, note?
     return { success: true, order: updatedOrder }
   } catch (e: any) {
     return { error: e.message || 'Gagal memperbarui status pelacakan.' }
+  }
+}
+
+export async function updateShippingLabel(orderId: string, label: string) {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'MERCHANT') {
+    return { error: 'Akses ditolak.' }
+  }
+  try {
+    await DataStore.updateOrderShippingLabel(orderId, label)
+    // Otomatis update tracking jadi SHIPPED
+    await DataStore.updateOrderTracking(orderId, 'SHIPPED', `Resi Ekspedisi Diinput: ${label}. Menunggu kurir melakukan penjemputan/pengiriman.`)
+    revalidatePath(`/orders/${orderId}`)
+    revalidatePath('/orders')
+    revalidatePath('/merchant/dashboard')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menginput resi.' }
   }
 }
 

@@ -117,7 +117,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
           </div>
           <DialogHeader className="text-center sm:text-center">
             <DialogTitle className="sm:text-center text-xl font-extrabold tracking-tight">
-              {tab === "login" ? "Masuk ke Teras UMKM" : "Gabung Teras UMKM"}
+              {tab === "login" ? "Masuk ke Saloka.id" : "Gabung Saloka.id"}
             </DialogTitle>
             <DialogDescription className="sm:text-center text-xs text-text-secondary mt-1">
               {tab === "login" 

@@ -86,6 +86,41 @@ Format Output: Return ONLY a valid JSON object matching this schema. Do not incl
   "borderRadius": 8,
   "styleName": "Herbal Fresh"
 }`
+  } else if (type === 'rewrite') {
+    const originalText = context.text || ''
+    const action = context.action || 'improve'
+    const customPrompt = context.customPrompt || ''
+
+    let instructions = ''
+    if (action === 'improve') {
+      instructions = 'Tingkatkan kualitas tulisan ini agar lebih mengalir, profesional, menarik, dan mudah dipahami.'
+    } else if (action === 'casual') {
+      instructions = 'Ubah gaya bahasa tulisan ini menjadi santai, kasual, ramah, dan bersahabat (casual tone).'
+    } else if (action === 'professional') {
+      instructions = 'Ubah gaya bahasa tulisan ini menjadi sangat profesional, formal, sopan, dan berwibawa (professional tone).'
+    } else if (action === 'friendly') {
+      instructions = 'Ubah gaya bahasa tulisan ini menjadi hangat, ramah, menyapa pembaca dengan akrab, dan menyenangkan (friendly tone).'
+    } else if (action === 'straightforward') {
+      instructions = 'Ubah gaya bahasa tulisan ini menjadi to-the-point, lugas, ringkas, informatif, dan padat (straightforward tone).'
+    } else if (action === 'correct') {
+      instructions = 'Koreksi ejaan, tanda baca, tata bahasa, dan perbaiki typo dalam tulisan ini agar sesuai dengan EYD yang benar.'
+    } else if (action === 'shorter') {
+      instructions = 'Persingkat tulisan ini secara signifikan agar ringkas namun tetap menyampaikan informasi utama secara padat.'
+    } else if (action === 'soft') {
+      instructions = 'Ubah tulisan ini menjadi gaya penjualan halus (soft selling), persuasif dengan cara mendidik atau menceritakan manfaat secara implisit.'
+    } else if (action === 'medium') {
+      instructions = 'Ubah tulisan ini menjadi gaya penjualan seimbang (medium selling), mengajak dengan sopan dan menonjolkan keunggulan produk secara jelas.'
+    } else if (action === 'hard') {
+      instructions = 'Ubah tulisan ini menjadi gaya penjualan langsung/keras (hard selling), menggunakan kata-kata ajakan bertindak yang mendesak, promo, dan penawaran berbatas waktu (CTA kuat).'
+    } else if (action === 'custom') {
+      instructions = `Ubah tulisan ini berdasarkan instruksi kustom berikut: ${customPrompt}`
+    }
+
+    return `Anda adalah asisten penulis AI profesional. Silakan tulis ulang teks berikut berdasarkan instruksi yang diberikan.
+Teks Asli: "${originalText}"
+Instruksi Penulisan Ulang: ${instructions}
+
+Format Output: Tuliskan langsung teks hasil penulisan ulangnya saja. Jangan berikan tanda kutip di awal/akhir teks hasil, jangan berikan kata pengantar, jangan berikan opsi alternatif, langsung berikan teks hasilnya saja.`
   } else {
     return `Tulis tagline bisnis dan biografi profil singkat dalam Bahasa Indonesia untuk landing page toko UMKM berikut:
 Nama Bisnis: ${context.businessName}
@@ -163,6 +198,30 @@ Sangat cocok bagi Anda yang menghargai keindahan detail dan ketahanan produk jan
         borderRadius: 8,
         styleName: 'AI Custom Style'
       })
+    }
+  } else if (type === 'rewrite') {
+    const originalText = context.text || ''
+    const action = context.action || 'improve'
+    if (action === 'shorter') {
+      return originalText.length > 20 ? originalText.substring(0, Math.floor(originalText.length / 2)) + '...' : originalText
+    } else if (action === 'correct') {
+      return originalText.replace(/typo/g, 'kesalahan ketik')
+    } else if (action === 'casual') {
+      return `Eh tau gak, ${originalText.toLowerCase().replace(/anda/g, 'kamu')}`
+    } else if (action === 'professional') {
+      return `Dengan hormat, kami sampaikan bahwa ${originalText}`
+    } else if (action === 'friendly') {
+      return `Halo sahabat! 😊 ${originalText}`
+    } else if (action === 'straightforward') {
+      return originalText.split('.')[0] + '.'
+    } else if (action === 'soft') {
+      return `Bayangkan kemudahan yang Anda rasakan dengan ${originalText}`
+    } else if (action === 'medium') {
+      return `Dapatkan solusi terbaik: ${originalText}. Pesan sekarang.`
+    } else if (action === 'hard') {
+      return `PROMO TERBATAS! 🔥 Beli sekarang: ${originalText.toUpperCase()} - DISKON 50% HARI INI SAJA!`
+    } else {
+      return `${originalText} (Optimized for ${action})`
     }
   } else {
     const businessName = context.businessName || 'Usaha Premium Anda'

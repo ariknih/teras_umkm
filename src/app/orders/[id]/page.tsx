@@ -251,6 +251,12 @@ export default function OrderDetailPage({ params }: PageProps) {
                 <span className="text-text-secondary block mb-1">Kurir</span>
                 <span className="text-text-primary font-bold uppercase">{order.courier || 'Tidak Spesifik'}</span>
               </div>
+              {order.shippingLabel && (
+                <div>
+                  <span className="text-text-secondary block mb-1">Resi Pengiriman</span>
+                  <span className="inline-block bg-primary/10 border border-primary/20 text-primary font-bold uppercase px-3 py-1 rounded font-mono tracking-widest">{order.shippingLabel}</span>
+                </div>
+              )}
               <div>
                 <span className="text-text-secondary block mb-1">Alamat Tujuan</span>
                 <p className="text-text-primary font-medium leading-relaxed">{order.shippingAddress || 'Tidak Spesifik'}</p>
@@ -290,7 +296,7 @@ export default function OrderDetailPage({ params }: PageProps) {
           
           <div className="space-y-6">
             {(order.items || []).map((item: any) => {
-              const product = item.product || { title: item.productTitle || 'Produk Teras', price: item.price }
+              const product = item.product || { title: item.productTitle || 'Produk Saloka', price: item.price }
               const alreadyReviewed = reviewedProductIds.has(item.productId)
 
               return (

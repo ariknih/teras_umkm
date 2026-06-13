@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, startTransition } from 'react'
 import Link from 'next/link'
-import { getMyOrders } from '../actions/orders'
+import { getMyOrders } from '@/app/actions/orders'
 import { Package, Calendar, Tag, ChevronRight, ShoppingBag } from 'lucide-react'
 
 export default function OrdersPage() {
@@ -76,7 +76,7 @@ export default function OrdersPage() {
             </div>
             <h3 className="font-sora text-sm font-bold text-text-primary mb-1">Belum Ada Transaksi</h3>
             <p className="text-xs text-text-secondary max-w-xs mx-auto mb-6">
-              Mulai jelajahi produk artisan unggulan di Teras Marketplace.
+              Mulai jelajahi produk artisan unggulan di Saloka Marketplace.
             </p>
             <Link
               href="/market"
@@ -128,7 +128,7 @@ export default function OrdersPage() {
                         <div key={item.id || idx} className="flex items-center gap-2">
                           <Package size={12} className="text-primary" />
                           <span className="text-xs text-text-primary font-medium line-clamp-1">
-                            {item.product?.title || item.productTitle || 'Produk Teras'}
+                            {item.product?.title || item.productTitle || 'Produk Saloka'}
                           </span>
                           <span className="text-[10px] text-text-secondary whitespace-nowrap">
                             x{item.quantity}

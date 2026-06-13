@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getCourses, getUserProgress } from "../actions/lms";
-import { getCurrentUser } from "../actions/auth";
+import { getCourses, getUserProgress } from "@/app/actions/lms";
+import { getCurrentUser } from "@/app/actions/auth";
 
 export default async function AcademyPage() {
   const user = await getCurrentUser();
@@ -21,7 +21,7 @@ export default async function AcademyPage() {
         {/* Header */}
         <div className="mb-16 text-center max-w-2xl mx-auto">
           <span className="btn-primary text-[10px] text-primary tracking-[0.2em] mb-4 bg-primary/10 border border-primary/20 inline-block">
-            Teras Premium LMS Academy
+            Saloka Premium LMS Academy
           </span>
           <h1 className="font-sora text-3xl md:text-5xl font-bold text-text-primary mb-4">
             Master the Craft of <span className="text-primary">Luxury Commerce.</span>

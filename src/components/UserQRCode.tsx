@@ -105,8 +105,8 @@ export default function UserQRCode({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Profil ${userName} di Teras UMKM`,
-          text: `Kunjungi profil ${userName} di Teras UMKM!`,
+          title: `Profil ${userName} di Saloka.id`,
+          text: `Kunjungi profil ${userName} di Saloka.id!`,
           url: profileUrl,
         })
       } catch {}
@@ -174,7 +174,7 @@ export default function UserQRCode({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 24px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
               <div>
                 <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: accentColor, margin: 0 }}>
-                  Teras UMKM
+                  Saloka.id
                 </p>
                 <h2 style={{ fontSize: '14px', fontWeight: 700, color: '#fff', margin: '2px 0 0' }}>QR Code Profil</h2>
               </div>

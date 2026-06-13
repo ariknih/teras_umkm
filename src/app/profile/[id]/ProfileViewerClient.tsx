@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import UserQRCode from '@/components/UserQRCode'
 import LandingPageRenderer from '../../components/LandingPageRenderer'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { 
   Star, 
   Shield, 
@@ -17,7 +18,18 @@ import {
   Globe,
   DollarSign,
   Briefcase,
-  ExternalLink
+  ExternalLink,
+  Copy,
+  Check,
+  Award,
+  TrendingUp,
+  Users,
+  Store,
+  ArrowUpRight,
+  Activity,
+  Wallet,
+  Eye,
+  Settings
 } from 'lucide-react'
 
 const Instagram = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -42,6 +54,7 @@ const Instagram = ({ className = "w-5 h-5" }: { className?: string }) => (
 interface User {
   id: string
   name: string
+  email?: string
   role: string
   level: number
   xp: number
@@ -69,6 +82,11 @@ interface Product {
 interface ProfileViewerClientProps {
   user: User
   products: Product[]
+  currentUser?: any
+  isOwner?: boolean
+  wallet?: any
+  affiliateStats?: any
+  merchantStats?: any
 }
 
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -166,9 +184,20 @@ function getUserBadges(user: { role: string; level: number; xp: number }) {
   return badges
 }
 
-export default function ProfileViewerClient({ user, products }: ProfileViewerClientProps) {
+export default function ProfileViewerClient({
+  user,
+  products,
+  currentUser,
+  isOwner = false,
+  wallet,
+  affiliateStats,
+  merchantStats,
+}: ProfileViewerClientProps) {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [distance, setDistance] = useState<number | null>(null)
+  const [activeTab, setActiveTab] = useState<'profile' | 'products' | 'storefront'>('profile')
+  const [copiedCode, setCopiedCode] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -192,39 +221,586 @@ export default function ProfileViewerClient({ user, products }: ProfileViewerCli
 
   const badges = React.useMemo(() => getUserBadges(user), [user])
 
-  // Group templates into the 4 target styles
-  // 1. Modern Gold (Dark with glows & luxury glassmorphism - Apple/Stripe-like)
-  // 2. Neo Brutalism (Flat pop style, thick borders, solid colors - Figma/Gumroad)
-  // 3. Minimal Noir (Developer carbon monospace dark theme - Linear/Vercel/Geist)
-  // 4. Clean Professional (Light clean slate SaaS theme - Vercel Light/Notion)
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(user.email || user.id)
+    setCopiedCode(true)
+    setTimeout(() => setCopiedCode(false), 2000)
+  }
 
-  if (['template1', 'template2', 'template3', 'template4', 'template5', 'brutalist'].includes(activeTemplate)) {
+  const handleCopyLink = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
+    const link = `${origin}/auth?ref=${user.email || user.id}`
+    navigator.clipboard.writeText(link)
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 2000)
+  }
+
+  const renderStorefrontPreview = () => {
+    if (['template1', 'template2', 'template3', 'template4', 'template5', 'brutalist'].includes(activeTemplate)) {
+      return (
+        <LandingPageRenderer
+          templateId={activeTemplate}
+          user={user}
+          config={config}
+          products={products}
+          distance={distance}
+          badges={badges}
+        />
+      )
+    }
+
+    if (activeTemplate === 'swiss-minimalist' || activeTemplate === 'de-stijl') {
+      return <NeoBrutalistTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
+    }
+
+    if (activeTemplate === 'minimal-noir' || activeTemplate === 'cyberpunk-dark' || activeTemplate === 'retro-synthwave' || activeTemplate === 'hpc-tech') {
+      return <MinimalNoirTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
+    }
+
+    if (activeTemplate === 'clean-professional' || activeTemplate === 'alabaster-glass' || activeTemplate === 'studio') {
+      return <CleanProfessionalTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
+    }
+
+    return <ModernGoldTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
+  }
+
+  if (activeTab === 'storefront') {
     return (
-      <LandingPageRenderer
-        templateId={activeTemplate}
-        user={user}
-        config={config}
-        products={products}
-        distance={distance}
-        badges={badges}
-      />
+      <div className="relative">
+        {/* Floating Toggle Banner to return to Profile */}
+        <div className="bg-[#13151E] border-b border-white/10 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-text-primary">
+              Pratinjau Desain Landing Page
+            </span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-geist font-bold bg-primary/25 border border-primary/30 text-primary uppercase">
+              {activeTemplate}
+            </span>
+          </div>
+          <button
+            onClick={() => setActiveTab('profile')}
+            className="px-4 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full text-xs font-bold text-text-primary transition-all flex items-center gap-1.5"
+          >
+            ← Kembali ke Profil Utama
+          </button>
+        </div>
+        {renderStorefrontPreview()}
+      </div>
     )
   }
 
-  if (activeTemplate === 'swiss-minimalist' || activeTemplate === 'de-stijl') {
-    return <NeoBrutalistTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
-  }
+  // Calculate XP percentage
+  const xpPercent = Math.min(Math.max((user.xp / 1000) * 100, 5), 100)
 
-  if (activeTemplate === 'minimal-noir' || activeTemplate === 'cyberpunk-dark' || activeTemplate === 'retro-synthwave' || activeTemplate === 'hpc-tech') {
-    return <MinimalNoirTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
-  }
+  return (
+    <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] font-sans pb-24 overflow-hidden relative selection:bg-primary/30 selection:text-white">
+      {/* Decorative ambient background glows */}
+      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_70%)] pointer-events-none z-0" />
+      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.02)_0%,transparent_70%)] pointer-events-none z-0" />
 
-  if (activeTemplate === 'clean-professional' || activeTemplate === 'alabaster-glass' || activeTemplate === 'studio') {
-    return <CleanProfessionalTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
-  }
+      {/* Profile Header Navigation */}
+      <header className="border-b border-white/5 bg-[#13151E]/40 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center">
+              <img src="/images/logo+nama_saloka.png" alt="Saloka.id" className="h-8 md:h-9 object-contain" />
+            </Link>
+          </div>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="/market" className="text-xs text-text-secondary hover:text-text-primary transition-colors">Marketplace</Link>
+            <Link href="/academy" className="text-xs text-text-secondary hover:text-text-primary transition-colors">Academy</Link>
+            <Link href="/affiliate" className="text-xs text-text-secondary hover:text-text-primary transition-colors">Affiliate Hub</Link>
+            <Link href="/community" className="text-xs text-text-secondary hover:text-text-primary transition-colors">Community</Link>
+          </nav>
+          <div className="flex items-center gap-3">
+            {isOwner ? (
+              <Link
+                href={user.role === 'MERCHANT' ? '/merchant/dashboard' : '/affiliate'}
+                className="px-4 py-2 bg-primary text-black font-geist font-bold text-xs uppercase tracking-wider rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-primary/15"
+              >
+                Dashboard Saya
+              </Link>
+            ) : (
+              <Link
+                href="/"
+                className="px-4 py-2 bg-white/5 border border-white/10 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-lg hover:bg-white/10 transition-all"
+              >
+                Kembali
+              </Link>
+            )}
+          </div>
+        </div>
+      </header>
 
-  // Default: Modern Gold Template (Premium luxury dark theme)
-  return <ModernGoldTemplate user={user} products={products} config={config} logoUrl={logoUrl} distance={distance} badges={badges} />
+      {/* Cover Banner */}
+      <div className="bg-gradient-to-r from-indigo-950/40 via-slate-900 to-amber-950/30 h-48 w-full border-b border-white/5 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.06)_0%,transparent_50%)]" />
+      </div>
+
+      {/* Main Content Area */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left Column: Profile Card */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-[#13151E]/80 border border-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+              
+              <div className="flex flex-col items-center text-center">
+                {/* Large Initials Avatar */}
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-primary/30 to-[#c9a227]/10 border border-[#c9a227]/30 flex items-center justify-center text-3xl font-extrabold text-primary shadow-lg shadow-primary/10 mb-6">
+                  {user.name.substring(0, 2).toUpperCase()}
+                </div>
+
+                {/* Verified Badge */}
+                <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-amber-500/10 border border-amber-500/25 rounded-full text-[9px] text-[#f5d76e] font-geist font-extrabold uppercase tracking-wider mb-2">
+                  <Shield className="w-3 h-3 text-[#f5d76e] fill-[#f5d76e]/10" />
+                  {user.membershipLevel} Verified
+                </span>
+
+                <h2 className="font-sora text-xl font-bold text-text-primary mb-1">
+                  {user.name}
+                </h2>
+                <p className="text-[10px] font-mono text-text-secondary mb-6">
+                  ID: {user.id}
+                </p>
+
+                {/* Level Progress */}
+                <div className="w-full bg-[#1A1D27] border border-white/5 rounded-2xl p-4 mb-6">
+                  <div className="flex justify-between items-center text-xs mb-2">
+                    <span className="font-bold text-text-secondary uppercase text-[10px] tracking-wider">Progress Level</span>
+                    <span className="font-geist font-black text-primary">LV {user.level}</span>
+                  </div>
+                  <div className="h-2.5 bg-white/5 border border-white/5 rounded-full overflow-hidden mb-1">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-[#f5d76e] rounded-full transition-all duration-500" 
+                      style={{ width: `${xpPercent}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[9px] text-text-secondary">
+                    <span>{user.xp} XP</span>
+                    <span>1,000 XP untuk Level Berikutnya</span>
+                  </div>
+                </div>
+
+                {/* Role and Access Badges */}
+                <div className="w-full space-y-3 pt-4 border-t border-white/5 text-left text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-text-secondary">Peran Platform</span>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-geist font-black border uppercase tracking-wider ${
+                      user.role === 'ADMIN' ? 'bg-red-500/10 border-red-500/35 text-red-400' :
+                      user.role === 'MERCHANT' ? 'bg-primary/10 border-primary/35 text-primary' :
+                      user.role === 'AFFILIATE' ? 'bg-blue-500/10 border-blue-500/35 text-blue-400' :
+                      'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
+                    }`}>
+                      {user.role}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-text-secondary">Tingkat Membership</span>
+                    <span className="font-bold text-text-primary">{user.membershipLevel}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-text-secondary">Hak Akses VIP</span>
+                    <span className="font-bold text-primary">{user.membershipAccess}</span>
+                  </div>
+                  {user.email && (
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                      <span className="text-text-secondary">Email</span>
+                      <span className="font-mono text-text-primary text-[10px] truncate max-w-[150px]">{user.email}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Badges Earned Card */}
+            {badges && badges.length > 0 && (
+              <div className="bg-[#13151E]/60 border border-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-2xl">
+                <h3 className="font-sora text-xs font-bold uppercase tracking-widest text-[#f5d76e] mb-4">
+                  Sertifikasi & Badges
+                </h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {badges.map((b: any) => (
+                    <div key={b.id} className="flex gap-3 p-3 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-amber-500/20 transition-all">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 text-xs ${b.color}`}>
+                        {b.id.includes('admin') ? '🛡️' : b.id.includes('merchant') ? '⭐' : b.id.includes('graduate') ? '🎓' : '⚡'}
+                      </div>
+                      <div>
+                        <span className="block text-[10px] font-bold text-white font-sora">{b.label}</span>
+                        <span className="block text-[9px] text-[#b8b8b8] mt-0.5">{b.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Tab View, Referral, and Analytics */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* View Selection Tabs */}
+            <div className="flex bg-[#13151E]/60 border border-white/5 p-1 rounded-2xl backdrop-blur-xl gap-1">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all ${
+                  activeTab === 'profile'
+                    ? 'bg-primary text-black shadow-lg shadow-primary/10'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                }`}
+              >
+                Profil & Referral
+              </button>
+              {user.role === 'MERCHANT' && (
+                <button
+                  onClick={() => setActiveTab('products')}
+                  className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all ${
+                    activeTab === 'products'
+                      ? 'bg-primary text-black shadow-lg shadow-primary/10'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                  }`}
+                >
+                  Katalog Produk ({products.length})
+                </button>
+              )}
+              {user.landingPageSetup && (
+                <button
+                  onClick={() => setActiveTab('storefront')}
+                  className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all ${
+                    (activeTab as string) === 'storefront'
+                      ? 'bg-primary text-black shadow-lg shadow-primary/10'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                  }`}
+                >
+                  Pratinjau Toko
+                </button>
+              )}
+            </div>
+
+            {/* PROFILE & REFERRAL TAB */}
+            {activeTab === 'profile' && (
+              <div className="space-y-6">
+                
+                {/* Referral Center Card */}
+                <div className="bg-[#13151E]/80 border border-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-b from-primary/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-1.5 h-6 bg-primary rounded-full" />
+                    <h3 className="font-sora text-sm font-bold text-[#f5d76e] uppercase tracking-widest">
+                      Program Kemitraan & Rujukan (Referral)
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-text-secondary leading-relaxed mb-6">
+                    Bagikan tautan referral atau kode referral Anda. Setiap pengguna yang mendaftar menggunakan referral Anda akan terhubung ke downline jaringan Anda, memberikan Anda komisi penjualan platform otomatis hingga 10% di setiap transaksi!
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                    
+                    {/* Inputs Area */}
+                    <div className="md:col-span-2 space-y-4">
+                      {/* Referral Code Box */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
+                          Kode Referral Anda
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={user.email || user.id}
+                            className="flex-1 h-10 px-3 bg-white/[0.03] border border-white/5 rounded-xl text-xs font-mono text-text-primary focus:outline-none"
+                          />
+                          <button
+                            onClick={handleCopyCode}
+                            className="px-4 h-10 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-xs font-bold text-text-primary transition-all flex items-center justify-center gap-1.5 min-w-[100px]"
+                          >
+                            {copiedCode ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-green-400" />
+                                Tersalin
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                Salin
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Referral Link Box */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
+                          Tautan Pendaftaran (Referral Link)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            readOnly
+                            value={typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.email || user.id}` : `/auth?ref=${user.id}`}
+                            className="flex-1 h-10 px-3 bg-white/[0.03] border border-white/5 rounded-xl text-xs font-mono text-[#f5d76e] focus:outline-none"
+                          />
+                          <button
+                            onClick={handleCopyLink}
+                            className="px-4 h-10 bg-primary text-black rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-w-[100px]"
+                          >
+                            {copiedLink ? (
+                              <>
+                                <Check className="w-3.5 h-3.5" />
+                                Tersalin
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5" />
+                                Salin Link
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Social Media Sharing */}
+                      <div className="pt-2">
+                        <span className="block text-[9px] uppercase tracking-wider text-text-secondary mb-2 font-bold">Bagikan Cepat</span>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={handleCopyLink}
+                            className="px-4 py-2 bg-[#25D366]/10 border border-[#25D366]/25 rounded-xl text-xs text-[#25D366] hover:bg-[#25D366]/20 transition-all font-geist font-bold flex items-center gap-1.5"
+                          >
+                            Bagikan ke WhatsApp
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* QR Code Area */}
+                    <div className="md:col-span-1 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-6">
+                      <div className="p-3 bg-white rounded-2xl mb-2 shadow-xl">
+                        <UserQRCode
+                          userId={user.id}
+                          userName={user.name}
+                          accentColor="#090A0F"
+                          qrDarkColor="#090A0F"
+                          qrLightColor="#ffffff"
+                          variant="icon-only"
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">
+                        Scan QR Code
+                      </span>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Performance & Analytics Summary Cards */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-4 bg-primary rounded-full" />
+                    <h3 className="font-sora text-xs font-bold text-[#f5d76e] uppercase tracking-widest">
+                      Ringkasan Analitik & Performa
+                    </h3>
+                  </div>
+
+                  {user.role === 'MERCHANT' ? (
+                    /* Merchant Analytics Grid */
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Produk</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl font-bold text-text-primary">{products.length}</span>
+                          <span className="text-[9px] text-text-secondary">Item terbit</span>
+                        </div>
+                      </div>
+                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Pesanan Masuk</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl font-bold text-primary">{merchantStats?.totalOrders || 0}</span>
+                          <span className="text-[9px] text-text-secondary">Pesanan</span>
+                        </div>
+                      </div>
+                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4 col-span-2 sm:col-span-1">
+                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Omzet Pendapatan</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-lg font-bold text-[#f5d76e]">Rp {(merchantStats?.totalRevenue || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Affiliate Analytics Grid */
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Akumulasi Komisi</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-base font-bold text-primary">Rp {(affiliateStats?.totalEarnings || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                      </div>
+                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Klik Tautan</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-bold text-text-primary">{affiliateStats?.clicksCount || 0}</span>
+                          <span className="text-[9px] text-text-secondary">Klik</span>
+                        </div>
+                      </div>
+                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Referral Pendaftaran</span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-lg font-bold text-text-primary">{affiliateStats?.referrals?.length || 0}</span>
+                          <span className="text-[9px] text-text-secondary">Mitra</span>
+                        </div>
+                      </div>
+                      {isOwner && wallet && (
+                        <div className="bg-[#13151E]/60 border border-primary/20 bg-gradient-to-b from-primary/5 to-transparent rounded-2xl p-4">
+                          <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Saldo Dompet</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-base font-bold text-primary">Rp {(wallet.balance || 0).toLocaleString('id-ID')}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Wallet Shortcut for Owner */}
+                  {isOwner && (
+                    <div className="flex justify-between items-center bg-white/[0.02] border border-white/5 rounded-2xl p-4 text-xs">
+                      <div className="flex items-center gap-3 text-text-secondary">
+                        <Wallet className="w-4 h-4 text-primary" />
+                        <span>Kelola penarikan komisi dan histori penarikan di Pusat Dompet Saloka</span>
+                      </div>
+                      <Link href="/wallet" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                        Buka Dompet
+                        <ArrowUpRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+
+                {/* Log Rujukan/Aktivitas Rinci */}
+                {isOwner && affiliateStats?.referrals && affiliateStats.referrals.length > 0 && (
+                  <div className="border border-white/5 bg-[#13151E]/80 rounded-3xl overflow-hidden shadow-xl">
+                    <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02]">
+                      <h4 className="font-sora text-xs font-bold text-text-primary uppercase tracking-wider">
+                        Log Rujukan Terkini
+                      </h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-white/5 text-text-secondary bg-white/[0.01]">
+                            <th className="p-4 font-geist font-bold uppercase tracking-wider">Tanggal</th>
+                            <th className="p-4 font-geist font-bold uppercase tracking-wider">Pelanggan</th>
+                            <th className="p-4 font-geist font-bold uppercase tracking-wider">Status</th>
+                            <th className="p-4 font-geist font-bold uppercase tracking-wider text-right">Komisi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {affiliateStats.referrals.slice(0, 5).map((ref: any) => {
+                            const date = new Date(ref.createdAt)
+                            return (
+                              <tr key={ref.id} className="hover:bg-white/[0.01] transition-colors">
+                                <td className="p-4 text-text-secondary font-geist">
+                                  {date.toLocaleDateString('id-ID')}{' '}
+                                  <span className="opacity-50 text-[10px]">
+                                    {date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-text-primary">
+                                  {ref.buyer?.name || 'Pelanggan'}
+                                </td>
+                                <td className="p-4">
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-geist font-bold border uppercase bg-green-950 border-green-500/30 text-green-400">
+                                    {ref.status}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right font-geist font-bold text-primary">
+                                  + Rp {ref.amount.toLocaleString('id-ID')}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PRODUCTS TAB */}
+            {activeTab === 'products' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-6 bg-primary rounded-full" />
+                    <h3 className="font-sora text-sm font-bold text-text-primary uppercase tracking-widest">
+                      Katalog Etalase Produk
+                    </h3>
+                  </div>
+                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-text-secondary font-mono">
+                    {products.length} Items
+                  </span>
+                </div>
+
+                {products.length === 0 ? (
+                  <div className="p-12 text-center border border-white/5 bg-[#13151E]/40 rounded-3xl text-xs text-text-secondary">
+                    Belum ada produk yang diterbitkan oleh merchant ini.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {products.map((p: any) => (
+                      <div 
+                        key={p.id}
+                        className="group bg-[#13151E]/60 border border-white/5 rounded-3xl p-5 hover:border-primary/25 transition-all duration-300 flex flex-col justify-between shadow-lg"
+                      >
+                        <div>
+                          {p.imageUrl && (
+                            <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 border border-white/5 relative bg-[#1A1D27]">
+                              <img 
+                                src={p.imageUrl} 
+                                alt={p.title} 
+                                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
+                              />
+                            </div>
+                          )}
+                          <span className="text-[8px] font-bold tracking-widest text-primary uppercase bg-primary/5 px-2.5 py-1 rounded border border-primary/20">
+                            {p.category}
+                          </span>
+                          <h4 className="text-sm font-bold text-white mt-3 group-hover:text-primary transition-colors line-clamp-1">
+                            {p.title}
+                          </h4>
+                          <p className="text-xs text-text-secondary mt-1.5 line-clamp-2 leading-relaxed">
+                            {p.description}
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/5">
+                          <span className="text-sm font-bold text-primary">
+                            Rp {p.price.toLocaleString('id-ID')}
+                          </span>
+                          <Link
+                            href={`/market/product/${p.id}`}
+                            className="px-4 py-2 bg-white/5 group-hover:bg-primary text-[#f5f5f5] group-hover:text-black text-[10px] font-bold uppercase rounded-lg border border-white/10 group-hover:border-transparent transition-all flex items-center gap-1"
+                          >
+                            Beli Produk
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+
+        </div>
+      </main>
+    </div>
+  )
 }
 
 /* ==========================================================================
@@ -525,7 +1101,7 @@ function ModernGoldTemplate({ user, products, config, logoUrl, distance, badges 
                   transition={{ duration: 0.5 }}
                   className={verifiedHeroBadge}
                 >
-                  <span>Teras UMKM Premium Merchant</span>
+                  <span>Saloka.id Premium Merchant</span>
                 </motion.div>
 
                 <motion.h1 
@@ -643,7 +1219,7 @@ function ModernGoldTemplate({ user, products, config, logoUrl, distance, badges 
                   <div>
                     <h4 className="text-sm font-bold text-white mb-2">Jaminan Kualitas Premium</h4>
                     <p className="text-xs text-[#b8b8b8] leading-relaxed">
-                      Setiap produk yang kami pasarkan telah melalui audit kelayakan mutu berkala dari platform Teras UMKM untuk memastikan pengalaman belanja terbaik.
+                      Setiap produk yang kami pasarkan telah melalui audit kelayakan mutu berkala dari platform Saloka.id untuk memastikan pengalaman belanja terbaik.
                     </p>
                   </div>
                 </div>
@@ -2182,7 +2758,7 @@ function CleanProfessionalTemplate({ user, products, config, logoUrl, distance, 
         <section className="text-center space-y-6">
           <div className={heroBadge}>
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Teras UMKM Partner Usaha</span>
+            <span>Saloka.id Partner Usaha</span>
           </div>
 
           <h1 className={heroTitleClass}>
@@ -2271,7 +2847,7 @@ function CleanProfessionalTemplate({ user, products, config, logoUrl, distance, 
             <div>
               <h4 className={bentoTitleClass}>Standard Kualitas Audit</h4>
               <p className={bentoDescClass}>
-                Menjamin mutu produk eceran dan logistik bersertifikasi yang terintegrasi dengan ekosistem digital TerasUMKM.
+                Menjamin mutu produk eceran dan logistik bersertifikasi yang terintegrasi dengan ekosistem digital Saloka.id.
               </p>
             </div>
           </div>

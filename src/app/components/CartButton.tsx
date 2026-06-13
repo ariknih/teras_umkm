@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-export default function CartButton() {
+export default function CartButton({ userId }: { userId?: string }) {
   const [itemCount, setItemCount] = useState(0)
 
   useEffect(() => {
     const updateCount = () => {
       try {
-        const storedCart = localStorage.getItem('teras_cart')
+        const cartKey = userId ? `teras_cart_${userId}` : 'teras_cart'
+        const storedCart = localStorage.getItem(cartKey)
         if (storedCart) {
           const cart = JSON.parse(storedCart)
           const count = cart.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
@@ -34,7 +35,7 @@ export default function CartButton() {
       window.removeEventListener('storage', updateCount)
       clearInterval(interval)
     }
-  }, [])
+  }, [userId])
 
   return (
     <Link

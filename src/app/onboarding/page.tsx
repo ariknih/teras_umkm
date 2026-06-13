@@ -6,8 +6,9 @@ import {
   getCurrentUserProfile, 
   sendOtpWhatsApp, 
   checkSubdomainAvailability, 
-  saveOnboardingData 
-} from '../actions/auth'
+  saveOnboardingData,
+  checkWhatsAppUnique
+} from '@/app/actions/auth'
 import { 
   MapPin, 
   ArrowLeft, 
@@ -41,6 +42,37 @@ const INDONESIA_REGIONS = [
   'Denpasar, Bali'
 ]
 
+
+const lightThemeStyles = {
+  '--background': '#F5F7F9',
+  '--foreground': '#111111',
+  '--primary': '#2DB24A',
+  '--primary-container': '#2DB24A',
+  '--on-primary-container': '#FFFFFF',
+  '--secondary': '#0F5132',
+  '--secondary-container': '#0F5132',
+  '--on-secondary-container': '#FFFFFF',
+  '--tertiary': '#FFC107',
+  '--tertiary-container': '#FFC107',
+  '--on-tertiary-container': '#0F5132',
+  '--bg-dark': '#F5F7F9',
+  '--surface-dark': '#FFFFFF',
+  '--surface-container-lowest': '#FFFFFF',
+  '--surface-container-low': '#F0F2F5',
+  '--surface-container': '#E5E8EB',
+  '--surface-container-high': '#DADFE3',
+  '--surface-container-highest': '#D0D5DA',
+  '--on-surface': '#111111',
+  '--on-surface-variant': '#6B7280',
+  '--inverse-surface': '#111111',
+  '--inverse-on-surface': '#FFFFFF',
+  '--text-primary': '#111111',
+  '--text-secondary': '#6B7280',
+  '--border-subtle': '#E5E7EB',
+  '--outline-variant': '#E5E7EB',
+  '--glow-gold': 'rgba(45, 178, 74, 0.05)',
+} as React.CSSProperties;
+
 export default function OnboardingPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
@@ -52,6 +84,7 @@ export default function OnboardingPage() {
   
   // Error / Status states
   const [error, setError] = useState<string | null>(null)
+  const [isDuplicateWa, setIsDuplicateWa] = useState(false)
 
   // Step 1: WA Verify States
   const [whatsapp, setWhatsapp] = useState('')
@@ -146,19 +179,31 @@ export default function OnboardingPage() {
   // Step 1: Send OTP handler
   const handleSendOtp = async () => {
     setError(null)
+    setIsDuplicateWa(false)
     if (!whatsapp) {
       setError('Nomor WhatsApp wajib diisi.')
       return
     }
 
-    // Generate realistic 6 digit OTP code
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
-    setGeneratedOtp(code)
-    setOtpSent(true)
-    setCountdown(60)
-    setOtpInputs(Array(6).fill(''))
-
     startTransition(async () => {
+      // 1. Check if WhatsApp number is already in use
+      const uniqueRes = await checkWhatsAppUnique(whatsapp)
+      if (uniqueRes.error) {
+        setError(uniqueRes.error)
+        return
+      }
+      if (!uniqueRes.unique) {
+        setIsDuplicateWa(true)
+        setError('Nomor WhatsApp sudah pernah digunakan oleh akun lain.')
+        return
+      }
+
+      // 2. Generate and send OTP if unique
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      setGeneratedOtp(code)
+      setOtpSent(true)
+      setCountdown(60)
+      setOtpInputs(Array(6).fill(''))
       await sendOtpWhatsApp(whatsapp, code)
     })
   }
@@ -302,7 +347,7 @@ export default function OnboardingPage() {
 
   if (loadingUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-dark">
+      <div style={lightThemeStyles} className="min-h-screen flex items-center justify-center bg-bg-dark">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
           <span className="text-xs font-bold text-text-secondary">Menyiapkan Onboarding...</span>
@@ -316,7 +361,7 @@ export default function OnboardingPage() {
   )
 
   return (
-    <div className="relative min-h-[calc(100vh-72px)] bg-bg-dark py-12 px-4 md:px-10 flex items-center justify-center overflow-hidden">
+    <div style={lightThemeStyles} className="relative min-h-[calc(100vh-72px)] bg-bg-dark py-12 px-4 md:px-10 flex items-center justify-center overflow-hidden">
       {/* Background Animated Gradient Orbs */}
       <motion.div
         animate={{
@@ -346,7 +391,7 @@ export default function OnboardingPage() {
       />
 
       {/* Glassmorphism Main Card */}
-      <div className="w-full max-w-[920px] bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border border-slate-100 dark:border-zinc-900 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.08)] z-10 overflow-hidden flex flex-col md:flex-row min-h-[580px] transition-all">
+      <div className="w-full max-w-[920px] bg-white border border-slate-200/80 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.05)] z-10 overflow-hidden flex flex-col md:flex-row min-h-[580px] transition-all">
         
         {/* Left Sidebar: Steps Progress Indicator */}
         <div className="w-full md:w-[300px] bg-gradient-to-b from-emerald-950 to-green-900 p-8 text-white flex flex-col justify-between shrink-0 relative overflow-hidden">
@@ -401,7 +446,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Right Content Panel */}
-        <div className="flex-grow p-8 md:p-12 flex flex-col justify-between relative bg-white/50 dark:bg-transparent min-h-[480px]">
+        <div className="flex-grow p-8 md:p-12 flex flex-col justify-between relative bg-white min-h-[480px]">
           
           {/* Back button (Only for steps 2 & 3) */}
           <AnimatePresence>
@@ -428,9 +473,29 @@ export default function OnboardingPage() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/20 text-xs text-red-600 dark:text-red-400 font-semibold border-l-4 border-red-500 shadow-sm"
+                  className="mb-6 p-4 rounded-xl bg-red-50 text-xs text-red-600 font-semibold border-l-4 border-red-500 shadow-sm"
                 >
-                  {error}
+                  <div>{error}</div>
+                  {isDuplicateWa && (
+                    <div className="mt-3 pt-3 border-t border-red-200/50 flex flex-wrap gap-3">
+                      <a 
+                        href={`https://wa.me/628122222900?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20password%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-[10px] font-bold"
+                      >
+                        Lupa Password? Hubungi CS
+                      </a>
+                      <a 
+                        href={`https://wa.me/628122222900?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20email%20atau%20informasi%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-colors text-[10px] font-bold"
+                      >
+                        Lupa Akun? Hubungi CS
+                      </a>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -451,7 +516,7 @@ export default function OnboardingPage() {
                   </div>
                   
                   <div>
-                    <h2 className="font-poppins text-2xl font-extrabold text-slate-800 dark:text-white">Kode Verifikasi</h2>
+                    <h2 className="font-poppins text-2xl font-extrabold text-slate-800">Kode Verifikasi</h2>
                     <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">
                       Silakan masukkan nomor WhatsApp aktif Anda untuk menerima kode OTP keamanan akun.
                     </p>
@@ -466,9 +531,13 @@ export default function OnboardingPage() {
                         <input 
                           type="tel"
                           value={whatsapp}
-                          onChange={(e) => setWhatsapp(e.target.value.replace(/[^0-9]/g, ''))}
-                          placeholder="Contoh: 081234567890"
-                          className="w-full px-4 py-3 bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-text-primary"
+                          onChange={(e) => {
+                            setWhatsapp(e.target.value.replace(/[^0-9]/g, ''))
+                            setError(null)
+                            setIsDuplicateWa(false)
+                          }}
+                          placeholder="081234567890"
+                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
                         />
                       </div>
                       
@@ -485,7 +554,7 @@ export default function OnboardingPage() {
                   ) : (
                     <div className="space-y-6 mt-6">
                       <p className="text-xs text-text-secondary">
-                        Kode verifikasi 6 digit telah berhasil dikirim melalui WhatsApp ke <strong className="text-slate-800 dark:text-white">{whatsapp}</strong>
+                        Kode verifikasi 6 digit telah berhasil dikirim melalui WhatsApp ke <strong className="text-slate-800">{whatsapp}</strong>
                       </p>
 
                       {/* 6 Digit Input Boxes */}
@@ -499,14 +568,14 @@ export default function OnboardingPage() {
                             value={digit}
                             onChange={(e) => handleOtpInputChange(idx, e.target.value)}
                             onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                            className="w-11 h-11 border border-slate-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 rounded-xl text-center font-poppins font-extrabold text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-text-primary"
+                            className="w-11 h-11 border border-slate-200 bg-white rounded-xl text-center font-poppins font-extrabold text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
                           />
                         ))}
                       </div>
 
                       <div className="text-xs text-text-secondary">
                         {countdown > 0 ? (
-                          <span>Mohon tunggu dalam <strong className="text-slate-800 dark:text-white">{countdown} detik</strong> untuk kirim ulang</span>
+                          <span>Mohon tunggu dalam <strong className="text-slate-800">{countdown} detik</strong> untuk kirim ulang</span>
                         ) : (
                           <button 
                             onClick={handleSendOtp}
@@ -526,7 +595,7 @@ export default function OnboardingPage() {
                         Verifikasi
                       </motion.button>
 
-                      <div className="text-[10px] text-text-secondary pt-4 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-center gap-1.5">
+                      <div className="text-[10px] text-text-secondary pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5">
                         Ada kendala? <span>Hubungi CS Saloka di WhatsApp:</span> 
                         <a href="https://wa.me/628122222900" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline">08122222900</a>
                       </div>
@@ -545,12 +614,12 @@ export default function OnboardingPage() {
                   transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                   className="space-y-6 w-full mt-2"
                 >
-                  <div className="flex items-center gap-3 border-b border-slate-100 dark:border-zinc-900 pb-4">
+                  <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
                       <Store size={20} />
                     </div>
                     <div>
-                      <h2 className="font-poppins text-lg font-extrabold text-slate-800 dark:text-white">Tambah Alamat</h2>
+                      <h2 className="font-poppins text-lg font-extrabold text-slate-800">Tambah Alamat</h2>
                       <p className="text-[10px] text-text-secondary">Alamat penjemputan paket oleh kurir logistik terintegrasi</p>
                     </div>
                   </div>
@@ -566,7 +635,7 @@ export default function OnboardingPage() {
                         value={storeName}
                         onChange={(e) => setStoreName(e.target.value)}
                         placeholder="Masukkan nama toko atau nama penjual"
-                        className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-text-primary"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
                       />
                     </div>
 
@@ -581,7 +650,7 @@ export default function OnboardingPage() {
                           value={picName}
                           onChange={(e) => setPicName(e.target.value)}
                           placeholder="Nama penanggung jawab"
-                          className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-text-primary"
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
                         />
                       </div>
                       <div>
@@ -594,7 +663,7 @@ export default function OnboardingPage() {
                           value={phone}
                           onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
                           placeholder="Nomor HP aktif"
-                          className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-text-primary"
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
                         />
                       </div>
                     </div>
@@ -606,22 +675,22 @@ export default function OnboardingPage() {
                       </label>
                       <div 
                         onClick={() => setRegionDropdownOpen(!regionDropdownOpen)}
-                        className="w-full px-4 py-3 bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold cursor-pointer flex justify-between items-center select-none text-text-primary"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold cursor-pointer flex justify-between items-center select-none text-slate-800"
                       >
-                        <span className={region ? 'text-slate-800 dark:text-white' : 'text-text-secondary/40'}>
+                        <span className={region ? 'text-slate-800' : 'text-text-secondary/40'}>
                           {region || 'Pilih Provinsi, Kota, Kecamatan'}
                         </span>
                         <MapPin size={16} className="text-text-secondary" />
                       </div>
 
                       {regionDropdownOpen && (
-                        <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-2xl p-4 z-20 space-y-2.5 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl p-4 z-20 space-y-2.5 animate-in fade-in zoom-in-95 duration-200">
                           <input
                             type="text"
                             placeholder="Masukkan nama kota / kecamatan..."
                             value={regionSearch}
                             onChange={(e) => setRegionSearch(e.target.value)}
-                            className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-950/50 border border-slate-200 dark:border-zinc-800 rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500 text-text-primary"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:border-emerald-500 text-slate-800"
                           />
                           <div className="max-h-40 overflow-y-auto space-y-1">
                             {filteredRegions.length > 0 ? (
@@ -629,7 +698,7 @@ export default function OnboardingPage() {
                                 <div
                                   key={reg}
                                   onClick={() => { setRegion(reg); setRegionDropdownOpen(false); }}
-                                  className="px-3 py-2.5 text-xs hover:bg-emerald-500/10 hover:text-emerald-500 font-bold rounded-lg cursor-pointer transition-colors text-text-primary"
+                                  className="px-3 py-2.5 text-xs hover:bg-emerald-500/10 hover:text-emerald-500 font-bold rounded-lg cursor-pointer transition-colors text-slate-800"
                                 >
                                   {reg}
                                 </div>
@@ -662,8 +731,8 @@ export default function OnboardingPage() {
                         rows={2}
                         value={detailAddress}
                         onChange={(e) => setDetailAddress(e.target.value)}
-                        placeholder="Contoh: Jalan Merpati No.123 RT 01 RW 01"
-                        className="w-full px-4 py-2.5 bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-text-primary"
+                        placeholder="Jalan Merpati No.123 RT 01 RW 01"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none text-slate-800"
                       />
                     </div>
 
@@ -675,7 +744,7 @@ export default function OnboardingPage() {
                         onChange={(e) => setShowDestinationDetail(e.target.checked)}
                         className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-500 cursor-pointer"
                       />
-                      <label htmlFor="dest-chk" className="text-[10px] font-bold text-text-secondary cursor-pointer hover:text-slate-800 dark:hover:text-white transition-colors">
+                      <label htmlFor="dest-chk" className="text-[10px] font-bold text-text-secondary cursor-pointer hover:text-slate-800 transition-colors">
                         Tampilkan detail tujuan pengiriman
                       </label>
                     </div>
@@ -706,7 +775,7 @@ export default function OnboardingPage() {
                     <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto text-emerald-600 shadow-inner">
                       <Globe size={26} />
                     </div>
-                    <h2 className="font-poppins text-2xl font-extrabold text-slate-800 dark:text-white">Create Subdomain</h2>
+                    <h2 className="font-poppins text-2xl font-extrabold text-slate-800">Create Subdomain</h2>
                     <p className="text-xs text-text-secondary leading-relaxed">
                       Pastikan subdomain yang Anda isi benar. Subdomain yang telah dibuat tidak dapat diubah kembali di kemudian hari.
                     </p>
@@ -717,15 +786,15 @@ export default function OnboardingPage() {
                       <label className="block text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-2">
                         Subdomain Toko Anda
                       </label>
-                      <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+                      <div className="flex rounded-xl overflow-hidden border border-slate-200 bg-slate-50 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
                         <input
                           type="text"
                           value={subdomain}
                           onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                          placeholder="Contoh: tokobudi"
-                          className="flex-grow px-4 py-3 bg-white dark:bg-zinc-950/50 text-xs font-semibold outline-none border-none text-right placeholder:text-left text-text-primary"
+                          placeholder="tokobudi"
+                          className="flex-grow px-4 py-3 bg-white text-xs font-semibold outline-none border-none text-right placeholder:text-left text-slate-800"
                         />
-                        <span className="px-5 py-3 bg-slate-100 dark:bg-zinc-900 text-xs font-extrabold text-text-secondary/70 flex items-center select-none border-l border-slate-200 dark:border-zinc-800">
+                        <span className="px-5 py-3 bg-slate-100 text-xs font-extrabold text-text-secondary/70 flex items-center select-none border-l border-slate-200">
                           .saloka.id
                         </span>
                       </div>
@@ -783,17 +852,17 @@ export default function OnboardingPage() {
                   </motion.div>
 
                   <div>
-                    <h2 className="font-poppins text-2xl font-extrabold text-slate-800 dark:text-white">Welcome to Saloka.id!</h2>
+                    <h2 className="font-poppins text-2xl font-extrabold text-slate-800">Welcome to Saloka.id!</h2>
                     <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">
-                      Akun merchant Anda telah siap. Teras toko online Anda kini aktif di:
+                      Akun merchant Anda telah siap. Saloka toko online Anda kini aktif di:
                     </p>
                     <div className="mt-4 px-6 py-3 bg-emerald-500/10 rounded-full inline-block text-sm font-extrabold text-emerald-600 border border-emerald-500/20 shadow-sm">
                       {subdomain}.saloka.id
                     </div>
                   </div>
 
-                  <div className="p-5 bg-slate-50 dark:bg-zinc-900/40 rounded-xl space-y-3.5 text-left border border-slate-100 dark:border-zinc-800">
-                    <h3 className="text-xs font-bold text-slate-800 dark:text-white">Langkah selanjutnya:</h3>
+                  <div className="p-5 bg-slate-50 rounded-xl space-y-3.5 text-left border border-slate-100">
+                    <h3 className="text-xs font-bold text-slate-800">Langkah selanjutnya:</h3>
                     <div className="space-y-2 text-[11px] text-text-secondary leading-relaxed">
                       <p>✓ <strong>Desain Landing Page:</strong> Kustomisasi warna, logo, spanduk, dan layout etalase Anda.</p>
                       <p>✓ <strong>Upload Produk:</strong> Tambahkan ribuan produk premium Anda ke etalase nasional.</p>
@@ -836,7 +905,7 @@ export default function OnboardingPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: "spring", stiffness: 350, damping: 25 }}
-              className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-7 w-full max-w-[390px] relative z-10 text-center border border-slate-100 dark:border-zinc-800"
+              className="bg-white rounded-2xl shadow-2xl p-7 w-full max-w-[390px] relative z-10 text-center border border-slate-200"
             >
               <button 
                 onClick={() => setShowConfirmModal(false)}
@@ -849,7 +918,7 @@ export default function OnboardingPage() {
                 <Globe size={30} />
               </div>
 
-              <h3 className="font-poppins text-base font-extrabold text-slate-800 dark:text-white mb-2 leading-snug">
+              <h3 className="font-poppins text-base font-extrabold text-slate-800 mb-2 leading-snug">
                 Make sure your domain is correct and appropriate
               </h3>
               
@@ -860,7 +929,7 @@ export default function OnboardingPage() {
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => setShowConfirmModal(false)}
-                  className="flex-1 py-2.5 px-4 border border-slate-200 dark:border-zinc-800 text-text-secondary hover:bg-slate-50 dark:hover:bg-zinc-800/50 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer bg-transparent"
+                  className="flex-1 py-2.5 px-4 border border-slate-200 text-text-secondary hover:bg-slate-50 font-bold text-xs uppercase tracking-wider rounded-xl transition-colors cursor-pointer bg-transparent"
                 >
                   Cancel
                 </button>

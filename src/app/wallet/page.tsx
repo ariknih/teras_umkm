@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getWalletDetails, withdrawFunds } from '../actions/wallet-affiliate'
-import { getCurrentUserProfile, logout } from '../actions/auth'
+import { getWalletDetails, withdrawFunds } from '@/app/actions/wallet-affiliate'
+import { getCurrentUserProfile, logout } from '@/app/actions/auth'
 
 interface Transaction {
   id: string
@@ -403,7 +403,7 @@ export default function WalletPage() {
                       required
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
-                      placeholder="Contoh: 100000"
+                      placeholder="100000"
                       className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-foreground placeholder:text-foreground/70/40 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                   </div>
@@ -468,7 +468,7 @@ export default function WalletPage() {
                 type="text"
                 value={manualOrderId || pendingOrderId || ''}
                 onChange={(e) => setManualOrderId(e.target.value)}
-                placeholder="Masukkan Order ID (contoh: dep-user-...)"
+                placeholder="Masukkan Order ID (dep-user-...)"
                 className="flex-grow h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-foreground focus:outline-none focus:border-primary/50"
               />
               <button

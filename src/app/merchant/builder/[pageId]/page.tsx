@@ -13,7 +13,16 @@ import {
   Users,
   AlertCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  Trash,
+  Copy,
+  Bookmark,
+  Pencil,
+  Settings,
+  RotateCcw,
+  FileText,
+  CheckSquare,
+  Minimize2
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -150,7 +159,7 @@ function defaultContent(type: string): Record<string, any> {
     navigation:          { links: [{ label: 'Beranda', url: '#' }, { label: 'Produk', url: '#produk' }, { label: 'Kontak', url: '#kontak' }], logoText: 'Brand' },
     tabs:                { tabs: [{ label: 'Deskripsi', content: 'Deskripsi produk Anda di sini.' }, { label: 'Spesifikasi', content: 'Spesifikasi teknis produk.' }, { label: 'Ulasan', content: 'Ulasan dari pelanggan.' }] },
     html:                { code: '<p style="text-align:center">Kode HTML kustom Anda di sini</p>' },
-    formulir:            { fields: [{ type: 'text', label: 'Nama Lengkap', placeholder: 'Masukkan nama lengkap', required: true }, { type: 'tel', label: 'Nomor WhatsApp', placeholder: '08xx-xxxx-xxxx', required: true }, { type: 'email', label: 'Email', placeholder: 'email@example.com', required: false }], submitLabel: 'Kirim Sekarang', redirectUrl: '' },
+    formulir:            { fields: [{ type: 'text', label: 'Nama Lengkap', placeholder: 'Masukkan nama lengkap', required: true }, { type: 'tel', label: 'Nomor WhatsApp', placeholder: '08xx-xxxx-xxxx', required: true }, { type: 'email', label: 'Email', placeholder: 'email@domain.id', required: false }], submitLabel: 'Kirim Sekarang', redirectUrl: '' },
     floating_whatsapp:   { phone: '6281234567890', message: 'Halo saya ingin bertanya.' },
     popup:               { title: 'Penawaran Spesial!', content: 'Dapatkan diskon 20% untuk pembelian pertama Anda.', buttonLabel: 'Ambil Diskon', delay: 3 },
   }
@@ -546,8 +555,29 @@ function RenderComp({ comp }: { comp: BuilderComponent }) {
       </div>
     )
     case 'html': return (
-      <div style={{ ...p, background: '#F9FAFB', borderRadius: 8, border: '1px solid #E5E7EB' }}>
-        <code style={{ fontSize: 12, color: '#374151', fontFamily: 'monospace', whiteSpace: 'pre-wrap', display: 'block' }}>{c.code || '<!-- HTML -->'}</code>
+      <div style={{ ...p, position: 'relative' }}>
+        {c.code ? (
+          <>
+            <SafeIframe html={c.code} pointerEventsNone />
+            {/* Transparent overlay to allow selecting/clicking the component wrapper in builder */}
+            <div 
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 10,
+                cursor: 'pointer'
+              }}
+            />
+          </>
+        ) : (
+          <div style={{ padding: '24px', textAlign: 'center', color: '#9CA3AF', border: '1px dashed #D1D5DB', borderRadius: 8, background: '#F9FAFB' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 4 }}>💻 Custom HTML Component</span>
+            <span style={{ fontSize: 11 }}>Kode HTML kosong. Silakan tulis kode di panel edit sebelah kanan.</span>
+          </div>
+        )}
       </div>
     )
     case 'floating_whatsapp': return (
@@ -1249,6 +1279,167 @@ const STYLE_PRESETS = {
   }
 }
 
+const STYLE_PALETTES = [
+  {
+    name: 'Cobalt Blue',
+    bgColor: '#F8FAFC',
+    primaryColor: '#2b4cd0',
+    textColor: '#1E293B',
+    cardBg: '#FFFFFF',
+    borderRadius: '8px',
+  },
+  {
+    name: 'Deep Purple',
+    bgColor: '#FAF5FF',
+    primaryColor: '#6c2bd6',
+    textColor: '#1E293B',
+    cardBg: '#FFFFFF',
+    borderRadius: '8px',
+  },
+  {
+    name: 'Sky Blue',
+    bgColor: '#F0F9FF',
+    primaryColor: '#2b6ee2',
+    textColor: '#1E293B',
+    cardBg: '#FFFFFF',
+    borderRadius: '8px',
+  },
+  {
+    name: 'Teal Garden',
+    bgColor: '#F4FBF7',
+    primaryColor: '#2bd6c6',
+    textColor: '#1E293B',
+    cardBg: '#FFFFFF',
+    borderRadius: '8px',
+  },
+  {
+    name: 'Vibrant Magenta',
+    bgColor: '#FDF2F8',
+    primaryColor: '#c52bd6',
+    textColor: '#1E293B',
+    cardBg: '#FFFFFF',
+    borderRadius: '8px',
+  },
+  {
+    name: 'Fresh Mint',
+    bgColor: '#F0FDF4',
+    primaryColor: '#2bd6be',
+    textColor: '#1E293B',
+    cardBg: '#FFFFFF',
+    borderRadius: '8px',
+  },
+  {
+    name: 'Lime Energy',
+    bgColor: '#F9FDEB',
+    primaryColor: '#a5d62b',
+    textColor: '#1E293B',
+    cardBg: '#FFFFFF',
+    borderRadius: '8px',
+  },
+  {
+    name: 'Classic Indigo',
+    bgColor: '#EEF2F6',
+    primaryColor: '#4F46E5',
+    textColor: '#1E293B',
+    cardBg: '#FFFFFF',
+    borderRadius: '8px',
+  }
+]
+
+function SafeIframe({ html, pointerEventsNone = false }: { html: string; pointerEventsNone?: boolean }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [height, setHeight] = useState('100px')
+
+  useEffect(() => {
+    const iframe = iframeRef.current
+    if (!iframe) return
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!doc) return
+
+    // Convert vh units to fixed px based on parent viewport height to prevent loop feedback
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 800
+    const sanitizedHtml = html.replace(/(\d+)vh/g, (match, p1) => {
+      const val = parseInt(p1)
+      return `${(val / 100) * screenHeight}px`
+    })
+
+    doc.open()
+    doc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+              height: auto !important;
+              min-height: auto !important;
+            }
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="iframe-content-root">${sanitizedHtml}</div>
+          <script>
+            function sendHeight() {
+              const el = document.getElementById("iframe-content-root");
+              if (el) {
+                const height = el.offsetHeight;
+                window.parent.postMessage({ 
+                  type: 'IFRAME_HEIGHT', 
+                  iframeId: '${html.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '')}', 
+                  height: height 
+                }, '*');
+              }
+            }
+            window.addEventListener('load', sendHeight);
+            window.addEventListener('resize', sendHeight);
+            setTimeout(sendHeight, 100);
+            setTimeout(sendHeight, 500);
+            
+            if (window.ResizeObserver) {
+              const resizeObserver = new ResizeObserver(sendHeight);
+              resizeObserver.observe(document.body);
+            }
+          </script>
+        </body>
+      </html>
+    `)
+    doc.close()
+  }, [html])
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const matchId = html.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '')
+      if (event.data && event.data.type === 'IFRAME_HEIGHT' && event.data.iframeId === matchId) {
+        setHeight(event.data.height + 'px')
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [html])
+
+  return (
+    <iframe
+      ref={iframeRef}
+      style={{
+        width: '100%',
+        height: height,
+        border: 'none',
+        overflow: 'hidden',
+        pointerEvents: pointerEventsNone ? 'none' : 'auto',
+      }}
+      title="Custom HTML Sandbox"
+    />
+  )
+}
+
 export default function BuilderPage() {
   const router = useRouter()
   const params = useParams()
@@ -1274,6 +1465,113 @@ export default function BuilderPage() {
   const [styleTab, setStyleTab] = useState<'guide' | 'custom'>('guide')
   const [aiPrompt, setAiPrompt] = useState('')
   const [generatingAiTheme, setGeneratingAiTheme] = useState(false)
+
+  // Custom theme states & functions
+  const [recentlyUsed, setRecentlyUsed] = useState<string[]>(['#2b4cd0', '#6c2bd6', '#2b6ee2', '#2bd6c6'])
+  const [customPrimaryColor, setCustomPrimaryColor] = useState('#2DB24A')
+  const [customTextColor, setCustomTextColor] = useState('#111111')
+  const [customCardBg, setCustomCardBg] = useState('#FFFFFF')
+  const [customBorderRadius, setCustomBorderRadius] = useState(8)
+
+  const addRecentlyUsed = (color: string) => {
+    if (!color) return
+    setRecentlyUsed(prev => {
+      const filtered = prev.filter(c => c.toLowerCase() !== color.toLowerCase())
+      return [color, ...filtered].slice(0, 4)
+    })
+  }
+
+  const handleCustomPrimaryChange = (val: string) => {
+    setCustomPrimaryColor(val)
+    addRecentlyUsed(val)
+    const nextComps = comps.map(comp => {
+      if (comp.type === 'button') {
+        return {
+          ...comp,
+          style: {
+            ...comp.style,
+            bgColor: val,
+            color: '#FFFFFF'
+          }
+        }
+      }
+      return comp
+    })
+    setComps(nextComps)
+    push(nextComps)
+  }
+
+  const handleCustomTextColorChange = (val: string) => {
+    setCustomTextColor(val)
+    addRecentlyUsed(val)
+    const nextComps = comps.map(comp => {
+      if (['headline', 'subheadline', 'content', 'rating', 'visitor_counter', 'sold_counter', 'sales_notification'].includes(comp.type)) {
+        return {
+          ...comp,
+          style: {
+            ...comp.style,
+            color: val
+          }
+        }
+      }
+      if (['pricing', 'faq', 'testimonials', 'formulir', 'banner_announcement', 'tabs'].includes(comp.type)) {
+        return {
+          ...comp,
+          style: {
+            ...comp.style,
+            color: val
+          }
+        }
+      }
+      return comp
+    })
+    setComps(nextComps)
+    push(nextComps)
+  }
+
+  const handleCustomCardBgChange = (val: string) => {
+    setCustomCardBg(val)
+    addRecentlyUsed(val)
+    const nextComps = comps.map(comp => {
+      if (['pricing', 'faq', 'testimonials', 'formulir', 'banner_announcement', 'tabs'].includes(comp.type)) {
+        return {
+          ...comp,
+          style: {
+            ...comp.style,
+            bgColor: val
+          }
+        }
+      }
+      return comp
+    })
+    setComps(nextComps)
+    push(nextComps)
+  }
+
+  const handleCustomBorderRadiusChange = (val: number) => {
+    setCustomBorderRadius(val)
+    const nextComps = comps.map(comp => {
+      if (['button', 'whatsapp_button', 'pricing', 'faq', 'testimonials', 'formulir', 'banner_announcement', 'tabs', 'image', 'video'].includes(comp.type)) {
+        return {
+          ...comp,
+          style: {
+            ...comp.style,
+            borderRadius: val
+          }
+        }
+      }
+      return comp
+    })
+    setComps(nextComps)
+    push(nextComps)
+  }
+
+  // AI Rewrite States
+  const [showAiRewriteMenu, setShowAiRewriteMenu] = useState<string | null>(null)
+  const [hoveredTone, setHoveredTone] = useState(false)
+  const [hoveredSelling, setHoveredSelling] = useState(false)
+  const [customPromptText, setCustomPromptText] = useState('')
+  const [rewritingCompId, setRewritingCompId] = useState<string | null>(null)
 
   // DnD state
   const [dragOverIdx, setDragOverIdx] = useState<number|null>(null)
@@ -1308,6 +1606,67 @@ export default function BuilderPage() {
     })
     setComps(nextComps)
     push(nextComps)
+  }
+
+  // Trigger AI rewrite
+  const triggerRewrite = async (comp: BuilderComponent, action: string) => {
+    let originalText = ''
+    let isLabel = false
+    
+    if (comp.type === 'headline' || comp.type === 'subheadline' || comp.type === 'content') {
+      originalText = comp.content.text || ''
+    } else if (comp.type === 'button') {
+      originalText = comp.content.label || ''
+      isLabel = true
+    } else {
+      alert('Tipe komponen ini tidak didukung untuk AI Rewrite kustom.')
+      return
+    }
+
+    if (!originalText && action !== 'custom') {
+      alert('Teks asli kosong. Silakan tulis teks terlebih dahulu.')
+      return
+    }
+
+    setRewritingCompId(comp.id)
+    setShowAiRewriteMenu(null)
+    
+    try {
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'rewrite',
+          context: {
+            text: originalText,
+            action,
+            customPrompt: action === 'custom' ? customPromptText : ''
+          }
+        })
+      })
+
+      const data = await res.json()
+      if (data.text) {
+        const nextContent = { ...comp.content }
+        if (isLabel) {
+          nextContent.label = data.text
+        } else {
+          nextContent.text = data.text
+        }
+        
+        updComp({ ...comp, content: nextContent })
+        if (action === 'custom') {
+          setCustomPromptText('')
+        }
+      } else if (data.error) {
+        alert(data.error)
+      }
+    } catch (e) {
+      console.error(e)
+      alert('Gagal memproses AI Rewrite.')
+    } finally {
+      setRewritingCompId(null)
+    }
   }
 
   // Handle AI Theme generation
@@ -1414,6 +1773,9 @@ export default function BuilderPage() {
     if(!profile)return;setSaving(true)
     try{
       const cfg=JSON.parse(profile.landingPageConfig||'{}')
+      // Ensure the subdomain is defined in the config, falling back to name-based sanitization
+      cfg.subdomain = cfg.subdomain || profile.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mitra'
+      
       const pages=(cfg.pages&&Array.isArray(cfg.pages)?[...cfg.pages]:[{id:'page-main',name:'Main'}])
       const i=pages.findIndex((p:any)=>p.id===pageId)
       if(i!==-1)pages[i]={...pages[i],builderComponents:comps,canvasBg:canvasBg,lastModified:new Date().toISOString()}
@@ -1508,23 +1870,27 @@ export default function BuilderPage() {
             </button>
             {showStyleMenu && (
               <div
-                className="absolute top-full left-0 mt-1 bg-[#1a1f2e] border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-50 w-[300px] text-white p-4 space-y-4"
+                className="absolute top-full left-0 mt-1 bg-[#1a1f2e] border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden z-50 w-[300px] text-white p-4 space-y-4 font-sans"
                 onClick={e => e.stopPropagation()}
               >
                 {/* Tabs */}
-                <div className="flex bg-slate-800 rounded-lg p-0.5 text-xs font-semibold">
+                <div className="grid grid-cols-2 bg-slate-900/50 border border-slate-700/80 rounded-xl p-1 text-xs font-semibold">
                   <button
                     onClick={() => setStyleTab('guide')}
-                    className={`flex-1 py-1.5 rounded-md transition-all ${
-                      styleTab === 'guide' ? 'bg-white text-gray-900 shadow' : 'text-slate-400 hover:text-white'
+                    className={`py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                      styleTab === 'guide' 
+                        ? 'bg-slate-800 border border-slate-700 text-slate-100 font-semibold shadow-inner' 
+                        : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     Style Guide
                   </button>
                   <button
                     onClick={() => setStyleTab('custom')}
-                    className={`flex-1 py-1.5 rounded-md transition-all ${
-                      styleTab === 'custom' ? 'bg-white text-gray-900 shadow' : 'text-slate-400 hover:text-white'
+                    className={`py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                      styleTab === 'custom' 
+                        ? 'bg-slate-800 border border-slate-700 text-slate-100 font-semibold shadow-inner' 
+                        : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     Custom
@@ -1532,38 +1898,55 @@ export default function BuilderPage() {
                 </div>
 
                 {styleTab === 'guide' && (
-                  <div className="space-y-4">
-                    {/* Preset Grid */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(STYLE_PRESETS).map(([key, p]) => (
+                  <div className="space-y-4 pt-1">
+                    {/* Color Swatches Grid (4 columns, 2 rows) */}
+                    <div className="grid grid-cols-4 gap-2.5">
+                      {STYLE_PALETTES.map((p, idx) => (
                         <button
-                          key={key}
-                          onClick={() => { applyPresetTheme(p); setShowStyleMenu(false); }}
-                          className="flex flex-col items-start p-2 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 transition-colors text-left group w-full"
-                        >
-                          <span className="text-[10px] font-bold mb-1.5 text-slate-300 group-hover:text-white transition-colors">
-                            {p.name}
-                          </span>
-                          <div className="flex gap-1 w-full">
-                            <span
-                              className="w-4 h-4 rounded-full border border-slate-600"
-                              style={{ backgroundColor: p.bgColor }}
-                              title="Background"
-                            />
-                            <span
-                              className="w-4 h-4 rounded-full border border-slate-600"
-                              style={{ backgroundColor: p.primaryColor }}
-                              title="Primary"
-                            />
-                            <span
-                              className="w-4 h-4 rounded-full border border-slate-600"
-                              style={{ backgroundColor: p.textColor }}
-                              title="Text"
-                            />
-                          </div>
-                        </button>
+                          key={idx}
+                          onClick={() => {
+                            applyPresetTheme(p);
+                            addRecentlyUsed(p.primaryColor);
+                            // Also update custom tab inputs to match
+                            setCustomPrimaryColor(p.primaryColor);
+                            setCustomTextColor(p.textColor);
+                            setCustomCardBg(p.cardBg);
+                            setCustomBorderRadius(parseInt(p.borderRadius) || 8);
+                          }}
+                          className="h-9 w-full rounded-xl hover:scale-105 active:scale-95 transition-all shadow-md border border-slate-700/80 hover:border-slate-500 cursor-pointer"
+                          style={{ backgroundColor: p.primaryColor }}
+                          title={p.name}
+                        />
                       ))}
                     </div>
+
+                    {/* Divider line */}
+                    <div className="border-t border-slate-800/80 my-3" />
+
+                    {/* Recently Used Section */}
+                    <div>
+                      <span className="block text-xs font-semibold text-slate-400 mb-2">Recently Used</span>
+                      <div className="flex gap-2.5 min-h-[32px] items-center">
+                        {recentlyUsed.length > 0 ? (
+                          recentlyUsed.map((color, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                handleCustomPrimaryChange(color);
+                              }}
+                              className="h-8 w-8 rounded-lg hover:scale-105 active:scale-95 transition-all border border-slate-700 hover:border-slate-500 cursor-pointer shadow-sm"
+                              style={{ backgroundColor: color }}
+                              title={color}
+                            />
+                          ))
+                        ) : (
+                          <span className="text-[11px] text-slate-500 italic">Belum ada warna yang digunakan</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Divider line */}
+                    <div className="border-t border-slate-800/80 my-3" />
 
                     {/* Reset Button */}
                     <button
@@ -1573,66 +1956,129 @@ export default function BuilderPage() {
                           primaryColor: '#2DB24A',
                           textColor: '#111111',
                           cardBg: '#FFFFFF',
-                          borderRadius: '4px',
+                          borderRadius: '8px',
                         });
+                        setCustomPrimaryColor('#2DB24A');
+                        setCustomTextColor('#111111');
+                        setCustomCardBg('#FFFFFF');
+                        setCustomBorderRadius(8);
                         setShowStyleMenu(false);
                       }}
-                      className="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors text-slate-300"
+                      className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-850 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 transition-all hover:text-white cursor-pointer"
                     >
+                      <RotateCcw size={13} className="text-slate-400" />
                       Reset to default
                     </button>
-
-                    {/* AI Generator section */}
-                    <div className="border-t border-slate-700 pt-3 space-y-2">
-                      <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                        Generate Theme with AI
-                      </label>
-                      <textarea
-                        value={aiPrompt}
-                        onChange={e => setAiPrompt(e.target.value)}
-                        placeholder="Contoh: herbal alami dengan warna hijau putih bersih..."
-                        className="w-full text-[11px] p-2 rounded-lg focus:outline-none bg-slate-800 border border-slate-700 text-white placeholder-slate-500 resize-none h-14"
-                      />
-                      <button
-                        onClick={async () => { await handleGenerateAiTheme(); setShowStyleMenu(false); }}
-                        disabled={generatingAiTheme}
-                        className="w-full h-8 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-                      >
-                        {generatingAiTheme ? (
-                          <>
-                            <svg className="animate-spin" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                              <path d="M4 12a8 8 0 018-8" />
-                            </svg>
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles size={10} />
-                            Generate Style
-                          </>
-                        )}
-                      </button>
-                    </div>
                   </div>
                 )}
 
                 {styleTab === 'custom' && (
-                  <div className="space-y-3">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Background Canvas
-                    </label>
-                    <div className="flex items-center gap-3">
+                  <div className="space-y-4 pt-1 max-h-[350px] overflow-y-auto pr-1">
+                    {/* Background Canvas */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Background Canvas
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={canvasBg}
+                          onChange={e => {
+                            setCanvasBg(e.target.value);
+                            addRecentlyUsed(e.target.value);
+                          }}
+                          className="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={canvasBg}
+                          onChange={e => {
+                            setCanvasBg(e.target.value);
+                            addRecentlyUsed(e.target.value);
+                          }}
+                          className="flex-1 text-xs px-2.5 py-1.5 bg-slate-900 border border-slate-700/80 rounded-lg text-white font-mono focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Warna Utama */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Warna Utama (Primary)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={customPrimaryColor}
+                          onChange={e => handleCustomPrimaryChange(e.target.value)}
+                          className="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={customPrimaryColor}
+                          onChange={e => handleCustomPrimaryChange(e.target.value)}
+                          className="flex-1 text-xs px-2.5 py-1.5 bg-slate-900 border border-slate-700/80 rounded-lg text-white font-mono focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Warna Teks */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Warna Teks
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={customTextColor}
+                          onChange={e => handleCustomTextColorChange(e.target.value)}
+                          className="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={customTextColor}
+                          onChange={e => handleCustomTextColorChange(e.target.value)}
+                          className="flex-1 text-xs px-2.5 py-1.5 bg-slate-900 border border-slate-700/80 rounded-lg text-white font-mono focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Warna Kartu */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        Warna Kartu (Card)
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={customCardBg}
+                          onChange={e => handleCustomCardBgChange(e.target.value)}
+                          className="w-8 h-8 rounded border border-slate-700 bg-transparent cursor-pointer flex-shrink-0"
+                        />
+                        <input
+                          type="text"
+                          value={customCardBg}
+                          onChange={e => handleCustomCardBgChange(e.target.value)}
+                          className="flex-1 text-xs px-2.5 py-1.5 bg-slate-900 border border-slate-700/80 rounded-lg text-white font-mono focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Border Radius */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          Border Radius
+                        </label>
+                        <span className="text-[10px] font-mono text-slate-400">{customBorderRadius}px</span>
+                      </div>
                       <input
-                        type="color"
-                        value={canvasBg}
-                        onChange={e => setCanvasBg(e.target.value)}
-                        className="w-10 h-10 border-0 bg-transparent rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={canvasBg}
-                        onChange={e => setCanvasBg(e.target.value)}
-                        className="flex-1 text-xs px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white font-mono"
+                        type="range"
+                        min={0}
+                        max={24}
+                        value={customBorderRadius}
+                        onChange={e => handleCustomBorderRadiusChange(parseInt(e.target.value))}
+                        className="w-full accent-indigo-500 bg-slate-900 rounded-lg cursor-pointer"
                       />
                     </div>
                   </div>
@@ -1775,9 +2221,9 @@ export default function BuilderPage() {
                       key={comp.id}
                       className={`comp-wrap relative group ${comp.id===selId?'selected':''}`}
                       style={{
-                        outline: comp.id===selId?'2px solid #2DB24A':undefined,
+                        outline: comp.id===selId?'2px solid #2563EB':undefined,
                         outlineOffset: comp.id===selId?-2:undefined,
-                        borderTop: dragOverIdx===idx&&dragFromIdx!==idx?'2px solid #2DB24A':'2px solid transparent',
+                        borderTop: dragOverIdx===idx&&dragFromIdx!==idx?'2px solid #2563EB':'2px solid transparent',
                         transition:'border-color 0.1s',
                         cursor:'default',
                       }}
@@ -1790,37 +2236,212 @@ export default function BuilderPage() {
                     >
                       {/* Hover outline for non-selected */}
                       {comp.id!==selId&&(
-                        <div className="absolute inset-0 pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity" style={{outline:'2px solid rgba(45,178,74,0.4)',outlineOffset:-2}}/>
+                        <div className="absolute inset-0 pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity" style={{outline:'2px solid rgba(37,99,235,0.4)',outlineOffset:-2}}/>
                       )}
 
                       {/* Drag handle — always visible on hover/selected, on LEFT side */}
                       <div
                         className="drag-handle absolute left-0 top-0 bottom-0 w-6 flex items-center justify-center z-20 opacity-0 transition-opacity cursor-grab active:cursor-grabbing"
-                        style={{background:'rgba(45,178,74,0.08)'}}
+                        style={{background:'rgba(37,99,235,0.08)'}}
                         title="Drag untuk pindah"
                       >
-                        <svg width="10" height="16" viewBox="0 0 10 16" fill="#2DB24A" opacity="0.7">
+                        <svg width="10" height="16" viewBox="0 0 10 16" fill="#2563EB" opacity="0.7">
                           <circle cx="3" cy="2" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="3" cy="14" r="1.5"/>
                           <circle cx="7" cy="2" r="1.5"/><circle cx="7" cy="8" r="1.5"/><circle cx="7" cy="14" r="1.5"/>
                         </svg>
                       </div>
 
-                      {/* Action buttons — top right */}
-                      <div className="comp-actions absolute top-0 right-0 z-20 opacity-0 transition-opacity flex items-center gap-px p-1 rounded-bl-lg" style={{background:'#2DB24A'}}>
-                        <button onClick={e=>{e.stopPropagation();moveUp(comp.id)}} className="w-6 h-6 flex items-center justify-center rounded text-white hover:bg-white/20 transition-colors" title="Naik">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"/></svg>
-                        </button>
-                        <button onClick={e=>{e.stopPropagation();moveDown(comp.id)}} className="w-6 h-6 flex items-center justify-center rounded text-white hover:bg-white/20 transition-colors" title="Turun">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div className="w-px h-4 bg-white/30"/>
-                        <button onClick={e=>{e.stopPropagation();dupComp(comp.id)}} className="w-6 h-6 flex items-center justify-center rounded text-white hover:bg-white/20 transition-colors" title="Duplikat">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                        </button>
-                        <button onClick={e=>{e.stopPropagation();delComp(comp.id)}} className="w-6 h-6 flex items-center justify-center rounded text-white hover:bg-red-400/70 transition-colors" title="Hapus">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18m-2 0l-1.5 14a2 2 0 01-2 2H8.5a2 2 0 01-2-2L5 6m4 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-                        </button>
-                      </div>
+                      {/* Selected blue top action bar */}
+                      {comp.id === selId && (
+                        <div className="absolute top-0 left-0 right-0 -translate-y-full bg-blue-600 text-white h-9 px-3 flex items-center justify-between z-35 rounded-t-lg select-none shadow-md">
+                          {/* Left actions: Trash, Copy, Bookmark */}
+                          <div className="flex items-center gap-3">
+                            <button 
+                              onClick={e=>{e.stopPropagation();delComp(comp.id)}} 
+                              className="w-5 h-5 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer" 
+                              title="Delete"
+                            >
+                              <Trash size={13} />
+                            </button>
+                            <button 
+                              onClick={e=>{e.stopPropagation();dupComp(comp.id)}} 
+                              className="w-5 h-5 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer" 
+                              title="Duplicate"
+                            >
+                              <Copy size={13} />
+                            </button>
+                            <button 
+                              onClick={e=>{e.stopPropagation()}} 
+                              className="w-5 h-5 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer" 
+                              title="Save Section"
+                            >
+                              <Bookmark size={13} />
+                            </button>
+                          </div>
+                          
+                          {/* Right actions: AI Rewrite, Quick Edit, Full Edit */}
+                          <div className="flex items-center gap-1.5 relative">
+                            {/* AI Rewrite Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowAiRewriteMenu(p => p === comp.id ? null : comp.id);
+                              }}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-750 hover:bg-blue-800 border border-blue-500/20 text-white rounded text-[10px] font-bold tracking-wider uppercase transition-colors cursor-pointer"
+                            >
+                              <Sparkles size={9} />
+                              AI Rewrite
+                            </button>
+
+                            {/* Quick Edit */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Open style tab custom
+                                setShowStyleMenu(true);
+                                setStyleTab('custom');
+                              }}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-750 hover:bg-blue-800 border border-blue-500/20 text-white rounded text-[10px] font-bold tracking-wider uppercase transition-colors cursor-pointer"
+                            >
+                              <Pencil size={9} />
+                              Quick Edit
+                            </button>
+
+                            {/* Full Edit */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Clicked full edit
+                              }}
+                              className="flex items-center gap-1 px-3 py-1 bg-blue-750 hover:bg-blue-800 border border-blue-500/20 text-white rounded text-[10px] font-bold tracking-wider uppercase transition-colors cursor-pointer"
+                            >
+                              <Settings size={9} />
+                              Full Edit
+                            </button>
+
+                            {/* AI Rewrite Menu Dropdown Popover */}
+                            {showAiRewriteMenu === comp.id && (
+                              <div 
+                                className="absolute right-0 top-full mt-2 bg-[#1a1f2e] text-white border border-slate-700 rounded-xl shadow-2xl z-[99] w-64 p-1.5 flex flex-col text-xs font-sans normal-case select-none text-left"
+                                onClick={e => e.stopPropagation()}
+                              >
+                                {/* Header */}
+                                <div className="px-3 py-1.5 text-slate-400 font-bold uppercase tracking-wider text-[9px] border-b border-slate-800">
+                                  Quick Action
+                                </div>
+
+                                {/* Menu Items */}
+                                <div className="py-1">
+                                  <button 
+                                    onClick={() => triggerRewrite(comp, 'improve')}
+                                    className="w-full text-left px-3 py-2 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2 text-white font-medium cursor-pointer"
+                                  >
+                                    <FileText size={12} className="text-blue-400 font-bold" /> Improve Writing
+                                  </button>
+
+                                  {/* Change Tone Menu */}
+                                  <div 
+                                    className="relative"
+                                    onMouseEnter={() => setHoveredTone(true)}
+                                    onMouseLeave={() => setHoveredTone(false)}
+                                  >
+                                    <button className="w-full text-left px-3 py-2 hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-between text-white font-medium cursor-pointer">
+                                      <span className="flex items-center gap-2"><span className="text-[12px]">💬</span> Change Tone</span>
+                                      <span className="text-slate-400 font-bold">&gt;</span>
+                                    </button>
+                                    {hoveredTone && (
+                                      <div className="absolute left-full top-0 ml-1 bg-[#1a1f2e] border border-slate-700 rounded-xl p-1 w-36 shadow-2xl flex flex-col z-[100]">
+                                        {['Casual', 'Professional', 'Friendly', 'Straightforward'].map((tone) => (
+                                          <button 
+                                            key={tone}
+                                            onClick={() => triggerRewrite(comp, tone.toLowerCase())}
+                                            className="w-full text-left px-3 py-2 hover:bg-slate-850 rounded-lg transition-colors capitalize text-white font-medium cursor-pointer"
+                                          >
+                                            {tone}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <button 
+                                    onClick={() => triggerRewrite(comp, 'correct')}
+                                    className="w-full text-left px-3 py-2 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2 text-white font-medium cursor-pointer"
+                                  >
+                                    <CheckSquare size={12} className="text-green-400" /> Correct Spelling
+                                  </button>
+
+                                  <button 
+                                    onClick={() => triggerRewrite(comp, 'shorter')}
+                                    className="w-full text-left px-3 py-2 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2 text-white font-medium cursor-pointer"
+                                  >
+                                    <Minimize2 size={12} className="text-amber-400" /> Make Shorter
+                                  </button>
+
+                                  {/* Selling Style Submenu */}
+                                  <div 
+                                    className="relative"
+                                    onMouseEnter={() => setHoveredSelling(true)}
+                                    onMouseLeave={() => setHoveredSelling(false)}
+                                  >
+                                    <button className="w-full text-left px-3 py-2 hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-between text-white font-medium cursor-pointer">
+                                      <span className="flex items-center gap-2"><span className="text-[12px]">📢</span> Selling Style</span>
+                                      <span className="text-slate-400 font-bold">&gt;</span>
+                                    </button>
+                                    {hoveredSelling && (
+                                      <div className="absolute left-full top-0 ml-1 bg-[#1a1f2e] border border-slate-700 rounded-xl p-1 w-44 shadow-2xl flex flex-col z-[100]">
+                                        {['Soft Settings', 'Medium Settings', 'Hard Settings'].map((style) => (
+                                          <button 
+                                            key={style}
+                                            onClick={() => triggerRewrite(comp, style.split(' ')[0].toLowerCase())}
+                                            className="w-full text-left px-3 py-2 hover:bg-slate-850 rounded-lg transition-colors text-white font-medium cursor-pointer"
+                                          >
+                                            {style}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Custom Prompt Box */}
+                                <div className="p-2 border-t border-slate-800">
+                                  <div className="relative">
+                                    <input 
+                                      type="text" 
+                                      placeholder="Custom Prompt"
+                                      value={customPromptText}
+                                      onChange={(e) => setCustomPromptText(e.target.value)}
+                                      className="w-full bg-slate-900 border border-slate-750 rounded-lg pl-3 pr-8 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-[11px]"
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          triggerRewrite(comp, 'custom');
+                                        }
+                                      }}
+                                    />
+                                    <button 
+                                      onClick={() => triggerRewrite(comp, 'custom')}
+                                      className="absolute right-1.5 top-1/2 -translate-y-1/2 text-blue-500 hover:text-blue-400 p-1 flex items-center justify-center transition-colors cursor-pointer"
+                                    >
+                                      🚀
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* AI Rewriting Loading Overlay */}
+                      {rewritingCompId === comp.id && (
+                        <div className="absolute inset-0 bg-blue-650/10 backdrop-blur-[1px] flex items-center justify-center z-40 select-none pointer-events-none">
+                          <div className="bg-[#1a1f2e] border border-blue-500/30 text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg animate-pulse">
+                            <Sparkles size={11} className="text-blue-400 animate-spin" />
+                            AI Rewriting...
+                          </div>
+                        </div>
+                      )}
 
                       {/* Component content */}
                       <div className="pl-7">

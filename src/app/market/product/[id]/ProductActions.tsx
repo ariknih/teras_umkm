@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getCurrentUser } from '@/app/actions/auth'
 
 interface ProductActionsProps {
   product: {
@@ -12,12 +13,27 @@ interface ProductActionsProps {
     merchantId?: string
   }
   affCode?: string
+  userId?: string
 }
 
-export default function ProductActions({ product, affCode }: ProductActionsProps) {
+export default function ProductActions({ product, affCode, userId }: ProductActionsProps) {
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
+  const [activeUserId, setActiveUserId] = useState<string | undefined>(userId)
   const router = useRouter()
+
+  // Sync userId with state, fallback to client-side session fetch
+  useEffect(() => {
+    if (userId) {
+      setActiveUserId(userId)
+    } else {
+      getCurrentUser().then(u => {
+        if (u) {
+          setActiveUserId(u.id)
+        }
+      })
+    }
+  }, [userId])
 
   // Save affiliate code if present
   useEffect(() => {
@@ -35,7 +51,8 @@ export default function ProductActions({ product, affCode }: ProductActionsProps
   const getCart = () => {
     if (typeof window === 'undefined') return []
     try {
-      const existing = localStorage.getItem('teras_cart')
+      const cartKey = activeUserId ? `teras_cart_${activeUserId}` : 'teras_cart'
+      const existing = localStorage.getItem(cartKey)
       return existing ? JSON.parse(existing) : []
     } catch {
       return []
@@ -43,7 +60,8 @@ export default function ProductActions({ product, affCode }: ProductActionsProps
   }
 
   const saveCart = (cart: any[]) => {
-    localStorage.setItem('teras_cart', JSON.stringify(cart))
+    const cartKey = activeUserId ? `teras_cart_${activeUserId}` : 'teras_cart'
+    localStorage.setItem(cartKey, JSON.stringify(cart))
   }
 
   const handleAddToCart = () => {

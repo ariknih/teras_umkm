@@ -3,7 +3,8 @@
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { logout } from '../actions/auth'
+import { logout } from '@/app/actions/auth'
+import { Logo } from '@/components/Logo'
 import {
   updateUserRoleAndLevelAction,
   addCourseAction,
@@ -12,8 +13,9 @@ import {
   addLessonAction,
   updateLessonAction,
   deleteLessonAction,
-  trackTransactionAction
-} from '../actions/admin'
+  trackTransactionAction,
+  generateDummyAffiliatesAction
+} from '@/app/actions/admin'
 
 interface AdminDashboardClientProps {
   currentUser: any
@@ -22,9 +24,10 @@ interface AdminDashboardClientProps {
   initialPosts: any[]
   initialOrders: any[]
   initialCourses: any[]
+  initialWithdrawals: any[]
 }
 
-type TabType = 'overview' | 'users' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates'
+type TabType = 'overview' | 'users' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates'
 
 export default function AdminDashboardClient({
   currentUser,
@@ -32,7 +35,8 @@ export default function AdminDashboardClient({
   initialProducts,
   initialPosts,
   initialOrders,
-  initialCourses
+  initialCourses,
+  initialWithdrawals
 }: AdminDashboardClientProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -45,6 +49,8 @@ export default function AdminDashboardClient({
   const [posts, setPosts] = useState(initialPosts)
   const [orders, setOrders] = useState(initialOrders)
   const [courses, setCourses] = useState(initialCourses)
+  const [withdrawals, setWithdrawals] = useState(initialWithdrawals)
+  const [processedWithdrawals, setProcessedWithdrawals] = useState<string[]>([])
 
   // Filters / Search
   const [userSearch, setUserSearch] = useState('')
@@ -58,6 +64,8 @@ export default function AdminDashboardClient({
 
   const [certUserSearch, setCertUserSearch] = useState('')
   const [selectedCertUser, setSelectedCertUser] = useState<any>(null)
+
+  const [expandedAffiliateId, setExpandedAffiliateId] = useState<string | null>(null)
 
   // Modals / Forms State
   const [editUser, setEditUser] = useState<any>(null)
@@ -120,6 +128,34 @@ export default function AdminDashboardClient({
         setEditUser(null)
       } else {
         setActionError(res.error || 'Terjadi kesalahan.')
+      }
+    })
+  }
+
+  const handleApproveMerchant = (userId: string) => {
+    if (!confirm('Setujui merchant ini agar dapat berjualan secara publik?')) return
+    setActionError(null)
+    setActionSuccess(null)
+
+    startTransition(async () => {
+      // Find the user to get existing props, only changing level to 2 (approved)
+      const u = users.find(x => x.id === userId)
+      if (!u) return
+      
+      const res = await updateUserRoleAndLevelAction(
+        u.id,
+        u.role,
+        2, // Change level to 2
+        u.xp,
+        u.membershipLevel,
+        u.membershipAccess
+      )
+
+      if (res.success) {
+        setUsers(prev => prev.map(user => user.id === userId ? { ...user, level: 2 } : user))
+        setActionSuccess(`Merchant "${u.name}" telah disetujui.`)
+      } else {
+        setActionError(res.error || 'Terjadi kesalahan saat menyetujui merchant.')
       }
     })
   }
@@ -318,14 +354,10 @@ export default function AdminDashboardClient({
         <div>
           {/* Sidebar Brand Logo */}
           <div className="h-[74px] border-b border-[#e2e8f0] flex items-center px-6 gap-3">
-            <div className="w-8 h-8 rounded-[var(--radius-brand)] bg-gradient-to-br from-[#0F5132] to-[#2DB24A] flex items-center justify-center shadow-md">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white stroke-current" strokeWidth="2.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div>
-              <span className="font-sora text-sm font-bold tracking-wider uppercase text-[#1e293b]">Teras Control</span>
-              <p className="text-[9px] font-geist font-bold uppercase tracking-widest text-[#0F5132] leading-none">Super Administrator</p>
+            <img src="/images/logo+nama_saloka.png" alt="Saloka.id" className="h-8 object-contain" />
+            <div className="flex flex-col justify-center border-l border-slate-200 pl-3">
+              <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none">Admin</p>
+              <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none mt-0.5">Control</p>
             </div>
           </div>
 
@@ -334,11 +366,14 @@ export default function AdminDashboardClient({
             {[
               { id: 'overview', label: 'Dashboard Overview', icon: 'M4 6h16M4 12h16M4 18h16' },
               { id: 'users', label: 'Kelola User & Role', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14-2a4 4 0 0 1-3.87 3M16 3.13a4 4 0 0 1 0 7.75' },
+              { id: 'approvals', label: 'Persetujuan Merchant', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+              { id: 'withdrawals', label: 'Pencairan Dana (Withdraw)', icon: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
               { id: 'products', label: 'Katalog Produk & Jasa', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
               { id: 'academy', label: 'LMS Kelola Materi', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.168.477 4 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4 1.253' },
               { id: 'community', label: 'Daftar Komunitas', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
               { id: 'transactions', label: 'Lacak Transaksi', icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4' },
-              { id: 'certificates', label: 'Sertifikat Level Up', icon: 'M12 14l-4-4 1.41-1.41L12 11.17l2.59-2.58L16 10l-4 4zm-6 4h12V6H6v12zm12-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12z' }
+              { id: 'certificates', label: 'Sertifikat Level Up', icon: 'M12 14l-4-4 1.41-1.41L12 11.17l2.59-2.58L16 10l-4 4zm-6 4h12V6H6v12zm12-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12z' },
+              { id: 'affiliates', label: 'Monitor Affiliate', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' }
             ].map(item => {
               const isActive = activeTab === item.id
               return (
@@ -398,13 +433,16 @@ export default function AdminDashboardClient({
               </svg>
             </button>
             <h2 className="font-sora text-xs md:text-sm font-black text-slate-800 tracking-wider uppercase">
-              {activeTab === 'overview' && 'Dashboard Overview'}
-              {activeTab === 'users' && 'Kelola User & Role'}
-              {activeTab === 'products' && 'Katalog Produk & Jasa'}
+              { activeTab === 'overview' && 'Dashboard Overview' }
+              { activeTab === 'users' && 'Kelola User & Role' }
+              { activeTab === 'approvals' && 'Persetujuan Merchant' }
+              { activeTab === 'withdrawals' && 'Pencairan Dana (Withdrawals)' }
+              { activeTab === 'products' && 'Katalog Produk & Jasa' }
               {activeTab === 'academy' && 'LMS Academy - Kelola Materi'}
               {activeTab === 'community' && 'Daftar Forum Komunitas'}
               {activeTab === 'transactions' && 'Lacak Transaksi Jual Beli'}
               {activeTab === 'certificates' && 'Sertifikat Level Up'}
+              {activeTab === 'affiliates' && 'Monitor Sistem Affiliate'}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -728,6 +766,151 @@ export default function AdminDashboardClient({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ─── TAB 2.5: PERSETUJUAN MERCHANT ─────────────────────────────── */}
+          {activeTab === 'approvals' && (
+            <div className="space-y-6">
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
+                  Daftar Antrian Verifikasi Merchant
+                </h3>
+                <p className="text-xs text-[#64748b] mb-6">
+                  Merchant yang mendaftar (Level 1) akan tampil di sini. Setujui mereka agar dapat mempublikasikan produk dan berjualan di Saloka.id.
+                </p>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px] text-xs text-left">
+                    <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
+                      <tr>
+                        <th className="px-6 py-3.5">Nama Usaha / Email</th>
+                        <th className="px-6 py-3.5">Status</th>
+                        <th className="px-6 py-3.5 text-center">Bergabung</th>
+                        <th className="px-6 py-3.5 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {users.filter(u => u.role === 'MERCHANT' && u.level === 1).length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-8 text-center text-slate-500 font-medium">
+                            🎉 Tidak ada antrian merchant yang perlu disetujui saat ini.
+                          </td>
+                        </tr>
+                      ) : (
+                        users.filter(u => u.role === 'MERCHANT' && u.level === 1).map(u => (
+                          <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4">
+                              <p className="font-bold text-slate-800">{u.name}</p>
+                              <p className="text-[10px] text-[#64748b] font-mono">{u.email}</p>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="px-2 py-0.5 rounded text-[9px] font-bold border border-yellow-200 bg-yellow-50 text-yellow-700 uppercase tracking-wider">
+                                Menunggu Verifikasi
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-center text-[#64748b]">
+                              {new Date(u.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button
+                                onClick={() => handleApproveMerchant(u.id)}
+                                disabled={isPending}
+                                className="px-4 py-1.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white rounded text-[11px] font-bold uppercase tracking-wider shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                              >
+                                {isPending ? 'Proses...' : 'Setujui Merchant'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── TAB 2.6: WITHDRAWALS (PENCAIRAN DANA) ─────────────────────── */}
+          {activeTab === 'withdrawals' && (
+            <div className="space-y-6">
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
+                  Permintaan Pencairan Dana (Withdrawal)
+                </h3>
+                <p className="text-xs text-[#64748b] mb-6">
+                  Daftar permintaan penarikan saldo wallet dari Merchant dan Affiliate ke rekening bank asli mereka.
+                </p>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px] text-xs text-left">
+                    <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
+                      <tr>
+                        <th className="px-6 py-3.5">ID / Tanggal</th>
+                        <th className="px-6 py-3.5">Pengguna</th>
+                        <th className="px-6 py-3.5 text-right">Nominal</th>
+                        <th className="px-6 py-3.5">Detail Rekening</th>
+                        <th className="px-6 py-3.5 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {withdrawals.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-8 text-center text-slate-500 font-medium">
+                            Tidak ada data penarikan saat ini.
+                          </td>
+                        </tr>
+                      ) : (
+                        withdrawals.map((w: any) => {
+                          const isProcessed = processedWithdrawals.includes(w.id);
+                          return (
+                            <tr key={w.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4">
+                                <p className="font-bold text-slate-800 font-mono text-[10px]">{w.id}</p>
+                                <p className="text-[10px] text-[#64748b]">
+                                  {new Date(w.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="font-bold text-slate-800">{w.user?.name || 'Customer'}</p>
+                                <p className="text-[10px] text-[#64748b] font-mono">{w.user?.email || 'N/A'}</p>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <span className="font-bold text-[#0F5132]">Rp {Math.abs(w.amount).toLocaleString('id-ID')}</span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="text-[10px] text-slate-800 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded border border-[#e2e8f0] inline-block font-mono">
+                                  {w.description.replace('Penarikan dana dompet digital', 'Rekening')}
+                                </p>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                {isProcessed ? (
+                                  <span className="px-3 py-1.5 rounded text-[10px] font-bold border border-green-200 bg-green-50 text-green-700 uppercase tracking-wider inline-flex items-center gap-1.5">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                                    Sukses Ditransfer
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      if (confirm('Konfirmasi bahwa dana telah ditransfer ke rekening pengguna?')) {
+                                        setProcessedWithdrawals(prev => [...prev, w.id]);
+                                        setActionSuccess(`Transfer untuk withdrawal ${w.id} telah dikonfirmasi selesai.`);
+                                      }
+                                    }}
+                                    className="px-4 py-1.5 bg-[#0F5132] hover:bg-[#0a3822] text-white rounded text-[11px] font-bold uppercase tracking-wider shadow-sm transition-colors cursor-pointer"
+                                  >
+                                    Tandai Selesai
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1358,6 +1541,153 @@ export default function AdminDashboardClient({
                       <span>Pilih pengguna di daftar sebelah kiri untuk melihat preview sertifikat level up otomatis.</span>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'affiliates' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-widest">Monitor Sistem Affiliate</h3>
+                    <p className="text-xs text-slate-500 mt-1">Pantau performa partner Affiliate (JV), total referral, dan kelola simulasi data dummy.</p>
+                  </div>
+                  <button
+                    disabled={isPending}
+                    onClick={() => {
+                      if (confirm('Bikin 10 akun dummy dan referral secara instan untuk keperluan demo?')) {
+                        startTransition(async () => {
+                          setActionError(null)
+                          setActionSuccess(null)
+                          const res = await generateDummyAffiliatesAction(10)
+                          if (res.success) {
+                            alert('10 Akun Dummy & Referral berhasil digenerate! Silakan refresh.')
+                            window.location.reload()
+                          } else {
+                            setActionError(res.error || 'Gagal generate.')
+                          }
+                        })
+                      }
+                    }}
+                    className="px-4 py-2 bg-[#0F5132] hover:bg-[#0a3a24] text-white text-xs font-bold uppercase tracking-widest rounded transition-colors disabled:opacity-50"
+                  >
+                    {isPending ? 'Generating...' : '🔥 Generate Dummy Affiliate'}
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs whitespace-nowrap">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                        <th className="px-4 py-3">User Affiliate</th>
+                        <th className="px-4 py-3">Total Downline / Referral</th>
+                        <th className="px-4 py-3">Level / XP</th>
+                        <th className="px-4 py-3">Tgl Bergabung</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {users.filter(u => u.role === 'AFFILIATE').length === 0 ? (
+                        <tr><td colSpan={4} className="text-center py-4 text-slate-400 italic">Belum ada user Affiliate.</td></tr>
+                      ) : (
+                        users.filter(u => u.role === 'AFFILIATE').map(aff => {
+                          const downlines = users.filter(u => u.parentAffiliateId === aff.id)
+                          const totalReferrals = downlines.length
+                          
+                          // Find orders made by downlines
+                          const downlineIds = downlines.map(d => d.id)
+                          const affiliateOrders = orders.filter(o => downlineIds.includes(o.buyerId))
+                          
+                          return (
+                            <React.Fragment key={aff.id}>
+                              <tr 
+                                className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                                onClick={() => setExpandedAffiliateId(expandedAffiliateId === aff.id ? null : aff.id)}
+                              >
+                                <td className="px-4 py-3 font-medium text-slate-800">
+                                  <div className="flex items-center gap-2">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform duration-200 ${expandedAffiliateId === aff.id ? 'rotate-90 text-[#0F5132]' : 'text-slate-400'}`}>
+                                      <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                    <div>{aff.name}<br/><span className="text-[10px] text-slate-500 font-normal">{aff.email}</span></div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3"><span className="px-2 py-1 bg-[#E8F5E9] text-[#0F5132] font-bold rounded text-[10px] border border-[#0F5132]/10">{totalReferrals} Orang</span></td>
+                                <td className="px-4 py-3">Lv.{aff.level} ({aff.xp} XP)</td>
+                                <td className="px-4 py-3 text-slate-500">{new Date(aff.createdAt).toLocaleDateString('id-ID')}</td>
+                              </tr>
+                              
+                              {/* EXPANDED VIEW */}
+                              {expandedAffiliateId === aff.id && (
+                                <tr className="bg-slate-50/80 border-b border-[#e2e8f0]">
+                                  <td colSpan={4} className="px-8 py-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                      {/* Downline Tree */}
+                                      <div>
+                                        <h4 className="font-sora text-[10px] font-bold text-slate-800 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#0F5132]"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                          Pohon Jaringan (Downline)
+                                        </h4>
+                                        {downlines.length === 0 ? (
+                                          <p className="text-[10px] text-slate-500 italic">Belum ada anggota di jaringan ini.</p>
+                                        ) : (
+                                          <div className="space-y-2 border-l-2 border-[#E8F5E9] pl-4 ml-2">
+                                            {downlines.map(d => (
+                                              <div key={d.id} className="text-[10px] bg-white border border-slate-200 p-2 rounded shadow-sm">
+                                                <span className="font-bold text-slate-700">{d.name}</span> <span className="text-slate-400">({d.email})</span>
+                                                <div className="text-emerald-600 mt-0.5 font-medium">Bergabung: {new Date(d.createdAt).toLocaleDateString('id-ID')}</div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Affiliate Products & Sales */}
+                                      <div>
+                                        <h4 className="font-sora text-[10px] font-bold text-slate-800 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-emerald-600"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                                          Produk Terjual & Komisi Affiliate
+                                        </h4>
+                                        {affiliateOrders.length === 0 ? (
+                                          <p className="text-[10px] text-slate-500 italic">Belum ada penjualan dari jaringan ini.</p>
+                                        ) : (
+                                          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                            {affiliateOrders.map(o => (
+                                              <div key={o.id} className="text-[10px] bg-white border border-slate-200 p-3 rounded shadow-sm">
+                                                <div className="flex justify-between items-start mb-1">
+                                                  <span className="font-bold text-slate-800">Order #{o.id.split('-').pop()}</span>
+                                                  <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded text-[8px]">
+                                                    Komisi: +Rp {Math.round(o.totalAmount * 0.1).toLocaleString('id-ID')}
+                                                  </span>
+                                                </div>
+                                                <div className="text-slate-500 mb-1">Pembeli: {users.find(u => u.id === o.buyerId)?.name || o.buyerId}</div>
+                                                <div className="space-y-1 mt-2 pt-2 border-t border-slate-100">
+                                                  {o.items?.map((item: any, idx: number) => {
+                                                    const p = products.find(prod => prod.id === item.productId)
+                                                    return (
+                                                      <div key={idx} className="flex justify-between text-[9px]">
+                                                        <span>{p?.title || 'Produk'} (x{item.quantity})</span>
+                                                        <span className="text-slate-600 font-medium">Rp {((p?.price || 0) * item.quantity).toLocaleString('id-ID')}</span>
+                                                      </div>
+                                                    )
+                                                  })}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

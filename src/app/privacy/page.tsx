@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Kebijakan Privasi - Teras UMKM',
-  description: 'Kebijakan privasi Teras UMKM menjelaskan bagaimana kami mengumpulkan, melindungi, dan menggunakan informasi pribadi Anda pada platform kami.',
+  title: 'Kebijakan Privasi - Saloka.id',
+  description: 'Kebijakan privasi Saloka.id menjelaskan bagaimana kami mengumpulkan, melindungi, dan menggunakan informasi pribadi Anda pada platform kami.',
 };
 
 export default function PrivacyPage() {
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
           <section className="space-y-3" id="sec-intro">
             <h2 className="font-sora text-base font-bold text-text-primary">Pendahuluan</h2>
             <p>
-              Teras UMKM menghormati privasi Anda dan berkomitmen untuk melindungi data pribadi Anda. Kebijakan privasi ini akan menginformasikan bagaimana kami menjaga data pribadi Anda ketika Anda mengunjungi platform kami, menggunakan layanan kami, dan memberitahu Anda tentang hak privasi Anda.
+              Saloka.id menghormati privasi Anda dan berkomitmen untuk melindungi data pribadi Anda. Kebijakan privasi ini akan menginformasikan bagaimana kami menjaga data pribadi Anda ketika Anda mengunjungi platform kami, menggunakan layanan kami, dan memberitahu Anda tentang hak privasi Anda.
             </p>
           </section>
 
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
           <section className="space-y-3" id="sec-contact">
             <h2 className="font-sora text-base font-bold text-text-primary">5. Kontak Kami</h2>
             <p>
-              Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini atau pengelolaan data Anda, silakan hubungi tim dukungan Teras UMKM melalui email di <span className="text-primary font-bold">support@terasumkm.id</span>.
+              Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini atau pengelolaan data Anda, silakan hubungi tim dukungan Saloka.id melalui email di <span className="text-primary font-bold">support@Saloka.id.id</span>.
             </p>
           </section>
         </div>

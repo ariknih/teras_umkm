@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { getCurrentUser } from './actions/auth'
-import { getProducts } from './actions/products'
-import { getCourses } from './actions/lms'
+import { getCurrentUser } from '@/app/actions/auth'
+import { getProducts } from '@/app/actions/products'
+import { getCourses } from '@/app/actions/lms'
 
 export default async function HomePage() {
   const user = await getCurrentUser()

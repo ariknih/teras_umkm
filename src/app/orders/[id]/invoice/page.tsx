@@ -111,7 +111,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
                   </svg>
                 </div>
                 <span className="font-sora text-base font-bold text-text-primary print:text-black">
-                  Teras<span className="text-primary print:text-black">UMKM</span>
+                  Saloka<span className="text-primary print:text-black">UMKM</span>
                 </span>
               </div>
               <p className="text-[10px] text-text-secondary print:text-gray-500 uppercase tracking-widest font-semibold">
@@ -141,13 +141,13 @@ export default function OrderInvoicePage({ params }: PageProps) {
               </span>
               <div className="space-y-1">
                 <p className="font-sora font-bold text-text-primary print:text-black text-sm">
-                  {merchant ? merchant.name : 'Merchant Teras UMKM'}
+                  {merchant ? merchant.name : 'Merchant Saloka.id'}
                 </p>
                 <p className="text-text-secondary print:text-gray-600">
                   Email: {merchant ? merchant.email : '-'}
                 </p>
                 <p className="text-text-secondary print:text-gray-500 italic text-[10px]">
-                  Anggota Resmi Teras UMKM Merchant Network
+                  Anggota Resmi Saloka.id Merchant Network
                 </p>
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
                 </thead>
                 <tbody className="divide-y divide-border-subtle/50 print:divide-gray-200">
                   {(order.items || []).map((item: any, idx: number) => {
-                    const productTitle = item.productTitle || item.product?.title || 'Produk Teras'
+                    const productTitle = item.productTitle || item.product?.title || 'Produk Saloka'
                     return (
                       <tr key={item.productId || idx} className="text-text-primary print:text-black">
                         <td className="py-3 pr-4 font-mono">{idx + 1}</td>
@@ -236,7 +236,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
               Pembayaran Terverifikasi Lunas
             </div>
             <div className="text-center sm:text-right leading-relaxed max-w-xs">
-              Terima kasih telah bertransaksi di Teras UMKM. Simpan invoice digital ini sebagai bukti pembelian yang sah.
+              Terima kasih telah bertransaksi di Saloka.id. Simpan invoice digital ini sebagai bukti pembelian yang sah.
             </div>
           </div>
         </div>

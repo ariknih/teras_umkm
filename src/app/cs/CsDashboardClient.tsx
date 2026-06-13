@@ -173,7 +173,7 @@ export default function CsDashboardClient({ currentUser, initialTickets }: CsDas
           </div>
           <div>
             <h1 className="font-sora text-sm font-bold text-text-primary">
-              Teras<span className="text-primary">CS Support Desk.</span>
+              Saloka<span className="text-primary">CS Support Desk.</span>
             </h1>
             <p className="text-[9px] font-mono text-text-secondary/70 uppercase tracking-widest mt-0.5">
               WORKSPACE PETUGAS CUSTOMER SERVICE

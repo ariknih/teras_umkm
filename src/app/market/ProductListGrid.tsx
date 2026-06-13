@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { getCurrentUser } from '@/app/actions/auth'
 import { SlidersHorizontal, X, ChevronDown, ArrowUpDown, DollarSign, Package } from 'lucide-react'
 
 interface Product {
@@ -20,6 +19,7 @@ interface Product {
 
 interface ProductListGridProps {
   initialProducts: Product[]
+  currentUser?: any
 }
 
 // Haversine formula to calculate distance in km
@@ -36,10 +36,10 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return d
 }
 
-export default function ProductListGrid({ initialProducts }: ProductListGridProps) {
+export default function ProductListGrid({ initialProducts, currentUser: initialUser }: ProductListGridProps) {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [locStatus, setLocStatus] = useState<'idle' | 'prompting' | 'loading' | 'success' | 'error'>('idle')
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<any>(initialUser)
 
   // Advanced Filter States
   const [searchQuery, setSearchQuery]   = useState('')
@@ -63,13 +63,9 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
   }, [filterOpen])
 
   useEffect(() => {
-    async function getUser() {
-      try {
-        const u = await getCurrentUser()
-        setCurrentUser(u)
-      } catch (_) {}
+    if (initialUser) {
+      setCurrentUser(initialUser)
     }
-    getUser()
 
     // Check if location was already allowed/cached in sessionStorage
     const saved = sessionStorage.getItem('user_coords')
@@ -80,7 +76,7 @@ export default function ProductListGrid({ initialProducts }: ProductListGridProp
         setLocStatus('success')
       } catch (_) {}
     }
-  }, [])
+  }, [initialUser])
 
   const requestLocation = () => {
     if (!navigator.geolocation) {

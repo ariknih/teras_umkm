@@ -108,7 +108,7 @@ export async function getCsAnalytics() {
     // Wait, let's just count how many CS users exist.
     // In fallback mode, we can just load the globalMockUsers or count them.
     // Let's query them properly.
-    const mockCSCount = 1; // cs@teras.com
+    const mockCSCount = 1; // cs@saloka.com
     
     // Resolve Rate
     const total = allTickets.length

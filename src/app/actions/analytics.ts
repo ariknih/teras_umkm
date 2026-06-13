@@ -63,7 +63,7 @@ export async function getMerchantAnalytics() {
           if (isCompleted) {
             if (!productSalesMap[item.productId]) {
               productSalesMap[item.productId] = {
-                title: item.product?.title || item.productTitle || 'Produk Teras',
+                title: item.product?.title || item.productTitle || 'Produk Saloka',
                 quantity: 0,
                 revenue: 0
               }

@@ -77,7 +77,7 @@ export default function HeroVisual3D() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px',
               }}>🏪</div>
               <div>
-                <p style={{ fontSize: '8px', color: 'rgba(255,255,255,0.32)', fontFamily: 'monospace', margin: 0, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Teras UMKM</p>
+                <p style={{ fontSize: '8px', color: 'rgba(255,255,255,0.32)', fontFamily: 'monospace', margin: 0, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Saloka.id</p>
                 <p style={{ fontSize: '11px', fontWeight: 700, color: '#fff', margin: 0 }}>Merchant Dashboard</p>
               </div>
             </div>

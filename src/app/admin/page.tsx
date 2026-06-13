@@ -1,4 +1,4 @@
-import { getCurrentUser } from '../actions/auth'
+import { getCurrentUser } from '@/app/actions/auth'
 import { redirect } from 'next/navigation'
 import { DataStore } from '@/lib/data-store'
 import AdminDashboardClient from './AdminDashboardClient'
@@ -14,12 +14,13 @@ export default async function AdminDashboard() {
   }
 
   // Fetch all data
-  const [allUsers, allProducts, allPosts, allOrders, allCourses] = await Promise.all([
+  const [allUsers, allProducts, allPosts, allOrders, allCourses, allWithdrawals] = await Promise.all([
     DataStore.getAllUsers(),
     DataStore.getProducts(),
     DataStore.getPosts(),
     DataStore.getAllOrders(),
-    DataStore.getCourses()
+    DataStore.getCourses(),
+    DataStore.getAllWithdrawals()
   ])
 
   return (
@@ -30,6 +31,7 @@ export default async function AdminDashboard() {
       initialPosts={allPosts}
       initialOrders={allOrders}
       initialCourses={allCourses}
+      initialWithdrawals={allWithdrawals}
     />
   )
 }

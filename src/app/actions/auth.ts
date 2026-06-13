@@ -1,6 +1,6 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { SignJWT, jwtVerify } from 'jose'
 import crypto from 'crypto'
 import { DataStore } from '@/lib/data-store'
@@ -9,6 +9,17 @@ const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-
 
 function hashPassword(password: string): string {
   return crypto.createHash('sha256').update(password).digest('hex')
+}
+
+function getCookieDomain(host: string): string {
+  const cleanHost = host.split(':')[0].toLowerCase()
+  if (cleanHost.endsWith('localhost')) {
+    return '.localhost'
+  }
+  if (cleanHost.endsWith('varro.my.id')) {
+    return '.varro.my.id'
+  }
+  return '.saloka.id'
 }
 
 export async function login(formData: FormData) {
@@ -38,12 +49,17 @@ export async function login(formData: FormData) {
     
   // Set Cookie
   const cookieStore = await cookies()
+  const headerList = await headers()
+  const host = headerList.get('host') || ''
+  const cookieDomain = getCookieDomain(host)
+  
   cookieStore.set('session', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7 // 7 days
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    domain: cookieDomain
   })
   
   return { success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } }
@@ -93,12 +109,17 @@ export async function register(formData: FormData) {
     
   // Set Cookie
   const cookieStore = await cookies()
+  const headerList = await headers()
+  const host = headerList.get('host') || ''
+  const cookieDomain = getCookieDomain(host)
+  
   cookieStore.set('session', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7 // 7 days
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    domain: cookieDomain
   })
   
   return { success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } }
@@ -106,7 +127,18 @@ export async function register(formData: FormData) {
 
 export async function logout() {
   const cookieStore = await cookies()
-  cookieStore.delete('session')
+  const headerList = await headers()
+  const host = headerList.get('host') || ''
+  const cookieDomain = getCookieDomain(host)
+  
+  cookieStore.set('session', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+    domain: cookieDomain
+  })
   return { success: true }
 }
 
@@ -178,10 +210,10 @@ export async function sendOtpWhatsApp(phone: string, otp: string) {
   try {
     await sendWhatsAppMessage({
       merchantId: 'SYSTEM',
-      merchantName: 'Teras UMKM Registration',
+      merchantName: 'Saloka.id Registration',
       recipientName: 'Registrant',
       recipientPhone: phone,
-      message: `Kode OTP verifikasi WhatsApp Teras UMKM Anda adalah: ${otp}. Harap tidak membagikan kode ini kepada siapapun.`
+      message: `Kode OTP verifikasi WhatsApp Saloka.id Anda adalah: ${otp}. Harap tidak membagikan kode ini kepada siapapun.`
     })
     return { success: true }
   } catch (err: any) {
@@ -246,4 +278,20 @@ export async function saveOnboardingData(data: {
   } catch (err: any) {
     return { error: err.message || 'Gagal menyimpan data onboarding.' }
   }
+}
+
+export async function checkWhatsAppUnique(whatsapp: string) {
+  try {
+    const existing = await DataStore.findUserByWhatsApp(whatsapp)
+    if (existing) {
+      return { unique: false }
+    }
+    return { unique: true }
+  } catch (err: any) {
+    return { error: err.message || 'Gagal memvalidasi nomor WhatsApp.' }
+  }
+}
+
+export async function getUserProfileBySubdomain(subdomain: string) {
+  return await DataStore.findUserBySubdomain(subdomain)
 }

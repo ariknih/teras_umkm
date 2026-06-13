@@ -25,14 +25,38 @@ export async function sendWhatsAppMessage({
   
   console.log(`[WA Gateway API - ${activeKey}] Mengirim ke ${recipientPhone} (${recipientName}): ${message}`)
 
-  try {
-    const twilioSid = process.env.TWILIO_ACCOUNT_SID
-    const twilioToken = process.env.TWILIO_AUTH_TOKEN
-    const twilioFrom = process.env.TWILIO_PHONE_NUMBER // e.g., 'whatsapp:+14155238886'
+  let success = false
 
-    const fonnteToken = process.env.FONNTE_API_TOKEN || (gatewayKey && gatewayKey !== 'TERAS_DEFAULT_GATEWAY_KEY' && !gatewayKey.includes('demo') ? gatewayKey : null)
+  // Try Fonnte first if a custom key is provided (since the merchant subscribed to Fonnte Lite/Premium)
+  const isCustomKey = gatewayKey && gatewayKey !== 'TERAS_DEFAULT_GATEWAY_KEY' && !gatewayKey.includes('demo')
+  if (isCustomKey) {
+    try {
+      const response = await fetch('https://api.fonnte.com/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': gatewayKey!,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          target: recipientPhone,
+          message: message
+        })
+      })
+      if (response.ok) {
+        const resData = await response.json()
+        console.log('Custom Fonnte send success:', resData)
+        success = true
+      } else {
+        console.warn('Custom Fonnte send failed, status:', response.status)
+      }
+    } catch (err) {
+      console.error('Error sending custom Fonnte:', err)
+    }
+  }
 
-    if (kirimiUserCode && kirimiSecret && kirimiDeviceId) {
+  // If not sent yet, try Kirimi if configured
+  if (!success && kirimiUserCode && kirimiSecret && kirimiDeviceId) {
+    try {
       let formattedPhone = recipientPhone.replace(/[^0-9]/g, '')
       if (formattedPhone.startsWith('0')) {
         formattedPhone = '62' + formattedPhone.slice(1)
@@ -52,16 +76,25 @@ export async function sendWhatsAppMessage({
         })
       })
 
-      if (!response.ok) {
-        console.warn('Kirimi WA gateway returned error status:', response.status)
-        const errText = await response.text()
-        console.warn('Kirimi error details:', errText)
-      } else {
+      if (response.ok) {
         const resData = await response.json()
-        console.log('Kirimi send response:', resData)
+        console.log('Kirimi send response success:', resData)
+        success = true
+      } else {
+        console.warn('Kirimi WA gateway returned error status:', response.status)
       }
-    } else if (twilioSid && twilioToken && twilioFrom) {
-      // Format recipient phone number to have country code if missing
+    } catch (err) {
+      console.error('Error sending Kirimi:', err)
+    }
+  }
+
+  // If not sent yet, try Twilio if configured
+  if (!success && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+    try {
+      const twilioSid = process.env.TWILIO_ACCOUNT_SID
+      const twilioToken = process.env.TWILIO_AUTH_TOKEN
+      const twilioFrom = process.env.TWILIO_PHONE_NUMBER
+
       let formattedPhone = recipientPhone
       if (formattedPhone.startsWith('0')) {
         formattedPhone = '+62' + formattedPhone.slice(1)
@@ -81,19 +114,25 @@ export async function sendWhatsAppMessage({
           Body: message
         })
       })
-      if (!response.ok) {
-        console.warn('Twilio WA gateway returned error status:', response.status)
-        const errText = await response.text()
-        console.warn('Twilio error details:', errText)
-      } else {
+      if (response.ok) {
         const resData = await response.json()
-        console.log('Twilio send response:', resData)
+        console.log('Twilio send response success:', resData)
+        success = true
+      } else {
+        console.warn('Twilio WA gateway returned error status:', response.status)
       }
-    } else if (fonnteToken) {
+    } catch (err) {
+      console.error('Error sending Twilio:', err)
+    }
+  }
+
+  // If not sent yet, try default Fonnte if configured
+  if (!success && process.env.FONNTE_API_TOKEN) {
+    try {
       const response = await fetch('https://api.fonnte.com/send', {
         method: 'POST',
         headers: {
-          'Authorization': fonnteToken,
+          'Authorization': process.env.FONNTE_API_TOKEN,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -101,42 +140,25 @@ export async function sendWhatsAppMessage({
           message: message
         })
       })
-      if (!response.ok) {
-        console.warn('Fonnte WA gateway returned error status:', response.status)
-      } else {
+      if (response.ok) {
         const resData = await response.json()
-        console.log('Fonnte send response:', resData)
+        console.log('Fonnte send response success:', resData)
+        success = true
+      } else {
+        console.warn('Fonnte WA gateway returned error status:', response.status)
       }
-    } else {
-      // Demo placeholder
-      if (gatewayKey && gatewayKey !== 'TERAS_DEFAULT_GATEWAY_KEY' && !gatewayKey.includes('demo')) {
-        const response = await fetch('https://api.komerce.id/wa-gateway/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${gatewayKey}`
-          },
-          body: JSON.stringify({
-            phone: recipientPhone,
-            message: message
-          })
-        })
-        if (!response.ok) {
-          console.warn('Real WA gateway returned error status:', response.status)
-        }
-      }
+    } catch (err) {
+      console.error('Error sending Fonnte:', err)
     }
-
-    // Always log to simulated logs for merchant dashboard preview
-    await DataStore.addWaLog(
-      merchantId,
-      merchantName,
-      activeKey,
-      `${recipientPhone} (${recipientName})`,
-      message,
-      'SUCCESS'
-    )
-  } catch (err) {
-    console.error('Error sending WA message:', err)
   }
+
+  // Always log to simulated logs for merchant dashboard preview
+  await DataStore.addWaLog(
+    merchantId,
+    merchantName,
+    activeKey,
+    `${recipientPhone} (${recipientName})`,
+    message,
+    success ? 'SUCCESS' : 'FAILED'
+  )
 }

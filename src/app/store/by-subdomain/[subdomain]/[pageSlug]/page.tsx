@@ -1,18 +1,18 @@
-import { getUserProfileById } from "@/app/actions/auth";
+import { DataStore } from "@/lib/data-store";
 import { getProducts } from "@/app/actions/products";
 import { notFound } from "next/navigation";
-import StorePageViewerClient from "./StorePageViewerClient";
+import StorePageViewerClient from "@/app/store/[merchantId]/[pageSlug]/StorePageViewerClient";
 import { Metadata } from "next";
 
 interface PageProps {
-  params: Promise<{ merchantId: string; pageSlug: string }>;
+  params: Promise<{ subdomain: string; pageSlug: string }>;
 }
 
 export async function generateMetadata(
   { params }: PageProps
 ): Promise<Metadata> {
-  const { merchantId, pageSlug } = await params;
-  const user = await getUserProfileById(merchantId);
+  const { subdomain, pageSlug } = await params;
+  const user = await DataStore.findUserBySubdomain(subdomain);
   
   if (!user) {
     return { title: "Halaman Tidak Ditemukan" };
@@ -36,9 +36,9 @@ export async function generateMetadata(
   return { title: `${user.name} - Halaman Khusus` };
 }
 
-export default async function StoreSubPage({ params }: PageProps) {
-  const { merchantId, pageSlug } = await params;
-  const user = await getUserProfileById(merchantId);
+export default async function SubdomainSubPage({ params }: PageProps) {
+  const { subdomain, pageSlug } = await params;
+  const user = await DataStore.findUserBySubdomain(subdomain);
   
   if (!user) {
     notFound();

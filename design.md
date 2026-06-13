@@ -1,4 +1,4 @@
-# Teras UMKM Design System
+# Saloka.id Design System
 This document contains all the extracted variables and tokens from the design system.
 
 ## Colors

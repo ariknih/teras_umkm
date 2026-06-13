@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
           id: 'deposit-wallet',
           price: depositAmount,
           quantity: 1,
-          name: 'Top Up Saldo Dompet Teras UMKM',
+          name: 'Top Up Saldo Dompet Saloka.id',
         }],
       });
 
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
         const code = shippingDetails.couponCode.toUpperCase();
         if (code === 'DISKON10') {
           computedDiscount = subtotal * 0.1;
-        } else if (code === 'TERASUMKM') {
+        } else if (code === 'Saloka.id') {
           computedDiscount = Math.min(20000, subtotal);
         } else if (code === 'GRATISONGKIR') {
           computedDiscount = shippingFee;

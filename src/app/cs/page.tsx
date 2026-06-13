@@ -1,4 +1,4 @@
-import { getCurrentUser } from '../actions/auth'
+import { getCurrentUser } from '@/app/actions/auth'
 import { redirect } from 'next/navigation'
 import { DataStore } from '@/lib/data-store'
 import CsDashboardClient from './CsDashboardClient'

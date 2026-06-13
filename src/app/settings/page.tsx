@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser } from '../actions/auth'
-import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2 } from 'lucide-react'
+import { getCurrentUserProfile } from '@/app/actions/auth'
+import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2, Settings } from 'lucide-react'
+import { updateUserSettingsAction } from '@/app/actions/wallet-affiliate'
 
-type TabType = 'profile' | 'security' | 'address' | 'notifications' | 'preferences'
+type TabType = 'profile' | 'security' | 'address' | 'integrations' | 'notifications' | 'preferences'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -14,15 +15,35 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('profile')
   const [saved, setSaved] = useState(false)
 
+  // State hooks for profile and integrations settings
+  const [name, setName] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [bio, setBio] = useState('')
+  const [waGatewayKeys, setWaGatewayKeys] = useState('')
+  const [fbPixelId, setFbPixelId] = useState('')
+  const [tiktokPixelId, setTiktokPixelId] = useState('')
+  const [zapierWebhookUrl, setZapierWebhookUrl] = useState('')
+  const [googleSheetUrl, setGoogleSheetUrl] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [saving, setSaving] = useState(false)
+
   useEffect(() => {
     async function load() {
       try {
-        const u = await getCurrentUser()
+        const u = await getCurrentUserProfile()
         if (!u) {
           router.push('/?login=true')
           return
         }
         setUser(u)
+        setName(u.name || '')
+        setWhatsapp(u.whatsapp || '')
+        setBio(u.bio || '')
+        setWaGatewayKeys(u.waGatewayKeys || '')
+        setFbPixelId(u.fbPixelId || '')
+        setTiktokPixelId(u.tiktokPixelId || '')
+        setZapierWebhookUrl(u.zapierWebhookUrl || '')
+        setGoogleSheetUrl(u.googleSheetUrl || '')
       } catch (err) {
         console.error(err)
       } finally {
@@ -32,9 +53,32 @@ export default function SettingsPage() {
     load()
   }, [router])
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const handleSave = async () => {
+    setSaving(true)
+    setErrorMsg('')
+    try {
+      const res = await updateUserSettingsAction({
+        name,
+        whatsapp,
+        bio,
+        waGatewayKeys,
+        fbPixelId: fbPixelId || null,
+        tiktokPixelId: tiktokPixelId || null,
+        zapierWebhookUrl: zapierWebhookUrl || null,
+        googleSheetUrl: googleSheetUrl || null
+      })
+      if (res.error) {
+        setErrorMsg(res.error)
+      } else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      }
+    } catch (err) {
+      console.error(err)
+      setErrorMsg('Gagal menyimpan pengaturan.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) {
@@ -54,6 +98,7 @@ export default function SettingsPage() {
     { id: 'profile', label: 'Profil & Biodata', icon: User },
     { id: 'security', label: 'Akun & Keamanan', icon: Shield },
     { id: 'address', label: 'Buku Alamat', icon: MapPin },
+    { id: 'integrations', label: 'Integrasi & WA Gateway', icon: Settings },
     { id: 'notifications', label: 'Notifikasi', icon: Bell },
     { id: 'preferences', label: 'Preferensi Tampilan', icon: Palette },
   ]
@@ -114,7 +159,12 @@ export default function SettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-foreground/70">Nama Lengkap</label>
-                  <input type="text" defaultValue={user?.name} className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors" />
+                  <input 
+                    type="text" 
+                    value={name} 
+                    onChange={e => setName(e.target.value)} 
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors" 
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-foreground/70">Email</label>
@@ -122,12 +172,23 @@ export default function SettingsPage() {
                   <p className="text-[10px] text-primary">Email tidak dapat diubah (Terverifikasi)</p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-foreground/70">Nomor Telepon</label>
-                  <input type="tel" defaultValue="+62" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors" />
+                  <label className="text-xs font-bold text-foreground/70">Nomor Telepon / WhatsApp</label>
+                  <input 
+                    type="tel" 
+                    value={whatsapp} 
+                    onChange={e => setWhatsapp(e.target.value)} 
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors" 
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-foreground/70">Bio Singkat</label>
-                  <textarea rows={3} placeholder="Ceritakan sedikit tentang Anda..." className="w-full p-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none"></textarea>
+                  <textarea 
+                    rows={3} 
+                    value={bio} 
+                    onChange={e => setBio(e.target.value)} 
+                    placeholder="Ceritakan sedikit tentang Anda..." 
+                    className="w-full p-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                  ></textarea>
                 </div>
               </div>
             </div>
@@ -176,11 +237,103 @@ export default function SettingsPage() {
                 <h3 className="font-bold text-sm text-foreground mb-1">Rumah (GPS Aktif)</h3>
                 <p className="text-xs text-foreground/70 font-medium mb-2">{user?.name} — 081234567890</p>
                 <p className="text-xs text-foreground/70 leading-relaxed mb-4">
-                  Jl. Contoh Alamat No. 123, Kelurahan Teras, Kecamatan UMKM<br />
+                  Jl. Raya Merdeka No. 45, Kelurahan Senayan, Kecamatan Kebayoran Baru<br />
                   Kota Jakarta Selatan, DKI Jakarta 12345
                 </p>
                 <div className="flex gap-3">
                   <button className="text-xs font-bold text-primary hover:underline cursor-pointer outline-none">Ubah</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* INTEGRATIONS TAB */}
+          {activeTab === 'integrations' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
+              <div>
+                <h2 className="font-sora text-xl font-bold text-foreground">Integrasi & WA Gateway</h2>
+                <p className="text-xs text-foreground/50 mt-1">
+                  Konfigurasikan kunci API pihak ketiga Anda untuk mengaktifkan notifikasi WhatsApp otomatis, pelacakan piksel, dan webhook data.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* WA Gateway Keys */}
+                <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)] bg-surface-container/25">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-bold text-foreground">WhatsApp Gateway API Token (Fonnte / Kirimi)</label>
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-[#2DB24A] text-[9px] font-bold uppercase tracking-wider rounded">Lite / Premium</span>
+                  </div>
+                  <input
+                    type="password"
+                    value={waGatewayKeys}
+                    onChange={e => setWaGatewayKeys(e.target.value)}
+                    placeholder="Masukkan API Token Fonnte/Kirimi Anda..."
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm font-mono focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                  <p className="text-[10px] text-foreground/50 mt-1.5 leading-relaxed">
+                    Masukkan token API WhatsApp Gateway Anda dari dashboard Fonnte atau Kirimi. Sistem akan menggunakan token ini untuk mengirimkan notifikasi follow-up pesanan dan bukti transaksi kepada pelanggan Anda secara otomatis.
+                  </p>
+                </div>
+
+                {/* Facebook Pixel */}
+                <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)]">
+                  <label className="text-sm font-bold text-foreground block mb-2">Facebook Pixel ID</label>
+                  <input
+                    type="text"
+                    value={fbPixelId}
+                    onChange={e => setFbPixelId(e.target.value)}
+                    placeholder="Contoh: 123456789012345"
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                  <p className="text-[10px] text-foreground/50 mt-1.5">
+                    ID Piksel Meta untuk melacak konversi iklan pada halaman penjualan Anda.
+                  </p>
+                </div>
+
+                {/* TikTok Pixel */}
+                <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)]">
+                  <label className="text-sm font-bold text-foreground block mb-2">TikTok Pixel ID</label>
+                  <input
+                    type="text"
+                    value={tiktokPixelId}
+                    onChange={e => setTiktokPixelId(e.target.value)}
+                    placeholder="Contoh: C1234567890"
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                  <p className="text-[10px] text-foreground/50 mt-1.5">
+                    ID Piksel TikTok untuk melacak efektivitas kampanye video iklan Anda.
+                  </p>
+                </div>
+
+                {/* Google Sheets Integration */}
+                <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)]">
+                  <label className="text-sm font-bold text-foreground block mb-2">Google Sheets Spreadsheet URL</label>
+                  <input
+                    type="text"
+                    value={googleSheetUrl}
+                    onChange={e => setGoogleSheetUrl(e.target.value)}
+                    placeholder="https://docs.google.com/spreadsheets/d/..."
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                  <p className="text-[10px] text-foreground/50 mt-1.5">
+                    URL spreadsheet Google Sheets yang dibagikan untuk menyinkronkan data pesanan masuk secara real-time.
+                  </p>
+                </div>
+
+                {/* Zapier / Webhook Integration */}
+                <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)]">
+                  <label className="text-sm font-bold text-foreground block mb-2">Zapier Webhook URL</label>
+                  <input
+                    type="text"
+                    value={zapierWebhookUrl}
+                    onChange={e => setZapierWebhookUrl(e.target.value)}
+                    placeholder="https://hooks.zapier.com/hooks/catch/..."
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                  <p className="text-[10px] text-foreground/50 mt-1.5">
+                    Webhook URL Zapier untuk mengirimkan event pesanan baru ke ribuan aplikasi eksternal lainnya.
+                  </p>
                 </div>
               </div>
             </div>
@@ -196,7 +349,7 @@ export default function SettingsPage() {
                   { title: 'Promo & Penawaran Spesial', desc: 'Dapatkan informasi diskon, kupon, dan penawaran menarik lainnya.', defaultChecked: true },
                   { title: 'Update Pesanan', desc: 'Notifikasi saat pesanan Anda diproses, dikirim, atau selesai.', defaultChecked: true },
                   { title: 'Aktivitas Komunitas', desc: 'Pemberitahuan saat ada diskusi baru atau balasan di forum komunitas.', defaultChecked: false },
-                  { title: 'Buletin Teras UMKM', desc: 'Berita bulanan dan tips berbisnis dari Teras UMKM.', defaultChecked: false },
+                  { title: 'Buletin Saloka.id', desc: 'Berita bulanan dan tips berbisnis dari Saloka.id.', defaultChecked: false },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center justify-between p-4 border border-border-subtle rounded-[var(--radius-brand)]">
                     <div>
@@ -251,19 +404,26 @@ export default function SettingsPage() {
 
           {/* Action Footer */}
           <div className="mt-10 pt-6 border-t border-border-subtle flex items-center justify-between">
-            {saved ? (
-              <span className="text-xs font-bold text-[#2DB24A] flex items-center gap-2 animate-in fade-in">
-                <CheckCircle2 size={16} />
-                Pengaturan berhasil disimpan!
-              </span>
-            ) : (
-              <span />
-            )}
+            <div className="flex flex-col gap-1">
+              {saved && (
+                <span className="text-xs font-bold text-[#2DB24A] flex items-center gap-2 animate-in fade-in">
+                  <CheckCircle2 size={16} />
+                  Pengaturan berhasil disimpan!
+                </span>
+              )}
+              {errorMsg && (
+                <span className="text-xs font-bold text-red-500 flex items-center gap-2 animate-in fade-in">
+                  <span className="text-sm">⚠️</span>
+                  {errorMsg}
+                </span>
+              )}
+            </div>
             <button 
               onClick={handleSave}
-              className="px-8 py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-full text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer outline-none"
+              disabled={saving}
+              className="px-8 py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-full text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Simpan Perubahan
+              {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
             </button>
           </div>
 

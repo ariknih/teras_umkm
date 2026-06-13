@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Syarat & Ketentuan Layanan - Teras UMKM',
-  description: 'Syarat dan ketentuan layanan Teras UMKM yang mengatur hak, kewajiban, dan tanggung jawab pengguna, merchant, serta pembeli di platform kami.',
+  title: 'Syarat & Ketentuan Layanan - Saloka.id',
+  description: 'Syarat dan ketentuan layanan Saloka.id yang mengatur hak, kewajiban, dan tanggung jawab pengguna, merchant, serta pembeli di platform kami.',
 };
 
 export default function TermsPage() {
@@ -32,14 +32,14 @@ export default function TermsPage() {
           <section className="space-y-3" id="sec-acceptance">
             <h2 className="font-sora text-base font-bold text-text-primary">Penerimaan Ketentuan</h2>
             <p>
-              Dengan mengakses dan menggunakan platform Teras UMKM, Anda menyetujui untuk terikat oleh Syarat & Ketentuan Layanan ini. Jika Anda tidak menyetujui bagian mana pun dari ketentuan ini, Anda tidak diperkenankan mengakses platform atau menggunakan layanan kami.
+              Dengan mengakses dan menggunakan platform Saloka.id, Anda menyetujui untuk terikat oleh Syarat & Ketentuan Layanan ini. Jika Anda tidak menyetujui bagian mana pun dari ketentuan ini, Anda tidak diperkenankan mengakses platform atau menggunakan layanan kami.
             </p>
           </section>
 
           <section className="space-y-3" id="sec-description">
             <h2 className="font-sora text-base font-bold text-text-primary">1. Deskripsi Layanan</h2>
             <p>
-              Teras UMKM adalah platform all-in-one bagi pelaku usaha mikro, kecil, dan menengah yang menyediakan:
+              Saloka.id adalah platform all-in-one bagi pelaku usaha mikro, kecil, dan menengah yang menyediakan:
             </p>
             <ul className="list-disc list-inside space-y-1.5 pl-4 text-xs">
               <li><strong>Marketplace:</strong> Sarana promosi, penjualan produk, jasa, lowongan kerja, dan sistem checkout logistik berbasis jarak.</li>
@@ -59,19 +59,19 @@ export default function TermsPage() {
           <section className="space-y-3" id="sec-obligations">
             <h2 className="font-sora text-base font-bold text-text-primary">3. Ketentuan Transaksi & Kebijakan Toko</h2>
             <p>
-              Dalam bertransaksi di Teras UMKM, pengguna tunduk pada aturan berikut:
+              Dalam bertransaksi di Saloka.id, pengguna tunduk pada aturan berikut:
             </p>
             <ul className="list-disc list-inside space-y-1.5 pl-4 text-xs">
               <li><strong>Pembelian Produk Sendiri:</strong> Pengguna dengan status Merchant dilarang keras membeli produk dari toko miliknya sendiri untuk meminimalkan risiko manipulasi rating, transaksi fiktif, atau penyalahgunaan insentif poin.</li>
               <li><strong>Keakuratan Informasi:</strong> Merchant wajib mengunggah deskripsi produk, stok barang, harga, dan gambar asli (mendukung format PNG/JPG) secara akurat.</li>
-              <li><strong>Penyelesaian Pembayaran:</strong> Semua transaksi diproses secara real-time melalui gateway pembayaran Midtrans atau saldo Dompet Teras. Transaksi dinyatakan sah setelah pembayaran terverifikasi sukses di sistem audit kas platform.</li>
+              <li><strong>Penyelesaian Pembayaran:</strong> Semua transaksi diproses secara real-time melalui gateway pembayaran Midtrans atau saldo Dompet Saloka. Transaksi dinyatakan sah setelah pembayaran terverifikasi sukses di sistem audit kas platform.</li>
             </ul>
           </section>
 
           <section className="space-y-3" id="sec-limitations">
             <h2 className="font-sora text-base font-bold text-text-primary">4. Batasan Tanggung Jawab</h2>
             <p>
-              Teras UMKM bertindak sebagai fasilitator platform dan tidak bertanggung jawab atas kerugian langsung atau tidak langsung yang diakibatkan oleh perselisihan antar pengguna (misal antara Merchant dan Pembeli), ketidakcocokan kualitas barang fisik, atau keterlambatan pengiriman oleh jasa kurir eksternal.
+              Saloka.id bertindak sebagai fasilitator platform dan tidak bertanggung jawab atas kerugian langsung atau tidak langsung yang diakibatkan oleh perselisihan antar pengguna (misal antara Merchant dan Pembeli), ketidakcocokan kualitas barang fisik, atau keterlambatan pengiriman oleh jasa kurir eksternal.
             </p>
           </section>
 

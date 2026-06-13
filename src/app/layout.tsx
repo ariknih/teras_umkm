@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Poppins, Geist } from "next/font/google";
 import "./globals.css";
-import { getCurrentUser, logout } from "./actions/auth";
-import { getWalletDetails } from "./actions/wallet-affiliate";
+import { getCurrentUser, logout } from "@/app/actions/auth";
+import { getWalletDetails } from "@/app/actions/wallet-affiliate";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DataStore } from "@/lib/data-store";
@@ -10,7 +10,7 @@ import OnboardingGuard from "./components/OnboardingGuard";
 import { headers } from "next/headers";
 import FloatingChat from "@/components/FloatingChat";
 import HeaderNavigation from "./components/HeaderNavigation";
-import ThemeToggle from "@/components/ThemeToggle";
+import MobileBottomNav from "@/components/MobileBottomNav";
 import { GsapScrollTrigger } from "@/components/GsapScrollTrigger";
 import Script from "next/script";
 import { Logo } from "@/components/Logo";
@@ -83,13 +83,51 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark');
-                } else {
-                  document.documentElement.classList.remove('dark');
-                }
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
               } catch (_) {}
             `,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const clean = (node) => {
+                  if (node.nodeType === 1) {
+                    if (node.hasAttribute('bis_skin_checked')) {
+                      node.removeAttribute('bis_skin_checked');
+                    }
+                    const kids = node.querySelectorAll('[bis_skin_checked]');
+                    for (let i = 0; i < kids.length; i++) {
+                      kids[i].removeAttribute('bis_skin_checked');
+                    }
+                  }
+                };
+                const observer = new MutationObserver((mutations) => {
+                  for (let i = 0; i < mutations.length; i++) {
+                    const m = mutations[i];
+                    if (m.type === 'attributes' && m.attributeName === 'bis_skin_checked') {
+                      m.target.removeAttribute('bis_skin_checked');
+                    }
+                    if (m.addedNodes) {
+                      for (let j = 0; j < m.addedNodes.length; j++) {
+                        clean(m.addedNodes[j]);
+                      }
+                    }
+                  }
+                });
+                observer.observe(document.documentElement, {
+                  childList: true,
+                  subtree: true,
+                  attributes: true,
+                  attributeFilter: ['bis_skin_checked']
+                });
+                document.addEventListener('DOMContentLoaded', () => {
+                  clean(document.body);
+                });
+              })();
+            `
           }}
         />
         <Script src="https://app.sandbox.midtrans.com/snap/snap.js" strategy="beforeInteractive" />
@@ -118,20 +156,17 @@ export default async function RootLayout({
         </main>
 
         {/* ── GLOBAL FOOTER ──────────────────────────────────────────────── */}
-        <footer className="w-full py-16 border-t border-outline-variant/20 bg-surface-container-low print:hidden">
-          <div className="max-w-[1280px] mx-auto px-4 md:px-10 grid grid-cols-1 md:grid-cols-4 gap-10">
+        <footer className="w-full py-16 border-t border-outline-variant/20 bg-surface-container-low print:hidden" suppressHydrationWarning>
+          <div className="max-w-[1280px] mx-auto px-4 md:px-10 grid grid-cols-1 md:grid-cols-4 gap-10" suppressHydrationWarning>
             {/* Brand */}
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="transform scale-[0.3] origin-left w-[28px] h-[38px]">
-                  <Logo />
-                </div>
-                <span className="font-poppins font-bold text-secondary text-lg">Saloka<span className="text-tertiary">.id</span></span>
+            <div className="md:col-span-1" suppressHydrationWarning>
+              <div className="flex items-center mb-4" suppressHydrationWarning>
+                <img src="/images/logo+nama_saloka.png" alt="Saloka.id" className="h-8 object-contain" />
               </div>
               <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
                 Platform ekosistem digital terlengkap untuk pelaku UMKM Indonesia yang ingin berkembang.
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-3" suppressHydrationWarning>
                 {/* Instagram */}
                 <a href="#" className="w-9 h-9 rounded-lg bg-white border border-outline-variant/30 flex items-center justify-center text-on-surface-variant hover:text-primary hover:border-primary/40 transition-all" aria-label="Instagram">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -154,7 +189,7 @@ export default async function RootLayout({
             </div>
 
             {/* Platform links */}
-            <div className="space-y-4">
+            <div className="space-y-4" suppressHydrationWarning>
               <h5 className="text-xs font-geist font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
                   <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
@@ -171,7 +206,7 @@ export default async function RootLayout({
             </div>
 
             {/* Legal links */}
-            <div className="space-y-4">
+            <div className="space-y-4" suppressHydrationWarning>
               <h5 className="text-xs font-geist font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
@@ -187,7 +222,7 @@ export default async function RootLayout({
             </div>
 
             {/* Newsletter */}
-            <div className="space-y-4">
+            <div className="space-y-4" suppressHydrationWarning>
               <h5 className="text-xs font-geist font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -195,16 +230,18 @@ export default async function RootLayout({
                 Newsletter
               </h5>
               <p className="text-sm text-on-surface-variant leading-relaxed">Insight bisnis UMKM setiap minggu, gratis.</p>
-              <div className="flex bg-white border border-outline-variant/30 rounded-lg p-1 overflow-hidden">
+              <div className="flex bg-white border border-outline-variant/30 rounded-lg p-1 overflow-hidden" suppressHydrationWarning>
                 <input className="bg-transparent border-none focus:ring-0 text-on-surface flex-1 px-3 text-sm outline-none" placeholder="Email Anda" type="email" />
-                <button className="btn-primary bg-primary-container text-on-surface rounded-md text-xs hover:bg-primary-container/90">Daftar</button>
+                <button className="bg-primary hover:bg-primary/95 text-white rounded-md text-xs font-geist font-bold uppercase tracking-wider px-5 py-2.5 transition-colors cursor-pointer border-none outline-none">
+                  Daftar
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="max-w-[1280px] mx-auto px-4 md:px-10 mt-12 pt-6 border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-10 mt-12 pt-6 border-t border-outline-variant/20 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left" suppressHydrationWarning>
             <p className="text-xs text-on-surface-variant">© 2026 Saloka.id. Dibuat dengan ❤️ untuk UMKM Indonesia.</p>
-            <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 sm:gap-6 text-xs text-on-surface-variant">
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 sm:gap-6 text-xs text-on-surface-variant" suppressHydrationWarning>
               <a
                 href="https://arikporto.netlify.app"
                 target="_blank"
@@ -227,43 +264,8 @@ export default async function RootLayout({
           </div>
         </footer>
 
-        {/* ── MOBILE NAV BAR ──────────────────────────────────────────────── */}
-        <nav className="md:hidden bg-white/95 backdrop-blur-2xl fixed bottom-0 left-0 right-0 w-full z-50 rounded-t-2xl border-t border-outline-variant/20 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] pb-safe print:hidden">
-          <div className="flex justify-around items-center h-16 px-2">
-            <Link href="/" className="flex flex-col items-center justify-center text-primary transition-colors flex-1 gap-1">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-              </svg>
-              <span className="text-[9px] font-geist font-semibold">Home</span>
-            </Link>
-            <Link href="/market" className="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 gap-1">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
-              </svg>
-              <span className="text-[9px] font-geist font-semibold">Market</span>
-            </Link>
-            <Link href="/academy" className="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 gap-1">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
-              </svg>
-              <span className="text-[9px] font-geist font-semibold">Academy</span>
-            </Link>
-            <Link href="/cart" className="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 gap-1">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-              </svg>
-              <span className="text-[9px] font-geist font-semibold">Keranjang</span>
-            </Link>
-            <Link href={user ? "/wallet" : "/auth"} className="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors flex-1 gap-1">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-              </svg>
-              <span className="text-[9px] font-geist font-semibold">Profil</span>
-            </Link>
-          </div>
-        </nav>
+        <MobileBottomNav isLoggedIn={!!user} />
         <FloatingChat />
-        <ThemeToggle />
         </>
         )}
       </body>

@@ -45,3 +45,11 @@ next-env.d.ts
 
 # Mock DB persistence (local dev only)
 .mock-db.json
+
+# local binaries and configs
+/cloudflared.exe
+/config.yml
+
+# uploads
+/public/uploads/
+

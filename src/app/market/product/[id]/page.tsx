@@ -4,6 +4,7 @@ import { getProductReviews } from "@/app/actions/reviews";
 import { notFound } from "next/navigation";
 import ProductActions from "./ProductActions";
 import { Metadata } from "next";
+import { getCurrentUser } from "@/app/actions/auth";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -18,25 +19,25 @@ export async function generateMetadata(
   
   if (!product) {
     return {
-      title: "Produk Tidak Ditemukan - Teras UMKM",
-      description: "Halaman produk tidak ditemukan di Teras UMKM."
+      title: "Produk Tidak Ditemukan - Saloka.id",
+      description: "Halaman produk tidak ditemukan di Saloka.id."
     };
   }
 
   const desc = product.description.substring(0, 150) + (product.description.length > 150 ? '...' : '');
 
   return {
-    title: `${product.title} - Teras UMKM`,
+    title: `${product.title} - Saloka.id`,
     description: desc,
     openGraph: {
-      title: `${product.title} - Teras UMKM`,
+      title: `${product.title} - Saloka.id`,
       description: desc,
       images: product.imageUrl ? [{ url: product.imageUrl }] : [],
       type: 'website',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${product.title} - Teras UMKM`,
+      title: `${product.title} - Saloka.id`,
       description: desc,
       images: product.imageUrl ? [product.imageUrl] : [],
     }
@@ -51,6 +52,8 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   if (!product) {
     notFound();
   }
+
+  const user = await getCurrentUser();
 
   const reviews = await getProductReviews(id);
   const avgRating = reviews.length > 0 
@@ -183,6 +186,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                 merchantId: product.merchantId,
               }}
               affCode={aff}
+              userId={user?.id}
             />
           </div>
         </div>
@@ -196,7 +200,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
           ) : (
             <div className="space-y-6">
               {reviews.map((rev: any) => {
-                const authorName = rev.author?.name || "Pelanggan Teras"
+                const authorName = rev.author?.name || "Pelanggan Saloka"
                 const initial = authorName.charAt(0).toUpperCase()
                 const dateStr = new Date(rev.createdAt).toLocaleDateString('id-ID', {
                   day: 'numeric', month: 'long', year: 'numeric'

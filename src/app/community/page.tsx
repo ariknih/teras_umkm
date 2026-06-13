@@ -18,8 +18,8 @@ import {
   toggleSuspendGroup,
   deletePostAction,
   deleteCommentAction
-} from '../actions/community'
-import { getCurrentUser } from '../actions/auth'
+} from '@/app/actions/community'
+import { getCurrentUser } from '@/app/actions/auth'
 
 interface Group {
   id: string
@@ -567,10 +567,10 @@ export default function CommunityPage() {
             <div className="btn-primary absolute -top-24 left-1/2 -translate-x-1/2 w-96 bg-primary/5 blur-3xl pointer-events-none" />
             
             <span className="btn-primary border border-primary/20 bg-primary/5 text-primary text-[10px] tracking-widest inline-block">
-              Teras Business Network
+              Saloka Business Network
             </span>
             <h1 className="font-sora text-2xl md:text-4xl font-extrabold text-text-primary tracking-tight">
-              Pusat Kolaborasi <span className="text-primary bg-clip-text">Komunitas Teras UMKM</span>
+              Pusat Kolaborasi <span className="text-primary bg-clip-text">Komunitas Saloka.id</span>
             </h1>
             <p className="text-xs md:text-sm text-text-secondary max-w-2xl mx-auto leading-relaxed">
               Bergabunglah dengan grup dan komunitas sektoral sesuai bidang usaha Anda. Diskusikan trend bisnis, cari supplier, jalin kemitraan, dan temukan solusi bersama pelaku UMKM lainnya.
@@ -759,7 +759,7 @@ export default function CommunityPage() {
                     required
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
-                    placeholder="Contoh: Pengrajin Batik Sleman"
+                    placeholder="Pengrajin Batik Sleman"
                     className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary/50"
                   />
                 </div>
@@ -783,7 +783,7 @@ export default function CommunityPage() {
                       type="text"
                       value={newGroupAvatar}
                       onChange={(e) => setNewGroupAvatar(e.target.value)}
-                      placeholder="https://example.com/logo.png"
+                      placeholder="https://domain.id/logo.png"
                       className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none"
                     />
                   </div>
@@ -793,7 +793,7 @@ export default function CommunityPage() {
                       type="text"
                       value={newGroupCover}
                       onChange={(e) => setNewGroupCover(e.target.value)}
-                      placeholder="https://example.com/cover.jpg"
+                      placeholder="https://domain.id/cover.jpg"
                       className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none"
                     />
                   </div>
@@ -949,7 +949,7 @@ export default function CommunityPage() {
           </div>
           <h2 className="font-sora text-lg font-bold text-text-primary">Komunitas Ditangguhkan</h2>
           <p className="text-xs text-text-secondary leading-relaxed">
-            Komunitas <strong>{selectedGroup.name}</strong> saat ini sedang ditangguhkan oleh Super Admin Teras UMKM karena dinilai melanggar standar komunitas bisnis kami.
+            Komunitas <strong>{selectedGroup.name}</strong> saat ini sedang ditangguhkan oleh Super Admin Saloka.id karena dinilai melanggar standar komunitas bisnis kami.
           </p>
           <div className="pt-2">
             <button
@@ -1178,7 +1178,7 @@ export default function CommunityPage() {
                             type="text"
                             value={newImageUrl}
                             onChange={(e) => setNewImageUrl(e.target.value)}
-                            placeholder="Contoh: produk.jpg"
+                            placeholder="produk.jpg"
                             className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                           />
                         </div>
@@ -1189,7 +1189,7 @@ export default function CommunityPage() {
                             type="text"
                             value={newVideoUrl}
                             onChange={(e) => setNewVideoUrl(e.target.value)}
-                            placeholder="Contoh: presentasi.mp4"
+                            placeholder="presentasi.mp4"
                             className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                           />
                         </div>

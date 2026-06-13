@@ -1,4 +1,4 @@
-# 🏪 Teras UMKM
+# 🏪 Saloka.id
 
 > **Premium Digital Ecosystem for Indonesian MSME Business Acceleration**  
 > *Platform Ekosistem Digital Premium untuk Akselerasi Bisnis UMKM Indonesia*
@@ -13,7 +13,7 @@
 
 # English Version 🇬🇧
 
-Teras UMKM is a premium all-in-one platform designed specifically to help Micro, Small, and Medium Enterprises (MSMEs) in Indonesia scale their businesses digitally. The platform integrates a **Marketplace**, **Service Directory**, **LMS Academy**, **Affiliate Hub**, **Community Forum**, **E-Wallet System**, and **Landing Page Builder** with modern GSAP scroll animations and interactive modal interfaces.
+Saloka.id is a premium all-in-one platform designed specifically to help Micro, Small, and Medium Enterprises (MSMEs) in Indonesia scale their businesses digitally. The platform integrates a **Marketplace**, **Service Directory**, **LMS Academy**, **Affiliate Hub**, **Community Forum**, **E-Wallet System**, and **Landing Page Builder** with modern GSAP scroll animations and interactive modal interfaces.
 
 ---
 
@@ -100,7 +100,7 @@ Teras UMKM is a premium all-in-one platform designed specifically to help Micro,
 3. **Spin Up Database (Docker)**
    Start the PostgreSQL container:
    ```bash
-   docker run --name teras-postgres -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=umkm123 -e POSTGRES_DB=teras_umkm -d postgres
+   docker run --name saloka-postgres -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=umkm123 -e POSTGRES_DB=teras_umkm -d postgres
    ```
 
 4. **Sync Database Schema & Run Seeds (Prisma)**
@@ -127,7 +127,7 @@ Teras UMKM is a premium all-in-one platform designed specifically to help Micro,
 
 # Versi Bahasa Indonesia 🇮🇩
 
-Teras UMKM adalah platform *all-in-one* premium yang dirancang khusus untuk membantu pelaku Usaha Mikro, Kecil, dan Menengah (UMKM) di Indonesia meningkatkan skala bisnis mereka secara digital. Platform ini mengintegrasikan **Marketplace**, **Katalog Jasa**, **LMS Academy**, **Affiliate Hub**, **Community Forum**, **Sistem E-Wallet**, dan **Landing Page Builder** dengan animasi scroll GSAP modern dan antarmuka modal interaktif.
+Saloka.id adalah platform *all-in-one* premium yang dirancang khusus untuk membantu pelaku Usaha Mikro, Kecil, dan Menengah (UMKM) di Indonesia meningkatkan skala bisnis mereka secara digital. Platform ini mengintegrasikan **Marketplace**, **Katalog Jasa**, **LMS Academy**, **Affiliate Hub**, **Community Forum**, **Sistem E-Wallet**, dan **Landing Page Builder** dengan animasi scroll GSAP modern dan antarmuka modal interaktif.
 
 ---
 
@@ -214,7 +214,7 @@ Teras UMKM adalah platform *all-in-one* premium yang dirancang khusus untuk memb
 3. **Jalankan Database (Docker)**
    Pastikan Docker Desktop aktif, lalu jalankan container database:
    ```bash
-   docker run --name teras-postgres -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=umkm123 -e POSTGRES_DB=teras_umkm -d postgres
+   docker run --name saloka-postgres -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=umkm123 -e POSTGRES_DB=teras_umkm -d postgres
    ```
 
 4. **Sinkronisasi Schema Database & Jalankan Seeds (Prisma)**

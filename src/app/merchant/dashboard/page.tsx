@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { getCurrentUser, getCurrentUserProfile, updateUserLandingPage } from '@/app/actions/auth'
 import { getProducts, createProduct, updateProduct, deleteProduct, updateAllProductsAffiliateSettingsAction } from '@/app/actions/products'
 import { getWalletDetails } from '@/app/actions/wallet-affiliate'
-import { getMerchantOrders, updateOrderTracking } from '@/app/actions/orders'
+import { getMerchantOrders, updateOrderTracking, updateShippingLabel } from '@/app/actions/orders'
 import { getMerchantAnalytics } from '@/app/actions/analytics'
 import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X } from 'lucide-react'
 
@@ -100,6 +100,7 @@ export default function MerchantDashboardPage() {
   const [selectedOrder, setSelectedOrder] = useState<any>(null)
   const [statusNotes, setStatusNotes] = useState('')
   const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [shippingLabelInput, setShippingLabelInput] = useState('')
 
   // AI Copywriter
   const [generatingAiText, setGeneratingAiText] = useState(false)
@@ -121,6 +122,15 @@ export default function MerchantDashboardPage() {
   const [globalCommValue, setGlobalCommValue] = useState(0)
   const [globalStatus, setGlobalStatus] = useState<string | null>(null)
   const [isApplyingGlobal, startApplyGlobal] = useTransition()
+
+  const parsedSubdomain = (() => {
+    if (!profile) return ''
+    try {
+      const config = JSON.parse(profile.landingPageConfig || '{}')
+      if (config.subdomain) return config.subdomain
+    } catch (e) {}
+    return profile.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mitra'
+  })()
 
   const handleImageUpload = (file: File, callback: (base64: string) => void) => {
     const reader = new FileReader()
@@ -1010,7 +1020,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
               <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Pecinta Brand Visual Identity</h3>
               <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
-                Setiap merchant di Teras UMKM Premium memiliki visual storefront storefront eksklusif. Pelajari tips mendesain brand premium Anda di modul LMS Academy kami untuk menarik lebih banyak pembeli high-end.
+                Setiap merchant di Saloka.id Premium memiliki visual storefront storefront eksklusif. Pelajari tips mendesain brand premium Anda di modul LMS Academy kami untuk menarik lebih banyak pembeli high-end.
               </p>
             </div>
           </div>
@@ -1347,7 +1357,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               Tambah Produk Ke Katalog
             </h3>
             <p className="text-xs text-text-secondary mb-8">
-              Masukkan detail produk dengan lengkap. Produk akan segera didistribusikan ke Teras Marketplace.
+              Masukkan detail produk dengan lengkap. Produk akan segera didistribusikan ke Saloka Marketplace.
             </p>
 
             <form onSubmit={handleCreate} className="space-y-5">
@@ -1532,6 +1542,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <p><strong className="text-text-primary">Kurir:</strong> {selectedOrder.courier || 'Tidak Ada'}</p>
                     <p><strong className="text-text-primary">Total Pembayaran:</strong> Rp {selectedOrder.totalAmount.toLocaleString('id-ID')}</p>
                     
+                    {selectedOrder.shippingLabel && (
+                      <p><strong className="text-primary font-bold">Resi Pengiriman:</strong> <span className="bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">{selectedOrder.shippingLabel}</span></p>
+                    )}
+                    
                     <div className="border-t border-border-subtle/50 pt-4 mt-4">
                       <h4 className="font-bold text-text-primary mb-2">Item Pesanan:</h4>
                       {selectedOrder.items?.map((item: any, idx: number) => (
@@ -1585,15 +1599,52 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       })}
                     </div>
 
+                    {!selectedOrder.shippingLabel && selectedOrder.tracking?.some((t: any) => t.status === 'PROCESSING') && (
+                      <div className="mt-6 p-4 border border-primary/30 bg-primary/5 rounded-lg mb-6">
+                        <label className="block text-[10px] font-geist font-bold text-primary uppercase tracking-wider mb-2">
+                          Input Resi Kurir (Live Tracking)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={shippingLabelInput}
+                            onChange={(e) => setShippingLabelInput(e.target.value)}
+                            placeholder="JNE123456789"
+                            className="flex-1 px-4 py-2 bg-surface-container border border-primary/30 rounded text-xs text-text-primary focus:outline-none focus:border-primary"
+                          />
+                          <button
+                            disabled={updatingStatus || !shippingLabelInput}
+                            onClick={async () => {
+                              setUpdatingStatus(true)
+                              const res = await updateShippingLabel(selectedOrder.id, shippingLabelInput)
+                              if (res.error) {
+                                setError(res.error)
+                              } else {
+                                setSuccess('Resi berhasil diinput dan pesanan otomatis berstatus SHIPPED!')
+                                setShippingLabelInput('')
+                                setSelectedOrder(null)
+                                await loadData()
+                              }
+                              setUpdatingStatus(false)
+                            }}
+                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-on-surface rounded text-xs font-bold disabled:opacity-50 transition-colors"
+                          >
+                            Simpan Resi
+                          </button>
+                        </div>
+                        <p className="text-[9px] text-text-secondary mt-2">Menyimpan resi akan otomatis memperbarui status menjadi <strong className="text-text-primary uppercase">SHIPPED</strong>.</p>
+                      </div>
+                    )}
+
                     <div className="mt-6">
                       <label htmlFor="status-note" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
-                        Catatan / Resi Pengiriman (Opsional)
+                        Catatan Update Status (Opsional)
                       </label>
                       <textarea
                         id="status-note"
                         value={statusNotes}
                         onChange={(e) => setStatusNotes(e.target.value)}
-                        placeholder="Contoh: Pesanan sedang dipacking / Nomor Resi: JNE123456789"
+                        placeholder="Pesanan sedang dipacking / Nomor Resi: JNE123456789"
                         rows={2}
                         className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                       />
@@ -2288,7 +2339,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Slug URL Halaman</label>
                           <div className="flex items-center">
                             <span className="h-11 px-3 bg-slate-100 border border-r-0 border-slate-100 rounded-l-xl text-xs text-text-secondary flex items-center">
-                              {profile?.subdomain ? `${profile.subdomain}.saloka.id/` : 'saloka.id/'}
+                              {parsedSubdomain ? `${parsedSubdomain}.saloka.id/` : 'saloka.id/'}
                             </span>
                             <input
                               type="text"
@@ -2444,7 +2495,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             name="headDesktop"
                             defaultValue={editingPage.headDesktop}
                             rows={3}
-                            placeholder="Contoh: <script>...</script> atau <style>...</style>"
+                            placeholder="<script>...</script> atau <style>...</style>"
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
@@ -2454,7 +2505,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             name="headMobile"
                             defaultValue={editingPage.headMobile}
                             rows={3}
-                            placeholder="Contoh: <script>...</script>"
+                            placeholder="<script>...</script>"
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
@@ -2464,7 +2515,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             name="footerAny"
                             defaultValue={editingPage.footerAny}
                             rows={3}
-                            placeholder="Contoh: <script>...</script>"
+                            placeholder="<script>...</script>"
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
@@ -2474,7 +2525,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             name="footerDesktop"
                             defaultValue={editingPage.footerDesktop}
                             rows={3}
-                            placeholder="Contoh: <script>...</script>"
+                            placeholder="<script>...</script>"
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
@@ -2484,7 +2535,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             name="footerMobile"
                             defaultValue={editingPage.footerMobile}
                             rows={3}
-                            placeholder="Contoh: <script>...</script>"
+                            placeholder="<script>...</script>"
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
@@ -2621,11 +2672,20 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               }
                             })()
                             
-                            const displayDomain = customDomain || `${profile?.subdomain || 'mitra'}.saloka.id`
+                            const displayDomain = customDomain || `${parsedSubdomain}.saloka.id`
                             const displayUrl = page.slug ? `${displayDomain}/${page.slug}` : displayDomain
                             const dateStr = new Date(page.lastModified || new Date()).toLocaleDateString('id-ID', {
                               day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
                             })
+
+                            // Determine subdomain URL path structure
+                            const isLocal = typeof window !== 'undefined' && window.location.hostname.includes('localhost')
+                            const hostBase = customDomain || (
+                              isLocal
+                                ? `${parsedSubdomain}.localhost:3000`
+                                : `${parsedSubdomain}.saloka.id`
+                            )
+                            const finalHref = page.slug ? `${isLocal ? 'http' : 'https'}://${hostBase}/${page.slug}` : `${isLocal ? 'http' : 'https'}://${hostBase}`
 
                             return (
                               <tr key={page.id} className="border-b border-slate-50 hover:bg-slate-50/40 transition-colors">
@@ -2640,14 +2700,26 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                     </div>
                                     <div>
                                       <p className="font-bold text-text-primary">{page.name}</p>
+                                      
+                                      {/* Action links under page name */}
+                                      <div className="flex items-center gap-1.5 text-[10px] text-text-secondary mt-1">
+                                        <button onClick={() => setEditingPage(page)} className="hover:text-primary cursor-pointer font-medium">Edit</button>
+                                        <span>|</span>
+                                        <button onClick={() => router.push(`/merchant/builder/${page.id}`)} className="hover:text-primary cursor-pointer font-medium">Edit with Builder</button>
+                                        <span>|</span>
+                                        <button onClick={() => handleDuplicatePage(page)} className="hover:text-primary cursor-pointer font-medium">Duplicate</button>
+                                        <span>|</span>
+                                        <a href={finalHref} target="_blank" rel="noreferrer" className="hover:text-primary font-medium text-text-secondary">Visit Page</a>
+                                      </div>
+
                                       {page.id === 'page-main' && (
-                                        <span className="btn-primary text-[8px] bg-primary/10 border border-primary/20 text-primary font-black mt-1 inline-block">Halaman Utama</span>
+                                        <span className="btn-primary text-[8px] bg-primary/10 border border-primary/20 text-primary font-black mt-2 inline-block">Halaman Utama</span>
                                       )}
                                     </div>
                                   </div>
                                 </td>
                                 <td className="py-4 px-5 font-mono text-[11px] text-[#2DB24A] hover:underline">
-                                  <a href={`/store/${profile?.id}/${page.slug || ''}`} target="_blank" rel="noreferrer">
+                                  <a href={finalHref} target="_blank" rel="noreferrer">
                                     {displayUrl}
                                   </a>
                                 </td>
@@ -2733,7 +2805,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Halaman</label>
                     <input
                       type="text"
-                      placeholder="Contoh: Landing Page Promo Domestik"
+                      placeholder="Landing Page Promo Domestik"
                       value={createPageName}
                       onChange={(e) => setCreatePageName(e.target.value)}
                       className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
@@ -2895,7 +2967,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Domain</label>
                   <input
                     type="text"
-                    placeholder="Contoh: www.tokosaya.com atau katalog.bisnis.id"
+                    placeholder="www.tokosaya.com atau katalog.bisnis.id"
                     value={customDomainInput}
                     onChange={(e) => setCustomDomainInput(e.target.value)}
                     className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"

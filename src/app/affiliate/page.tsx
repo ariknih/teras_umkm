@@ -10,14 +10,14 @@ import {
   getAffiliateLeaderboard,
   getAffiliateDownline,
   getReminders
-} from '../actions/affiliate-extra'
+} from '@/app/actions/affiliate-extra'
 import {
   updateUserLandingPage,
   getCurrentUserProfile
-} from '../actions/auth'
-import { getWalletDetails, getAffiliateStats } from '../actions/wallet-affiliate'
-import { getProducts } from '../actions/products'
-import LandingPageRenderer from '../components/LandingPageRenderer'
+} from '@/app/actions/auth'
+import { getWalletDetails, getAffiliateStats } from '@/app/actions/wallet-affiliate'
+import { getProducts } from '@/app/actions/products'
+import LandingPageRenderer from '@/app/components/LandingPageRenderer'
 
 interface Referral {
   id: string
@@ -885,7 +885,7 @@ export default function AffiliatePage() {
                           </div>
                           <div className="p-4 space-y-2">
                             <p className="text-[10px] text-text-secondary font-geist font-bold uppercase tracking-wider">
-                              Seller: {p.merchant?.name || 'Teras Merchant'}
+                              Seller: {p.merchant?.name || 'Saloka Merchant'}
                             </p>
                             <h4 className="font-sora text-xs font-bold text-text-primary line-clamp-1">
                               {p.title}
