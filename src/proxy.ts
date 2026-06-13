@@ -76,6 +76,14 @@ export function proxy(request: NextRequest) {
         subdomain = firstPart
       }
     }
+  } else if (cleanHost.endsWith('vercel.app')) {
+    // Vercel deployment subdomain check (e.g. arik.terasumkm.vercel.app)
+    if (hostParts.length > 3) {
+      const firstPart = hostParts[0].toLowerCase()
+      if (!['www', 'admin', 'affiliate', 'api'].includes(firstPart)) {
+        subdomain = firstPart
+      }
+    }
   } else {
     // Production subdomain check (e.g. arik.saloka.id)
     if (hostParts.length > 2) {
