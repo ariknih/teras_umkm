@@ -119,6 +119,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                           </Link>
                         )}
 
+                        {user.role === 'CUSTOMER_SERVICE' && (
+                          <Link href="/cs" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
+                            <LayoutDashboard size={14} className="text-primary" />
+                            <span>CS Dashboard</span>
+                          </Link>
+                        )}
+
                         {user.role !== 'ADMIN' && (
                           <Link href={`/profile/${user.id}`} onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                             <UserIcon size={14} className="text-text-secondary" />
@@ -230,6 +237,15 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                       className="w-full py-2.5 px-4 bg-red-600 text-white text-center font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
                     >
                       Admin Panel
+                    </Link>
+                  )}
+                  {user.role === 'CUSTOMER_SERVICE' && (
+                    <Link
+                      href="/cs"
+                      onClick={() => setIsOpenMobile(false)}
+                      className="btn-primary w-full text-center text-xs"
+                    >
+                      CS Dashboard
                     </Link>
                   )}
                   <Link
