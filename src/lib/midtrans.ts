@@ -29,6 +29,11 @@ export async function createSnapTransaction(params: {
   grossAmount: number;
   customerDetails?: CustomerDetails;
   itemDetails?: ItemDetails[];
+  callbacks?: {
+    finish?: string;
+    unfinish?: string;
+    error?: string;
+  };
 }) {
   try {
     const payload = {
@@ -41,6 +46,7 @@ export async function createSnapTransaction(params: {
       credit_card: {
         secure: true,
       },
+      callbacks: params.callbacks,
     };
 
     const response = await fetch(SNAP_API_URL, {

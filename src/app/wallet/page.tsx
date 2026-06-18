@@ -151,6 +151,32 @@ export default function WalletPage() {
     }
   }
 
+  // Auto verify deposit when redirected back from Midtrans payment page
+  useEffect(() => {
+    if (typeof window !== 'undefined' && userProfile) {
+      const params = new URLSearchParams(window.location.search)
+      const orderId = params.get('order_id')
+      const status = params.get('transaction_status')
+      
+      if (orderId && (orderId.startsWith('dep-') || orderId.startsWith('deposit-'))) {
+        if (status === 'settlement' || status === 'capture') {
+          verifyTransaction(orderId, false)
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, document.title, newUrl)
+        } else if (status === 'pending') {
+          setSuccess('Menunggu pembayaran diselesaikan. Selesaikan pembayaran atau gunakan panel di bawah.')
+          setPendingOrderId(orderId)
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, document.title, newUrl)
+        } else if (status === 'deny' || status === 'expire' || status === 'cancel') {
+          setError('Pembayaran deposit gagal atau dibatalkan.')
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, document.title, newUrl)
+        }
+      }
+    }
+  }, [userProfile])
+
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)

@@ -498,6 +498,32 @@ export default function CartPage() {
     }
   }
 
+  // Auto verify checkout when redirected back from Midtrans payment page
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentUser) {
+      const params = new URLSearchParams(window.location.search)
+      const orderId = params.get('order_id')
+      const status = params.get('transaction_status')
+      
+      if (orderId && (orderId.startsWith('chk-') || orderId.startsWith('checkout-'))) {
+        if (status === 'settlement' || status === 'capture') {
+          verifyCheckout(orderId, false)
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, document.title, newUrl)
+        } else if (status === 'pending') {
+          setSuccessMessage('Menunggu pembayaran diselesaikan. Selesaikan pembayaran atau gunakan panel di bawah.')
+          setPendingOrderId(orderId)
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, document.title, newUrl)
+        } else if (status === 'deny' || status === 'expire' || status === 'cancel') {
+          setError('Pembayaran gagal atau dibatalkan.')
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, document.title, newUrl)
+        }
+      }
+    }
+  }, [currentUser])
+
   // Calculate pricing logic with wholesale (dimsale)
   const getProductPriceWithWholesale = (basePrice: number, qty: number) => {
     if (qty >= 10) return basePrice * 0.80; // 20% off

@@ -10,6 +10,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Anda harus masuk terlebih dahulu.' }, { status: 401 });
     }
 
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const host = req.headers.get('host') || 'localhost:3000';
+    const baseUrl = `${protocol}://${host}`;
+
     const body = await req.json();
     const { type, amount, items, affiliateId, shippingDetails } = body;
 
@@ -34,6 +38,11 @@ export async function POST(req: NextRequest) {
           quantity: 1,
           name: 'Top Up Saldo Dompet Saloka.id',
         }],
+        callbacks: {
+          finish: `${baseUrl}/wallet`,
+          unfinish: `${baseUrl}/wallet`,
+          error: `${baseUrl}/wallet`,
+        },
       });
 
       return NextResponse.json({
@@ -166,6 +175,11 @@ export async function POST(req: NextRequest) {
           email: user.email,
         },
         itemDetails: computedDiscount > 0 ? undefined : itemDetailsList,
+        callbacks: {
+          finish: `${baseUrl}/cart`,
+          unfinish: `${baseUrl}/cart`,
+          error: `${baseUrl}/cart`,
+        },
       });
 
       return NextResponse.json({
