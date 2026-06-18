@@ -6282,18 +6282,22 @@ export const DataStore = {
 
   async getUserIndukCommunity(userId: string) {
     syncMockDb()
-    const user = globalMockUsers.find(u => u.id === userId)
-    const indukId = (user as any)?.indukCommunityId
-    if (!indukId) return null
-    
     if (await isDbConnected()) {
       try {
+        const u = await db.user.findUnique({ where: { id: userId } })
+        const indukId = u?.indukCommunityId
+        if (!indukId) return null
+        
         return await db.community.findUnique({
           where: { id: indukId },
           include: { ketua: { select: { id: true, name: true } } }
         })
       } catch (_) {}
     }
+
+    const user = globalMockUsers.find(u => u.id === userId)
+    const indukId = (user as any)?.indukCommunityId
+    if (!indukId) return null
 
     const communities = (globalThis as any).__mockCommunities || []
     return communities.find((c: any) => c.id === indukId) || null
