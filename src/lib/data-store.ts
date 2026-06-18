@@ -1924,6 +1924,9 @@ function loadMockDb(): {
   reviews?: any[];
   notifications?: any[];
   orderTrackings?: any[];
+  communities?: any[];
+  communityMemberships?: any[];
+  cooperativeLoans?: any[];
 } {
   try {
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -1975,6 +1978,15 @@ function loadMockDb(): {
       if (parsed.supportMessages) {
         parsed.supportMessages = parsed.supportMessages.map((sm: any) => ({ ...sm, createdAt: new Date(sm.createdAt) }))
       }
+      if (parsed.communities) {
+        parsed.communities = parsed.communities.map((c: any) => ({ ...c, createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) }))
+      }
+      if (parsed.communityMemberships) {
+        parsed.communityMemberships = parsed.communityMemberships.map((cm: any) => ({ ...cm, joinedAt: new Date(cm.joinedAt) }))
+      }
+      if (parsed.cooperativeLoans) {
+        parsed.cooperativeLoans = parsed.cooperativeLoans.map((l: any) => ({ ...l, createdAt: new Date(l.createdAt), updatedAt: new Date(l.updatedAt) }))
+      }
       return parsed
     }
   } catch (e) {
@@ -2018,7 +2030,10 @@ function saveMockDb() {
       orders: globalMockOrders,
       reviews: globalMockReviews,
       notifications: globalMockNotifications,
-      orderTrackings: globalMockOrderTrackings
+      orderTrackings: globalMockOrderTrackings,
+      communities: (globalThis as any).__mockCommunities,
+      communityMemberships: (globalThis as any).__mockCommunityMemberships,
+      cooperativeLoans: (globalThis as any).__mockCooperativeLoans
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2104,6 +2119,26 @@ function syncMockDb() {
       if (parsed.orderTrackings) {
         globalMockOrderTrackings = parsed.orderTrackings.map((ot: any) => ({ ...ot, createdAt: new Date(ot.createdAt) }))
       }
+      if (parsed.communities) {
+        (globalThis as any).__mockCommunities = parsed.communities.map((c: any) => ({
+          ...c,
+          createdAt: new Date(c.createdAt),
+          updatedAt: new Date(c.updatedAt)
+        }))
+      }
+      if (parsed.communityMemberships) {
+        (globalThis as any).__mockCommunityMemberships = parsed.communityMemberships.map((cm: any) => ({
+          ...cm,
+          joinedAt: new Date(cm.joinedAt)
+        }))
+      }
+      if (parsed.cooperativeLoans) {
+        (globalThis as any).__mockCooperativeLoans = parsed.cooperativeLoans.map((l: any) => ({
+          ...l,
+          createdAt: new Date(l.createdAt),
+          updatedAt: new Date(l.updatedAt)
+        }))
+      }
     }
   } catch (e) {
     // ignore
@@ -2112,6 +2147,11 @@ function syncMockDb() {
 
 // Load persisted data and merge with defaults
 const _persistedDb = loadMockDb()
+
+// Initialize globalThis mock communities from persisted database
+;(globalThis as any).__mockCommunities = _persistedDb.communities || []
+;(globalThis as any).__mockCommunityMemberships = _persistedDb.communityMemberships || []
+;(globalThis as any).__mockCooperativeLoans = _persistedDb.cooperativeLoans || []
 
 // Global state in-memory database helpers for local updates in sandbox mode
 let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products).map((p: any) => ({
@@ -5856,8 +5896,95 @@ export const DataStore = {
 
   async getCommunities() {
     syncMockDb()
+
+    // Define seed communities
+    const seedCommunities = [
+      {
+        id: 'comm-dummy-1',
+        name: 'Asosiasi Kuliner Kreatif Jogja',
+        type: 'PERKUMPULAN' as const,
+        description: 'Wadah kolaborasi dan diskusi antar pemilik usaha kuliner kreatif di wilayah Yogyakarta. Kami fokus pada peningkatan mutu produk, sertifikasi halal, dan pemasaran digital bersama.',
+        aktaNotaris: 'Akta Notaris No. 12 Tgl 10 April 2024',
+        nomorAhu: 'AHU-0010243.AH.01.07',
+        nomorNpwp: '12.345.678.9-012.000',
+        domisili: 'Kota Yogyakarta, DIY',
+        kontakPj: '081234567890',
+        waGroupLink: 'https://chat.whatsapp.com/JdK8X4bY12eD5xG',
+        avatarUrl: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=150&h=150&fit=crop&q=80',
+        coverUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop&q=80',
+        joinFee: 0,
+        monthlyFee: 0,
+        ketuaId: 'user-merchant-1',
+        isSuspended: false,
+        isVerified: true,
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01')
+      },
+      {
+        id: 'comm-dummy-2',
+        name: 'Koperasi Produksi Maju Bersama',
+        type: 'KOPERASI' as const,
+        description: 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah untuk pengadaan bahan baku bersama, fasilitasi permodalan modal produksi, dan bagi hasil usaha (SHU) tahunan.',
+        aktaNotaris: 'Akta Notaris Koperasi No. 98 Tgl 01 Februari 2025',
+        nomorAhu: 'AHU-KOP-0029311.AH.01.11',
+        nomorNpwp: '12.987.654.3-012.000',
+        domisili: 'Sleman, DIY',
+        kontakPj: '089876543210',
+        waGroupLink: 'https://chat.whatsapp.com/LhB2P9qK10zF6sD',
+        avatarUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=150&h=150&fit=crop&q=80',
+        coverUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=300&fit=crop&q=80',
+        joinFee: 150000,
+        monthlyFee: 50000,
+        ketuaId: 'user-admin-1',
+        isSuspended: false,
+        isVerified: true,
+        createdAt: new Date('2026-02-15'),
+        updatedAt: new Date('2026-02-15')
+      }
+    ];
+
     if (await isDbConnected()) {
       try {
+        const count = await db.community.count();
+        if (count === 0) {
+          for (const seed of seedCommunities) {
+            const ketuaExists = await db.user.findUnique({ where: { id: seed.ketuaId } });
+            const finalKetuaId = ketuaExists ? seed.ketuaId : (await db.user.findFirst())?.id;
+            if (finalKetuaId) {
+              await db.community.create({
+                data: {
+                  id: seed.id,
+                  name: seed.name,
+                  type: seed.type,
+                  description: seed.description,
+                  aktaNotaris: seed.aktaNotaris,
+                  nomorAhu: seed.nomorAhu,
+                  nomorNpwp: seed.nomorNpwp,
+                  domisili: seed.domisili,
+                  kontakPj: seed.kontakPj,
+                  waGroupLink: seed.waGroupLink,
+                  avatarUrl: seed.avatarUrl,
+                  coverUrl: seed.coverUrl,
+                  joinFee: seed.joinFee,
+                  monthlyFee: seed.monthlyFee,
+                  ketuaId: finalKetuaId,
+                  isVerified: seed.isVerified,
+                  createdAt: seed.createdAt,
+                  updatedAt: seed.updatedAt
+                }
+              });
+              // Auto join ketua as member
+              await db.communityMembership.create({
+                data: {
+                  communityId: seed.id,
+                  userId: finalKetuaId,
+                  isInduk: true,
+                  isPaid: true
+                }
+              });
+            }
+          }
+        }
         return await db.community.findMany({
           include: {
             ketua: { select: { id: true, name: true, role: true } },
@@ -5867,6 +5994,27 @@ export const DataStore = {
         })
       } catch (_) {}
     }
+
+    if (!(globalThis as any).__mockCommunities || (globalThis as any).__mockCommunities.length === 0) {
+      (globalThis as any).__mockCommunities = [...seedCommunities];
+      // Seed memberships for mock ketua
+      if (!(globalThis as any).__mockCommunityMemberships) (globalThis as any).__mockCommunityMemberships = [];
+      for (const seed of seedCommunities) {
+        const exists = (globalThis as any).__mockCommunityMemberships.some((m: any) => m.communityId === seed.id && m.userId === seed.ketuaId);
+        if (!exists) {
+          (globalThis as any).__mockCommunityMemberships.push({
+            id: `cm-${seed.id}-${seed.ketuaId}`,
+            communityId: seed.id,
+            userId: seed.ketuaId,
+            isInduk: true,
+            isPaid: true,
+            joinedAt: new Date()
+          });
+        }
+      }
+      saveMockDb();
+    }
+
     const communities = (globalThis as any).__mockCommunities || []
     return communities.map((c: any) => {
       const ketua = globalMockUsers.find(u => u.id === c.ketuaId)
