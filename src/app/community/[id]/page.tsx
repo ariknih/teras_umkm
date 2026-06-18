@@ -280,7 +280,7 @@ export default function CommunityDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex items-center justify-center">
         <div className="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
       </div>
     )
@@ -288,7 +288,7 @@ export default function CommunityDetailPage() {
 
   if (!community) {
     return (
-      <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex flex-col items-center justify-center gap-4">
         <h2 className="text-xl font-bold font-sora">Komunitas Tidak Ditemukan</h2>
         <Link href="/community" className="text-xs text-primary hover:underline">Kembali ke direktori</Link>
       </div>
@@ -299,26 +299,26 @@ export default function CommunityDetailPage() {
   const isAdmin = user && user.role === 'ADMIN'
 
   return (
-    <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] pb-24 relative overflow-hidden">
+    <div className="min-h-screen bg-[#F5F7F9] text-[#111111] pb-24 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[550px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_80%)] pointer-events-none z-0" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[550px] bg-[radial-gradient(circle_at_center,rgba(45,178,74,0.03)_0%,transparent_80%)] pointer-events-none z-0" />
 
       {/* Cover Banner */}
-      <div className="relative h-60 md:h-80 w-full bg-gradient-to-r from-neutral-950 via-neutral-900 to-yellow-950/20 overflow-hidden border-b border-white/5">
+      <div className="relative h-60 md:h-80 w-full bg-gradient-to-r from-neutral-200 via-neutral-100 to-green-500/10 overflow-hidden border-b border-black/5">
         {community.coverUrl ? (
           <img src={community.coverUrl} alt={community.name} className="object-cover w-full h-full" />
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(198,169,107,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(198,169,107,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(45,178,74,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(45,178,74,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#090A0F] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#F5F7F9] via-transparent to-transparent" />
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 md:px-8 -mt-24 space-y-8">
         {/* Header Block */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-[#13151E]/60 backdrop-blur-xl border border-white/5 p-6 rounded-3xl shadow-2xl">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white/80 backdrop-blur-xl border border-black/5 p-6 rounded-3xl shadow-2xl">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-6 w-full">
             {/* Avatar */}
-            <div className="w-24 h-24 rounded-2xl bg-neutral-950 border border-primary/30 flex items-center justify-center text-3xl font-extrabold text-primary shadow-lg overflow-hidden shrink-0">
+            <div className="w-24 h-24 rounded-2xl bg-white border border-primary/20 flex items-center justify-center text-3xl font-extrabold text-primary shadow-lg overflow-hidden shrink-0">
               {community.avatarUrl ? (
                 <img src={community.avatarUrl} alt="" className="object-cover w-full h-full" />
               ) : (
@@ -328,9 +328,9 @@ export default function CommunityDetailPage() {
             
             <div className="space-y-2 text-center md:text-left flex-grow">
               <div className="flex items-center justify-center md:justify-start gap-2">
-                <h1 className="font-sora text-2xl md:text-3xl font-extrabold tracking-tight text-white">{community.name}</h1>
+                <h1 className="font-sora text-2xl md:text-3xl font-extrabold tracking-tight text-[#111111]">{community.name}</h1>
                 <span className={`px-2 py-0.5 rounded text-[8px] font-geist font-black border uppercase tracking-wider ${
-                  community.type === 'KOPERASI' ? 'bg-amber-500/10 border-amber-500/35 text-amber-400' : 'bg-cyan-500/10 border-cyan-500/35 text-cyan-400'
+                  community.type === 'KOPERASI' ? 'bg-amber-500/10 border-amber-500/35 text-amber-600' : 'bg-cyan-500/10 border-cyan-500/35 text-cyan-600'
                 }`}>
                   {community.type}
                 </span>
@@ -386,7 +386,7 @@ export default function CommunityDetailPage() {
               <button
                 onClick={handleJoin}
                 disabled={actionPending}
-                className="w-full md:w-auto px-8 py-3 bg-primary hover:bg-primary/95 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center shadow-lg shadow-primary/15"
+                className="w-full md:w-auto px-8 py-3 bg-primary hover:bg-primary/95 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center shadow-lg shadow-primary/15"
               >
                 {actionPending ? 'Memproses...' : community.type === 'KOPERASI' ? `Gabung Koperasi (Rp ${community.joinFee.toLocaleString('id-ID')})` : 'Gabung Komunitas (Gratis)'}
               </button>
@@ -399,16 +399,16 @@ export default function CommunityDetailPage() {
           
           {/* Left Block: Legal & Details */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-[#13151E]/80 border border-white/5 rounded-3xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+            <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center gap-2 border-b border-black/5 pb-3">
                 <Info className="w-4 h-4 text-primary" />
-                <h3 className="font-sora text-xs font-bold uppercase tracking-wider text-text-primary">Legalitas & Detail</h3>
+                <h3 className="font-sora text-xs font-bold uppercase tracking-wider text-[#111111]">Legalitas & Detail</h3>
               </div>
 
               <div className="space-y-3 text-xs">
                 <div>
                   <span className="block text-text-secondary text-[10px] uppercase font-semibold">Tipe Komunitas</span>
-                  <span className="text-white font-bold">{community.type === 'KOPERASI' ? 'Koperasi Produksi (Berbayar)' : 'Perkumpulan Bisnis (Gratis)'}</span>
+                  <span className="text-[#111111] font-bold">{community.type === 'KOPERASI' ? 'Koperasi Produksi (Berbayar)' : 'Perkumpulan Bisnis (Gratis)'}</span>
                 </div>
                 {community.type === 'KOPERASI' && (
                   <>
@@ -425,33 +425,33 @@ export default function CommunityDetailPage() {
                 {community.aktaNotaris && (
                   <div>
                     <span className="block text-text-secondary text-[10px] uppercase font-semibold">Akta Notaris</span>
-                    <span className="text-white font-mono font-medium">{community.aktaNotaris}</span>
+                    <span className="text-[#111111] font-mono font-medium">{community.aktaNotaris}</span>
                   </div>
                 )}
                 {community.nomorAhu && (
                   <div>
                     <span className="block text-text-secondary text-[10px] uppercase font-semibold">Nomor AHU</span>
-                    <span className="text-white font-mono font-medium">{community.nomorAhu}</span>
+                    <span className="text-[#111111] font-mono font-medium">{community.nomorAhu}</span>
                   </div>
                 )}
                 {community.nomorNpwp && (
                   <div>
                     <span className="block text-text-secondary text-[10px] uppercase font-semibold">NPWP Organisasi</span>
-                    <span className="text-white font-mono font-medium">{community.nomorNpwp}</span>
+                    <span className="text-[#111111] font-mono font-medium">{community.nomorNpwp}</span>
                   </div>
                 )}
                 {community.domisili && (
                   <div>
                     <span className="block text-text-secondary text-[10px] uppercase font-semibold">Domisili Kantor</span>
-                    <span className="text-white font-medium">{community.domisili}</span>
+                    <span className="text-[#111111] font-medium">{community.domisili}</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Description */}
-            <div className="bg-[#13151E]/80 border border-white/5 rounded-3xl p-6 shadow-xl space-y-3">
-              <h3 className="font-sora text-xs font-bold uppercase tracking-wider text-[#f5d76e]">Tentang Kami</h3>
+            <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-xl space-y-3">
+              <h3 className="font-sora text-xs font-bold uppercase tracking-wider text-amber-600">Tentang Kami</h3>
               <p className="text-xs text-text-secondary leading-relaxed">{community.description}</p>
             </div>
           </div>
@@ -461,16 +461,16 @@ export default function CommunityDetailPage() {
             
             {/* Koperasi Financial System / Loan requests section */}
             {community.type === 'KOPERASI' && isMember && (
-              <div className="bg-[#13151E]/80 border border-white/5 rounded-3xl p-6 shadow-xl space-y-6">
-                <div className="flex justify-between items-center border-b border-white/5 pb-4">
+              <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-xl space-y-6">
+                <div className="flex justify-between items-center border-b border-black/5 pb-4">
                   <div className="flex items-center gap-3">
                     <DollarSign className="w-5 h-5 text-primary" />
-                    <h3 className="font-sora text-sm font-bold text-white uppercase tracking-wider">Permodalan Koperasi</h3>
+                    <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">Permodalan Koperasi</h3>
                   </div>
                   {!isKetua && (
                     <button
                       onClick={() => setLoanModalOpen(true)}
-                      className="px-4 py-2 bg-primary text-black font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow"
+                      className="px-4 py-2 bg-primary text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow"
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       Ajukan Modal
@@ -480,7 +480,7 @@ export default function CommunityDetailPage() {
 
                 {/* Loan Request list */}
                 {loans.length === 0 ? (
-                  <div className="text-center py-8 text-xs text-text-secondary bg-[#090A0F] rounded-2xl border border-white/5">
+                  <div className="text-center py-8 text-xs text-text-secondary bg-[#F5F7F9] rounded-2xl border border-black/5">
                     Belum ada pengajuan pinjaman modal produksi terdaftar.
                   </div>
                 ) : (
@@ -488,15 +488,15 @@ export default function CommunityDetailPage() {
                     {loans.map((loan) => {
                       const isBorrower = user && loan.merchantId === user.id
                       return (
-                        <div key={loan.id} className="p-4 bg-[#090A0F] border border-white/5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div key={loan.id} className="p-4 bg-[#F5F7F9] border border-black/5 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-white">Pinjaman Modal Rp {loan.amount.toLocaleString('id-ID')}</span>
+                              <span className="text-xs font-bold text-[#111111]">Pinjaman Modal Rp {loan.amount.toLocaleString('id-ID')}</span>
                               <span className={`px-2 py-0.5 rounded text-[8px] font-geist font-bold border uppercase ${
-                                loan.status === 'PENDING' ? 'bg-amber-500/10 border-amber-500/35 text-amber-400' :
-                                loan.status === 'APPROVED_KETUA' ? 'bg-blue-500/10 border-blue-500/35 text-blue-400' :
-                                loan.status === 'APPROVED_ADMIN' ? 'bg-green-500/10 border-green-500/35 text-green-400' :
-                                'bg-red-500/10 border-red-500/35 text-red-400'
+                                loan.status === 'PENDING' ? 'bg-amber-500/10 border-amber-500/35 text-amber-600' :
+                                loan.status === 'APPROVED_KETUA' ? 'bg-blue-500/10 border-blue-500/35 text-blue-600' :
+                                loan.status === 'APPROVED_ADMIN' ? 'bg-green-500/10 border-green-500/35 text-green-600' :
+                                'bg-red-500/10 border-red-500/35 text-red-600'
                               }`}>
                                 {loan.status.replace('_', ' ')}
                               </span>
@@ -554,10 +554,10 @@ export default function CommunityDetailPage() {
             )}
 
             {/* Merchant Member Directory */}
-            <div className="bg-[#13151E]/80 border border-white/5 rounded-3xl p-6 shadow-xl space-y-6">
-              <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+            <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-xl space-y-6">
+              <div className="flex items-center gap-3 border-b border-black/5 pb-4">
                 <Users className="w-5 h-5 text-primary" />
-                <h3 className="font-sora text-sm font-bold text-white uppercase tracking-wider">Direktori Merchant Anggota</h3>
+                <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">Direktori Merchant Anggota</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -567,14 +567,14 @@ export default function CommunityDetailPage() {
                     <Link
                       href={`/profile/${mem.user.id}`}
                       key={mem.id}
-                      className="p-4 bg-[#090A0F] border border-white/5 rounded-2xl hover:border-primary/20 transition-all flex items-center justify-between group"
+                      className="p-4 bg-[#F5F7F9] border border-black/5 rounded-2xl hover:border-primary/20 transition-all flex items-center justify-between group"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-neutral-950 border border-primary/10 flex items-center justify-center font-bold text-xs text-primary">
+                        <div className="w-10 h-10 rounded-xl bg-white border border-primary/10 flex items-center justify-center font-bold text-xs text-primary">
                           {mem.user.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <span className="block text-xs font-bold text-white group-hover:text-primary transition-colors">{mem.user.name}</span>
+                          <span className="block text-xs font-bold text-[#111111] group-hover:text-primary transition-colors">{mem.user.name}</span>
                           <span className="block text-[9px] font-mono text-text-secondary uppercase">{mem.user.role} • LV {mem.user.level}</span>
                         </div>
                       </div>
@@ -589,11 +589,11 @@ export default function CommunityDetailPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                <h3 className="font-sora text-sm font-bold text-white uppercase tracking-wider">Produk Unggulan Anggota</h3>
+                <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">Produk Unggulan Anggota</h3>
               </div>
 
               {products.length === 0 ? (
-                <div className="text-center py-12 border border-white/5 bg-[#13151E]/60 rounded-3xl text-xs text-text-secondary">
+                <div className="text-center py-12 border border-black/5 bg-white rounded-3xl text-xs text-text-secondary">
                   Belum ada katalog produk terdaftar dari merchant anggota komunitas ini.
                 </div>
               ) : (
@@ -602,9 +602,9 @@ export default function CommunityDetailPage() {
                     <Link
                       key={p.id}
                       href={`/market/product/${p.id}`}
-                      className="border border-white/5 bg-[#13151E]/80 rounded-2xl overflow-hidden hover:border-primary/25 transition-all flex flex-col justify-between group"
+                      className="border border-black/5 bg-white rounded-2xl overflow-hidden hover:border-primary/25 transition-all flex flex-col justify-between group"
                     >
-                      <div className="relative aspect-square bg-neutral-950 w-full overflow-hidden">
+                      <div className="relative aspect-square bg-neutral-100 w-full overflow-hidden">
                         {p.imageUrl ? (
                           <img src={p.imageUrl} alt="" className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
                         ) : (
@@ -612,7 +612,7 @@ export default function CommunityDetailPage() {
                         )}
                       </div>
                       <div className="p-4 space-y-1">
-                        <span className="block text-[11px] font-bold text-text-primary line-clamp-1 group-hover:text-primary transition-colors">{p.title}</span>
+                        <span className="block text-[11px] font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{p.title}</span>
                         <span className="block text-xs font-black text-primary font-geist">Rp {p.price.toLocaleString('id-ID')}</span>
                       </div>
                     </Link>
@@ -634,17 +634,17 @@ export default function CommunityDetailPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md border border-white/5 bg-[#13151E] p-6 rounded-3xl shadow-2xl space-y-4"
+              className="w-full max-w-md border border-black/5 bg-white p-6 rounded-3xl shadow-2xl space-y-4"
             >
-              <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                <h3 className="font-sora text-sm font-bold text-text-primary uppercase tracking-wider">
+              <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">
                   Pengajuan Modal Koperasi
                 </h3>
-                <button onClick={() => setLoanModalOpen(false)} className="text-text-secondary hover:text-white text-sm font-bold">✕</button>
+                <button onClick={() => setLoanModalOpen(false)} className="text-text-secondary hover:text-[#111111] text-sm font-bold">✕</button>
               </div>
 
               {loanError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold">{loanError}</div>
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 font-semibold">{loanError}</div>
               )}
 
               <form onSubmit={handleLoanSubmit} className="space-y-4">
@@ -656,7 +656,7 @@ export default function CommunityDetailPage() {
                     value={loanAmount}
                     onChange={(e) => setLoanAmount(e.target.value)}
                     placeholder="e.g. 5000000"
-                    className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                    className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -667,13 +667,13 @@ export default function CommunityDetailPage() {
                     onChange={(e) => setLoanPurpose(e.target.value)}
                     placeholder="e.g. Pembelian bahan baku terigu premium dan mesin oven baru untuk kapasitas produksi Sourdough."
                     rows={4}
-                    className="w-full px-3 py-2 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none resize-none"
+                    className="w-full px-3 py-2 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50 resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-primary text-black font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg"
+                  className="w-full py-2.5 bg-primary text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg"
                 >
                   Kirim Pengajuan Modal
                 </button>
@@ -691,23 +691,23 @@ export default function CommunityDetailPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md border border-white/5 bg-[#13151E] p-6 rounded-3xl shadow-2xl space-y-4"
+              className="w-full max-w-md border border-black/5 bg-white p-6 rounded-3xl shadow-2xl space-y-4"
             >
-              <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                <h3 className="font-sora text-sm font-bold text-text-primary uppercase tracking-wider">Pembayaran Simpanan Pokok Koperasi</h3>
-                <button onClick={() => setPaymentModalOpen(false)} className="text-text-secondary hover:text-white text-sm font-bold">✕</button>
+              <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">Pembayaran Simpanan Pokok Koperasi</h3>
+                <button onClick={() => setPaymentModalOpen(false)} className="text-text-secondary hover:text-[#111111] text-sm font-bold">✕</button>
               </div>
 
               {paymentSuccess ? (
                 <div className="p-6 text-center space-y-2">
-                  <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center text-green-400 mx-auto text-xl">✓</div>
-                  <h4 className="font-bold text-white text-sm">Pembayaran Sukses!</h4>
+                  <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center text-green-600 mx-auto text-xl">✓</div>
+                  <h4 className="font-bold text-[#111111] text-sm">Pembayaran Sukses!</h4>
                   <p className="text-xs text-text-secondary">Anda resmi bergabung ke koperasi.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-neutral-900 rounded-2xl border border-white/5">
-                    <span className="text-xs font-bold text-white">Biaya Pendaftaran / Simpanan Pokok</span>
+                  <div className="flex justify-between items-center p-4 bg-[#F5F7F9] rounded-2xl border border-black/5">
+                    <span className="text-xs font-bold text-[#111111]">Biaya Pendaftaran / Simpanan Pokok</span>
                     <span className="text-sm font-extrabold text-primary">Rp {community.joinFee.toLocaleString('id-ID')}</span>
                   </div>
 
@@ -717,7 +717,7 @@ export default function CommunityDetailPage() {
                       className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
                         paymentMethod === 'QRIS'
                           ? 'bg-primary/10 border-primary text-primary'
-                          : 'bg-neutral-900 border-white/5 text-text-secondary hover:text-text-primary'
+                          : 'bg-[#F5F7F9] border-black/10 text-text-secondary hover:text-[#111111]'
                       }`}
                     >
                       QRIS
@@ -727,7 +727,7 @@ export default function CommunityDetailPage() {
                       className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
                         paymentMethod === 'BANK'
                           ? 'bg-primary/10 border-primary text-primary'
-                          : 'bg-neutral-900 border-white/5 text-text-secondary hover:text-text-primary'
+                          : 'bg-[#F5F7F9] border-black/10 text-text-secondary hover:text-[#111111]'
                       }`}
                     >
                       Transfer Saloka
@@ -735,8 +735,8 @@ export default function CommunityDetailPage() {
                   </div>
 
                   {paymentMethod === 'QRIS' ? (
-                    <div className="flex flex-col items-center py-6 bg-white rounded-2xl border border-white/5">
-                      <svg width="120" height="120" viewBox="0 0 24 24" fill="none" className="text-[#090A0F]">
+                    <div className="flex flex-col items-center py-6 bg-white rounded-2xl border border-black/5">
+                      <svg width="120" height="120" viewBox="0 0 24 24" fill="none" className="text-black">
                         <rect width="24" height="24" fill="white" />
                         <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm1 1h2v2H5V5zm9-3h8v8h-8V2zm2 2v4h4V4h-4zm1 1h2v2h-2V5zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm1 1h2v2H5v-2zm12-3h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm-2-2h2v2h-2v-2zm0 4h2v2h-2v-2zm4 0h2v2h-2v-2zm-8-4h2v2H9v-2zm2 2h2v2h-2v-2zm2-2h2v2h-2v-2z" fill="currentColor" />
                         <rect x="9.5" y="9.5" width="5" height="5" fill="#2DB24A" />
@@ -744,9 +744,9 @@ export default function CommunityDetailPage() {
                       <span className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider mt-2">Saloka Auto-Verify QRIS</span>
                     </div>
                   ) : (
-                    <div className="p-4 bg-neutral-900 border border-white/5 rounded-2xl space-y-1 text-center">
+                    <div className="p-4 bg-[#F5F7F9] border border-black/5 rounded-2xl space-y-1 text-center">
                       <span className="text-[10px] text-text-secondary block font-bold">Kirim ke Rekening Bersama Saloka:</span>
-                      <span className="text-sm font-black text-white block font-mono">BCA: 712-094-1182</span>
+                      <span className="text-sm font-black text-[#111111] block font-mono">BCA: 712-094-1182</span>
                       <span className="text-[9px] text-text-secondary block">a/n PT Saloka Digital Indonesia</span>
                     </div>
                   )}
@@ -754,11 +754,11 @@ export default function CommunityDetailPage() {
                   <button
                     onClick={handleConfirmPayment}
                     disabled={isVerifying}
-                    className="w-full py-3 bg-primary hover:bg-primary/95 text-black font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+                    className="w-full py-3 bg-primary hover:bg-primary/95 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
                   >
                     {isVerifying ? (
                       <>
-                        <span className="w-3.5 h-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
+                        <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
                         Memverifikasi Pembayaran...
                       </>
                     ) : (
@@ -780,20 +780,20 @@ export default function CommunityDetailPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-2xl border border-white/5 bg-[#13151E] p-6 rounded-3xl shadow-2xl space-y-4 my-8"
+              className="w-full max-w-2xl border border-black/5 bg-white p-6 rounded-3xl shadow-2xl space-y-4 my-8"
             >
-              <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                <h3 className="font-sora text-sm font-bold text-text-primary uppercase tracking-wider">
+              <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">
                   Edit Landing Page & Profil Komunitas
                 </h3>
-                <button onClick={() => setEditModalOpen(false)} className="text-text-secondary hover:text-white text-sm font-bold">✕</button>
+                <button onClick={() => setEditModalOpen(false)} className="text-text-secondary hover:text-[#111111] text-sm font-bold">✕</button>
               </div>
 
               {editError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold">{editError}</div>
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 font-semibold">{editError}</div>
               )}
               {editSuccess && (
-                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-400 font-semibold">{editSuccess}</div>
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-500 font-semibold">{editSuccess}</div>
               )}
 
               <form onSubmit={handleEditSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
@@ -805,7 +805,7 @@ export default function CommunityDetailPage() {
                       required
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                      className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                     />
                   </div>
 
@@ -816,7 +816,7 @@ export default function CommunityDetailPage() {
                       value={editWaGroupLink}
                       onChange={(e) => setEditWaGroupLink(e.target.value)}
                       placeholder="https://chat.whatsapp.com/..."
-                      className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                      className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                     />
                   </div>
                 </div>
@@ -828,7 +828,7 @@ export default function CommunityDetailPage() {
                     value={editDescription}
                     onChange={(e) => setEditDescription(e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none resize-none"
+                    className="w-full px-3 py-2 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50 resize-none"
                   />
                 </div>
 
@@ -840,7 +840,7 @@ export default function CommunityDetailPage() {
                       value={editAvatarUrl}
                       onChange={(e) => setEditAvatarUrl(e.target.value)}
                       placeholder="/images/community-logo.png"
-                      className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                      className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                     />
                   </div>
 
@@ -851,13 +851,13 @@ export default function CommunityDetailPage() {
                       value={editCoverUrl}
                       onChange={(e) => setEditCoverUrl(e.target.value)}
                       placeholder="/images/community-banner.png"
-                      className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                      className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                     />
                   </div>
                 </div>
 
-                <div className="border-t border-white/5 pt-4">
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Informasi Legalitas</h4>
+                <div className="border-t border-black/5 pt-4">
+                  <h4 className="text-xs font-bold text-[#111111] uppercase tracking-wider mb-3">Informasi Legalitas</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Akta Notaris</label>
@@ -866,7 +866,7 @@ export default function CommunityDetailPage() {
                         value={editAkta}
                         onChange={(e) => setEditAkta(e.target.value)}
                         placeholder="Nomor Akta Notaris"
-                        className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                        className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                       />
                     </div>
 
@@ -877,7 +877,7 @@ export default function CommunityDetailPage() {
                         value={editAhu}
                         onChange={(e) => setEditAhu(e.target.value)}
                         placeholder="Nomor AHU"
-                        className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                        className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                       />
                     </div>
 
@@ -888,7 +888,7 @@ export default function CommunityDetailPage() {
                         value={editNpwp}
                         onChange={(e) => setEditNpwp(e.target.value)}
                         placeholder="Nomor NPWP"
-                        className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                        className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                       />
                     </div>
 
@@ -899,7 +899,7 @@ export default function CommunityDetailPage() {
                         value={editDomisili}
                         onChange={(e) => setEditDomisili(e.target.value)}
                         placeholder="Alamat Kantor Pusat"
-                        className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                        className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                       />
                     </div>
                   </div>
@@ -912,13 +912,13 @@ export default function CommunityDetailPage() {
                     value={editKontakPj}
                     onChange={(e) => setEditKontakPj(e.target.value)}
                     placeholder="Nama / No HP PJ"
-                    className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                    className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                   />
                 </div>
 
                 {community.type === 'KOPERASI' && (
-                  <div className="border-t border-white/5 pt-4">
-                    <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">Keuangan Koperasi</h4>
+                  <div className="border-t border-black/5 pt-4">
+                    <h4 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-3">Keuangan Koperasi</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Simpanan Pokok (Rp)</label>
@@ -926,7 +926,7 @@ export default function CommunityDetailPage() {
                           type="number"
                           value={editJoinFee}
                           onChange={(e) => setEditJoinFee(e.target.value)}
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
 
@@ -936,7 +936,7 @@ export default function CommunityDetailPage() {
                           type="number"
                           value={editMonthlyFee}
                           onChange={(e) => setEditMonthlyFee(e.target.value)}
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                     </div>
@@ -947,14 +947,14 @@ export default function CommunityDetailPage() {
                   <button
                     type="button"
                     onClick={() => setEditModalOpen(false)}
-                    className="flex-1 py-2.5 border border-white/5 hover:bg-white/5 text-white font-bold text-xs uppercase tracking-wider rounded-xl font-geist"
+                    className="flex-1 py-2.5 border border-black/10 hover:bg-[#F5F7F9] text-[#111111] font-bold text-xs uppercase tracking-wider rounded-xl font-geist"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={actionPending}
-                    className="flex-1 py-2.5 bg-primary text-black font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg font-geist"
+                    className="flex-1 py-2.5 bg-primary text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg font-geist"
                   >
                     {actionPending ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>

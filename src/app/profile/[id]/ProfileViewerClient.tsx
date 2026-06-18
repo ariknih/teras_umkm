@@ -998,37 +998,37 @@ export default function ProfileViewerClient({
 
       {/* ── KYC AUTO-VERIFICATION MODAL SIMULATOR ───────────────────────────── */}
       {kycSimulateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-lg border rounded-3xl p-6 shadow-2xl space-y-6 bg-[#13151E] ${
+            className={`w-full max-w-lg border rounded-3xl p-6 shadow-2xl space-y-6 bg-white ${
               kycSimulateStatus === 'success' ? 'border-green-500/30' :
               kycSimulateStatus === 'failed' ? 'border-red-500/30' :
               'border-yellow-500/30'
             }`}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+            <div className="flex items-center justify-between border-b border-black/5 pb-4">
               <div className="flex items-center gap-2">
                 <Shield className={`w-5 h-5 ${
-                  kycSimulateStatus === 'success' ? 'text-green-400' :
-                  kycSimulateStatus === 'failed' ? 'text-red-400' :
-                  'text-yellow-400'
+                  kycSimulateStatus === 'success' ? 'text-green-600' :
+                  kycSimulateStatus === 'failed' ? 'text-red-600' :
+                  'text-yellow-500'
                 }`} />
                 <div>
-                  <h3 className="font-sora text-sm font-bold text-white uppercase tracking-wider">
+                  <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">
                     Verihubs e-KYC Simulator
                   </h3>
-                  <span className="text-[9px] text-[#8e9094] uppercase font-semibold">
+                  <span className="text-[9px] text-text-secondary uppercase font-semibold">
                     Instant AI OCR & Liveness SDK
                   </span>
                 </div>
               </div>
               <span className={`px-2.5 py-0.5 rounded text-[8px] font-geist font-black border uppercase tracking-wider ${
-                kycSimulateStatus === 'success' ? 'bg-green-500/10 border-green-500/35 text-green-400' :
-                kycSimulateStatus === 'failed' ? 'bg-red-500/10 border-red-500/35 text-red-400' :
-                'bg-yellow-500/10 border-yellow-500/35 text-yellow-400 animate-pulse'
+                kycSimulateStatus === 'success' ? 'bg-green-500/10 border-green-500/35 text-green-600' :
+                kycSimulateStatus === 'failed' ? 'bg-red-500/10 border-red-500/35 text-red-600' :
+                'bg-yellow-500/10 border-yellow-500/35 text-yellow-600 animate-pulse'
               }`}>
                 {kycSimulateStatus === 'running' ? 'Scanning...' : kycSimulateStatus}
               </span>
@@ -1036,9 +1036,9 @@ export default function ProfileViewerClient({
 
             {/* Animation Area */}
             {kycSimulateStatus === 'running' && (
-              <div className="relative h-28 bg-[#090A0F] rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center">
+              <div className="relative h-28 bg-[#F5F7F9] rounded-2xl border border-black/5 overflow-hidden flex items-center justify-center">
                 {/* Scanner Grid background */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(198,169,107,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(198,169,107,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(45,178,74,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(45,178,74,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
                 
                 {/* Laser scan lines */}
                 {kycSimulateStep <= 2 ? (
@@ -1059,21 +1059,21 @@ export default function ProfileViewerClient({
                     <Activity className="w-8 h-8 text-yellow-500 animate-pulse" />
                   </div>
                 )}
-                <span className="text-[10px] font-mono font-bold text-yellow-500/70 z-10">
+                <span className="text-[10px] font-mono font-bold text-yellow-600/70 z-10">
                   {kycSimulateStep <= 2 ? 'OCR DOCUMENT SCANNING...' : 'FACE LIVENESS EVALUATING...'}
                 </span>
               </div>
             )}
 
             {/* Logs Console */}
-            <div className="bg-[#090A0F] p-4 rounded-2xl border border-white/5 font-mono text-[10px] space-y-1.5 max-h-[160px] overflow-y-auto">
+            <div className="bg-[#F5F7F9] p-4 rounded-2xl border border-black/5 font-mono text-[10px] space-y-1.5 max-h-[160px] overflow-y-auto">
               {kycSimulateLogs.map((log, i) => (
                 <div
                   key={i}
                   className={
-                    log.startsWith('[SUCCESS]') ? 'text-green-400 font-semibold' :
-                    log.startsWith('[ERROR]') ? 'text-red-400 font-semibold' :
-                    'text-[#8e9094]'
+                    log.startsWith('[SUCCESS]') ? 'text-green-600 font-semibold' :
+                    log.startsWith('[ERROR]') ? 'text-red-600 font-semibold' :
+                    'text-text-secondary'
                   }
                 >
                   {log}
@@ -1084,19 +1084,19 @@ export default function ProfileViewerClient({
             {/* Checklists */}
             <div className="grid grid-cols-3 gap-2">
               <div className={`p-3 rounded-xl border text-center space-y-1 ${
-                kycSimulateStep >= 2 ? 'bg-green-500/5 border-green-500/20 text-green-400' : 'bg-white/[0.01] border-white/5 text-[#8e9094]'
+                kycSimulateStep >= 2 ? 'bg-green-500/5 border-green-500/25 text-green-600' : 'bg-[#F5F7F9] border-black/5 text-text-secondary'
               }`}>
                 <span className="block text-[8px] font-black uppercase tracking-wider">Step 1</span>
                 <span className="block text-[10px] font-bold">KTP OCR</span>
               </div>
               <div className={`p-3 rounded-xl border text-center space-y-1 ${
-                kycSimulateStep >= 4 ? 'bg-green-500/5 border-green-500/20 text-green-400' : 'bg-white/[0.01] border-white/5 text-[#8e9094]'
+                kycSimulateStep >= 4 ? 'bg-green-500/5 border-green-500/25 text-green-600' : 'bg-[#F5F7F9] border-black/5 text-text-secondary'
               }`}>
                 <span className="block text-[8px] font-black uppercase tracking-wider">Step 2</span>
                 <span className="block text-[10px] font-bold">Liveness Test</span>
               </div>
               <div className={`p-3 rounded-xl border text-center space-y-1 ${
-                kycSimulateStep >= 6 ? 'bg-green-500/5 border-green-500/20 text-green-400' : 'bg-white/[0.01] border-white/5 text-[#8e9094]'
+                kycSimulateStep >= 6 ? 'bg-green-500/5 border-green-500/25 text-green-600' : 'bg-[#F5F7F9] border-black/5 text-text-secondary'
               }`}>
                 <span className="block text-[8px] font-black uppercase tracking-wider">Step 3</span>
                 <span className="block text-[10px] font-bold">Dukcapil Match</span>

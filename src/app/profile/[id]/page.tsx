@@ -57,18 +57,18 @@ export default async function ProfilePage({ params }: PageProps) {
   const user = id !== 'undefined' && id !== 'null' ? await getUserProfileById(id) : null;
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] font-sans pb-24 overflow-hidden relative flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] font-sans pb-24 overflow-hidden relative flex items-center justify-center px-4">
         {/* Decorative glows */}
         <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(45,178,74,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
         <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_70%)] pointer-events-none z-0" />
 
-        <div className="relative z-10 w-full max-w-md text-center border border-white/5 bg-[#13151E]/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl">
+        <div className="relative z-10 w-full max-w-md text-center border border-black/5 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl">
           <div className="w-16 h-16 rounded-2xl bg-[#2DB24A]/10 border border-[#2DB24A]/20 flex items-center justify-center mx-auto text-[#2DB24A] mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" />
             </svg>
           </div>
-          <h2 className="font-sora text-2xl font-bold text-white mb-3">Belum Masuk Akun</h2>
+          <h2 className="font-sora text-2xl font-bold text-[#111111] mb-3">Belum Masuk Akun</h2>
           <p className="text-xs text-text-secondary leading-relaxed mb-8">
             Silakan masuk atau daftar akun baru Saloka.id untuk mengelola profil, melihat saldo dompet, dan mengakses fitur premium.
           </p>
@@ -81,7 +81,7 @@ export default async function ProfilePage({ params }: PageProps) {
             </Link>
             <Link
               href="/auth?tab=register"
-              className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-center font-bold text-xs uppercase tracking-wider rounded-xl transition-colors"
+              className="w-full py-3 bg-[#F5F7F9] hover:bg-neutral-200 border border-black/10 text-[#111111] text-center font-bold text-xs uppercase tracking-wider rounded-xl transition-colors"
             >
               Daftar Akun Baru
             </Link>

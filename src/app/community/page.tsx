@@ -127,7 +127,7 @@ export default function CommunityDirectoryPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex items-center justify-center">
         <div className="w-10 h-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
       </div>
     )
@@ -136,19 +136,19 @@ export default function CommunityDirectoryPage() {
   const isKycApproved = user && user.kycStatus === 'APPROVED'
 
   return (
-    <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] pt-28 pb-24 px-4 md:px-10 relative overflow-hidden">
+    <div className="min-h-screen bg-[#F5F7F9] text-[#111111] pt-28 pb-24 px-4 md:px-10 relative overflow-hidden">
       {/* Background glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_80%)] pointer-events-none z-0" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(45,178,74,0.03)_0%,transparent_80%)] pointer-events-none z-0" />
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-8">
         {/* Banner Card */}
-        <div className="border border-white/5 bg-[#13151E]/60 backdrop-blur-xl p-8 md:p-12 rounded-3xl text-center space-y-4 shadow-2xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(198,169,107,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(198,169,107,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+        <div className="border border-black/5 bg-white/60 backdrop-blur-xl p-8 md:p-12 rounded-3xl text-center space-y-4 shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(45,178,74,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(45,178,74,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
           <span className="px-3 py-1 border border-primary/20 bg-primary/5 text-primary text-[10px] font-bold tracking-widest uppercase rounded-full inline-block">
             SALOKA BUSINESS NETWORK
           </span>
-          <h1 className="font-sora text-3xl md:text-5xl font-extrabold text-white tracking-tight">
+          <h1 className="font-sora text-3xl md:text-5xl font-extrabold text-[#111111] tracking-tight">
             Direktori Komunitas Induk
           </h1>
           <p className="text-xs md:text-sm text-text-secondary max-w-2xl mx-auto leading-relaxed">
@@ -176,8 +176,8 @@ export default function CommunityDirectoryPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-white/5 pb-4">
-          <h2 className="font-sora text-lg font-bold text-white">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-black/5 pb-4">
+          <h2 className="font-sora text-lg font-bold text-[#111111]">
             Semua Komunitas Terdaftar ({filteredCommunities.length})
           </h2>
           <div className="relative w-full md:w-80">
@@ -187,15 +187,15 @@ export default function CommunityDirectoryPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari nama atau deskripsi komunitas..."
-              className="w-full h-10 pl-10 pr-4 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-primary/50"
+              className="w-full h-10 pl-10 pr-4 bg-white border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
             />
           </div>
         </div>
 
         {/* Directory Grid */}
         {filteredCommunities.length === 0 ? (
-          <div className="text-center py-20 border border-white/5 bg-[#13151E]/60 rounded-3xl">
-            <h3 className="font-sora text-sm font-bold text-white mb-2">Komunitas Tidak Ditemukan</h3>
+          <div className="text-center py-20 border border-black/5 bg-white/60 rounded-3xl">
+            <h3 className="font-sora text-sm font-bold text-[#111111] mb-2">Komunitas Tidak Ditemukan</h3>
             <p className="text-xs text-text-secondary max-w-xs mx-auto">
               Coba cari dengan kata kunci lain atau daftarkan komunitas bisnis Anda.
             </p>
@@ -205,21 +205,21 @@ export default function CommunityDirectoryPage() {
             {filteredCommunities.map((c) => (
               <div
                 key={c.id}
-                className="border border-white/5 bg-[#13151E]/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl hover:border-primary/20 transition-all duration-300 group"
+                className="border border-black/5 bg-white rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl hover:border-primary/20 transition-all duration-300 group"
               >
                 {/* Banner */}
-                <div className="h-28 w-full bg-gradient-to-r from-neutral-950 via-neutral-900 to-yellow-950/20 relative">
+                <div className="h-28 w-full bg-gradient-to-r from-neutral-200 via-neutral-100 to-green-500/10 relative">
                   {c.coverUrl && (
                     <img src={c.coverUrl} alt={c.name} className="object-cover w-full h-full" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#13151E] via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
                 </div>
 
                 {/* Details */}
                 <div className="p-5 flex-grow space-y-4">
                   <div className="flex gap-4">
                     {/* Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-neutral-950 border border-primary/20 flex items-center justify-center font-bold text-lg text-primary shadow -mt-10 z-10 shrink-0 overflow-hidden">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-primary/20 flex items-center justify-center font-bold text-lg text-primary shadow -mt-10 z-10 shrink-0 overflow-hidden">
                       {c.avatarUrl ? (
                         <img src={c.avatarUrl} alt="" className="object-cover w-full h-full" />
                       ) : (
@@ -228,9 +228,9 @@ export default function CommunityDirectoryPage() {
                     </div>
                     
                     <div>
-                      <h3 className="font-sora text-xs font-bold text-white line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
+                      <h3 className="font-sora text-xs font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
                       <span className={`inline-block px-1.5 py-0.5 rounded text-[8px] font-geist font-black border uppercase tracking-wider mt-1 ${
-                        c.type === 'KOPERASI' ? 'bg-amber-500/10 border-amber-500/35 text-amber-400' : 'bg-cyan-500/10 border-cyan-500/35 text-cyan-400'
+                        c.type === 'KOPERASI' ? 'bg-amber-500/10 border-amber-500/35 text-amber-500' : 'bg-cyan-500/10 border-cyan-500/35 text-cyan-500'
                       }`}>
                         {c.type}
                       </span>
@@ -241,7 +241,7 @@ export default function CommunityDirectoryPage() {
                 </div>
 
                 {/* Footer Action */}
-                <div className="p-5 pt-0 border-t border-white/5 flex items-center justify-between">
+                <div className="p-5 pt-0 border-t border-black/5 flex items-center justify-between">
                   <div className="flex items-center gap-1 text-[10px] text-text-secondary">
                     <Users className="w-3.5 h-3.5" />
                     <span>{c._count?.members || 0} Anggota</span>
@@ -267,26 +267,26 @@ export default function CommunityDirectoryPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-2xl border border-white/5 bg-[#13151E] p-6 md:p-8 rounded-3xl shadow-2xl space-y-6 max-h-[85vh] overflow-y-auto"
+              className="w-full max-w-2xl border border-black/5 bg-white p-6 md:p-8 rounded-3xl shadow-2xl space-y-6 max-h-[85vh] overflow-y-auto"
             >
-              <div className="flex justify-between items-center border-b border-white/5 pb-3">
-                <h3 className="font-sora text-sm font-bold text-text-primary uppercase tracking-wider">
+              <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">
                   Daftarkan Komunitas Induk Baru
                 </h3>
-                <button onClick={() => setCreateModalOpen(false)} className="text-text-secondary hover:text-white text-sm font-bold">✕</button>
+                <button onClick={() => setCreateModalOpen(false)} className="text-text-secondary hover:text-[#111111] text-sm font-bold">✕</button>
               </div>
 
               {!isKycApproved ? (
-                <div className="p-6 border border-amber-500/20 bg-amber-500/10 rounded-2xl space-y-4 text-center">
-                  <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto" />
-                  <h4 className="font-sora font-bold text-white text-sm">Verifikasi KYC Diperlukan</h4>
+                <div className="p-6 border border-amber-500/20 bg-amber-500/5 rounded-2xl space-y-4 text-center">
+                  <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
+                  <h4 className="font-sora font-bold text-[#111111] text-sm">Verifikasi KYC Diperlukan</h4>
                   <p className="text-xs text-text-secondary max-w-md mx-auto leading-relaxed">
                     Sesuai dengan regulasi platform, hanya pengguna yang telah lulus verifikasi KYC (Know Your Customer) yang dapat bertindak sebagai Ketua Komunitas dan mendaftarkan Komunitas Induk baru.
                   </p>
                   <div className="pt-2">
                     <Link
                       href={user ? `/profile/${user.id}` : '/auth?tab=register'}
-                      className="inline-block px-5 py-2.5 bg-primary text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl shadow"
+                      className="inline-block px-5 py-2.5 bg-primary text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl shadow"
                     >
                       Lengkapi KYC di Profil
                     </Link>
@@ -295,7 +295,7 @@ export default function CommunityDirectoryPage() {
               ) : (
                 <form onSubmit={handleCreateCommunity} className="space-y-6">
                   {formError && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-semibold">{formError}</div>
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 font-semibold">{formError}</div>
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -307,7 +307,7 @@ export default function CommunityDirectoryPage() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Asosiasi Kuliner Kreatif Jogja"
-                        className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                        className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -315,7 +315,7 @@ export default function CommunityDirectoryPage() {
                       <select
                         value={type}
                         onChange={(e) => setType(e.target.value as any)}
-                        className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                        className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                       >
                         <option value="PERKUMPULAN">Perkumpulan (Gratis / Free)</option>
                         <option value="KOPERASI">Koperasi Produksi (Berbayar)</option>
@@ -331,12 +331,12 @@ export default function CommunityDirectoryPage() {
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Jelaskan visi misi, cakupan anggota merchant, dan target pasar komunitas bisnis Anda..."
                       rows={3}
-                      className="w-full px-3 py-2 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none resize-none"
+                      className="w-full px-3 py-2 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50 resize-none"
                     />
                   </div>
 
                   {/* Legalitas */}
-                  <div className="space-y-3 pt-2 border-t border-white/5">
+                  <div className="space-y-3 pt-2 border-t border-black/5">
                     <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
                       <FileText className="w-3.5 h-3.5" />
                       Legalitas Organisasi
@@ -349,7 +349,7 @@ export default function CommunityDirectoryPage() {
                           value={aktaNotaris}
                           onChange={(e) => setAktaNotaris(e.target.value)}
                           placeholder="e.g. Akta Notaris No. 24 Tgl 12 Jan 2026"
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -359,7 +359,7 @@ export default function CommunityDirectoryPage() {
                           value={nomorAhu}
                           onChange={(e) => setNomorAhu(e.target.value)}
                           placeholder="e.g. AHU-0001234.AH.01.07"
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -369,7 +369,7 @@ export default function CommunityDirectoryPage() {
                           value={nomorNpwp}
                           onChange={(e) => setNomorNpwp(e.target.value)}
                           placeholder="e.g. 12.345.678.9-012.000"
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -379,7 +379,7 @@ export default function CommunityDirectoryPage() {
                           value={domisili}
                           onChange={(e) => setDomisili(e.target.value)}
                           placeholder="e.g. Kota Yogyakarta, DIY"
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                     </div>
@@ -387,7 +387,7 @@ export default function CommunityDirectoryPage() {
 
                   {/* Koperasi Financial Fields */}
                   {type === 'KOPERASI' && (
-                    <div className="space-y-3 pt-2 border-t border-white/5 animate-in fade-in duration-300">
+                    <div className="space-y-3 pt-2 border-t border-black/5 animate-in fade-in duration-300">
                       <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
                         Pengaturan Finansial Koperasi
                       </h4>
@@ -400,7 +400,7 @@ export default function CommunityDirectoryPage() {
                             value={joinFee}
                             onChange={(e) => setJoinFee(e.target.value)}
                             placeholder="e.g. 150000"
-                            className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                            className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -411,7 +411,7 @@ export default function CommunityDirectoryPage() {
                             value={monthlyFee}
                             onChange={(e) => setMonthlyFee(e.target.value)}
                             placeholder="e.g. 50000"
-                            className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                            className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                           />
                         </div>
                       </div>
@@ -419,7 +419,7 @@ export default function CommunityDirectoryPage() {
                   )}
 
                   {/* Media & Links */}
-                  <div className="space-y-3 pt-2 border-t border-white/5">
+                  <div className="space-y-3 pt-2 border-t border-black/5">
                     <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
                       Media, Kontak & Tautan Diskusi
                     </h4>
@@ -432,7 +432,7 @@ export default function CommunityDirectoryPage() {
                           value={kontakPj}
                           onChange={(e) => setKontakPj(e.target.value)}
                           placeholder="e.g. 081234567890"
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -442,7 +442,7 @@ export default function CommunityDirectoryPage() {
                           value={waGroupLink}
                           onChange={(e) => setWaGroupLink(e.target.value)}
                           placeholder="e.g. https://chat.whatsapp.com/..."
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -452,7 +452,7 @@ export default function CommunityDirectoryPage() {
                           value={avatarUrl}
                           onChange={(e) => setAvatarUrl(e.target.value)}
                           placeholder="https://domain.id/avatar.png"
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -462,7 +462,7 @@ export default function CommunityDirectoryPage() {
                           value={coverUrl}
                           onChange={(e) => setCoverUrl(e.target.value)}
                           placeholder="https://domain.id/cover.png"
-                          className="w-full h-10 px-3 bg-neutral-900 border border-white/5 rounded-xl text-xs text-white focus:outline-none"
+                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
                         />
                       </div>
                     </div>
@@ -471,7 +471,7 @@ export default function CommunityDirectoryPage() {
                   <button
                     type="submit"
                     disabled={isPending}
-                    className="w-full py-3 bg-primary text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 transition-all shadow-lg"
+                    className="w-full py-3 bg-primary text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 transition-all shadow-lg"
                   >
                     {isPending ? 'Mendaftarkan Komunitas...' : 'Daftarkan Komunitas Bisnis'}
                   </button>
