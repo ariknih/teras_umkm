@@ -38,7 +38,10 @@ export default function ProductActions({ product, affCode, userId }: ProductActi
   // Save affiliate code if present
   useEffect(() => {
     if (affCode) {
-      localStorage.setItem('teras_affiliate_id', affCode)
+      const existing = localStorage.getItem('teras_affiliate_id')
+      if (!existing) {
+        localStorage.setItem('teras_affiliate_id', affCode)
+      }
     }
   }, [affCode])
 

@@ -1,0 +1,53 @@
+merchant wajib masuk komunitas/ter affiliasi (setelah login langsung pili komunitas,atau bisa masuk komunitas saat berada di landing page tapi sebelum merchant daftar/login) jadi pedagang pencet komunitas a lalu langsung diarahkan ke pendaftaran dan langsung sudah masuk komunitas tsb. masuk komunitas itu syarat membuka dashboard merchant
+*masuk komunitas dulu baru bisa daftar 
+
+tabel baru database induk komunitas-> saat dilihat isi induk komunitas isinya detail para merchant->dan merchant yang memiliki affiliator(saat sampai ke affiliator itu sudah menjadimper orangan/tidak terhubung ke induk komunitas
+
+jika ingin membuat komunitas 
+calon ketua komunitas wajib mengisi form dengan memasukan data koomunitas dan legalitasnya
+-nama komunitas
+-akta notaris
+-nomor ahu
+-nomor NPWP
+-domisili organisasi
+-nomor kontak penanggung jawab
+-jenis komunitas (perkumpulan/koperasi)
+-wajib kyc (untuk yang ingin membuat komunitas
+-set up landingpage
+
+*perbedaan komunitas perkumpulan dan koperasi
+-perkumpulan=tidak ada keuangan/free (siapapun bisa masuk)
+-koperasi=komunitas berbayar saat masuk,ada iuran bulanan dan iurannya berbeda beda, bisa disetting oleh admin dan pemilik komunitas (berbayarnya bayar melalui rekening saloka dulu abis dari saloka baru ke komunitas
+
+koperasi bisa memberikan modal produksi kepada membernya
+sebelum masuk ke koperasi
+dan ketua yang mengurus dana koperasi, tetapi jika ingin memberikan modal atau pinjaman pada merchant lain harus izin dahulu ke admin
+dan yang meminjam juga harus lulus kyc 
+
+page profile: induk komunitas harus ada, induk gabisa diganti,
+
+jadi merchant bebas bergabung dengan berbagai komunitas,tetapi induknya hanya saat pertama kali daftar/memilih/daftar dengan undangan
+
+LMS tidak bisa diakses oleh semua org/ jangan ada di bawah, hanya ada di dashboard merchant(untuk edukasi untuk para penjual)
+kalau untuk affiliate tidak akan dapat sertifikat hanya ada vidio tutorial, dan ada kelas berbayar untuk merchant dan affiliate jadi edukasi khusus dan exp ga ngaruh sama ini semua
+
+revisi isi komunitas 
+-detail komunitas diskusinya di grup wa 
+-dan ada landingpagenya untuk semua komunitas
+
+revisi sistem affiliate komisi 
+60% untuk affiliate
+10% komunitas induk si merchant 
+10% pengundang 
+20% admin/perusahaan
+affiliator tanpa undangan
+
+saat ditampilkan ke page affiliator yang ditampilkan hasil bersih affiliate product/jasa tsb 
+
+saat user pencet link saloka yang ber refferal tapi tidak jadi daftar sistem otomatis mengunci user tsb dengan affiliate yang sblmnya pernah dia klik/ cookies nya tetap dan kode affiliate saat daftar tidak bisa diubah jika masuk melalui link, hanya untuk diperangkat yang sama 
+
+
+landing page builder
+
+
+

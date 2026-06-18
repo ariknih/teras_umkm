@@ -88,20 +88,38 @@ export async function register(formData: FormData) {
     return { error: 'Email sudah terdaftar' }
   }
 
+  // Referral Cookie Lock (Revisi Pert Keempat)
+  // Priority: 1) affiliate_ref cookie, 2) referralCode from form
+  const cookieStore = await cookies()
+  const affiliateRefCookie = cookieStore.get('affiliate_ref')?.value
   const referralCode = formData.get('referralCode') as string || undefined
+  const effectiveReferral = affiliateRefCookie || referralCode
+
   let parentAffiliateId: string | undefined = undefined
-  if (referralCode) {
-    let referrer = await DataStore.findUserById(referralCode)
+  if (effectiveReferral) {
+    let referrer = await DataStore.findUserById(effectiveReferral)
     if (!referrer) {
-      referrer = await DataStore.findUserByEmail(referralCode)
+      referrer = await DataStore.findUserByEmail(effectiveReferral)
     }
     if (referrer) {
       parentAffiliateId = referrer.id
     }
   }
 
+  // Community selection (Revisi Pert Keempat)
+  const communityId = formData.get('communityId') as string || undefined
+
   const passwordHash = hashPassword(password)
   const user = await DataStore.createUser({ email, name, passwordHash, role, parentAffiliateId })
+
+  // If merchant selected an induk community during registration, join it
+  if (communityId && (role === 'MERCHANT' || role === 'AFFILIATE')) {
+    try {
+      await DataStore.joinCommunity(user.id, communityId, true) // asInduk = true
+    } catch (_) {
+      // Non-blocking: community join failure shouldn't block registration
+    }
+  }
   
   // Create Session JWT
   const token = await new SignJWT({ id: user.id, email: user.email, role: user.role, name: user.name })
@@ -111,7 +129,6 @@ export async function register(formData: FormData) {
     .sign(SECRET_KEY)
     
   // Set Cookie
-  const cookieStore = await cookies()
   const headerList = await headers()
   const host = headerList.get('host') || ''
   const cookieDomain = getCookieDomain(host)
@@ -250,6 +267,64 @@ export async function saveOnboardingData(data: {
   }
 
   try {
+    let existingPages: any[] = []
+    const existingUser = await DataStore.findUserById(user.id)
+    if (existingUser && existingUser.landingPageConfig) {
+      try {
+        const parsed = JSON.parse(existingUser.landingPageConfig)
+        if (parsed.pages && Array.isArray(parsed.pages)) {
+          existingPages = parsed.pages
+        }
+      } catch (e) {}
+    }
+
+    if (existingPages.length === 0) {
+      const defaultStyle = { textAlign: 'center', fontSize: 'default', fontWeight: 'default', color: '', bgColor: '', paddingTop: 16, paddingBottom: 16, paddingLeft: 16, paddingRight: 16, opacity: 100, textDecoration: 'none', textTransform: 'none', borderRadius: 0 }
+      const defaultAdvance = { marginTop: 0, marginBottom: 0, animation: 'none', showDesktop: true, showTablet: true, showMobile: true, customClass: '', customId: '' }
+      const makeComp = (type: string, content: any, style = {}, advance = {}) => ({
+        id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        type,
+        content,
+        style: { ...defaultStyle, ...style },
+        advance: { ...defaultAdvance, ...advance }
+      })
+      existingPages = [
+        {
+          id: "page-main",
+          name: "Main Storefront",
+          slug: "",
+          template: "template1",
+          status: "PUBLISHED",
+          customDomain: "",
+          headDesktop: "",
+          headMobile: "",
+          footerAny: "",
+          footerDesktop: "",
+          footerMobile: "",
+          allowSearch: "Yes",
+          followLinks: "Yes",
+          lastModified: new Date().toISOString(),
+          builderComponents: [
+            makeComp('headline', { text: `Selamat Datang di ${data.storeName}`, tag: 'h1' }, { textAlign: 'center', paddingTop: 32, paddingBottom: 8 }),
+            makeComp('subheadline', { text: `Kami menyediakan produk dan layanan terbaik secara lokal.`, tag: 'h2' }, { textAlign: 'center', paddingTop: 8, paddingBottom: 24, color: '#6B7280' }),
+            makeComp('product_showcase', { productIds: [], layout: 'grid', columns: 2, title: 'Produk Pilihan Kami', showPrice: true, showStock: true, showBuyBtn: true, buyBtnLabel: 'Beli Sekarang' }),
+            makeComp('whatsapp_button', { label: 'Hubungi Kami', phone: data.whatsapp || data.phone, message: 'Halo, saya tertarik dengan produk Anda.' }, { textAlign: 'center' })
+          ]
+        }
+      ]
+    } else {
+      const mainPage = existingPages.find(p => p.id === 'page-main')
+      if (mainPage) {
+        mainPage.name = data.storeName
+        if (mainPage.builderComponents && Array.isArray(mainPage.builderComponents)) {
+          const headlineComp = mainPage.builderComponents.find((c: any) => c.type === 'headline')
+          if (headlineComp && headlineComp.content && (!headlineComp.content.text || headlineComp.content.text.startsWith('Selamat Datang di '))) {
+            headlineComp.content.text = `Selamat Datang di ${data.storeName}`
+          }
+        }
+      }
+    }
+
     const config = JSON.stringify({
       title: data.storeName,
       bio: `Selamat datang di toko ${data.storeName}! Kami menyediakan produk dan jasa terbaik secara lokal.`,
@@ -259,7 +334,8 @@ export async function saveOnboardingData(data: {
       subdomain: data.subdomain.toLowerCase().trim(),
       locationName: data.locationName,
       detailAddress: data.detailAddress,
-      sections: ['hero', 'profile', 'products', 'map', 'footer']
+      sections: ['hero', 'profile', 'products', 'map', 'footer'],
+      pages: existingPages
     })
 
     const updated = await DataStore.updateLandingPage(

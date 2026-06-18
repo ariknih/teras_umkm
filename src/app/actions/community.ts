@@ -205,3 +205,314 @@ export async function deleteCommentAction(commentId: string, postId: string) {
 }
 
 
+// ═══════════════════════════════════════════════════════════════════════════
+// INDUK COMMUNITY ACTIONS (Revisi Pert Keempat)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function getIndukCommunities() {
+  return await DataStore.getCommunities()
+}
+
+export async function getIndukCommunityDetail(id: string) {
+  return await DataStore.getCommunityById(id)
+}
+
+export async function createIndukCommunity(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const name = formData.get('name') as string
+  const type = (formData.get('type') as string) || 'PERKUMPULAN'
+  const description = formData.get('description') as string
+  const aktaNotaris = formData.get('aktaNotaris') as string || undefined
+  const nomorAhu = formData.get('nomorAhu') as string || undefined
+  const nomorNpwp = formData.get('nomorNpwp') as string || undefined
+  const domisili = formData.get('domisili') as string || undefined
+  const kontakPj = formData.get('kontakPj') as string || undefined
+  const avatarUrl = formData.get('avatarUrl') as string || undefined
+  const coverUrl = formData.get('coverUrl') as string || undefined
+  const waGroupLink = formData.get('waGroupLink') as string || undefined
+  const joinFee = parseFloat(formData.get('joinFee') as string) || 0
+  const monthlyFee = parseFloat(formData.get('monthlyFee') as string) || 0
+
+  if (!name || !description) {
+    return { error: 'Nama dan deskripsi komunitas wajib diisi.' }
+  }
+
+  if (type !== 'PERKUMPULAN' && type !== 'KOPERASI') {
+    return { error: 'Tipe komunitas tidak valid.' }
+  }
+
+  try {
+    const community = await DataStore.createCommunity({
+      ketuaId: user.id,
+      name,
+      type: type as 'PERKUMPULAN' | 'KOPERASI',
+      description,
+      aktaNotaris,
+      nomorAhu,
+      nomorNpwp,
+      domisili,
+      kontakPj,
+      avatarUrl,
+      coverUrl,
+      waGroupLink,
+      joinFee,
+      monthlyFee
+    })
+    revalidatePath('/community')
+    return { success: true, community }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal membuat komunitas.' }
+  }
+}
+
+export async function joinIndukCommunity(communityId: string, asInduk: boolean = false) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  // Prevent changing induk community if already set
+  if (asInduk) {
+    const existingInduk = await DataStore.getUserIndukCommunity(user.id)
+    if (existingInduk) {
+      return { error: 'Anda sudah memiliki Komunitas Induk. Komunitas Induk tidak bisa diganti.' }
+    }
+  }
+
+  try {
+    const result = await DataStore.joinCommunity(user.id, communityId, asInduk)
+    revalidatePath('/community')
+    revalidatePath('/merchant/dashboard')
+    return { success: true, ...result }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal bergabung ke komunitas.' }
+  }
+}
+
+export async function getUserIndukCommunityAction() {
+  const user = await getCurrentUser()
+  if (!user) return null
+  return await DataStore.getUserIndukCommunity(user.id)
+}
+
+export async function getIndukCommunityMembersAction(communityId: string) {
+  return await DataStore.getIndukCommunityMembers(communityId)
+}
+
+export async function submitKycAction(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const ktpUrl = formData.get('ktpUrl') as string
+  const selfieUrl = formData.get('selfieUrl') as string
+
+  if (!ktpUrl || !selfieUrl) {
+    return { error: 'Foto KTP dan Selfie wajib diunggah.' }
+  }
+
+  try {
+    const updatedUser = await DataStore.submitKyc(user.id, ktpUrl, selfieUrl)
+    revalidatePath('/profile')
+    return { success: true, user: updatedUser }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengirim pengajuan KYC.' }
+  }
+}
+
+export async function updateKycStatusAction(userId: string, status: 'APPROVED' | 'REJECTED') {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    return { error: 'Anda tidak memiliki akses.' }
+  }
+
+  try {
+    const updatedUser = await DataStore.updateKycStatus(userId, status)
+    return { success: true, user: updatedUser }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal memperbarui status KYC.' }
+  }
+}
+
+export async function submitCooperativeLoanAction(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  let dbUser = null
+  try {
+    dbUser = await DataStore.findUserById(user.id)
+  } catch (_) {}
+
+  if (!dbUser || dbUser.kycStatus !== 'APPROVED') {
+    return { error: 'Anda harus menyelesaikan dan lulus verifikasi KYC terlebih dahulu.' }
+  }
+
+  const communityId = formData.get('communityId') as string
+  const amountStr = formData.get('amount') as string
+  const purpose = formData.get('purpose') as string
+
+  if (!communityId || !amountStr || !purpose) {
+    return { error: 'Semua kolom wajib diisi.' }
+  }
+
+  const amount = parseFloat(amountStr)
+  if (isNaN(amount) || amount <= 0) {
+    return { error: 'Jumlah pinjaman tidak valid.' }
+  }
+
+  try {
+    const loan = await DataStore.submitCooperativeLoan({
+      communityId,
+      merchantId: user.id,
+      amount,
+      purpose
+    })
+    revalidatePath('/merchant/dashboard')
+    revalidatePath(`/community/${communityId}`)
+    return { success: true, loan }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengajukan pinjaman modal.' }
+  }
+}
+
+export async function getCooperativeLoansAction(communityId?: string) {
+  const user = await getCurrentUser()
+  if (!user) return []
+
+  const isKetua = communityId ? (await DataStore.getCommunityById(communityId))?.ketuaId === user.id : false
+
+  if (user.role === 'ADMIN' || isKetua) {
+    return await DataStore.getCooperativeLoans(communityId)
+  } else {
+    return await DataStore.getCooperativeLoans(communityId, user.id)
+  }
+}
+
+export async function approveCooperativeLoanAction(loanId: string, role: 'KETUA' | 'ADMIN') {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const loan = await DataStore.getCooperativeLoanById(loanId)
+  if (!loan) return { error: 'Data pinjaman tidak ditemukan.' }
+
+  if (role === 'KETUA') {
+    if (loan.community.ketuaId !== user.id) {
+      return { error: 'Anda bukan ketua dari komunitas ini.' }
+    }
+    
+    try {
+      const updated = await DataStore.updateCooperativeLoanStatus(
+        loanId,
+        'APPROVED_KETUA',
+        true,
+        loan.approvedByAdmin
+      )
+      revalidatePath('/merchant/dashboard')
+      return { success: true, loan: updated }
+    } catch (e: any) {
+      return { error: e.message || 'Gagal menyetujui pinjaman.' }
+    }
+  }
+
+  if (role === 'ADMIN') {
+    if (user.role !== 'ADMIN') {
+      return { error: 'Anda tidak memiliki hak akses admin.' }
+    }
+
+    try {
+      const updated = await DataStore.updateCooperativeLoanStatus(
+        loanId,
+        'APPROVED_ADMIN',
+        loan.approvedByKetua,
+        true
+      )
+      revalidatePath('/merchant/dashboard')
+      return { success: true, loan: updated }
+    } catch (e: any) {
+      return { error: e.message || 'Gagal menyetujui pinjaman.' }
+    }
+  }
+
+  return { error: 'Role tidak valid.' }
+}
+
+export async function rejectCooperativeLoanAction(loanId: string, role: 'KETUA' | 'ADMIN') {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const loan = await DataStore.getCooperativeLoanById(loanId)
+  if (!loan) return { error: 'Data pinjaman tidak ditemukan.' }
+
+  if (role === 'KETUA' && loan.community.ketuaId !== user.id) {
+    return { error: 'Anda bukan ketua dari komunitas ini.' }
+  }
+
+  if (role === 'ADMIN' && user.role !== 'ADMIN') {
+    return { error: 'Anda tidak memiliki hak akses admin.' }
+  }
+
+  try {
+    const updated = await DataStore.updateCooperativeLoanStatus(
+      loanId,
+      'REJECTED',
+      role === 'KETUA' ? false : loan.approvedByKetua,
+      role === 'ADMIN' ? false : loan.approvedByAdmin
+    )
+    revalidatePath('/merchant/dashboard')
+    return { success: true, loan: updated }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menolak pinjaman.' }
+  }
+}
+
+export async function updateIndukCommunity(id: string, formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const community = await DataStore.getCommunityById(id)
+  if (!community) return { error: 'Komunitas tidak ditemukan.' }
+  if (community.ketuaId !== user.id && user.role !== 'ADMIN') {
+    return { error: 'Anda tidak memiliki wewenang untuk mengubah komunitas ini.' }
+  }
+
+  const name = formData.get('name') as string
+  const description = formData.get('description') as string
+  const aktaNotaris = formData.get('aktaNotaris') as string || undefined
+  const nomorAhu = formData.get('nomorAhu') as string || undefined
+  const nomorNpwp = formData.get('nomorNpwp') as string || undefined
+  const domisili = formData.get('domisili') as string || undefined
+  const kontakPj = formData.get('kontakPj') as string || undefined
+  const avatarUrl = formData.get('avatarUrl') as string || undefined
+  const coverUrl = formData.get('coverUrl') as string || undefined
+  const waGroupLink = formData.get('waGroupLink') as string || undefined
+  const landingPageConfig = formData.get('landingPageConfig') as string || undefined
+  const joinFee = parseFloat(formData.get('joinFee') as string) || 0
+  const monthlyFee = parseFloat(formData.get('monthlyFee') as string) || 0
+
+  if (!name || !description) {
+    return { error: 'Nama dan deskripsi komunitas wajib diisi.' }
+  }
+
+  try {
+    const updated = await DataStore.updateCommunity(id, {
+      name,
+      description,
+      aktaNotaris,
+      nomorAhu,
+      nomorNpwp,
+      domisili,
+      kontakPj,
+      avatarUrl,
+      coverUrl,
+      waGroupLink,
+      landingPageConfig,
+      joinFee,
+      monthlyFee
+    })
+    revalidatePath(`/community/${id}`)
+    revalidatePath('/community')
+    return { success: true, community: updated }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal memperbarui komunitas.' }
+  }
+}
+

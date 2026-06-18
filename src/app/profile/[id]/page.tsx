@@ -139,6 +139,16 @@ export default async function ProfilePage({ params }: PageProps) {
   const allProducts = await getProducts();
   const userProducts = allProducts.filter((p) => p.merchantId === user.id);
 
+  // Get induk community info
+  let indukCommunity = null;
+  if (user.indukCommunityId) {
+    try {
+      indukCommunity = await DataStore.getCommunityById(user.indukCommunityId);
+    } catch (e) {
+      console.error("Failed to fetch induk community:", e);
+    }
+  }
+
   // Dynamically generate default template and configs if they haven't set it up
   const template = user.landingPageTemplate || 'modern-gold';
   const config = user.landingPageConfig || JSON.stringify({
@@ -165,6 +175,9 @@ export default async function ProfilePage({ params }: PageProps) {
         landingPageSetup: true, // Always force true for viewing
         latitude: user.latitude || -6.2088,
         longitude: user.longitude || 106.8456,
+        kycStatus: user.kycStatus || 'NOT_SUBMITTED',
+        indukCommunityId: user.indukCommunityId,
+        indukCommunityName: indukCommunity ? indukCommunity.name : null,
       }}
       products={userProducts.map((p) => ({
         id: p.id,

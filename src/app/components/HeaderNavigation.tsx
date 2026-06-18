@@ -55,7 +55,6 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
           {/* Middle: Links */}
           <div className="hidden lg:flex flex-1 justify-center items-center gap-6">
             <Link href="/market" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Marketplace</Link>
-            <Link href="/academy" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Academy</Link>
             <Link href="/affiliate" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Affiliate Hub</Link>
             <Link href="/community" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Community</Link>
           </div>
@@ -189,13 +188,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             >
               Marketplace
             </Link>
-            <Link
-              href="/academy"
-              onClick={() => setIsOpenMobile(false)}
-              className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
-            >
-              LMS Academy
-            </Link>
+
             <Link
               href="/affiliate"
               onClick={() => setIsOpenMobile(false)}

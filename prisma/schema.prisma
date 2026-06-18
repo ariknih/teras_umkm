@@ -69,6 +69,26 @@ enum PayoutStatus {
   FAILED
 }
 
+enum CommunityType {
+  PERKUMPULAN
+  KOPERASI
+}
+
+enum KycStatus {
+  NOT_SUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED_KETUA
+  APPROVED_ADMIN
+  DISBURSED
+  REJECTED
+}
+
 model User {
   id           String        @id @default(uuid())
   email        String        @unique
@@ -90,6 +110,15 @@ model User {
   membershipAccess  String       @default("Gold")     // "Gold", "Platinum", "Diamond"
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  // KYC fields
+  kycStatus         KycStatus    @default(NOT_SUBMITTED)
+  kycKtpUrl         String?
+  kycSelfieUrl      String?
+  kycSubmittedAt    DateTime?
+
+  // Komunitas Induk (set saat pertama kali daftar, tidak bisa diganti)
+  indukCommunityId  String?
   
   // Integrations Settings
   waGatewayKeys    String        @default("")
@@ -109,6 +138,10 @@ model User {
   postLikes    PostLike[]
   ownedGroups  CommunityGroup[] @relation("GroupAdmin")
   groupMembers GroupMember[]
+
+  // Community relations (new hierarchy)
+  ownedCommunities    Community[]          @relation("CommunityKetua")
+  communityMemberships CommunityMembership[]
 
   buyerRooms   ChatRoom[]      @relation("BuyerRooms")
   sellerRooms  ChatRoom[]      @relation("SellerRooms")
@@ -425,4 +458,70 @@ model OrderTracking {
   status    String   // CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
   note      String?
   createdAt DateTime @default(now())
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Komunitas Induk (Revisi Pert Keempat)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Community {
+  id                String          @id @default(uuid())
+  name              String
+  type              CommunityType   @default(PERKUMPULAN)
+  aktaNotaris       String?
+  nomorAhu          String?
+  nomorNpwp         String?
+  domisili          String?
+  kontakPj          String?
+  description       String?
+  coverUrl          String?
+  avatarUrl         String?
+  landingPageConfig String?
+  waGroupLink       String?
+
+  // Iuran (hanya untuk KOPERASI)
+  joinFee           Float           @default(0)
+  monthlyFee        Float           @default(0)
+
+  isSuspended       Boolean         @default(false)
+  isVerified        Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Ketua Komunitas
+  ketuaId           String
+  ketua             User            @relation("CommunityKetua", fields: [ketuaId], references: [id])
+
+  // Members
+  members           CommunityMembership[]
+
+  // Keuangan Koperasi
+  loanRequests      CooperativeLoan[]
+}
+
+model CommunityMembership {
+  id            String      @id @default(uuid())
+  communityId   String
+  community     Community   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isInduk       Boolean     @default(false)
+  isPaid        Boolean     @default(false)
+  joinedAt      DateTime    @default(now())
+
+  @@unique([communityId, userId])
+}
+
+model CooperativeLoan {
+  id              String      @id @default(uuid())
+  communityId     String
+  community       Community   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  merchantId      String
+  amount          Float
+  purpose         String
+  status          LoanStatus  @default(PENDING)
+  approvedByKetua Boolean     @default(false)
+  approvedByAdmin Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }

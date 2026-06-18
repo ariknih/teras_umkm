@@ -2317,6 +2317,49 @@ export const DataStore = {
   },
 
   async createUser(data: { email: string; name: string; passwordHash: string; role: string; latitude?: number; longitude?: number; parentAffiliateId?: string }) {
+    const defaultTemplate = 'modern-gold'
+    const defaultStyle = { textAlign: 'center', fontSize: 'default', fontWeight: 'default', color: '', bgColor: '', paddingTop: 16, paddingBottom: 16, paddingLeft: 16, paddingRight: 16, opacity: 100, textDecoration: 'none', textTransform: 'none', borderRadius: 0 }
+    const defaultAdvance = { marginTop: 0, marginBottom: 0, animation: 'none', showDesktop: true, showTablet: true, showMobile: true, customClass: '', customId: '' }
+    const makeComp = (type: string, content: any, style = {}, advance = {}) => ({
+      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      type,
+      content,
+      style: { ...defaultStyle, ...style },
+      advance: { ...defaultAdvance, ...advance }
+    })
+    const defaultPages = [
+      {
+        id: "page-main",
+        name: "Main Storefront",
+        slug: "",
+        template: "template1",
+        status: "PUBLISHED",
+        customDomain: "",
+        headDesktop: "",
+        headMobile: "",
+        footerAny: "",
+        footerDesktop: "",
+        footerMobile: "",
+        allowSearch: "Yes",
+        followLinks: "Yes",
+        lastModified: new Date().toISOString(),
+        builderComponents: [
+          makeComp('headline', { text: `Selamat Datang di ${data.name}`, tag: 'h1' }, { textAlign: 'center', paddingTop: 32, paddingBottom: 8 }),
+          makeComp('subheadline', { text: 'Kami menyediakan produk dan layanan berkualitas tinggi untuk Anda.', tag: 'h2' }, { textAlign: 'center', paddingTop: 8, paddingBottom: 24, color: '#6B7280' }),
+          makeComp('product_showcase', { productIds: [], layout: 'grid', columns: 2, title: 'Produk Pilihan Kami', showPrice: true, showStock: true, showBuyBtn: true, buyBtnLabel: 'Beli Sekarang' }),
+          makeComp('whatsapp_button', { label: 'Hubungi Kami', phone: '', message: 'Halo, saya tertarik dengan produk Anda.' }, { textAlign: 'center' })
+        ]
+      }
+    ]
+    const defaultConfig = JSON.stringify({
+      title: data.name,
+      bio: `Selamat datang di profil resmi kami. Kami adalah pelaku usaha terdaftar di ekosistem premium Saloka.id. Silakan jelajahi katalog produk, jasa, dan lokasi kami.`,
+      phone: "",
+      instagram: `@${data.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+      sections: ["hero", "profile", "products", "map"],
+      pages: defaultPages
+    })
+
     if (await isDbConnected()) {
       try {
         return await db.$transaction(async (tx) => {
@@ -2326,6 +2369,8 @@ export const DataStore = {
               role: data.role as any,
               level: 1,
               xp: 0,
+              landingPageTemplate: defaultTemplate,
+              landingPageConfig: defaultConfig,
               landingPageSetup: false,
               membershipLevel: 'Reseller',
               membershipAccess: 'Gold',
@@ -2347,8 +2392,8 @@ export const DataStore = {
       longitude: data.longitude || 106.8456,
       level: 1,
       xp: 0,
-      landingPageTemplate: null,
-      landingPageConfig: null,
+      landingPageTemplate: defaultTemplate,
+      landingPageConfig: defaultConfig,
       landingPageSetup: false,
       parentAffiliateId: data.parentAffiliateId || null,
       membershipLevel: 'Reseller',
@@ -3014,6 +3059,78 @@ export const DataStore = {
     return wallet
   },
 
+  async purchaseCourse(userId: string, courseId: string, amount: number, courseTitle: string) {
+    const description = `Pembelian Kelas: ${courseTitle}`
+    if (await isDbConnected()) {
+      try {
+        return await db.$transaction(async (tx) => {
+          const wallet = await tx.wallet.findUnique({ where: { userId } })
+          if (!wallet || wallet.balance < amount) throw new Error('Saldo tidak mencukupi')
+          await tx.wallet.update({
+            where: { userId },
+            data: { balance: { decrement: amount } }
+          })
+          await tx.walletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              amount,
+              type: 'WITHDRAWAL',
+              description
+            }
+          })
+          
+          const user = await tx.user.findUnique({ where: { id: userId } })
+          if (user) {
+            let configObj: any = {}
+            try {
+              configObj = JSON.parse(user.landingPageConfig || '{}')
+            } catch (_) {}
+            const purchased = Array.isArray(configObj.purchasedCourseIds) ? configObj.purchasedCourseIds : []
+            if (!purchased.includes(courseId)) {
+              purchased.push(courseId)
+            }
+            configObj.purchasedCourseIds = purchased
+            await tx.user.update({
+              where: { id: userId },
+              data: { landingPageConfig: JSON.stringify(configObj) }
+            })
+          }
+          return true
+        })
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal memproses transaksi database')
+      }
+    }
+
+    const wallet = globalMockWallets.find(w => w.userId === userId)
+    if (!wallet || wallet.balance < amount) throw new Error('Saldo tidak mencukupi')
+    wallet.balance -= amount
+    globalMockWalletTransactions.push({
+      id: `tx-${Date.now()}`,
+      walletId: wallet.id,
+      amount,
+      type: 'WITHDRAWAL' as const,
+      description,
+      createdAt: new Date(),
+    })
+
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      let configObj: any = {}
+      try {
+        configObj = JSON.parse(user.landingPageConfig || '{}')
+      } catch (_) {}
+      const purchased = Array.isArray(configObj.purchasedCourseIds) ? configObj.purchasedCourseIds : []
+      if (!purchased.includes(courseId)) {
+        purchased.push(courseId)
+      }
+      configObj.purchasedCourseIds = purchased
+      user.landingPageConfig = JSON.stringify(configObj)
+    }
+    saveMockDb()
+    return true
+  },
+
   async depositFunds(userId: string, amount: number, method: string = 'Payment Gateway') {
     if (await isDbConnected()) {
       try {
@@ -3286,7 +3403,8 @@ export const DataStore = {
               }
             }
 
-            // 1. Handle Affiliate Commission Splits (60/20/20)
+            // 1. Handle Affiliate Commission Splits (60/10/10/20 — Revisi Pert Keempat)
+            // 60% affiliate, 10% komunitas induk merchant, 10% pengundang, 20% admin
             if (product.isAffiliateEnabled) {
               const hasPromoter = activeAffiliateId && activeAffiliateId !== product.merchantId;
               const hasParent = buyerObj?.parentAffiliateId && buyerObj?.parentAffiliateId !== product.merchantId;
@@ -3303,7 +3421,8 @@ export const DataStore = {
                   merchantEarnings -= totalComm
 
                 const promoterComm = totalComm * 0.60
-                const parentComm = totalComm * 0.20
+                const communityComm = totalComm * 0.10  // Komunitas induk merchant
+                const parentComm = totalComm * 0.10     // Pengundang
                 let adminComm = totalComm * 0.20
 
                 // Promoter (Tier 1) - 60%
@@ -3344,7 +3463,35 @@ export const DataStore = {
                 }
                 if (!promoterPaid) adminComm += promoterComm
 
-                // Inviter / Parent (Tier 2) - 20%
+                // Komunitas Induk Merchant - 10%
+                let communityPaid = false
+                const merchantObj = await tx.user.findUnique({ where: { id: product.merchantId } })
+                const indukCommunityId = (merchantObj as any)?.indukCommunityId
+                if (indukCommunityId) {
+                  // Find ketua komunitas to pay the community share
+                  const community = await tx.community.findUnique({ where: { id: indukCommunityId } })
+                  if (community) {
+                    const ketuaWallet = await tx.wallet.findUnique({ where: { userId: community.ketuaId } })
+                    if (ketuaWallet) {
+                      await tx.wallet.update({
+                        where: { userId: community.ketuaId },
+                        data: { balance: { increment: communityComm } }
+                      })
+                      await tx.walletTransaction.create({
+                        data: {
+                          walletId: ketuaWallet.id,
+                          amount: communityComm,
+                          type: 'COMMISSION',
+                          description: `Komisi Komunitas Induk (10%) dari penjualan ${product.title}`
+                        }
+                      })
+                      communityPaid = true
+                    }
+                  }
+                }
+                if (!communityPaid) adminComm += communityComm
+
+                // Pengundang / Parent - 10%
                 let parentPaid = false
                 const buyerParentId = buyerObj?.parentAffiliateId
                 if (buyerParentId && buyerParentId !== product.merchantId) {
@@ -3359,7 +3506,7 @@ export const DataStore = {
                         walletId: parentWallet.id,
                         amount: parentComm,
                         type: 'COMMISSION',
-                        description: `Komisi Affiliate Tier 2 dari penjualan ${product.title}`
+                        description: `Komisi Pengundang (10%) dari penjualan ${product.title}`
                       }
                     })
                     await tx.affiliateReferral.create({
@@ -3383,7 +3530,7 @@ export const DataStore = {
                 }
                 if (!parentPaid) adminComm += parentComm
 
-                // Admin - 20% + Absorbed
+                // Admin/Perusahaan - 20% + Absorbed
                 const adminWallet = await tx.wallet.findUnique({ where: { userId: 'user-admin-1' } })
                 if (adminWallet) {
                   await tx.wallet.update({
@@ -3395,7 +3542,7 @@ export const DataStore = {
                       walletId: adminWallet.id,
                       amount: adminComm,
                       type: 'COMMISSION',
-                      description: `Komisi Admin (Affiliate Cut) dari penjualan ${product.title}`
+                      description: `Komisi Admin (20%) dari penjualan ${product.title}`
                     }
                   })
                 }
@@ -3633,7 +3780,8 @@ export const DataStore = {
         }
       }
 
-      // 1. Handle Affiliate Commission Splits (60/20/20)
+      // 1. Handle Affiliate Commission Splits (60/10/10/20 — Revisi Pert Keempat)
+      // 60% affiliate, 10% komunitas induk merchant, 10% pengundang, 20% admin
       if (product.isAffiliateEnabled) {
         const hasPromoter = activeAffiliateId && activeAffiliateId !== product.merchantId;
         const hasParent = buyerUser?.parentAffiliateId && buyerUser?.parentAffiliateId !== product.merchantId;
@@ -3650,7 +3798,8 @@ export const DataStore = {
             merchantEarnings -= totalComm
 
           const promoterComm = totalComm * 0.60
-          const parentComm = totalComm * 0.20
+          const communityComm = totalComm * 0.10  // Komunitas induk merchant
+          const parentComm = totalComm * 0.10     // Pengundang
           let adminComm = totalComm * 0.20
 
           // Promoter (Tier 1) - 60%
@@ -3686,7 +3835,31 @@ export const DataStore = {
           }
           if (!promoterPaid) adminComm += promoterComm
 
-          // Inviter / Parent (Tier 2) - 20%
+          // Komunitas Induk Merchant - 10%
+          let communityPaid = false
+          const merchantUser2 = globalMockUsers.find(u => u.id === product.merchantId)
+          const indukId = (merchantUser2 as any)?.indukCommunityId
+          if (indukId) {
+            const community = (globalThis as any).__mockCommunities?.find((c: any) => c.id === indukId)
+            if (community) {
+              const ketuaWallet = globalMockWallets.find(w => w.userId === community.ketuaId)
+              if (ketuaWallet) {
+                ketuaWallet.balance += communityComm
+                globalMockWalletTransactions.push({
+                  id: `tx-${Date.now()}-comm-induk`,
+                  walletId: ketuaWallet.id,
+                  amount: communityComm,
+                  type: 'COMMISSION' as const,
+                  description: `Komisi Komunitas Induk (10%) dari penjualan ${product.title}`,
+                  createdAt: new Date()
+                })
+                communityPaid = true
+              }
+            }
+          }
+          if (!communityPaid) adminComm += communityComm
+
+          // Pengundang / Parent - 10%
           let parentPaid = false
           const buyerParentId = buyerUser?.parentAffiliateId
           if (buyerParentId && buyerParentId !== product.merchantId) {
@@ -3698,7 +3871,7 @@ export const DataStore = {
                 walletId: parentWallet.id,
                 amount: parentComm,
                 type: 'COMMISSION' as const,
-                description: `Komisi Affiliate Tier 2 dari penjualan ${product.title}`,
+                description: `Komisi Pengundang (10%) dari penjualan ${product.title}`,
                 createdAt: new Date()
               })
               globalMockReferrals.push({
@@ -3720,7 +3893,7 @@ export const DataStore = {
           }
           if (!parentPaid) adminComm += parentComm
 
-          // Admin - 20%
+          // Admin/Perusahaan - 20%
           const adminWallet = globalMockWallets.find(w => w.userId === 'user-admin-1')
           if (adminWallet) {
             adminWallet.balance += adminComm
@@ -3729,7 +3902,7 @@ export const DataStore = {
               walletId: adminWallet.id,
               amount: adminComm,
               type: 'COMMISSION' as const,
-              description: `Komisi Admin (Affiliate Cut) dari penjualan ${product.title}`,
+              description: `Komisi Admin (20%) dari penjualan ${product.title}`,
               createdAt: new Date()
             })
           }
@@ -4421,23 +4594,23 @@ export const DataStore = {
 
     const totalEarnings = referralsList.reduce((sum, r) => sum + r.amount, 0);
 
-    // Calculate commission breakdown by tier
-    let tier1Earnings = 0;
-    let tier2Earnings = 0;
-    let tier3Earnings = 0;
+    // Calculate commission breakdown by category (Revisi Pert Keempat: 60/10/10/20)
+    let affiliateEarnings = 0;   // 60% - Komisi Affiliate
+    let communityEarnings = 0;   // 10% - Komunitas Induk
+    let inviterEarnings = 0;     // 10% - Pengundang
 
     walletTransactions.forEach(tx => {
       if (tx.type === 'COMMISSION') {
         const desc = tx.description.toLowerCase();
-        if (desc.includes('tier 1')) {
-          tier1Earnings += tx.amount;
-        } else if (desc.includes('tier 2')) {
-          tier2Earnings += tx.amount;
-        } else if (desc.includes('tier 3')) {
-          tier3Earnings += tx.amount;
+        if (desc.includes('tier 1') || desc.includes('affiliate') || desc.includes('promoter')) {
+          affiliateEarnings += tx.amount;
+        } else if (desc.includes('komunitas induk')) {
+          communityEarnings += tx.amount;
+        } else if (desc.includes('tier 2') || desc.includes('pengundang') || desc.includes('inviter')) {
+          inviterEarnings += tx.amount;
         } else {
-          // fallback if no tier listed
-          tier1Earnings += tx.amount;
+          // fallback
+          affiliateEarnings += tx.amount;
         }
       }
     });
@@ -4460,9 +4633,9 @@ export const DataStore = {
       referrals: referralsList,
       totalEarnings,
       commissionByTier: {
-        tier1: tier1Earnings,
-        tier2: tier2Earnings,
-        tier3: tier3Earnings
+        affiliate: affiliateEarnings,
+        komunitas: communityEarnings,
+        pengundang: inviterEarnings
       },
       clicksCount: totalClicks,
       customLinks: userLinks,
@@ -5675,6 +5848,530 @@ export const DataStore = {
     });
     saveMockDb();
     return true;
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COMMUNITY INDUK OPERATIONS (Revisi Pert Keempat)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getCommunities() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.community.findMany({
+          include: {
+            ketua: { select: { id: true, name: true, role: true } },
+            _count: { select: { members: true } }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    const communities = (globalThis as any).__mockCommunities || []
+    return communities.map((c: any) => {
+      const ketua = globalMockUsers.find(u => u.id === c.ketuaId)
+      const memberCount = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === c.id).length
+      return {
+        ...c,
+        ketua: ketua ? { id: ketua.id, name: ketua.name, role: ketua.role } : null,
+        _count: { members: memberCount }
+      }
+    })
+  },
+
+  async getCommunityById(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.community.findUnique({
+          where: { id },
+          include: {
+            ketua: { select: { id: true, name: true, role: true, email: true } },
+            members: {
+              include: { user: { select: { id: true, name: true, role: true, email: true } } }
+            },
+            _count: { select: { members: true } }
+          }
+        })
+      } catch (_) {}
+    }
+    const communities = (globalThis as any).__mockCommunities || []
+    const community = communities.find((c: any) => c.id === id)
+    if (!community) return null
+    const ketua = globalMockUsers.find(u => u.id === community.ketuaId)
+    const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === id)
+    const members = memberships.map((m: any) => {
+      const user = globalMockUsers.find(u => u.id === m.userId)
+      return { ...m, user: user ? { id: user.id, name: user.name, role: user.role, email: user.email } : null }
+    })
+    return {
+      ...community,
+      ketua: ketua ? { id: ketua.id, name: ketua.name, role: ketua.role, email: ketua.email } : null,
+      members,
+      _count: { members: members.length }
+    }
+  },
+
+  async createCommunity(data: {
+    ketuaId: string
+    name: string
+    type: 'PERKUMPULAN' | 'KOPERASI'
+    description?: string
+    aktaNotaris?: string
+    nomorAhu?: string
+    nomorNpwp?: string
+    domisili?: string
+    kontakPj?: string
+    avatarUrl?: string
+    coverUrl?: string
+    waGroupLink?: string
+    joinFee?: number
+    monthlyFee?: number
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const community = await db.community.create({
+          data: {
+            name: data.name,
+            type: data.type as any,
+            description: data.description || '',
+            aktaNotaris: data.aktaNotaris || null,
+            nomorAhu: data.nomorAhu || null,
+            nomorNpwp: data.nomorNpwp || null,
+            domisili: data.domisili || null,
+            kontakPj: data.kontakPj || null,
+            avatarUrl: data.avatarUrl || null,
+            coverUrl: data.coverUrl || null,
+            waGroupLink: data.waGroupLink || null,
+            joinFee: data.joinFee || 0,
+            monthlyFee: data.monthlyFee || 0,
+            ketuaId: data.ketuaId
+          }
+        })
+        // Auto-join ketua as member with isInduk
+        await db.communityMembership.create({
+          data: {
+            communityId: community.id,
+            userId: data.ketuaId,
+            isInduk: true,
+            isPaid: true
+          }
+        })
+        return community
+      } catch (_) {}
+    }
+
+    // Mock DB
+    if (!(globalThis as any).__mockCommunities) (globalThis as any).__mockCommunities = []
+    if (!(globalThis as any).__mockCommunityMemberships) (globalThis as any).__mockCommunityMemberships = []
+    
+    const newCommunity = {
+      id: `community-${Date.now()}`,
+      name: data.name,
+      type: data.type,
+      description: data.description || '',
+      aktaNotaris: data.aktaNotaris || null,
+      nomorAhu: data.nomorAhu || null,
+      nomorNpwp: data.nomorNpwp || null,
+      domisili: data.domisili || null,
+      kontakPj: data.kontakPj || null,
+      avatarUrl: data.avatarUrl || null,
+      coverUrl: data.coverUrl || null,
+      waGroupLink: data.waGroupLink || null,
+      landingPageConfig: null,
+      joinFee: data.joinFee || 0,
+      monthlyFee: data.monthlyFee || 0,
+      isSuspended: false,
+      isVerified: false,
+      ketuaId: data.ketuaId,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    (globalThis as any).__mockCommunities.push(newCommunity);
+    
+    // Auto-join ketua
+    (globalThis as any).__mockCommunityMemberships.push({
+      id: `cm-${Date.now()}`,
+      communityId: newCommunity.id,
+      userId: data.ketuaId,
+      isInduk: true,
+      isPaid: true,
+      joinedAt: new Date()
+    })
+    
+    saveMockDb()
+    return newCommunity
+  },
+
+  async updateCommunity(id: string, data: {
+    name: string
+    description?: string
+    aktaNotaris?: string
+    nomorAhu?: string
+    nomorNpwp?: string
+    domisili?: string
+    kontakPj?: string
+    avatarUrl?: string
+    coverUrl?: string
+    waGroupLink?: string
+    landingPageConfig?: string
+    joinFee?: number
+    monthlyFee?: number
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const dbUpdated = await db.community.update({
+          where: { id },
+          data: {
+            name: data.name,
+            description: data.description,
+            aktaNotaris: data.aktaNotaris || null,
+            nomorAhu: data.nomorAhu || null,
+            nomorNpwp: data.nomorNpwp || null,
+            domisili: data.domisili || null,
+            kontakPj: data.kontakPj || null,
+            avatarUrl: data.avatarUrl || null,
+            coverUrl: data.coverUrl || null,
+            waGroupLink: data.waGroupLink || null,
+            landingPageConfig: data.landingPageConfig || null,
+            joinFee: data.joinFee || 0,
+            monthlyFee: data.monthlyFee || 0,
+          }
+        })
+        return dbUpdated
+      } catch (_) {}
+    }
+
+    if (!(globalThis as any).__mockCommunities) (globalThis as any).__mockCommunities = []
+    const idx = (globalThis as any).__mockCommunities.findIndex((c: any) => c.id === id)
+    if (idx !== -1) {
+      const existing = (globalThis as any).__mockCommunities[idx]
+      const mockUpdated = {
+        ...existing,
+        name: data.name,
+        description: data.description ?? existing.description,
+        aktaNotaris: data.aktaNotaris ?? existing.aktaNotaris,
+        nomorAhu: data.nomorAhu ?? existing.nomorAhu,
+        nomorNpwp: data.nomorNpwp ?? existing.nomorNpwp,
+        domisili: data.domisili ?? existing.domisili,
+        kontakPj: data.kontakPj ?? existing.kontakPj,
+        avatarUrl: data.avatarUrl ?? existing.avatarUrl,
+        coverUrl: data.coverUrl ?? existing.coverUrl,
+        waGroupLink: data.waGroupLink ?? existing.waGroupLink,
+        landingPageConfig: data.landingPageConfig ?? existing.landingPageConfig,
+        joinFee: data.joinFee ?? existing.joinFee,
+        monthlyFee: data.monthlyFee ?? existing.monthlyFee,
+        updatedAt: new Date()
+      };
+      (globalThis as any).__mockCommunities[idx] = mockUpdated
+      saveMockDb()
+      return mockUpdated
+    }
+    throw new Error('Community not found')
+  },
+
+  async joinCommunity(userId: string, communityId: string, asInduk: boolean = false) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const existing = await db.communityMembership.findUnique({
+          where: { communityId_userId: { communityId, userId } }
+        })
+        if (existing) return { joined: true, alreadyMember: true }
+        
+        const community = await db.community.findUnique({ where: { id: communityId } })
+        const needsPayment = community?.type === 'KOPERASI' && (community.joinFee || 0) > 0
+
+        await db.communityMembership.create({
+          data: {
+            communityId,
+            userId,
+            isInduk: asInduk,
+            isPaid: !needsPayment // Perkumpulan = auto paid, Koperasi = needs payment
+          }
+        })
+
+        if (asInduk) {
+          await db.user.update({
+            where: { id: userId },
+            data: { indukCommunityId: communityId }
+          })
+        }
+
+        return { joined: true, needsPayment }
+      } catch (_) {}
+    }
+
+    // Mock DB
+    if (!(globalThis as any).__mockCommunityMemberships) (globalThis as any).__mockCommunityMemberships = []
+    const memberships = (globalThis as any).__mockCommunityMemberships as any[]
+    const existing = memberships.find(m => m.communityId === communityId && m.userId === userId)
+    if (existing) return { joined: true, alreadyMember: true }
+
+    const communities = (globalThis as any).__mockCommunities || []
+    const community = communities.find((c: any) => c.id === communityId)
+    const needsPayment = community?.type === 'KOPERASI' && (community.joinFee || 0) > 0
+
+    memberships.push({
+      id: `cm-${Date.now()}`,
+      communityId,
+      userId,
+      isInduk: asInduk,
+      isPaid: !needsPayment,
+      joinedAt: new Date()
+    })
+
+    if (asInduk) {
+      const user = globalMockUsers.find(u => u.id === userId)
+      if (user) (user as any).indukCommunityId = communityId
+    }
+
+    saveMockDb()
+    return { joined: true, needsPayment }
+  },
+
+  async getUserIndukCommunity(userId: string) {
+    syncMockDb()
+    const user = globalMockUsers.find(u => u.id === userId)
+    const indukId = (user as any)?.indukCommunityId
+    if (!indukId) return null
+    
+    if (await isDbConnected()) {
+      try {
+        return await db.community.findUnique({
+          where: { id: indukId },
+          include: { ketua: { select: { id: true, name: true } } }
+        })
+      } catch (_) {}
+    }
+
+    const communities = (globalThis as any).__mockCommunities || []
+    return communities.find((c: any) => c.id === indukId) || null
+  },
+
+  async setIndukCommunity(userId: string, communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({
+          where: { id: userId },
+          data: { indukCommunityId: communityId }
+        })
+      } catch (_) {}
+    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      (user as any).indukCommunityId = communityId
+      user.updatedAt = new Date()
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
+  async getIndukCommunityMembers(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.communityMembership.findMany({
+          where: { communityId },
+          include: { user: { select: { id: true, name: true, role: true, email: true, level: true, xp: true } } }
+        })
+      } catch (_) {}
+    }
+    const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === communityId)
+    return memberships.map((m: any) => {
+      const user = globalMockUsers.find(u => u.id === m.userId)
+      return {
+        ...m,
+        user: user ? { id: user.id, name: user.name, role: user.role, email: user.email, level: user.level, xp: user.xp } : null
+      }
+    })
+  },
+
+  async isCommunityMember(userId: string, communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const m = await db.communityMembership.findUnique({
+          where: { communityId_userId: { communityId, userId } }
+        })
+        return !!m
+      } catch (_) {}
+    }
+    const memberships = (globalThis as any).__mockCommunityMemberships || []
+    return memberships.some((m: any) => m.communityId === communityId && m.userId === userId)
+  },
+
+  async submitKyc(userId: string, ktpUrl: string, selfieUrl: string) {
+    syncMockDb()
+    const isFailed = ktpUrl.toLowerCase().includes('fail') || ktpUrl.toLowerCase().includes('tolak') || ktpUrl.toLowerCase().includes('invalid');
+    const finalStatus = isFailed ? 'REJECTED' : 'APPROVED';
+
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({
+          where: { id: userId },
+          data: {
+            kycStatus: finalStatus,
+            kycKtpUrl: ktpUrl,
+            kycSelfieUrl: selfieUrl,
+            kycSubmittedAt: new Date()
+          }
+        })
+      } catch (_) {}
+    }
+
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      (user as any).kycStatus = finalStatus;
+      (user as any).kycKtpUrl = ktpUrl;
+      (user as any).kycSelfieUrl = selfieUrl;
+      (user as any).kycSubmittedAt = new Date();
+      user.updatedAt = new Date();
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
+  async updateKycStatus(userId: string, status: 'NOT_SUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED') {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({
+          where: { id: userId },
+          data: {
+            kycStatus: status as any
+          }
+        })
+      } catch (_) {}
+    }
+
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      (user as any).kycStatus = status;
+      user.updatedAt = new Date()
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
+  async submitCooperativeLoan(data: { communityId: string, merchantId: string, amount: number, purpose: string }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeLoan.create({
+          data: {
+            communityId: data.communityId,
+            merchantId: data.merchantId,
+            amount: data.amount,
+            purpose: data.purpose,
+            status: 'PENDING'
+          }
+        })
+      } catch (_) {}
+    }
+
+    if (!(globalThis as any).__mockCooperativeLoans) {
+      (globalThis as any).__mockCooperativeLoans = [];
+    }
+    const newLoan: { id: string; communityId: string; merchantId: string; amount: number; purpose: string; status: string; approvedByKetua: boolean; approvedByAdmin: boolean; createdAt: Date; updatedAt: Date } = {
+      id: `loan-${Date.now()}`,
+      communityId: data.communityId,
+      merchantId: data.merchantId,
+      amount: data.amount,
+      purpose: data.purpose,
+      status: 'PENDING',
+      approvedByKetua: false,
+      approvedByAdmin: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    (globalThis as any).__mockCooperativeLoans.push(newLoan);
+    saveMockDb();
+    return newLoan;
+
+  },
+
+  async getCooperativeLoans(communityId?: string, merchantId?: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const where: any = {}
+        if (communityId) where.communityId = communityId
+        if (merchantId) where.merchantId = merchantId
+        return await db.cooperativeLoan.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            community: { select: { id: true, name: true } }
+          }
+        })
+      } catch (_) {}
+    }
+
+    let loans = (globalThis as any).__mockCooperativeLoans || []
+    if (communityId) loans = loans.filter((l: any) => l.communityId === communityId)
+    if (merchantId) loans = loans.filter((l: any) => l.merchantId === merchantId)
+    const communities = (globalThis as any).__mockCommunities || []
+    return loans.map((l: any) => ({
+      ...l,
+      community: communities.find((c: any) => c.id === l.communityId) || null
+    })).sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
+  },
+
+  async getCooperativeLoanById(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeLoan.findUnique({
+          where: { id },
+          include: {
+            community: true
+          }
+        })
+      } catch (_) {}
+    }
+    const loans = (globalThis as any).__mockCooperativeLoans || []
+    const loan = loans.find((l: any) => l.id === id)
+    if (!loan) return null
+    const communities = (globalThis as any).__mockCommunities || []
+    return {
+      ...loan,
+      community: communities.find((c: any) => c.id === loan.communityId) || null
+    }
+  },
+
+  async updateCooperativeLoanStatus(loanId: string, status: 'PENDING' | 'APPROVED_KETUA' | 'APPROVED_ADMIN' | 'DISBURSED' | 'REJECTED', approvedByKetua: boolean, approvedByAdmin: boolean) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeLoan.update({
+          where: { id: loanId },
+          data: {
+            status: status as any,
+            approvedByKetua,
+            approvedByAdmin
+          }
+        })
+      } catch (_) {}
+    }
+
+    const loans = (globalThis as any).__mockCooperativeLoans || []
+    const loan = loans.find((l: any) => l.id === loanId)
+    if (loan) {
+      loan.status = status
+      loan.approvedByKetua = approvedByKetua
+      loan.approvedByAdmin = approvedByAdmin
+      loan.updatedAt = new Date()
+      saveMockDb()
+      return loan
+    }
+    return null
   }
 }
 

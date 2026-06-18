@@ -18,6 +18,7 @@ import {
 import { getWalletDetails, getAffiliateStats } from '@/app/actions/wallet-affiliate'
 import { getProducts } from '@/app/actions/products'
 import LandingPageRenderer from '@/app/components/LandingPageRenderer'
+import { getCourses, getUserProgress } from '@/app/actions/lms'
 
 interface Referral {
   id: string
@@ -185,6 +186,8 @@ export default function AffiliatePage() {
   const [downline, setDownline] = useState<any[]>([])
   const [leaderboard, setLeaderboard] = useState<any[]>([])
   const [reminders, setReminders] = useState<any[]>([])
+  const [courses, setCourses] = useState<any[]>([])
+  const [userProgress, setUserProgress] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   // Custom Links Form State
@@ -265,6 +268,12 @@ export default function AffiliatePage() {
 
           const rems = await getReminders()
           setReminders(rems)
+
+          // Load LMS courses and user progress
+          const lmsCourses = await getCourses()
+          setCourses(lmsCourses)
+          const progress = await getUserProgress()
+          setUserProgress(progress)
         }
       }
     } catch (err) {
@@ -512,7 +521,8 @@ export default function AffiliatePage() {
             { id: 'network', name: 'Downline Jaringan' },
             { id: 'leaderboard', name: 'Leaderboard' },
             { id: 'upgrades', name: 'Pusat Upgrade' },
-            { id: 'customizer', name: 'Customizer Landing Page' }
+            { id: 'customizer', name: 'Customizer Landing Page' },
+            { id: 'academy', name: 'LMS Academy' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1577,6 +1587,102 @@ export default function AffiliatePage() {
                   />
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'academy' && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg mb-6">
+              <h3 className="font-sora text-sm font-bold text-primary mb-2">Saloka Premium LMS Academy</h3>
+              <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
+                Tingkatkan omset dan keterampilan afiliasi Anda dengan mempelajari modul branding, pemasaran media sosial, sains fermentasi, dan manajemen finansial dari para mentor top.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {courses.map((course) => {
+                const courseLessons = course.lessons || [];
+                const totalLessons = courseLessons.length;
+                const completedLessons = new Set(
+                  userProgress.filter((p) => p.completed).map((p) => p.lessonId)
+                );
+                const completedCount = courseLessons.filter((l: any) => completedLessons.has(l.id)).length;
+                const percent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+                return (
+                  <div
+                    key={course.id}
+                    className="group border border-border-subtle bg-surface-dark rounded-lg overflow-hidden flex flex-col justify-between"
+                  >
+                    <div>
+                      {/* Course Image */}
+                      <div className="aspect-[21/9] w-full bg-slate-900 relative overflow-hidden flex items-center justify-center border-b border-border-subtle">
+                        {course.coverImage ? (
+                          <img
+                            src={course.coverImage}
+                            alt={course.title}
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-60" />
+                        )}
+                        <span className="absolute top-4 left-4 px-2.5 py-1 bg-surface-dark/95 border border-primary/25 rounded-md text-[9px] font-bold text-primary uppercase tracking-wider shadow-sm">
+                          {course.accessRequired || 'Gold'} Module
+                        </span>
+                      </div>
+
+                      {/* Course Info */}
+                      <div className="p-6">
+                        <h3 className="font-sora text-base font-bold text-text-primary mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                          {course.title}
+                        </h3>
+                        <p className="text-xs text-text-secondary leading-relaxed mb-6">
+                          {course.description}
+                        </p>
+
+                        {/* Progress Bar */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-text-secondary uppercase">
+                            <span>Progress Belajar</span>
+                            <span className="text-primary font-bold">{percent}% Selesai</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary duration-500 rounded-full"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                          <div className="text-[10px] text-text-secondary pt-1">
+                            {completedCount} dari {totalLessons} pelajaran selesai dipelajari.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="p-6 pt-0">
+                      <Link
+                        id={`btn-course-${course.id}`}
+                        href={`/academy/course/${course.id}`}
+                        className="w-full py-3 bg-primary hover:bg-primary/95 text-black font-geist font-bold text-xs uppercase tracking-wider rounded flex items-center justify-center gap-2 shadow-sm transition-all text-center font-bold"
+                      >
+                        Mulai Belajar
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                          className="w-3.5 h-3.5"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

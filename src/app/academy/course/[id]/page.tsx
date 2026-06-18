@@ -22,6 +22,16 @@ export default async function CoursePage({ params }: PageProps) {
     .filter((p) => p.completed)
     .map((p) => p.lessonId);
 
+  let purchasedCourseIds: string[] = []
+  if (userProfile && userProfile.landingPageConfig) {
+    try {
+      const config = JSON.parse(userProfile.landingPageConfig)
+      if (Array.isArray(config.purchasedCourseIds)) {
+        purchasedCourseIds = config.purchasedCourseIds
+      }
+    } catch (_) {}
+  }
+
   const lessons = course.lessons || [];
   const initialActiveLessonId = lessons[0]?.id || "";
 
@@ -68,12 +78,14 @@ export default async function CoursePage({ params }: PageProps) {
         {/* Lesson viewer */}
         <LessonViewer
           courseId={course.id}
+          courseTitle={course.title}
           lessons={lessons as any}
           initialActiveLessonId={initialActiveLessonId}
           completedLessonIds={completedLessonIds}
           isLoggedIn={!!userProfile}
           userAccess={userProfile?.membershipAccess || "Gold"}
           courseAccessRequired={course.accessRequired || "Gold"}
+          purchasedCourseIds={purchasedCourseIds}
         />
       </div>
     </div>

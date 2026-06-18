@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import UserQRCode from '@/components/UserQRCode'
 import LandingPageRenderer from '../../components/LandingPageRenderer'
+import StorePageViewerClient from '@/app/store/[merchantId]/[pageSlug]/StorePageViewerClient'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { 
@@ -65,6 +66,9 @@ interface User {
   landingPageSetup: boolean
   latitude?: number | null
   longitude?: number | null
+  kycStatus?: string | null
+  indukCommunityId?: string | null
+  indukCommunityName?: string | null
 }
 
 interface Product {
@@ -199,6 +203,70 @@ export default function ProfileViewerClient({
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
 
+  // KYC Auto-Verification Simulator States
+  const [kycSimulateOpen, setKycSimulateOpen] = useState(false)
+  const [kycSimulateStep, setKycSimulateStep] = useState(0)
+  const [kycSimulateStatus, setKycSimulateStatus] = useState<'idle' | 'running' | 'success' | 'failed'>('idle')
+  const [kycSimulateLogs, setKycSimulateLogs] = useState<string[]>([])
+
+  const handleKycSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const currentForm = e.currentTarget
+    const formData = new FormData(currentForm)
+    const ktpUrl = formData.get('ktpUrl') as string
+    const selfieUrl = formData.get('selfieUrl') as string
+
+    if (!ktpUrl || !selfieUrl) {
+      alert('Foto KTP dan Selfie wajib diunggah.')
+      return
+    }
+
+    setKycSimulateOpen(true)
+    setKycSimulateStatus('running')
+    setKycSimulateStep(0)
+    setKycSimulateLogs(['[INFO] Menginisialisasi Verihubs KYC SDK...'])
+
+    const isFailed = ktpUrl.toLowerCase().includes('fail') || ktpUrl.toLowerCase().includes('tolak') || ktpUrl.toLowerCase().includes('invalid')
+
+    const addLog = (log: string, delay: number, step: number) => {
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          setKycSimulateStep(step)
+          setKycSimulateLogs((prev) => [...prev, log])
+          resolve()
+        }, delay)
+      })
+    }
+
+    try {
+      await addLog('[INFO] Menghubungkan ke secure upload server...', 800, 1)
+      await addLog('[INFO] Mengunggah Foto KTP & Selfie...', 800, 1)
+      await addLog('[INFO] Menjalankan OCR (Optical Character Recognition) pada KTP...', 1000, 2)
+      await addLog(`[SUCCESS] NIK Terdeteksi: 3273182903901004. Nama: ${user.name.toUpperCase()}.`, 1000, 3)
+      await addLog('[INFO] Memulai tes keaktifan wajah (Liveness Detection)...', 800, 4)
+      await addLog('[INFO] Mencocokkan wajah selfie dengan wajah di foto KTP...', 1000, 4)
+
+      if (isFailed) {
+        await addLog('[ERROR] Deteksi kecocokan wajah gagal (Similarity: 41.5% - Batas minimum: 75.0%). Wajah selfie tidak cocok dengan foto KTP.', 1200, 5)
+        setKycSimulateStatus('failed')
+        const { submitKycAction } = await import('@/app/actions/community')
+        await submitKycAction(formData)
+      } else {
+        await addLog('[SUCCESS] Kecocokan wajah: 98.4% Match. Liveness: PASSED.', 1000, 5)
+        await addLog('[INFO] Sinkronisasi & validasi database kependudukan Dukcapil...', 800, 6)
+        setKycSimulateStatus('success')
+        const { submitKycAction } = await import('@/app/actions/community')
+        const res = await submitKycAction(formData)
+        if (res.error) {
+          throw new Error(res.error)
+        }
+      }
+    } catch (err: any) {
+      setKycSimulateStatus('failed')
+      setKycSimulateLogs((prev) => [...prev, `[ERROR] Terjadi kesalahan: ${err.message || 'Verifikasi gagal.'}`])
+    }
+  }
+
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -219,6 +287,41 @@ export default function ProfileViewerClient({
   const activeTemplate = user.landingPageTemplate || 'modern-gold'
   const logoUrl = config.logoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&q=80"
 
+  // Find custom page builder main page if it exists
+  const customMainPage = React.useMemo(() => {
+    if (config && config.pages && Array.isArray(config.pages)) {
+      return config.pages.find((p: any) => p.id === 'page-main' || p.slug === '' || p.slug === 'main')
+    }
+    return null
+  }, [config])
+
+  // Resolve components for product showcase inside page builder
+  const resolvedComponents = React.useMemo(() => {
+    if (!customMainPage || !customMainPage.builderComponents) return []
+    return customMainPage.builderComponents.map((comp: any) => {
+      if (comp.type === 'product_showcase') {
+        const ids: string[] = comp.content.productIds || []
+        const resolved = products.filter((p) => ids.includes(p.id))
+        return {
+          ...comp,
+          content: {
+            ...comp.content,
+            _resolvedProducts: resolved.map(p => ({
+              id: p.id,
+              title: p.title,
+              description: p.description,
+              price: p.price,
+              category: p.category,
+              stock: p.stock,
+              imageUrl: p.imageUrl
+            }))
+          }
+        }
+      }
+      return comp
+    })
+  }, [customMainPage, products])
+
   const badges = React.useMemo(() => getUserBadges(user), [user])
 
   const handleCopyCode = () => {
@@ -236,6 +339,20 @@ export default function ProfileViewerClient({
   }
 
   const renderStorefrontPreview = () => {
+    if (customMainPage && resolvedComponents.length > 0) {
+      return (
+        <StorePageViewerClient
+          pageName={customMainPage.name || 'Halaman Utama'}
+          components={resolvedComponents}
+          user={{
+            id: user.id,
+            name: user.name,
+            role: user.role,
+          }}
+        />
+      )
+    }
+
     if (['template1', 'template2', 'template3', 'template4', 'template5', 'brutalist'].includes(activeTemplate)) {
       return (
         <LandingPageRenderer
@@ -268,18 +385,18 @@ export default function ProfileViewerClient({
     return (
       <div className="relative">
         {/* Floating Toggle Banner to return to Profile */}
-        <div className="bg-[#13151E] border-b border-white/10 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+        <div className="bg-surface-dark border-b border-border-subtle px-6 py-3 flex items-center justify-between sticky top-0 z-50">
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-text-primary">
               Pratinjau Desain Landing Page
             </span>
             <span className="px-2 py-0.5 rounded text-[10px] font-geist font-bold bg-primary/25 border border-primary/30 text-primary uppercase">
-              {activeTemplate}
+              {customMainPage ? 'Page Builder' : activeTemplate}
             </span>
           </div>
           <button
             onClick={() => setActiveTab('profile')}
-            className="px-4 py-1.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-full text-xs font-bold text-text-primary transition-all flex items-center gap-1.5"
+            className="px-4 py-1.5 bg-surface-container border border-border-subtle hover:bg-surface-container-high rounded-full text-xs font-bold text-text-primary transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
           >
             ← Kembali ke Profil Utama
           </button>
@@ -293,13 +410,13 @@ export default function ProfileViewerClient({
   const xpPercent = Math.min(Math.max((user.xp / 1000) * 100, 5), 100)
 
   return (
-    <div className="min-h-screen bg-[#090A0F] text-[#F8FAFC] font-sans pb-24 overflow-hidden relative selection:bg-primary/30 selection:text-white">
+    <div className="min-h-screen bg-bg-dark text-text-primary font-sans pb-24 overflow-hidden relative selection:bg-primary/30 selection:text-white">
       {/* Decorative ambient background glows */}
       <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_70%)] pointer-events-none z-0" />
       <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.02)_0%,transparent_70%)] pointer-events-none z-0" />
 
       {/* Profile Header Navigation */}
-      <header className="border-b border-white/5 bg-[#13151E]/40 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-border-subtle bg-surface-dark/40 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center">
@@ -323,7 +440,7 @@ export default function ProfileViewerClient({
             ) : (
               <Link
                 href="/"
-                className="px-4 py-2 bg-white/5 border border-white/10 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-lg hover:bg-white/10 transition-all"
+                className="px-4 py-2 bg-surface-container border border-border-subtle text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-lg hover:bg-surface-container-high transition-all"
               >
                 Kembali
               </Link>
@@ -333,7 +450,7 @@ export default function ProfileViewerClient({
       </header>
 
       {/* Cover Banner */}
-      <div className="bg-gradient-to-r from-indigo-950/40 via-slate-900 to-amber-950/30 h-48 w-full border-b border-white/5 relative">
+      <div className="bg-gradient-to-r from-indigo-950/40 via-slate-900 to-amber-950/30 h-48 w-full border-b border-border-subtle relative">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.06)_0%,transparent_50%)]" />
       </div>
 
@@ -343,7 +460,7 @@ export default function ProfileViewerClient({
           
           {/* Left Column: Profile Card */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-[#13151E]/80 border border-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="bg-surface-dark/80 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
               
               <div className="flex flex-col items-center text-center">
@@ -366,12 +483,12 @@ export default function ProfileViewerClient({
                 </p>
 
                 {/* Level Progress */}
-                <div className="w-full bg-[#1A1D27] border border-white/5 rounded-2xl p-4 mb-6">
+                <div className="w-full bg-surface-container border border-border-subtle rounded-2xl p-4 mb-6">
                   <div className="flex justify-between items-center text-xs mb-2">
                     <span className="font-bold text-text-secondary uppercase text-[10px] tracking-wider">Progress Level</span>
                     <span className="font-geist font-black text-primary">LV {user.level}</span>
                   </div>
-                  <div className="h-2.5 bg-white/5 border border-white/5 rounded-full overflow-hidden mb-1">
+                  <div className="h-2.5 bg-surface-container-high border border-border-subtle rounded-full overflow-hidden mb-1">
                     <div 
                       className="h-full bg-gradient-to-r from-primary to-[#f5d76e] rounded-full transition-all duration-500" 
                       style={{ width: `${xpPercent}%` }}
@@ -384,7 +501,7 @@ export default function ProfileViewerClient({
                 </div>
 
                 {/* Role and Access Badges */}
-                <div className="w-full space-y-3 pt-4 border-t border-white/5 text-left text-xs">
+                <div className="w-full space-y-3 pt-4 border-t border-border-subtle text-left text-xs">
                   <div className="flex justify-between items-center">
                     <span className="text-text-secondary">Peran Platform</span>
                     <span className={`px-2 py-0.5 rounded text-[9px] font-geist font-black border uppercase tracking-wider ${
@@ -396,6 +513,27 @@ export default function ProfileViewerClient({
                       {user.role}
                     </span>
                   </div>
+                  {user.role === 'MERCHANT' && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-secondary">Komunitas Induk</span>
+                      <span className="font-bold text-text-primary text-right">
+                        {(user as any).indukCommunityName || (
+                          <span className="text-red-400 text-[10px] font-medium">Belum memilih</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-text-secondary">Status KYC</span>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-geist font-black border uppercase tracking-wider ${
+                      (user as any).kycStatus === 'APPROVED' ? 'bg-green-500/10 border-green-500/35 text-green-400' :
+                      (user as any).kycStatus === 'PENDING' ? 'bg-amber-500/10 border-amber-500/35 text-amber-400' :
+                      (user as any).kycStatus === 'REJECTED' ? 'bg-red-500/10 border-red-500/35 text-red-400' :
+                      'bg-neutral-500/10 border-neutral-500/35 text-neutral-400'
+                    }`}>
+                      {(user as any).kycStatus || 'NOT_SUBMITTED'}
+                    </span>
+                  </div>
                   <div className="flex justify-between items-center">
                     <span className="text-text-secondary">Tingkat Membership</span>
                     <span className="font-bold text-text-primary">{user.membershipLevel}</span>
@@ -405,7 +543,7 @@ export default function ProfileViewerClient({
                     <span className="font-bold text-primary">{user.membershipAccess}</span>
                   </div>
                   {user.email && (
-                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                    <div className="flex justify-between items-center pt-2 border-t border-border-subtle">
                       <span className="text-text-secondary">Email</span>
                       <span className="font-mono text-text-primary text-[10px] truncate max-w-[150px]">{user.email}</span>
                     </div>
@@ -416,19 +554,19 @@ export default function ProfileViewerClient({
 
             {/* Badges Earned Card */}
             {badges && badges.length > 0 && (
-              <div className="bg-[#13151E]/60 border border-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-2xl">
+              <div className="bg-surface-dark/60 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl">
                 <h3 className="font-sora text-xs font-bold uppercase tracking-widest text-[#f5d76e] mb-4">
                   Sertifikasi & Badges
                 </h3>
                 <div className="grid grid-cols-1 gap-3">
                   {badges.map((b: any) => (
-                    <div key={b.id} className="flex gap-3 p-3 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-amber-500/20 transition-all">
+                    <div key={b.id} className="flex gap-3 p-3 rounded-2xl bg-surface-container-lowest border border-border-subtle hover:border-amber-500/20 transition-all">
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 text-xs ${b.color}`}>
                         {b.id.includes('admin') ? '🛡️' : b.id.includes('merchant') ? '⭐' : b.id.includes('graduate') ? '🎓' : '⚡'}
                       </div>
                       <div>
-                        <span className="block text-[10px] font-bold text-white font-sora">{b.label}</span>
-                        <span className="block text-[9px] text-[#b8b8b8] mt-0.5">{b.desc}</span>
+                        <span className="block text-[10px] font-bold text-text-primary font-sora">{b.label}</span>
+                        <span className="block text-[9px] text-text-secondary mt-0.5">{b.desc}</span>
                       </div>
                     </div>
                   ))}
@@ -441,13 +579,13 @@ export default function ProfileViewerClient({
           <div className="lg:col-span-2 space-y-6">
             
             {/* View Selection Tabs */}
-            <div className="flex bg-[#13151E]/60 border border-white/5 p-1 rounded-2xl backdrop-blur-xl gap-1">
+            <div className="flex bg-surface-dark/60 border border-border-subtle p-1 rounded-2xl backdrop-blur-xl gap-1">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all ${
+                className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                   activeTab === 'profile'
                     ? 'bg-primary text-black shadow-lg shadow-primary/10'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-container'
                 }`}
               >
                 Profil & Referral
@@ -455,10 +593,10 @@ export default function ProfileViewerClient({
               {user.role === 'MERCHANT' && (
                 <button
                   onClick={() => setActiveTab('products')}
-                  className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all ${
+                  className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                     activeTab === 'products'
                       ? 'bg-primary text-black shadow-lg shadow-primary/10'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-container'
                   }`}
                 >
                   Katalog Produk ({products.length})
@@ -467,10 +605,10 @@ export default function ProfileViewerClient({
               {user.landingPageSetup && (
                 <button
                   onClick={() => setActiveTab('storefront')}
-                  className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all ${
+                  className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
                     (activeTab as string) === 'storefront'
                       ? 'bg-primary text-black shadow-lg shadow-primary/10'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-container'
                   }`}
                 >
                   Pratinjau Toko
@@ -483,7 +621,7 @@ export default function ProfileViewerClient({
               <div className="space-y-6">
                 
                 {/* Referral Center Card */}
-                <div className="bg-[#13151E]/80 border border-white/5 backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+                <div className="bg-surface-dark/80 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-b from-primary/5 to-transparent rounded-full blur-3xl pointer-events-none" />
                   
                   <div className="flex items-center gap-3 mb-6">
@@ -511,11 +649,11 @@ export default function ProfileViewerClient({
                             type="text"
                             readOnly
                             value={user.email || user.id}
-                            className="flex-1 h-10 px-3 bg-white/[0.03] border border-white/5 rounded-xl text-xs font-mono text-text-primary focus:outline-none"
+                            className="flex-1 h-10 px-3 bg-surface-container-low border border-border-subtle rounded-xl text-xs font-mono text-text-primary focus:outline-none"
                           />
                           <button
                             onClick={handleCopyCode}
-                            className="px-4 h-10 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-xs font-bold text-text-primary transition-all flex items-center justify-center gap-1.5 min-w-[100px]"
+                            className="px-4 h-10 bg-surface-container border border-border-subtle hover:bg-surface-container-high rounded-xl text-xs font-bold text-text-primary transition-all flex items-center justify-center gap-1.5 min-w-[100px] cursor-pointer"
                           >
                             {copiedCode ? (
                               <>
@@ -542,11 +680,11 @@ export default function ProfileViewerClient({
                             type="text"
                             readOnly
                             value={typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.email || user.id}` : `/auth?ref=${user.id}`}
-                            className="flex-1 h-10 px-3 bg-white/[0.03] border border-white/5 rounded-xl text-xs font-mono text-[#f5d76e] focus:outline-none"
+                            className="flex-1 h-10 px-3 bg-surface-container-low border border-border-subtle rounded-xl text-xs font-mono text-text-primary focus:outline-none"
                           />
                           <button
                             onClick={handleCopyLink}
-                            className="px-4 h-10 bg-primary text-black rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-w-[100px]"
+                            className="px-4 h-10 bg-primary text-black rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-w-[100px] cursor-pointer"
                           >
                             {copiedLink ? (
                               <>
@@ -567,18 +705,20 @@ export default function ProfileViewerClient({
                       <div className="pt-2">
                         <span className="block text-[9px] uppercase tracking-wider text-text-secondary mb-2 font-bold">Bagikan Cepat</span>
                         <div className="flex gap-2">
-                          <button 
-                            onClick={handleCopyLink}
-                            className="px-4 py-2 bg-[#25D366]/10 border border-[#25D366]/25 rounded-xl text-xs text-[#25D366] hover:bg-[#25D366]/20 transition-all font-geist font-bold flex items-center gap-1.5"
+                          <a 
+                            href={`https://wa.me/?text=${encodeURIComponent(`Ayo daftar di Saloka.id menggunakan rujukan saya: ${typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.email || user.id}` : ''}`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-green-500/10 border border-green-500/25 rounded-xl text-xs text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-all font-geist font-bold flex items-center gap-1.5"
                           >
                             Bagikan ke WhatsApp
-                          </button>
+                          </a>
                         </div>
                       </div>
                     </div>
 
                     {/* QR Code Area */}
-                    <div className="md:col-span-1 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-6">
+                    <div className="md:col-span-1 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-border-subtle pt-6 md:pt-0 md:pl-6">
                       <div className="p-3 bg-white rounded-2xl mb-2 shadow-xl">
                         <UserQRCode
                           userId={user.id}
@@ -597,6 +737,62 @@ export default function ProfileViewerClient({
                   </div>
                 </div>
 
+                {/* KYC Submission Card (Only for Owner and when not approved) */}
+                {isOwner && (user as any).kycStatus !== 'APPROVED' && (
+                  <div className="bg-surface-dark/80 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-1.5 h-6 bg-primary rounded-full" />
+                      <h3 className="font-sora text-sm font-bold text-[#f5d76e] uppercase tracking-widest">
+                        Verifikasi Identitas (KYC)
+                      </h3>
+                    </div>
+                    <p className="text-xs text-text-secondary leading-relaxed">
+                      Lengkapi verifikasi identitas Anda untuk dapat membuat komunitas baru, bergabung dengan Koperasi, atau mengajukan pinjaman modal usaha.
+                    </p>
+
+                    {(user as any).kycStatus === 'PENDING' ? (
+                      <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center text-xs text-amber-400 font-bold">
+                        Pengajuan KYC Anda sedang ditinjau oleh Admin. Silakan tunggu verifikasi.
+                      </div>
+                    ) : (
+                      <form onSubmit={handleKycSubmit} className="space-y-4 pt-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
+                              URL Foto KTP
+                            </label>
+                            <input
+                              type="text"
+                              name="ktpUrl"
+                              required
+                              placeholder="e.g. https://domain.id/ktp-anda.jpg"
+                              className="w-full h-10 px-3 bg-surface-container-low border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
+                              URL Foto Selfie dengan KTP
+                            </label>
+                            <input
+                              type="text"
+                              name="selfieUrl"
+                              required
+                              placeholder="e.g. https://domain.id/selfie-ktp.jpg"
+                              className="w-full h-10 px-3 bg-surface-container-low border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="submit"
+                          className="w-full py-2.5 bg-primary text-black font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 transition-all cursor-pointer"
+                        >
+                          Kirim Pengajuan KYC
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
                 {/* Performance & Analytics Summary Cards */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
@@ -609,44 +805,44 @@ export default function ProfileViewerClient({
                   {user.role === 'MERCHANT' ? (
                     /* Merchant Analytics Grid */
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
                         <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Produk</span>
                         <div className="flex items-baseline gap-1.5">
                           <span className="text-xl font-bold text-text-primary">{products.length}</span>
                           <span className="text-[9px] text-text-secondary">Item terbit</span>
                         </div>
                       </div>
-                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
                         <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Pesanan Masuk</span>
                         <div className="flex items-baseline gap-1.5">
                           <span className="text-xl font-bold text-primary">{merchantStats?.totalOrders || 0}</span>
                           <span className="text-[9px] text-text-secondary">Pesanan</span>
                         </div>
                       </div>
-                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4 col-span-2 sm:col-span-1">
+                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4 col-span-2 sm:col-span-1">
                         <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Omzet Pendapatan</span>
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-lg font-bold text-[#f5d76e]">Rp {(merchantStats?.totalRevenue || 0).toLocaleString('id-ID')}</span>
+                          <span className="text-lg font-bold text-primary">Rp {(merchantStats?.totalRevenue || 0).toLocaleString('id-ID')}</span>
                         </div>
                       </div>
                     </div>
                   ) : (
                     /* Affiliate Analytics Grid */
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
                         <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Akumulasi Komisi</span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-base font-bold text-primary">Rp {(affiliateStats?.totalEarnings || 0).toLocaleString('id-ID')}</span>
                         </div>
                       </div>
-                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
                         <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Klik Tautan</span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-lg font-bold text-text-primary">{affiliateStats?.clicksCount || 0}</span>
                           <span className="text-[9px] text-text-secondary">Klik</span>
                         </div>
                       </div>
-                      <div className="bg-[#13151E]/60 border border-white/5 rounded-2xl p-4">
+                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
                         <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Referral Pendaftaran</span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-lg font-bold text-text-primary">{affiliateStats?.referrals?.length || 0}</span>
@@ -654,7 +850,7 @@ export default function ProfileViewerClient({
                         </div>
                       </div>
                       {isOwner && wallet && (
-                        <div className="bg-[#13151E]/60 border border-primary/20 bg-gradient-to-b from-primary/5 to-transparent rounded-2xl p-4">
+                        <div className="bg-surface-dark/60 border border-primary/20 bg-gradient-to-b from-primary/5 to-transparent rounded-2xl p-4">
                           <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Saldo Dompet</span>
                           <div className="flex items-baseline gap-1">
                             <span className="text-base font-bold text-primary">Rp {(wallet.balance || 0).toLocaleString('id-ID')}</span>
@@ -666,7 +862,7 @@ export default function ProfileViewerClient({
 
                   {/* Wallet Shortcut for Owner */}
                   {isOwner && (
-                    <div className="flex justify-between items-center bg-white/[0.02] border border-white/5 rounded-2xl p-4 text-xs">
+                    <div className="flex justify-between items-center bg-surface-container-lowest border border-border-subtle rounded-2xl p-4 text-xs">
                       <div className="flex items-center gap-3 text-text-secondary">
                         <Wallet className="w-4 h-4 text-primary" />
                         <span>Kelola penarikan komisi dan histori penarikan di Pusat Dompet Saloka</span>
@@ -681,8 +877,8 @@ export default function ProfileViewerClient({
 
                 {/* Log Rujukan/Aktivitas Rinci */}
                 {isOwner && affiliateStats?.referrals && affiliateStats.referrals.length > 0 && (
-                  <div className="border border-white/5 bg-[#13151E]/80 rounded-3xl overflow-hidden shadow-xl">
-                    <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02]">
+                  <div className="border border-border-subtle bg-surface-dark/80 rounded-3xl overflow-hidden shadow-xl">
+                    <div className="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest">
                       <h4 className="font-sora text-xs font-bold text-text-primary uppercase tracking-wider">
                         Log Rujukan Terkini
                       </h4>
@@ -690,18 +886,18 @@ export default function ProfileViewerClient({
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-white/5 text-text-secondary bg-white/[0.01]">
+                          <tr className="border-b border-border-subtle text-text-secondary bg-surface-container-lowest">
                             <th className="p-4 font-geist font-bold uppercase tracking-wider">Tanggal</th>
                             <th className="p-4 font-geist font-bold uppercase tracking-wider">Pelanggan</th>
                             <th className="p-4 font-geist font-bold uppercase tracking-wider">Status</th>
                             <th className="p-4 font-geist font-bold uppercase tracking-wider text-right">Komisi</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-border-subtle">
                           {affiliateStats.referrals.slice(0, 5).map((ref: any) => {
                             const date = new Date(ref.createdAt)
                             return (
-                              <tr key={ref.id} className="hover:bg-white/[0.01] transition-colors">
+                              <tr key={ref.id} className="hover:bg-surface-container-lowest transition-colors">
                                 <td className="p-4 text-text-secondary font-geist">
                                   {date.toLocaleDateString('id-ID')}{' '}
                                   <span className="opacity-50 text-[10px]">
@@ -740,13 +936,13 @@ export default function ProfileViewerClient({
                       Katalog Etalase Produk
                     </h3>
                   </div>
-                  <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-text-secondary font-mono">
+                  <span className="px-3 py-1 bg-surface-container border border-border-subtle rounded-full text-[10px] text-text-secondary font-mono">
                     {products.length} Items
                   </span>
                 </div>
 
                 {products.length === 0 ? (
-                  <div className="p-12 text-center border border-white/5 bg-[#13151E]/40 rounded-3xl text-xs text-text-secondary">
+                  <div className="p-12 text-center border border-border-subtle bg-surface-dark/40 rounded-3xl text-xs text-text-secondary">
                     Belum ada produk yang diterbitkan oleh merchant ini.
                   </div>
                 ) : (
@@ -754,11 +950,11 @@ export default function ProfileViewerClient({
                     {products.map((p: any) => (
                       <div 
                         key={p.id}
-                        className="group bg-[#13151E]/60 border border-white/5 rounded-3xl p-5 hover:border-primary/25 transition-all duration-300 flex flex-col justify-between shadow-lg"
+                        className="group bg-surface-dark/60 border border-border-subtle rounded-3xl p-5 hover:border-primary/25 transition-all duration-300 flex flex-col justify-between shadow-lg"
                       >
                         <div>
                           {p.imageUrl && (
-                            <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 border border-white/5 relative bg-[#1A1D27]">
+                            <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 border border-border-subtle relative bg-surface-container">
                               <img 
                                 src={p.imageUrl} 
                                 alt={p.title} 
@@ -769,20 +965,20 @@ export default function ProfileViewerClient({
                           <span className="text-[8px] font-bold tracking-widest text-primary uppercase bg-primary/5 px-2.5 py-1 rounded border border-primary/20">
                             {p.category}
                           </span>
-                          <h4 className="text-sm font-bold text-white mt-3 group-hover:text-primary transition-colors line-clamp-1">
+                          <h4 className="text-sm font-bold text-text-primary mt-3 group-hover:text-primary transition-colors line-clamp-1">
                             {p.title}
                           </h4>
                           <p className="text-xs text-text-secondary mt-1.5 line-clamp-2 leading-relaxed">
                             {p.description}
                           </p>
                         </div>
-                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/5">
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-border-subtle">
                           <span className="text-sm font-bold text-primary">
                             Rp {p.price.toLocaleString('id-ID')}
                           </span>
                           <Link
                             href={`/market/product/${p.id}`}
-                            className="px-4 py-2 bg-white/5 group-hover:bg-primary text-[#f5f5f5] group-hover:text-black text-[10px] font-bold uppercase rounded-lg border border-white/10 group-hover:border-transparent transition-all flex items-center gap-1"
+                            className="px-4 py-2 bg-surface-container hover:bg-primary text-text-primary hover:text-black text-[10px] font-bold uppercase rounded-lg border border-border-subtle hover:border-transparent transition-all flex items-center gap-1 cursor-pointer"
                           >
                             Beli Produk
                             <ArrowRight className="w-3 h-3" />
@@ -799,6 +995,136 @@ export default function ProfileViewerClient({
 
         </div>
       </main>
+
+      {/* ── KYC AUTO-VERIFICATION MODAL SIMULATOR ───────────────────────────── */}
+      {kycSimulateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`w-full max-w-lg border rounded-3xl p-6 shadow-2xl space-y-6 bg-[#13151E] ${
+              kycSimulateStatus === 'success' ? 'border-green-500/30' :
+              kycSimulateStatus === 'failed' ? 'border-red-500/30' :
+              'border-yellow-500/30'
+            }`}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div className="flex items-center gap-2">
+                <Shield className={`w-5 h-5 ${
+                  kycSimulateStatus === 'success' ? 'text-green-400' :
+                  kycSimulateStatus === 'failed' ? 'text-red-400' :
+                  'text-yellow-400'
+                }`} />
+                <div>
+                  <h3 className="font-sora text-sm font-bold text-white uppercase tracking-wider">
+                    Verihubs e-KYC Simulator
+                  </h3>
+                  <span className="text-[9px] text-[#8e9094] uppercase font-semibold">
+                    Instant AI OCR & Liveness SDK
+                  </span>
+                </div>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded text-[8px] font-geist font-black border uppercase tracking-wider ${
+                kycSimulateStatus === 'success' ? 'bg-green-500/10 border-green-500/35 text-green-400' :
+                kycSimulateStatus === 'failed' ? 'bg-red-500/10 border-red-500/35 text-red-400' :
+                'bg-yellow-500/10 border-yellow-500/35 text-yellow-400 animate-pulse'
+              }`}>
+                {kycSimulateStatus === 'running' ? 'Scanning...' : kycSimulateStatus}
+              </span>
+            </div>
+
+            {/* Animation Area */}
+            {kycSimulateStatus === 'running' && (
+              <div className="relative h-28 bg-[#090A0F] rounded-2xl border border-white/5 overflow-hidden flex items-center justify-center">
+                {/* Scanner Grid background */}
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(198,169,107,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(198,169,107,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
+                
+                {/* Laser scan lines */}
+                {kycSimulateStep <= 2 ? (
+                  // KTP scan line
+                  <motion.div
+                    animate={{ top: ['0%', '100%', '0%'] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                    className="absolute left-0 right-0 h-0.5 bg-yellow-500 shadow-[0_0_8px_#eab308]"
+                  />
+                ) : (
+                  // Face scanning mesh representation
+                  <div className="relative w-20 h-20 rounded-full border border-yellow-500/20 flex items-center justify-center">
+                    <motion.div
+                      animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.8, 0.3] }}
+                      transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+                      className="absolute inset-0 rounded-full border border-yellow-500/40"
+                    />
+                    <Activity className="w-8 h-8 text-yellow-500 animate-pulse" />
+                  </div>
+                )}
+                <span className="text-[10px] font-mono font-bold text-yellow-500/70 z-10">
+                  {kycSimulateStep <= 2 ? 'OCR DOCUMENT SCANNING...' : 'FACE LIVENESS EVALUATING...'}
+                </span>
+              </div>
+            )}
+
+            {/* Logs Console */}
+            <div className="bg-[#090A0F] p-4 rounded-2xl border border-white/5 font-mono text-[10px] space-y-1.5 max-h-[160px] overflow-y-auto">
+              {kycSimulateLogs.map((log, i) => (
+                <div
+                  key={i}
+                  className={
+                    log.startsWith('[SUCCESS]') ? 'text-green-400 font-semibold' :
+                    log.startsWith('[ERROR]') ? 'text-red-400 font-semibold' :
+                    'text-[#8e9094]'
+                  }
+                >
+                  {log}
+                </div>
+              ))}
+            </div>
+
+            {/* Checklists */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className={`p-3 rounded-xl border text-center space-y-1 ${
+                kycSimulateStep >= 2 ? 'bg-green-500/5 border-green-500/20 text-green-400' : 'bg-white/[0.01] border-white/5 text-[#8e9094]'
+              }`}>
+                <span className="block text-[8px] font-black uppercase tracking-wider">Step 1</span>
+                <span className="block text-[10px] font-bold">KTP OCR</span>
+              </div>
+              <div className={`p-3 rounded-xl border text-center space-y-1 ${
+                kycSimulateStep >= 4 ? 'bg-green-500/5 border-green-500/20 text-green-400' : 'bg-white/[0.01] border-white/5 text-[#8e9094]'
+              }`}>
+                <span className="block text-[8px] font-black uppercase tracking-wider">Step 2</span>
+                <span className="block text-[10px] font-bold">Liveness Test</span>
+              </div>
+              <div className={`p-3 rounded-xl border text-center space-y-1 ${
+                kycSimulateStep >= 6 ? 'bg-green-500/5 border-green-500/20 text-green-400' : 'bg-white/[0.01] border-white/5 text-[#8e9094]'
+              }`}>
+                <span className="block text-[8px] font-black uppercase tracking-wider">Step 3</span>
+                <span className="block text-[10px] font-bold">Dukcapil Match</span>
+              </div>
+            </div>
+
+            {/* Action buttons when finished */}
+            {kycSimulateStatus !== 'running' && (
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    setKycSimulateOpen(false)
+                    window.location.reload()
+                  }}
+                  className={`w-full py-3 text-xs font-bold uppercase tracking-wider rounded-xl font-geist cursor-pointer ${
+                    kycSimulateStatus === 'success'
+                      ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/15'
+                      : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/15'
+                  }`}
+                >
+                  {kycSimulateStatus === 'success' ? 'Verifikasi Sukses - Selesai' : 'Verifikasi Gagal - Coba Lagi'}
+                </button>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+
     </div>
   )
 }

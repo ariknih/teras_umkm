@@ -8,7 +8,8 @@ import { getProducts, createProduct, updateProduct, deleteProduct, updateAllProd
 import { getWalletDetails } from '@/app/actions/wallet-affiliate'
 import { getMerchantOrders, updateOrderTracking, updateShippingLabel } from '@/app/actions/orders'
 import { getMerchantAnalytics } from '@/app/actions/analytics'
-import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X } from 'lucide-react'
+import { getCourses, getUserProgress } from '@/app/actions/lms'
+import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info } from 'lucide-react'
 
 interface Product {
   id: string
@@ -79,8 +80,12 @@ export default function MerchantDashboardPage() {
   const [createPageTemplate, setCreatePageTemplate] = useState('template1')
   const [createPagePreview, setCreatePagePreview] = useState<'mobile' | 'desktop'>('mobile')
   
-  // Tabs: 'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages'
-  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization'>('overview')
+  // Tabs: 'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy'
+  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy'>('overview')
+  
+  // LMS Academy state
+  const [courses, setCourses] = useState<any[]>([])
+  const [userProgress, setUserProgress] = useState<any[]>([])
   
   // Storefront customization state
   const [storefrontTemplate, setStorefrontTemplate] = useState<'gold' | 'noir' | 'clean' | 'studio' | 'brutalist' | 'swiss' | 'destijl' | 'hpc'>('gold')
@@ -379,6 +384,12 @@ export default function MerchantDashboardPage() {
           setOrders(oList)
           const analyticData = await getMerchantAnalytics()
           setAnalytics(analyticData)
+          
+          // Load LMS courses and user progress
+          const lmsCourses = await getCourses()
+          setCourses(lmsCourses)
+          const progress = await getUserProgress()
+          setUserProgress(progress)
         }
       }
     } catch (err) {
@@ -868,6 +879,31 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
     )
   }
 
+  if (user.role === 'MERCHANT' && !profile?.indukCommunityId) {
+    return (
+      <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark py-12 px-6">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.06)_0%,transparent_65%)] pointer-events-none z-0" />
+        <div className="relative z-10 w-full max-w-lg text-center border border-border-subtle bg-surface-dark p-8 rounded-2xl shadow-2xl space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-500 mb-2">
+            <Info className="w-8 h-8" />
+          </div>
+          <h2 className="font-sora text-xl font-bold text-text-primary">Komunitas Induk Diperlukan</h2>
+          <p className="text-xs text-text-secondary leading-relaxed">
+            Untuk mengaktifkan dan membuka Dashboard Merchant, Anda wajib bergabung ke salah satu <strong>Komunitas Induk</strong> (Perkumpulan atau Koperasi) terlebih dahulu.
+          </p>
+          <div className="pt-2">
+            <Link
+              href="/community"
+              className="btn-primary w-full text-xs inline-block text-center py-3 bg-primary text-black font-bold uppercase tracking-wider rounded-xl shadow-lg"
+            >
+              Pilih Komunitas Induk Sekarang
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Calculate statistics
   const outOfStockItems = products.filter((p) => p.stock <= 0).length
   const totalItems = products.length
@@ -949,6 +985,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             { id: 'orders', label: `Pesanan Masuk (${orders.length})` },
             { id: 'analytics', label: 'Analitik Bisnis' },
             { id: 'pages', label: 'Daftar Halaman & Domain' },
+            { id: 'academy', label: 'LMS Academy' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -2778,6 +2815,102 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {activeTab === 'academy' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] mb-6">
+              <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Saloka Premium LMS Academy</h3>
+              <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
+                Tingkatkan omset bisnis Anda dengan mempelajari modul branding, pemasaran media sosial, sains fermentasi, dan manajemen finansial dari para mentor top.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {courses.map((course) => {
+                const courseLessons = course.lessons || [];
+                const totalLessons = courseLessons.length;
+                const completedLessons = new Set(
+                  userProgress.filter((p) => p.completed).map((p) => p.lessonId)
+                );
+                const completedCount = courseLessons.filter((l: any) => completedLessons.has(l.id)).length;
+                const percent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+                return (
+                  <div
+                    key={course.id}
+                    className="group bg-white rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.02)] border border-slate-100/80 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all duration-300 flex flex-col justify-between"
+                  >
+                    <div>
+                      {/* Course Image */}
+                      <div className="aspect-[21/9] w-full bg-slate-50 relative overflow-hidden flex items-center justify-center">
+                        {course.coverImage ? (
+                          <img
+                            src={course.coverImage}
+                            alt={course.title}
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-60" />
+                        )}
+                        <span className="absolute top-4 left-4 px-2.5 py-1 bg-white/95 rounded-lg text-[9px] font-bold text-primary uppercase tracking-wider shadow-sm">
+                          {course.accessRequired || 'Gold'} Module
+                        </span>
+                      </div>
+
+                      {/* Course Info */}
+                      <div className="p-6">
+                        <h3 className="font-sora text-base font-bold text-text-primary mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                          {course.title}
+                        </h3>
+                        <p className="text-xs text-text-secondary leading-relaxed mb-6">
+                          {course.description}
+                        </p>
+
+                        {/* Progress Bar */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-text-secondary uppercase">
+                            <span>Progress Belajar</span>
+                            <span className="text-primary font-bold">{percent}% Selesai</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary duration-500 rounded-full"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                          <div className="text-[10px] text-text-secondary pt-1">
+                            {completedCount} dari {totalLessons} pelajaran selesai dipelajari.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <div className="p-6 pt-0">
+                      <Link
+                        id={`btn-course-${course.id}`}
+                        href={`/academy/course/${course.id}`}
+                        className="w-full py-3 bg-primary hover:bg-primary/95 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all text-center"
+                      >
+                        Mulai Belajar
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                          className="w-3.5 h-3.5"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                        </svg>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 

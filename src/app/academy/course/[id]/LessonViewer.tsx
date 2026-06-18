@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { toggleLessonProgress } from '@/app/actions/lms'
+import { toggleLessonProgress, purchaseCourseAction } from '@/app/actions/lms'
 
 interface Lesson {
   id: string
@@ -16,22 +16,26 @@ interface Lesson {
 
 interface LessonViewerProps {
   courseId: string
+  courseTitle: string
   lessons: Lesson[]
   initialActiveLessonId: string
   completedLessonIds: string[]
   isLoggedIn: boolean
   userAccess: string
   courseAccessRequired: string
+  purchasedCourseIds?: string[]
 }
 
 export default function LessonViewer({
   courseId,
+  courseTitle,
   lessons,
   initialActiveLessonId,
   completedLessonIds,
   isLoggedIn,
   userAccess,
   courseAccessRequired,
+  purchasedCourseIds = [],
 }: LessonViewerProps) {
   const router = useRouter()
   const [activeId, setActiveId] = useState(initialActiveLessonId)
@@ -43,7 +47,30 @@ export default function LessonViewer({
   const levels: Record<string, number> = { Gold: 1, Platinum: 2, Diamond: 3 }
   const userRank = levels[userAccess] || 1
   const reqRank = levels[courseAccessRequired] || 1
-  const isLocked = userRank < reqRank
+  const hasPurchased = purchasedCourseIds.includes(courseId)
+  const isLocked = userRank < reqRank && !hasPurchased
+
+  let price = 50000
+  if (courseId === 'course-brand-1') price = 150000
+  else if (courseId === 'course-sourdough-1') price = 100000
+
+  const handlePurchase = () => {
+    if (!isLoggedIn) {
+      router.push('/auth')
+      return
+    }
+    if (confirm(`Apakah Anda yakin ingin membeli akses kelas "${courseTitle}" seharga Rp ${price.toLocaleString('id-ID')}? Saldo dompet Anda akan didebit.`)) {
+      startTransition(async () => {
+        const res = await purchaseCourseAction(courseId, price, courseTitle)
+        if (res.success) {
+          alert('Kelas berhasil dibeli! Akses materi sekarang terbuka.')
+          router.refresh()
+        } else {
+          alert(res.error || 'Gagal membeli kelas.')
+        }
+      })
+    }
+  }
 
   const handleToggleProgress = (lessonId: string, isCompleted: boolean) => {
     if (!isLoggedIn) {
@@ -137,16 +164,24 @@ export default function LessonViewer({
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-xs justify-center pt-2">
+            <div className="flex flex-col gap-3 w-full max-w-xs justify-center pt-2">
+              <button
+                id="btn-purchase-course"
+                onClick={handlePurchase}
+                disabled={isPending}
+                className="w-full py-3.5 bg-primary hover:bg-primary/90 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300 shadow-md shadow-primary/10 cursor-pointer"
+              >
+                {isPending ? 'Memproses...' : `Beli Kelas (Rp ${price.toLocaleString('id-ID')})`}
+              </button>
               <Link
                 href="/affiliate"
-                className="btn-primary w-full text-xs text-center shadow-md shadow-primary/10 hover:shadow-primary/20"
+                className="w-full py-3 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300 shadow-sm"
               >
                 Upgrade Keanggotaan
               </Link>
               <Link
                 href="/academy"
-                className="w-full py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/30 text-text-secondary hover:text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded text-center transition-all duration-300"
+                className="w-full py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/30 text-text-secondary hover:text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300"
               >
                 Cari Kelas Lain
               </Link>
