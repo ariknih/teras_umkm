@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUser } from '@/app/actions/auth'
+import { Share2, Check } from 'lucide-react'
 
 interface ProductActionsProps {
   product: {
@@ -14,12 +15,15 @@ interface ProductActionsProps {
   }
   affCode?: string
   userId?: string
+  userRole?: string
 }
 
-export default function ProductActions({ product, affCode, userId }: ProductActionsProps) {
+export default function ProductActions({ product, affCode, userId, userRole }: ProductActionsProps) {
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
   const [activeUserId, setActiveUserId] = useState<string | undefined>(userId)
+  const [activeUserRole, setActiveUserRole] = useState<string | undefined>(userRole)
+  const [affiliateLinkCopied, setAffiliateLinkCopied] = useState(false)
   const router = useRouter()
 
   // Sync userId with state, fallback to client-side session fetch
@@ -30,10 +34,14 @@ export default function ProductActions({ product, affCode, userId }: ProductActi
       getCurrentUser().then(u => {
         if (u) {
           setActiveUserId(u.id)
+          setActiveUserRole(u.role)
         }
       })
     }
-  }, [userId])
+    if (userRole) {
+      setActiveUserRole(userRole)
+    }
+  }, [userId, userRole])
 
   // Save affiliate code if present
   useEffect(() => {
@@ -93,6 +101,15 @@ export default function ProductActions({ product, affCode, userId }: ProductActi
     }
     saveCart(cart)
     router.push('/cart')
+  }
+
+  const handleCopyAffiliateLink = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const link = `${origin}/market/product/${product.id}?aff=${activeUserId}`
+    navigator.clipboard.writeText(link).then(() => {
+      setAffiliateLinkCopied(true)
+      setTimeout(() => setAffiliateLinkCopied(false), 2500)
+    })
   }
 
   return (
@@ -175,6 +192,28 @@ export default function ProductActions({ product, affCode, userId }: ProductActi
           </button>
         )}
       </div>
+
+      {/* Affiliate Share Button — hanya tampil untuk AFFILIATE */}
+      {activeUserRole === 'AFFILIATE' && activeUserId && (
+        <div className="pt-2 border-t border-border-subtle/40">
+          <p className="text-[10px] text-text-secondary font-geist mb-2">
+            Bagikan produk ini dengan link affiliate Anda dan dapatkan komisi.
+          </p>
+          <button
+            id="btn-share-affiliate"
+            onClick={handleCopyAffiliateLink}
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded border font-geist font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
+              affiliateLinkCopied
+                ? 'bg-green-950 border-green-500/40 text-green-400'
+                : 'bg-surface-container hover:bg-surface-container-high border-primary/30 hover:border-primary text-primary'
+            }`}
+          >
+            {affiliateLinkCopied
+              ? <><Check className="w-3.5 h-3.5" /> Link Affiliate Tersalin!</>
+              : <><Share2 className="w-3.5 h-3.5" /> Bagikan Link Affiliate</>}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -187,6 +187,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
               }}
               affCode={aff}
               userId={user?.id}
+              userRole={user?.role}
             />
           </div>
         </div>

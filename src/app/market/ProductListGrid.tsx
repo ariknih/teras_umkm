@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { SlidersHorizontal, X, ChevronDown, ArrowUpDown, DollarSign, Package } from 'lucide-react'
+import { SlidersHorizontal, X, ChevronDown, ArrowUpDown, DollarSign, Package, Share2, Check } from 'lucide-react'
 
 interface Product {
   id: string
@@ -40,6 +40,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [locStatus, setLocStatus] = useState<'idle' | 'prompting' | 'loading' | 'success' | 'error'>('idle')
   const [currentUser, setCurrentUser] = useState<any>(initialUser)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   // Advanced Filter States
   const [searchQuery, setSearchQuery]   = useState('')
@@ -521,12 +522,39 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
             const storeNames = ['Moell Store', 'Gallery Gadget', 'Wuben Light ID', 'Stanley ID', 'OMG Store', 'Infiniti Gadget']
             const storeName = storeNames[idNum % storeNames.length]
             const isOfficial = idNum % 2 === 0
+            const isAffiliate = currentUser?.role === 'AFFILIATE'
             return (
-              <Link
-                key={product.id}
-                href={`/market/product/${product.id}`}
-                className="group flex flex-col bg-white border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] h-full"
-              >
+              <div key={product.id} className="group flex flex-col bg-white border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] h-full relative">
+                {/* Share button overlay for AFFILIATE only */}
+                {isAffiliate && (
+                  <button
+                    id={`share-product-${product.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                      const link = `${origin}/market/product/${product.id}?aff=${currentUser.id}`
+                      navigator.clipboard.writeText(link).then(() => {
+                        setCopiedId(product.id)
+                        setTimeout(() => setCopiedId(null), 2000)
+                      })
+                    }}
+                    title="Salin Link Affiliate"
+                    className={`absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-200 ${
+                      copiedId === product.id
+                        ? 'bg-green-500 text-white scale-105'
+                        : 'bg-white/90 hover:bg-primary text-gray-600 hover:text-white backdrop-blur-sm'
+                    }`}
+                  >
+                    {copiedId === product.id
+                      ? <Check className="w-3.5 h-3.5" />
+                      : <Share2 className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+                <Link
+                  href={`/market/product/${product.id}`}
+                  className="flex flex-col h-full"
+                >
                 {/* Square image */}
                 <div className="aspect-square w-full bg-slate-100 relative overflow-hidden">
                   {product.imageUrl ? (
@@ -591,7 +619,8 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     </div>
                   </div>
                 </div>
-              </Link>
+                </Link>
+              </div>
             )
           })}
         </div>

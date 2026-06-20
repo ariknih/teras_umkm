@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUserProfile } from '@/app/actions/auth'
-import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2, Settings } from 'lucide-react'
+import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2, Settings, ShieldCheck } from 'lucide-react'
 import { updateUserSettingsAction } from '@/app/actions/wallet-affiliate'
 
-type TabType = 'profile' | 'security' | 'address' | 'integrations' | 'notifications' | 'preferences'
+type TabType = 'profile' | 'security' | 'address' | 'integrations' | 'notifications' | 'preferences' | 'kyc'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -26,6 +26,12 @@ export default function SettingsPage() {
   const [googleSheetUrl, setGoogleSheetUrl] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // KYC State
+  const [kycStatus, setKycStatus] = useState<string | null>(null)
+  const [kycVerifiedAt, setKycVerifiedAt] = useState<string | null>(null)
+  const [kycLoading, setKycLoading] = useState(false)
+  const [kycStarting, setKycStarting] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -51,6 +57,17 @@ export default function SettingsPage() {
       }
     }
     load()
+
+    // Load KYC status
+    setKycLoading(true)
+    fetch('/api/kyc/status')
+      .then(r => r.json())
+      .then(d => {
+        setKycStatus(d.status)
+        setKycVerifiedAt(d.verifiedAt ? new Date(d.verifiedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : null)
+      })
+      .catch(() => {})
+      .finally(() => setKycLoading(false))
   }, [router])
 
   const handleSave = async () => {
@@ -97,6 +114,7 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'profile', label: 'Profil & Biodata', icon: User },
     { id: 'security', label: 'Akun & Keamanan', icon: Shield },
+    { id: 'kyc', label: 'Verifikasi Identitas', icon: ShieldCheck },
     { id: 'address', label: 'Buku Alamat', icon: MapPin },
     { id: 'integrations', label: 'Integrasi & WA Gateway', icon: Settings },
     { id: 'notifications', label: 'Notifikasi', icon: Bell },
@@ -217,6 +235,129 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* KYC TAB */}
+          {activeTab === 'kyc' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
+              <div>
+                <h2 className="font-sora text-xl font-bold text-foreground">Verifikasi Identitas (KYC)</h2>
+                <p className="text-xs text-foreground/50 mt-1">
+                  Verifikasi identitas membantu membangun kepercayaan dan membuka akses ke fitur premium platform.
+                </p>
+              </div>
+
+              {/* Status Card */}
+              <div className={`p-5 rounded-[var(--radius-brand)] border-2 ${
+                kycStatus === 'VERIFIED'
+                  ? 'border-green-500/40 bg-green-500/5'
+                  : kycStatus === 'REJECTED'
+                  ? 'border-red-500/40 bg-red-500/5'
+                  : kycStatus === 'PENDING'
+                  ? 'border-amber-500/40 bg-amber-500/5'
+                  : 'border-border-subtle bg-surface-container/30'
+              }`}>
+                <div className="flex items-start gap-4">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl shrink-0 ${
+                    kycStatus === 'VERIFIED' ? 'bg-green-500/15' :
+                    kycStatus === 'REJECTED' ? 'bg-red-500/15' :
+                    kycStatus === 'PENDING' ? 'bg-amber-500/15' : 'bg-surface-container'
+                  }`}>
+                    {kycStatus === 'VERIFIED' ? '✅' : kycStatus === 'REJECTED' ? '❌' : kycStatus === 'PENDING' ? '🕐' : '🪪'}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-sm text-foreground">
+                        {kycStatus === 'VERIFIED' ? 'Identitas Terverifikasi' :
+                         kycStatus === 'REJECTED' ? 'Verifikasi Ditolak' :
+                         kycStatus === 'PENDING' ? 'Sedang Ditinjau' : 'Belum Diverifikasi'}
+                      </h3>
+                      {kycStatus === 'VERIFIED' && (
+                        <span className="px-2 py-0.5 bg-green-500/15 text-green-600 text-[9px] font-black uppercase tracking-wider rounded">
+                          ✓ Terverifikasi
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-foreground/60 mt-1">
+                      {kycStatus === 'VERIFIED'
+                        ? `Identitas Anda telah berhasil diverifikasi${kycVerifiedAt ? ` pada ${kycVerifiedAt}` : ''}. Badge KYC aktif di profil Anda.`
+                        : kycStatus === 'REJECTED'
+                        ? 'Verifikasi ditolak. Pastikan dokumen Anda valid dan foto wajah terlihat jelas, lalu coba lagi.'
+                        : kycStatus === 'PENDING'
+                        ? 'Verifikasi sedang dalam proses peninjauan. Estimasi selesai dalam 1x24 jam.'
+                        : 'Verifikasi identitas Anda untuk mendapatkan badge KYC, meningkatkan kepercayaan pembeli, dan akses fitur premium.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Benefits */}
+              {kycStatus !== 'VERIFIED' && (
+                <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)]">
+                  <h4 className="text-sm font-bold text-foreground mb-3">Manfaat Verifikasi KYC</h4>
+                  <ul className="space-y-2">
+                    {[
+                      { icon: '🛡️', text: 'Badge Identitas Terverifikasi di profil dan toko Anda' },
+                      { icon: '📈', text: 'Peningkatan kepercayaan dan konversi dari pembeli' },
+                      { icon: '💼', text: 'Akses ke fitur pinjaman koperasi dan program UMKM premium' },
+                      { icon: '🔓', text: 'Limit transaksi lebih tinggi dan fitur eksklusif' },
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-start gap-2.5 text-xs text-foreground/70">
+                        <span className="text-base leading-none">{item.icon}</span>
+                        <span>{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* What's needed */}
+              {!kycStatus && (
+                <div className="p-5 border border-primary/20 bg-primary/5 rounded-[var(--radius-brand)]">
+                  <h4 className="text-sm font-bold text-foreground mb-3">Yang Perlu Disiapkan</h4>
+                  <ul className="space-y-2">
+                    {[
+                      '📄 KTP / Paspor / SIM yang masih berlaku',
+                      '🤳 Selfie wajah menghadap kamera (liveness check)',
+                      '📶 Koneksi internet yang stabil',
+                    ].map((item, i) => (
+                      <li key={i} className="text-xs text-foreground/70">{item}</li>
+                    ))}
+                  </ul>
+                  <p className="text-[10px] text-foreground/40 mt-3">
+                    Powered by <strong>Didit</strong> — verifikasi aman & gratis. Data tidak disimpan di server Saloka.id.
+                  </p>
+                </div>
+              )}
+
+              {/* CTA Button */}
+              {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
+                <button
+                  id="btn-start-kyc"
+                  disabled={kycStarting}
+                  onClick={async () => {
+                    setKycStarting(true)
+                    try {
+                      const res = await fetch('/api/kyc/didit', { method: 'POST' })
+                      const data = await res.json()
+                      if (data.url) {
+                        window.location.href = data.url
+                      } else {
+                        alert(data.error || 'Gagal memulai verifikasi. Coba lagi.')
+                      }
+                    } catch (e) {
+                      alert('Terjadi kesalahan jaringan. Silakan coba lagi.')
+                    } finally {
+                      setKycStarting(false)
+                    }
+                  }}
+                  className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary/90 text-white font-geist font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  {kycStarting ? 'Memulai Verifikasi...' : kycStatus === 'REJECTED' ? 'Coba Verifikasi Ulang' : 'Mulai Verifikasi KYC Gratis'}
+                </button>
+              )}
             </div>
           )}
 

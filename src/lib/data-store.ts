@@ -6389,14 +6389,16 @@ export const DataStore = {
     return null
   },
 
-  async updateKycStatus(userId: string, status: 'NOT_SUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED') {
+  async updateKycStatus(userId: string, status: 'NOT_SUBMITTED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'VERIFIED', sessionId?: string) {
     syncMockDb()
     if (await isDbConnected()) {
       try {
         return await db.user.update({
           where: { id: userId },
           data: {
-            kycStatus: status as any
+            kycStatus: status as any,
+            ...(sessionId ? { kycSessionId: sessionId } as any : {}),
+            ...(status === 'VERIFIED' || status === 'APPROVED' ? { kycVerifiedAt: new Date() } as any : {}),
           }
         })
       } catch (_) {}
@@ -6404,12 +6406,36 @@ export const DataStore = {
 
     const user = globalMockUsers.find(u => u.id === userId)
     if (user) {
-      (user as any).kycStatus = status;
+      (user as any).kycStatus = status
+      if (sessionId) (user as any).kycSessionId = sessionId
+      if (status === 'VERIFIED' || status === 'APPROVED') (user as any).kycVerifiedAt = new Date()
       user.updatedAt = new Date()
       saveMockDb()
       return user
     }
     return null
+  },
+
+  async getKycStatus(userId: string): Promise<{ status: string | null; sessionId: string | null; verifiedAt: Date | null }> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const u = await db.user.findUnique({ where: { id: userId } })
+        if (u) {
+          return {
+            status: (u as any).kycStatus || null,
+            sessionId: (u as any).kycSessionId || null,
+            verifiedAt: (u as any).kycVerifiedAt || null,
+          }
+        }
+      } catch (_) {}
+    }
+    const u = globalMockUsers.find(u => u.id === userId)
+    return {
+      status: (u as any)?.kycStatus || null,
+      sessionId: (u as any)?.kycSessionId || null,
+      verifiedAt: (u as any)?.kycVerifiedAt || null,
+    }
   },
 
   async submitCooperativeLoan(data: { communityId: string, merchantId: string, amount: number, purpose: string }) {
