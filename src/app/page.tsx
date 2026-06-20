@@ -159,20 +159,20 @@ export default async function HomePage() {
       {/* ── BOTTOM CTA ──────────────────────────────────────────────── */}
       <section className="w-full px-6 py-20 flex justify-center relative overflow-hidden bg-surface">
         <div className="absolute inset-0 pointer-events-none overflow-hidden max-w-[1440px] mx-auto">
-           {/* Floating elements styling from Figma (shadows & rotation) */}
-           <div className="absolute top-[20%] left-[5%] md:left-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-10deg]">
-             <img src="https://placehold.co/72x72/f3f4f6/9ca3af" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
-           </div>
-           <div className="absolute bottom-[20%] left-[15%] md:left-[20%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[18deg]">
-             <img src="https://placehold.co/78x78/f3f4f6/9ca3af" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
-           </div>
-           <div className="absolute top-[10%] right-[10%] md:right-[15%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[6deg]">
-             <img src="https://placehold.co/68x68/f3f4f6/9ca3af" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
-           </div>
-           <div className="absolute bottom-[25%] right-[5%] md:right-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-12deg]">
-             <img src="https://placehold.co/73x73/f3f4f6/9ca3af" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
-           </div>
-        </div>
+            {/* Floating elements styling from Figma (shadows & rotation) */}
+            <div className="absolute top-[20%] left-[5%] md:left-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-10deg]">
+              <img src="/images/shopping_bag.png" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
+            </div>
+            <div className="absolute bottom-[20%] left-[15%] md:left-[20%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[18deg]">
+              <img src="/images/coffee_cup.png" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
+            </div>
+            <div className="absolute top-[10%] right-[10%] md:right-[15%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[6deg]">
+              <img src="/images/tools_service.png" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
+            </div>
+            <div className="absolute bottom-[25%] right-[5%] md:right-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-12deg]">
+              <img src="/images/premium_package.png" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
+            </div>
+         </div>
         
         <div className="relative z-10 w-full max-w-[800px] flex flex-col items-center gap-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight">
