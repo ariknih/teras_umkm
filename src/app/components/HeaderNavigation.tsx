@@ -49,7 +49,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
         <div className="w-full max-w-[1280px] bg-surface/95 backdrop-blur-md rounded-[9999px] shadow-sm border border-border-subtle px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between pointer-events-auto">
           {/* Left: Brand logo */}
           <Link href="/" className="flex items-center shrink-0">
-            <img src="/images/logo+nama_saloka.png" alt="Saloka.id" className="h-8 md:h-9 object-contain" />
+            <img src="/images/logo+nama_saloka.webp" alt="Saloka.id" className="h-8 md:h-9 object-contain" />
           </Link>
 
           {/* Middle: Links */}

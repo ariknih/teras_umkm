@@ -163,7 +163,7 @@ export default async function RootLayout({
             {/* Brand */}
             <div className="md:col-span-1" suppressHydrationWarning>
               <div className="flex items-center mb-4" suppressHydrationWarning>
-                <img src="/images/logo+nama_saloka.png" alt="Saloka.id" className="h-8 object-contain" />
+                <img src="/images/logo+nama_saloka.webp" alt="Saloka.id" className="h-8 object-contain" />
               </div>
               <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
                 Platform ekosistem digital terlengkap untuk pelaku UMKM Indonesia yang ingin berkembang.

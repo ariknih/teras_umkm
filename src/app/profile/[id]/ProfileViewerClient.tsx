@@ -421,7 +421,7 @@ export default function ProfileViewerClient({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center">
-              <img src="/images/logo+nama_saloka.png" alt="Saloka.id" className="h-8 md:h-9 object-contain" />
+              <img src="/images/logo+nama_saloka.webp" alt="Saloka.id" className="h-8 md:h-9 object-contain" />
             </Link>
           </div>
           <nav className="hidden md:flex items-center gap-6">

@@ -161,16 +161,16 @@ export default async function HomePage() {
         <div className="absolute inset-0 pointer-events-none overflow-hidden max-w-[1440px] mx-auto">
             {/* Floating elements styling from Figma (shadows & rotation) */}
             <div className="absolute top-[20%] left-[5%] md:left-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-10deg]">
-              <img src="/images/shopping_bag.png" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
+              <img src="/images/shopping_bag.webp" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
             </div>
             <div className="absolute bottom-[20%] left-[15%] md:left-[20%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[18deg]">
-              <img src="/images/coffee_cup.png" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
+              <img src="/images/coffee_cup.webp" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
             </div>
             <div className="absolute top-[10%] right-[10%] md:right-[15%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[6deg]">
-              <img src="/images/tools_service.png" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
+              <img src="/images/tools_service.webp" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
             </div>
             <div className="absolute bottom-[25%] right-[5%] md:right-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-12deg]">
-              <img src="/images/premium_package.png" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
+              <img src="/images/premium_package.webp" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
             </div>
          </div>
         

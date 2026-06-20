@@ -354,7 +354,7 @@ export default function AdminDashboardClient({
         <div>
           {/* Sidebar Brand Logo */}
           <div className="h-[74px] border-b border-[#e2e8f0] flex items-center px-6 gap-3">
-            <img src="/images/logo+nama_saloka.png" alt="Saloka.id" className="h-8 object-contain" />
+            <img src="/images/logo+nama_saloka.webp" alt="Saloka.id" className="h-8 object-contain" />
             <div className="flex flex-col justify-center border-l border-slate-200 pl-3">
               <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none">Admin</p>
               <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none mt-0.5">Control</p>
