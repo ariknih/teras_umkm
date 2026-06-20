@@ -15,6 +15,7 @@ import {
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
+import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Shield, 
@@ -157,9 +158,9 @@ export default function CommunityDetailPage() {
     startTransition(async () => {
       const res = await joinIndukCommunity(id, true) // join as induk
       if (res.error) {
-        alert(res.error)
+        goeyToast.error(res.error)
       } else {
-        alert('Berhasil bergabung ke Komunitas Induk Perkumpulan!')
+        goeyToast.success('Berhasil bergabung ke Komunitas Induk Perkumpulan!')
         loadData()
       }
     })
@@ -171,7 +172,7 @@ export default function CommunityDetailPage() {
       try {
         const res = await joinIndukCommunity(id, true) // Join as induk
         if (res.error) {
-          alert(res.error)
+          goeyToast.error(res.error)
           setIsVerifying(false)
         } else {
           setPaymentSuccess(true)
@@ -207,7 +208,7 @@ export default function CommunityDetailPage() {
     if (res.error) {
       setLoanError(res.error)
     } else {
-      alert('Pengajuan pinjaman modal berhasil dikirim!')
+      goeyToast.success('Pengajuan pinjaman modal berhasil dikirim!')
       setLoanAmount('')
       setLoanPurpose('')
       setLoanModalOpen(false)
@@ -219,9 +220,9 @@ export default function CommunityDetailPage() {
     if (confirm('Apakah Anda yakin ingin menyetujui pengajuan pinjaman modal ini?')) {
       const res = await approveCooperativeLoanAction(loanId, role)
       if (res.error) {
-        alert(res.error)
+        goeyToast.error(res.error)
       } else {
-        alert('Pinjaman modal berhasil disetujui!')
+        goeyToast.success('Pinjaman modal berhasil disetujui!')
         loadData()
       }
     }
@@ -231,9 +232,9 @@ export default function CommunityDetailPage() {
     if (confirm('Apakah Anda yakin ingin menolak pengajuan pinjaman modal ini?')) {
       const res = await rejectCooperativeLoanAction(loanId, role)
       if (res.error) {
-        alert(res.error)
+        goeyToast.error(res.error)
       } else {
-        alert('Pinjaman modal berhasil ditolak.')
+        goeyToast.success('Pinjaman modal berhasil ditolak.')
         loadData()
       }
     }

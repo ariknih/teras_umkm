@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getIndukCommunities, createIndukCommunity } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
+import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Shield, 
@@ -97,7 +98,7 @@ export default function CommunityDirectoryPage() {
       if (res.error) {
         setFormError(res.error)
       } else {
-        alert('Komunitas Induk berhasil dibuat!')
+        goeyToast.success('Komunitas Induk berhasil dibuat!')
         setCreateModalOpen(false)
         
         // Reset form

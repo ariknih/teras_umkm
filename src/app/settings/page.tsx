@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getCurrentUserProfile } from '@/app/actions/auth'
 import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2, Settings, ShieldCheck } from 'lucide-react'
 import { updateUserSettingsAction } from '@/app/actions/wallet-affiliate'
+import { goeyToast } from 'goey-toast'
 
 type TabType = 'profile' | 'security' | 'address' | 'integrations' | 'notifications' | 'preferences' | 'kyc'
 
@@ -344,10 +345,10 @@ export default function SettingsPage() {
                       if (data.url) {
                         window.location.href = data.url
                       } else {
-                        alert(data.error || 'Gagal memulai verifikasi. Coba lagi.')
+                        goeyToast.error(data.error || 'Gagal memulai verifikasi. Coba lagi.')
                       }
                     } catch (e) {
-                      alert('Terjadi kesalahan jaringan. Silakan coba lagi.')
+                      goeyToast.error('Terjadi kesalahan jaringan. Silakan coba lagi.')
                     } finally {
                       setKycStarting(false)
                     }

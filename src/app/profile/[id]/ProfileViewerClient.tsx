@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { goeyToast } from 'goey-toast'
 import UserQRCode from '@/components/UserQRCode'
 import LandingPageRenderer from '../../components/LandingPageRenderer'
 import StorePageViewerClient from '@/app/store/[merchantId]/[pageSlug]/StorePageViewerClient'
@@ -217,7 +218,7 @@ export default function ProfileViewerClient({
     const selfieUrl = formData.get('selfieUrl') as string
 
     if (!ktpUrl || !selfieUrl) {
-      alert('Foto KTP dan Selfie wajib diunggah.')
+      goeyToast.error('Foto KTP dan Selfie wajib diunggah.')
       return
     }
 

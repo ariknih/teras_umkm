@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { getMyConversations, getChatHistory, sendChat, startChatWithSeller, markChatAsReadAction } from '@/app/actions/chat'
 import { createTicketAction, sendCsMessage, getCsChatHistory } from '@/app/actions/cs'
 import { getCurrentUser } from '@/app/actions/auth'
+import { goeyToast } from 'goey-toast'
 
 export default function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false)
@@ -133,10 +134,11 @@ export default function FloatingChat() {
   }
 
   const showToast = (msg: string) => {
-    setToastMessage(msg)
-    setTimeout(() => {
-      setToastMessage(null)
-    }, 4500)
+    if (msg.toLowerCase().includes('gagal') || msg.toLowerCase().includes('silakan') || msg.toLowerCase().includes('belum')) {
+      goeyToast.error(msg)
+    } else {
+      goeyToast.success(msg)
+    }
   }
 
   const handleSendChat = async (e: React.FormEvent) => {
@@ -615,21 +617,6 @@ export default function FloatingChat() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
-
-      {/* Custom Premium Toast */}
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-24 right-6 z-50 px-4 py-3 bg-[#2DB24A] text-white font-bold text-xs rounded-lg shadow-2xl flex items-center gap-2"
-          >
-            <span>✓</span>
-            <span>{toastMessage}</span>
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -14,6 +14,7 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 import { GsapScrollTrigger } from "@/components/GsapScrollTrigger";
 import Script from "next/script";
 import { Logo } from "@/components/Logo";
+import GoeyToastProvider from "@/components/GoeyToastProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -138,6 +139,7 @@ export default async function RootLayout({
         }`}
         suppressHydrationWarning
       >
+        <GoeyToastProvider />
         {isAdminRoute || isBuilderRoute ? (
           <main className="flex-grow flex flex-col">
             {children}
