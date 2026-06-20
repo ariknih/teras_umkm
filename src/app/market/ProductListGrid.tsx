@@ -16,6 +16,9 @@ interface Product {
   latitude?: number | null
   longitude?: number | null
   merchantId?: string
+  merchant?: {
+    name: string
+  } | null
 }
 
 interface ProductListGridProps {
@@ -80,6 +83,12 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
     }
   }, [initialUser])
 
+  useEffect(() => {
+    if (initialQuery !== undefined) {
+      setSearchQuery(initialQuery)
+    }
+  }, [initialQuery])
+
   const requestLocation = () => {
     if (!navigator.geolocation) {
       setLocStatus('error')
@@ -127,9 +136,30 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
     // Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
-      result = result.filter(
-        p => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
-      )
+      result = result.filter(p => {
+        const idNum = parseInt(p.id.slice(-3), 36) || 0
+        const storeNames = ['Moell Store', 'Gallery Gadget', 'Wuben Light ID', 'Stanley ID', 'OMG Store', 'Infiniti Gadget']
+        const storeName = storeNames[idNum % storeNames.length].toLowerCase()
+        
+        const locations = ['Jakarta Pusat', 'Jakarta Barat', 'Tangerang', 'Bandung', 'Surabaya', 'Bekasi']
+        const location = locations[idNum % locations.length].toLowerCase()
+
+        const title = p.title.toLowerCase()
+        const description = p.description.toLowerCase()
+        const categoryRaw = p.category.toLowerCase()
+        const categoryFormatted = formatCategoryName(p.category).toLowerCase()
+        const merchantName = p.merchant?.name ? p.merchant.name.toLowerCase() : ''
+
+        return (
+          title.includes(q) ||
+          description.includes(q) ||
+          categoryRaw.includes(q) ||
+          categoryFormatted.includes(q) ||
+          merchantName.includes(q) ||
+          storeName.includes(q) ||
+          location.includes(q)
+        )
+      })
     }
 
     // Price range filters
@@ -576,7 +606,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                         {isOfficial && (
                           <span className="w-3 h-3 rounded bg-purple-600 text-white flex items-center justify-center text-[6px] font-black shrink-0">✔</span>
                         )}
-                        <span className="truncate">{storeName}</span>
+                        <span className="truncate">{product.merchant?.name || storeName}</span>
                       </div>
                       <p className="truncate">{location}</p>
                     </div>
