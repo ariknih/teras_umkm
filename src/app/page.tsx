@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
 import { getCourses } from '@/app/actions/lms'
+import InteractiveFeatures from '@/app/components/InteractiveFeatures'
 
 export default async function HomePage() {
   const user = await getCurrentUser()
@@ -69,22 +70,7 @@ export default async function HomePage() {
       <section className="w-full px-6 md:px-20 py-16 bg-background flex justify-center">
         <div className="w-full max-w-[1280px] flex flex-col lg:flex-row gap-12 lg:gap-16 items-stretch">
           {/* Left: Features */}
-          <div className="flex-1 flex flex-col gap-6">
-             <div className="w-full h-64 md:h-96 relative bg-purple-100 rounded-2xl overflow-hidden flex items-center justify-center border border-purple-200">
-               {/* Background blur from Figma */}
-               <div className="absolute opacity-20 bg-neutral-400 blur-3xl w-full h-full scale-150" />
-               <img src="https://placehold.co/394x793/D8B4E2/ffffff?text=App" alt="App preview" className="absolute top-10 md:top-20 right-[-20px] md:right-[-50px] w-48 md:w-80 shadow-2xl rounded-xl transform rotate-12" />
-               <div className="absolute top-6 left-6 md:top-8 md:left-8 bg-purple-200 text-purple-900 px-4 py-2 rounded-xl text-xs md:text-sm font-medium shadow-sm max-w-[200px] border border-purple-300">
-                 Marketplace menawarkan produk & jasa!
-               </div>
-             </div>
-             {/* Feature Tabs */}
-             <div className="flex gap-2 w-full overflow-x-auto pb-2 scrollbar-hide">
-               <div className="flex-1 min-w-[120px] px-4 py-2.5 bg-surface rounded-xl shadow-sm border border-border text-center text-text-primary font-semibold cursor-pointer">Marketplace</div>
-               <div className="flex-1 min-w-[120px] px-4 py-2.5 bg-background rounded-xl border border-border text-center text-text-secondary font-semibold cursor-pointer hover:bg-gray-100">Affiliate Hub</div>
-               <div className="flex-1 min-w-[120px] px-4 py-2.5 bg-background rounded-xl border border-border text-center text-text-secondary font-semibold cursor-pointer hover:bg-gray-100">Academy</div>
-             </div>
-          </div>
+          <InteractiveFeatures />
 
           {/* Right: Testimonial */}
           <div className="w-full lg:w-[400px] relative bg-secondary rounded-2xl p-8 flex flex-col justify-center text-surface overflow-hidden shadow-xl">
