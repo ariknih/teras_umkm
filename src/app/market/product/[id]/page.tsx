@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import ProductActions from "./ProductActions";
 import { Metadata } from "next";
 import { getCurrentUser } from "@/app/actions/auth";
+import { formatCategoryName } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -90,14 +91,14 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-60 flex items-center justify-center">
                 <span className="text-[12px] font-geist font-bold text-primary/40 uppercase tracking-widest">
-                  {product.category} Image
+                  {formatCategoryName(product.category)} Image
                 </span>
               </div>
             )}
             
             {/* Category Pill */}
             <span className="absolute top-4 left-4 px-2 py-0.5 bg-surface-dark/90 backdrop-blur border border-primary/20 rounded text-[9px] font-geist font-bold text-primary uppercase tracking-wider">
-              {product.category}
+              {formatCategoryName(product.category)}
             </span>
           </div>
 

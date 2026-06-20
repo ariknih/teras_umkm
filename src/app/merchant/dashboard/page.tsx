@@ -10,6 +10,7 @@ import { getMerchantOrders, updateOrderTracking, updateShippingLabel } from '@/a
 import { getMerchantAnalytics } from '@/app/actions/analytics'
 import { getCourses, getUserProgress } from '@/app/actions/lms'
 import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info } from 'lucide-react'
+import { formatCategoryName } from '@/lib/utils'
 
 interface Product {
   id: string
@@ -1343,7 +1344,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         {p.imageUrl ? (
                           <img src={p.imageUrl} alt={p.title} className="object-cover w-full h-full" />
                         ) : (
-                          <span className="text-[8px] font-bold text-primary/40 uppercase">{p.category}</span>
+                          <span className="text-[8px] font-bold text-primary/40 uppercase">{formatCategoryName(p.category)}</span>
                         )}
                       </div>
                       <div>
@@ -1352,7 +1353,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         </h4>
                         <div className="flex gap-2 items-center mb-1">
                           <span className="btn-primary bg-primary/10 border border-primary/25 text-[8px] text-primary">
-                            {p.category}
+                            {formatCategoryName(p.category)}
                           </span>
                           <span className={`text-[10px] font-semibold ${p.stock <= 0 ? 'text-red-400' : 'text-text-secondary'}`}>
                             Stok: {p.stock}

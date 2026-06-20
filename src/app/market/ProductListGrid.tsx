@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { SlidersHorizontal, X, ChevronDown, ArrowUpDown, DollarSign, Package, Share2, Check } from 'lucide-react'
+import { formatCategoryName } from '@/lib/utils'
 
 interface Product {
   id: string
@@ -20,6 +21,7 @@ interface Product {
 interface ProductListGridProps {
   initialProducts: Product[]
   currentUser?: any
+  initialQuery?: string
 }
 
 // Haversine formula to calculate distance in km
@@ -36,15 +38,14 @@ function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): nu
   return d
 }
 
-export default function ProductListGrid({ initialProducts, currentUser: initialUser }: ProductListGridProps) {
+export default function ProductListGrid({ initialProducts, currentUser: initialUser, initialQuery }: ProductListGridProps) {
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [locStatus, setLocStatus] = useState<'idle' | 'prompting' | 'loading' | 'success' | 'error'>('idle')
   const [currentUser, setCurrentUser] = useState<any>(initialUser)
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   // Advanced Filter States
-  const [searchQuery, setSearchQuery]   = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('Semua')
+  const [searchQuery, setSearchQuery]   = useState(initialQuery || '')
   const [minPrice, setMinPrice]         = useState<number | ''>('')
   const [maxPrice, setMaxPrice]         = useState<number | ''>('')
   const [sortBy, setSortBy]             = useState<'default' | 'price-asc' | 'price-desc' | 'distance-asc'>('default')
@@ -104,11 +105,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
     )
   }
 
-  // Get unique categories dynamically
-  const categories = React.useMemo(() => {
-    const list = new Set(initialProducts.map(p => p.category))
-    return ['Semua', ...Array.from(list)]
-  }, [initialProducts])
+
 
   // Calculate distance for all products if coords is available
   const productsWithDistance = React.useMemo(() => {
@@ -135,13 +132,6 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
       )
     }
 
-    // Category filter
-    if (selectedCategory && selectedCategory !== 'Semua') {
-      result = result.filter(
-        p => p.category.toLowerCase() === selectedCategory.toLowerCase()
-      )
-    }
-
     // Price range filters
     if (minPrice !== '') result = result.filter(p => p.price >= Number(minPrice))
     if (maxPrice !== '') result = result.filter(p => p.price <= Number(maxPrice))
@@ -163,7 +153,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
     }
 
     return result
-  }, [productsWithDistance, searchQuery, selectedCategory, minPrice, maxPrice, sortBy, inStockOnly])
+  }, [productsWithDistance, searchQuery, minPrice, maxPrice, sortBy, inStockOnly])
 
   // Active filter count (for badge)
   const activeFilterCount = [
@@ -173,11 +163,10 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
     inStockOnly,
   ].filter(Boolean).length
 
-  const isFilterActive = !!(searchQuery || selectedCategory !== 'Semua' || activeFilterCount > 0)
+  const isFilterActive = !!(searchQuery || activeFilterCount > 0)
 
   const handleResetFilters = () => {
     setSearchQuery('')
-    setSelectedCategory('Semua')
     setMinPrice('')
     setMaxPrice('')
     setSortBy('default')
@@ -437,26 +426,6 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
           </div>
         </div>
 
-        {/* ── Category pills ── */}
-        <div className="flex gap-2 overflow-x-auto pb-0.5 mt-3 scrollbar-none -mx-4 px-4">
-          {categories.map((cat) => {
-            const isSelected = selectedCategory === cat
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold font-geist whitespace-nowrap transition-all shrink-0 ${
-                  isSelected
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'bg-slate-100 hover:bg-slate-200 text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                {cat === 'Semua' ? '🛍️ Semua' : cat}
-              </button>
-            )
-          })}
-        </div>
-
         {/* Active filters chip bar */}
         {isFilterActive && (
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border-subtle/50">
@@ -465,12 +434,6 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
               <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
                 &quot;{searchQuery}&quot;
                 <button onClick={() => setSearchQuery('')}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
-              </span>
-            )}
-            {selectedCategory !== 'Semua' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
-                {selectedCategory}
-                <button onClick={() => setSelectedCategory('Semua')}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
               </span>
             )}
             {sortBy !== 'default' && (
@@ -561,7 +524,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     <img src={product.imageUrl} alt={product.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">{product.category}</span>
+                      <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">{formatCategoryName(product.category)}</span>
                     </div>
                   )}
                   {discount > 0 && (
