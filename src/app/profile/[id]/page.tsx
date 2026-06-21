@@ -23,7 +23,10 @@ export async function generateMetadata(
     };
   }
 
-  let bio = `Selamat datang di profil resmi ${user.name}. Kami adalah pelaku usaha terdaftar di ekosistem premium Saloka.id.`;
+  const roleTitle = user.role === 'MERCHANT' ? 'Merchant' : user.role === 'AFFILIATE' ? 'Affiliate' : 'Pengguna';
+  const pageTitle = `${user.name} - Profil ${roleTitle} Saloka.id`;
+
+  let bio = `Selamat datang di profil resmi ${user.name}. Kami adalah ${user.role === 'MERCHANT' ? 'pelaku usaha Merchant' : user.role === 'AFFILIATE' ? 'Mitra Afiliasi' : 'Pengguna'} terdaftar di ekosistem premium Saloka.id.`;
   if (user.landingPageConfig) {
     try {
       const cfg = JSON.parse(user.landingPageConfig);
@@ -36,16 +39,16 @@ export async function generateMetadata(
   const desc = bio.substring(0, 150) + (bio.length > 150 ? '...' : '');
 
   return {
-    title: `${user.name} - Profil Merchant Saloka.id`,
+    title: pageTitle,
     description: desc,
     openGraph: {
-      title: `${user.name} - Profil Merchant Saloka.id`,
+      title: pageTitle,
       description: desc,
       type: 'profile',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${user.name} - Profil Merchant Saloka.id`,
+      title: pageTitle,
       description: desc,
     }
   };
@@ -153,7 +156,7 @@ export default async function ProfilePage({ params }: PageProps) {
   const template = user.landingPageTemplate || 'modern-gold';
   const config = user.landingPageConfig || JSON.stringify({
     title: user.name,
-    bio: `Selamat datang di profil resmi kami. Kami adalah pelaku usaha ${user.role === 'MERCHANT' ? 'Merchant' : user.role === 'AFFILIATE' ? 'Mitra Afiliasi' : 'Pelanggan'} terdaftar di ekosistem premium Saloka.id. Silakan jelajahi katalog produk, jasa, dan lokasi kami.`,
+    bio: `Selamat datang di profil resmi kami. Kami adalah ${user.role === 'MERCHANT' ? 'pelaku usaha Merchant' : user.role === 'AFFILIATE' ? 'Mitra Afiliasi' : 'Pelanggan'} terdaftar di ekosistem premium Saloka.id. ${user.role === 'MERCHANT' ? 'Silakan jelajahi katalog produk, jasa, dan lokasi kami.' : 'Silakan hubungi kami untuk informasi lebih lanjut.'}`,
     phone: "08123456789",
     instagram: `@${user.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
     sections: ["hero", "profile", "products", "map"]

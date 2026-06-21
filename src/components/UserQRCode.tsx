@@ -276,7 +276,7 @@ export default function UserQRCode({
             {/* Footer note */}
             <div style={{ padding: '0 24px 20px', textAlign: 'center' }}>
               <p style={{ fontSize: '9px', color: 'rgba(255,255,255,0.2)', margin: 0 }}>
-                Scan QR ini untuk langsung mengunjungi halaman profil merchant
+                Scan QR ini untuk langsung mengunjungi halaman profil
               </p>
             </div>
           </motion.div>

@@ -545,7 +545,7 @@ export default function ProfileViewerClient({
                   Katalog Produk ({products.length})
                 </button>
               )}
-              {user.landingPageSetup && (
+              {user.role === 'MERCHANT' && user.landingPageSetup && (
                 <button
                   onClick={() => setActiveTab('storefront')}
                   className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
@@ -1506,7 +1506,9 @@ function ModernGoldTemplate({ user, products, config, logoUrl, distance, badges 
                 <div className="flex justify-between items-center">
                   <div>
                     <span className="text-[9px] font-bold text-[#c9a227] uppercase tracking-widest block">Geografi</span>
-                    <h4 className="text-xs font-bold text-white mt-1">Lokasi Merchant Terverifikasi</h4>
+                    <h4 className="text-xs font-bold text-white mt-1">
+                      {user.role === 'MERCHANT' ? 'Lokasi Merchant Terverifikasi' : 'Lokasi Terverifikasi'}
+                    </h4>
                   </div>
                   {distance !== null && (
                     <div className={distanceClass}>
@@ -1977,7 +1979,9 @@ function NeoBrutalistTemplate({ user, products, config, logoUrl, distance, badge
         {user.latitude && user.longitude && (
           <section className={mapSectionClass}>
             <div className="flex justify-between items-center">
-              <h4 className="text-xs font-black uppercase">Lokasi Penjual</h4>
+              <h4 className="text-xs font-black uppercase">
+                {user.role === 'MERCHANT' ? 'Lokasi Penjual' : 'Lokasi Pengguna'}
+              </h4>
               {distance !== null && (
                 <span className={mapDistanceClass}>
                   {distance.toFixed(1)} km dari Anda
@@ -3089,7 +3093,9 @@ function CleanProfessionalTemplate({ user, products, config, logoUrl, distance, 
           <section className={mapCardClass}>
             <div className="flex justify-between items-center">
               <div>
-                <span className={mapHeaderSubClass}>Lokasi Toko</span>
+                <span className={mapHeaderSubClass}>
+                  {user.role === 'MERCHANT' ? 'Lokasi Toko' : 'Lokasi Pengguna'}
+                </span>
                 <h4 className={mapHeaderTitleClass}>Titik GPS Koordinat Usaha</h4>
               </div>
               {distance !== null && (
