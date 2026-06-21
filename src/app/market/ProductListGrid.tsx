@@ -138,7 +138,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
       const q = searchQuery.toLowerCase()
       result = result.filter(p => {
         const productId = p.id || ''
-        const idNum = parseInt(productId.slice(-3), 36) || 0
+        const idNum = Math.abs(parseInt(productId.slice(-3), 36) || 0)
         const storeNames = ['Moell Store', 'Gallery Gadget', 'Wuben Light ID', 'Stanley ID', 'OMG Store', 'Infiniti Gadget']
         const storeName = storeNames[idNum % storeNames.length].toLowerCase()
         
@@ -507,7 +507,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
           {filteredProducts.map((product) => {
             const dist = (product as any).distance
             const productId = product.id || ''
-            const idNum = parseInt(productId.slice(-3), 36) || 0
+            const idNum = Math.abs(parseInt(productId.slice(-3), 36) || 0)
             const discount = (idNum % 3 === 0) ? (10 + (idNum % 5) * 5) : 0
             const originalPrice = discount ? Math.round(product.price * (100 / (100 - discount))) : product.price
             const rating = (4.5 + (idNum % 5) * 0.1).toFixed(1)
