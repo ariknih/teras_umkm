@@ -31,7 +31,10 @@ import {
   Activity,
   Wallet,
   Eye,
-  Settings
+  Settings,
+  Upload,
+  X,
+  Loader2
 } from 'lucide-react'
 
 const Instagram = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -204,69 +207,8 @@ export default function ProfileViewerClient({
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
 
-  // KYC Auto-Verification Simulator States
-  const [kycSimulateOpen, setKycSimulateOpen] = useState(false)
-  const [kycSimulateStep, setKycSimulateStep] = useState(0)
-  const [kycSimulateStatus, setKycSimulateStatus] = useState<'idle' | 'running' | 'success' | 'failed'>('idle')
-  const [kycSimulateLogs, setKycSimulateLogs] = useState<string[]>([])
-
-  const handleKycSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const currentForm = e.currentTarget
-    const formData = new FormData(currentForm)
-    const ktpUrl = formData.get('ktpUrl') as string
-    const selfieUrl = formData.get('selfieUrl') as string
-
-    if (!ktpUrl || !selfieUrl) {
-      goeyToast.error('Foto KTP dan Selfie wajib diunggah.')
-      return
-    }
-
-    setKycSimulateOpen(true)
-    setKycSimulateStatus('running')
-    setKycSimulateStep(0)
-    setKycSimulateLogs(['[INFO] Menginisialisasi Verihubs KYC SDK...'])
-
-    const isFailed = ktpUrl.toLowerCase().includes('fail') || ktpUrl.toLowerCase().includes('tolak') || ktpUrl.toLowerCase().includes('invalid')
-
-    const addLog = (log: string, delay: number, step: number) => {
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          setKycSimulateStep(step)
-          setKycSimulateLogs((prev) => [...prev, log])
-          resolve()
-        }, delay)
-      })
-    }
-
-    try {
-      await addLog('[INFO] Menghubungkan ke secure upload server...', 800, 1)
-      await addLog('[INFO] Mengunggah Foto KTP & Selfie...', 800, 1)
-      await addLog('[INFO] Menjalankan OCR (Optical Character Recognition) pada KTP...', 1000, 2)
-      await addLog(`[SUCCESS] NIK Terdeteksi: 3273182903901004. Nama: ${user.name.toUpperCase()}.`, 1000, 3)
-      await addLog('[INFO] Memulai tes keaktifan wajah (Liveness Detection)...', 800, 4)
-      await addLog('[INFO] Mencocokkan wajah selfie dengan wajah di foto KTP...', 1000, 4)
-
-      if (isFailed) {
-        await addLog('[ERROR] Deteksi kecocokan wajah gagal (Similarity: 41.5% - Batas minimum: 75.0%). Wajah selfie tidak cocok dengan foto KTP.', 1200, 5)
-        setKycSimulateStatus('failed')
-        const { submitKycAction } = await import('@/app/actions/community')
-        await submitKycAction(formData)
-      } else {
-        await addLog('[SUCCESS] Kecocokan wajah: 98.4% Match. Liveness: PASSED.', 1000, 5)
-        await addLog('[INFO] Sinkronisasi & validasi database kependudukan Dukcapil...', 800, 6)
-        setKycSimulateStatus('success')
-        const { submitKycAction } = await import('@/app/actions/community')
-        const res = await submitKycAction(formData)
-        if (res.error) {
-          throw new Error(res.error)
-        }
-      }
-    } catch (err: any) {
-      setKycSimulateStatus('failed')
-      setKycSimulateLogs((prev) => [...prev, `[ERROR] Terjadi kesalahan: ${err.message || 'Verifikasi gagal.'}`])
-    }
-  }
+  // KYC Didit state
+  const [kycStarting, setKycStarting] = useState(false)
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -739,57 +681,81 @@ export default function ProfileViewerClient({
                 </div>
 
                 {/* KYC Submission Card (Only for Owner and when not approved) */}
-                {isOwner && (user as any).kycStatus !== 'APPROVED' && (
-                  <div className="bg-surface-dark/80 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-4">
+                {isOwner && (user as any).kycStatus !== 'APPROVED' && (user as any).kycStatus !== 'VERIFIED' && (
+                  <div className="bg-surface-dark/80 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+                    
                     <div className="flex items-center gap-3">
                       <div className="w-1.5 h-6 bg-primary rounded-full" />
                       <h3 className="font-sora text-sm font-bold text-[#f5d76e] uppercase tracking-widest">
                         Verifikasi Identitas (KYC)
                       </h3>
                     </div>
+                    
                     <p className="text-xs text-text-secondary leading-relaxed">
                       Lengkapi verifikasi identitas Anda untuk dapat membuat komunitas baru, bergabung dengan Koperasi, atau mengajukan pinjaman modal usaha.
                     </p>
 
                     {(user as any).kycStatus === 'PENDING' ? (
-                      <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-center text-xs text-amber-400 font-bold">
-                        Pengajuan KYC Anda sedang ditinjau oleh Admin. Silakan tunggu verifikasi.
+                      <div className="p-5 bg-amber-500/10 border border-amber-500/25 rounded-2xl text-center text-xs text-amber-400 font-bold flex flex-col items-center gap-2">
+                        <Activity className="w-5 h-5 animate-pulse text-amber-400" />
+                        <span>Pengajuan KYC Anda sedang ditinjau oleh Admin. Silakan tunggu verifikasi selesai.</span>
                       </div>
                     ) : (
-                      <form onSubmit={handleKycSubmit} className="space-y-4 pt-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                              URL Foto KTP
-                            </label>
-                            <input
-                              type="text"
-                              name="ktpUrl"
-                              required
-                              placeholder="e.g. https://domain.id/ktp-anda.jpg"
-                              className="w-full h-10 px-3 bg-surface-container-low border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none"
-                            />
+                      <div className="space-y-4 pt-2">
+                        <div className="bg-surface-container-low border border-primary/20 rounded-2xl p-5 space-y-4 shadow-sm hover:border-primary/40 transition-all duration-300">
+                          <div className="flex justify-between items-start gap-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[8px] font-geist font-black bg-primary text-black uppercase tracking-wider">
+                                  Instan & Aman
+                                </span>
+                                <h4 className="text-xs font-bold text-text-primary">
+                                  Verifikasi Otomatis Didit
+                                </h4>
+                              </div>
+                              <p className="text-[10px] text-text-secondary mt-1.5 leading-relaxed">
+                                Verifikasi wajah (liveness check) dan dokumen Anda secara instan menggunakan kamera smartphone/laptop Anda.
+                              </p>
+                            </div>
+                            <div className="text-xs text-[#f5d76e] shrink-0 font-bold">⚡ 1 Menit</div>
                           </div>
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
-                              URL Foto Selfie dengan KTP
-                            </label>
-                            <input
-                              type="text"
-                              name="selfieUrl"
-                              required
-                              placeholder="e.g. https://domain.id/selfie-ktp.jpg"
-                              className="w-full h-10 px-3 bg-surface-container-low border border-border-subtle rounded-xl text-xs text-text-primary focus:outline-none"
-                            />
-                          </div>
+                          
+                          <button
+                            type="button"
+                            disabled={kycStarting}
+                            onClick={async () => {
+                              setKycStarting(true)
+                              try {
+                                const res = await fetch('/api/kyc/didit', { method: 'POST' })
+                                const data = await res.json()
+                                if (data.url) {
+                                  window.location.href = data.url
+                                } else {
+                                  goeyToast.error(data.error || 'Gagal memulai verifikasi. Coba lagi.')
+                                }
+                              } catch (e) {
+                                goeyToast.error('Terjadi kesalahan jaringan. Silakan coba lagi.')
+                              } finally {
+                                setKycStarting(false)
+                              }
+                            }}
+                            className="w-full py-3 bg-primary text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/10 disabled:opacity-60 cursor-pointer"
+                          >
+                            {kycStarting ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                Memulai Verifikasi...
+                              </>
+                            ) : (
+                              <>
+                                <Shield className="w-3.5 h-3.5" />
+                                Mulai Verifikasi Otomatis
+                              </>
+                            )}
+                          </button>
                         </div>
-                        <button
-                          type="submit"
-                          className="w-full py-2.5 bg-primary text-black font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 transition-all cursor-pointer"
-                        >
-                          Kirim Pengajuan KYC
-                        </button>
-                      </form>
+                      </div>
                     )}
                   </div>
                 )}
@@ -997,134 +963,7 @@ export default function ProfileViewerClient({
         </div>
       </main>
 
-      {/* ── KYC AUTO-VERIFICATION MODAL SIMULATOR ───────────────────────────── */}
-      {kycSimulateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-lg border rounded-3xl p-6 shadow-2xl space-y-6 bg-white ${
-              kycSimulateStatus === 'success' ? 'border-green-500/30' :
-              kycSimulateStatus === 'failed' ? 'border-red-500/30' :
-              'border-yellow-500/30'
-            }`}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-black/5 pb-4">
-              <div className="flex items-center gap-2">
-                <Shield className={`w-5 h-5 ${
-                  kycSimulateStatus === 'success' ? 'text-green-600' :
-                  kycSimulateStatus === 'failed' ? 'text-red-600' :
-                  'text-yellow-500'
-                }`} />
-                <div>
-                  <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">
-                    Verihubs e-KYC Simulator
-                  </h3>
-                  <span className="text-[9px] text-text-secondary uppercase font-semibold">
-                    Instant AI OCR & Liveness SDK
-                  </span>
-                </div>
-              </div>
-              <span className={`px-2.5 py-0.5 rounded text-[8px] font-geist font-black border uppercase tracking-wider ${
-                kycSimulateStatus === 'success' ? 'bg-green-500/10 border-green-500/35 text-green-600' :
-                kycSimulateStatus === 'failed' ? 'bg-red-500/10 border-red-500/35 text-red-600' :
-                'bg-yellow-500/10 border-yellow-500/35 text-yellow-600 animate-pulse'
-              }`}>
-                {kycSimulateStatus === 'running' ? 'Scanning...' : kycSimulateStatus}
-              </span>
-            </div>
 
-            {/* Animation Area */}
-            {kycSimulateStatus === 'running' && (
-              <div className="relative h-28 bg-[#F5F7F9] rounded-2xl border border-black/5 overflow-hidden flex items-center justify-center">
-                {/* Scanner Grid background */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(45,178,74,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(45,178,74,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
-                
-                {/* Laser scan lines */}
-                {kycSimulateStep <= 2 ? (
-                  // KTP scan line
-                  <motion.div
-                    animate={{ top: ['0%', '100%', '0%'] }}
-                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                    className="absolute left-0 right-0 h-0.5 bg-yellow-500 shadow-[0_0_8px_#eab308]"
-                  />
-                ) : (
-                  // Face scanning mesh representation
-                  <div className="relative w-20 h-20 rounded-full border border-yellow-500/20 flex items-center justify-center">
-                    <motion.div
-                      animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.8, 0.3] }}
-                      transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-                      className="absolute inset-0 rounded-full border border-yellow-500/40"
-                    />
-                    <Activity className="w-8 h-8 text-yellow-500 animate-pulse" />
-                  </div>
-                )}
-                <span className="text-[10px] font-mono font-bold text-yellow-600/70 z-10">
-                  {kycSimulateStep <= 2 ? 'OCR DOCUMENT SCANNING...' : 'FACE LIVENESS EVALUATING...'}
-                </span>
-              </div>
-            )}
-
-            {/* Logs Console */}
-            <div className="bg-[#F5F7F9] p-4 rounded-2xl border border-black/5 font-mono text-[10px] space-y-1.5 max-h-[160px] overflow-y-auto">
-              {kycSimulateLogs.map((log, i) => (
-                <div
-                  key={i}
-                  className={
-                    log.startsWith('[SUCCESS]') ? 'text-green-600 font-semibold' :
-                    log.startsWith('[ERROR]') ? 'text-red-600 font-semibold' :
-                    'text-text-secondary'
-                  }
-                >
-                  {log}
-                </div>
-              ))}
-            </div>
-
-            {/* Checklists */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className={`p-3 rounded-xl border text-center space-y-1 ${
-                kycSimulateStep >= 2 ? 'bg-green-500/5 border-green-500/25 text-green-600' : 'bg-[#F5F7F9] border-black/5 text-text-secondary'
-              }`}>
-                <span className="block text-[8px] font-black uppercase tracking-wider">Step 1</span>
-                <span className="block text-[10px] font-bold">KTP OCR</span>
-              </div>
-              <div className={`p-3 rounded-xl border text-center space-y-1 ${
-                kycSimulateStep >= 4 ? 'bg-green-500/5 border-green-500/25 text-green-600' : 'bg-[#F5F7F9] border-black/5 text-text-secondary'
-              }`}>
-                <span className="block text-[8px] font-black uppercase tracking-wider">Step 2</span>
-                <span className="block text-[10px] font-bold">Liveness Test</span>
-              </div>
-              <div className={`p-3 rounded-xl border text-center space-y-1 ${
-                kycSimulateStep >= 6 ? 'bg-green-500/5 border-green-500/25 text-green-600' : 'bg-[#F5F7F9] border-black/5 text-text-secondary'
-              }`}>
-                <span className="block text-[8px] font-black uppercase tracking-wider">Step 3</span>
-                <span className="block text-[10px] font-bold">Dukcapil Match</span>
-              </div>
-            </div>
-
-            {/* Action buttons when finished */}
-            {kycSimulateStatus !== 'running' && (
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    setKycSimulateOpen(false)
-                    window.location.reload()
-                  }}
-                  className={`w-full py-3 text-xs font-bold uppercase tracking-wider rounded-xl font-geist cursor-pointer ${
-                    kycSimulateStatus === 'success'
-                      ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/15'
-                      : 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/15'
-                  }`}
-                >
-                  {kycSimulateStatus === 'success' ? 'Verifikasi Sukses - Selesai' : 'Verifikasi Gagal - Coba Lagi'}
-                </button>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      )}
 
     </div>
   )

@@ -17,7 +17,10 @@ import {
   Info,
   CheckCircle2, 
   AlertTriangle,
-  FileText
+  FileText,
+  Upload,
+  X,
+  Loader2
 } from 'lucide-react'
 
 export default function CommunityDirectoryPage() {
@@ -42,6 +45,40 @@ export default function CommunityDirectoryPage() {
   const [waGroupLink, setWaGroupLink] = useState('')
   const [joinFee, setJoinFee] = useState('')
   const [monthlyFee, setMonthlyFee] = useState('')
+
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+
+  const handleFileUpload = async (file: File, type: 'avatar' | 'cover') => {
+    const setUploading = type === 'avatar' ? setUploadingAvatar : setUploadingCover
+    const setUrl = type === 'avatar' ? setAvatarUrl : setCoverUrl
+
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('folder', 'community')
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Gagal mengunggah file.')
+      }
+
+      const data = await res.json()
+      setUrl(data.url)
+      goeyToast.success(`Foto ${type === 'avatar' ? 'Logo' : 'Sampul'} berhasil diunggah!`)
+    } catch (e: any) {
+      console.error(e)
+      goeyToast.error(e.message || 'Terjadi kesalahan saat mengunggah file.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const [formError, setFormError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -447,24 +484,89 @@ export default function CommunityDirectoryPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Logo URL / Avatar</label>
-                        <input
-                          type="text"
-                          value={avatarUrl}
-                          onChange={(e) => setAvatarUrl(e.target.value)}
-                          placeholder="https://domain.id/avatar.png"
-                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
-                        />
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Logo Komunitas / Avatar</label>
+                        {avatarUrl ? (
+                          <div className="relative border border-black/10 rounded-xl overflow-hidden bg-[#F5F7F9] p-1.5 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <img src={avatarUrl} alt="Logo Preview" className="w-10 h-10 object-cover rounded-lg" />
+                              <span className="text-[10px] font-medium text-[#111111] truncate max-w-[120px]">Logo Terpilih</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setAvatarUrl('')}
+                              className="p-1 bg-black/5 hover:bg-black/10 text-neutral-600 rounded-full transition-colors cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-xl h-14 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={uploadingAvatar}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) handleFileUpload(file, 'avatar')
+                              }}
+                            />
+                            {uploadingAvatar ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                <span className="text-[10px] text-text-secondary font-medium">Mengunggah...</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                                <span className="text-[10px] font-bold text-text-primary">Pilih Logo Komunitas</span>
+                              </div>
+                            )}
+                          </label>
+                        )}
                       </div>
+
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Cover Banner URL</label>
-                        <input
-                          type="text"
-                          value={coverUrl}
-                          onChange={(e) => setCoverUrl(e.target.value)}
-                          placeholder="https://domain.id/cover.png"
-                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
-                        />
+                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Banner Sampul / Cover</label>
+                        {coverUrl ? (
+                          <div className="relative border border-black/10 rounded-xl overflow-hidden bg-[#F5F7F9] p-1.5 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <img src={coverUrl} alt="Cover Preview" className="w-10 h-10 object-cover rounded-lg" />
+                              <span className="text-[10px] font-medium text-[#111111] truncate max-w-[120px]">Banner Terpilih</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setCoverUrl('')}
+                              className="p-1 bg-black/5 hover:bg-black/10 text-neutral-600 rounded-full transition-colors cursor-pointer"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-xl h-14 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={uploadingCover}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) handleFileUpload(file, 'cover')
+                              }}
+                            />
+                            {uploadingCover ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                <span className="text-[10px] text-text-secondary font-medium">Mengunggah...</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Upload className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                                <span className="text-[10px] font-bold text-text-primary">Pilih Banner Sampul</span>
+                              </div>
+                            )}
+                          </label>
+                        )}
                       </div>
                     </div>
                   </div>
