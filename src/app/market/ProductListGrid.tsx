@@ -137,18 +137,19 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       result = result.filter(p => {
-        const idNum = parseInt(p.id.slice(-3), 36) || 0
+        const productId = p.id || ''
+        const idNum = parseInt(productId.slice(-3), 36) || 0
         const storeNames = ['Moell Store', 'Gallery Gadget', 'Wuben Light ID', 'Stanley ID', 'OMG Store', 'Infiniti Gadget']
         const storeName = storeNames[idNum % storeNames.length].toLowerCase()
         
         const locations = ['Jakarta Pusat', 'Jakarta Barat', 'Tangerang', 'Bandung', 'Surabaya', 'Bekasi']
         const location = locations[idNum % locations.length].toLowerCase()
 
-        const title = p.title.toLowerCase()
-        const description = p.description.toLowerCase()
-        const categoryRaw = p.category.toLowerCase()
-        const categoryFormatted = formatCategoryName(p.category).toLowerCase()
-        const merchantName = p.merchant?.name ? p.merchant.name.toLowerCase() : ''
+        const title = (p.title || '').toLowerCase()
+        const description = (p.description || '').toLowerCase()
+        const categoryRaw = (p.category || '').toLowerCase()
+        const categoryFormatted = formatCategoryName(p.category || '').toLowerCase()
+        const merchantName = p.merchant?.name ? String(p.merchant.name).toLowerCase() : ''
 
         return (
           title.includes(q) ||
@@ -505,7 +506,8 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {filteredProducts.map((product) => {
             const dist = (product as any).distance
-            const idNum = parseInt(product.id.slice(-3), 36) || 0
+            const productId = product.id || ''
+            const idNum = parseInt(productId.slice(-3), 36) || 0
             const discount = (idNum % 3 === 0) ? (10 + (idNum % 5) * 5) : 0
             const originalPrice = discount ? Math.round(product.price * (100 / (100 - discount))) : product.price
             const rating = (4.5 + (idNum % 5) * 0.1).toFixed(1)
@@ -517,35 +519,35 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
             const isOfficial = idNum % 2 === 0
             const isAffiliate = currentUser?.role === 'AFFILIATE'
             return (
-              <div key={product.id} className="group flex flex-col bg-white border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] h-full relative">
+              <div key={productId} className="group flex flex-col bg-white border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] h-full relative">
                 {/* Share button overlay for AFFILIATE only */}
                 {isAffiliate && (
                   <button
-                    id={`share-product-${product.id}`}
+                    id={`share-product-${productId}`}
                     onClick={(e) => {
                       e.stopPropagation()
                       e.preventDefault()
                       const origin = typeof window !== 'undefined' ? window.location.origin : ''
-                      const link = `${origin}/market/product/${product.id}?aff=${currentUser.id}`
+                      const link = `${origin}/market/product/${productId}?aff=${currentUser.id}`
                       navigator.clipboard.writeText(link).then(() => {
-                        setCopiedId(product.id)
+                        setCopiedId(productId)
                         setTimeout(() => setCopiedId(null), 2000)
                       })
                     }}
                     title="Salin Link Affiliate"
                     className={`absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-200 ${
-                      copiedId === product.id
+                      copiedId === productId
                         ? 'bg-green-500 text-white scale-105'
                         : 'bg-white/90 hover:bg-primary text-gray-600 hover:text-white backdrop-blur-sm'
                     }`}
                   >
-                    {copiedId === product.id
+                    {copiedId === productId
                       ? <Check className="w-3.5 h-3.5" />
                       : <Share2 className="w-3.5 h-3.5" />}
                   </button>
                 )}
                 <Link
-                  href={`/market/product/${product.id}`}
+                  href={`/market/product/${productId}`}
                   className="flex flex-col h-full"
                 >
                 {/* Square image */}
