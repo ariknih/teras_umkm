@@ -33,7 +33,8 @@ import {
   X,
   FileText,
   Upload,
-  Loader2
+  Loader2,
+  Share2
 } from 'lucide-react'
 
 export default function CommunityDetailPage() {
@@ -55,6 +56,7 @@ export default function CommunityDetailPage() {
   const [loanAmount, setLoanAmount] = useState('')
   const [loanPurpose, setLoanPurpose] = useState('')
   const [loanError, setLoanError] = useState<string | null>(null)
+  const [copiedProductId, setCopiedProductId] = useState<string | null>(null)
 
   // Payment states for Koperasi
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
@@ -639,13 +641,37 @@ export default function CommunityDetailPage() {
                     <Link
                       key={p.id}
                       href={`/market/product/${p.id}`}
-                      className="border border-black/5 bg-white rounded-2xl overflow-hidden hover:border-primary/25 transition-all flex flex-col justify-between group"
+                      className="border border-black/5 bg-white rounded-2xl overflow-hidden hover:border-primary/25 transition-all flex flex-col justify-between group relative"
                     >
                       <div className="relative aspect-square bg-neutral-100 w-full overflow-hidden">
                         {p.imageUrl ? (
                           <img src={p.imageUrl} alt="" className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-[10px] text-text-secondary uppercase tracking-widest font-bold">No Image</div>
+                        )}
+                        {user?.role === 'AFFILIATE' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              e.preventDefault()
+                              const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                              const link = `${origin}/market/product/${p.id}?aff=${user.id}`
+                              navigator.clipboard.writeText(link).then(() => {
+                                setCopiedProductId(p.id)
+                                setTimeout(() => setCopiedProductId(null), 2000)
+                              })
+                            }}
+                            title="Salin Link Affiliate"
+                            className={`absolute top-2 right-2 z-20 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-200 cursor-pointer ${
+                              copiedProductId === p.id
+                                ? 'bg-green-500 text-white scale-105'
+                                : 'bg-white/90 hover:bg-primary text-gray-600 hover:text-white backdrop-blur-sm border border-black/5'
+                            }`}
+                          >
+                            {copiedProductId === p.id
+                              ? <Check className="w-3.5 h-3.5" />
+                              : <Share2 className="w-3.5 h-3.5" />}
+                          </button>
                         )}
                       </div>
                       <div className="p-4 space-y-1">

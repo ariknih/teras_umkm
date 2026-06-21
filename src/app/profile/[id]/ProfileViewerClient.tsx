@@ -34,7 +34,8 @@ import {
   Settings,
   Upload,
   X,
-  Loader2
+  Loader2,
+  Share2
 } from 'lucide-react'
 
 const Instagram = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -206,6 +207,7 @@ export default function ProfileViewerClient({
   const [activeTab, setActiveTab] = useState<'profile' | 'products' | 'storefront'>('profile')
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [copiedProductId, setCopiedProductId] = useState<string | null>(null)
 
   // KYC Didit state
   const [kycStarting, setKycStarting] = useState(false)
@@ -917,18 +919,44 @@ export default function ProfileViewerClient({
                     {products.map((p: any) => (
                       <div 
                         key={p.id}
-                        className="group bg-surface-dark/60 border border-border-subtle rounded-3xl p-5 hover:border-primary/25 transition-all duration-300 flex flex-col justify-between shadow-lg"
+                        className="group bg-surface-dark/60 border border-border-subtle rounded-3xl p-5 hover:border-primary/25 transition-all duration-300 flex flex-col justify-between shadow-lg relative"
                       >
                         <div>
-                          {p.imageUrl && (
-                            <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 border border-border-subtle relative bg-surface-container">
-                              <img 
-                                src={p.imageUrl} 
-                                alt={p.title} 
-                                className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
-                              />
-                            </div>
-                          )}
+                          <div className="relative">
+                            {p.imageUrl && (
+                              <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 border border-border-subtle relative bg-surface-container">
+                                <img 
+                                  src={p.imageUrl} 
+                                  alt={p.title} 
+                                  className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" 
+                                />
+                              </div>
+                            )}
+                            {currentUser?.role === 'AFFILIATE' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  e.preventDefault()
+                                  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+                                  const link = `${origin}/market/product/${p.id}?aff=${currentUser.id}`
+                                  navigator.clipboard.writeText(link).then(() => {
+                                    setCopiedProductId(p.id)
+                                    setTimeout(() => setCopiedProductId(null), 2000)
+                                  })
+                                }}
+                                title="Salin Link Affiliate"
+                                className={`absolute top-2 right-2 z-20 w-8 h-8 rounded-full flex items-center justify-center shadow-md transition-all duration-200 cursor-pointer ${
+                                  copiedProductId === p.id
+                                    ? 'bg-green-500 text-white scale-105'
+                                    : 'bg-surface-container/90 hover:bg-primary text-text-primary hover:text-black backdrop-blur-sm border border-border-subtle'
+                                }`}
+                              >
+                                {copiedProductId === p.id
+                                  ? <Check className="w-4 h-4" />
+                                  : <Share2 className="w-4 h-4" />}
+                              </button>
+                            )}
+                          </div>
                           <span className="text-[8px] font-bold tracking-widest text-primary uppercase bg-primary/5 px-2.5 py-1 rounded border border-primary/20">
                             {p.category}
                           </span>
