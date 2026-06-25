@@ -9,6 +9,7 @@ import { getWalletDetails } from '@/app/actions/wallet-affiliate'
 import { getMerchantOrders, updateOrderTracking, updateShippingLabel } from '@/app/actions/orders'
 import { getMerchantAnalytics } from '@/app/actions/analytics'
 import { getCourses, getUserProgress } from '@/app/actions/lms'
+import { joinBootcampAction } from '@/app/actions/bootcamp'
 import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
 
@@ -712,6 +713,20 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
     }
   }
 
+  const handleJoinBootcamp = () => {
+    setError(null)
+    setSuccess(null)
+    startTransition(async () => {
+      const res = await joinBootcampAction()
+      if (res.error) {
+        setError(res.error)
+      } else {
+        setSuccess('Selamat! Anda telah resmi bergabung ke Saloka Bootcamp.')
+        await loadData()
+      }
+    })
+  }
+
   // Create Product Submit
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -813,10 +828,73 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark">
-        <span className="text-xs font-geist font-bold text-primary tracking-widest uppercase animate-pulse">
-          Opening Merchant Terminal...
-        </span>
+      <div className="relative min-h-screen bg-[#F5F7F9] pt-12 pb-24 px-6 md:px-10 animate-pulse">
+        <div className="relative z-10 max-w-[1200px] mx-auto">
+          {/* Header Skeleton */}
+          <div className="mb-10 pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-slate-100">
+            <div className="space-y-2">
+              <div className="h-8 w-48 bg-slate-200 rounded-lg"></div>
+              <div className="h-4 w-72 bg-slate-200 rounded-lg"></div>
+            </div>
+            <div className="h-8 w-36 bg-slate-200 rounded-lg"></div>
+          </div>
+
+          {/* Navigation Tabs Skeleton */}
+          <div className="flex gap-4 border-b border-slate-100 mb-8 pb-3 overflow-x-auto">
+            <div className="h-6 w-24 bg-slate-200 rounded-md shrink-0"></div>
+            <div className="h-6 w-32 bg-slate-200 rounded-md shrink-0"></div>
+            <div className="h-6 w-28 bg-slate-200 rounded-md shrink-0"></div>
+            <div className="h-6 w-24 bg-slate-200 rounded-md shrink-0"></div>
+            <div className="h-6 w-32 bg-slate-200 rounded-md shrink-0"></div>
+          </div>
+
+          {/* Cards Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="bg-white p-6 rounded-2xl border border-slate-100 h-36 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="h-3 w-32 bg-slate-200 rounded"></div>
+                <div className="h-8 w-44 bg-slate-200 rounded-lg"></div>
+              </div>
+              <div className="h-3 w-28 bg-slate-200 rounded"></div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl border border-slate-100 h-36 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="h-3 w-32 bg-slate-200 rounded"></div>
+                <div className="h-8 w-24 bg-slate-200 rounded-lg"></div>
+              </div>
+              <div className="h-3 w-28 bg-slate-200 rounded"></div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl border border-slate-100 h-36 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="h-3 w-32 bg-slate-200 rounded"></div>
+                <div className="h-8 w-20 bg-slate-200 rounded-lg"></div>
+              </div>
+              <div className="h-3 w-28 bg-slate-200 rounded"></div>
+            </div>
+          </div>
+
+          {/* Table/List Area Skeleton */}
+          <div className="bg-white p-6 rounded-2xl border border-slate-100 space-y-6">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <div className="h-5 w-36 bg-slate-200 rounded"></div>
+              <div className="h-8 w-24 bg-slate-200 rounded-lg"></div>
+            </div>
+            <div className="space-y-4">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-200 rounded-xl"></div>
+                    <div className="space-y-1.5">
+                      <div className="h-4 w-40 bg-slate-200 rounded"></div>
+                      <div className="h-3 w-24 bg-slate-200 rounded"></div>
+                    </div>
+                  </div>
+                  <div className="h-6 w-16 bg-slate-200 rounded-full"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -1054,12 +1132,101 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               </div>
             </div>
 
-            {/* Showcase Quick Banner */}
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
-              <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Pecinta Brand Visual Identity</h3>
-              <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
-                Setiap merchant di Saloka.id Premium memiliki visual storefront storefront eksklusif. Pelajari tips mendesain brand premium Anda di modul LMS Academy kami untuk menarik lebih banyak pembeli high-end.
-              </p>
+            {/* Additional Banners Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Showcase Quick Banner */}
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
+                <div>
+                  <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Pecinta Brand Visual Identity</h3>
+                  <p className="text-xs text-text-secondary leading-relaxed">
+                    Setiap merchant di Saloka.id Premium memiliki visual storefront storefront eksklusif. Pelajari tips mendesain brand premium Anda di modul LMS Academy kami untuk menarik lebih banyak pembeli high-end.
+                  </p>
+                </div>
+              </div>
+
+              {/* Saloka Bootcamp Banner */}
+              <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100/80 flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-sora text-sm font-bold text-[#0F5132]">Saloka Bootcamp Mentoring</h3>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[#E8F5E9] text-[#0F5132] uppercase tracking-wider">
+                      Oleh Saloka.id
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-secondary leading-relaxed mb-4">
+                    Program inkubasi eksklusif UMKM Saloka untuk meningkatkan penjualan, legalitas bisnis, dan kesiapan modal kerja.
+                  </p>
+                </div>
+
+                <div className="pt-2">
+                  {/* Status & Action */}
+                  {user?.level < 2 ? (
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-semibold text-red-600 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                        Kualifikasi Belum Terpenuhi
+                      </div>
+                      <p className="text-[10px] text-text-secondary leading-normal">
+                        Raih minimal <strong>Level 2</strong> untuk membuka akses pendaftaran Bootcamp. (Tingkat saat ini: Level {user?.level}).
+                      </p>
+                      <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider rounded-xl cursor-not-allowed">
+                        Gabung Bootcamp
+                      </button>
+                    </div>
+                  ) : !user?.bootcampStatus || user?.bootcampStatus === 'NONE' ? (
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-semibold text-amber-600 flex items-center gap-1.5 animate-pulse">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Menunggu Aktivasi dari Admin
+                      </div>
+                      <p className="text-[10px] text-text-secondary leading-normal">
+                        Anda telah mencapai Level {user?.level}. Silakan tunggu admin memverifikasi kualifikasi Anda untuk mengaktifkan tombol pendaftaran.
+                      </p>
+                      <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider rounded-xl cursor-not-allowed">
+                        Gabung Bootcamp
+                      </button>
+                    </div>
+                  ) : user?.bootcampStatus === 'QUALIFIED' ? (
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-semibold text-green-600 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Lolos Kualifikasi - Akses Terbuka!
+                      </div>
+                      <p className="text-[10px] text-text-secondary leading-normal">
+                        Anda memenuhi kualifikasi dari Admin. Klik tombol di bawah untuk bergabung ke Bootcamp Saloka.
+                      </p>
+                      <button
+                        onClick={handleJoinBootcamp}
+                        disabled={isPending}
+                        className="w-full py-2.5 bg-[#0F5132] hover:bg-[#0c4028] text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-[0.98] cursor-pointer"
+                      >
+                        {isPending ? 'Memproses...' : '🚀 Gabung Bootcamp'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-bold text-primary flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Sudah Terdaftar di Bootcamp
+                      </div>
+                      <p className="text-[10px] text-text-secondary leading-normal">
+                        Selamat! Anda telah terdaftar sebagai peserta Bootcamp Saloka. Mentor kami akan segera menghubungi Anda untuk jadwal mentoring.
+                      </p>
+                      <button disabled className="w-full py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold uppercase tracking-wider rounded-xl cursor-default">
+                        ✓ Terdaftar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
-import { login, register } from "@/app/actions/auth";
+import { login, register, getReferralCookie } from "@/app/actions/auth";
 import { getIndukCommunities } from "@/app/actions/community";
 
 interface AuthDialogProps {
@@ -21,6 +21,9 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
   const [tab, setTab] = useState<"login" | "register">(defaultTab);
   
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState(false);
+  const [usernameMsg, setUsernameMsg] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"CUSTOMER" | "MERCHANT" | "AFFILIATE">("CUSTOMER");
@@ -31,13 +34,61 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
   const [communities, setCommunities] = useState<any[]>([]);
   const [selectedCommunityId, setSelectedCommunityId] = useState("");
 
-  // Pre-fill referral code from URL
+  // Pre-fill referral code from URL or cookie
   useEffect(() => {
-    const ref = searchParams?.get("ref") || searchParams?.get("aff");
-    if (ref) {
-      setReferralCode(ref);
-    }
+    getReferralCookie().then((cookieVal) => {
+      if (cookieVal) {
+        setReferralCode(cookieVal);
+      } else {
+        const ref = searchParams?.get("ref") || searchParams?.get("aff");
+        if (ref) {
+          setReferralCode(ref);
+        }
+      }
+    });
   }, [searchParams]);
+
+  // Debounced check username
+  useEffect(() => {
+    if (!username) {
+      setIsUsernameAvailable(false);
+      setUsernameMsg("");
+      return;
+    }
+    
+    if (username.length < 3) {
+      setIsUsernameAvailable(false);
+      setUsernameMsg("Min. 3 karakter");
+      return;
+    }
+
+    const cleaned = username.toLowerCase().trim();
+    const valid = /^[a-z0-9_.-]{3,30}$/.test(cleaned);
+    if (!valid) {
+      setIsUsernameAvailable(false);
+      setUsernameMsg("Format tidak valid");
+      return;
+    }
+    
+    const handler = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(cleaned)}`);
+        const data = await res.json();
+        setIsUsernameAvailable(data.available);
+        setUsernameMsg(data.message);
+      } catch (err) {
+        setIsUsernameAvailable(false);
+        setUsernameMsg("Gagal memeriksa username");
+      }
+    }, 400);
+
+    return () => clearTimeout(handler);
+  }, [username]);
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toLowerCase().replace(/\s/g, "").replace(/[^a-z0-9_.-]/g, "");
+    setUsername(val);
+  };
 
   // Load communities for merchant registration
   useEffect(() => {
@@ -68,8 +119,12 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
     setError(null);
 
     if (tab === "register") {
-      if (!name || !email || !password) {
+      if (!name || !username || !email || !password) {
         setError("Semua kolom wajib diisi.");
+        return;
+      }
+      if (!isUsernameAvailable) {
+        setError("Username tidak tersedia atau tidak valid.");
         return;
       }
       if (role === "MERCHANT" && !selectedCommunityId) {
@@ -85,6 +140,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
       
       if (tab === "register") {
         formData.append("name", name);
+        formData.append("username", username);
         formData.append("role", role);
         if (role === "MERCHANT" && selectedCommunityId) {
           formData.append("communityId", selectedCommunityId);
@@ -141,7 +197,11 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
           </div>
           <DialogHeader className="text-center sm:text-center">
             <DialogTitle className="sm:text-center text-xl font-extrabold tracking-tight">
-              {tab === "login" ? "Masuk ke Saloka.id" : "Gabung Saloka.id"}
+              {tab === "login" ? (
+                <>Masuk ke <span className="text-[#111111] dark:text-[#e3f2e8]">Saloka</span><span className="text-tertiary">.id</span></>
+              ) : (
+                <>Gabung <span className="text-[#111111] dark:text-[#e3f2e8]">Saloka</span><span className="text-tertiary">.id</span></>
+              )}
             </DialogTitle>
             <DialogDescription className="sm:text-center text-xs text-text-secondary mt-1">
               {tab === "login" 
@@ -186,18 +246,43 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
         {/* Auth Form */}
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           {tab === "register" && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <Label htmlFor="dialog-name" className="text-xs font-semibold text-text-secondary">Nama Lengkap</Label>
-              <Input
-                id="dialog-name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Budi Santoso"
-                className="pl-4 py-3"
-              />
-            </div>
+            <>
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Label htmlFor="dialog-name" className="text-xs font-semibold text-text-secondary">Nama Lengkap</Label>
+                <Input
+                  id="dialog-name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Budi Santoso"
+                  className="pl-4 py-3"
+                />
+              </div>
+
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="dialog-username" className="text-xs font-semibold text-text-secondary">Username</Label>
+                  {username && (
+                    <span className={`text-[10px] font-medium ${isUsernameAvailable ? 'text-green-500' : 'text-red-500'}`}>
+                      {usernameMsg}
+                    </span>
+                  )}
+                </div>
+                <Input
+                  id="dialog-username"
+                  type="text"
+                  required
+                  value={username}
+                  onChange={handleUsernameChange}
+                  placeholder="username_anda"
+                  className={`pl-4 py-3 ${username ? (isUsernameAvailable ? 'border-green-500 focus:border-green-500 focus:ring-green-500/20' : 'border-red-500 focus:border-red-500 focus:ring-red-500/20') : ''}`}
+                />
+                <p className="text-[10px] text-text-secondary/70">
+                  Hanya boleh huruf kecil, angka, titik, underscore, atau dash (3-30 karakter). Ini akan menjadi kode referral Anda.
+                </p>
+              </div>
+            </>
           )}
 
           <div className="space-y-2">

@@ -15,7 +15,7 @@ export async function generateMetadata(
   const { subdomain } = await params;
   const user = await DataStore.findUserBySubdomain(subdomain);
   
-  if (!user) {
+  if (!user || user.role !== 'MERCHANT') {
     return {
       title: "Profil Tidak Ditemukan - Saloka.id",
     };
@@ -43,7 +43,7 @@ export default async function SubdomainMainPage({ params }: PageProps) {
   const { subdomain } = await params;
   
   const user = await DataStore.findUserBySubdomain(subdomain);
-  if (!user) {
+  if (!user || user.role !== 'MERCHANT') {
     notFound();
   }
 

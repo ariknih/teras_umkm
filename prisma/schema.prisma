@@ -63,6 +63,25 @@ enum TransactionType {
   COMMISSION
 }
 
+enum CoinTxType {
+  TOPUP
+  REWARD_USER_INVITE
+  REWARD_MERCHANT_INVITE
+  REDEEM_VOUCHER
+  DISTRIBUTE // Ketua distribusi ke member
+}
+
+enum VoucherType {
+  INTERNAL // Voucher diskon platform sendiri
+  EXTERNAL // Voucher pihak ketiga (TikTok, Shopee, dll)
+}
+
+enum RedemptionStatus {
+  PENDING
+  CLAIMED
+  EXPIRED
+}
+
 enum PayoutStatus {
   PENDING
   PAID
@@ -92,6 +111,7 @@ enum LoanStatus {
 model User {
   id           String        @id @default(uuid())
   email        String        @unique
+  username     String?       @unique // Kode referral (unik, tidak bisa sama)
   name         String
   passwordHash String
   role         Role          @default(CUSTOMER)
@@ -100,6 +120,8 @@ model User {
   level        Int           @default(1)
   xp           Int           @default(0)
   points       Float         @default(0.0)
+  coinBalance  Float         @default(0.0) // Saldo coin pribadi
+  bootcampStatus String      @default("NONE") // "NONE", "QUALIFIED", "JOINED"
   landingPageTemplate String?
   landingPageConfig   String?
   landingPageSetup    Boolean       @default(false)
@@ -155,6 +177,14 @@ model User {
   wallet       Wallet?
   notifications Notification[]
   reviews       ProductReview[]
+  
+  // Coin relations
+  coinTransactions  CoinTransaction[]   @relation("UserCoinTx")
+  coinRedemptions   CoinRedemption[]
+  referralsMade     UserReferral[]      @relation("ReferrerUser")  // orang yang diundang oleh user ini
+  referredBy        UserReferral[]      @relation("ReferredUser")  // siapa yang mengundang user ini
+  merchantInvitesSent    MerchantInvite[] @relation("InviterMerchant")
+  merchantInvitesReceived MerchantInvite[] @relation("InviteeMerchant")
 }
 
 model Product {
@@ -483,6 +513,10 @@ model Community {
   joinFee           Float           @default(0)
   monthlyFee        Float           @default(0)
 
+  // Coin komunitas
+  coinBalance       Float           @default(0.0)   // Kas coin komunitas
+  minCoinForLoan    Float           @default(1000.0) // Min coin untuk buka akses pinjaman
+
   isSuspended       Boolean         @default(false)
   isVerified        Boolean         @default(false)
   createdAt         DateTime        @default(now())
@@ -497,6 +531,9 @@ model Community {
 
   // Keuangan Koperasi
   loanRequests      CooperativeLoan[]
+  
+  // Coin komunitas
+  coinTransactions  CoinTransaction[]   @relation("CommunityCoinTx")
 }
 
 model CommunityMembership {
@@ -524,4 +561,99 @@ model CooperativeLoan {
   approvedByAdmin Boolean     @default(false)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sistem Coin (Revisi Pert Kelima)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Log semua transaksi coin (topup, reward undangan, redeem voucher)
+model CoinTransaction {
+  id          String      @id @default(uuid())
+  type        CoinTxType
+  amount      Float       // jumlah coin (positif = masuk, negatif = keluar)
+  description String
+  createdAt   DateTime    @default(now())
+
+  // User yang terlibat (penerima coin)
+  userId      String
+  user        User        @relation("UserCoinTx", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Opsional: dikaitkan dengan komunitas (untuk topup komunitas)
+  communityId String?
+  community   Community?  @relation("CommunityCoinTx", fields: [communityId], references: [id], onDelete: SetNull)
+
+  // Referensi objek terkait (opsional)
+  relatedUserId    String? // user yang diundang / merchant yang diundang
+  relatedVoucherId String? // voucher yang diredeem
+}
+
+// Master daftar voucher yang bisa ditukar coin
+model CoinVoucher {
+  id            String        @id @default(uuid())
+  name          String
+  description   String
+  type          VoucherType   @default(INTERNAL)
+  coinCost      Float         // berapa coin yang dibutuhkan
+  value         Float         // nilai voucher dalam rupiah
+  code          String?       // untuk EXTERNAL: kode voucher yang sudah ada
+  maxRedemption Int           @default(0) // 0 = unlimited
+  totalRedeemed Int           @default(0)
+  isActive      Boolean       @default(true)
+  validUntil    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  redemptions   CoinRedemption[]
+}
+
+// Log penukaran coin ke voucher oleh user
+model CoinRedemption {
+  id          String            @id @default(uuid())
+  coinSpent   Float
+  status      RedemptionStatus  @default(PENDING)
+  claimCode   String?           // kode unik yang digenerate untuk user (INTERNAL)
+  claimedAt   DateTime?
+  createdAt   DateTime          @default(now())
+
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  voucherId   String
+  voucher     CoinVoucher       @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+}
+
+// Log undangan user (siapa mengundang siapa — semua role)
+// Reward: +1 coin untuk pengundang
+model UserReferral {
+  id              String    @id @default(uuid())
+  coinAwarded     Float     @default(1.0)
+  isRewarded      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  referrerId      String
+  referrer        User      @relation("ReferrerUser", fields: [referrerId], references: [id], onDelete: Cascade)
+
+  referredId      String
+  referred        User      @relation("ReferredUser", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@unique([referrerId, referredId])
+}
+
+// Log undangan merchant ke komunitas yang sama
+// Reward: COIN (PERKUMPULAN) atau SALDO WALLET (KOPERASI)
+model MerchantInvite {
+  id              String    @id @default(uuid())
+  communityId     String
+  communityType   String    // 'PERKUMPULAN' | 'KOPERASI'
+  rewardType      String    // 'COIN' | 'SALDO'
+  rewardAmount    Float     @default(1.0)
+  isRewarded      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  inviterId       String
+  inviter         User      @relation("InviterMerchant", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  inviteeId       String
+  invitee         User      @relation("InviteeMerchant", fields: [inviteeId], references: [id], onDelete: Cascade)
 }

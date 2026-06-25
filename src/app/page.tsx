@@ -35,7 +35,7 @@ export default async function HomePage() {
         <div className="relative z-10 max-w-[630px] flex flex-col gap-8 bg-white/40 md:bg-transparent p-6 rounded-2xl md:p-0 backdrop-blur-sm md:backdrop-blur-none">
           <h1 className="text-text-primary text-4xl md:text-6xl font-bold leading-tight">
             Berniaga mudah <br className="hidden md:block" />
-            hanya di <span className="text-tertiary">Saloka.id</span>
+            hanya di <span className="text-text-primary">Saloka</span><span className="text-tertiary">.id</span>
           </h1>
           <p className="text-text-primary text-lg md:text-xl font-normal leading-relaxed">
             Memperluas jangkauan toko, jasa, atau komunitas sekarang menjadi semakin mudah!

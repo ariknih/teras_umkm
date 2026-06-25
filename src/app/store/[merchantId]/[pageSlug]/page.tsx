@@ -14,7 +14,7 @@ export async function generateMetadata(
   const { merchantId, pageSlug } = await params;
   const user = await getUserProfileById(merchantId);
   
-  if (!user) {
+  if (!user || user.role !== 'MERCHANT') {
     return { title: "Halaman Tidak Ditemukan" };
   }
 
@@ -40,7 +40,7 @@ export default async function StoreSubPage({ params }: PageProps) {
   const { merchantId, pageSlug } = await params;
   const user = await getUserProfileById(merchantId);
   
-  if (!user) {
+  if (!user || user.role !== 'MERCHANT') {
     notFound();
   }
 

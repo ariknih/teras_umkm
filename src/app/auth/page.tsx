@@ -2,7 +2,7 @@
  
 import React, { useState, useTransition, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { login, register } from '@/app/actions/auth'
+import { login, register, getReferralCookie } from '@/app/actions/auth'
 import { getIndukCommunities } from '@/app/actions/community'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Logo } from '@/components/Logo'
@@ -16,6 +16,9 @@ function AuthContent() {
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [showForm, setShowForm] = useState(false)
   const [name, setName] = useState('')
+  const [username, setUsername] = useState('')
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState(false)
+  const [usernameMsg, setUsernameMsg] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState<'CUSTOMER' | 'MERCHANT' | 'AFFILIATE'>('CUSTOMER')
@@ -26,11 +29,59 @@ function AuthContent() {
   const [selectedCommunityId, setSelectedCommunityId] = useState('')
 
   useEffect(() => {
-    const ref = searchParams.get('ref') || searchParams.get('aff')
-    if (ref) {
-      setReferralCode(ref)
-    }
+    getReferralCookie().then((cookieVal) => {
+      if (cookieVal) {
+        setReferralCode(cookieVal)
+      } else {
+        const ref = searchParams.get('ref') || searchParams.get('aff')
+        if (ref) {
+          setReferralCode(ref)
+        }
+      }
+    })
   }, [searchParams])
+
+  // Debounced check username
+  useEffect(() => {
+    if (!username) {
+      setIsUsernameAvailable(false)
+      setUsernameMsg('')
+      return
+    }
+    
+    if (username.length < 3) {
+      setIsUsernameAvailable(false)
+      setUsernameMsg('Min. 3 karakter')
+      return
+    }
+
+    const cleaned = username.toLowerCase().trim()
+    const valid = /^[a-z0-9_.-]{3,30}$/.test(cleaned)
+    if (!valid) {
+      setIsUsernameAvailable(false)
+      setUsernameMsg('Format tidak valid')
+      return
+    }
+    
+    const handler = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/auth/check-username?username=${encodeURIComponent(cleaned)}`)
+        const data = await res.json()
+        setIsUsernameAvailable(data.available)
+        setUsernameMsg(data.message)
+      } catch (err) {
+        setIsUsernameAvailable(false)
+        setUsernameMsg('Gagal memeriksa username')
+      }
+    }, 400)
+
+    return () => clearTimeout(handler)
+  }, [username])
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toLowerCase().replace(/\s/g, '').replace(/[^a-z0-9_.-]/g, '')
+    setUsername(val)
+  }
 
   useEffect(() => {
     const tabParam = searchParams.get('tab')
@@ -69,8 +120,12 @@ function AuthContent() {
     setError(null)
 
     if (tab === 'register') {
-      if (!name || !email || !password) {
+      if (!name || !username || !email || !password) {
         setError('Semua kolom wajib diisi.')
+        return
+      }
+      if (!isUsernameAvailable) {
+        setError('Username tidak tersedia atau tidak valid.')
         return
       }
       if (role === 'MERCHANT' && !selectedCommunityId) {
@@ -86,6 +141,7 @@ function AuthContent() {
       
       if (tab === 'register') {
         formData.append('name', name)
+        formData.append('username', username)
         formData.append('role', role)
         if (role === 'MERCHANT' && selectedCommunityId) {
           formData.append('communityId', selectedCommunityId)
@@ -135,7 +191,7 @@ function AuthContent() {
           </div>
           <div className="text-center mt-2">
             <h2 className="text-xl font-extrabold tracking-tight text-on-surface font-sora">
-              Saloka.id
+              <span>Saloka</span><span className="text-tertiary">.id</span>
             </h2>
             <p className="text-xs text-text-secondary mt-1">
               Digitalisasi Usaha & Layanan Terintegrasi
@@ -277,18 +333,43 @@ function AuthContent() {
       {/* Auth Form */}
       <form onSubmit={handleSubmit} className="w-full space-y-4">
         {tab === "register" && (
-          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-            <Label htmlFor="page-name" className="text-xs font-semibold text-text-secondary">Nama Lengkap</Label>
-            <Input
-              id="page-name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Budi Santoso"
-              className="pl-4 py-3"
-            />
-          </div>
+          <>
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <Label htmlFor="page-name" className="text-xs font-semibold text-text-secondary">Nama Lengkap</Label>
+              <Input
+                id="page-name"
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Budi Santoso"
+                className="pl-4 py-3"
+              />
+            </div>
+            
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="page-username" className="text-xs font-semibold text-text-secondary">Username</Label>
+                {username && (
+                  <span className={`text-[10px] font-medium ${isUsernameAvailable ? 'text-green-500' : 'text-red-500'}`}>
+                    {usernameMsg}
+                  </span>
+                )}
+              </div>
+              <Input
+                id="page-username"
+                type="text"
+                required
+                value={username}
+                onChange={handleUsernameChange}
+                placeholder="username_anda"
+                className={`pl-4 py-3 ${username ? (isUsernameAvailable ? 'border-green-500 focus:border-green-500 focus:ring-green-500/20' : 'border-red-500 focus:border-red-500 focus:ring-red-500/20') : ''}`}
+              />
+              <p className="text-[10px] text-text-secondary/70">
+                Hanya boleh huruf kecil, angka, titik, underscore, atau dash (3-30 karakter). Ini akan menjadi kode referral Anda.
+              </p>
+            </div>
+          </>
         )}
 
         <div className="space-y-2">

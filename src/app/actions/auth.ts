@@ -73,6 +73,7 @@ export async function register(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const roleStr = formData.get('role') as string // 'CUSTOMER' | 'MERCHANT' | 'AFFILIATE'
+  const usernameRaw = formData.get('username') as string
   
   if (!name || !email || !password || !roleStr) {
     return { error: 'Semua kolom wajib diisi' }
@@ -82,27 +83,50 @@ export async function register(formData: FormData) {
   if (!['CUSTOMER', 'MERCHANT', 'AFFILIATE'].includes(role)) {
     return { error: 'Role tidak valid' }
   }
+
+  // Validasi username jika diberikan
+  let finalUsername: string | undefined = undefined
+  if (usernameRaw) {
+    const cleaned = usernameRaw.toLowerCase().trim().replace(/[^a-z0-9_.-]/g, '')
+    if (cleaned.length < 3) {
+      return { error: 'Username minimal 3 karakter.' }
+    }
+    const taken = await DataStore.isUsernameTaken(cleaned)
+    if (taken) {
+      return { error: 'Username sudah digunakan. Silakan pilih yang lain.' }
+    }
+    finalUsername = cleaned
+  }
   
   const existing = await DataStore.findUserByEmail(email)
   if (existing) {
     return { error: 'Email sudah terdaftar' }
   }
 
-  // Referral Cookie Lock (Revisi Pert Keempat)
-  // Priority: 1) affiliate_ref cookie, 2) referralCode from form
+  // Referral: Cookie first-touch (TIDAK bisa di-override)
+  // Lookup by USERNAME (bukan ID/email)
   const cookieStore = await cookies()
   const affiliateRefCookie = cookieStore.get('affiliate_ref')?.value
   const referralCode = formData.get('referralCode') as string || undefined
+  // Cookie adalah first-touch lock; form input hanya dipakai kalau tidak ada cookie
   const effectiveReferral = affiliateRefCookie || referralCode
 
   let parentAffiliateId: string | undefined = undefined
+  let referrerId: string | undefined = undefined
   if (effectiveReferral) {
-    let referrer = await DataStore.findUserById(effectiveReferral)
+    // Coba lookup by username dulu
+    let referrer = await DataStore.findUserByUsername(effectiveReferral)
     if (!referrer) {
+      // Fallback: coba by ID (backward compat)
+      referrer = await DataStore.findUserById(effectiveReferral)
+    }
+    if (!referrer) {
+      // Fallback: coba by email (backward compat)
       referrer = await DataStore.findUserByEmail(effectiveReferral)
     }
     if (referrer) {
       parentAffiliateId = referrer.id
+      referrerId = referrer.id
     }
   }
 
@@ -110,14 +134,34 @@ export async function register(formData: FormData) {
   const communityId = formData.get('communityId') as string || undefined
 
   const passwordHash = hashPassword(password)
-  const user = await DataStore.createUser({ email, name, passwordHash, role, parentAffiliateId })
+  const user = await DataStore.createUser({
+    email,
+    name,
+    passwordHash,
+    role,
+    parentAffiliateId,
+    username: finalUsername,
+  })
 
   // If merchant selected an induk community during registration, join it
   if (communityId && (role === 'MERCHANT' || role === 'AFFILIATE')) {
     try {
       await DataStore.joinCommunity(user.id, communityId, true) // asInduk = true
     } catch (_) {
-      // Non-blocking: community join failure shouldn't block registration
+      // Non-blocking
+    }
+  }
+
+  // Reward +1 coin ke pengundang (semua role)
+  if (referrerId) {
+    try {
+      await DataStore.rewardUserInviteCoin({
+        referrerId,
+        referredId: user.id,
+        coinAmount: 1.0,
+      })
+    } catch (_) {
+      // Non-blocking: reward gagal tidak halangi registrasi
     }
   }
   
@@ -373,4 +417,61 @@ export async function checkWhatsAppUnique(whatsapp: string) {
 
 export async function getUserProfileBySubdomain(subdomain: string) {
   return await DataStore.findUserBySubdomain(subdomain)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Username Actions (Revisi Pert Kelima)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function checkUsernameAvailability(username: string) {
+  const user = await getCurrentUser()
+  const cleaned = username.toLowerCase().trim()
+  if (!/^[a-z0-9_.-]{3,30}$/.test(cleaned)) {
+    return { available: false, message: 'Format username tidak valid (3-30 karakter, huruf kecil/angka/_/./-)' }
+  }
+  const taken = await DataStore.isUsernameTaken(cleaned, user?.id)
+  return { available: !taken, message: taken ? 'Username sudah digunakan' : 'Username tersedia' }
+}
+
+export async function updateUsernameAction(username: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const cleaned = username.toLowerCase().trim()
+  if (!/^[a-z0-9_.-]{3,30}$/.test(cleaned)) {
+    return { error: 'Username hanya boleh huruf kecil, angka, titik, underscore, atau dash (3-30 karakter).' }
+  }
+
+  const taken = await DataStore.isUsernameTaken(cleaned, user.id)
+  if (taken) {
+    return { error: 'Username sudah digunakan. Silakan pilih yang lain.' }
+  }
+
+  try {
+    await DataStore.setUsername(user.id, cleaned)
+    revalidatePath('/settings')
+    revalidatePath('/profile')
+    return { success: true, username: cleaned, referralLink: `/ref/${cleaned}` }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menyimpan username.' }
+  }
+}
+
+export async function getReferralInfo() {
+  const user = await getCurrentUser()
+  if (!user) return null
+  const profile = await DataStore.findUserById(user.id)
+  if (!profile) return null
+  const username = (profile as any).username
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://saloka.id'
+  return {
+    username: username || null,
+    referralLink: username ? `${appUrl}/ref/${username}` : null,
+    coinBalance: (profile as any).coinBalance || 0,
+  }
+}
+
+export async function getReferralCookie() {
+  const cookieStore = await cookies()
+  return cookieStore.get('affiliate_ref')?.value || null
 }

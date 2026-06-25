@@ -123,13 +123,17 @@ export default function OnboardingPage() {
           router.push('/auth')
           return
         }
+        if (profile.role !== 'MERCHANT') {
+          router.push('/')
+          return
+        }
         setUser(profile)
         // If already completed onboarding, redirect to dashboard
         if (profile.landingPageSetup) {
           if (typeof window !== 'undefined' && profile.id) {
             localStorage.setItem(`onboarding_completed_${profile.id}`, 'true')
           }
-          router.push(profile.role === 'MERCHANT' ? '/merchant/dashboard' : '/')
+          router.push('/merchant/dashboard')
         }
       } catch (err) {
         console.error(err)

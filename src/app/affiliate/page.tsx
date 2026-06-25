@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react'
+import { goeyToast } from 'goey-toast'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -300,6 +301,7 @@ export default function AffiliatePage() {
 
     if (!selectedProductId || !customSlug) {
       setLinkError('Mohon isi semua kolom.')
+      goeyToast.error('Mohon isi semua kolom.')
       return
     }
 
@@ -307,8 +309,10 @@ export default function AffiliatePage() {
       const res = await createCustomAffiliateLink(selectedProductId, customSlug, linkSource)
       if (res.error) {
         setLinkError(res.error)
+        goeyToast.error(res.error)
       } else {
         setLinkSuccess('Link affiliate kustom berhasil dibuat!')
+        goeyToast.success('Link affiliate kustom berhasil dibuat!')
         setCustomSlug('')
         setLinkSource('direct')
         // reload stats for updated list
@@ -324,7 +328,9 @@ export default function AffiliatePage() {
 
     const cost = tier === 'Platinum' ? 250000 : 500000
     if (!wallet || wallet.balance < cost) {
-      setUpgradeError(`Saldo tidak mencukupi. Anda membutuhkan Rp ${cost.toLocaleString('id-ID')} untuk upgrade ke ${tier}.`)
+      const errorMsg = `Saldo tidak mencukupi. Anda membutuhkan Rp ${cost.toLocaleString('id-ID')} untuk upgrade ke ${tier}.`
+      setUpgradeError(errorMsg)
+      goeyToast.error(errorMsg)
       return
     }
 
@@ -333,8 +339,11 @@ export default function AffiliatePage() {
         const res = await upgradeMembershipAccess(tier)
         if (res.error) {
           setUpgradeError(res.error)
+          goeyToast.error(res.error)
         } else {
-          setUpgradeSuccess(`Selamat! Keanggotaan Anda berhasil di-upgrade ke akses ${tier}.`)
+          const successMsg = `Selamat! Keanggotaan Anda berhasil di-upgrade ke akses ${tier}.`
+          setUpgradeSuccess(successMsg)
+          goeyToast.success(successMsg)
           await loadData()
           router.refresh()
         }
@@ -410,10 +419,30 @@ export default function AffiliatePage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark">
-        <span className="text-xs font-geist font-bold text-primary tracking-widest uppercase animate-pulse">
-          Memuat Ledger Afiliasi Premium...
-        </span>
+      <div className="min-h-screen bg-[#F4F7F5] p-6 md:p-10 animate-pulse flex flex-col items-center">
+        <div className="w-full max-w-[1280px] mt-6">
+          {/* Header Skeleton */}
+          <div className="h-10 bg-slate-200 w-1/4 rounded mb-6"></div>
+          <div className="h-4 bg-slate-200 w-1/3 rounded mb-10"></div>
+          
+          {/* Tabs Skeleton */}
+          <div className="flex gap-2 mb-8 border-b border-slate-200 pb-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-8 bg-slate-200 w-24 rounded"></div>
+            ))}
+          </div>
+          
+          {/* Main Grid Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="border border-slate-200 p-6 rounded-2xl bg-white space-y-4 shadow-sm">
+                <div className="h-4 bg-slate-200 w-1/2 rounded"></div>
+                <div className="h-8 bg-slate-200 w-3/4 rounded"></div>
+                <div className="h-3 bg-slate-200 w-1/3 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -501,12 +530,12 @@ export default function AffiliatePage() {
               href={`/profile/${user.id}`}
               className="px-3 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle rounded text-xs font-geist text-text-primary transition-colors flex items-center gap-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-[#2DB24A]">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
-              Lihat Halaman Landing Anda
+              Lihat Profil Anda
             </Link>
-            <span className="btn-primary bg-primary/10 border border-primary/25 text-[10px] text-primary">
+            <span className="btn-primary bg-[#2DB24A]/10 border border-[#2DB24A]/25 text-[10px] text-[#0F5132]">
               Akses: {user.membershipAccess} ({user.membershipLevel})
             </span>
           </div>
@@ -521,7 +550,6 @@ export default function AffiliatePage() {
             { id: 'network', name: 'Downline Jaringan' },
             { id: 'leaderboard', name: 'Leaderboard' },
             { id: 'upgrades', name: 'Pusat Upgrade' },
-            { id: 'customizer', name: 'Customizer Landing Page' },
             { id: 'academy', name: 'LMS Academy' }
           ].map((tab) => (
             <button
@@ -529,8 +557,8 @@ export default function AffiliatePage() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-5 py-3.5 text-xs font-geist font-bold uppercase tracking-wider border-b-2 whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'border-primary text-primary bg-primary/5'
-                  : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-white/5'
+                  ? 'border-[#2DB24A] text-[#2DB24A] bg-[#2DB24A]/5'
+                  : 'border-transparent text-text-secondary hover:text-[#0F5132] hover:bg-slate-50'
               }`}
             >
               {tab.name}
@@ -1348,248 +1376,7 @@ export default function AffiliatePage() {
           </div>
         )}
 
-        {/* 6. CUSTOMIZER TAB */}
-        {activeTab === 'customizer' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fadeIn">
-            {/* Visual Builder Sidebar (Left, 5 cols) */}
-            <div className="lg:col-span-5 border border-border-subtle bg-surface-dark p-6 rounded-lg space-y-6">
-              <div>
-                <h3 className="font-sora text-base font-bold text-text-primary mb-1">
-                  Elementor Landing Page Builder
-                </h3>
-                <p className="text-xs text-text-secondary">
-                  Gunakan visual panel ini untuk mengatur desain visual, kontak usaha, dan geolokasi Anda.
-                </p>
-              </div>
 
-              {custSuccess && (
-                <div className="p-3 bg-green-500/10 border border-green-500/20 text-xs text-green-400 rounded">
-                  {custSuccess}
-                </div>
-              )}
-              {custError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 text-xs text-red-400 rounded">
-                  {custError}
-                </div>
-              )}
-
-              <form onSubmit={handleSaveCustomizer} className="space-y-5 text-xs">
-                {/* Select Template */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">
-                    Pilih Desain Tema Halaman
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {TEMPLATE_OPTIONS.map((tpl) => (
-                      <button
-                        key={tpl.id}
-                        type="button"
-                        onClick={() => setCustTemplate(tpl.id)}
-                        className={`p-3 rounded text-left border text-[11px] transition-all flex flex-col justify-between min-h-[70px] ${
-                          custTemplate === tpl.id
-                            ? 'border-primary bg-primary/5 text-primary'
-                            : 'border-border-subtle bg-surface-container/50 text-text-secondary hover:border-white/10'
-                        }`}
-                      >
-                        <span className="font-bold">{tpl.name}</span>
-                        <span className="text-[9px] opacity-75">{tpl.desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Form Fields */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
-                      Nama Brand / Judul Halaman
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={custTitle}
-                      onChange={(e) => setCustTitle(e.target.value)}
-                      placeholder="e.g. Kala Artisan Bakery"
-                      className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
-                      Bio Ringkas Usaha
-                    </label>
-                    <textarea
-                      required
-                      value={custBio}
-                      onChange={(e) => setCustBio(e.target.value)}
-                      placeholder="Tulis deskripsi bisnis premium Anda..."
-                      rows={3}
-                      className="w-full p-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
-                        WhatsApp (e.g. 62812345)
-                      </label>
-                      <input
-                        type="text"
-                        value={custPhone}
-                        onChange={(e) => setCustPhone(e.target.value)}
-                        placeholder="62812345678"
-                        className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
-                        Instagram (e.g. @username)
-                      </label>
-                      <input
-                        type="text"
-                        value={custInstagram}
-                        onChange={(e) => setCustInstagram(e.target.value)}
-                        placeholder="@kala.studio"
-                        className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Section Toggles */}
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">
-                    Aktifkan Modul Komponen Halaman
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'hero', name: 'Hero Header' },
-                      { id: 'profile', name: 'Tentang & Kontak' },
-                      { id: 'features', name: 'Fitur Unggulan' },
-                      { id: 'products', name: 'Produk Showcase' },
-                      { id: 'map', name: 'GPS Radar Map' },
-                      { id: 'cta', name: 'Hubungi WhatsApp' }
-                    ].map((sec) => {
-                      const isActive = custSections.includes(sec.id)
-                      return (
-                        <button
-                          key={sec.id}
-                          type="button"
-                          onClick={() => toggleSection(sec.id)}
-                          className={`flex items-center justify-between p-2.5 rounded border text-[11px] font-medium transition-all ${
-                            isActive
-                              ? 'border-primary/40 bg-primary/5 text-text-primary'
-                              : 'border-border-subtle bg-surface-container/20 text-text-secondary hover:border-white/5'
-                          }`}
-                        >
-                          <span>{sec.name}</span>
-                          <span className={isActive ? 'text-primary' : 'text-text-secondary/50'}>
-                            {isActive ? '✓ ON' : '✗ OFF'}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* GPS Location Panel */}
-                <div className="border border-border-subtle p-4 rounded-lg bg-surface-container/50 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-geist font-bold uppercase tracking-wider text-text-secondary">
-                      Lokasi GPS Merchant
-                    </span>
-                    <button
-                      type="button"
-                      onClick={getGpsCoords}
-                      className="btn-primary text-[9px]"
-                    >
-                      Dapatkan GPS Anda
-                    </button>
-                  </div>
-                  
-                  {gpsStatus === 'detecting' && (
-                    <span className="text-[10px] text-primary animate-pulse block">⌛ Menghubungi satelit GPS browser...</span>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 text-[10px] font-mono text-text-secondary">
-                    <div>
-                      <span>LATITUDE:</span>
-                      <span className="block p-2 bg-black rounded border border-white/5 text-white font-bold mt-1">
-                        {custLat ? custLat.toFixed(5) : '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span>LONGITUDE:</span>
-                      <span className="block p-2 bg-black rounded border border-white/5 text-white font-bold mt-1">
-                        {custLng ? custLng.toFixed(5) : '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[9px] text-text-secondary/80 leading-relaxed block">
-                    * Lokasi GPS digunakan untuk mengukur jarak relatif dan mengurutkan produk di marketplace jasa.
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSavingCust}
-                  className="btn-primary w-full text-xs disabled:opacity-50"
-                >
-                  {isSavingCust ? 'Menyimpan...' : 'Simpan & Publikasikan Landing Page (+50 XP)'}
-                </button>
-              </form>
-            </div>
-
-            {/* Visual Builder Live Preview (Right, 7 cols) */}
-            <div className="lg:col-span-7 flex flex-col">
-              <span className="text-[10px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-2 block">
-                Live Preview (Simulasi Responsif)
-              </span>
-
-              {/* Preview Window */}
-              <div className="flex-grow border border-border-subtle rounded-lg bg-black overflow-hidden flex flex-col min-h-[500px]">
-                {/* Browser bar */}
-                <div className="h-10 bg-surface-container border-b border-border-subtle px-4 flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
-                  </div>
-                  <div className="bg-black/40 border border-white/5 rounded px-3 py-1 text-[10px] text-text-secondary font-mono flex-grow max-w-xs text-center truncate select-all">
-                    {originUrl}/profile/{user.id}
-                  </div>
-                </div>
-
-                {/* Real-time Visual Preview Area */}
-                <div className="flex-grow overflow-y-auto scrollbar-thin transition-all duration-300 relative bg-[#121314] max-h-[550px]">
-                  <LandingPageRenderer
-                    templateId={custTemplate}
-                    user={user}
-                    config={{
-                      title: custTitle,
-                      bio: custBio,
-                      phone: custPhone,
-                      instagram: custInstagram,
-                      logoUrl: user.logoUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop&q=80",
-                      locationName: user.locationName || 'Jakarta, Indonesia',
-                      sections: custSections,
-                      testimonials: [],
-                      faq: [],
-                      galleryTitle: 'Galeri Foto Kami',
-                      galleryDesc: 'Lihat portofolio dan dokumentasi kami...',
-                      galleryItems: [],
-                      footerText: custTitle || user.name,
-                      footerTagline: 'Pilihan terbaik untuk produk dan jasa berkualitas premium.',
-                      footerCopyright: `© 2026 ${custTitle || user.name}. Hak Cipta Dilindungi.`
-                    }}
-                    products={[]}
-                    isEditable={false}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {activeTab === 'academy' && (
           <div className="space-y-6 animate-fadeIn">

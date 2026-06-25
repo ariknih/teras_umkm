@@ -393,13 +393,22 @@ export default function CommunityDetailPage() {
 
           <div className="w-full md:w-auto flex flex-col gap-2">
             {isKetua && (
-              <button
-                onClick={() => setEditModalOpen(true)}
-                className="w-full md:w-auto px-6 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 shadow-lg shadow-yellow-500/15"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Edit Landing Page
-              </button>
+              <>
+                <Link
+                  href={`/community/${id}/coin`}
+                  className="w-full md:w-auto px-6 py-2.5 bg-green-700 hover:bg-green-800 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 shadow-lg shadow-green-700/15 cursor-pointer"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Koin Komunitas
+                </Link>
+                <button
+                  onClick={() => setEditModalOpen(true)}
+                  className="w-full md:w-auto px-6 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center flex items-center justify-center gap-1.5 shadow-lg shadow-yellow-500/15"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Edit Landing Page
+                </button>
+              </>
             )}
             {isMember ? (
               <>
@@ -508,13 +517,57 @@ export default function CommunityDetailPage() {
                   </div>
                   {!isKetua && (
                     <button
-                      onClick={() => setLoanModalOpen(true)}
-                      className="px-4 py-2 bg-primary text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow"
+                      onClick={() => {
+                        if ((community.coinBalance || 0) < (community.minCoinForLoan || 1000)) {
+                          goeyToast.error('Akses pinjaman modal terkunci karena koin kas komunitas belum mencapai 1000 koin.')
+                          return
+                        }
+                        setLoanModalOpen(true)
+                      }}
+                      className={`px-4 py-2 text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg flex items-center gap-1.5 shadow ${
+                        (community.coinBalance || 0) < (community.minCoinForLoan || 1000)
+                          ? 'bg-neutral-400 cursor-not-allowed opacity-60'
+                          : 'bg-primary'
+                      }`}
                     >
                       <PlusCircle className="w-3.5 h-3.5" />
                       Ajukan Modal
                     </button>
                   )}
+                </div>
+
+                {/* Coin Status Indicator */}
+                <div className="p-4 bg-green-500/5 border border-green-500/10 rounded-2xl space-y-3">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-semibold text-text-primary flex items-center gap-1.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-yellow-500">
+                        <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A.75.75 0 0 0 9 9h1.5v2.25H9a.75.75 0 0 0 0 1.5h1.5V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-3V9H15a.75.75 0 0 0 0-1.5H9Z" clipRule="evenodd" />
+                      </svg>
+                      Kas Koin Komunitas
+                    </span>
+                    <span className="font-bold text-text-primary">
+                      {community.coinBalance || 0} / {community.minCoinForLoan || 1000} Koin
+                    </span>
+                  </div>
+                  <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all ${
+                        (community.coinBalance || 0) >= (community.minCoinForLoan || 1000) ? 'bg-green-500' : 'bg-yellow-500'
+                      }`}
+                      style={{ width: `${Math.min(100, ((community.coinBalance || 0) / (community.minCoinForLoan || 1000)) * 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-text-secondary leading-normal">
+                    {(community.coinBalance || 0) >= (community.minCoinForLoan || 1000) ? (
+                      <span className="text-green-600 font-semibold flex items-center gap-1">
+                        ✓ Akses pinjaman modal aktif. Anggota dapat mengajukan pinjaman.
+                      </span>
+                    ) : (
+                      <span className="text-amber-600 font-semibold flex items-center gap-1">
+                        ⚠ Akses pinjaman modal terkunci. Komunitas memerlukan minimal {community.minCoinForLoan || 1000} koin agar anggota dapat mengajukan pinjaman.
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 {/* Loan Request list */}

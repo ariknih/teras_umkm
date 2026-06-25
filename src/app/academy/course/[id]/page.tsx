@@ -86,6 +86,8 @@ export default async function CoursePage({ params }: PageProps) {
           userAccess={userProfile?.membershipAccess || "Gold"}
           courseAccessRequired={course.accessRequired || "Gold"}
           purchasedCourseIds={purchasedCourseIds}
+          isBootcampJoined={userProfile?.bootcampStatus === 'JOINED'}
+          isAdmin={userProfile?.role === 'ADMIN'}
         />
       </div>
     </div>

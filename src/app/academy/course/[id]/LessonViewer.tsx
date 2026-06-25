@@ -24,6 +24,8 @@ interface LessonViewerProps {
   userAccess: string
   courseAccessRequired: string
   purchasedCourseIds?: string[]
+  isBootcampJoined?: boolean
+  isAdmin?: boolean
 }
 
 export default function LessonViewer({
@@ -36,6 +38,8 @@ export default function LessonViewer({
   userAccess,
   courseAccessRequired,
   purchasedCourseIds = [],
+  isBootcampJoined = false,
+  isAdmin = false,
 }: LessonViewerProps) {
   const router = useRouter()
   const [activeId, setActiveId] = useState(initialActiveLessonId)
@@ -48,7 +52,15 @@ export default function LessonViewer({
   const userRank = levels[userAccess] || 1
   const reqRank = levels[courseAccessRequired] || 1
   const hasPurchased = purchasedCourseIds.includes(courseId)
-  const isLocked = userRank < reqRank && !hasPurchased
+  
+  let isLocked = false
+  if (isAdmin) {
+    isLocked = false
+  } else if (courseAccessRequired === 'Bootcamp') {
+    isLocked = !isBootcampJoined
+  } else {
+    isLocked = userRank < reqRank && !hasPurchased
+  }
 
   let price = 50000
   if (courseId === 'course-brand-1') price = 150000
@@ -143,48 +155,75 @@ export default function LessonViewer({
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" />
               </svg>
-            </div>
-
-            <div className="space-y-3 max-w-md">
+            </div>             <div className="space-y-3 max-w-md">
               <h3 className="font-sora text-xl font-bold text-text-primary">Materi Eksklusif Terkunci</h3>
               <p className="text-xs text-text-secondary leading-relaxed">
-                Modul ini hanya dapat diakses oleh anggota dengan tingkat <span className="text-primary font-bold">{courseAccessRequired}</span> atau lebih tinggi.
+                {courseAccessRequired === 'Bootcamp'
+                  ? 'Modul ini khusus bagi merchant terdaftar Program Saloka Bootcamp. Silakan gabung via dashboard merchant Anda.'
+                  : `Modul ini hanya dapat diakses oleh anggota dengan tingkat ${courseAccessRequired} atau lebih tinggi.`}
               </p>
             </div>
 
             {/* Info Box */}
             <div className="w-full max-w-md bg-surface-container/60 border border-border-subtle p-4 rounded-lg flex flex-col gap-2 text-left">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-text-secondary">Tingkat Akses Anda:</span>
-                <span className="text-text-primary font-bold uppercase">{userAccess}</span>
-              </div>
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-text-secondary">Tingkat Akses Diperlukan:</span>
-                <span className="text-primary font-bold uppercase">{courseAccessRequired}</span>
-              </div>
+              {courseAccessRequired === 'Bootcamp' ? (
+                <div className="text-xs text-center text-text-secondary font-medium">
+                  Persyaratan: Akses keanggotaan <strong>Bootcamp Saloka</strong> Aktif.
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-text-secondary">Tingkat Akses Anda:</span>
+                    <span className="text-text-primary font-bold uppercase">{userAccess}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-text-secondary">Tingkat Akses Diperlukan:</span>
+                    <span className="text-primary font-bold uppercase">{courseAccessRequired}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col gap-3 w-full max-w-xs justify-center pt-2">
-              <button
-                id="btn-purchase-course"
-                onClick={handlePurchase}
-                disabled={isPending}
-                className="w-full py-3.5 bg-primary hover:bg-primary/90 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300 shadow-md shadow-primary/10 cursor-pointer"
-              >
-                {isPending ? 'Memproses...' : `Beli Kelas (Rp ${price.toLocaleString('id-ID')})`}
-              </button>
-              <Link
-                href="/affiliate"
-                className="w-full py-3 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300 shadow-sm"
-              >
-                Upgrade Keanggotaan
-              </Link>
-              <Link
-                href="/academy"
-                className="w-full py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/30 text-text-secondary hover:text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300"
-              >
-                Cari Kelas Lain
-              </Link>
+              {courseAccessRequired === 'Bootcamp' ? (
+                <>
+                  <Link
+                    href="/merchant/dashboard"
+                    className="w-full py-3.5 bg-primary hover:bg-primary/90 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300 shadow-md shadow-primary/10"
+                  >
+                    Buka Dashboard Merchant
+                  </Link>
+                  <Link
+                    href="/academy"
+                    className="w-full py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/30 text-text-secondary hover:text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300"
+                  >
+                    Cari Kelas Lain
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <button
+                    id="btn-purchase-course"
+                    onClick={handlePurchase}
+                    disabled={isPending}
+                    className="w-full py-3.5 bg-primary hover:bg-primary/90 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300 shadow-md shadow-primary/10 cursor-pointer"
+                  >
+                    {isPending ? 'Memproses...' : `Beli Kelas (Rp ${price.toLocaleString('id-ID')})`}
+                  </button>
+                  <Link
+                    href="/affiliate"
+                    className="w-full py-3 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300 shadow-sm"
+                  >
+                    Upgrade Keanggotaan
+                  </Link>
+                  <Link
+                    href="/academy"
+                    className="w-full py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/30 text-text-secondary hover:text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-xl text-center transition-all duration-300"
+                  >
+                    Cari Kelas Lain
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         ) : activeLesson ? (

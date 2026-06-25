@@ -20,11 +20,12 @@ export async function updateUserRoleAndLevelAction(
   level: number,
   xp: number,
   membershipLevel: string,
-  membershipAccess: string
+  membershipAccess: string,
+  bootcampStatus?: string
 ) {
   await ensureAdmin()
   try {
-    await DataStore.updateUserRoleAndLevel(userId, role, level, xp, membershipLevel, membershipAccess)
+    await DataStore.updateUserRoleAndLevel(userId, role, level, xp, membershipLevel, membershipAccess, bootcampStatus)
     revalidatePath('/admin')
     return { success: true }
   } catch (e: any) {

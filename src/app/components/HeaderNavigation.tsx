@@ -75,6 +75,12 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   </span>
                 </Link>
 
+                <Link href="/wallet/coin" className="hidden sm:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full hover:bg-amber-500/20 transition-colors whitespace-nowrap shrink-0 cursor-pointer">
+                  <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
+                    🪙 {(user?.coinBalance ?? 0).toLocaleString("id-ID")} Koin
+                  </span>
+                </Link>
+
                 <div className="relative" ref={profileRef}>
                   <button
                     id="profile-dropdown-btn"
@@ -139,6 +145,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                             <span>Dashboard Affiliate</span>
                           </Link>
                         )}
+
+                        <Link href="/wallet/coin" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-amber-500">
+                            <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A.75.75 0 0 0 9 9h1.5v2.25H9a.75.75 0 0 0 0 1.5h1.5V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-3V9H15a.75.75 0 0 0 0-1.5H9Z" clipRule="evenodd" />
+                          </svg>
+                          <span>Dompet Koin</span>
+                        </Link>
 
                         <Link href="/settings" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                           <Settings size={14} className="text-text-secondary" />
@@ -219,6 +232,17 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     Rp {(wallet?.balance ?? 0).toLocaleString("id-ID")}
                   </span>
                 </div>
+
+                <Link
+                  href="/wallet/coin"
+                  onClick={() => setIsOpenMobile(false)}
+                  className="p-4 bg-surface border border-border-subtle rounded-xl flex items-center justify-between hover:bg-surface-container-low transition-all cursor-pointer"
+                >
+                  <span className="text-xs text-text-secondary font-geist uppercase tracking-wider">Saldo Koin</span>
+                  <span className="text-sm font-black text-amber-600 flex items-center gap-1">
+                    🪙 {(user?.coinBalance ?? 0).toLocaleString("id-ID")} Koin
+                  </span>
+                </Link>
 
                 <div className="flex flex-col gap-2">
                   {user.role === 'MERCHANT' && (

@@ -61,7 +61,7 @@ export default async function RootLayout({
   }
   const wallet = user ? await getWalletDetails() : null;
   const userSetupCompleted = dbUser 
-    ? (['MERCHANT', 'AFFILIATE'].includes(dbUser.role) ? dbUser.landingPageSetup : true)
+    ? (dbUser.role === 'MERCHANT' ? dbUser.landingPageSetup : true)
     : true;
 
   const headerList = await headers();

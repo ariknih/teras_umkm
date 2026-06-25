@@ -14,7 +14,7 @@ export async function generateMetadata(
   const { subdomain, pageSlug } = await params;
   const user = await DataStore.findUserBySubdomain(subdomain);
   
-  if (!user) {
+  if (!user || user.role !== 'MERCHANT') {
     return { title: "Halaman Tidak Ditemukan" };
   }
 
@@ -40,7 +40,7 @@ export default async function SubdomainSubPage({ params }: PageProps) {
   const { subdomain, pageSlug } = await params;
   const user = await DataStore.findUserBySubdomain(subdomain);
   
-  if (!user) {
+  if (!user || user.role !== 'MERCHANT') {
     notFound();
   }
 

@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUserProfile } from '@/app/actions/auth'
-import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2, Settings, ShieldCheck } from 'lucide-react'
+import { getCurrentUserProfile, updateUsernameAction, checkUsernameAvailability, getReferralInfo } from '@/app/actions/auth'
+import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2, Settings, ShieldCheck, Link2, Coins, Upload, X, Loader2 } from 'lucide-react'
 import { updateUserSettingsAction } from '@/app/actions/wallet-affiliate'
 import { goeyToast } from 'goey-toast'
+import { submitKycAction } from '@/app/actions/community'
 
-type TabType = 'profile' | 'security' | 'address' | 'integrations' | 'notifications' | 'preferences' | 'kyc'
+type TabType = 'profile' | 'security' | 'address' | 'integrations' | 'notifications' | 'preferences' | 'kyc' | 'referral'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -32,7 +33,18 @@ export default function SettingsPage() {
   const [kycStatus, setKycStatus] = useState<string | null>(null)
   const [kycVerifiedAt, setKycVerifiedAt] = useState<string | null>(null)
   const [kycLoading, setKycLoading] = useState(false)
+  
+  // KYC Didit state
   const [kycStarting, setKycStarting] = useState(false)
+
+  // Referral & Username State
+  const [username, setUsername] = useState('')
+  const [usernameInput, setUsernameInput] = useState('')
+  const [referralLink, setReferralLink] = useState<string | null>(null)
+  const [coinBalance, setCoinBalance] = useState(0)
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
+  const [usernameSaving, setUsernameSaving] = useState(false)
+  const [referralCopied, setReferralCopied] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -51,6 +63,15 @@ export default function SettingsPage() {
         setTiktokPixelId(u.tiktokPixelId || '')
         setZapierWebhookUrl(u.zapierWebhookUrl || '')
         setGoogleSheetUrl(u.googleSheetUrl || '')
+
+        // Load referral info
+        const ref = await getReferralInfo()
+        if (ref) {
+          setUsername(ref.username || '')
+          setUsernameInput(ref.username || '')
+          setReferralLink(ref.referralLink)
+          setCoinBalance(ref.coinBalance || 0)
+        }
       } catch (err) {
         console.error(err)
       } finally {
@@ -116,6 +137,7 @@ export default function SettingsPage() {
     { id: 'profile', label: 'Profil & Biodata', icon: User },
     { id: 'security', label: 'Akun & Keamanan', icon: Shield },
     { id: 'kyc', label: 'Verifikasi Identitas', icon: ShieldCheck },
+    { id: 'referral', label: 'Referral & Coin', icon: Link2 },
     { id: 'address', label: 'Buku Alamat', icon: MapPin },
     { id: 'integrations', label: 'Integrasi & WA Gateway', icon: Settings },
     { id: 'notifications', label: 'Notifikasi', icon: Bell },
@@ -314,7 +336,7 @@ export default function SettingsPage() {
               )}
 
               {/* What's needed */}
-              {!kycStatus && (
+              {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
                 <div className="p-5 border border-primary/20 bg-primary/5 rounded-[var(--radius-brand)]">
                   <h4 className="text-sm font-bold text-foreground mb-3">Yang Perlu Disiapkan</h4>
                   <ul className="space-y-2">
@@ -353,12 +375,158 @@ export default function SettingsPage() {
                       setKycStarting(false)
                     }
                   }}
-                  className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary/90 text-white font-geist font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary/90 text-white font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   {kycStarting ? 'Memulai Verifikasi...' : kycStatus === 'REJECTED' ? 'Coba Verifikasi Ulang' : 'Mulai Verifikasi KYC Gratis'}
                 </button>
               )}
+            </div>
+          )}
+
+          {/* REFERRAL & COIN TAB */}
+          {activeTab === 'referral' && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
+              <div>
+                <h2 className="font-sora text-xl font-bold text-foreground">Referral & Coin</h2>
+                <p className="text-xs text-foreground/50 mt-1">
+                  Atur username referral kamu dan pantau saldo coin reward.
+                </p>
+              </div>
+
+              {/* Coin Balance */}
+              <div className="p-5 rounded-[var(--radius-brand)] bg-gradient-to-r from-purple-600/15 to-indigo-600/15 border border-purple-500/20">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-2xl">🪙</div>
+                  <div>
+                    <p className="text-xs text-foreground/60 font-medium">Saldo Coin Kamu</p>
+                    <p className="text-2xl font-extrabold text-foreground">{coinBalance.toLocaleString('id-ID')} <span className="text-sm font-semibold text-foreground/60">coin</span></p>
+                    <p className="text-xs text-foreground/50">≈ Rp {(coinBalance * 1500).toLocaleString('id-ID')}</p>
+                  </div>
+                  <a href="/wallet/coin" className="ml-auto px-4 py-2 bg-purple-600 text-white text-xs font-bold rounded-full hover:bg-purple-700 transition-colors no-underline">
+                    Tukar Coin
+                  </a>
+                </div>
+              </div>
+
+              {/* Username / Referral Code */}
+              <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)] space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground mb-1">Username Referral</h3>
+                  <p className="text-xs text-foreground/60">Username kamu = kode referral kamu. Bagikan link ini ke teman untuk dapat +1 coin per orang yang daftar.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-foreground/70">Username</label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40 text-sm font-mono">@</span>
+                      <input
+                        id="username-input"
+                        type="text"
+                        value={usernameInput}
+                        onChange={async (e) => {
+                          const val = e.target.value.toLowerCase().replace(/[^a-z0-9_.-]/g, '')
+                          setUsernameInput(val)
+                          if (val.length < 3) { setUsernameStatus('invalid'); return }
+                          setUsernameStatus('checking')
+                          const res = await checkUsernameAvailability(val)
+                          setUsernameStatus(res.available ? 'available' : 'taken')
+                        }}
+                        placeholder="username_kamu"
+                        maxLength={30}
+                        className="w-full h-11 pl-8 pr-4 bg-surface-container border border-border-subtle rounded-[var(--radius-brand)] text-sm font-mono focus:outline-none focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+                    <button
+                      id="save-username-btn"
+                      disabled={usernameSaving || usernameStatus === 'taken' || usernameStatus === 'invalid' || usernameStatus === 'checking' || usernameInput === username}
+                      onClick={async () => {
+                        setUsernameSaving(true)
+                        const res = await updateUsernameAction(usernameInput)
+                        setUsernameSaving(false)
+                        if ('error' in res) {
+                          goeyToast.error(res.error as string)
+                        } else {
+                          setUsername(usernameInput)
+                          setReferralLink(res.referralLink || null)
+                          goeyToast.success('Username berhasil disimpan!')
+                        }
+                      }}
+                      className="px-5 py-2 bg-primary text-white text-xs font-bold rounded-[var(--radius-brand)] hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer outline-none"
+                    >
+                      {usernameSaving ? '...' : 'Simpan'}
+                    </button>
+                  </div>
+
+                  {/* Status */}
+                  {usernameStatus === 'available' && usernameInput !== username && (
+                    <p className="text-xs text-green-500 font-medium flex items-center gap-1">✅ Username tersedia</p>
+                  )}
+                  {usernameStatus === 'taken' && (
+                    <p className="text-xs text-red-500 font-medium flex items-center gap-1">❌ Username sudah digunakan</p>
+                  )}
+                  {usernameStatus === 'checking' && (
+                    <p className="text-xs text-foreground/50">⏳ Mengecek ketersediaan...</p>
+                  )}
+                  {usernameStatus === 'invalid' && usernameInput.length > 0 && (
+                    <p className="text-xs text-amber-500">⚠️ Minimal 3 karakter (huruf kecil, angka, _  . -)</p>
+                  )}
+                </div>
+
+                {/* Referral Link */}
+                {referralLink && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-foreground/70">Link Referral Kamu</label>
+                    <div className="flex items-center gap-2 p-3 bg-surface-container rounded-[var(--radius-brand)] border border-border-subtle">
+                      <span className="text-xs font-mono text-foreground/80 flex-1 break-all">{referralLink}</span>
+                      <button
+                        id="copy-referral-btn"
+                        onClick={() => {
+                          navigator.clipboard.writeText(referralLink).then(() => {
+                            setReferralCopied(true)
+                            setTimeout(() => setReferralCopied(false), 2500)
+                          })
+                        }}
+                        className="px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg hover:bg-primary/20 transition-colors cursor-pointer outline-none shrink-0"
+                      >
+                        {referralCopied ? '✅ Disalin!' : '📋 Salin'}
+                      </button>
+                    </div>
+                    <p className="text-xs text-foreground/50">Setiap user yang daftar pakai link ini akan memberikan +1 coin untukmu.</p>
+                  </div>
+                )}
+
+                {!referralLink && !username && (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-[var(--radius-brand)]">
+                    <p className="text-xs text-amber-600 font-medium">⚠️ Set username dulu untuk mendapatkan link referral kamu!</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Cara dapat coin */}
+              <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)]">
+                <h4 className="text-sm font-bold text-foreground mb-3">Cara Dapat Coin</h4>
+                <div className="space-y-3">
+                  {[
+                    { icon: '👥', label: '+1 coin', desc: 'Setiap user baru yang daftar pakai link referral kamu' },
+                    { icon: '🤝', label: '+5 coin', desc: 'Setiap merchant yang berhasil kamu undang ke komunitas PERKUMPULAN' },
+                    { icon: '💳', label: 'Saldo wallet', desc: 'Merchant koperasi mengundang merchant → dapat saldo wallet (bukan coin)' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="text-lg">{item.icon}</span>
+                      <div>
+                        <span className="text-xs font-extrabold text-primary">{item.label}</span>
+                        <span className="text-xs text-foreground/60 ml-2">{item.desc}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex gap-3">
+                  <a href="/wallet/coin" className="text-xs font-bold text-primary hover:underline">Lihat Riwayat Coin →</a>
+                  <a href="/voucher" className="text-xs font-bold text-primary hover:underline">Tukar Voucher →</a>
+                </div>
+              </div>
             </div>
           )}
 

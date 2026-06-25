@@ -2356,7 +2356,7 @@ export const DataStore = {
     return null
   },
 
-  async createUser(data: { email: string; name: string; passwordHash: string; role: string; latitude?: number; longitude?: number; parentAffiliateId?: string }) {
+  async createUser(data: { email: string; name: string; passwordHash: string; role: string; latitude?: number; longitude?: number; parentAffiliateId?: string; username?: string }) {
     const defaultTemplate = 'modern-gold'
     const defaultStyle = { textAlign: 'center', fontSize: 'default', fontWeight: 'default', color: '', bgColor: '', paddingTop: 16, paddingBottom: 16, paddingLeft: 16, paddingRight: 16, opacity: 100, textDecoration: 'none', textTransform: 'none', borderRadius: 0 }
     const defaultAdvance = { marginTop: 0, marginBottom: 0, animation: 'none', showDesktop: true, showTablet: true, showMobile: true, customClass: '', customId: '' }
@@ -2406,16 +2406,18 @@ export const DataStore = {
           const user = await tx.user.create({
             data: {
               ...data,
+              username: data.username || null,
               role: data.role as any,
               level: 1,
               xp: 0,
+              coinBalance: 0.0,
               landingPageTemplate: defaultTemplate,
               landingPageConfig: defaultConfig,
               landingPageSetup: false,
               membershipLevel: 'Reseller',
               membershipAccess: 'Gold',
               parentAffiliateId: data.parentAffiliateId || null
-            }
+            } as any
           })
           await tx.wallet.create({ data: { userId: user.id, balance: 0.0 } })
           return user
@@ -2426,12 +2428,14 @@ export const DataStore = {
       id: `user-${Date.now()}`,
       email: data.email,
       name: data.name,
+      username: data.username || null,
       passwordHash: data.passwordHash,
       role: data.role,
       latitude: data.latitude || -6.2088,
       longitude: data.longitude || 106.8456,
       level: 1,
       xp: 0,
+      coinBalance: 0.0,
       landingPageTemplate: defaultTemplate,
       landingPageConfig: defaultConfig,
       landingPageSetup: false,
@@ -2623,7 +2627,7 @@ export const DataStore = {
   },
 
   // User Management Override
-  async updateUserRoleAndLevel(userId: string, role: string, level: number, xp: number, membershipLevel: string, membershipAccess: string) {
+  async updateUserRoleAndLevel(userId: string, role: string, level: number, xp: number, membershipLevel: string, membershipAccess: string, bootcampStatus?: string) {
     if (await isDbConnected()) {
       try {
         await db.user.update({
@@ -2633,7 +2637,8 @@ export const DataStore = {
             level,
             xp,
             membershipLevel,
-            membershipAccess
+            membershipAccess,
+            bootcampStatus: bootcampStatus || undefined
           }
         })
       } catch (_) {}
@@ -2647,6 +2652,28 @@ export const DataStore = {
         xp,
         membershipLevel,
         membershipAccess,
+        bootcampStatus: bootcampStatus || globalMockUsers[idx].bootcampStatus || 'NONE',
+        updatedAt: new Date()
+      }
+    }
+    saveMockDb()
+    return true
+  },
+
+  async joinBootcamp(userId: string) {
+    if (await isDbConnected()) {
+      try {
+        await db.user.update({
+          where: { id: userId },
+          data: { bootcampStatus: 'JOINED' }
+        })
+      } catch (_) {}
+    }
+    const idx = globalMockUsers.findIndex(u => u.id === userId)
+    if (idx !== -1) {
+      globalMockUsers[idx] = {
+        ...globalMockUsers[idx],
+        bootcampStatus: 'JOINED',
         updatedAt: new Date()
       }
     }
@@ -6550,8 +6577,578 @@ export const DataStore = {
       return loan
     }
     return null
-  }
+  },
+
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COIN SYSTEM (Revisi Pert Kelima)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getUserCoinBalance(userId: string): Promise<number> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const u = await db.user.findUnique({ where: { id: userId }, select: { coinBalance: true } as any })
+        return (u as any)?.coinBalance || 0
+      } catch (_) {}
+    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    return (user as any)?.coinBalance || 0
+  },
+
+  async getCommunityCoinBalance(communityId: string): Promise<{ coinBalance: number; minCoinForLoan: number } | null> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const c = await db.community.findUnique({
+          where: { id: communityId },
+          select: { coinBalance: true, minCoinForLoan: true } as any
+        })
+        if (!c) return null
+        return { coinBalance: (c as any).coinBalance || 0, minCoinForLoan: (c as any).minCoinForLoan || 1000 }
+      } catch (_) {}
+    }
+    const communities = (globalThis as any).__mockCommunities || []
+    const c = communities.find((c: any) => c.id === communityId)
+    if (!c) return null
+    return { coinBalance: c.coinBalance || 0, minCoinForLoan: c.minCoinForLoan || 1000 }
+  },
+
+  async getCoinTransactions(userId: string): Promise<any[]> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await (db as any).coinTransaction.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+          take: 50
+        })
+      } catch (_) {}
+    }
+    const txs = (globalThis as any).__mockCoinTransactions || []
+    return txs.filter((t: any) => t.userId === userId).sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
+  },
+
+  async topupCommunityCoin(data: {
+    communityId: string
+    ketuaId: string
+    jumlahCoin: number
+    totalBiaya: number
+    description: string
+  }) {
+    syncMockDb()
+
+    if (await isDbConnected()) {
+      try {
+        await db.$transaction(async (tx: any) => {
+          // Tambah coin ke komunitas
+          await tx.community.update({
+            where: { id: data.communityId },
+            data: { coinBalance: { increment: data.jumlahCoin } }
+          })
+          // Catat transaksi coin
+          await tx.coinTransaction.create({
+            data: {
+              type: 'TOPUP',
+              amount: data.jumlahCoin,
+              description: data.description,
+              userId: data.ketuaId,
+              communityId: data.communityId,
+            }
+          })
+        })
+        return { newCoinBalance: data.jumlahCoin }
+      } catch (_) {}
+    }
+
+    // Mock DB
+    if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+    const communities = (globalThis as any).__mockCommunities || []
+    const community = communities.find((c: any) => c.id === data.communityId)
+    if (community) {
+      community.coinBalance = (community.coinBalance || 0) + data.jumlahCoin
+      community.updatedAt = new Date()
+    }
+    const tx = {
+      id: `coin-tx-${Date.now()}`,
+      type: 'TOPUP',
+      amount: data.jumlahCoin,
+      description: data.description,
+      userId: data.ketuaId,
+      communityId: data.communityId,
+      createdAt: new Date()
+    }
+    ;(globalThis as any).__mockCoinTransactions.push(tx)
+    saveMockDb()
+    return { newCoinBalance: community?.coinBalance || data.jumlahCoin, tx }
+  },
+
+  async rewardUserInviteCoin(data: {
+    referrerId: string
+    referredId: string
+    coinAmount: number
+  }) {
+    syncMockDb()
+
+    if (await isDbConnected()) {
+      try {
+        await db.$transaction(async (tx: any) => {
+          // Cek duplikasi
+          const existing = await tx.userReferral.findUnique({
+            where: { referrerId_referredId: { referrerId: data.referrerId, referredId: data.referredId } }
+          })
+          if (existing) return existing
+
+          // Tambah coin ke pengundang
+          await tx.user.update({
+            where: { id: data.referrerId },
+            data: { coinBalance: { increment: data.coinAmount } }
+          })
+          // Catat referral
+          const ref = await tx.userReferral.create({
+            data: {
+              referrerId: data.referrerId,
+              referredId: data.referredId,
+              coinAwarded: data.coinAmount,
+              isRewarded: true
+            }
+          })
+          // Catat transaksi coin
+          await tx.coinTransaction.create({
+            data: {
+              type: 'REWARD_USER_INVITE',
+              amount: data.coinAmount,
+              description: `Reward mengundang user baru`,
+              userId: data.referrerId,
+              relatedUserId: data.referredId,
+            }
+          })
+          return ref
+        })
+        return { rewarded: true, coinAmount: data.coinAmount }
+      } catch (_) {}
+    }
+
+    // Mock DB
+    if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+    if (!(globalThis as any).__mockUserReferrals) (globalThis as any).__mockUserReferrals = []
+
+    const existingRef = ((globalThis as any).__mockUserReferrals || [])
+      .find((r: any) => r.referrerId === data.referrerId && r.referredId === data.referredId)
+    if (existingRef) return { rewarded: false, message: 'Sudah pernah diundang' }
+
+    const referrer = globalMockUsers.find(u => u.id === data.referrerId)
+    if (referrer) {
+      (referrer as any).coinBalance = ((referrer as any).coinBalance || 0) + data.coinAmount
+      referrer.updatedAt = new Date()
+    }
+    ;(globalThis as any).__mockUserReferrals.push({
+      id: `ref-${Date.now()}`,
+      referrerId: data.referrerId,
+      referredId: data.referredId,
+      coinAwarded: data.coinAmount,
+      isRewarded: true,
+      createdAt: new Date()
+    })
+    ;(globalThis as any).__mockCoinTransactions.push({
+      id: `coin-tx-${Date.now()}`,
+      type: 'REWARD_USER_INVITE',
+      amount: data.coinAmount,
+      description: `Reward mengundang user baru`,
+      userId: data.referrerId,
+      relatedUserId: data.referredId,
+      createdAt: new Date()
+    })
+    saveMockDb()
+    return { rewarded: true, coinAmount: data.coinAmount }
+  },
+
+  async rewardMerchantInvite(data: {
+    inviterId: string
+    inviteeId: string
+    communityId: string
+  }) {
+    syncMockDb()
+
+    const communities = (globalThis as any).__mockCommunities || []
+    const community = communities.find((c: any) => c.id === data.communityId)
+    const communityType = community?.type || 'PERKUMPULAN'
+    const isKoperasi = communityType === 'KOPERASI'
+
+    // Reward: COIN untuk PERKUMPULAN, SALDO untuk KOPERASI
+    const rewardType = isKoperasi ? 'SALDO' : 'COIN'
+    const rewardAmount = 5.0 // default 5 coin atau Rp 5.000 saldo
+
+    if (await isDbConnected()) {
+      try {
+        await db.$transaction(async (tx: any) => {
+          // Cek duplikasi
+          const existing = await (tx as any).merchantInvite.findFirst({
+            where: { inviterId: data.inviterId, inviteeId: data.inviteeId, communityId: data.communityId }
+          })
+          if (existing) return existing
+
+          // Verifikasi invitee join komunitas yang sama
+          const inviteeMembership = await tx.communityMembership.findUnique({
+            where: { communityId_userId: { communityId: data.communityId, userId: data.inviteeId } }
+          })
+          if (!inviteeMembership) throw new Error('Merchant yang diundang belum bergabung ke komunitas ini.')
+
+          if (isKoperasi) {
+            // Reward saldo wallet dari kas koperasi
+            const koperasi = await tx.community.findUnique({ where: { id: data.communityId } })
+            const kasBalance = (koperasi as any)?.coinBalance || 0
+            if (kasBalance < rewardAmount) throw new Error('Kas koperasi tidak mencukupi untuk reward.')
+
+            // Tambah saldo wallet pengundang
+            await tx.wallet.update({
+              where: { userId: data.inviterId },
+              data: { balance: { increment: rewardAmount * 1500 } } // convert ke rupiah
+            })
+            // Catat wallet transaction
+            await tx.walletTransaction.create({
+              data: {
+                amount: rewardAmount * 1500,
+                type: 'COMMISSION',
+                description: `Reward mengundang merchant ke komunitas koperasi`,
+                wallet: { connect: { userId: data.inviterId } }
+              }
+            })
+          } else {
+            // Reward coin untuk perkumpulan
+            await tx.user.update({
+              where: { id: data.inviterId },
+              data: { coinBalance: { increment: rewardAmount } }
+            })
+            await (tx as any).coinTransaction.create({
+              data: {
+                type: 'REWARD_MERCHANT_INVITE',
+                amount: rewardAmount,
+                description: `Reward mengundang merchant ke komunitas`,
+                userId: data.inviterId,
+                communityId: data.communityId,
+                relatedUserId: data.inviteeId,
+              }
+            })
+          }
+
+          // Catat merchant invite log
+          await (tx as any).merchantInvite.create({
+            data: {
+              communityId: data.communityId,
+              communityType,
+              rewardType,
+              rewardAmount,
+              isRewarded: true,
+              inviterId: data.inviterId,
+              inviteeId: data.inviteeId,
+            }
+          })
+        })
+        return { rewarded: true, rewardType, rewardAmount }
+      } catch (e: any) {
+        return { error: e.message || 'Gagal memberikan reward.' }
+      }
+    }
+
+    // Mock DB
+    if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+    if (!(globalThis as any).__mockMerchantInvites) (globalThis as any).__mockMerchantInvites = []
+
+    const existing = ((globalThis as any).__mockMerchantInvites || [])
+      .find((m: any) => m.inviterId === data.inviterId && m.inviteeId === data.inviteeId && m.communityId === data.communityId)
+    if (existing) return { rewarded: false, message: 'Sudah pernah mengundang merchant ini ke komunitas ini.' }
+
+    const inviter = globalMockUsers.find(u => u.id === data.inviterId)
+
+    if (isKoperasi) {
+      // Tambah saldo wallet
+      const inviterWallet = globalMockWallets.find(w => w.userId === data.inviterId)
+      if (inviterWallet) inviterWallet.balance += rewardAmount * 1500
+      globalMockWalletTransactions.push({
+        id: `wt-${Date.now()}`,
+        amount: rewardAmount * 1500,
+        type: 'COMMISSION',
+        description: `Reward mengundang merchant ke komunitas koperasi`,
+        walletId: inviterWallet?.id || '',
+        createdAt: new Date()
+      })
+    } else {
+      // Tambah coin
+      if (inviter) (inviter as any).coinBalance = ((inviter as any).coinBalance || 0) + rewardAmount
+      ;(globalThis as any).__mockCoinTransactions.push({
+        id: `coin-tx-${Date.now()}`,
+        type: 'REWARD_MERCHANT_INVITE',
+        amount: rewardAmount,
+        description: `Reward mengundang merchant ke komunitas`,
+        userId: data.inviterId,
+        communityId: data.communityId,
+        relatedUserId: data.inviteeId,
+        createdAt: new Date()
+      })
+    }
+
+    ;(globalThis as any).__mockMerchantInvites.push({
+      id: `mi-${Date.now()}`,
+      communityId: data.communityId,
+      communityType,
+      rewardType,
+      rewardAmount,
+      isRewarded: true,
+      inviterId: data.inviterId,
+      inviteeId: data.inviteeId,
+      createdAt: new Date()
+    })
+    saveMockDb()
+    return { rewarded: true, rewardType, rewardAmount }
+  },
+
+  // Voucher Methods
+  async getAllCoinVouchers(): Promise<any[]> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await (db as any).coinVoucher.findMany({
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    return (globalThis as any).__mockCoinVouchers || []
+  },
+
+  async getActiveCoinVouchers(): Promise<any[]> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await (db as any).coinVoucher.findMany({
+          where: { isActive: true },
+          orderBy: { coinCost: 'asc' }
+        })
+      } catch (_) {}
+    }
+    return ((globalThis as any).__mockCoinVouchers || []).filter((v: any) => v.isActive)
+  },
+
+  async getCoinVoucherById(id: string): Promise<any | null> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await (db as any).coinVoucher.findUnique({ where: { id } })
+      } catch (_) {}
+    }
+    return ((globalThis as any).__mockCoinVouchers || []).find((v: any) => v.id === id) || null
+  },
+
+  async createCoinVoucher(data: {
+    name: string
+    description: string
+    type: 'INTERNAL' | 'EXTERNAL'
+    coinCost: number
+    value: number
+    code?: string
+    maxRedemption: number
+    validUntil?: Date
+  }): Promise<any> {
+    if (!(globalThis as any).__mockCoinVouchers) (globalThis as any).__mockCoinVouchers = []
+    if (await isDbConnected()) {
+      try {
+        return await (db as any).coinVoucher.create({ data: { ...data, totalRedeemed: 0 } })
+      } catch (_) {}
+    }
+    const voucher = {
+      id: `voucher-${Date.now()}`,
+      ...data,
+      totalRedeemed: 0,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    ;(globalThis as any).__mockCoinVouchers.push(voucher)
+    return voucher
+  },
+
+  async toggleCoinVoucherActive(id: string) {
+    if (await isDbConnected()) {
+      try {
+        const v = await (db as any).coinVoucher.findUnique({ where: { id } })
+        return await (db as any).coinVoucher.update({ where: { id }, data: { isActive: !v.isActive } })
+      } catch (_) {}
+    }
+    const vouchers = (globalThis as any).__mockCoinVouchers || []
+    const v = vouchers.find((v: any) => v.id === id)
+    if (v) { v.isActive = !v.isActive; v.updatedAt = new Date() }
+    return { toggled: true, isActive: v?.isActive }
+  },
+
+  async redeemCoinVoucher(data: {
+    userId: string
+    voucherId: string
+    coinSpent: number
+    voucherType: string
+    externalCode?: string
+  }): Promise<any> {
+    syncMockDb()
+    // Generate klaim kode unik untuk INTERNAL
+    const claimCode = data.voucherType === 'INTERNAL'
+      ? `SALOKA-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+      : data.externalCode
+
+    if (await isDbConnected()) {
+      try {
+        return await db.$transaction(async (tx: any) => {
+          await tx.user.update({
+            where: { id: data.userId },
+            data: { coinBalance: { decrement: data.coinSpent } }
+          })
+          await (tx as any).coinVoucher.update({
+            where: { id: data.voucherId },
+            data: { totalRedeemed: { increment: 1 } }
+          })
+          const redemption = await (tx as any).coinRedemption.create({
+            data: {
+              userId: data.userId,
+              voucherId: data.voucherId,
+              coinSpent: data.coinSpent,
+              status: 'CLAIMED',
+              claimCode,
+              claimedAt: new Date(),
+            }
+          })
+          await (tx as any).coinTransaction.create({
+            data: {
+              type: 'REDEEM_VOUCHER',
+              amount: -data.coinSpent,
+              description: `Tukar coin dengan voucher`,
+              userId: data.userId,
+              relatedVoucherId: data.voucherId,
+            }
+          })
+          return { redemption, claimCode }
+        })
+      } catch (_) {}
+    }
+
+    // Mock DB
+    if (!(globalThis as any).__mockCoinRedemptions) (globalThis as any).__mockCoinRedemptions = []
+    if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+
+    const user = globalMockUsers.find(u => u.id === data.userId)
+    if (user) (user as any).coinBalance = ((user as any).coinBalance || 0) - data.coinSpent
+
+    const vouchers = (globalThis as any).__mockCoinVouchers || []
+    const voucher = vouchers.find((v: any) => v.id === data.voucherId)
+    if (voucher) voucher.totalRedeemed = (voucher.totalRedeemed || 0) + 1
+
+    const redemption = {
+      id: `redeem-${Date.now()}`,
+      userId: data.userId,
+      voucherId: data.voucherId,
+      coinSpent: data.coinSpent,
+      status: 'CLAIMED',
+      claimCode,
+      claimedAt: new Date(),
+      createdAt: new Date()
+    }
+    ;(globalThis as any).__mockCoinRedemptions.push(redemption)
+    ;(globalThis as any).__mockCoinTransactions.push({
+      id: `coin-tx-${Date.now()}`,
+      type: 'REDEEM_VOUCHER',
+      amount: -data.coinSpent,
+      description: `Tukar coin dengan voucher`,
+      userId: data.userId,
+      relatedVoucherId: data.voucherId,
+      createdAt: new Date()
+    })
+    saveMockDb()
+    return { redemption, claimCode }
+  },
+
+  async getUserCoinRedemptions(userId: string): Promise<any[]> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await (db as any).coinRedemption.findMany({
+          where: { userId },
+          include: { voucher: true },
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    const redemptions = ((globalThis as any).__mockCoinRedemptions || []).filter((r: any) => r.userId === userId)
+    const vouchers = (globalThis as any).__mockCoinVouchers || []
+    return redemptions.map((r: any) => ({
+      ...r,
+      voucher: vouchers.find((v: any) => v.id === r.voucherId) || null
+    })).sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
+  },
+
+  async getCoinAdminStats() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const [totalTx, totalRedemptions, recentTx] = await Promise.all([
+          (db as any).coinTransaction.count(),
+          (db as any).coinRedemption.count(),
+          (db as any).coinTransaction.findMany({ orderBy: { createdAt: 'desc' }, take: 10 })
+        ])
+        return { totalTx, totalRedemptions, recentTx }
+      } catch (_) {}
+    }
+    const txs = (globalThis as any).__mockCoinTransactions || []
+    const redemptions = (globalThis as any).__mockCoinRedemptions || []
+    return {
+      totalTx: txs.length,
+      totalRedemptions: redemptions.length,
+      recentTx: txs.slice(-10).reverse()
+    }
+  },
+
+  // Username methods
+  async findUserByUsername(username: string): Promise<any | null> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.findFirst({ where: { username: username.toLowerCase() } as any })
+      } catch (_) {}
+    }
+    return globalMockUsers.find(u => (u as any).username?.toLowerCase() === username.toLowerCase()) || null
+  },
+
+  async isUsernameTaken(username: string, excludeUserId?: string): Promise<boolean> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const existing = await db.user.findFirst({
+          where: { username: username.toLowerCase(), ...(excludeUserId ? { NOT: { id: excludeUserId } } : {}) } as any
+        })
+        return !!existing
+      } catch (_) {}
+    }
+    return globalMockUsers.some(u =>
+      (u as any).username?.toLowerCase() === username.toLowerCase() &&
+      (!excludeUserId || u.id !== excludeUserId)
+    )
+  },
+
+  async setUsername(userId: string, username: string): Promise<any> {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({ where: { id: userId }, data: { username: username.toLowerCase() } as any })
+      } catch (_) {}
+    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      (user as any).username = username.toLowerCase()
+      user.updatedAt = new Date()
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
 }
+
 
 // Global Registry for Midtrans transactions to handle polling/webhooks on local server
 const pendingCheckouts: Record<string, any> = (globalThis as any).pendingCheckouts || {};

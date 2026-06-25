@@ -7,6 +7,7 @@ import LandingPageRenderer from '../../components/LandingPageRenderer'
 import StorePageViewerClient from '@/app/store/[merchantId]/[pageSlug]/StorePageViewerClient'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { submitKycAction } from '@/app/actions/community'
 import { 
   Star, 
   Shield, 
@@ -330,18 +331,18 @@ export default function ProfileViewerClient({
     return (
       <div className="relative">
         {/* Floating Toggle Banner to return to Profile */}
-        <div className="bg-surface-dark border-b border-border-subtle px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+        <div className="bg-white border-b border-[#E5E7EB] px-6 py-3 flex items-center justify-between sticky top-0 z-50">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-text-primary">
+            <span className="text-xs font-bold text-[#111111]">
               Pratinjau Desain Landing Page
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-geist font-bold bg-primary/25 border border-primary/30 text-primary uppercase">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF5ED] border border-[#2DB24A]/30 text-[#0F5132] uppercase">
               {customMainPage ? 'Page Builder' : activeTemplate}
             </span>
           </div>
           <button
             onClick={() => setActiveTab('profile')}
-            className="px-4 py-1.5 bg-surface-container border border-border-subtle hover:bg-surface-container-high rounded-full text-xs font-bold text-text-primary transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+            className="px-4 py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-full text-xs font-bold text-[#111111] transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
           >
             ← Kembali ke Profil Utama
           </button>
@@ -355,48 +356,11 @@ export default function ProfileViewerClient({
   const xpPercent = Math.min(Math.max((user.xp / 1000) * 100, 5), 100)
 
   return (
-    <div className="min-h-screen bg-bg-dark text-text-primary font-sans pb-24 overflow-hidden relative selection:bg-primary/30 selection:text-white">
-      {/* Decorative ambient background glows */}
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_70%)] pointer-events-none z-0" />
-      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.02)_0%,transparent_70%)] pointer-events-none z-0" />
-
+    <div className="min-h-screen bg-[#F4F7F5] text-[#111111] font-sans pb-24 overflow-hidden relative selection:bg-[#2DB24A]/30 selection:text-white">
       {/* Profile Header Navigation */}
-      <header className="border-b border-border-subtle bg-surface-dark/40 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center">
-              <img src="/images/logo+nama_saloka.webp" alt="Saloka.id" className="h-8 md:h-9 object-contain" />
-            </Link>
-          </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/market" className="text-xs text-text-secondary hover:text-text-primary transition-colors">Marketplace</Link>
-            <Link href="/academy" className="text-xs text-text-secondary hover:text-text-primary transition-colors">Academy</Link>
-            <Link href="/affiliate" className="text-xs text-text-secondary hover:text-text-primary transition-colors">Affiliate Hub</Link>
-            <Link href="/community" className="text-xs text-text-secondary hover:text-text-primary transition-colors">Community</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            {isOwner ? (
-              <Link
-                href={user.role === 'MERCHANT' ? '/merchant/dashboard' : '/affiliate'}
-                className="px-4 py-2 bg-primary text-black font-geist font-bold text-xs uppercase tracking-wider rounded-lg hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-primary/15"
-              >
-                Dashboard Saya
-              </Link>
-            ) : (
-              <Link
-                href="/"
-                className="px-4 py-2 bg-surface-container border border-border-subtle text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-lg hover:bg-surface-container-high transition-all"
-              >
-                Kembali
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
 
       {/* Cover Banner */}
-      <div className="bg-gradient-to-r from-indigo-950/40 via-slate-900 to-amber-950/30 h-48 w-full border-b border-border-subtle relative">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.06)_0%,transparent_50%)]" />
+      <div className="bg-[#EAF5ED] h-48 w-full border-b border-[#2DB24A]/20 relative">
       </div>
 
       {/* Main Content Area */}
@@ -405,22 +369,20 @@ export default function ProfileViewerClient({
           
           {/* Left Column: Profile Card */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-surface-dark/80 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-              
+            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 shadow-sm relative overflow-hidden">
               <div className="flex flex-col items-center text-center">
                 {/* Large Initials Avatar */}
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-primary/30 to-[#c9a227]/10 border border-[#c9a227]/30 flex items-center justify-center text-3xl font-extrabold text-primary shadow-lg shadow-primary/10 mb-6">
+                <div className="w-24 h-24 rounded-2xl bg-[#EAF5ED] border border-[#2DB24A]/20 flex items-center justify-center text-3xl font-bold text-[#0F5132] mb-6">
                   {user.name.substring(0, 2).toUpperCase()}
                 </div>
 
                 {/* Verified Badge */}
-                <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-amber-500/10 border border-amber-500/25 rounded-full text-[9px] text-[#f5d76e] font-geist font-extrabold uppercase tracking-wider mb-2">
-                  <Shield className="w-3 h-3 text-[#f5d76e] fill-[#f5d76e]/10" />
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#EAF5ED] border border-[#2DB24A]/20 rounded-full text-[10px] text-[#0f5132] font-semibold uppercase tracking-wider mb-2">
+                  <Shield className="w-3 h-3 text-[#0f5132] fill-[#0f5132]/10" />
                   {user.membershipLevel} Verified
                 </span>
 
-                <h2 className="font-sora text-xl font-bold text-text-primary mb-1">
+                <h2 className="text-xl font-bold text-[#111111] mb-1">
                   {user.name}
                 </h2>
                 <p className="text-[10px] font-mono text-text-secondary mb-6">
@@ -428,14 +390,14 @@ export default function ProfileViewerClient({
                 </p>
 
                 {/* Level Progress */}
-                <div className="w-full bg-surface-container border border-border-subtle rounded-2xl p-4 mb-6">
+                <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6">
                   <div className="flex justify-between items-center text-xs mb-2">
                     <span className="font-bold text-text-secondary uppercase text-[10px] tracking-wider">Progress Level</span>
-                    <span className="font-geist font-black text-primary">LV {user.level}</span>
+                    <span className="font-bold text-[#2DB24A]">LV {user.level}</span>
                   </div>
-                  <div className="h-2.5 bg-surface-container-high border border-border-subtle rounded-full overflow-hidden mb-1">
+                  <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
                     <div 
-                      className="h-full bg-gradient-to-r from-primary to-[#f5d76e] rounded-full transition-all duration-500" 
+                      className="h-full bg-[#2DB24A] rounded-full transition-all duration-500" 
                       style={{ width: `${xpPercent}%` }}
                     />
                   </div>
@@ -449,11 +411,11 @@ export default function ProfileViewerClient({
                 <div className="w-full space-y-3 pt-4 border-t border-border-subtle text-left text-xs">
                   <div className="flex justify-between items-center">
                     <span className="text-text-secondary">Peran Platform</span>
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-geist font-black border uppercase tracking-wider ${
-                      user.role === 'ADMIN' ? 'bg-red-500/10 border-red-500/35 text-red-400' :
-                      user.role === 'MERCHANT' ? 'bg-primary/10 border-primary/35 text-primary' :
-                      user.role === 'AFFILIATE' ? 'bg-blue-500/10 border-blue-500/35 text-blue-400' :
-                      'bg-emerald-500/10 border-emerald-500/35 text-emerald-400'
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
+                      user.role === 'ADMIN' ? 'bg-red-50 border border-red-200 text-red-700' :
+                      user.role === 'MERCHANT' ? 'bg-[#EAF5ED] border border-[#2DB24A]/30 text-[#0F5132]' :
+                      user.role === 'AFFILIATE' ? 'bg-blue-50 border border-blue-200 text-blue-700' :
+                      'bg-emerald-50 border border-emerald-250 text-emerald-800'
                     }`}>
                       {user.role}
                     </span>
@@ -463,18 +425,18 @@ export default function ProfileViewerClient({
                       <span className="text-text-secondary">Komunitas Induk</span>
                       <span className="font-bold text-text-primary text-right">
                         {(user as any).indukCommunityName || (
-                          <span className="text-red-400 text-[10px] font-medium">Belum memilih</span>
+                          <span className="text-red-500 text-[10px] font-medium">Belum memilih</span>
                         )}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
                     <span className="text-text-secondary">Status KYC</span>
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-geist font-black border uppercase tracking-wider ${
-                      (user as any).kycStatus === 'APPROVED' ? 'bg-green-500/10 border-green-500/35 text-green-400' :
-                      (user as any).kycStatus === 'PENDING' ? 'bg-amber-500/10 border-amber-500/35 text-amber-400' :
-                      (user as any).kycStatus === 'REJECTED' ? 'bg-red-500/10 border-red-500/35 text-red-400' :
-                      'bg-neutral-500/10 border-neutral-500/35 text-neutral-400'
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
+                      (user as any).kycStatus === 'APPROVED' ? 'bg-green-50 border border-green-200 text-green-700' :
+                      (user as any).kycStatus === 'PENDING' ? 'bg-amber-50 border border-amber-200 text-amber-700' :
+                      (user as any).kycStatus === 'REJECTED' ? 'bg-red-50 border border-red-200 text-red-700' :
+                      'bg-slate-100 border border-slate-300 text-slate-700'
                     }`}>
                       {(user as any).kycStatus || 'NOT_SUBMITTED'}
                     </span>
@@ -485,7 +447,7 @@ export default function ProfileViewerClient({
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-text-secondary">Hak Akses VIP</span>
-                    <span className="font-bold text-primary">{user.membershipAccess}</span>
+                    <span className="font-bold text-[#2DB24A]">{user.membershipAccess}</span>
                   </div>
                   {user.email && (
                     <div className="flex justify-between items-center pt-2 border-t border-border-subtle">
@@ -496,21 +458,21 @@ export default function ProfileViewerClient({
                 </div>
               </div>
             </div>
-
+ 
             {/* Badges Earned Card */}
             {badges && badges.length > 0 && (
-              <div className="bg-surface-dark/60 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl">
-                <h3 className="font-sora text-xs font-bold uppercase tracking-widest text-[#f5d76e] mb-4">
+              <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 shadow-sm">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#0f5132] mb-4">
                   Sertifikasi & Badges
                 </h3>
                 <div className="grid grid-cols-1 gap-3">
                   {badges.map((b: any) => (
-                    <div key={b.id} className="flex gap-3 p-3 rounded-2xl bg-surface-container-lowest border border-border-subtle hover:border-amber-500/20 transition-all">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center border shrink-0 text-xs ${b.color}`}>
+                    <div key={b.id} className="flex gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-[#2DB24A]/25 transition-all">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 text-xs ${b.color}`}>
                         {b.id.includes('admin') ? '🛡️' : b.id.includes('merchant') ? '⭐' : b.id.includes('graduate') ? '🎓' : '⚡'}
                       </div>
                       <div>
-                        <span className="block text-[10px] font-bold text-text-primary font-sora">{b.label}</span>
+                        <span className="block text-[10px] font-bold text-text-primary">{b.label}</span>
                         <span className="block text-[9px] text-text-secondary mt-0.5">{b.desc}</span>
                       </div>
                     </div>
@@ -519,18 +481,17 @@ export default function ProfileViewerClient({
               </div>
             )}
           </div>
-
+ 
           {/* Right Column: Tab View, Referral, and Analytics */}
           <div className="lg:col-span-2 space-y-6">
-            
             {/* View Selection Tabs */}
-            <div className="flex bg-surface-dark/60 border border-border-subtle p-1 rounded-2xl backdrop-blur-xl gap-1">
+            <div className="flex bg-white border border-[#E5E7EB] p-1 rounded-xl gap-1 shadow-sm">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   activeTab === 'profile'
-                    ? 'bg-primary text-black shadow-lg shadow-primary/10'
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-container'
+                    ? 'bg-[#2DB24A] text-white shadow-sm'
+                    : 'text-slate-600 hover:text-[#0F5132] hover:bg-slate-50'
                 }`}
               >
                 Profil & Referral
@@ -538,10 +499,10 @@ export default function ProfileViewerClient({
               {user.role === 'MERCHANT' && (
                 <button
                   onClick={() => setActiveTab('products')}
-                  className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                  className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     activeTab === 'products'
-                      ? 'bg-primary text-black shadow-lg shadow-primary/10'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-container'
+                      ? 'bg-[#2DB24A] text-white shadow-sm'
+                      : 'text-slate-600 hover:text-[#0F5132] hover:bg-slate-50'
                   }`}
                 >
                   Katalog Produk ({products.length})
@@ -550,36 +511,34 @@ export default function ProfileViewerClient({
               {user.role === 'MERCHANT' && user.landingPageSetup && (
                 <button
                   onClick={() => setActiveTab('storefront')}
-                  className={`flex-1 py-3 text-xs font-geist font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${
+                  className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     (activeTab as string) === 'storefront'
-                      ? 'bg-primary text-black shadow-lg shadow-primary/10'
-                      : 'text-text-secondary hover:text-text-primary hover:bg-surface-container'
+                      ? 'bg-[#2DB24A] text-white shadow-sm'
+                      : 'text-slate-600 hover:text-[#0F5132] hover:bg-slate-50'
                   }`}
                 >
                   Pratinjau Toko
                 </button>
               )}
             </div>
-
+  
             {/* PROFILE & REFERRAL TAB */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
                 
                 {/* Referral Center Card */}
-                <div className="bg-surface-dark/80 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-b from-primary/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-                  
+                <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 shadow-sm relative overflow-hidden">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1.5 h-6 bg-primary rounded-full" />
-                    <h3 className="font-sora text-sm font-bold text-[#f5d76e] uppercase tracking-widest">
+                    <div className="w-1.5 h-6 bg-[#2DB24A] rounded-full" />
+                    <h3 className="text-sm font-bold text-[#0F5132]">
                       Program Kemitraan & Rujukan (Referral)
                     </h3>
                   </div>
-
+  
                   <p className="text-xs text-text-secondary leading-relaxed mb-6">
                     Bagikan tautan referral atau kode referral Anda. Setiap pengguna yang mendaftar menggunakan referral Anda akan terhubung ke downline jaringan Anda, memberikan Anda komisi penjualan platform otomatis hingga 10% di setiap transaksi!
                   </p>
-
+  
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
                     
                     {/* Inputs Area */}
@@ -594,15 +553,15 @@ export default function ProfileViewerClient({
                             type="text"
                             readOnly
                             value={user.email || user.id}
-                            className="flex-1 h-10 px-3 bg-surface-container-low border border-border-subtle rounded-xl text-xs font-mono text-text-primary focus:outline-none"
+                            className="flex-1 h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-[#111111] focus:outline-none"
                           />
                           <button
                             onClick={handleCopyCode}
-                            className="px-4 h-10 bg-surface-container border border-border-subtle hover:bg-surface-container-high rounded-xl text-xs font-bold text-text-primary transition-all flex items-center justify-center gap-1.5 min-w-[100px] cursor-pointer"
+                            className="px-4 h-10 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg text-xs font-bold text-[#111111] transition-all flex items-center justify-center gap-1.5 min-w-[100px] cursor-pointer"
                           >
                             {copiedCode ? (
                               <>
-                                <Check className="w-3.5 h-3.5 text-green-400" />
+                                <Check className="w-3.5 h-3.5 text-green-600" />
                                 Tersalin
                               </>
                             ) : (
@@ -614,7 +573,7 @@ export default function ProfileViewerClient({
                           </button>
                         </div>
                       </div>
-
+ 
                       {/* Referral Link Box */}
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
@@ -625,11 +584,11 @@ export default function ProfileViewerClient({
                             type="text"
                             readOnly
                             value={typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.email || user.id}` : `/auth?ref=${user.id}`}
-                            className="flex-1 h-10 px-3 bg-surface-container-low border border-border-subtle rounded-xl text-xs font-mono text-text-primary focus:outline-none"
+                            className="flex-1 h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-[#111111] focus:outline-none"
                           />
                           <button
                             onClick={handleCopyLink}
-                            className="px-4 h-10 bg-primary text-black rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-w-[100px] cursor-pointer"
+                            className="px-4 h-10 bg-[#2DB24A] text-white hover:bg-[#2DB24A]/90 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-w-[100px] cursor-pointer"
                           >
                             {copiedLink ? (
                               <>
@@ -654,7 +613,7 @@ export default function ProfileViewerClient({
                             href={`https://wa.me/?text=${encodeURIComponent(`Ayo daftar di Saloka.id menggunakan rujukan saya: ${typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.email || user.id}` : ''}`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-4 py-2 bg-green-500/10 border border-green-500/25 rounded-xl text-xs text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-all font-geist font-bold flex items-center gap-1.5"
+                            className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 hover:bg-green-100 transition-all font-semibold flex items-center gap-1.5"
                           >
                             Bagikan ke WhatsApp
                           </a>
@@ -664,17 +623,17 @@ export default function ProfileViewerClient({
 
                     {/* QR Code Area */}
                     <div className="md:col-span-1 flex flex-col items-center justify-center border-t md:border-t-0 md:border-l border-border-subtle pt-6 md:pt-0 md:pl-6">
-                      <div className="p-3 bg-white rounded-2xl mb-2 shadow-xl">
+                      <div className="p-3 bg-white border border-[#E5E7EB] rounded-xl mb-2">
                         <UserQRCode
-                          userId={user.id}
-                          userName={user.name}
-                          accentColor="#090A0F"
-                          qrDarkColor="#090A0F"
-                          qrLightColor="#ffffff"
-                          variant="icon-only"
+                           userId={user.id}
+                           userName={user.name}
+                           accentColor="#090A0F"
+                           qrDarkColor="#090A0F"
+                           qrLightColor="#ffffff"
+                           variant="icon-only"
                         />
                       </div>
-                      <span className="text-[10px] font-bold text-text-secondary uppercase tracking-widest">
+                      <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
                         Scan QR Code
                       </span>
                     </div>
@@ -684,12 +643,10 @@ export default function ProfileViewerClient({
 
                 {/* KYC Submission Card (Only for Owner and when not approved) */}
                 {isOwner && (user as any).kycStatus !== 'APPROVED' && (user as any).kycStatus !== 'VERIFIED' && (
-                  <div className="bg-surface-dark/80 border border-border-subtle backdrop-blur-xl rounded-3xl p-6 shadow-2xl space-y-5 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-                    
+                  <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 shadow-sm space-y-5 relative overflow-hidden">
                     <div className="flex items-center gap-3">
-                      <div className="w-1.5 h-6 bg-primary rounded-full" />
-                      <h3 className="font-sora text-sm font-bold text-[#f5d76e] uppercase tracking-widest">
+                      <div className="w-1.5 h-6 bg-[#2DB24A] rounded-full" />
+                      <h3 className="text-sm font-bold text-[#0f5132]">
                         Verifikasi Identitas (KYC)
                       </h3>
                     </div>
@@ -699,17 +656,17 @@ export default function ProfileViewerClient({
                     </p>
 
                     {(user as any).kycStatus === 'PENDING' ? (
-                      <div className="p-5 bg-amber-500/10 border border-amber-500/25 rounded-2xl text-center text-xs text-amber-400 font-bold flex flex-col items-center gap-2">
-                        <Activity className="w-5 h-5 animate-pulse text-amber-400" />
+                      <div className="p-5 bg-amber-50 border border-amber-200 rounded-xl text-center text-xs text-amber-700 font-bold flex flex-col items-center gap-2">
+                        <Activity className="w-5 h-5 animate-pulse text-amber-500" />
                         <span>Pengajuan KYC Anda sedang ditinjau oleh Admin. Silakan tunggu verifikasi selesai.</span>
                       </div>
-                    ) : (
+                                        ) : (
                       <div className="space-y-4 pt-2">
-                        <div className="bg-surface-container-low border border-primary/20 rounded-2xl p-5 space-y-4 shadow-sm hover:border-primary/40 transition-all duration-300">
+                        <div className="bg-slate-50 border border-[#2DB24A]/20 rounded-xl p-5 space-y-4 shadow-sm hover:border-[#2DB24A]/40 transition-all duration-300">
                           <div className="flex justify-between items-start gap-4">
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 rounded text-[8px] font-geist font-black bg-primary text-black uppercase tracking-wider">
+                                <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-[#EAF5ED] border border-[#2DB24A]/30 text-[#0F5132] uppercase tracking-wider">
                                   Instan & Aman
                                 </span>
                                 <h4 className="text-xs font-bold text-text-primary">
@@ -717,10 +674,10 @@ export default function ProfileViewerClient({
                                 </h4>
                               </div>
                               <p className="text-[10px] text-text-secondary mt-1.5 leading-relaxed">
-                                Verifikasi wajah (liveness check) dan dokumen Anda secara instan menggunakan kamera smartphone/laptop Anda.
+                                Verifikasi wajah (liveness check) dan dokumen Anda secara instan menggunakan kamera smartphone atau laptop Anda.
                               </p>
                             </div>
-                            <div className="text-xs text-[#f5d76e] shrink-0 font-bold">⚡ 1 Menit</div>
+                            <div className="text-xs text-[#0f5132] shrink-0 font-bold">⚡ 1 Menit</div>
                           </div>
                           
                           <button
@@ -742,7 +699,7 @@ export default function ProfileViewerClient({
                                 setKycStarting(false)
                               }
                             }}
-                            className="w-full py-3 bg-primary text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/10 disabled:opacity-60 cursor-pointer"
+                            className="w-full py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
                           >
                             {kycStarting ? (
                               <>
@@ -765,8 +722,8 @@ export default function ProfileViewerClient({
                 {/* Performance & Analytics Summary Cards */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-4 bg-primary rounded-full" />
-                    <h3 className="font-sora text-xs font-bold text-[#f5d76e] uppercase tracking-widest">
+                    <div className="w-1.5 h-4 bg-[#2DB24A] rounded-full" />
+                    <h3 className="text-xs font-bold text-[#0F5132] uppercase tracking-wider">
                       Ringkasan Analitik & Performa
                     </h3>
                   </div>
@@ -774,55 +731,55 @@ export default function ProfileViewerClient({
                   {user.role === 'MERCHANT' ? (
                     /* Merchant Analytics Grid */
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
-                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Produk</span>
+                      <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm">
+                        <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Total Produk</span>
                         <div className="flex items-baseline gap-1.5">
                           <span className="text-xl font-bold text-text-primary">{products.length}</span>
                           <span className="text-[9px] text-text-secondary">Item terbit</span>
                         </div>
                       </div>
-                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
-                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Pesanan Masuk</span>
+                      <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm">
+                        <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Total Pesanan Masuk</span>
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl font-bold text-primary">{merchantStats?.totalOrders || 0}</span>
+                          <span className="text-xl font-bold text-[#2DB24A]">{merchantStats?.totalOrders || 0}</span>
                           <span className="text-[9px] text-text-secondary">Pesanan</span>
                         </div>
                       </div>
-                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4 col-span-2 sm:col-span-1">
+                      <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm col-span-2 sm:col-span-1">
                         <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Omzet Pendapatan</span>
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-lg font-bold text-primary">Rp {(merchantStats?.totalRevenue || 0).toLocaleString('id-ID')}</span>
+                          <span className="text-lg font-bold text-[#2DB24A]">Rp {(merchantStats?.totalRevenue || 0).toLocaleString('id-ID')}</span>
                         </div>
                       </div>
                     </div>
                   ) : (
                     /* Affiliate Analytics Grid */
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
-                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Akumulasi Komisi</span>
+                      <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm">
+                        <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Akumulasi Komisi</span>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-base font-bold text-primary">Rp {(affiliateStats?.totalEarnings || 0).toLocaleString('id-ID')}</span>
+                          <span className="text-base font-bold text-[#2DB24A]">Rp {(affiliateStats?.totalEarnings || 0).toLocaleString('id-ID')}</span>
                         </div>
                       </div>
-                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
-                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Klik Tautan</span>
+                      <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm">
+                        <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Klik Tautan</span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-lg font-bold text-text-primary">{affiliateStats?.clicksCount || 0}</span>
                           <span className="text-[9px] text-text-secondary">Klik</span>
                         </div>
                       </div>
-                      <div className="bg-surface-dark/60 border border-border-subtle rounded-2xl p-4">
-                        <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Referral Pendaftaran</span>
+                      <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm">
+                        <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Referral Pendaftaran</span>
                         <div className="flex items-baseline gap-1">
                           <span className="text-lg font-bold text-text-primary">{affiliateStats?.referrals?.length || 0}</span>
                           <span className="text-[9px] text-text-secondary">Mitra</span>
                         </div>
                       </div>
                       {isOwner && wallet && (
-                        <div className="bg-surface-dark/60 border border-primary/20 bg-gradient-to-b from-primary/5 to-transparent rounded-2xl p-4">
-                          <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Saldo Dompet</span>
+                        <div className="bg-[#EAF5ED] border border-[#2DB24A]/25 rounded-xl p-4">
+                          <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Saldo Dompet</span>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-base font-bold text-primary">Rp {(wallet.balance || 0).toLocaleString('id-ID')}</span>
+                            <span className="text-base font-bold text-[#2DB24A]">Rp {(wallet.balance || 0).toLocaleString('id-ID')}</span>
                           </div>
                         </div>
                       )}
@@ -831,12 +788,12 @@ export default function ProfileViewerClient({
 
                   {/* Wallet Shortcut for Owner */}
                   {isOwner && (
-                    <div className="flex justify-between items-center bg-surface-container-lowest border border-border-subtle rounded-2xl p-4 text-xs">
+                    <div className="flex justify-between items-center bg-white border border-[#E5E7EB] rounded-xl p-4 text-xs shadow-sm">
                       <div className="flex items-center gap-3 text-text-secondary">
-                        <Wallet className="w-4 h-4 text-primary" />
+                        <Wallet className="w-4 h-4 text-[#2DB24A]" />
                         <span>Kelola penarikan komisi dan histori penarikan di Pusat Dompet Saloka</span>
                       </div>
-                      <Link href="/wallet" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                      <Link href="/wallet" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
                         Buka Dompet
                         <ArrowUpRight className="w-4 h-4" />
                       </Link>
@@ -846,28 +803,28 @@ export default function ProfileViewerClient({
 
                 {/* Log Rujukan/Aktivitas Rinci */}
                 {isOwner && affiliateStats?.referrals && affiliateStats.referrals.length > 0 && (
-                  <div className="border border-border-subtle bg-surface-dark/80 rounded-3xl overflow-hidden shadow-xl">
-                    <div className="px-6 py-4 border-b border-border-subtle bg-surface-container-lowest">
-                      <h4 className="font-sora text-xs font-bold text-text-primary uppercase tracking-wider">
+                  <div className="border border-[#E5E7EB] bg-white rounded-2xl overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-[#E5E7EB] bg-slate-50">
+                      <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">
                         Log Rujukan Terkini
                       </h4>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-border-subtle text-text-secondary bg-surface-container-lowest">
-                            <th className="p-4 font-geist font-bold uppercase tracking-wider">Tanggal</th>
-                            <th className="p-4 font-geist font-bold uppercase tracking-wider">Pelanggan</th>
-                            <th className="p-4 font-geist font-bold uppercase tracking-wider">Status</th>
-                            <th className="p-4 font-geist font-bold uppercase tracking-wider text-right">Komisi</th>
+                          <tr className="border-b border-[#E5E7EB] text-text-secondary bg-slate-50">
+                            <th className="p-4 font-bold uppercase tracking-wider">Tanggal</th>
+                            <th className="p-4 font-bold uppercase tracking-wider">Pelanggan</th>
+                            <th className="p-4 font-bold uppercase tracking-wider">Status</th>
+                            <th className="p-4 font-bold uppercase tracking-wider text-right">Komisi</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-border-subtle">
+                        <tbody className="divide-y divide-[#E5E7EB]">
                           {affiliateStats.referrals.slice(0, 5).map((ref: any) => {
                             const date = new Date(ref.createdAt)
                             return (
-                              <tr key={ref.id} className="hover:bg-surface-container-lowest transition-colors">
-                                <td className="p-4 text-text-secondary font-geist">
+                              <tr key={ref.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="p-4 text-text-secondary">
                                   {date.toLocaleDateString('id-ID')}{' '}
                                   <span className="opacity-50 text-[10px]">
                                     {date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
@@ -877,11 +834,11 @@ export default function ProfileViewerClient({
                                   {ref.buyer?.name || 'Pelanggan'}
                                 </td>
                                 <td className="p-4">
-                                  <span className="px-2 py-0.5 rounded text-[9px] font-geist font-bold border uppercase bg-green-950 border-green-500/30 text-green-400">
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-bold border uppercase bg-green-50 border-green-200 text-green-700">
                                     {ref.status}
                                   </span>
                                 </td>
-                                <td className="p-4 text-right font-geist font-bold text-primary">
+                                <td className="p-4 text-right font-bold text-[#2DB24A]">
                                   + Rp {ref.amount.toLocaleString('id-ID')}
                                 </td>
                               </tr>
@@ -900,18 +857,18 @@ export default function ProfileViewerClient({
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-6 bg-primary rounded-full" />
-                    <h3 className="font-sora text-sm font-bold text-text-primary uppercase tracking-widest">
+                    <div className="w-1.5 h-6 bg-[#2DB24A] rounded-full" />
+                    <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
                       Katalog Etalase Produk
                     </h3>
                   </div>
-                  <span className="px-3 py-1 bg-surface-container border border-border-subtle rounded-full text-[10px] text-text-secondary font-mono">
+                  <span className="px-3 py-1 bg-slate-100 border border-slate-200 rounded-full text-[10px] text-text-secondary font-mono">
                     {products.length} Items
                   </span>
                 </div>
 
                 {products.length === 0 ? (
-                  <div className="p-12 text-center border border-border-subtle bg-surface-dark/40 rounded-3xl text-xs text-text-secondary">
+                  <div className="p-12 text-center border border-border-subtle bg-slate-50 rounded-2xl text-xs text-text-secondary">
                     Belum ada produk yang diterbitkan oleh merchant ini.
                   </div>
                 ) : (
@@ -919,12 +876,12 @@ export default function ProfileViewerClient({
                     {products.map((p: any) => (
                       <div 
                         key={p.id}
-                        className="group bg-surface-dark/60 border border-border-subtle rounded-3xl p-5 hover:border-primary/25 transition-all duration-300 flex flex-col justify-between shadow-lg relative"
+                        className="group bg-white border border-[#E5E7EB] rounded-2xl p-5 hover:border-[#2DB24A]/30 transition-all duration-300 flex flex-col justify-between shadow-sm relative"
                       >
                         <div>
                           <div className="relative">
                             {p.imageUrl && (
-                              <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden mb-4 border border-border-subtle relative bg-surface-container">
+                              <div className="aspect-[16/10] w-full rounded-xl overflow-hidden mb-4 border border-[#E5E7EB] relative bg-slate-50">
                                 <img 
                                   src={p.imageUrl} 
                                   alt={p.title} 

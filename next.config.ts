@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
     "saloka.varro.my.id",
     "*.varro.my.id"
   ],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   async headers() {
     if (process.env.NODE_ENV === 'development') {
       return [

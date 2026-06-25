@@ -16,6 +16,11 @@ import {
   trackTransactionAction,
   generateDummyAffiliatesAction
 } from '@/app/actions/admin'
+import {
+  createCoinVoucherAdmin,
+  toggleCoinVoucherActive,
+  getCoinAdminStats
+} from '@/app/actions/coin'
 
 interface AdminDashboardClientProps {
   currentUser: any
@@ -25,9 +30,11 @@ interface AdminDashboardClientProps {
   initialOrders: any[]
   initialCourses: any[]
   initialWithdrawals: any[]
+  initialVouchers: any[]
+  initialCoinStats: any
 }
 
-type TabType = 'overview' | 'users' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates'
+type TabType = 'overview' | 'users' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins'
 
 export default function AdminDashboardClient({
   currentUser,
@@ -36,7 +43,9 @@ export default function AdminDashboardClient({
   initialPosts,
   initialOrders,
   initialCourses,
-  initialWithdrawals
+  initialWithdrawals,
+  initialVouchers,
+  initialCoinStats
 }: AdminDashboardClientProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -51,6 +60,20 @@ export default function AdminDashboardClient({
   const [courses, setCourses] = useState(initialCourses)
   const [withdrawals, setWithdrawals] = useState(initialWithdrawals)
   const [processedWithdrawals, setProcessedWithdrawals] = useState<string[]>([])
+
+  const [vouchers, setVouchers] = useState(initialVouchers || [])
+  const [coinStats, setCoinStats] = useState(initialCoinStats || { totalTx: 0, totalRedemptions: 0, recentTx: [] })
+
+  // Voucher Form State
+  const [voucherName, setVoucherName] = useState('')
+  const [voucherDesc, setVoucherDesc] = useState('')
+  const [voucherType, setVoucherType] = useState<'INTERNAL' | 'EXTERNAL'>('INTERNAL')
+  const [voucherCoinCost, setVoucherCoinCost] = useState('')
+  const [voucherValue, setVoucherValue] = useState('')
+  const [voucherCode, setVoucherCode] = useState('')
+  const [voucherMaxRedemption, setVoucherMaxRedemption] = useState('0')
+  const [voucherValidUntil, setVoucherValidUntil] = useState('')
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false)
 
   // Filters / Search
   const [userSearch, setUserSearch] = useState('')
@@ -119,7 +142,8 @@ export default function AdminDashboardClient({
         Number(editUser.level),
         Number(editUser.xp),
         editUser.membershipLevel,
-        editUser.membershipAccess
+        editUser.membershipAccess,
+        editUser.bootcampStatus || 'NONE'
       )
 
       if (res.success) {
@@ -148,7 +172,8 @@ export default function AdminDashboardClient({
         2, // Change level to 2
         u.xp,
         u.membershipLevel,
-        u.membershipAccess
+        u.membershipAccess,
+        u.bootcampStatus || 'NONE'
       )
 
       if (res.success) {
@@ -373,7 +398,8 @@ export default function AdminDashboardClient({
               { id: 'community', label: 'Daftar Komunitas', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
               { id: 'transactions', label: 'Lacak Transaksi', icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4' },
               { id: 'certificates', label: 'Sertifikat Level Up', icon: 'M12 14l-4-4 1.41-1.41L12 11.17l2.59-2.58L16 10l-4 4zm-6 4h12V6H6v12zm12-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12z' },
-              { id: 'affiliates', label: 'Monitor Affiliate', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' }
+              { id: 'affiliates', label: 'Monitor Affiliate', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+              { id: 'coins', label: 'Kelola Koin & Voucher', icon: 'M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A.75.75 0 0 0 9 9h1.5v2.25H9a.75.75 0 0 0 0 1.5h1.5V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-3V9H15a.75.75 0 0 0 0-1.5H9Z' }
             ].map(item => {
               const isActive = activeTab === item.id
               return (
@@ -745,6 +771,29 @@ export default function AdminDashboardClient({
                           </select>
                         </div>
                       </div>
+
+                      {editUser.role === 'MERCHANT' && (
+                        <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg space-y-2">
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">
+                            Kualifikasi Bootcamp Saloka
+                          </label>
+                          {editUser.level < 2 ? (
+                            <div className="text-[11px] text-red-650 font-medium bg-red-50 border border-red-100 p-2.5 rounded">
+                              ⚠️ Merchant belum memenuhi syarat (Minimal Level 2). Saat ini: Level {editUser.level}
+                            </div>
+                          ) : (
+                            <select
+                              value={editUser.bootcampStatus || 'NONE'}
+                              onChange={e => setEditUser({ ...editUser, bootcampStatus: e.target.value })}
+                              className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            >
+                              <option value="NONE">Tidak Terkualifikasi / Belum Aktif</option>
+                              <option value="QUALIFIED">Lolos Kualifikasi (Tombol Aktif)</option>
+                              <option value="JOINED">Sudah Bergabung (Joined)</option>
+                            </select>
+                          )}
+                        </div>
+                      )}
 
                       <div className="pt-4 flex gap-3">
                         <button
@@ -1136,18 +1185,34 @@ export default function AdminDashboardClient({
                             <option value="Gold">Gold</option>
                             <option value="Platinum">Platinum</option>
                             <option value="Diamond">Diamond</option>
+                            <option value="Bootcamp">Bootcamp</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Cover Image URL</label>
-                          <input
-                            type="text"
-                            value={courseCover}
-                            onChange={e => setCourseCover(e.target.value)}
-                            placeholder="https://unsplash..."
-                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
-                          />
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Cover Image (Upload File)</label>
+                          <div className="space-y-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={e => {
+                                const file = e.target.files?.[0]
+                                if (file) {
+                                  const reader = new FileReader()
+                                  reader.onload = () => {
+                                    setCourseCover(reader.result as string)
+                                  }
+                                  reader.readAsDataURL(file)
+                                }
+                              }}
+                              className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[11px] file:font-semibold file:bg-[#0F5132]/10 file:text-[#0F5132] hover:file:bg-[#0F5132]/20 cursor-pointer"
+                            />
+                            {courseCover && (
+                              <div className="w-16 h-10 relative rounded overflow-hidden border border-slate-200">
+                                <img src={courseCover} alt="Preview" className="object-cover w-full h-full" />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -1209,14 +1274,29 @@ export default function AdminDashboardClient({
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Video URL (MP4 / YouTube)</label>
-                        <input
-                          type="text"
-                          value={lessonVideo}
-                          onChange={e => setLessonVideo(e.target.value)}
-                          placeholder="https://www.w3schools.com/html/mov_bbb.mp4"
-                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
-                        />
+                        <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Video Pembahasan (Upload File)</label>
+                        <div className="space-y-2">
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={e => {
+                              const file = e.target.files?.[0]
+                              if (file) {
+                                const reader = new FileReader()
+                                reader.onload = () => {
+                                  setLessonVideo(reader.result as string)
+                                }
+                                reader.readAsDataURL(file)
+                              }
+                            }}
+                            className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[11px] file:font-semibold file:bg-[#0F5132]/10 file:text-[#0F5132] hover:file:bg-[#0F5132]/20 cursor-pointer"
+                          />
+                          {lessonVideo && (
+                            <div className="text-[10px] text-green-700 font-bold">
+                              ✓ Video Terpilih ({Math.round(lessonVideo.length / 1024 / 1024 * 10) / 10} MB)
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -1693,6 +1773,342 @@ export default function AdminDashboardClient({
             </div>
           )}
 
+          {activeTab === 'coins' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {/* Stat Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
+                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Transaksi Koin</p>
+                  <p className="text-2xl font-sora font-extrabold text-[#0F5132] tracking-tight">{coinStats.totalTx}</p>
+                  <p className="text-[10px] text-[#64748b] mt-1.5">Topup, reward, dan redeem koin</p>
+                </div>
+                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
+                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Penukaran Voucher</p>
+                  <p className="text-2xl font-sora font-extrabold text-blue-600 tracking-tight">{coinStats.totalRedemptions}</p>
+                  <p className="text-[10px] text-[#64748b] mt-1.5">Voucher internal & eksternal</p>
+                </div>
+                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm flex flex-col justify-between">
+                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Koin Kas & Rate</p>
+                  <p className="text-sm font-bold text-slate-800">1 Koin = Rp 1.500</p>
+                  <p className="text-[10px] text-[#64748b] mt-1.5">Rate konversi standar Saloka.id</p>
+                </div>
+              </div>
+
+              {/* Vouchers Panel */}
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-widest">Kelola Master Voucher Koin</h3>
+                    <p className="text-xs text-slate-500 mt-1">Daftar voucher diskon belanja yang dapat ditukar dengan koin oleh user.</p>
+                  </div>
+                  <button
+                    onClick={() => setIsVoucherModalOpen(true)}
+                    className="px-4 py-2 bg-[#0F5132] hover:bg-[#0a3a24] text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow flex items-center gap-1.5 cursor-pointer border-none outline-none"
+                  >
+                    <span>+ Tambah Voucher Baru</span>
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs whitespace-nowrap">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                        <th className="px-4 py-3">Nama Voucher</th>
+                        <th className="px-4 py-3">Tipe</th>
+                        <th className="px-4 py-3 text-right">Biaya Koin</th>
+                        <th className="px-4 py-3 text-right">Nilai Rupiah</th>
+                        <th className="px-4 py-3">Kode (External)</th>
+                        <th className="px-4 py-3 text-center">Stok / Terpakai</th>
+                        <th className="px-4 py-3 text-center">Status</th>
+                        <th className="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {vouchers.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="text-center py-8 text-slate-400 italic">
+                            Belum ada master voucher koin terdaftar.
+                          </td>
+                        </tr>
+                      ) : (
+                        vouchers.map((v: any) => (
+                          <tr key={v.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-3">
+                              <p className="font-bold text-slate-800">{v.name}</p>
+                              <p className="text-[10px] text-slate-500">{v.description}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
+                                v.type === 'INTERNAL' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : 'bg-purple-50 text-purple-700 border-purple-200'
+                              }`}>
+                                {v.type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right font-bold text-slate-800">{v.coinCost} Koin</td>
+                            <td className="px-4 py-3 text-right font-bold text-primary">Rp {v.value.toLocaleString('id-ID')}</td>
+                            <td className="px-4 py-3 font-mono text-slate-600">{v.code || '-'}</td>
+                            <td className="px-4 py-3 text-center">
+                              {v.maxRedemption > 0 ? `${v.totalRedeemed} / ${v.maxRedemption}` : `${v.totalRedeemed} / Unlimited`}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
+                                v.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
+                              }`}>
+                                {v.isActive ? 'Aktif' : 'Non-Aktif'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Apakah Anda yakin ingin ${v.isActive ? 'menonaktifkan' : 'mengaktifkan'} voucher ini?`)) {
+                                    startTransition(async () => {
+                                      const res = await toggleCoinVoucherActive(v.id)
+                                      if (res.success) {
+                                        setVouchers((prev: any[]) => prev.map(x => x.id === v.id ? { ...x, isActive: !x.isActive } : x))
+                                      } else {
+                                        alert(res.error || 'Gagal mengubah status voucher.')
+                                      }
+                                    })
+                                  }
+                                }}
+                                className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer border ${
+                                  v.isActive
+                                    ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200'
+                                    : 'bg-green-50 hover:bg-green-100 text-green-600 border-green-200'
+                                }`}
+                              >
+                                {v.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Recent Transactions List */}
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <h3 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
+                  10 Transaksi Koin Terkini
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs whitespace-nowrap">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                        <th className="px-4 py-3">User ID / Penerima</th>
+                        <th className="px-4 py-3">Jenis Transaksi</th>
+                        <th className="px-4 py-3 text-right">Jumlah Koin</th>
+                        <th className="px-4 py-3">Keterangan</th>
+                        <th className="px-4 py-3">Tanggal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {coinStats.recentTx.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="text-center py-4 text-slate-400 italic">
+                            Belum ada riwayat transaksi koin.
+                          </td>
+                        </tr>
+                      ) : (
+                        coinStats.recentTx.map((tx: any) => (
+                          <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-3 font-mono text-slate-600">{tx.userId}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
+                                tx.type === 'TOPUP' ? 'bg-green-50 text-green-700 border-green-200' :
+                                tx.type === 'REDEEM_VOUCHER' ? 'bg-red-50 text-red-700 border-red-200' :
+                                'bg-blue-50 text-blue-700 border-blue-200'
+                              }`}>
+                                {tx.type}
+                              </span>
+                            </td>
+                            <td className={`px-4 py-3 text-right font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                              {tx.amount > 0 ? `+${tx.amount}` : tx.amount} Coin
+                            </td>
+                            <td className="px-4 py-3 text-slate-700">{tx.description}</td>
+                            <td className="px-4 py-3 text-slate-500">{new Date(tx.createdAt).toLocaleString('id-ID')}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Create Voucher Modal */}
+              {isVoucherModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                  <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                      <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">Buat Voucher Koin Baru</h3>
+                      <button onClick={() => setIsVoucherModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                    </div>
+
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        setActionError(null)
+                        setActionSuccess(null)
+                        startTransition(async () => {
+                          const formData = new FormData()
+                          formData.append('name', voucherName)
+                          formData.append('description', voucherDesc)
+                          formData.append('type', voucherType)
+                          formData.append('coinCost', voucherCoinCost)
+                          formData.append('value', voucherValue)
+                          formData.append('code', voucherCode)
+                          formData.append('maxRedemption', voucherMaxRedemption)
+                          formData.append('validUntil', voucherValidUntil)
+
+                          const res = await createCoinVoucherAdmin(formData)
+                          if (res.success && res.voucher) {
+                            setVouchers((prev: any[]) => [res.voucher, ...prev])
+                            setActionSuccess(`Voucher "${voucherName}" berhasil dibuat!`)
+                            setIsVoucherModalOpen(false)
+                            
+                            // Reset form fields
+                            setVoucherName('')
+                            setVoucherDesc('')
+                            setVoucherType('INTERNAL')
+                            setVoucherCoinCost('')
+                            setVoucherValue('')
+                            setVoucherCode('')
+                            setVoucherMaxRedemption('0')
+                            setVoucherValidUntil('')
+
+                            // Reload stats
+                            const stats = await getCoinAdminStats()
+                            if (stats) setCoinStats(stats)
+                          } else {
+                            setActionError(res.error || 'Gagal membuat voucher.')
+                          }
+                        })
+                      }}
+                      className="space-y-4 text-xs"
+                    >
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nama Voucher</label>
+                        <input
+                          type="text"
+                          required
+                          value={voucherName}
+                          onChange={e => setVoucherName(e.target.value)}
+                          placeholder="e.g. Diskon 25rb Shopee"
+                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Deskripsi</label>
+                        <textarea
+                          required
+                          value={voucherDesc}
+                          onChange={e => setVoucherDesc(e.target.value)}
+                          placeholder="e.g. Tukarkan koin Anda untuk mendapatkan voucher potongan 25.000 rupiah di Shopee."
+                          rows={2}
+                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132] resize-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Tipe Voucher</label>
+                          <select
+                            value={voucherType}
+                            onChange={e => setVoucherType(e.target.value as any)}
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-800 outline-none focus:border-[#0F5132]"
+                          >
+                            <option value="INTERNAL">INTERNAL (Saloka)</option>
+                            <option value="EXTERNAL">EXTERNAL (TikTok/Shopee)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Biaya (Koin)</label>
+                          <input
+                            type="number"
+                            required
+                            value={voucherCoinCost}
+                            onChange={e => setVoucherCoinCost(e.target.value)}
+                            placeholder="e.g. 10"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nilai Rp (Value)</label>
+                          <input
+                            type="number"
+                            required
+                            value={voucherValue}
+                            onChange={e => setVoucherValue(e.target.value)}
+                            placeholder="e.g. 25000"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Kode (Jika External)</label>
+                          <input
+                            type="text"
+                            value={voucherCode}
+                            onChange={e => setVoucherCode(e.target.value)}
+                            placeholder="e.g. SHP-DISC25K"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Maks. Klaim (Stok)</label>
+                          <input
+                            type="number"
+                            required
+                            value={voucherMaxRedemption}
+                            onChange={e => setVoucherMaxRedemption(e.target.value)}
+                            placeholder="0 = Unlimited"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132]"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Masa Berlaku (Selesai)</label>
+                          <input
+                            type="date"
+                            value={voucherValidUntil}
+                            onChange={e => setVoucherValidUntil(e.target.value)}
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-800 outline-none focus:border-[#0F5132]"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-4 flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setIsVoucherModalOpen(false)}
+                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isPending}
+                          className="flex-1 py-2.5 bg-[#0F5132] hover:bg-[#0a3a24] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {isPending ? 'Membuat...' : 'Buat Voucher'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
     </div>

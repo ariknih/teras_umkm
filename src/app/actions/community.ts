@@ -359,6 +359,16 @@ export async function submitCooperativeLoanAction(formData: FormData) {
     return { error: 'Jumlah pinjaman tidak valid.' }
   }
 
+  // Cek apakah komunitas memiliki cukup coin untuk membuka akses pinjaman
+  const coinData = await DataStore.getCommunityCoinBalance(communityId)
+  const coinBalance = coinData?.coinBalance || 0
+  const minCoin = coinData?.minCoinForLoan || 1000
+  if (coinBalance < minCoin) {
+    return {
+      error: `Komunitas belum memiliki cukup coin untuk membuka akses pinjaman. Saat ini: ${coinBalance} coin, dibutuhkan minimal: ${minCoin} coin. Hubungi Ketua Komunitas untuk top up coin.`
+    }
+  }
+
   try {
     const loan = await DataStore.submitCooperativeLoan({
       communityId,
