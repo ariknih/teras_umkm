@@ -944,7 +944,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               href="/auth"
               className="btn-primary text-xs"
             >
-              Ganti Akun Demo (Gunakan Merchant)
+              Masuk dengan Akun Merchant
             </Link>
             <Link
               href="/"

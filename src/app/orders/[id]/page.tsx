@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, use, startTransition } from 'react'
 import Link from 'next/link'
-import { getOrderDetail } from '@/app/actions/orders'
+import { getOrderDetail, updateOrderTracking } from '@/app/actions/orders'
 import { createReview } from '@/app/actions/reviews'
 import { CheckCircle2, Package, Truck, Home, Star, AlertCircle, ArrowLeft } from 'lucide-react'
+import { goeyToast } from 'goey-toast'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -23,6 +24,25 @@ export default function OrderDetailPage({ params }: PageProps) {
   const [reviewError, setReviewError] = useState<string | null>(null)
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewedProductIds, setReviewedProductIds] = useState<Set<string>>(new Set())
+  const [completing, setCompleting] = useState(false)
+
+  const handleCompleteOrder = async () => {
+    if (!confirm('Apakah Anda yakin pesanan sudah diterima dengan baik?')) return
+    setCompleting(true)
+    try {
+      const res = await updateOrderTracking(id, 'DELIVERED', 'Pesanan telah diterima oleh pembeli.')
+      if (res.error) {
+        goeyToast.error(res.error)
+      } else {
+        goeyToast.success('Pesanan berhasil diselesaikan!')
+        await fetchOrderDetail()
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal menyelesaikan pesanan.')
+    } finally {
+      setCompleting(false)
+    }
+  }
 
   const fetchOrderDetail = async () => {
     try {
@@ -113,7 +133,10 @@ export default function OrderDetailPage({ params }: PageProps) {
 
   // Stepper state determination
   const trackingSteps = order.tracking || []
-  const currentStatus = trackingSteps.length > 0 ? trackingSteps[trackingSteps.length - 1].status : 'CONFIRMED'
+  let currentStatus = trackingSteps.length > 0 ? trackingSteps[trackingSteps.length - 1].status : 'CONFIRMED'
+  if (order.status === 'COMPLETED') {
+    currentStatus = 'DELIVERED'
+  }
 
   const statuses = [
     { key: 'CONFIRMED', label: 'Dikonfirmasi', icon: CheckCircle2, description: 'Pembayaran terverifikasi' },
@@ -147,15 +170,27 @@ export default function OrderDetailPage({ params }: PageProps) {
               ID Pesanan: <span className="text-primary font-bold">{order.id.replace('order-', '#')}</span>
             </p>
           </div>
-          <span className={`px-2.5 py-1 rounded text-[9px] font-geist font-black uppercase tracking-widest border ${
-            order.status === 'COMPLETED'
-              ? 'bg-green-500/10 border-green-500/20 text-green-400'
-              : order.status === 'CANCELLED'
-              ? 'bg-red-500/10 border-red-500/20 text-red-400'
-              : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 animate-pulse'
-          }`}>
-            Status: {order.status === 'COMPLETED' ? 'Selesai' : order.status === 'CANCELLED' ? 'Batal' : 'Pending'}
-          </span>
+          <div className="flex items-center gap-3">
+            {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+              <button
+                type="button"
+                onClick={handleCompleteOrder}
+                disabled={completing}
+                className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow transition-all cursor-pointer disabled:opacity-50"
+              >
+                {completing ? 'Memproses...' : '✓ Pesanan Diterima'}
+              </button>
+            )}
+            <span className={`px-2.5 py-1 rounded text-[9px] font-geist font-black uppercase tracking-widest border ${
+              order.status === 'COMPLETED'
+                ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                : order.status === 'CANCELLED'
+                ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 animate-pulse'
+            }`}>
+              Status: {order.status === 'COMPLETED' ? 'Selesai' : order.status === 'CANCELLED' ? 'Batal' : 'Pending'}
+            </span>
+          </div>
         </div>
 
         {/* TIMELINE STEPPER (Horizontal on desktop, vertical stack on mobile) */}
@@ -225,7 +260,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                 return (
                   <div key={step.id || idx} className="relative">
                     {/* Circle Dot indicator */}
-                    <div className="btn-primary absolute -left-[21px] top-1.5 w-2.5 border-2 border-surface-dark" />
+                    <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#2DB24A] border-2 border-surface-dark" />
                     
                     <div className="flex justify-between items-start gap-3 flex-wrap">
                       <span className="text-xs font-bold text-text-primary">{step.status}</span>

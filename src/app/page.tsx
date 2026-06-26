@@ -46,22 +46,31 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── TRUSTED BY SECTION ──────────────────────────────────────── */}
+      {/* ── KEUNGGULAN PLATFORM ──────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex flex-col items-center bg-surface">
         <div className="w-full max-w-[1280px] py-8 px-6 bg-surface rounded-3xl border border-border shadow-sm flex flex-col items-center gap-8 overflow-hidden">
-          <h3 className="text-center text-text-primary text-base font-semibold">Trusted by 100+ Companies!</h3>
-          {/* Logo marquee placeholder */}
-          <div className="w-full relative flex items-center justify-center overflow-hidden">
-            <div className="flex items-center gap-8 md:gap-16 opacity-70">
-              <img className="h-10 object-contain" src="https://placehold.co/107x42/f3f4f6/9ca3af?text=Logo" alt="Brand" />
-              <img className="h-10 object-contain" src="https://placehold.co/98x42/f3f4f6/9ca3af?text=Brand" alt="Brand" />
-              <img className="h-10 object-contain hidden md:block" src="https://placehold.co/198x42/f3f4f6/9ca3af?text=Company" alt="Company" />
-              <img className="h-12 object-contain" src="https://placehold.co/84x52/f3f4f6/9ca3af?text=Inc" alt="Inc" />
-              <img className="h-10 object-contain hidden sm:block" src="https://placehold.co/144x42/f3f4f6/9ca3af?text=Studio" alt="Studio" />
+          <h3 className="text-center text-text-primary text-base font-semibold">Ekosistem Lengkap untuk UMKM Indonesia</h3>
+          <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <span className="text-3xl md:text-4xl font-bold text-primary">🛒</span>
+              <span className="text-2xl font-bold text-text-primary">Marketplace</span>
+              <span className="text-xs text-text-secondary">Jual beli produk & jasa</span>
             </div>
-            {/* Fade edges */}
-            <div className="w-16 md:w-56 h-full left-0 top-0 absolute bg-gradient-to-r from-surface to-transparent pointer-events-none" />
-            <div className="w-16 md:w-56 h-full right-0 top-0 absolute bg-gradient-to-l from-surface to-transparent pointer-events-none" />
+            <div className="flex flex-col items-center gap-2 text-center">
+              <span className="text-3xl md:text-4xl font-bold text-primary">🎓</span>
+              <span className="text-2xl font-bold text-text-primary">Academy</span>
+              <span className="text-xs text-text-secondary">Kursus & pelatihan bisnis</span>
+            </div>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <span className="text-3xl md:text-4xl font-bold text-primary">🤝</span>
+              <span className="text-2xl font-bold text-text-primary">Affiliate</span>
+              <span className="text-xs text-text-secondary">Program afiliasi & komisi</span>
+            </div>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <span className="text-3xl md:text-4xl font-bold text-primary">💬</span>
+              <span className="text-2xl font-bold text-text-primary">Komunitas</span>
+              <span className="text-xs text-text-secondary">Forum diskusi & networking</span>
+            </div>
           </div>
         </div>
       </section>
@@ -88,49 +97,61 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ── NEW PRODUCT LINE (MASAYA) ───────────────────────────────── */}
+      {/* ── PRODUK UNGGULAN ───────────────────────────────────────────── */}
+      {featuredProducts.length > 0 && (
       <section className="w-full px-6 md:px-20 py-16 flex justify-center bg-surface">
-        <div className="w-full max-w-[1280px] bg-background rounded-3xl border border-border p-8 md:p-12 flex flex-col lg:flex-row gap-12 relative overflow-hidden shadow-sm">
-          {/* Decorative blurs */}
-          <div className="btn-primary absolute top-0 left-[-50px] w-64 bg-primary/20 blur-3xl" />
-          <div className="btn-primary absolute bottom-0 right-[100px] w-80 bg-primary/20 blur-3xl" />
+        <div className="w-full max-w-[1280px] bg-background rounded-3xl border border-border p-8 md:p-12 flex flex-col gap-8 relative overflow-hidden shadow-sm">
+          <div className="absolute top-0 left-[-50px] w-64 h-64 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="absolute bottom-0 right-[100px] w-80 h-80 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
           
-          <div className="flex-1 flex flex-col justify-center gap-6 relative z-10 max-w-sm">
-            <h2 className="text-2xl md:text-3xl font-semibold text-text-primary leading-snug">Lini produk baru dari Masaya Furnitures!</h2>
-            <p className="text-text-secondary text-sm md:text-base leading-relaxed">
-              Masaya furnitures memperkenalkan lini produk baru yang digadang-gadang sebagai upaya mereka mencapai emisi karbon 0%.
-            </p>
-            <div className="flex gap-2 mt-2">
-              <div className="btn-primary w-8" />
-              <div className="w-2 h-2 bg-border rounded-full" />
-              <div className="w-2 h-2 bg-border rounded-full" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-semibold text-text-primary leading-snug">Produk Unggulan di Saloka.id</h2>
+              <p className="text-text-secondary text-sm md:text-base leading-relaxed mt-2">
+                Temukan berbagai produk UMKM berkualitas dari seluruh Indonesia.
+              </p>
             </div>
+            <Link href="/market" className="btn-secondary text-sm shrink-0">
+              Lihat Semua Produk →
+            </Link>
           </div>
 
-          <div className="flex-[1.5] relative z-10 flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-            <img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=400" alt="Furniture" className="w-64 h-48 md:w-80 md:h-64 rounded-2xl object-cover shrink-0 shadow-md snap-center" />
-            <div className="w-64 h-48 md:w-80 md:h-64 rounded-2xl bg-black/50 shrink-0 shadow-md snap-center flex items-center justify-center text-surface/50 text-sm">Product Image</div>
-            <img src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=400" alt="Furniture" className="w-64 h-48 md:w-80 md:h-64 rounded-2xl object-cover shrink-0 shadow-md snap-center" />
+          <div className="relative z-10 flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
+            {featuredProducts.slice(0, 6).map((product) => (
+              <Link key={product.id} href={`/market/product/${product.id}`} className="w-56 md:w-64 shrink-0 snap-center group">
+                <div className="w-full h-40 md:h-48 rounded-2xl overflow-hidden bg-surface-container shadow-md">
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-text-secondary text-sm">Tidak ada gambar</div>
+                  )}
+                </div>
+                <h3 className="mt-3 text-sm font-semibold text-text-primary line-clamp-1 group-hover:text-primary transition-colors">{product.title}</h3>
+                <p className="text-primary font-bold text-sm">Rp {product.price.toLocaleString('id-ID')}</p>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
+      )}
 
       {/* ── FAQ SECTION ─────────────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex justify-center bg-surface">
         <div className="w-full max-w-[1280px] flex flex-col md:flex-row gap-12 lg:gap-24">
           <div className="w-full md:w-1/3 flex flex-col gap-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight">Frequently Asked Questions</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight">Pertanyaan yang Sering Diajukan</h2>
             <p className="text-text-secondary text-base leading-relaxed">
-              Improve your learning experience with our user-centered platform! Now with the assistance of Learning AI!
+              Temukan jawaban atas pertanyaan umum seputar Saloka.id dan layanan kami.
             </p>
           </div>
           
           <div className="flex-1 flex flex-col gap-4">
             {[
-              { q: 'What is Saloka', a: 'Improve your learning experience with our user-centered learning platform! Now with the assistance of Learning AI! Improve your learning experience with our user-centered learning platform! Now with the assistance of Learning AI!' },
-              { q: 'How do I login', a: 'You can login by clicking the Login button on the top right corner and entering your credentials.' },
-              { q: 'What are the services provided by Saloka?', a: 'We offer a marketplace for physical and digital goods, professional services, an LMS for business training, and an affiliate hub.' },
-              { q: 'Does Saloka have Customer Support?', a: 'Yes, our customer support is available 24/7 via the help center and live chat.' }
+              { q: 'Apa itu Saloka.id?', a: 'Saloka.id adalah platform ekosistem digital terlengkap untuk pelaku UMKM Indonesia. Kami menyediakan marketplace untuk jual beli produk dan jasa, LMS Academy untuk pelatihan bisnis, program afiliasi untuk menambah penghasilan, serta forum komunitas untuk berjejaring sesama pelaku usaha.' },
+              { q: 'Bagaimana cara mendaftar sebagai merchant?', a: 'Klik tombol "Mulai Berdagang Sekarang!" di halaman utama, lalu pilih "Daftar" dan isi data Anda. Setelah mendaftar, Anda bisa langsung membuka toko, menambahkan produk, dan mulai berjualan.' },
+              { q: 'Layanan apa saja yang tersedia di Saloka.id?', a: 'Kami menyediakan Marketplace untuk produk fisik dan digital, Katalog Jasa untuk layanan profesional, LMS Academy untuk kursus dan pelatihan bisnis, Affiliate Hub untuk program komisi, serta Community Forum untuk diskusi dan networking.' },
+              { q: 'Apakah Saloka.id memiliki layanan pelanggan?', a: 'Ya! Tim customer support kami siap membantu Anda melalui fitur live chat yang tersedia di platform. Anda juga bisa menghubungi kami melalui WhatsApp untuk respon yang lebih cepat.' },
+              { q: 'Bagaimana cara pembayaran di Saloka.id?', a: 'Saloka.id mendukung berbagai metode pembayaran melalui Midtrans, termasuk transfer bank, e-wallet (GoPay, OVO, DANA), kartu kredit/debit, dan QRIS. Anda juga bisa menggunakan saldo dompet Saloka untuk transaksi.' },
             ].map((faq, idx) => (
               <details key={idx} className="group border-b border-border pb-4" open={idx === 0}>
                 <summary className="flex items-center gap-4 cursor-pointer list-none py-2">
@@ -145,13 +166,6 @@ export default async function HomePage() {
                 </div>
               </details>
             ))}
-            
-            <button className="mt-4 flex items-center gap-2 text-primary font-medium hover:text-secondary w-fit transition-colors">
-              See More FAQs
-              <div className="btn-primary w-5 bg-primary/10 flex items-center justify-center">
-                <div className="btn-primary w-1.5" />
-              </div>
-            </button>
           </div>
         </div>
       </section>

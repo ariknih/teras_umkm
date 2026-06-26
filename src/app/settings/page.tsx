@@ -92,6 +92,50 @@ export default function SettingsPage() {
       .finally(() => setKycLoading(false))
   }, [router])
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingAvatar(true)
+    setErrorMsg('')
+
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('folder', 'avatars')
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd,
+      })
+
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Gagal mengunggah foto profil.')
+      }
+
+      // Save to database
+      const saveRes = await updateUserSettingsAction({
+        image: data.url,
+      })
+
+      if (saveRes.error) {
+        throw new Error(saveRes.error)
+      }
+
+      setUser((prev: any) => ({ ...prev, image: data.url }))
+      goeyToast.success('Foto profil berhasil diubah!')
+    } catch (err: any) {
+      console.error(err)
+      setErrorMsg(err.message || 'Gagal mengubah foto profil.')
+      goeyToast.error(err.message || 'Gagal mengubah foto profil.')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   const handleSave = async () => {
     setSaving(true)
     setErrorMsg('')
@@ -186,13 +230,33 @@ export default function SettingsPage() {
               <h2 className="font-sora text-xl font-bold text-foreground mb-6">Profil & Biodata</h2>
               
               <div className="flex items-center gap-6 mb-8 pb-8 border-b border-border-subtle">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary-container text-white flex items-center justify-center text-2xl font-extrabold shadow-lg">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-primary to-primary-container text-white flex items-center justify-center text-2xl font-extrabold shadow-lg relative">
+                  {uploadingAvatar && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    </div>
+                  )}
+                  {user?.image ? (
+                    <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    user?.name?.charAt(0).toUpperCase() || 'U'
+                  )}
                 </div>
                 <div>
-                  <button className="px-4 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle rounded-full text-xs font-bold transition-colors cursor-pointer outline-none">
-                    Ubah Foto
-                  </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="avatar-file-input"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                    disabled={uploadingAvatar}
+                  />
+                  <label
+                    htmlFor="avatar-file-input"
+                    className={`inline-block px-4 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle rounded-full text-xs font-bold transition-colors cursor-pointer outline-none ${uploadingAvatar ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {uploadingAvatar ? 'Mengunggah...' : 'Ubah Foto'}
+                  </label>
                   <p className="text-[10px] text-foreground/50 mt-2">JPG, GIF atau PNG maksimal 2MB.</p>
                 </div>
               </div>

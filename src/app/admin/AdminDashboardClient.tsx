@@ -474,7 +474,7 @@ export default function AdminDashboardClient({
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132] bg-[#E8F5E9] border border-[#0F5132]/20 px-2.5 py-1 rounded uppercase tracking-wider">
               <span className="w-1.5 h-1.5 bg-[#0F5132] rounded-full animate-pulse inline-block" />
-              Realtime Sandbox
+              Sistem Aktif
             </span>
             <Link href="/" className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 rounded-[var(--radius-brand)] transition-colors border border-[#e2e8f0] uppercase tracking-wider shadow-sm">
               Kembali ke Landing

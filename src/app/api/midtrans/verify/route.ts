@@ -5,7 +5,8 @@ import { getTransactionStatus, decodeUserIdFromMidtrans } from '@/lib/midtrans';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { orderId, simulate } = body;
+    const orderId = body.orderId || body.order_id;
+    const simulate = body.simulate;
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID wajib diisi.' }, { status: 400 });
@@ -24,7 +25,9 @@ export async function POST(req: NextRequest) {
     let status = 'pending';
     let grossAmount = 0;
 
-    if (simulate) {
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.MIDTRANS_IS_PRODUCTION === 'true';
+
+    if (simulate && !isProduction) {
       // Simulate success for local testing
       status = 'settlement';
       

@@ -5177,6 +5177,7 @@ export const DataStore = {
     zapierWebhookUrl?: string | null;
     googleSheetUrl?: string | null;
     zoomMeetingUrl?: string | null;
+    image?: string | null;
   }) {
     if (await isDbConnected()) {
       try {
@@ -5197,6 +5198,7 @@ export const DataStore = {
       if (data.zapierWebhookUrl !== undefined) user.zapierWebhookUrl = data.zapierWebhookUrl
       if (data.googleSheetUrl !== undefined) user.googleSheetUrl = data.googleSheetUrl
       if (data.zoomMeetingUrl !== undefined) user.zoomMeetingUrl = data.zoomMeetingUrl
+      if (data.image !== undefined) user.image = data.image
       user.updatedAt = new Date()
       saveMockDb()
       return user

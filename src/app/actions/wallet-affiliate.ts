@@ -72,6 +72,7 @@ export async function updateUserSettingsAction(data: {
   zapierWebhookUrl?: string | null;
   googleSheetUrl?: string | null;
   zoomMeetingUrl?: string | null;
+  image?: string | null;
 }) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }

@@ -61,6 +61,24 @@ export async function updateOrderTracking(orderId: string, status: string, note?
     return { error: 'Anda harus masuk terlebih dahulu.' }
   }
 
+  // Load the order to check authorization
+  const order = await DataStore.findOrderById(orderId)
+  if (!order) {
+    return { error: 'Pesanan tidak ditemukan.' }
+  }
+
+  const isMerchant = order.items?.some((item: any) => item.product?.merchantId === user.id)
+  const isBuyer = order.buyerId === user.id
+  const isAdmin = user.role === 'ADMIN'
+
+  // Access control check:
+  // - Admin can update any order.
+  // - Merchant of the product can update tracking (PROCESSING, SHIPPED, DELIVERED).
+  // - Buyer can cancel their own order.
+  if (!isAdmin && !isMerchant && !(isBuyer && (status === 'CANCELLED' || status === 'DELIVERED'))) {
+    return { error: 'Akses ditolak. Anda tidak berwenang memperbarui pesanan ini.' }
+  }
+
   // Set default note if not provided
   let defaultNote = note
   if (!defaultNote) {
@@ -120,6 +138,19 @@ export async function updateShippingLabel(orderId: string, label: string) {
   if (!user || user.role !== 'MERCHANT') {
     return { error: 'Akses ditolak.' }
   }
+
+  // Load the order to check authorization
+  const order = await DataStore.findOrderById(orderId)
+  if (!order) {
+    return { error: 'Pesanan tidak ditemukan.' }
+  }
+
+  const isMerchant = order.items?.some((item: any) => item.product?.merchantId === user.id)
+
+  if (!isMerchant) {
+    return { error: 'Akses ditolak. Anda bukan merchant untuk pesanan ini.' }
+  }
+
   try {
     await DataStore.updateOrderShippingLabel(orderId, label)
     // Otomatis update tracking jadi SHIPPED

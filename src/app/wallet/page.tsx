@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Script from 'next/script'
 import { getWalletDetails, withdrawFunds } from '@/app/actions/wallet-affiliate'
 import { getCurrentUserProfile, logout } from '@/app/actions/auth'
 import { goeyToast } from 'goey-toast'
@@ -63,7 +64,6 @@ export default function WalletPage() {
   useEffect(() => {
     loadData()
   }, [])
-
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -85,6 +85,7 @@ export default function WalletPage() {
 
       const data = await res.json()
       if (!res.ok || data.error) {
+        setIsDepositLoading(false)
         throw new Error(data.error || 'Gagal memproses pembayaran.')
       }
 
@@ -96,25 +97,28 @@ export default function WalletPage() {
           onSuccess: async (result: any) => {
             setSuccess('Pembayaran berhasil! Memverifikasi...')
             await verifyTransaction(result.order_id || data.orderId)
+            setIsDepositLoading(false)
           },
           onPending: (result: any) => {
             setPendingOrderId(result.order_id || data.orderId)
-            setSuccess('Menunggu pembayaran diselesaikan. Selesaikan pembayaran atau gunakan verifikasi manual di bawah.')
+            setSuccess('Menunggu pembayaran diselesaikan. Silakan selesaikan pembayaran Anda.')
+            setIsDepositLoading(false)
           },
           onError: (result: any) => {
             setError('Terjadi kesalahan pada pembayaran Midtrans.')
+            setIsDepositLoading(false)
           },
           onClose: () => {
-            setSuccess(`Transaksi dibuat: ${data.orderId}. Anda dapat menyelesaikannya atau klik 'Verifikasi Manual'.`)
+            setSuccess(`Pembayaran belum selesai. Silakan selesaikan pembayaran atau coba lagi.`)
+            setIsDepositLoading(false)
           }
         })
       } else {
-        // Fallback if Snap script failed to load, allow manual verification / simulation
-        setSuccess(`Token Midtrans berhasil dibuat: ${data.orderId}. Silakan gunakan panel simulasi di bawah untuk konfirmasi offline.`)
+        setSuccess(`Pembayaran sedang diproses. Jika sudah membayar, silakan tunggu beberapa saat.`)
+        setIsDepositLoading(false)
       }
     } catch (err: any) {
       setError(err.message || 'Gagal terhubung dengan Midtrans.')
-    } finally {
       setIsDepositLoading(false)
     }
   }
@@ -653,6 +657,15 @@ export default function WalletPage() {
           </div>
         </div>
       </div>
+      {/* Load Midtrans Snap dynamically */}
+      <Script
+        src={process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true' 
+          ? "https://app.midtrans.com/snap/snap.js" 
+          : "https://app.sandbox.midtrans.com/snap/snap.js"
+        }
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-sFQP1v53tr2M3CQd'}
+        strategy="lazyOnload"
+      />
     </div>
   )
 }

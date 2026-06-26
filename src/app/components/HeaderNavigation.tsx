@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import CartButton from './CartButton'
 import NotificationBell from './NotificationBell'
-import { Menu, X, LogOut, Settings, Shield, User as UserIcon, LayoutDashboard, Wallet, Search, MapPin } from 'lucide-react'
+import ChatHeaderButton from './ChatHeaderButton'
+import { Menu, X, LogOut, Settings, Shield, User as UserIcon, LayoutDashboard, Wallet, Search, MapPin, MessageSquare } from 'lucide-react'
 import { AuthDialog } from '@/components/AuthDialog'
 import { Logo } from '@/components/Logo'
 
@@ -63,6 +64,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
           <div className="flex items-center gap-3">
             {user && <CartButton userId={user.id} />}
             {user && <NotificationBell />}
+            {user && <ChatHeaderButton userId={user.id} />}
 
             {user && <div className="w-[1px] h-5 bg-border/80 mx-1 hidden sm:block" />}
 
@@ -87,9 +89,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     onClick={() => setIsOpenProfile(!isOpenProfile)}
                     className="flex relative w-8 h-8 rounded-full overflow-hidden border border-primary/40 hover:border-primary transition-colors items-center justify-center bg-gradient-to-br from-primary to-primary-container shadow shadow-primary/5 shrink-0 outline-none cursor-pointer"
                   >
-                    <span className="font-sora font-extrabold text-xs text-white">
-                      {user.name?.charAt(0).toUpperCase() || 'U'}
-                    </span>
+                    {user.image ? (
+                      <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="font-sora font-extrabold text-xs text-white">
+                        {user.name?.charAt(0).toUpperCase() || 'U'}
+                      </span>
+                    )}
                   </button>
 
                   {isOpenProfile && (
@@ -151,6 +157,11 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                             <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A.75.75 0 0 0 9 9h1.5v2.25H9a.75.75 0 0 0 0 1.5h1.5V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-3V9H15a.75.75 0 0 0 0-1.5H9Z" clipRule="evenodd" />
                           </svg>
                           <span>Dompet Koin</span>
+                        </Link>
+
+                        <Link href="/chat" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
+                          <MessageSquare size={14} className="text-primary" />
+                          <span>Chat Obrolan</span>
                         </Link>
 
                         <Link href="/settings" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">

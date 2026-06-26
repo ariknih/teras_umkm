@@ -113,6 +113,7 @@ model User {
   email        String        @unique
   username     String?       @unique // Kode referral (unik, tidak bisa sama)
   name         String
+  image        String?       // Profile picture URL
   passwordHash String
   role         Role          @default(CUSTOMER)
   latitude     Float?
