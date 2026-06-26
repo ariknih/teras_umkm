@@ -792,49 +792,52 @@ export default function CartPage() {
   )
 
 
-  const renderSimulatePanel = () => (
-    (pendingOrderId || manualOrderId) && (
-      <div className="border border-yellow-500/20 bg-yellow-500/5 p-6 rounded-[var(--radius-brand)] mt-6">
-        <span className="block text-[10px] font-geist font-bold text-yellow-500 uppercase tracking-widest mb-2">
-          🛠️ Panel Simulasi & Verifikasi Midtrans Sandbox / Offline
-        </span>
-        <p className="text-[10px] text-foreground/70 mb-4 leading-relaxed">
-          Gunakan panel ini untuk memverifikasi transaksi secara manual atau klik <strong>Simulasikan Berhasil</strong> untuk memproses checkout secara instan untuk pengujian offline.
-        </p>
-        
-        <div className="flex flex-col gap-2">
-          <div className="text-[10px] text-foreground/70 font-mono break-all bg-surface-container/55 p-2 rounded border border-border-subtle">
-            <strong>Order ID:</strong> {pendingOrderId || 'Belum ada'}
-          </div>
-          <input
-            type="text"
-            value={manualOrderId || pendingOrderId || ''}
-            onChange={(e) => setManualOrderId(e.target.value)}
-            placeholder="Masukkan Order ID manual jika ada"
-            className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-foreground focus:outline-none focus:border-primary/50"
-          />
-          <div className="flex gap-2 mt-1">
-            <button
-              type="button"
-              disabled={isVerifying || (!manualOrderId && !pendingOrderId)}
-              onClick={() => verifyCheckout(manualOrderId || pendingOrderId || '', false)}
-              className="flex-1 h-10 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-primary font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-colors"
-            >
-              Cek Status
-            </button>
-            <button
-              type="button"
-              disabled={isVerifying || (!manualOrderId && !pendingOrderId)}
-              onClick={() => verifyCheckout(manualOrderId || pendingOrderId || '', true)}
-              className="flex-1 h-10 bg-yellow-600 hover:bg-yellow-500 text-black font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-colors"
-            >
-              Simulasikan
-            </button>
+  const renderSimulatePanel = () => {
+    if (process.env.NODE_ENV === 'production') return null;
+    return (
+      (pendingOrderId || manualOrderId) && (
+        <div className="border border-yellow-500/20 bg-yellow-500/5 p-6 rounded-[var(--radius-brand)] mt-6">
+          <span className="block text-[10px] font-geist font-bold text-yellow-500 uppercase tracking-widest mb-2">
+            🛠️ Panel Simulasi & Verifikasi Midtrans Sandbox / Offline
+          </span>
+          <p className="text-[10px] text-foreground/70 mb-4 leading-relaxed">
+            Gunakan panel ini untuk memverifikasi transaksi secara manual atau klik <strong>Simulasikan Berhasil</strong> untuk memproses checkout secara instan untuk pengujian offline.
+          </p>
+          
+          <div className="flex flex-col gap-2">
+            <div className="text-[10px] text-foreground/70 font-mono break-all bg-surface-container/55 p-2 rounded border border-border-subtle">
+              <strong>Order ID:</strong> {pendingOrderId || 'Belum ada'}
+            </div>
+            <input
+              type="text"
+              value={manualOrderId || pendingOrderId || ''}
+              onChange={(e) => setManualOrderId(e.target.value)}
+              placeholder="Masukkan Order ID manual jika ada"
+              className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-foreground focus:outline-none focus:border-primary/50"
+            />
+            <div className="flex gap-2 mt-1">
+              <button
+                type="button"
+                disabled={isVerifying || (!manualOrderId && !pendingOrderId)}
+                onClick={() => verifyCheckout(manualOrderId || pendingOrderId || '', false)}
+                className="flex-1 h-10 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-primary font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-colors"
+              >
+                Cek Status
+              </button>
+              <button
+                type="button"
+                disabled={isVerifying || (!manualOrderId && !pendingOrderId)}
+                onClick={() => verifyCheckout(manualOrderId || pendingOrderId || '', true)}
+                className="flex-1 h-10 bg-yellow-600 hover:bg-yellow-500 text-black font-geist font-bold text-[10px] uppercase tracking-wider rounded transition-colors"
+              >
+                Simulasikan
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )
     )
-  )
+  }
 
   const renderAffiliateIdCard = () => {
     if (!affiliateId) return null;
@@ -1281,10 +1284,25 @@ export default function CartPage() {
                 <button
                   id="cart-checkout"
                   onClick={handleCheckout}
-                  disabled={isPending || isPendingCheckout || isVerifying || cart.length === 0 || hasOwnProduct}
+                  disabled={
+                    isPending ||
+                    isPendingCheckout ||
+                    isVerifying ||
+                    cart.length === 0 ||
+                    hasOwnProduct ||
+                    (paymentMethod === 'WALLET' && (walletBalance === null || walletBalance < total))
+                  }
                   className="w-full py-3.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-geist font-bold text-xs uppercase tracking-wider rounded-[var(--radius-brand)] shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isPendingCheckout ? 'Memproses Transaksi...' : (isVerifying ? 'Memverifikasi Pembayaran...' : (paymentMethod === 'WALLET' ? '⚡ 1-Click Checkout via Dompet' : 'Bayar & Selesaikan Order (Midtrans)'))}
+                  {isPendingCheckout 
+                    ? 'Memproses Transaksi...' 
+                    : isVerifying 
+                    ? 'Memverifikasi Pembayaran...' 
+                    : paymentMethod === 'WALLET' 
+                    ? (walletBalance === null || walletBalance < total) 
+                      ? 'Saldo Dompet Tidak Mencukupi' 
+                      : '⚡ 1-Click Checkout via Dompet' 
+                    : 'Bayar & Selesaikan Order (Midtrans)'}
                 </button>
 
                 {hasOwnProduct && (

@@ -62,6 +62,7 @@ interface User {
   id: string
   name: string
   email?: string
+  username?: string | null
   role: string
   level: number
   xp: number
@@ -271,14 +272,16 @@ export default function ProfileViewerClient({
   const badges = React.useMemo(() => getUserBadges(user), [user])
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(user.email || user.id)
+    const code = user.username || (user.email ? user.email.split('@')[0] : '') || user.id
+    navigator.clipboard.writeText(code)
     setCopiedCode(true)
     setTimeout(() => setCopiedCode(false), 2000)
   }
 
   const handleCopyLink = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
-    const link = `${origin}/auth?ref=${user.email || user.id}`
+    const code = user.username || (user.email ? user.email.split('@')[0] : '') || user.id
+    const link = `${origin}/auth?ref=${code}`
     navigator.clipboard.writeText(link)
     setCopiedLink(true)
     setTimeout(() => setCopiedLink(false), 2000)
@@ -552,7 +555,7 @@ export default function ProfileViewerClient({
                           <input
                             type="text"
                             readOnly
-                            value={user.email || user.id}
+                            value={user.username || (user.email ? user.email.split('@')[0] : '') || user.id}
                             className="flex-1 h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-[#111111] focus:outline-none"
                           />
                           <button
@@ -583,7 +586,7 @@ export default function ProfileViewerClient({
                           <input
                             type="text"
                             readOnly
-                            value={typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.email || user.id}` : `/auth?ref=${user.id}`}
+                            value={typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.username || (user.email ? user.email.split('@')[0] : '') || user.id}` : `/auth?ref=${user.id}`}
                             className="flex-1 h-10 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono text-[#111111] focus:outline-none"
                           />
                           <button
@@ -610,7 +613,7 @@ export default function ProfileViewerClient({
                         <span className="block text-[9px] uppercase tracking-wider text-text-secondary mb-2 font-bold">Bagikan Cepat</span>
                         <div className="flex gap-2">
                           <a 
-                            href={`https://wa.me/?text=${encodeURIComponent(`Ayo daftar di Saloka.id menggunakan rujukan saya: ${typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.email || user.id}` : ''}`)}`}
+                            href={`https://wa.me/?text=${encodeURIComponent(`Ayo daftar di Saloka.id menggunakan rujukan saya: ${typeof window !== 'undefined' ? `${window.location.origin}/auth?ref=${user.username || (user.email ? user.email.split('@')[0] : '') || user.id}` : ''}`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg text-xs text-green-700 hover:bg-green-100 transition-all font-semibold flex items-center gap-1.5"
@@ -670,7 +673,7 @@ export default function ProfileViewerClient({
                                   Instan & Aman
                                 </span>
                                 <h4 className="text-xs font-bold text-text-primary">
-                                  Verifikasi Otomatis Didit
+                                  Verifikasi Otomatis
                                 </h4>
                               </div>
                               <p className="text-[10px] text-text-secondary mt-1.5 leading-relaxed">

@@ -168,6 +168,7 @@ export default async function ProfilePage({ params }: PageProps) {
         id: user.id,
         name: user.name,
         email: user.email,
+        username: user.username,
         role: user.role,
         level: user.level,
         xp: user.xp,

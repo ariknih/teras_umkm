@@ -551,7 +551,7 @@ export default function WalletPage() {
         </div>
 
         {/* MIDTRANS TRANSACTION SIMULATION PANEL */}
-        {(pendingOrderId || manualOrderId || pendingOrderId === null) && (
+        {process.env.NODE_ENV !== 'production' && (pendingOrderId || manualOrderId || pendingOrderId === null) && (
           <div className="border border-amber-200 bg-amber-50 p-6 rounded-2xl mb-12">
             <span className="block text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2">
               🛠️ Panel Simulasi & Verifikasi Midtrans Sandbox / Offline

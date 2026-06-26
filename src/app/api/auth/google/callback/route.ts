@@ -76,9 +76,21 @@ export async function GET(request: NextRequest) {
       // Create a new user with google details
       const randomPassword = crypto.randomBytes(16).toString('hex')
       const passwordHash = crypto.createHash('sha256').update(randomPassword).digest('hex')
+      
+      // Generate a unique username for Google OAuth
+      let baseUsername = (name || email.split('@')[0]).toLowerCase().replace(/[^a-z0-9]/g, '')
+      if (baseUsername.length < 3) baseUsername = "user"
+      let username = baseUsername
+      let counter = 1
+      while (await DataStore.findUserByUsername(username)) {
+        username = `${baseUsername}${counter}`
+        counter++
+      }
+
       user = await DataStore.createUser({
         email,
         name: name || email.split('@')[0],
+        username,
         passwordHash,
         role
       })

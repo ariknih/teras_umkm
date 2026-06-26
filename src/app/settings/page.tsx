@@ -349,7 +349,7 @@ export default function SettingsPage() {
                     ))}
                   </ul>
                   <p className="text-[10px] text-foreground/40 mt-3">
-                    Powered by <strong>Didit</strong> — verifikasi aman & gratis. Data tidak disimpan di server Saloka.id.
+                    Verifikasi aman & gratis. Data tidak disimpan di server Saloka.id.
                   </p>
                 </div>
               )}
