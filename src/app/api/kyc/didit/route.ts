@@ -6,7 +6,7 @@ const DIDIT_BASE_URL = process.env.DIDIT_BASE_URL || 'https://verification.didit
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 // Per-session config — NOT a secret, NOT an env var (per Didit docs)
-const WORKFLOW_ID = 'e697a038-ffc1-466f-a86a-39c483eb33d7' // Free KYC
+const WORKFLOW_ID = process.env.DIDIT_WORKFLOW_ID || 'e697a038-ffc1-466f-a86a-39c483eb33d7'
 
 export async function POST(req: NextRequest) {
   try {
