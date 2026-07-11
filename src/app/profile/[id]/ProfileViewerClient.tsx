@@ -692,7 +692,14 @@ export default function ProfileViewerClient({
                                 const res = await fetch('/api/kyc/didit', { method: 'POST' })
                                 const data = await res.json()
                                 if (data.url) {
-                                  window.location.href = data.url
+                                  // Open Didit modal (SDK) — user stays on page
+                                  const { DiditSdk } = await import('@didit-protocol/sdk-web')
+                                  DiditSdk.shared.onComplete = (result: { status: string }) => {
+                                    if (result.status === 'completed') {
+                                      goeyToast.success('Verifikasi selesai! Menunggu konfirmasi...')
+                                    }
+                                  }
+                                  DiditSdk.shared.startVerification({ url: data.url })
                                 } else {
                                   goeyToast.error(data.error || 'Gagal memulai verifikasi. Coba lagi.')
                                 }

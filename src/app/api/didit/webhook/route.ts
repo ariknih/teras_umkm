@@ -3,82 +3,132 @@ import { DataStore } from '@/lib/data-store'
 import crypto from 'crypto'
 
 /**
- * Webhook handler untuk menerima hasil verifikasi KYC dari Didit.
- * Didit akan POST ke URL ini setelah user menyelesaikan (atau gagal) verifikasi.
+ * Didit Webhook V3 Handler
+ * Verifies X-Signature-V2 (HMAC-SHA256 of canonicalised body)
+ * then dispatches on status (case-sensitive literals).
  *
- * Payload dari Didit (format umum):
- * {
- *   session_id: string,
- *   status: 'approved' | 'declined' | 'review',
- *   vendor_data: string (userId yang kita set waktu create session),
- *   kyc: { document: {...}, liveness: {...} },
- *   ...
- * }
+ * Canonicalisation: shortenFloats → sortKeys → JSON.stringify (unescaped Unicode)
  */
+
+// Whole-number floats (1.0 → 1) — matches Didit server canonicalization
+function shortenFloats(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(shortenFloats)
+  if (v && typeof v === 'object') {
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, shortenFloats(x)])
+    )
+  }
+  if (typeof v === 'number' && !Number.isInteger(v) && v % 1 === 0) return Math.trunc(v)
+  return v
+}
+
+// Recursive lexicographic key sort (array order preserved)
+function sortKeys(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(sortKeys)
+  if (v && typeof v === 'object') {
+    return Object.keys(v as object)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, k) => {
+        acc[k] = sortKeys((v as Record<string, unknown>)[k])
+        return acc
+      }, {})
+  }
+  return v
+}
+
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text()
 
-    // Ambil signature dari header (bisa x-signature, x-signature-v2, dll.)
-    const signature = req.headers.get('x-signature') || req.headers.get('X-Signature')
+    // 1. Read signature headers
+    const sig = req.headers.get('x-signature-v2') ?? ''
+    const ts = Number(req.headers.get('x-timestamp'))
     const secret = process.env.DIDIT_WEBHOOK_SECRET
 
+    // 2. Freshness check — reject if older/newer than 300s (replay protection)
+    if (!ts || Math.abs(Date.now() / 1000 - ts) > 300) {
+      console.error('[Didit Webhook] Stale or missing timestamp')
+      return new NextResponse('stale', { status: 401 })
+    }
+
+    // 3. Verify HMAC signature using X-Signature-V2
     if (secret) {
-      if (!signature) {
-        console.error('[Didit Webhook] Missing signature header')
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+      if (!sig) {
+        console.error('[Didit Webhook] Missing x-signature-v2 header')
+        return new NextResponse('missing signature', { status: 401 })
       }
 
-      // Verifikasi menggunakan hmac-sha256
-      const hmac = crypto.createHmac('sha256', secret)
-      hmac.update(rawBody)
-      const expectedSignature = hmac.digest('hex')
+      const parsed = JSON.parse(rawBody)
+      const canonical = JSON.stringify(sortKeys(shortenFloats(parsed)))
+
+      const expected = crypto
+        .createHmac('sha256', secret)
+        .update(canonical, 'utf8')
+        .digest('hex')
 
       try {
-        const isMatch = crypto.timingSafeEqual(
-          Buffer.from(signature, 'hex'),
-          Buffer.from(expectedSignature, 'hex')
-        )
-        if (!isMatch) {
+        if (
+          sig.length !== expected.length ||
+          !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))
+        ) {
           console.error('[Didit Webhook] Signature mismatch')
-          return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+          return new NextResponse('bad sig', { status: 401 })
         }
       } catch (err) {
         console.error('[Didit Webhook] Signature comparison failed:', err)
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+        return new NextResponse('bad sig', { status: 401 })
       }
     } else {
-      console.warn('[Didit Webhook] DIDIT_WEBHOOK_SECRET is not configured in .env. Skipping verification.')
+      console.warn('[Didit Webhook] DIDIT_WEBHOOK_SECRET not configured — skipping verification')
     }
 
     const payload = JSON.parse(rawBody)
-    console.log('[Didit Webhook] Received payload:', JSON.stringify(payload, null, 2))
+    console.log('[Didit Webhook] Received:', JSON.stringify(payload, null, 2))
 
-    const { session_id, status, vendor_data } = payload
-    const userId = vendor_data // kita simpan userId sebagai vendor_data
+    const { event_id, session_id, status, vendor_data } = payload
+    const userId = vendor_data
 
     if (!userId) {
-      console.warn('[Didit Webhook] No vendor_data (userId) found in payload')
+      console.warn('[Didit Webhook] No vendor_data (userId) in payload')
       return NextResponse.json({ received: true })
     }
 
-    // Simpan status KYC ke database
-    if (status === 'approved' || status === 'Approved') {
-      await DataStore.updateKycStatus(userId, 'VERIFIED', session_id)
-      console.log(`[Didit Webhook] User ${userId} KYC VERIFIED`)
-    } else if (status === 'declined' || status === 'Declined' || status === 'rejected') {
-      await DataStore.updateKycStatus(userId, 'REJECTED', session_id)
-      console.log(`[Didit Webhook] User ${userId} KYC REJECTED`)
-    } else {
-      // 'review', 'pending', atau status lain
-      await DataStore.updateKycStatus(userId, 'PENDING', session_id)
-      console.log(`[Didit Webhook] User ${userId} KYC status: ${status}`)
+    // 4. Dispatch on status — case-sensitive literals (V3 spec)
+    switch (status) {
+      case 'Approved':
+        await DataStore.updateKycStatus(userId, 'VERIFIED', session_id)
+        console.log(`[Didit Webhook] User ${userId} KYC VERIFIED`)
+        break
+      case 'Declined':
+        await DataStore.updateKycStatus(userId, 'REJECTED', session_id)
+        console.log(`[Didit Webhook] User ${userId} KYC DECLINED`)
+        break
+      case 'In Review':
+      case 'Resubmitted':
+      case 'Awaiting User':
+      case 'In Progress':
+      case 'Not Started':
+        await DataStore.updateKycStatus(userId, 'PENDING', session_id)
+        console.log(`[Didit Webhook] User ${userId} KYC status: ${status}`)
+        break
+      case 'Kyc Expired':
+        await DataStore.updateKycStatus(userId, 'NONE', session_id)
+        console.log(`[Didit Webhook] User ${userId} KYC expired — needs re-verification`)
+        break
+      case 'Abandoned':
+      case 'Expired':
+        // No-op: user didn't finish or session timed out
+        console.log(`[Didit Webhook] User ${userId} KYC ${status} — no action`)
+        break
+      default:
+        console.warn(`[Didit Webhook] Unknown status: ${status}`)
     }
 
+    // 5. Return 2xx immediately (Didit timeout = 5s)
     return NextResponse.json({ received: true })
   } catch (err: any) {
     console.error('[Didit Webhook] Error:', err)
-    // Return 200 agar Didit tidak retry terus-menerus
+    // Always 200 so Didit doesn't retry endlessly
     return NextResponse.json({ received: true, error: err.message })
   }
 }

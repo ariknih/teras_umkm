@@ -986,6 +986,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
   // Calculate statistics
   const outOfStockItems = products.filter((p) => p.stock <= 0).length
   const totalItems = products.length
+  const pendingOrdersCount = orders.filter(o => {
+    const lastTracking = o.tracking && o.tracking.length > 0 ? o.tracking[o.tracking.length - 1].status : 'CONFIRMED';
+    return lastTracking !== 'DELIVERED' && lastTracking !== 'CANCELLED';
+  }).length
 
   // Pages management helpers
   const pagesList = (() => {
@@ -1085,7 +1089,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Quick Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
                 <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Saldo Penjualan Merchant
@@ -1116,6 +1120,21 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   className="text-[10px] font-bold text-[#0F5132] hover:text-[#2DB24A] uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   Lihat Semua Produk
+                </button>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-amber-100/70">
+                <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
+                  Pesanan Baru / Diproses
+                </span>
+                <h2 className={`font-sora text-2xl font-black mb-4 ${pendingOrdersCount > 0 ? 'text-amber-600 animate-pulse' : 'text-text-primary'}`}>
+                  {pendingOrdersCount} Pesanan
+                </h2>
+                <button
+                  onClick={() => setActiveTab('orders')}
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-[#2DB24A] uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  Proses Pesanan Sekarang
                 </button>
               </div>
 
@@ -1777,7 +1796,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         return (
                           <button
                             key={status}
-                            disabled={updatingStatus || isCurrent}
+                            disabled={updatingStatus || isCurrent || (status === 'SHIPPED' && !selectedOrder.shippingLabel)}
                             onClick={async () => {
                               setUpdatingStatus(true)
                               const res = await updateOrderTracking(selectedOrder.id, status, statusNotes)
@@ -1785,7 +1804,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                 setError(res.error)
                               } else {
                                 setSuccess(`Status pesanan berhasil diperbarui menjadi ${status}!`)
-                                setSelectedOrder(null)
+                                if (res.order) {
+                                  setSelectedOrder(res.order)
+                                } else {
+                                  setSelectedOrder(null)
+                                }
                                 setStatusNotes('')
                                 await loadData()
                               }
@@ -1794,10 +1817,19 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             className={`w-full py-3 px-4 border rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-left flex items-center justify-between cursor-pointer ${
                               isCurrent
                                 ? 'bg-primary/5 border-primary text-primary opacity-60 cursor-not-allowed'
+                                : (status === 'SHIPPED' && !selectedOrder.shippingLabel)
+                                ? 'bg-surface-container/30 border-border-subtle/50 text-text-secondary/50 cursor-not-allowed'
                                 : 'bg-surface-container hover:bg-surface-container-high border-border-subtle text-text-primary'
                             }`}
                           >
-                            <span>{labels[status]}</span>
+                            <span>
+                              {labels[status]}
+                              {status === 'SHIPPED' && !selectedOrder.shippingLabel && (
+                                <span className="ml-2 text-[9px] text-amber-600 font-normal lowercase italic">
+                                  (Wajib input resi di bawah)
+                                </span>
+                              )}
+                            </span>
                             {isCurrent && <span className="text-[9px] font-bold">SELESAI</span>}
                           </button>
                         )
@@ -1827,7 +1859,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               } else {
                                 setSuccess('Resi berhasil diinput dan pesanan otomatis berstatus SHIPPED!')
                                 setShippingLabelInput('')
-                                setSelectedOrder(null)
+                                if (res.order) {
+                                  setSelectedOrder(res.order)
+                                } else {
+                                  setSelectedOrder(null)
+                                }
                                 await loadData()
                               }
                               setUpdatingStatus(false)

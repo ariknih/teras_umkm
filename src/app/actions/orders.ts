@@ -79,6 +79,12 @@ export async function updateOrderTracking(orderId: string, status: string, note?
     return { error: 'Akses ditolak. Anda tidak berwenang memperbarui pesanan ini.' }
   }
 
+  // If attempting to mark as SHIPPED, they MUST have a shippingLabel (resi) filled
+  if (status === 'SHIPPED' && !order.shippingLabel) {
+    return { error: 'Anda wajib menginput nomor resi kurir terlebih dahulu sebelum mengubah status menjadi Kirim Barang / SHIPPED.' }
+  }
+
+
   // Set default note if not provided
   let defaultNote = note
   if (!defaultNote) {
@@ -154,11 +160,11 @@ export async function updateShippingLabel(orderId: string, label: string) {
   try {
     await DataStore.updateOrderShippingLabel(orderId, label)
     // Otomatis update tracking jadi SHIPPED
-    await DataStore.updateOrderTracking(orderId, 'SHIPPED', `Resi Ekspedisi Diinput: ${label}. Menunggu kurir melakukan penjemputan/pengiriman.`)
+    const updatedOrder = await DataStore.updateOrderTracking(orderId, 'SHIPPED', `Resi Ekspedisi Diinput: ${label}. Menunggu kurir melakukan penjemputan/pengiriman.`)
     revalidatePath(`/orders/${orderId}`)
     revalidatePath('/orders')
     revalidatePath('/merchant/dashboard')
-    return { success: true }
+    return { success: true, order: updatedOrder }
   } catch (e: any) {
     return { error: e.message || 'Gagal menginput resi.' }
   }
