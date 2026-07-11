@@ -694,8 +694,8 @@ export default function ProfileViewerClient({
                                 if (data.url) {
                                   // Open Didit modal (SDK) — user stays on page
                                   const { DiditSdk } = await import('@didit-protocol/sdk-web')
-                                  DiditSdk.shared.onComplete = (result: { status: string }) => {
-                                    if (result.status === 'completed') {
+                                  DiditSdk.shared.onComplete = (result) => {
+                                    if (result.type === 'completed') {
                                       goeyToast.success('Verifikasi selesai! Menunggu konfirmasi...')
                                     }
                                   }
