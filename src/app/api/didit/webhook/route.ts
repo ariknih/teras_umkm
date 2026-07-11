@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         console.log(`[Didit Webhook] User ${userId} KYC status: ${status}`)
         break
       case 'Kyc Expired':
-        await DataStore.updateKycStatus(userId, 'NONE', session_id)
+        await DataStore.updateKycStatus(userId, 'NOT_SUBMITTED', session_id)
         console.log(`[Didit Webhook] User ${userId} KYC expired — needs re-verification`)
         break
       case 'Abandoned':
