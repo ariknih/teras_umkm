@@ -715,43 +715,120 @@ export default function AdminDashboardClient({
             </div>
           )}
 
-          {/* ─── TAB 1: OVERVIEW ───────────────────────────────────────────── */}
+                    {/* ─── TAB 1: OVERVIEW ───────────────────────────────────────────── */}
           {activeTab === 'overview' && (
-            <div className="space-y-8">
-              {/* Stat Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                {[
-                  { label: 'Total Volume Jual Beli', value: `Rp ${totalVolume.toLocaleString('id-ID')}`, sub: `${orders.length} order sukses`, color: 'text-[#0F5132]' },
-                  { label: 'Total Pengguna', value: totalUsers, sub: 'Customer, Merchant & Affiliate', color: 'text-blue-600' },
-                  { label: 'Total Produk & Jasa', value: totalProducts, sub: 'Aktif di catalog', color: 'text-green-600' },
-                  { label: 'Postingan Komunitas', value: totalPosts, sub: 'Artikel & tanya jawab', color: 'text-purple-600' }
-                ].map((stat, i) => (
-                  <div key={i} className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-md transition-all duration-300">
-                    <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">{stat.label}</p>
-                    <p className={`text-2xl font-sora font-extrabold ${stat.color} tracking-tight`}>{stat.value}</p>
-                    <p className="text-[10px] text-[#64748b] mt-1.5">{stat.sub}</p>
+            <div className="space-y-8 animate-fade-in">
+              {/* Stat Cards Bento Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                
+                {/* Bento Card 1: Large Highlight (Total Volume) */}
+                <div className="lg:col-span-2 p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/40 rounded-full blur-3xl -mr-5 -mt-5 group-hover:bg-emerald-100/40 transition-colors duration-300 pointer-events-none" />
+                  <div className="relative z-10 flex flex-col justify-between h-full">
+                    <div>
+                      <span className="text-[9px] font-bold font-mono tracking-widest text-[#0F5132] bg-[#E8F5E9] border border-[#0F5132]/10 px-2.5 py-1 rounded-full uppercase">
+                        Kinerja Finansial
+                      </span>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-5">Total Volume Jual Beli</p>
+                    </div>
+                    <div className="mt-6">
+                      <p className="text-3xl font-sora font-extrabold text-[#0F5132] tracking-tight font-mono">
+                        Rp {totalVolume.toLocaleString('id-ID')}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-2 font-mono flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-[#2DB24A] rounded-full inline-block animate-pulse" />
+                        {orders.length} order sukses
+                      </p>
+                    </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Bento Card 2: Total Users */}
+                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/40 rounded-full blur-2xl -mr-5 -mt-5 group-hover:bg-blue-100/40 transition-colors duration-300 pointer-events-none" />
+                  <div className="relative z-10 flex flex-col justify-between h-full">
+                    <div>
+                      <span className="text-[9px] font-bold font-mono tracking-widest text-blue-700 bg-blue-50 border border-blue-200/20 px-2.5 py-1 rounded-full uppercase">
+                        Komunitas
+                      </span>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-5">Total Pengguna</p>
+                    </div>
+                    <div className="mt-6">
+                      <p className="text-3xl font-sora font-extrabold text-blue-900 tracking-tight font-mono">
+                        {totalUsers}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-2 leading-tight">Customer, Merchant & Affiliate</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bento Card 3: Total Products */}
+                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50/40 rounded-full blur-2xl -mr-5 -mt-5 group-hover:bg-indigo-100/40 transition-colors duration-300 pointer-events-none" />
+                  <div className="relative z-10 flex flex-col justify-between h-full">
+                    <div>
+                      <span className="text-[9px] font-bold font-mono tracking-widest text-indigo-700 bg-indigo-50 border border-indigo-200/20 px-2.5 py-1 rounded-full uppercase">
+                        Etalase
+                      </span>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-5">Total Produk & Jasa</p>
+                    </div>
+                    <div className="mt-6">
+                      <p className="text-3xl font-sora font-extrabold text-indigo-900 tracking-tight font-mono">
+                        {totalProducts}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-2 leading-tight">Aktif di katalog UMKM</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bento Card 4: Postingan Komunitas */}
+                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50/40 rounded-full blur-2xl -mr-5 -mt-5 group-hover:bg-purple-100/40 transition-colors duration-300 pointer-events-none" />
+                  <div className="relative z-10 flex flex-col justify-between h-full">
+                    <div>
+                      <span className="text-[9px] font-bold font-mono tracking-widest text-purple-700 bg-purple-50 border border-purple-200/20 px-2.5 py-1 rounded-full uppercase">
+                        Aktivitas
+                      </span>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-5">Artikel Komunitas</p>
+                    </div>
+                    <div className="mt-6">
+                      <p className="text-3xl font-sora font-extrabold text-purple-900 tracking-tight font-mono">
+                        {totalPosts}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-2 leading-tight">Artikel & tanya jawab forum</p>
+                    </div>
+                  </div>
+                </div>
+
               </div>
 
+              {/* Grid 2: Distribusi & Kategori */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* User Distribution */}
-                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6">
-                  <h3 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">Distribusi Pengguna</h3>
-                  <div className="grid grid-cols-3 gap-4">
+                
+                {/* User Distribution Bento Panel */}
+                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6 hover:shadow-md transition-shadow duration-300">
+                  <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                    <h3 className="font-sora text-sm font-extrabold text-slate-800 uppercase tracking-wider">Distribusi Peran Pengguna</h3>
+                    <span className="text-[9px] font-bold font-mono text-slate-400">DEMOGRAFI AKTIF</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {[
-                      { role: 'MERCHANT', count: users.filter(u => u.role === 'MERCHANT').length, desc: 'Penjual & Mitra', color: 'bg-amber-500' },
-                      { role: 'AFFILIATE', count: users.filter(u => u.role === 'AFFILIATE').length, desc: 'Pemasar Mandiri', color: 'bg-purple-500' },
-                      { role: 'CUSTOMER', count: users.filter(u => u.role === 'CUSTOMER').length, desc: 'Pembeli & LMS Learner', color: 'bg-blue-500' }
+                      { role: 'MERCHANT', count: users.filter(u => u.role === 'MERCHANT').length, desc: 'Penjual & Mitra Toko', color: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50' },
+                      { role: 'AFFILIATE', count: users.filter(u => u.role === 'AFFILIATE').length, desc: 'Pemasar Jaringan', color: 'bg-purple-500', text: 'text-purple-700', bg: 'bg-purple-50' },
+                      { role: 'CUSTOMER', count: users.filter(u => u.role === 'CUSTOMER').length, desc: 'Pembeli & LMS Learner', color: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50' }
                     ].map((item, idx) => {
-                      const pct = Math.round((item.count / totalUsers) * 100)
+                      const pct = Math.round((item.count / totalUsers) * 100) || 0
                       return (
-                        <div key={idx} className="p-4 bg-[#f8f9fa] rounded-[var(--radius-brand)] border border-[#e2e8f0]">
-                          <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">{item.role}</p>
-                          <p className="text-xl font-extrabold text-[#0f172a] mt-1">{item.count} <span className="text-xs text-[#64748b] font-normal">({pct}%)</span></p>
-                          <p className="text-[10px] text-[#64748b] mt-0.5 leading-none">{item.desc}</p>
-                          <div className="w-full bg-[#e2e8f0] h-1.5 rounded-full mt-3 overflow-hidden">
-                            <div className={`${item.color} h-full`} style={{ width: `${pct}%` }} />
+                        <div key={idx} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-colors duration-200">
+                          <span className={`text-[9px] font-bold font-mono tracking-widest px-2.5 py-0.5 rounded ${item.bg} ${item.text}`}>
+                            {item.role}
+                          </span>
+                          <p className="text-2xl font-black text-slate-800 mt-4 font-mono">
+                            {item.count} <span className="text-xs text-slate-400 font-normal">({pct}%)</span>
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-1">{item.desc}</p>
+                          <div className="w-full bg-slate-100 h-1 mt-4 overflow-hidden rounded-full">
+                            <div className={`${item.color} h-full rounded-full`} style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       )
@@ -759,60 +836,76 @@ export default function AdminDashboardClient({
                   </div>
                 </div>
 
-                {/* Top categories */}
-                <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6">
-                  <h3 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">Top Kategori</h3>
-                  <div className="space-y-3.5">
+                {/* Top Categories Bento Panel */}
+                <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6 hover:shadow-md transition-shadow duration-300">
+                  <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
+                    <h3 className="font-sora text-sm font-extrabold text-slate-800 uppercase tracking-wider">Top Kategori Produk</h3>
+                    <span className="text-[9px] font-bold font-mono text-[#0F5132]">PROPORSIONAL</span>
+                  </div>
+                  <div className="space-y-4 max-h-[190px] overflow-y-auto pr-1 scrollbar-thin">
                     {Array.from(new Set(products.map(p => p.category))).map(cat => {
                       const count = products.filter(p => p.category === cat).length
-                      const pct = Math.round((count / totalProducts) * 100)
+                      const pct = Math.round((count / totalProducts) * 100) || 0
                       return (
-                        <div key={cat}>
-                          <div className="flex justify-between text-[11px] font-semibold text-[#64748b] mb-1">
-                            <span className="uppercase text-[#334155]">{cat}</span>
-                            <span>{count} item ({pct}%)</span>
+                        <div key={cat} className="group">
+                          <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1.5">
+                            <span className="uppercase tracking-wider text-slate-700 group-hover:text-slate-900 transition-colors">{cat.replace('_', ' ')}</span>
+                            <span className="font-mono text-slate-600">{count} item ({pct}%)</span>
                           </div>
-                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-[#0F5132] h-full" style={{ width: `${pct}%` }} />
+                          <div className="w-full bg-slate-50 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-gradient-to-r from-[#2DB24A] to-[#0F5132] h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       )
                     })}
                   </div>
                 </div>
+
               </div>
 
-              {/* Latest Transactions Overview */}
-              <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6">
-                <div className="flex justify-between items-center mb-4 border-b border-[#e2e8f0] pb-3">
-                  <h3 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider text-[#0F5132]">5 Transaksi Terkini</h3>
-                  <button onClick={() => setActiveTab('transactions')} className="text-[10px] text-[#0F5132] hover:underline font-bold uppercase tracking-wider">Semua Transaksi →</button>
+              {/* Grid 3: Latest Transactions */}
+              <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6 hover:shadow-md transition-shadow duration-300">
+                <div className="flex justify-between items-center mb-5 border-b border-slate-100 pb-4">
+                  <div>
+                    <h3 className="font-sora text-sm font-extrabold text-slate-800 uppercase tracking-wider">5 Transaksi Terkini</h3>
+                    <p className="text-[10px] text-slate-400 mt-1">Status dan mutasi penjualan di Teras UMKM</p>
+                  </div>
+                  <button 
+                    onClick={() => setActiveTab('transactions')} 
+                    className="px-3.5 py-1.5 border border-slate-100 hover:border-[#0F5132] text-[#0F5132] hover:bg-emerald-50/30 text-[9px] font-bold uppercase tracking-widest rounded-xl transition-all duration-200 cursor-pointer bg-transparent"
+                  >
+                    Semua Transaksi →
+                  </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
                     <thead>
-                      <tr className="border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
-                        <th className="py-2.5">ID Order</th>
-                        <th className="py-2.5">Pembeli</th>
-                        <th className="py-2.5">Tanggal</th>
-                        <th className="py-2.5 text-right">Total Nominal</th>
-                        <th className="py-2.5 text-center">Status</th>
+                      <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider text-[9px] font-mono">
+                        <th className="pb-3 pl-2">ID Order</th>
+                        <th className="pb-3">Pembeli</th>
+                        <th className="pb-3">Tanggal Transaksi</th>
+                        <th className="pb-3 text-right">Total Nominal</th>
+                        <th className="pb-3 text-center">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-50">
                       {orders.slice(0, 5).map(o => {
                         const buyer = users.find(u => u.id === o.buyerId)
                         return (
-                          <tr key={o.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 font-mono font-bold text-[#0F5132]">{o.id}</td>
-                            <td className="py-3">
+                          <tr key={o.id} className="hover:bg-slate-50/50 transition-colors duration-150">
+                            <td className="py-3.5 pl-2 font-mono font-bold text-[#0F5132]">{o.id}</td>
+                            <td className="py-3.5">
                               <p className="font-bold text-slate-800">{buyer?.name || 'Masyarakat/Customer'}</p>
-                              <p className="text-[10px] text-[#64748b]">{buyer?.email || o.buyerId}</p>
+                              <p className="text-[9px] font-mono text-slate-400">{buyer?.email || o.buyerId}</p>
                             </td>
-                            <td className="py-3 text-[#64748b]">{new Date(o.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                            <td className="py-3 text-right font-bold text-slate-800">Rp {o.totalAmount.toLocaleString('id-ID')}</td>
-                            <td className="py-3 text-center">
-                              <span className="px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200 font-bold uppercase text-[9px] tracking-wider">
+                            <td className="py-3.5 text-slate-500 font-mono">
+                              {new Date(o.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </td>
+                            <td className="py-3.5 text-right font-mono font-bold text-slate-800">
+                              Rp {o.totalAmount.toLocaleString('id-ID')}
+                            </td>
+                            <td className="py-3.5 text-center">
+                              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold uppercase text-[8px] tracking-widest font-mono">
                                 {o.status}
                               </span>
                             </td>
@@ -824,9 +917,9 @@ export default function AdminDashboardClient({
                 </div>
               </div>
             </div>
-          )}
-
-          {/* ─── TAB 2: KELOLA USER ────────────────────────────────────────── */}
+          )
+          }
+{/* ─── TAB 2: KELOLA USER ────────────────────────────────────────── */}
           {activeTab === 'users' && (
             <div className="space-y-6">
               {/* Filter controls */}
