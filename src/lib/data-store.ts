@@ -5941,7 +5941,6 @@ export const DataStore = {
   async getCommunities() {
     syncMockDb()
 
-    // Define seed communities
     const seedCommunities = [
       {
         id: 'comm-dummy-1',
@@ -6036,12 +6035,13 @@ export const DataStore = {
           },
           orderBy: { createdAt: 'desc' }
         })
-      } catch (_) {}
+      } catch (err) {
+        console.error("Error in getCommunities database query:", err);
+      }
     }
 
     if (!(globalThis as any).__mockCommunities || (globalThis as any).__mockCommunities.length === 0) {
       (globalThis as any).__mockCommunities = [...seedCommunities];
-      // Seed memberships for mock ketua
       if (!(globalThis as any).__mockCommunityMemberships) (globalThis as any).__mockCommunityMemberships = [];
       for (const seed of seedCommunities) {
         const exists = (globalThis as any).__mockCommunityMemberships.some((m: any) => m.communityId === seed.id && m.userId === seed.ketuaId);
@@ -6073,9 +6073,96 @@ export const DataStore = {
 
   async getCommunityById(id: string) {
     syncMockDb()
+
+    const seedCommunities = [
+      {
+        id: 'comm-dummy-1',
+        name: 'Asosiasi Kuliner Kreatif Jogja',
+        type: 'PERKUMPULAN' as const,
+        description: 'Wadah kolaborasi dan diskusi antar pemilik usaha kuliner kreatif di wilayah Yogyakarta. Kami fokus pada peningkatan mutu produk, sertifikasi halal, dan pemasaran digital bersama.',
+        aktaNotaris: 'Akta Notaris No. 12 Tgl 10 April 2024',
+        nomorAhu: 'AHU-0010243.AH.01.07',
+        nomorNpwp: '12.345.678.9-012.000',
+        domisili: 'Kota Yogyakarta, DIY',
+        kontakPj: '081234567890',
+        waGroupLink: 'https://chat.whatsapp.com/JdK8X4bY12eD5xG',
+        avatarUrl: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=150&h=150&fit=crop&q=80',
+        coverUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop&q=80',
+        joinFee: 0,
+        monthlyFee: 0,
+        ketuaId: 'user-merchant-1',
+        isSuspended: false,
+        isVerified: true,
+        createdAt: new Date('2026-01-01'),
+        updatedAt: new Date('2026-01-01')
+      },
+      {
+        id: 'comm-dummy-2',
+        name: 'Koperasi Produksi Maju Bersama',
+        type: 'KOPERASI' as const,
+        description: 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah untuk pengadaan bahan baku bersama, fasilitasi permodalan modal produksi, dan bagi hasil usaha (SHU) tahunan.',
+        aktaNotaris: 'Akta Notaris Koperasi No. 98 Tgl 01 Februari 2025',
+        nomorAhu: 'AHU-KOP-0029311.AH.01.11',
+        nomorNpwp: '12.987.654.3-012.000',
+        domisili: 'Sleman, DIY',
+        kontakPj: '089876543210',
+        waGroupLink: 'https://chat.whatsapp.com/LhB2P9qK10zF6sD',
+        avatarUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=150&h=150&fit=crop&q=80',
+        coverUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=300&fit=crop&q=80',
+        joinFee: 150000,
+        monthlyFee: 50000,
+        ketuaId: 'user-admin-1',
+        isSuspended: false,
+        isVerified: true,
+        createdAt: new Date('2026-02-15'),
+        updatedAt: new Date('2026-02-15')
+      }
+    ];
+
     if (await isDbConnected()) {
       try {
-        return await db.community.findUnique({
+        const count = await db.community.count();
+        if (count === 0) {
+          for (const seed of seedCommunities) {
+            const ketuaExists = await db.user.findUnique({ where: { id: seed.ketuaId } });
+            const finalKetuaId = ketuaExists ? seed.ketuaId : (await db.user.findFirst())?.id;
+            if (finalKetuaId) {
+              await db.community.create({
+                data: {
+                  id: seed.id,
+                  name: seed.name,
+                  type: seed.type,
+                  description: seed.description,
+                  aktaNotaris: seed.aktaNotaris,
+                  nomorAhu: seed.nomorAhu,
+                  nomorNpwp: seed.nomorNpwp,
+                  domisili: seed.domisili,
+                  kontakPj: seed.kontakPj,
+                  waGroupLink: seed.waGroupLink,
+                  avatarUrl: seed.avatarUrl,
+                  coverUrl: seed.coverUrl,
+                  joinFee: seed.joinFee,
+                  monthlyFee: seed.monthlyFee,
+                  ketuaId: finalKetuaId,
+                  isVerified: seed.isVerified,
+                  createdAt: seed.createdAt,
+                  updatedAt: seed.updatedAt
+                }
+              });
+              // Auto join ketua as member
+              await db.communityMembership.create({
+                data: {
+                  communityId: seed.id,
+                  userId: finalKetuaId,
+                  isInduk: true,
+                  isPaid: true
+                }
+              });
+            }
+          }
+        }
+
+        const community = await db.community.findUnique({
           where: { id },
           include: {
             ketua: { select: { id: true, name: true, role: true, email: true } },
@@ -6084,9 +6171,16 @@ export const DataStore = {
             },
             _count: { select: { members: true } }
           }
-        })
-      } catch (_) {}
+        });
+
+        if (community) {
+          return community;
+        }
+      } catch (err) {
+        console.error("Error in getCommunityById database query:", err);
+      }
     }
+
     const communities = (globalThis as any).__mockCommunities || []
     const community = communities.find((c: any) => c.id === id)
     if (!community) return null
