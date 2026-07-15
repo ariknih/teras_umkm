@@ -69,6 +69,7 @@ export default function AdminDashboardClient({
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [isPending, startTransition] = useTransition()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   // State lists
   const [users, setUsers] = useState(initialUsers)
@@ -561,21 +562,42 @@ export default function AdminDashboardClient({
       )}
 
       {/* ─── SIDEBAR (Minimal Luxury Light Style) ─────────────────────────── */}
-      <aside className={`fixed inset-y-0 left-0 z-40 w-[280px] bg-white border-r border-[#e2e8f0] flex flex-col justify-between transition-transform duration-300 lg:translate-x-0 lg:static lg:flex-shrink-0 ${
+      <aside className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-[#e2e8f0] flex flex-col justify-between transition-all duration-300 lg:translate-x-0 lg:static lg:flex-shrink-0 ${
+        isSidebarCollapsed ? 'w-[76px]' : 'w-[280px]'
+      } ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
-        <div>
+        <div className="flex-1 overflow-y-auto scrollbar-none">
           {/* Sidebar Brand Logo */}
-          <div className="h-[74px] border-b border-[#e2e8f0] flex items-center px-6 gap-3">
-            <img src="/images/logo+nama_saloka.webp" alt="Saloka.id" className="h-8 object-contain" />
-            <div className="flex flex-col justify-center border-l border-slate-200 pl-3">
-              <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none">Admin</p>
-              <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none mt-0.5">Control</p>
-            </div>
+          <div className={`h-[74px] border-b border-[#e2e8f0] flex items-center justify-between transition-all duration-300 ${isSidebarCollapsed ? 'px-3 justify-center' : 'px-6 gap-3'}`}>
+            {!isSidebarCollapsed ? (
+              <div className="flex items-center gap-3 overflow-hidden">
+                <img src="/images/logo+nama_saloka.webp" alt="Saloka.id" className="h-8 object-contain" />
+                <div className="flex flex-col justify-center border-l border-slate-200 pl-3 min-w-max">
+                  <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none">Admin</p>
+                  <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none mt-0.5">Control</p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-black font-sora text-sm">
+                S
+              </div>
+            )}
+            
+            {/* Collapse Toggle Button (Visible only on desktop lg:) */}
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="hidden lg:flex items-center justify-center p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors border-none bg-transparent"
+              title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transform transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`}>
+                <path d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
           </div>
 
           {/* Navigation links */}
-          <nav className="p-4 space-y-1.5">
+          <nav className={`p-4 space-y-1.5 ${isSidebarCollapsed ? 'px-2' : ''}`}>
             {[
               { id: 'overview', label: 'Dashboard Overview', icon: 'M4 6h16M4 12h16M4 18h16' },
               { id: 'users', label: 'Kelola User & Role', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14-2a4 4 0 0 1-3.87 3M16 3.13a4 4 0 0 1 0 7.75' },
@@ -595,16 +617,19 @@ export default function AdminDashboardClient({
                 <button
                   key={item.id}
                   onClick={() => { setActiveTab(item.id as TabType); setSelectedTx(null); setIsSidebarOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-[var(--radius-brand)] text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                  className={`w-full flex items-center transition-all duration-200 cursor-pointer ${
+                    isSidebarCollapsed ? 'justify-center p-3 rounded-xl' : 'gap-3 px-3.5 py-3 rounded-[var(--radius-brand)]'
+                  } ${
                     isActive 
                       ? 'bg-[#E8F5E9] text-[#0F5132] border-l-4 border-[#0F5132] shadow-sm' 
                       : 'text-[#475569] hover:text-[#0f172a] hover:bg-slate-50'
                   }`}
+                  title={isSidebarCollapsed ? item.label : undefined}
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                     <path d={item.icon} />
                   </svg>
-                  <span>{item.label}</span>
+                  {!isSidebarCollapsed && <span className="text-xs font-bold uppercase tracking-wider">{item.label}</span>}
                 </button>
               )
             })}
@@ -612,20 +637,22 @@ export default function AdminDashboardClient({
         </div>
 
         {/* Sidebar Footer User Info */}
-        <div className="p-4 border-t border-[#e2e8f0] bg-[#f8f9fa] flex items-center justify-between">
+        <div className={`p-4 border-t border-[#e2e8f0] bg-[#f8f9fa] flex ${isSidebarCollapsed ? 'flex-col gap-3 items-center justify-center' : 'items-center justify-between'}`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0F5132] to-[#2DB24A] flex items-center justify-center font-bold text-white shadow-sm text-sm">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0F5132] to-[#2DB24A] flex items-center justify-center font-bold text-white shadow-sm text-sm shrink-0">
               {currentUser.name?.charAt(0).toUpperCase()}
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold truncate text-[#0f172a]">{currentUser.name}</p>
-              <p className="text-[10px] text-[#64748b] truncate">{currentUser.email}</p>
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="min-w-0">
+                <p className="text-xs font-bold truncate text-[#0f172a]">{currentUser.name}</p>
+                <p className="text-[10px] text-[#64748b] truncate">{currentUser.email}</p>
+              </div>
+            )}
           </div>
           <button
             onClick={handleLogout}
             title="Log Out"
-            className="p-2 rounded-[var(--radius-brand)] bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer transition-colors border border-red-100"
+            className={`p-2 rounded-[var(--radius-brand)] bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer transition-colors border border-red-100 ${isSidebarCollapsed ? 'w-8 h-8 flex items-center justify-center' : ''}`}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
