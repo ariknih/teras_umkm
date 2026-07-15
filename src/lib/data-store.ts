@@ -13,11 +13,26 @@ const mockUsers = [
     name: 'Super Admin Saloka',
     passwordHash: crypto.createHash('sha256').update('admin2026').digest('hex'),
     role: 'ADMIN' as const,
+    isSuperAdmin: true,
     latitude: -6.2088, longitude: 106.8456,
     level: 99, xp: 99999,
     landingPageTemplate: null, landingPageConfig: null, landingPageSetup: true,
     parentAffiliateId: null,
     membershipLevel: 'Super Admin', membershipAccess: 'Diamond',
+    createdAt: new Date(), updatedAt: new Date(),
+  },
+  {
+    id: 'user-admin-2',
+    email: 'staff@saloka.com',
+    name: 'Staff Admin Saloka',
+    passwordHash: crypto.createHash('sha256').update('staff2026').digest('hex'),
+    role: 'ADMIN' as const,
+    isSuperAdmin: false,
+    latitude: -6.2088, longitude: 106.8456,
+    level: 50, xp: 5000,
+    landingPageTemplate: null, landingPageConfig: null, landingPageSetup: true,
+    parentAffiliateId: null,
+    membershipLevel: 'Admin Staff', membershipAccess: 'Platinum',
     createdAt: new Date(), updatedAt: new Date(),
   },
   {
@@ -6256,17 +6271,34 @@ export const DataStore = {
         const existing = await db.communityMembership.findUnique({
           where: { communityId_userId: { communityId, userId } }
         })
-        if (existing) return { joined: true, alreadyMember: true }
+        if (existing) {
+          if (existing.invoiceStatus === 'UNPAID') {
+            await db.communityMembership.update({
+              where: { id: existing.id },
+              data: { invoiceStatus: 'PAID' }
+            })
+            return { joined: true, statusUpdated: true, invoiceStatus: 'PAID' }
+          }
+          return { joined: true, alreadyMember: true }
+        }
         
         const community = await db.community.findUnique({ where: { id: communityId } })
-        const needsPayment = community?.type === 'KOPERASI' && (community.joinFee || 0) > 0
+        if (!community) return { error: 'Komunitas tidak ditemukan.' }
+        
+        // Auto-lock recruitment if coinBalance <= 0 or isRecruitmentLocked
+        if (community.coinBalance <= 0 || community.isRecruitmentLocked) {
+          return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
+        }
 
-        await db.communityMembership.create({
+        const needsPayment = (community.type === 'KOPERASI' || community.category === 'PAID' || community.category === 'KOPERASI') && (community.joinFee || 0) > 0
+
+        const membership = await db.communityMembership.create({
           data: {
             communityId,
             userId,
             isInduk: asInduk,
-            isPaid: !needsPayment // Perkumpulan = auto paid, Koperasi = needs payment
+            isPaid: !needsPayment,
+            invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED'
           }
         })
 
@@ -6277,36 +6309,134 @@ export const DataStore = {
           })
         }
 
-        return { joined: true, needsPayment }
-      } catch (_) {}
+        // If joined immediately (no payment needed) and it's a paid community/koperasi, trigger 3-coin referral
+        if (!needsPayment && (community.type === 'KOPERASI' || community.category === 'PAID')) {
+          const userObj = await db.user.findUnique({ where: { id: userId } })
+          if (userObj && userObj.parentAffiliateId && community.coinBalance >= 3) {
+            const referrerId = userObj.parentAffiliateId
+            
+            // Deduct from community
+            await db.community.update({
+              where: { id: communityId },
+              data: { 
+                coinBalance: { decrement: 3 },
+                isRecruitmentLocked: community.coinBalance - 3 <= 0 ? true : community.isRecruitmentLocked
+              }
+            })
+            
+            // Add to referrer
+            await db.user.update({
+              where: { id: referrerId },
+              data: { coinBalance: { increment: 3 } }
+            })
+            
+            // Record logs
+            await db.coinTransaction.create({
+              data: {
+                type: 'REFERRAL_COMMISSION',
+                amount: 3,
+                description: `Komisi referral cross-community dari pendaftaran ${userObj.name} ke ${community.name}`,
+                userId: referrerId,
+                relatedUserId: userId
+              }
+            })
+            
+            await db.coinTransaction.create({
+              data: {
+                type: 'REFERRAL_COMMISSION',
+                amount: -3,
+                description: `Biaya komisi referral untuk anggota baru ${userObj.name}`,
+                userId: community.ketuaId,
+                communityId: communityId,
+                relatedUserId: userId
+              }
+            })
+          }
+        }
+
+        return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED' }
+      } catch (e: any) {
+        return { error: e.message || 'Gagal bergabung ke komunitas.' }
+      }
     }
 
     // Mock DB
     if (!(globalThis as any).__mockCommunityMemberships) (globalThis as any).__mockCommunityMemberships = []
     const memberships = (globalThis as any).__mockCommunityMemberships as any[]
     const existing = memberships.find(m => m.communityId === communityId && m.userId === userId)
-    if (existing) return { joined: true, alreadyMember: true }
+    if (existing) {
+      if (existing.invoiceStatus === 'UNPAID') {
+        existing.invoiceStatus = 'PAID'
+        saveMockDb()
+        return { joined: true, statusUpdated: true, invoiceStatus: 'PAID' }
+      }
+      return { joined: true, alreadyMember: true }
+    }
 
     const communities = (globalThis as any).__mockCommunities || []
     const community = communities.find((c: any) => c.id === communityId)
-    const needsPayment = community?.type === 'KOPERASI' && (community.joinFee || 0) > 0
+    if (!community) return { error: 'Komunitas tidak ditemukan.' }
 
-    memberships.push({
+    // Auto-lock check for mock
+    if ((community.coinBalance || 0) <= 0 || community.isRecruitmentLocked) {
+      return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
+    }
+
+    const needsPayment = (community.type === 'KOPERASI' || community.category === 'PAID') && (community.joinFee || 0) > 0
+
+    const newMembership = {
       id: `cm-${Date.now()}`,
       communityId,
       userId,
       isInduk: asInduk,
       isPaid: !needsPayment,
+      invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED',
       joinedAt: new Date()
-    })
+    }
+    memberships.push(newMembership)
 
     if (asInduk) {
       const user = globalMockUsers.find(u => u.id === userId)
       if (user) (user as any).indukCommunityId = communityId
     }
 
+    // Trigger mock referral commission if joined immediately
+    if (!needsPayment && (community.type === 'KOPERASI' || community.category === 'PAID')) {
+      const userObj = globalMockUsers.find(u => u.id === userId)
+      if (userObj && userObj.parentAffiliateId && (community.coinBalance || 0) >= 3) {
+        const referrerId = userObj.parentAffiliateId
+        community.coinBalance = (community.coinBalance || 0) - 3
+        if (community.coinBalance <= 0) community.isRecruitmentLocked = true
+        
+        const referrer = globalMockUsers.find(u => u.id === referrerId)
+        if (referrer) {
+          referrer.coinBalance = (referrer.coinBalance || 0) + 3
+        }
+
+        if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+        ;(globalThis as any).__mockCoinTransactions.push({
+          id: `ctx-${Date.now()}-1`,
+          type: 'REFERRAL_COMMISSION',
+          amount: 3,
+          description: `Komisi referral cross-community dari pendaftaran ${userObj.name} ke ${community.name}`,
+          userId: referrerId,
+          relatedUserId: userId,
+          createdAt: new Date()
+        }, {
+          id: `ctx-${Date.now()}-2`,
+          type: 'REFERRAL_COMMISSION',
+          amount: -3,
+          description: `Biaya komisi referral untuk anggota baru ${userObj.name}`,
+          userId: community.ketuaId,
+          communityId: communityId,
+          relatedUserId: userId,
+          createdAt: new Date()
+        })
+      }
+    }
+
     saveMockDb()
-    return { joined: true, needsPayment }
+    return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED' }
   },
 
   async getUserIndukCommunity(userId: string) {
@@ -7147,6 +7277,524 @@ export const DataStore = {
       return user
     }
     return null
+  },
+
+  async getInvoiceMemberships(status?: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const where: any = {}
+        if (status) where.invoiceStatus = status
+        return await db.communityMembership.findMany({
+          where,
+          include: {
+            community: { select: { id: true, name: true, type: true } },
+            user: { select: { id: true, name: true, email: true, role: true } }
+          },
+          orderBy: { joinedAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    let memberships = (globalThis as any).__mockCommunityMemberships || []
+    if (status) memberships = memberships.filter((m: any) => m.invoiceStatus === status)
+    const communities = (globalThis as any).__mockCommunities || []
+    return memberships.map((m: any) => {
+      const user = globalMockUsers.find(u => u.id === m.userId)
+      const community = communities.find((c: any) => c.id === m.communityId)
+      return {
+        ...m,
+        user: user ? { id: user.id, name: user.name, email: user.email, role: user.role } : null,
+        community: community ? { id: community.id, name: community.name, type: community.type } : null
+      }
+    }).sort((a: any, b: any) => b.joinedAt.getTime() - a.joinedAt.getTime())
+  },
+
+  async verifyInvoiceMembership(membershipId: string, adminId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const membership = await db.communityMembership.update({
+          where: { id: membershipId },
+          data: {
+            isPaid: true,
+            invoiceStatus: 'VERIFIED',
+            invoiceVerifiedAt: new Date(),
+            invoiceVerifiedBy: adminId
+          },
+          include: {
+            community: true,
+            user: true
+          }
+        })
+
+        // Trigger 3-coin referral commission
+        if (membership.community.type === 'KOPERASI' || membership.community.category === 'PAID') {
+          const userObj = membership.user
+          const community = membership.community
+          if (userObj.parentAffiliateId && community.coinBalance >= 3) {
+            const referrerId = userObj.parentAffiliateId
+            
+            await db.community.update({
+              where: { id: community.id },
+              data: {
+                coinBalance: { decrement: 3 },
+                isRecruitmentLocked: community.coinBalance - 3 <= 0 ? true : community.isRecruitmentLocked
+              }
+            })
+
+            await db.user.update({
+              where: { id: referrerId },
+              data: { coinBalance: { increment: 3 } }
+            })
+
+            await db.coinTransaction.create({
+              data: {
+                type: 'REFERRAL_COMMISSION',
+                amount: 3,
+                description: `Komisi referral cross-community dari pendaftaran ${userObj.name} ke ${community.name}`,
+                userId: referrerId,
+                relatedUserId: userObj.id
+              }
+            })
+
+            await db.coinTransaction.create({
+              data: {
+                type: 'REFERRAL_COMMISSION',
+                amount: -3,
+                description: `Biaya komisi referral untuk anggota baru ${userObj.name}`,
+                userId: community.ketuaId,
+                communityId: community.id,
+                relatedUserId: userObj.id
+              }
+            })
+          }
+        }
+        return { success: true, membership }
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal memverifikasi keanggotaan.')
+      }
+    }
+
+    // Mock DB
+    const memberships = (globalThis as any).__mockCommunityMemberships || []
+    const m = memberships.find((x: any) => x.id === membershipId)
+    if (!m) throw new Error('Keanggotaan tidak ditemukan.')
+
+    m.isPaid = true
+    m.invoiceStatus = 'VERIFIED'
+    m.invoiceVerifiedAt = new Date()
+    m.invoiceVerifiedBy = adminId
+
+    const communities = (globalThis as any).__mockCommunities || []
+    const community = communities.find((c: any) => c.id === m.communityId)
+    const userObj = globalMockUsers.find(u => u.id === m.userId)
+
+    if (community && (community.type === 'KOPERASI' || community.category === 'PAID') && userObj && userObj.parentAffiliateId) {
+      const referrerId = userObj.parentAffiliateId
+      if ((community.coinBalance || 0) >= 3) {
+        community.coinBalance = (community.coinBalance || 0) - 3
+        if (community.coinBalance <= 0) community.isRecruitmentLocked = true
+        
+        const referrer = globalMockUsers.find(u => u.id === referrerId)
+        if (referrer) {
+          referrer.coinBalance = (referrer.coinBalance || 0) + 3
+        }
+
+        if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+        ;(globalThis as any).__mockCoinTransactions.push({
+          id: `ctx-${Date.now()}-1`,
+          type: 'REFERRAL_COMMISSION',
+          amount: 3,
+          description: `Komisi referral cross-community dari pendaftaran ${userObj.name} ke ${community.name}`,
+          userId: referrerId,
+          relatedUserId: userObj.id,
+          createdAt: new Date()
+         }, {
+          id: `ctx-${Date.now()}-2`,
+          type: 'REFERRAL_COMMISSION',
+          amount: -3,
+          description: `Biaya komisi referral untuk anggota baru ${userObj.name}`,
+          userId: community.ketuaId,
+          communityId: community.id,
+          relatedUserId: userObj.id,
+          createdAt: new Date()
+        })
+      }
+    }
+
+    saveMockDb()
+    return { success: true, membership: m }
+  },
+
+  async getAllCoinHolders() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const [users, communities] = await Promise.all([
+          db.user.findMany({
+            where: { coinBalance: { gt: 0 } },
+            select: { id: true, name: true, role: true, coinBalance: true }
+          }),
+          db.community.findMany({
+            where: { coinBalance: { gt: 0 } },
+            select: { id: true, name: true, type: true, coinBalance: true }
+          })
+        ])
+
+        const holders: any[] = []
+        users.forEach(u => {
+          holders.push({
+            id: u.id,
+            name: u.name,
+            type: `MERCHANT/USER (${u.role})`,
+            coinBalance: u.coinBalance,
+            status: 'ACTIVE'
+          })
+        })
+        communities.forEach(c => {
+          holders.push({
+            id: c.id,
+            name: c.name,
+            type: `KOMUNITAS (${c.type})`,
+            coinBalance: c.coinBalance,
+            status: 'ACTIVE'
+          })
+        })
+        return holders
+      } catch (_) {}
+    }
+    
+    // Mock DB
+    const holders: any[] = []
+    globalMockUsers.forEach(u => {
+      if ((u.coinBalance || 0) > 0) {
+        holders.push({
+          id: u.id,
+          name: u.name,
+          type: `MERCHANT/USER (${u.role})`,
+          coinBalance: u.coinBalance,
+          status: 'ACTIVE'
+        })
+      }
+    })
+    const communities = (globalThis as any).__mockCommunities || []
+    communities.forEach((c: any) => {
+      if ((c.coinBalance || 0) > 0) {
+        holders.push({
+          id: c.id,
+          name: c.name,
+          type: `KOMUNITAS (${c.type})`,
+          coinBalance: c.coinBalance,
+          status: 'ACTIVE'
+        })
+      }
+    })
+    return holders
+  },
+
+  async injectCoin(targetId: string, targetType: 'USER' | 'COMMUNITY', amount: number, reason: string, adminId: string) {
+    syncMockDb()
+    const desc = `INJECT oleh Admin: ${reason}`
+    if (await isDbConnected()) {
+      try {
+        if (targetType === 'USER') {
+          const u = await db.user.update({
+            where: { id: targetId },
+            data: { coinBalance: { increment: amount } }
+          })
+          await db.coinTransaction.create({
+            data: {
+              type: 'INJECTION',
+              amount,
+              description: desc,
+              userId: targetId
+            }
+          })
+          return u
+        } else {
+          const c = await db.community.update({
+            where: { id: targetId },
+            data: { 
+              coinBalance: { increment: amount },
+              isRecruitmentLocked: false
+            }
+          })
+          await db.coinTransaction.create({
+            data: {
+              type: 'INJECTION',
+              amount,
+              description: desc,
+              userId: adminId,
+              communityId: targetId
+            }
+          })
+          return c
+        }
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal melakukan inject koin.')
+      }
+    }
+
+    // Mock DB
+    if (targetType === 'USER') {
+      const u = globalMockUsers.find(x => x.id === targetId)
+      if (!u) throw new Error('User tidak ditemukan.')
+      u.coinBalance = (u.coinBalance || 0) + amount
+      
+      if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+      ;(globalThis as any).__mockCoinTransactions.push({
+        id: `ctx-${Date.now()}`,
+        type: 'INJECTION',
+        amount,
+        description: desc,
+        userId: targetId,
+        createdAt: new Date()
+      })
+      saveMockDb()
+      return u
+    } else {
+      const communities = (globalThis as any).__mockCommunities || []
+      const c = communities.find((x: any) => x.id === targetId)
+      if (!c) throw new Error('Komunitas tidak ditemukan.')
+      c.coinBalance = (c.coinBalance || 0) + amount
+      c.isRecruitmentLocked = false
+      
+      if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+      ;(globalThis as any).__mockCoinTransactions.push({
+        id: `ctx-${Date.now()}`,
+        type: 'INJECTION',
+        amount,
+        description: desc,
+        userId: adminId,
+        communityId: targetId,
+        createdAt: new Date()
+      })
+      saveMockDb()
+      return c
+    }
+  },
+
+  async getAdmins() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.findMany({
+          where: { role: 'ADMIN' },
+          select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, createdAt: true }
+        })
+      } catch (_) {}
+    }
+    return globalMockUsers.filter(u => u.role === 'ADMIN').map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      isSuperAdmin: (u as any).isSuperAdmin || false,
+      createdAt: u.createdAt
+    }))
+  },
+
+  async createAdmin(data: { name: string, email: string, passwordHash: string, isSuperAdmin?: boolean }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const u = await db.user.create({
+          data: {
+            name: data.name,
+            email: data.email,
+            passwordHash: data.passwordHash,
+            role: 'ADMIN',
+            isSuperAdmin: data.isSuperAdmin || false,
+            membershipLevel: 'Staff',
+            membershipAccess: 'Gold'
+          }
+        })
+        await db.wallet.create({ data: { userId: u.id, balance: 0.0 } })
+        return u
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal menambahkan admin.')
+      }
+    }
+    
+    // Mock DB
+    const exists = globalMockUsers.some(u => u.email === data.email)
+    if (exists) throw new Error('Email sudah terdaftar.')
+
+    const newAdmin = {
+      id: `admin-${Date.now()}`,
+      email: data.email,
+      name: data.name,
+      passwordHash: data.passwordHash,
+      role: 'ADMIN' as const,
+      isSuperAdmin: data.isSuperAdmin || false,
+      level: 1, xp: 0,
+      landingPageTemplate: null, landingPageConfig: null, landingPageSetup: false,
+      parentAffiliateId: null,
+      membershipLevel: 'Staff',
+      membershipAccess: 'Gold',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    globalMockUsers.push(newAdmin)
+    saveMockDb()
+    return newAdmin
+  },
+
+  async deleteAdmin(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.delete({ where: { id } })
+       } catch (e: any) {
+        throw new Error(e.message || 'Gagal menghapus admin.')
+      }
+    }
+    
+    // Mock DB
+    const index = globalMockUsers.findIndex(u => u.id === id)
+    if (index === -1) throw new Error('Admin tidak ditemukan.')
+    const deleted = globalMockUsers.splice(index, 1)[0]
+    saveMockDb()
+    return deleted
+  },
+
+  async createLevelRequest(data: { userId: string, targetLevel: number, radiusKm: number, omsetBulan: number, hasLegalitas: boolean, hasSertifikat: boolean, hasDesain: boolean, catatan?: string }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.merchantLevelRequest.create({
+          data: {
+            userId: data.userId,
+            targetLevel: data.targetLevel,
+            radiusKm: data.radiusKm,
+            omsetBulan: data.omsetBulan,
+            hasLegalitas: data.hasLegalitas,
+            hasSertifikat: data.hasSertifikat,
+            hasDesain: data.hasDesain,
+            catatan: data.catatan || null
+          }
+        })
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal membuat pengajuan level.')
+      }
+    }
+    
+    // Mock DB
+    if (!(globalThis as any).__mockLevelRequests) (globalThis as any).__mockLevelRequests = []
+    const newRequest = {
+      id: `req-${Date.now()}`,
+      userId: data.userId,
+      targetLevel: data.targetLevel,
+      status: 'PENDING',
+      radiusKm: data.radiusKm,
+      omsetBulan: data.omsetBulan,
+      hasLegalitas: data.hasLegalitas,
+      hasSertifikat: data.hasSertifikat,
+      hasDesain: data.hasDesain,
+      catatan: data.catatan || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    ;(globalThis as any).__mockLevelRequests.push(newRequest)
+    saveMockDb()
+    return newRequest
+  },
+
+  async getLevelRequests(status?: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const where: any = {}
+        if (status) where.status = status
+        return await db.merchantLevelRequest.findMany({
+          where,
+          include: { user: { select: { id: true, name: true, email: true, role: true, merchantLevel: true } } },
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    
+    // Mock DB
+    let reqs = (globalThis as any).__mockLevelRequests || []
+    if (status) reqs = reqs.filter((r: any) => r.status === status)
+    return reqs.map((r: any) => {
+      const userObj = globalMockUsers.find(u => u.id === r.userId)
+      return {
+        ...r,
+        user: userObj ? { id: userObj.id, name: userObj.name, email: userObj.email, role: userObj.role, merchantLevel: userObj.merchantLevel || 0 } : null
+      }
+    }).sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
+  },
+
+  async approveLevelRequest(requestId: string, adminId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const req = await db.merchantLevelRequest.update({
+          where: { id: requestId },
+          data: {
+            status: 'APPROVED',
+            reviewedAt: new Date(),
+            reviewedBy: adminId
+          }
+        })
+        // Update user merchant level
+        await db.user.update({
+          where: { id: req.userId },
+          data: { merchantLevel: req.targetLevel, levelApprovedAt: new Date(), levelApprovedBy: adminId }
+        })
+        return req
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal menyetujui pengajuan level.')
+      }
+    }
+    
+    // Mock DB
+    const reqs = (globalThis as any).__mockLevelRequests || []
+    const req = reqs.find((r: any) => r.id === requestId)
+    if (!req) throw new Error('Pengajuan tidak ditemukan.')
+    req.status = 'APPROVED'
+    req.reviewedAt = new Date()
+    req.reviewedBy = adminId
+    
+    const userObj = globalMockUsers.find(u => u.id === req.userId)
+    if (userObj) {
+      ;(userObj as any).merchantLevel = req.targetLevel
+      ;(userObj as any).levelApprovedAt = new Date()
+      ;(userObj as any).levelApprovedBy = adminId
+    }
+    saveMockDb()
+    return req
+  },
+
+  async rejectLevelRequest(requestId: string, note: string, adminId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.merchantLevelRequest.update({
+          where: { id: requestId },
+          data: {
+            status: 'REJECTED',
+            reviewNote: note,
+            reviewedAt: new Date(),
+            reviewedBy: adminId
+          }
+        })
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal menolak pengajuan level.')
+      }
+    }
+    
+    // Mock DB
+    const reqs = (globalThis as any).__mockLevelRequests || []
+    const req = reqs.find((r: any) => r.id === requestId)
+    if (!req) throw new Error('Pengajuan tidak ditemukan.')
+    req.status = 'REJECTED'
+    req.reviewNote = note
+    req.reviewedAt = new Date()
+    req.reviewedBy = adminId
+    saveMockDb()
+    return req
   },
 
 }

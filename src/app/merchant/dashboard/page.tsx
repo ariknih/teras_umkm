@@ -10,6 +10,7 @@ import { getMerchantOrders, updateOrderTracking, updateShippingLabel } from '@/a
 import { getMerchantAnalytics } from '@/app/actions/analytics'
 import { getCourses, getUserProgress } from '@/app/actions/lms'
 import { joinBootcampAction } from '@/app/actions/bootcamp'
+import { createLevelRequestAction } from '@/app/actions/admin'
 import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
 
@@ -82,8 +83,8 @@ export default function MerchantDashboardPage() {
   const [createPageTemplate, setCreatePageTemplate] = useState('template1')
   const [createPagePreview, setCreatePagePreview] = useState<'mobile' | 'desktop'>('mobile')
   
-  // Tabs: 'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy'
-  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy'>('overview')
+  // Tabs: 'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy' | 'leveling'
+  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy' | 'leveling'>('overview')
   
   // LMS Academy state
   const [courses, setCourses] = useState<any[]>([])
@@ -1069,6 +1070,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             { id: 'analytics', label: 'Analitik Bisnis' },
             { id: 'pages', label: 'Daftar Halaman & Domain' },
             { id: 'academy', label: 'LMS Academy' },
+            { id: 'leveling', label: 'Leveling Area (L1-L4)' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -3413,6 +3415,137 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'leveling' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100">
+              <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Pengajuan Kenaikan Level Area Merchant (L1 - L4)</h3>
+              <p className="text-xs text-text-secondary leading-relaxed mb-6">
+                Untuk menaikkan radius jangkauan area bisnis Anda, Anda harus memenuhi syarat legalitas, sertifikasi, desain premium, dan omset minimal Rp 10 Juta per bulan.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                {[
+                  { title: 'Level 1 (Default)', desc: 'Jangkauan area standard (5 KM). Syarat: Registrasi dasar.' },
+                  { title: 'Level 2 (Kecamatan)', desc: 'Jangkauan area 10 KM. Syarat: Lolos Bootcamp & Validasi.' },
+                  { title: 'Level 3 (Kabupaten)', desc: 'Jangkauan area 35 KM. Syarat: Legalitas Lengkap, Omset >= 10jt.' },
+                  { title: 'Level 4 (Nasional)', desc: 'Jangkauan area seluruh Indonesia. Syarat: Sertifikasi & Desain Premium.' }
+                ].map((item, idx) => (
+                  <div key={idx} className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                    <h4 className="font-bold text-xs text-slate-800 mb-1">{item.title}</h4>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  const form = e.currentTarget
+                  const formData = new FormData(form)
+                  
+                  formData.set('hasLegalitas', String((form.elements.namedItem('hasLegalitas') as HTMLInputElement).checked))
+                  formData.set('hasSertifikat', String((form.elements.namedItem('hasSertifikat') as HTMLInputElement).checked))
+                  formData.set('hasDesain', String((form.elements.namedItem('hasDesain') as HTMLInputElement).checked))
+
+                  startTransition(async () => {
+                    const res = await createLevelRequestAction(formData)
+                    if (res.success) {
+                      alert('Pengajuan kenaikan level berhasil dikirim! Silakan menunggu review dari Superadmin.')
+                      form.reset()
+                      router.refresh()
+                    } else {
+                      alert(res.error || 'Gagal mengirimkan pengajuan.')
+                    }
+                  })
+                }}
+                className="space-y-4 text-xs max-w-xl"
+              >
+                <div>
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Target Tingkatan Level</label>
+                  <select
+                    name="targetLevel"
+                    required
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none"
+                  >
+                    <option value="2">Level 2 (Jangkauan 10 KM - Kecamatan)</option>
+                    <option value="3">Level 3 (Jangkauan 35 KM - Kabupaten)</option>
+                    <option value="4">Level 4 (Jangkauan Seluruh Indonesia - Nasional)</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Estimasi Jangkauan Radius (KM)</label>
+                    <input
+                      name="radiusKm"
+                      type="number"
+                      required
+                      placeholder="e.g. 10"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Rata-rata Omset Bulanan (Rupiah)</label>
+                    <input
+                      name="omsetBulan"
+                      type="number"
+                      required
+                      placeholder="e.g. 12000000"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 py-3 border-y border-slate-100">
+                  <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Checklist Persyaratan</span>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      name="hasLegalitas"
+                      type="checkbox"
+                      className="rounded text-primary focus:ring-primary cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-700">Saya memiliki Dokumen Legalitas lengkap (Akta Notaris, AHU, NPWP)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      name="hasDesain"
+                      type="checkbox"
+                      className="rounded text-primary focus:ring-primary cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-700">Saya telah memperbarui desain halaman display produk dengan standard Premium/Exclusive</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      name="hasSertifikat"
+                      type="checkbox"
+                      className="rounded text-primary focus:ring-primary cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-700">Saya memiliki Sertifikasi Produk (P-IRT, Halal, atau BPOM) jika relevan</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Catatan Tambahan (Opsional)</label>
+                  <textarea
+                    name="catatan"
+                    placeholder="Sebutkan jenis usaha Anda dan detail dokumen legalitas jika ada..."
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none h-20"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="px-6 py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer border-none shadow-sm disabled:opacity-50"
+                >
+                  {isPending ? 'Mengirim Pengajuan...' : 'Kirim Pengajuan Level Up'}
+                </button>
+              </form>
             </div>
           </div>
         )}

@@ -14,7 +14,17 @@ import {
   updateLessonAction,
   deleteLessonAction,
   trackTransactionAction,
-  generateDummyAffiliatesAction
+  generateDummyAffiliatesAction,
+  getAdminsAction,
+  createAdminAction,
+  deleteAdminAction,
+  getInvoiceMembershipsAction,
+  verifyInvoiceMembershipAction,
+  getAllCoinHoldersAction,
+  injectCoinAction,
+  getLevelRequestsAction,
+  approveLevelRequestAction,
+  rejectLevelRequestAction
 } from '@/app/actions/admin'
 import {
   createCoinVoucherAdmin,
@@ -32,9 +42,13 @@ interface AdminDashboardClientProps {
   initialWithdrawals: any[]
   initialVouchers: any[]
   initialCoinStats: any
+  initialAdmins: any[]
+  initialInvoices: any[]
+  initialCoinHolders: any[]
+  initialLevelRequests: any[]
 }
 
-type TabType = 'overview' | 'users' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins'
+type TabType = 'overview' | 'users' | 'admins' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins'
 
 export default function AdminDashboardClient({
   currentUser,
@@ -45,7 +59,11 @@ export default function AdminDashboardClient({
   initialCourses,
   initialWithdrawals,
   initialVouchers,
-  initialCoinStats
+  initialCoinStats,
+  initialAdmins,
+  initialInvoices,
+  initialCoinHolders,
+  initialLevelRequests
 }: AdminDashboardClientProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -63,6 +81,30 @@ export default function AdminDashboardClient({
 
   const [vouchers, setVouchers] = useState(initialVouchers || [])
   const [coinStats, setCoinStats] = useState(initialCoinStats || { totalTx: 0, totalRedemptions: 0, recentTx: [] })
+
+  const [admins, setAdmins] = useState(initialAdmins || [])
+  const [invoices, setInvoices] = useState(initialInvoices || [])
+  const [coinHolders, setCoinHolders] = useState(initialCoinHolders || [])
+  const [levelRequests, setLevelRequests] = useState(initialLevelRequests || [])
+
+  // Admin CRUD Form State
+  const [adminName, setAdminName] = useState('')
+  const [adminEmail, setAdminEmail] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
+  const [adminIsSuper, setAdminIsSuper] = useState(false)
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false)
+
+  // Inject Coin Form State
+  const [injectTargetId, setInjectTargetId] = useState('')
+  const [injectTargetType, setInjectTargetType] = useState<'USER' | 'COMMUNITY'>('USER')
+  const [injectAmount, setInjectAmount] = useState('')
+  const [injectReason, setInjectReason] = useState('')
+  const [isInjectModalOpen, setIsInjectModalOpen] = useState(false)
+
+  // Level Request Review Form State
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false)
+  const [rejectRequestId, setRejectRequestId] = useState('')
+  const [rejectNote, setInjectRejectNote] = useState('')
 
   // Voucher Form State
   const [voucherName, setVoucherName] = useState('')
@@ -181,6 +223,152 @@ export default function AdminDashboardClient({
         setActionSuccess(`Merchant "${u.name}" telah disetujui.`)
       } else {
         setActionError(res.error || 'Terjadi kesalahan saat menyetujui merchant.')
+      }
+    })
+  }
+
+  // ─── ADMIN & COIN & LEVELING HANDLERS ──────────────────────────────────────
+  const handleCreateAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!adminName || !adminEmail || !adminPassword) {
+      alert('Semua kolom wajib diisi.')
+      return
+    }
+    setActionError(null)
+    setActionSuccess(null)
+    const formData = new FormData()
+    formData.append('name', adminName)
+    formData.append('email', adminEmail)
+    formData.append('password', adminPassword)
+    formData.append('isSuperAdmin', String(adminIsSuper))
+
+    startTransition(async () => {
+      const res = await createAdminAction(formData)
+      if (res.success) {
+        setActionSuccess('Admin baru berhasil ditambahkan.')
+        setAdmins(prev => [...prev, res.admin])
+        setIsAdminModalOpen(false)
+        setAdminName('')
+        setAdminEmail('')
+        setAdminPassword('')
+        setAdminIsSuper(false)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menambahkan admin.')
+      }
+    })
+  }
+
+  const handleDeleteAdmin = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus admin ini?')) return
+    setActionError(null)
+    setActionSuccess(null)
+    startTransition(async () => {
+      const res = await deleteAdminAction(id)
+      if (res.success) {
+        setActionSuccess('Admin berhasil dihapus.')
+        setAdmins(prev => prev.filter(x => x.id !== id))
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menghapus admin.')
+      }
+    })
+  }
+
+  const handleVerifyInvoice = async (membershipId: string) => {
+    if (!confirm('Apakah Anda yakin ingin memverifikasi pembayaran invoice keanggotaan ini?')) return
+    setActionError(null)
+    setActionSuccess(null)
+    startTransition(async () => {
+      const res = await verifyInvoiceMembershipAction(membershipId)
+      if (res.success) {
+        setActionSuccess('Invoice keanggotaan berhasil diverifikasi.')
+        setInvoices(prev => prev.map(inv => inv.id === membershipId ? { ...inv, invoiceStatus: 'VERIFIED', isPaid: true } : inv))
+        const holders = await getAllCoinHoldersAction()
+        setCoinHolders(holders)
+        router.refresh()
+      } else {
+        setActionError((res as any).error || 'Gagal memverifikasi invoice.')
+      }
+    })
+  }
+
+  const handleInjectCoinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!injectTargetId || !injectAmount || !injectReason) {
+      alert('Semua kolom wajib diisi.')
+      return
+    }
+    setActionError(null)
+    setActionSuccess(null)
+    const formData = new FormData()
+    formData.append('targetId', injectTargetId)
+    formData.append('targetType', injectTargetType)
+    formData.append('amount', injectAmount)
+    formData.append('reason', injectReason)
+
+    startTransition(async () => {
+      const res = await injectCoinAction(formData)
+      if (res.success) {
+        setActionSuccess(`Inject ${injectAmount} koin berhasil dilakukan.`)
+        setIsInjectModalOpen(false)
+        setInjectTargetId('')
+        setInjectAmount('')
+        setInjectReason('')
+        const holders = await getAllCoinHoldersAction()
+        setCoinHolders(holders)
+        const stats = await getCoinAdminStats()
+        if (stats) setCoinStats(stats)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal melakukan inject koin.')
+      }
+    })
+  }
+
+  const handleApproveLevel = async (requestId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menyetujui pengajuan level ini?')) return
+    setActionError(null)
+    setActionSuccess(null)
+    startTransition(async () => {
+      const res = await approveLevelRequestAction(requestId)
+      if (res.success) {
+        setActionSuccess('Pengajuan level berhasil disetujui.')
+        setLevelRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'APPROVED' } : r))
+        const req = levelRequests.find(r => r.id === requestId)
+        if (req) {
+          setUsers(prev => prev.map(u => u.id === req.userId ? { ...u, merchantLevel: req.targetLevel } : u))
+        }
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menyetujui pengajuan level.')
+      }
+    })
+  }
+
+  const handleOpenRejectModal = (requestId: string) => {
+    setRejectRequestId(requestId)
+    setInjectRejectNote('')
+    setIsRejectModalOpen(true)
+  }
+
+  const handleRejectSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!rejectNote) {
+      alert('Alasan penolakan harus diisi.')
+      return
+    }
+    setActionError(null)
+    setActionSuccess(null)
+    setIsRejectModalOpen(false)
+    startTransition(async () => {
+      const res = await rejectLevelRequestAction(rejectRequestId, rejectNote)
+      if (res.success) {
+        setActionSuccess('Pengajuan level berhasil ditolak.')
+        setLevelRequests(prev => prev.map(r => r.id === rejectRequestId ? { ...r, status: 'REJECTED', reviewNote: rejectNote } : r))
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menolak pengajuan level.')
       }
     })
   }
@@ -391,6 +579,7 @@ export default function AdminDashboardClient({
             {[
               { id: 'overview', label: 'Dashboard Overview', icon: 'M4 6h16M4 12h16M4 18h16' },
               { id: 'users', label: 'Kelola User & Role', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14-2a4 4 0 0 1-3.87 3M16 3.13a4 4 0 0 1 0 7.75' },
+              ...(currentUser.isSuperAdmin ? [{ id: 'admins', label: 'Kelola Admin', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-7 16a7 7 0 0 1 14 0H5z' }] : []),
               { id: 'approvals', label: 'Persetujuan Merchant', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
               { id: 'withdrawals', label: 'Pencairan Dana (Withdraw)', icon: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
               { id: 'products', label: 'Katalog Produk & Jasa', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
@@ -461,6 +650,7 @@ export default function AdminDashboardClient({
             <h2 className="font-sora text-xs md:text-sm font-black text-slate-800 tracking-wider uppercase">
               { activeTab === 'overview' && 'Dashboard Overview' }
               { activeTab === 'users' && 'Kelola User & Role' }
+              { activeTab === 'admins' && 'Kelola Admin' }
               { activeTab === 'approvals' && 'Persetujuan Merchant' }
               { activeTab === 'withdrawals' && 'Pencairan Dana (Withdrawals)' }
               { activeTab === 'products' && 'Katalog Produk & Jasa' }
@@ -469,6 +659,7 @@ export default function AdminDashboardClient({
               {activeTab === 'transactions' && 'Lacak Transaksi Jual Beli'}
               {activeTab === 'certificates' && 'Sertifikat Level Up'}
               {activeTab === 'affiliates' && 'Monitor Sistem Affiliate'}
+              {activeTab === 'coins' && 'Kelola Koin & Voucher'}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -820,30 +1011,31 @@ export default function AdminDashboardClient({
 
           {/* ─── TAB 2.5: PERSETUJUAN MERCHANT ─────────────────────────────── */}
           {activeTab === 'approvals' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in duration-255">
+              {/* Section 1: Verifikasi Merchant Baru */}
               <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
-                <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
-                  Daftar Antrian Verifikasi Merchant
+                <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
+                  Daftar Antrian Verifikasi Merchant (Baru)
                 </h3>
-                <p className="text-xs text-[#64748b] mb-6">
-                  Merchant yang mendaftar (Level 1) akan tampil di sini. Setujui mereka agar dapat mempublikasikan produk dan berjualan di Saloka.id.
+                <p className="text-xs text-[#64748b] mb-4">
+                  Merchant baru mendaftar (Level 1). Setujui agar terdaftar sebagai Merchant Aktif (Level 2).
                 </p>
 
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[800px] text-xs text-left">
-                    <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
+                    <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px] font-bold">
                       <tr>
-                        <th className="px-6 py-3.5">Nama Usaha / Email</th>
-                        <th className="px-6 py-3.5">Status</th>
-                        <th className="px-6 py-3.5 text-center">Bergabung</th>
-                        <th className="px-6 py-3.5 text-right">Aksi</th>
+                        <th className="px-6 py-3">Nama Usaha / Email</th>
+                        <th className="px-6 py-3">Status</th>
+                        <th className="px-6 py-3 text-center">Bergabung</th>
+                        <th className="px-6 py-3 text-right">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-105">
                       {users.filter(u => u.role === 'MERCHANT' && u.level === 1).length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="px-6 py-8 text-center text-slate-500 font-medium">
-                            🎉 Tidak ada antrian merchant yang perlu disetujui saat ini.
+                          <td colSpan={4} className="px-6 py-6 text-center text-slate-400 italic">
+                            🎉 Tidak ada antrian merchant baru.
                           </td>
                         </tr>
                       ) : (
@@ -854,7 +1046,7 @@ export default function AdminDashboardClient({
                               <p className="text-[10px] text-[#64748b] font-mono">{u.email}</p>
                             </td>
                             <td className="px-6 py-4">
-                              <span className="px-2 py-0.5 rounded text-[9px] font-bold border border-yellow-200 bg-yellow-50 text-yellow-700 uppercase tracking-wider">
+                              <span className="px-2 py-0.5 rounded text-[8px] font-bold border border-yellow-250 bg-yellow-50 text-yellow-750 uppercase tracking-wider">
                                 Menunggu Verifikasi
                               </span>
                             </td>
@@ -865,13 +1057,139 @@ export default function AdminDashboardClient({
                               <button
                                 onClick={() => handleApproveMerchant(u.id)}
                                 disabled={isPending}
-                                className="px-4 py-1.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white rounded text-[11px] font-bold uppercase tracking-wider shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                                className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white rounded text-[10px] font-bold uppercase tracking-wider shadow-sm transition-colors cursor-pointer disabled:opacity-50 border-none"
                               >
-                                {isPending ? 'Proses...' : 'Setujui Merchant'}
+                                {isPending ? 'Proses...' : 'Setujui'}
                               </button>
                             </td>
                           </tr>
                         ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Section 2: Persetujuan Naik Level (L1 - L4) */}
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
+                  Persetujuan Kenaikan Level Usaha (L1 - L4)
+                </h3>
+                <p className="text-xs text-[#64748b] mb-6">
+                  Validasi jangkauan radius, kelengkapan legalitas/sertifikasi, dan omset minimal Rp 10 Juta untuk kenaikan level area merchant.
+                </p>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[1000px] text-xs text-left">
+                    <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px] font-bold">
+                      <tr>
+                        <th className="px-4 py-3">Merchant</th>
+                        <th className="px-4 py-3 text-center">Level Target</th>
+                        <th className="px-4 py-3 text-center">Jangkauan Radius</th>
+                        <th className="px-4 py-3 text-right">Omset Bulanan</th>
+                        <th className="px-4 py-3 text-center">Kelengkapan</th>
+                        <th className="px-4 py-3 text-center">Status</th>
+                        <th className="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {levelRequests.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-8 text-center text-slate-400 italic">
+                            Belum ada pengajuan kenaikan level merchant.
+                          </td>
+                        </tr>
+                      ) : (
+                        levelRequests.map((req: any) => {
+                          const isOmsetQualified = req.omsetBulan >= 10000000;
+                          return (
+                            <tr key={req.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-4 py-3">
+                                <p className="font-bold text-slate-800">{req.user?.name || 'Merchant'}</p>
+                                <p className="text-[10px] text-slate-500 font-mono">{req.user?.email}</p>
+                                <p className="text-[9px] text-slate-450 mt-0.5">Level Saat Ini: L{req.user?.merchantLevel || 1}</p>
+                              </td>
+                              <td className="px-4 py-3 text-center font-bold text-slate-800">
+                                L{req.targetLevel}
+                              </td>
+                              <td className="px-4 py-3 text-center font-semibold text-slate-700">
+                                {req.radiusKm} KM
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <p className="font-bold text-slate-850">Rp {req.omsetBulan.toLocaleString('id-ID')}</p>
+                                <span className={`inline-block text-[8px] font-bold px-1.5 py-0.2 rounded mt-0.5 border ${
+                                  isOmsetQualified 
+                                    ? 'bg-green-50 text-green-700 border-green-200' 
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                                }`}>
+                                  {isOmsetQualified ? 'Lolos (>= Rp 10jt)' : 'Belum Lolos (< Rp 10jt)'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-col gap-1 text-[9px] font-medium text-slate-600">
+                                  <div className="flex items-center gap-1">
+                                    <span className={req.hasLegalitas ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>
+                                      {req.hasLegalitas ? '✓' : '✗'}
+                                    </span>
+                                    <span>Legalitas (Akta/AHU/NPWP)</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className={req.hasDesain ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>
+                                      {req.hasDesain ? '✓' : '✗'}
+                                    </span>
+                                    <span>Desain Premium</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className={req.hasSertifikat ? 'text-green-600 font-bold' : 'text-red-500 font-bold'}>
+                                      {req.hasSertifikat ? '✓' : '✗'}
+                                    </span>
+                                    <span>Sertifikasi Produk</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
+                                  req.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200' :
+                                  req.status === 'REJECTED' ? 'bg-red-50 text-red-700 border-red-200' :
+                                  'bg-yellow-50 text-yellow-750 border-yellow-200'
+                                }`}>
+                                  {req.status}
+                                </span>
+                                {req.status === 'REJECTED' && req.reviewNote && (
+                                  <p className="text-[9px] text-red-500 italic mt-1 max-w-[150px] truncate" title={req.reviewNote}>
+                                    Catatan: {req.reviewNote}
+                                  </p>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {req.status === 'PENDING' ? (
+                                  currentUser.isSuperAdmin ? (
+                                    <div className="flex justify-end gap-1.5">
+                                      <button
+                                        onClick={() => handleApproveLevel(req.id)}
+                                        disabled={isPending}
+                                        className="px-2.5 py-1 bg-[#0F5132] hover:bg-[#0a3a24] text-white rounded text-[10px] font-bold uppercase transition-colors cursor-pointer border-none"
+                                      >
+                                        Setujui
+                                      </button>
+                                      <button
+                                        onClick={() => handleOpenRejectModal(req.id)}
+                                        disabled={isPending}
+                                        className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-bold uppercase transition-colors cursor-pointer border-none"
+                                      >
+                                        Tolak
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-[9px] text-slate-400 italic">Butuh Superadmin</span>
+                                  )
+                                ) : (
+                                  <span className="text-[10px] text-slate-450 italic">Selesai</span>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })
                       )}
                     </tbody>
                   </table>
@@ -1348,7 +1666,100 @@ export default function AdminDashboardClient({
 
           {/* ─── TAB 5: DAFTAR KOMUNITAS ───────────────────────────────────── */}
           {activeTab === 'community' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in duration-250">
+              {/* Membership Invoice Verification Section */}
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
+                  Verifikasi Pembayaran Invoice Keanggotaan Komunitas
+                </h3>
+                <p className="text-xs text-[#64748b] mb-4">
+                  Daftar tagihan pendaftaran keanggotaan Komunitas Koperasi (Simpanan Pokok & Wajib) dan Komunitas Berbayar yang dikelola Saloka.
+                </p>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[800px] text-xs text-left">
+                    <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px] font-bold">
+                      <tr>
+                        <th className="px-4 py-3">Nama Anggota</th>
+                        <th className="px-4 py-3">Komunitas</th>
+                        <th className="px-4 py-3 text-right">Rincian Biaya</th>
+                        <th className="px-4 py-3 text-center">Status Invoice</th>
+                        <th className="px-4 py-3 text-center">Tanggal Daftar</th>
+                        <th className="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {invoices.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-6 text-center text-slate-400 italic">
+                            Belum ada pendaftaran dengan invoice keanggotaan.
+                          </td>
+                        </tr>
+                      ) : (
+                        invoices.map((inv: any) => {
+                          const isKoperasi = inv.community?.type === 'KOPERASI';
+                          return (
+                            <tr key={inv.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-4 py-3">
+                                <p className="font-bold text-slate-800">{inv.user?.name || 'UMKM Mitra'}</p>
+                                <p className="text-[10px] text-slate-505 font-mono">{inv.user?.email}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <p className="font-bold text-slate-800">{inv.community?.name || 'Komunitas'}</p>
+                                <span className={`inline-block text-[8px] font-bold px-1.5 py-0.2 rounded border ${
+                                  isKoperasi ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-cyan-50 text-cyan-700 border-cyan-200'
+                                }`}>
+                                  {inv.community?.type || 'KOMUNITAS'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {isKoperasi ? (
+                                  <div className="text-right">
+                                    <p className="font-bold text-slate-850">Simpanan Pokok: Rp 100.000</p>
+                                    <p className="text-[10px] text-slate-500">Simpanan Wajib: Rp 25.000</p>
+                                  </div>
+                                ) : (
+                                  <div className="text-right">
+                                    <p className="font-bold text-[#0F5132]">Biaya Gabung: Free / Standard</p>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
+                                  inv.invoiceStatus === 'VERIFIED' ? 'bg-green-50 text-green-700 border-green-200' :
+                                  inv.invoiceStatus === 'PAID' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                  'bg-yellow-50 text-yellow-750 border-yellow-200'
+                                }`}>
+                                  {inv.invoiceStatus === 'VERIFIED' ? 'Terverifikasi' : 
+                                   inv.invoiceStatus === 'PAID' ? 'Sudah Bayar (Pending)' : 'Belum Bayar'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-center text-slate-500">
+                                {new Date(inv.joinedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {inv.invoiceStatus === 'VERIFIED' ? (
+                                  <span className="text-[10px] text-slate-400 italic">Terverifikasi</span>
+                                ) : (
+                                  <button
+                                    onClick={() => handleVerifyInvoice(inv.id)}
+                                    disabled={isPending}
+                                    className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3a24] text-white rounded text-[10px] font-bold uppercase tracking-wider transition-colors border-none cursor-pointer disabled:opacity-50"
+                                  >
+                                    {isPending ? 'Proses...' : 'Verifikasi Lunas'}
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Forum Activities Section */}
               <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-hidden shadow-sm">
                 <div className="px-6 py-4 border-b border-[#e2e8f0] bg-[#f8f9fa]">
                   <h3 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Aktivitas Forum Komunitas</h3>
@@ -1773,13 +2184,98 @@ export default function AdminDashboardClient({
             </div>
           )}
 
+          {/* ─── TAB 8: KELOLA ADMIN (SUPERADMIN ONLY) ─────────────────────── */}
+          {activeTab === 'admins' && currentUser.isSuperAdmin && (
+            <div className="space-y-6 animate-in fade-in duration-250">
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider">Kelola Akun Administrator biasa</h3>
+                    <p className="text-xs text-slate-500 mt-1">Daftar staf administrator pengelola sistem website Saloka.</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAdminName('')
+                      setAdminEmail('')
+                      setAdminPassword('')
+                      setAdminIsSuper(false)
+                      setIsAdminModalOpen(true)
+                    }}
+                    className="px-4 py-2 bg-[#0F5132] hover:bg-[#0a3a24] text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow flex items-center gap-1.5 cursor-pointer border-none outline-none"
+                  >
+                    <span>+ Tambah Admin Baru</span>
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs whitespace-nowrap">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                        <th className="px-4 py-3">Nama</th>
+                        <th className="px-4 py-3">Email</th>
+                        <th className="px-4 py-3">Tipe Otoritas</th>
+                        <th className="px-4 py-3">Tanggal Dibuat</th>
+                        <th className="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {admins.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="text-center py-6 text-slate-400 italic">
+                            Belum ada administrator biasa terdaftar.
+                          </td>
+                        </tr>
+                      ) : (
+                        admins.map((adm: any) => (
+                          <tr key={adm.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-3 font-bold text-slate-800">{adm.name}</td>
+                            <td className="px-4 py-3 font-mono text-slate-650">{adm.email}</td>
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
+                                adm.isSuperAdmin ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-700 border-slate-200'
+                              }`}>
+                                {adm.isSuperAdmin ? 'Superadmin' : 'Admin Staff'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-slate-500">
+                              {new Date(adm.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              {adm.id === currentUser.id ? (
+                                <span className="text-[10px] text-slate-400 italic">Akun Anda</span>
+                              ) : (
+                                <button
+                                  onClick={() => handleDeleteAdmin(adm.id)}
+                                  className="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                                >
+                                  Hapus
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'coins' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {/* Stat Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
+                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Peredaran Koin</p>
+                  <p className="text-2xl font-sora font-extrabold text-[#0F5132] tracking-tight">
+                    {coinHolders.reduce((sum: number, h: any) => sum + (h.coinBalance || 0), 0)} Coin
+                  </p>
+                  <p className="text-[10px] text-[#64748b] mt-1.5">Total suplai aktif ekosistem</p>
+                </div>
                 <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
                   <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Transaksi Koin</p>
-                  <p className="text-2xl font-sora font-extrabold text-[#0F5132] tracking-tight">{coinStats.totalTx}</p>
+                  <p className="text-2xl font-sora font-extrabold text-slate-800 tracking-tight">{coinStats.totalTx}</p>
                   <p className="text-[10px] text-[#64748b] mt-1.5">Topup, reward, dan redeem koin</p>
                 </div>
                 <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
@@ -1791,6 +2287,67 @@ export default function AdminDashboardClient({
                   <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Koin Kas & Rate</p>
                   <p className="text-sm font-bold text-slate-800">1 Koin = Rp 1.500</p>
                   <p className="text-[10px] text-[#64748b] mt-1.5">Rate konversi standar Saloka.id</p>
+                </div>
+              </div>
+
+              {/* Coin Holder List Panel */}
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-widest">Daftar Pemegang Koin (Coin Holders)</h3>
+                    <p className="text-xs text-slate-500 mt-1">Daftar saldo koin aktif pada wallet merchant, user, dan kas komunitas.</p>
+                  </div>
+                  {currentUser.isSuperAdmin && (
+                    <button
+                      onClick={() => {
+                        setInjectTargetId('')
+                        setInjectTargetType('USER')
+                        setInjectAmount('')
+                        setInjectReason('')
+                        setIsInjectModalOpen(true)
+                      }}
+                      className="px-4 py-2 bg-[#0F5132] hover:bg-[#0a3a24] text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow flex items-center gap-1.5 cursor-pointer border-none outline-none"
+                    >
+                      <span>⚡ Inject Koin Baru</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs whitespace-nowrap">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                        <th className="px-4 py-3">ID Pemegang</th>
+                        <th className="px-4 py-3">Nama Pemilik</th>
+                        <th className="px-4 py-3">Tipe</th>
+                        <th className="px-4 py-3 text-right">Saldo Koin</th>
+                        <th className="px-4 py-3 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {coinHolders.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="text-center py-6 text-slate-400 italic">
+                            Belum ada data pemegang koin aktif.
+                          </td>
+                        </tr>
+                      ) : (
+                        coinHolders.map((h: any) => (
+                          <tr key={h.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-3 font-mono text-slate-650">{h.id}</td>
+                            <td className="px-4 py-3 font-bold text-slate-800">{h.name}</td>
+                            <td className="px-4 py-3 font-semibold text-slate-500">{h.type}</td>
+                            <td className="px-4 py-3 text-right font-bold text-[#0F5132]">{h.coinBalance} Coin</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="px-2 py-0.5 rounded text-[8px] font-bold border border-green-200 bg-green-50 text-green-700 uppercase tracking-wider">
+                                ACTIVE
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -1891,13 +2448,13 @@ export default function AdminDashboardClient({
               {/* Recent Transactions List */}
               <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
                 <h3 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider mb-4 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
-                  10 Transaksi Koin Terkini
+                  10 Transaksi Koin Terkini (Ledger Mutasi)
                 </h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs whitespace-nowrap">
                     <thead>
                       <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-                        <th className="px-4 py-3">User ID / Penerima</th>
+                        <th className="px-4 py-3">Penerima / Komunitas</th>
                         <th className="px-4 py-3">Jenis Transaksi</th>
                         <th className="px-4 py-3 text-right">Jumlah Koin</th>
                         <th className="px-4 py-3">Keterangan</th>
@@ -1914,12 +2471,13 @@ export default function AdminDashboardClient({
                       ) : (
                         coinStats.recentTx.map((tx: any) => (
                           <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-4 py-3 font-mono text-slate-600">{tx.userId}</td>
+                            <td className="px-4 py-3 font-mono text-slate-600">{tx.userId || tx.communityId}</td>
                             <td className="px-4 py-3">
                               <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
                                 tx.type === 'TOPUP' ? 'bg-green-50 text-green-700 border-green-200' :
                                 tx.type === 'REDEEM_VOUCHER' ? 'bg-red-50 text-red-700 border-red-200' :
-                                'bg-blue-50 text-blue-700 border-blue-200'
+                                tx.type === 'INJECTION' ? 'bg-blue-50 text-blue-700 border-blue-200 font-extrabold' :
+                                'bg-yellow-50 text-yellow-700 border-yellow-200'
                               }`}>
                                 {tx.type}
                               </span>
@@ -1927,7 +2485,7 @@ export default function AdminDashboardClient({
                             <td className={`px-4 py-3 text-right font-bold ${tx.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
                               {tx.amount > 0 ? `+${tx.amount}` : tx.amount} Coin
                             </td>
-                            <td className="px-4 py-3 text-slate-700">{tx.description}</td>
+                            <td className="px-4 py-3 text-slate-705">{tx.description}</td>
                             <td className="px-4 py-3 text-slate-500">{new Date(tx.createdAt).toLocaleString('id-ID')}</td>
                           </tr>
                         ))
@@ -1968,7 +2526,6 @@ export default function AdminDashboardClient({
                             setActionSuccess(`Voucher "${voucherName}" berhasil dibuat!`)
                             setIsVoucherModalOpen(false)
                             
-                            // Reset form fields
                             setVoucherName('')
                             setVoucherDesc('')
                             setVoucherType('INTERNAL')
@@ -1978,7 +2535,6 @@ export default function AdminDashboardClient({
                             setVoucherMaxRedemption('0')
                             setVoucherValidUntil('')
 
-                            // Reload stats
                             const stats = await getCoinAdminStats()
                             if (stats) setCoinStats(stats)
                           } else {
@@ -2007,8 +2563,7 @@ export default function AdminDashboardClient({
                           value={voucherDesc}
                           onChange={e => setVoucherDesc(e.target.value)}
                           placeholder="e.g. Tukarkan koin Anda untuk mendapatkan voucher potongan 25.000 rupiah di Shopee."
-                          rows={2}
-                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132] resize-none"
+                          className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132] h-20"
                         />
                       </div>
 
@@ -2020,52 +2575,52 @@ export default function AdminDashboardClient({
                             onChange={e => setVoucherType(e.target.value as any)}
                             className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-800 outline-none focus:border-[#0F5132]"
                           >
-                            <option value="INTERNAL">INTERNAL (Saloka)</option>
-                            <option value="EXTERNAL">EXTERNAL (TikTok/Shopee)</option>
+                            <option value="INTERNAL">Internal (Belanja Saloka)</option>
+                            <option value="EXTERNAL">External (Mitra Shopee/Tokped)</option>
                           </select>
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Biaya (Koin)</label>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Biaya Tukar Koin</label>
                           <input
                             type="number"
                             required
                             value={voucherCoinCost}
                             onChange={e => setVoucherCoinCost(e.target.value)}
                             placeholder="e.g. 10"
-                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132]"
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nilai Rp (Value)</label>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nilai Rupiah Potongan</label>
                           <input
                             type="number"
                             required
                             value={voucherValue}
                             onChange={e => setVoucherValue(e.target.value)}
                             placeholder="e.g. 25000"
-                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132]"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Kode (Jika External)</label>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Kode Klaim (External)</label>
                           <input
                             type="text"
                             value={voucherCode}
                             onChange={e => setVoucherCode(e.target.value)}
-                            placeholder="e.g. SHP-DISC25K"
-                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                            placeholder="Kosongkan jika tipe INTERNAL"
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132]"
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Maks. Klaim (Stok)</label>
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Stok Awal</label>
                           <input
                             type="number"
                             required
@@ -2107,6 +2662,232 @@ export default function AdminDashboardClient({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ─── ADD ADMIN MODAL ────────────────────────────────────── */}
+          {isAdminModalOpen && currentUser.isSuperAdmin && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">Tambah Administrator Baru</h3>
+                  <button onClick={() => setIsAdminModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+
+                <form onSubmit={handleCreateAdminSubmit} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nama Lengkap</label>
+                    <input
+                      type="text"
+                      required
+                      value={adminName}
+                      onChange={e => setAdminName(e.target.value)}
+                      placeholder="e.g. Budi Santoso"
+                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Alamat Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={adminEmail}
+                      onChange={e => setAdminEmail(e.target.value)}
+                      placeholder="e.g. budi.admin@saloka.id"
+                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Kata Sandi (Password)</label>
+                    <input
+                      type="password"
+                      required
+                      value={adminPassword}
+                      onChange={e => setAdminPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 py-2">
+                    <input
+                      type="checkbox"
+                      id="isSuper"
+                      checked={adminIsSuper}
+                      onChange={e => setAdminIsSuper(e.target.checked)}
+                      className="rounded text-[#0F5132] focus:ring-[#0F5132] cursor-pointer"
+                    />
+                    <label htmlFor="isSuper" className="text-xs text-slate-700 font-semibold cursor-pointer">
+                      Jadikan Superadmin (Otoritas Penuh & Inject Koin)
+                    </label>
+                  </div>
+
+                  <div className="pt-4 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsAdminModalOpen(false)}
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="flex-1 py-2.5 bg-[#0F5132] hover:bg-[#0a3a24] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {isPending ? 'Menyimpan...' : 'Tambah Staf'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── INJECT COIN MODAL (SUPERADMIN ONLY) ───────────────────────── */}
+          {isInjectModalOpen && currentUser.isSuperAdmin && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">⚡ Inject Koin Ke Sistem</h3>
+                  <button onClick={() => setIsInjectModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+
+                <form onSubmit={handleInjectCoinSubmit} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Tipe Penerima</label>
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="targetType"
+                          checked={injectTargetType === 'USER'}
+                          onChange={() => { setInjectTargetType('USER'); setInjectTargetId(''); }}
+                          className="text-[#0F5132] focus:ring-[#0F5132]"
+                        />
+                        <span className="text-slate-700 font-semibold">Merchant / User</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="targetType"
+                          checked={injectTargetType === 'COMMUNITY'}
+                          onChange={() => { setInjectTargetType('COMMUNITY'); setInjectTargetId(''); }}
+                          className="text-[#0F5132] focus:ring-[#0F5132]"
+                        />
+                        <span className="text-slate-700 font-semibold">Kas Komunitas</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Pilih Target Penerima</label>
+                    <select
+                      required
+                      value={injectTargetId}
+                      onChange={e => setInjectTargetId(e.target.value)}
+                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 outline-none focus:border-[#0F5132]"
+                    >
+                      <option value="">-- Pilih Penerima --</option>
+                      {injectTargetType === 'USER' ? (
+                        users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name} ({u.role} - {u.email})</option>
+                        ))
+                      ) : (
+                        Array.from(new Map([
+                          ...invoices.map(inv => inv.community).filter(Boolean),
+                          ...coinHolders.filter(h => h.type.startsWith('KOMUNITAS')).map(h => ({ id: h.id, name: h.name, type: 'KOMUNITAS' }))
+                        ].map((c: any) => [c.id, c])).values()).map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name} ({c.type || 'KOMUNITAS'})</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Jumlah Koin Inject</label>
+                    <input
+                      type="number"
+                      required
+                      value={injectAmount}
+                      onChange={e => setInjectAmount(e.target.value)}
+                      placeholder="e.g. 1000"
+                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Alasan Inject (Penting untuk Audit Log)</label>
+                    <textarea
+                      required
+                      value={injectReason}
+                      onChange={e => setInjectReason(e.target.value)}
+                      placeholder="e.g. Topup awal kas komunitas / Reward event tahunan merchant"
+                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132] h-20"
+                    />
+                  </div>
+
+                  <div className="pt-4 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsInjectModalOpen(false)}
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="flex-1 py-2.5 bg-[#0F5132] hover:bg-[#0a3a24] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 border-none"
+                    >
+                      {isPending ? 'Injecting...' : 'Inject Koin'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── REJECT LEVEL UP REASON MODAL ─────────────────────────────── */}
+          {isRejectModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className="bg-white border border-red-200 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="font-sora text-sm font-bold text-red-650 uppercase tracking-wider">Tolak Pengajuan Level Merchant</h3>
+                  <button onClick={() => setIsRejectModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+
+                <form onSubmit={handleRejectSubmit} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Alasan Penolakan (Catatan Evaluasi)</label>
+                    <textarea
+                      required
+                      value={rejectNote}
+                      onChange={e => setInjectRejectNote(e.target.value)}
+                      placeholder="e.g. Omset bulanan belum mencapai Rp 10 Juta / Legalitas NPWP tidak terdaftar"
+                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-red-500 h-24"
+                    />
+                  </div>
+
+                  <div className="pt-4 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsRejectModalOpen(false)}
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 border-none"
+                    >
+                      {isPending ? 'Menyimpan...' : 'Tolak Pengajuan'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
         </div>

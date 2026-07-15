@@ -373,14 +373,16 @@ function AuthContent() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="page-email" className="text-xs font-semibold text-text-secondary">Email Bisnis</Label>
+          <Label htmlFor="page-email" className="text-xs font-semibold text-text-secondary">
+            {tab === 'login' ? 'Email atau Username' : 'Email Bisnis'}
+          </Label>
           <Input
             id="page-email"
-            type="email"
+            type={tab === 'login' ? 'text' : 'email'}
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="nama@tokoanda.id"
+            placeholder={tab === 'login' ? 'username_anda atau nama@email.id' : 'nama@tokoanda.id'}
             className="pl-4 py-3"
           />
         </div>

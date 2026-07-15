@@ -14,7 +14,20 @@ export default async function AdminDashboard() {
   }
 
   // Fetch all data
-  const [allUsers, allProducts, allPosts, allOrders, allCourses, allWithdrawals, allVouchers, coinStats] = await Promise.all([
+  const [
+    allUsers,
+    allProducts,
+    allPosts,
+    allOrders,
+    allCourses,
+    allWithdrawals,
+    allVouchers,
+    coinStats,
+    allAdmins,
+    allInvoices,
+    allCoinHolders,
+    allLevelRequests
+  ] = await Promise.all([
     DataStore.getAllUsers(),
     DataStore.getProducts(),
     DataStore.getPosts(),
@@ -22,7 +35,11 @@ export default async function AdminDashboard() {
     DataStore.getCourses(),
     DataStore.getAllWithdrawals(),
     DataStore.getAllCoinVouchers(),
-    DataStore.getCoinAdminStats()
+    DataStore.getCoinAdminStats(),
+    DataStore.getAdmins(),
+    DataStore.getInvoiceMemberships(),
+    DataStore.getAllCoinHolders(),
+    DataStore.getLevelRequests()
   ])
 
   return (
@@ -36,6 +53,10 @@ export default async function AdminDashboard() {
       initialWithdrawals={allWithdrawals}
       initialVouchers={allVouchers}
       initialCoinStats={coinStats}
+      initialAdmins={allAdmins}
+      initialInvoices={allInvoices}
+      initialCoinHolders={allCoinHolders}
+      initialLevelRequests={allLevelRequests}
     />
   )
 }

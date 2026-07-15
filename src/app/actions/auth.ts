@@ -26,21 +26,25 @@ function getCookieDomain(host: string): string | undefined {
 }
 
 export async function login(formData: FormData) {
-  const email = formData.get('email') as string
+  const emailOrUsername = (formData.get('email') as string || '').trim()
   const password = formData.get('password') as string
   
-  if (!email || !password) {
-    return { error: 'Email dan password wajib diisi' }
+  if (!emailOrUsername || !password) {
+    return { error: 'Email/username dan password wajib diisi' }
   }
   
-  const user = await DataStore.findUserByEmail(email)
+  let user = await DataStore.findUserByEmail(emailOrUsername)
   if (!user) {
-    return { error: 'Email atau password salah' }
+    user = await DataStore.findUserByUsername(emailOrUsername)
+  }
+  
+  if (!user) {
+    return { error: 'Email/username atau password salah' }
   }
   
   const hash = hashPassword(password)
   if (user.passwordHash !== hash) {
-    return { error: 'Email atau password salah' }
+    return { error: 'Email/username atau password salah' }
   }
   
   // Create Session JWT

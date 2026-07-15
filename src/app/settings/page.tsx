@@ -419,40 +419,107 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* CTA Button */}
-              {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
-                <button
-                  id="btn-start-kyc"
-                  disabled={kycStarting}
-                  onClick={async () => {
-                    setKycStarting(true)
-                    try {
-                      const res = await fetch('/api/kyc/didit', { method: 'POST' })
-                      const data = await res.json()
-                      if (data.url) {
-                        // Open Didit modal (SDK) — user stays on page
-                        const { DiditSdk } = await import('@didit-protocol/sdk-web')
-                        DiditSdk.shared.onComplete = (result) => {
-                          if (result.type === 'completed') {
-                            goeyToast.success('Verifikasi selesai! Menunggu konfirmasi...')
+              {/* CTA Buttons & Bypass simulator */}
+              <div className="flex flex-wrap gap-4">
+                {kycStatus !== 'VERIFIED' && kycStatus !== 'PENDING' && (
+                  <button
+                    id="btn-start-kyc"
+                    disabled={kycStarting}
+                    onClick={async () => {
+                      setKycStarting(true)
+                      try {
+                        const res = await fetch('/api/kyc/didit', { method: 'POST' })
+                        const data = await res.json()
+                        if (data.url) {
+                          // Open Didit modal (SDK) — user stays on page
+                          const { DiditSdk } = await import('@didit-protocol/sdk-web')
+                          DiditSdk.shared.onComplete = (result) => {
+                            if (result.type === 'completed') {
+                              goeyToast.success('Verifikasi selesai! Menunggu konfirmasi...')
+                            }
                           }
+                          DiditSdk.shared.startVerification({ url: data.url })
+                        } else {
+                          goeyToast.error(data.error || 'Gagal memulai verifikasi. Coba lagi.')
                         }
-                        DiditSdk.shared.startVerification({ url: data.url })
-                      } else {
-                        goeyToast.error(data.error || 'Gagal memulai verifikasi. Coba lagi.')
+                      } catch (e) {
+                        goeyToast.error('Terjadi kesalahan jaringan. Silakan coba lagi.')
+                      } finally {
+                        setKycStarting(false)
                       }
-                    } catch (e) {
-                      goeyToast.error('Terjadi kesalahan jaringan. Silakan coba lagi.')
-                    } finally {
-                      setKycStarting(false)
-                    }
-                  }}
-                  className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary/90 text-white font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  {kycStarting ? 'Memulai Verifikasi...' : kycStatus === 'REJECTED' ? 'Coba Verifikasi Ulang' : 'Mulai Verifikasi KYC Gratis'}
-                </button>
-              )}
+                    }}
+                    className="w-full sm:w-auto px-8 py-4 bg-primary hover:bg-primary/90 text-white font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all shadow-lg hover:shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    {kycStarting ? 'Memulai Verifikasi...' : kycStatus === 'REJECTED' ? 'Coba Verifikasi Ulang' : 'Mulai Verifikasi KYC Gratis'}
+                  </button>
+                )}
+
+                {kycStatus !== 'VERIFIED' && (
+                  <button
+                    onClick={async () => {
+                      if (confirm('Simulasikan KYC instan berhasil?')) {
+                        const res = await fetch('/api/kyc/simulate', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: 'VERIFIED' })
+                        })
+                        const d = await res.json()
+                        if (d.success) {
+                          goeyToast.success('Simulasi KYC Berhasil!')
+                          setKycStatus('VERIFIED')
+                          setKycVerifiedAt(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }))
+                        } else {
+                          goeyToast.error('Gagal mensimulasikan KYC.')
+                        }
+                      }
+                    }}
+                    className="w-full sm:w-auto px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none"
+                  >
+                    ⚙️ Simulasi KYC Lulus (Bypass)
+                  </button>
+                )}
+
+                {kycStatus === 'PENDING' && (
+                  <button
+                    onClick={async () => {
+                      const res = await fetch('/api/kyc/status')
+                      const d = await res.json()
+                      setKycStatus(d.status)
+                      if (d.verifiedAt) {
+                        setKycVerifiedAt(new Date(d.verifiedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }))
+                      }
+                      goeyToast.success(`Status diperbarui: ${d.status}`)
+                    }}
+                    className="w-full sm:w-auto px-6 py-4 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all cursor-pointer border-none"
+                  >
+                    🔄 Refresh Status Verifikasi
+                  </button>
+                )}
+
+                {kycStatus === 'VERIFIED' && (
+                  <button
+                    onClick={async () => {
+                      if (confirm('Reset status KYC menjadi Belum Diverifikasi untuk pengujian ulang?')) {
+                        const res = await fetch('/api/kyc/simulate', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: 'NOT_SUBMITTED' })
+                        })
+                        const d = await res.json()
+                        if (d.success) {
+                          goeyToast.success('Status KYC direset!')
+                          setKycStatus('NOT_SUBMITTED')
+                          setKycVerifiedAt(null)
+                        }
+                      }
+                    }}
+                    className="w-full sm:w-auto px-6 py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-bold text-xs rounded-[var(--radius-brand)] transition-all cursor-pointer"
+                  >
+                    ⚠️ Reset Status KYC (Untuk Testing)
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

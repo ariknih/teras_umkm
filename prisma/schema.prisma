@@ -68,7 +68,9 @@ enum CoinTxType {
   REWARD_USER_INVITE
   REWARD_MERCHANT_INVITE
   REDEEM_VOUCHER
-  DISTRIBUTE // Ketua distribusi ke member
+  DISTRIBUTE          // Ketua distribusi ke member
+  INJECTION           // Inject manual oleh Superadmin
+  REFERRAL_COMMISSION // Komisi 3 koin cross-community ke referrer
 }
 
 enum VoucherType {
@@ -93,11 +95,19 @@ enum CommunityType {
   KOPERASI
 }
 
+// Kategori komunitas yang lebih granular
+enum CommunityCategory {
+  FREE     // Komunitas Gratis — min topup 100 koin
+  PAID     // Komunitas Berbayar — min topup 1.000 koin
+  KOPERASI // Koperasi — simpanan pokok + wajib
+}
+
 enum KycStatus {
   NOT_SUBMITTED
   PENDING
   APPROVED
   REJECTED
+  VERIFIED
 }
 
 enum LoanStatus {
@@ -105,6 +115,12 @@ enum LoanStatus {
   APPROVED_KETUA
   APPROVED_ADMIN
   DISBURSED
+  REJECTED
+}
+
+enum LevelRequestStatus {
+  PENDING
+  APPROVED
   REJECTED
 }
 
@@ -116,6 +132,7 @@ model User {
   image        String?       // Profile picture URL
   passwordHash String
   role         Role          @default(CUSTOMER)
+  isSuperAdmin Boolean       @default(false)  // Superadmin flag — hanya 1 akun
   latitude     Float?
   longitude    Float?
   level        Int           @default(1)
@@ -131,6 +148,10 @@ model User {
   subAffiliates     User[]       @relation("AffiliateTree")
   membershipLevel   String       @default("Reseller") // "Reseller", "Agen", "Distributor"
   membershipAccess  String       @default("Gold")     // "Gold", "Platinum", "Diamond"
+  // Level Area Merchant (L0 = belum punya level, L1-L4)
+  merchantLevel     Int          @default(0)
+  levelApprovedAt   DateTime?
+  levelApprovedBy   String?      // ID Superadmin yang approve
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -186,6 +207,7 @@ model User {
   referredBy        UserReferral[]      @relation("ReferredUser")  // siapa yang mengundang user ini
   merchantInvitesSent    MerchantInvite[] @relation("InviterMerchant")
   merchantInvitesReceived MerchantInvite[] @relation("InviteeMerchant")
+  levelRequests          MerchantLevelRequest[] @relation("MerchantLevelRequests")
 }
 
 model Product {
@@ -496,9 +518,10 @@ model OrderTracking {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 model Community {
-  id                String          @id @default(uuid())
+  id                String            @id @default(uuid())
   name              String
-  type              CommunityType   @default(PERKUMPULAN)
+  type              CommunityType     @default(PERKUMPULAN)
+  category          CommunityCategory @default(FREE) // FREE | PAID | KOPERASI
   aktaNotaris       String?
   nomorAhu          String?
   nomorNpwp         String?
@@ -510,42 +533,54 @@ model Community {
   landingPageConfig String?
   waGroupLink       String?
 
-  // Iuran (hanya untuk KOPERASI)
-  joinFee           Float           @default(0)
-  monthlyFee        Float           @default(0)
+  // Iuran (hanya untuk PAID/KOPERASI)
+  joinFee           Float             @default(0)
+  monthlyFee        Float             @default(0)
+
+  // Koperasi: simpanan
+  simpananPokok     Float             @default(100000) // Rp 100.000
+  simpananWajib     Float             @default(25000)  // Rp 25.000/bulan
 
   // Coin komunitas
-  coinBalance       Float           @default(0.0)   // Kas coin komunitas
-  minCoinForLoan    Float           @default(1000.0) // Min coin untuk buka akses pinjaman
+  coinBalance       Float             @default(0.0)    // Kas coin komunitas
+  minCoinForLoan    Float             @default(1000.0) // Min coin untuk buka akses pinjaman
+  minCoinRequired   Float             @default(100.0)  // Min topup awal (100 FREE, 1000 PAID)
+  isRecruitmentLocked Boolean         @default(false)  // Auto-lock bila saldo coin = 0
 
-  isSuspended       Boolean         @default(false)
-  isVerified        Boolean         @default(false)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  isSuspended       Boolean           @default(false)
+  isVerified        Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   // Ketua Komunitas
   ketuaId           String
-  ketua             User            @relation("CommunityKetua", fields: [ketuaId], references: [id])
+  ketua             User              @relation("CommunityKetua", fields: [ketuaId], references: [id])
 
   // Members
   members           CommunityMembership[]
 
   // Keuangan Koperasi
   loanRequests      CooperativeLoan[]
-  
+
   // Coin komunitas
-  coinTransactions  CoinTransaction[]   @relation("CommunityCoinTx")
+  coinTransactions  CoinTransaction[] @relation("CommunityCoinTx")
 }
 
 model CommunityMembership {
-  id            String      @id @default(uuid())
-  communityId   String
-  community     Community   @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  isInduk       Boolean     @default(false)
-  isPaid        Boolean     @default(false)
-  joinedAt      DateTime    @default(now())
+  id              String      @id @default(uuid())
+  communityId     String
+  community       Community   @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isInduk         Boolean     @default(false)
+  isPaid          Boolean     @default(false)
+  // Untuk KOPERASI: simpanan
+  simpananPokok   Float?      // Rp 100.000 sekali bayar
+  simpananWajib   Float?      // Rp 25.000/bulan
+  invoiceStatus   String      @default("UNPAID") // UNPAID | PAID | VERIFIED
+  invoiceVerifiedAt DateTime?
+  invoiceVerifiedBy String?   // ID Admin yang verifikasi
+  joinedAt        DateTime    @default(now())
 
   @@unique([communityId, userId])
 }
@@ -657,4 +692,47 @@ model MerchantInvite {
 
   inviteeId       String
   invitee         User      @relation("InviteeMerchant", fields: [inviteeId], references: [id], onDelete: Cascade)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Konfigurasi Sistem Koin (Dikelola oleh Superadmin)
+// Singleton — hanya 1 row dengan id = "singleton"
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model CoinSystemConfig {
+  id                  String   @id @default("singleton")
+  coinRateRupiah      Float    @default(1500.0) // Nilai 1 koin dalam Rupiah (dinamis)
+  minTopupFree        Int      @default(100)    // Min topup awal komunitas FREE
+  minTopupPaid        Int      @default(1000)   // Min topup awal komunitas PAID/KOPERASI
+  referralCoinAmount  Int      @default(3)      // Jumlah koin reward referral cross-community
+  updatedAt           DateTime @updatedAt
+  updatedBy           String?                  // ID Superadmin yang terakhir update
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sistem Level Up Merchant (L1–L4, disetujui Superadmin)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model MerchantLevelRequest {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation("MerchantLevelRequests", fields: [userId], references: [id], onDelete: Cascade)
+  targetLevel     Int                 // 1, 2, 3, atau 4
+  status          LevelRequestStatus  @default(PENDING)
+
+  // Kriteria yang perlu dipenuhi
+  radiusKm        Float?              // Jangkauan area KM (L1=5, L2=10, L3=35, L4=beyond)
+  omsetBulan      Float?              // Omset bulanan (requirement: >= 10.000.000)
+  hasLegalitas    Boolean             @default(false)
+  hasSertifikat   Boolean             @default(false)
+  hasDesain       Boolean             @default(false)
+  catatan         String?             // Catatan dari merchant
+
+  // Review oleh Superadmin
+  reviewNote      String?
+  reviewedAt      DateTime?
+  reviewedBy      String?             // ID Superadmin yang review
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 }
