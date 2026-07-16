@@ -6379,8 +6379,12 @@ export const DataStore = {
         const community = await db.community.findUnique({ where: { id: communityId } })
         if (!community) return { error: 'Komunitas tidak ditemukan.' }
         
-        // Auto-lock recruitment if coinBalance <= 0 or isRecruitmentLocked
-        if (community.coinBalance <= 0 || community.isRecruitmentLocked) {
+        // Auto-lock recruitment if coinBalance <= 0 (only for non-free communities) or isRecruitmentLocked
+        const isFree = (community.joinFee || 0) === 0 || community.category === 'FREE';
+        if (community.isRecruitmentLocked) {
+          return { error: 'Rekrutmen komunitas dikunci. Hubungi ketua komunitas.' }
+        }
+        if (!isFree && community.coinBalance <= 0) {
           return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
         }
 
@@ -6472,7 +6476,11 @@ export const DataStore = {
     if (!community) return { error: 'Komunitas tidak ditemukan.' }
 
     // Auto-lock check for mock
-    if ((community.coinBalance || 0) <= 0 || community.isRecruitmentLocked) {
+    const isFree = (community.joinFee || 0) === 0 || community.category === 'FREE';
+    if (community.isRecruitmentLocked) {
+      return { error: 'Rekrutmen komunitas dikunci. Hubungi ketua komunitas.' }
+    }
+    if (!isFree && (community.coinBalance || 0) <= 0) {
       return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
     }
 
