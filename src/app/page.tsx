@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
 import { getCourses } from '@/app/actions/lms'
 import InteractiveFeatures from '@/app/components/InteractiveFeatures'
+import HeroBackground from '@/app/components/HeroBackground'
+import ScrollReveal from '@/app/components/ScrollReveal'
 
 export default async function HomePage() {
   const user = await getCurrentUser()
@@ -20,17 +22,7 @@ export default async function HomePage() {
       
       {/* ── HERO SECTION ────────────────────────────────────────────── */}
       <section className="relative w-full max-w-[1440px] mx-auto min-h-[500px] md:h-[768px] flex items-center px-6 md:px-16 overflow-hidden">
-        {/* Background Gradients & Images */}
-        <div className="absolute inset-0 z-0">
-           {/* Gradient: Hanya putih di kiri atas dan sedikit saja */}
-           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.75)_0%,transparent_40%)] z-10 pointer-events-none" />
-           {/* The user's uploaded photo from the market */}
-           <img 
-             src="/images/lamanawal.jpg" 
-             alt="Saloka Market" 
-             className="w-full h-full object-cover opacity-80 md:opacity-100" 
-           />
-        </div>
+        <HeroBackground />
         
         <div className="relative z-10 max-w-[630px] flex flex-col gap-8 bg-white/40 md:bg-transparent p-6 rounded-2xl md:p-0 backdrop-blur-sm md:backdrop-blur-none">
           <h1 className="text-text-primary text-4xl md:text-6xl font-bold leading-tight">
@@ -48,7 +40,8 @@ export default async function HomePage() {
 
       {/* ── KEUNGGULAN PLATFORM ──────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex flex-col items-center bg-surface">
-        <div className="w-full max-w-[1280px] py-8 px-6 bg-surface rounded-3xl border border-border shadow-sm flex flex-col items-center gap-8 overflow-hidden">
+        <ScrollReveal>
+          <div className="w-full max-w-[1280px] py-8 px-6 bg-surface rounded-3xl border border-border shadow-sm flex flex-col items-center gap-8 overflow-hidden">
           <h3 className="text-center text-text-primary text-base font-semibold">Ekosistem Lengkap untuk UMKM Indonesia</h3>
           <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div className="flex flex-col items-center gap-2 text-center">
@@ -73,11 +66,13 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ── FEATURES & TESTIMONIAL ──────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 bg-background flex justify-center">
-        <div className="w-full max-w-[1280px] flex flex-col lg:flex-row gap-12 lg:gap-16 items-stretch">
+        <ScrollReveal>
+          <div className="w-full max-w-[1280px] flex flex-col lg:flex-row gap-12 lg:gap-16 items-stretch">
           {/* Left: Features */}
           <InteractiveFeatures />
 
@@ -95,12 +90,14 @@ export default async function HomePage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ── PRODUK UNGGULAN ───────────────────────────────────────────── */}
       {featuredProducts.length > 0 && (
       <section className="w-full px-6 md:px-20 py-16 flex justify-center bg-surface">
-        <div className="w-full max-w-[1280px] bg-background rounded-3xl border border-border p-8 md:p-12 flex flex-col gap-8 relative overflow-hidden shadow-sm">
+        <ScrollReveal>
+          <div className="w-full max-w-[1280px] bg-background rounded-3xl border border-border p-8 md:p-12 flex flex-col gap-8 relative overflow-hidden shadow-sm">
           <div className="absolute top-0 left-[-50px] w-64 h-64 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
           <div className="absolute bottom-0 right-[100px] w-80 h-80 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
           
@@ -132,12 +129,14 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+        </ScrollReveal>
       </section>
       )}
 
       {/* ── FAQ SECTION ─────────────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex justify-center bg-surface">
-        <div className="w-full max-w-[1280px] flex flex-col md:flex-row gap-12 lg:gap-24">
+        <ScrollReveal>
+          <div className="w-full max-w-[1280px] flex flex-col md:flex-row gap-12 lg:gap-24">
           <div className="w-full md:w-1/3 flex flex-col gap-4">
             <h2 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight">Pertanyaan yang Sering Diajukan</h2>
             <p className="text-text-secondary text-base leading-relaxed">
@@ -168,6 +167,7 @@ export default async function HomePage() {
             ))}
           </div>
         </div>
+        </ScrollReveal>
       </section>
 
       {/* ── BOTTOM CTA ──────────────────────────────────────────────── */}
@@ -188,9 +188,10 @@ export default async function HomePage() {
             </div>
          </div>
         
-        <div className="relative z-10 w-full max-w-[800px] flex flex-col items-center gap-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight">
-            Siap memperluas jangkauan bisnis?
+        <ScrollReveal>
+          <div className="relative z-10 w-full max-w-[800px] flex flex-col items-center gap-6 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-text-primary leading-tight">
+              Siap memperluas jangkauan bisnis?
           </h2>
           <p className="text-text-secondary text-sm md:text-base leading-relaxed max-w-[690px]">
             Bergabunglah dengan Saloka.id dan tingkatkan visibilitas bisnis Anda! Manfaatkan platform kami yang inovatif untuk memperluas jangkauan produk dan layanan Anda ke audiens yang lebih luas. Transformasi cara Anda berbisnis dengan solusi manajemen pengetahuan yang dirancang untuk masa depan.
@@ -199,6 +200,7 @@ export default async function HomePage() {
             {user ? "Buka Dashboard Anda" : "Mulai Berdagang Sekarang!"}
           </Link>
         </div>
+        </ScrollReveal>
       </section>
 
     </div>
