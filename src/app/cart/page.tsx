@@ -614,10 +614,20 @@ export default function CartPage() {
       quantity: item.quantity,
     }))
 
+    const merchantObj = cartDetails[0]?.merchant;
+    let merchantAddress = '';
+    if ((merchantObj as any)?.landingPageConfig) {
+      try {
+        const config = JSON.parse((merchantObj as any).landingPageConfig);
+        merchantAddress = config.detailAddress || config.locationName || '';
+      } catch (e) {}
+    }
+    if (!merchantAddress) merchantAddress = 'Alamat Toko UMKM';
+
     const shippingDetails = {
       shippingFee,
       courier: deliveryMethod === 'PICKUP' ? 'pickup' : selectedCourier,
-      shippingAddress: deliveryMethod === 'PICKUP' ? 'Ambil Sendiri / Pickup' : shippingAddress,
+      shippingAddress: deliveryMethod === 'PICKUP' ? `[PICKUP] Ambil di Toko: ${merchantAddress}` : shippingAddress,
       couponCode: couponSuccess ? couponCode : undefined,
       discountAmount: couponDiscount,
     }
@@ -918,6 +928,15 @@ export default function CartPage() {
 
                   return Object.entries(groups).map(([mId, items]) => {
                     const shopName = items[0]?.merchant?.name || 'Toko UMKM';
+                    const merchantObj = items[0]?.merchant;
+                    let merchantAddress = '';
+                    if ((merchantObj as any)?.landingPageConfig) {
+                      try {
+                        const config = JSON.parse((merchantObj as any).landingPageConfig);
+                        merchantAddress = config.detailAddress || config.locationName || '';
+                      } catch (e) {}
+                    }
+                    if (!merchantAddress) merchantAddress = 'Alamat Toko UMKM (Silakan konfirmasi via Chat)';
                     
                     return (
                       <div key={mId} className="space-y-4">
@@ -1103,7 +1122,13 @@ export default function CartPage() {
                                   <span>Estimasi Tiba:</span>
                                   <span>Bisa diambil langsung / janjian</span>
                                 </div>
-                                <div className="flex justify-between items-center pt-1 border-t border-slate-200/50">
+                                <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-200/50">
+                                  <span className="text-slate-500 font-medium">Alamat Pengambilan / Toko:</span>
+                                  <span className="font-bold text-slate-800 bg-green-50/50 p-2 border border-[#2DB24A]/20 rounded text-[11px] leading-relaxed">
+                                    📍 {merchantAddress}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center pt-1">
                                   <span className="text-slate-500">Ongkos Kirim:</span>
                                   <span className="font-extrabold text-green-600 text-[13px]">Gratis (Rp 0)</span>
                                 </div>
