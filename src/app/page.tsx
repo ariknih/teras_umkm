@@ -26,7 +26,7 @@ export default async function HomePage() {
            <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/60 to-white z-10 pointer-events-none" />
            {/* The user's uploaded photo from the market */}
            <img 
-             src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80" 
+             src="/images/lamanawal.jpg" 
              alt="Saloka Market" 
              className="w-full h-full object-cover opacity-80 md:opacity-100" 
            />
