@@ -91,6 +91,7 @@ export default function CartPage() {
   const [useGps, setUseGps] = useState(false)
   const [buyerCoords, setBuyerCoords] = useState<{ latitude: number; longitude: number } | null>(null)
   const [selectedCourier, setSelectedCourier] = useState<string>('jne')
+  const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY')
   const [shippingAddress, setShippingAddress] = useState('')
   const [shippingDistKm, setShippingDistKm] = useState(0)
   const [courierRates, setCourierRates] = useState<CourierRate[]>([])
@@ -615,8 +616,8 @@ export default function CartPage() {
 
     const shippingDetails = {
       shippingFee,
-      courier: selectedCourier,
-      shippingAddress: shippingAddress,
+      courier: deliveryMethod === 'PICKUP' ? 'pickup' : selectedCourier,
+      shippingAddress: deliveryMethod === 'PICKUP' ? 'Ambil Sendiri / Pickup' : shippingAddress,
       couponCode: couponSuccess ? couponCode : undefined,
       discountAmount: couponDiscount,
     }
@@ -734,7 +735,7 @@ export default function CartPage() {
   }, 0);
 
   const selectedCourierRate = courierRates.find((r) => r.courier_code === selectedCourier);
-  const shippingFee = selectedCourierRate ? selectedCourierRate.price : 0;
+  const shippingFee = deliveryMethod === 'PICKUP' ? 0 : (selectedCourierRate ? selectedCourierRate.price : 0);
   
   // Coin calculation (Redeem: 1 coin = Rp 1.500)
   const userCoins = currentUserProfile?.coinBalance || 0;
@@ -1028,42 +1029,88 @@ export default function CartPage() {
                             />
                           </div>
 
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-slate-500 font-medium">Opsi Pengiriman:</span>
-                              <span className="font-bold text-slate-800">
-                                {selectedCourierRate ? selectedCourierRate.courier_name : 'REGULAR'}
-                              </span>
-                            </div>
-                            
-                            <div className="flex justify-between items-center text-[11px] text-slate-400">
-                              <span>Estimasi Tiba:</span>
-                              <span>{selectedCourierRate ? selectedCourierRate.etd : '2-3 hari'}</span>
+                          <div className="space-y-3">
+                            <div className="space-y-1.5 pb-2.5 border-b border-slate-200/60">
+                              <span className="text-slate-500 font-medium block">Metode Pengiriman:</span>
+                              <div className="flex flex-wrap gap-4 mt-2">
+                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                  <input 
+                                    type="radio" 
+                                    name="delivery-method"
+                                    value="DELIVERY"
+                                    checked={deliveryMethod === 'DELIVERY'}
+                                    onChange={() => setDeliveryMethod('DELIVERY')}
+                                    className="w-4 h-4 text-[#2DB24A] border-slate-300 focus:ring-[#2DB24A] cursor-pointer accent-[#2DB24A]"
+                                  />
+                                  <span className="font-bold text-slate-700">Kirim via Kurir / Ekspedisi</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                  <input 
+                                    type="radio" 
+                                    name="delivery-method"
+                                    value="PICKUP"
+                                    checked={deliveryMethod === 'PICKUP'}
+                                    onChange={() => setDeliveryMethod('PICKUP')}
+                                    className="w-4 h-4 text-[#2DB24A] border-slate-300 focus:ring-[#2DB24A] cursor-pointer accent-[#2DB24A]"
+                                  />
+                                  <span className="font-bold text-slate-700">Ambil Sendiri / Pickup (Rp 0)</span>
+                                </label>
+                              </div>
                             </div>
 
-                            <div className="flex justify-between items-center pt-1 border-t border-slate-200/50">
-                              <span className="text-slate-500">Ongkos Kirim:</span>
-                              <span className="font-extrabold text-slate-800 text-[13px]">
-                                Rp {shippingFee.toLocaleString('id-ID')}
-                              </span>
-                            </div>
+                            {deliveryMethod === 'DELIVERY' ? (
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-slate-500 font-medium">Opsi Pengiriman:</span>
+                                  <span className="font-bold text-slate-800">
+                                    {selectedCourierRate ? selectedCourierRate.courier_name : 'REGULAR'}
+                                  </span>
+                                </div>
+                                
+                                <div className="flex justify-between items-center text-[11px] text-slate-400">
+                                  <span>Estimasi Tiba:</span>
+                                  <span>{selectedCourierRate ? selectedCourierRate.etd : '2-3 hari'}</span>
+                                </div>
 
-                            <div className="text-right">
-                              <select
-                                value={selectedCourier}
-                                onChange={(e) => setSelectedCourier(e.target.value)}
-                                className="mt-1 px-2.5 py-1 border border-slate-200 bg-white rounded text-[10px] font-bold text-slate-600 focus:outline-none cursor-pointer"
-                              >
-                                {courierRates.map(rate => (
-                                  <option key={rate.courier_code} value={rate.courier_code}>
-                                    {rate.courier_name} (Rp {rate.price.toLocaleString('id-ID')})
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
+                                <div className="flex justify-between items-center pt-1 border-t border-slate-200/50">
+                                  <span className="text-slate-500">Ongkos Kirim:</span>
+                                  <span className="font-extrabold text-slate-800 text-[13px]">
+                                    Rp {shippingFee.toLocaleString('id-ID')}
+                                  </span>
+                                </div>
+
+                                <div className="text-right">
+                                  <select
+                                    value={selectedCourier}
+                                    onChange={(e) => setSelectedCourier(e.target.value)}
+                                    className="mt-1 px-2.5 py-1 border border-slate-200 bg-white rounded text-[10px] font-bold text-slate-600 focus:outline-none cursor-pointer"
+                                  >
+                                    {courierRates.map(rate => (
+                                      <option key={rate.courier_code} value={rate.courier_code}>
+                                        {rate.courier_name} (Rp {rate.price.toLocaleString('id-ID')})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-slate-500 font-medium">Opsi Pengiriman:</span>
+                                  <span className="font-bold text-slate-800">Ambil Sendiri / Pickup</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[11px] text-slate-400">
+                                  <span>Estimasi Tiba:</span>
+                                  <span>Bisa diambil langsung / janjian</span>
+                                </div>
+                                <div className="flex justify-between items-center pt-1 border-t border-slate-200/50">
+                                  <span className="text-slate-500">Ongkos Kirim:</span>
+                                  <span className="font-extrabold text-green-600 text-[13px]">Gratis (Rp 0)</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
-
                         {/* Store Subtotal Footer */}
                         <div className="text-right text-xs text-slate-500 pt-2 flex justify-end gap-2 items-center">
                           <span>Total Pesanan ({items.reduce((a, b) => a + b.quantity, 0)} Produk):</span>
