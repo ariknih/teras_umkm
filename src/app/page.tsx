@@ -22,8 +22,8 @@ export default async function HomePage() {
       <section className="relative w-full max-w-[1440px] mx-auto min-h-[500px] md:h-[768px] flex items-center px-6 md:px-16 overflow-hidden">
         {/* Background Gradients & Images */}
         <div className="absolute inset-0 z-0">
-           {/* Gradient as per figma design bg-linear-234 */}
-           <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/60 to-white z-10 pointer-events-none" />
+           {/* Gradient: Hanya putih di kiri atas dan sedikit saja */}
+           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.75)_0%,transparent_40%)] z-10 pointer-events-none" />
            {/* The user's uploaded photo from the market */}
            <img 
              src="/images/lamanawal.jpg" 
