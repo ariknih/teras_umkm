@@ -64,7 +64,7 @@ export function proxy(request: NextRequest) {
     // Local development subdomain check (e.g. arik.localhost)
     if (hostParts.length > 1) {
       const firstPart = hostParts[0].toLowerCase()
-      if (!['www', 'admin', 'affiliate', 'api', 'localhost'].includes(firstPart)) {
+      if (!['www', 'admin', 'affiliate', 'api', 'localhost', 'prev', 'preprod'].includes(firstPart)) {
         subdomain = firstPart
       }
     }
@@ -72,7 +72,7 @@ export function proxy(request: NextRequest) {
     // Cloudflare Tunnel development subdomain check (e.g. arik.saloka.varro.my.id)
     if (hostParts.length > 4) {
       const firstPart = hostParts[0].toLowerCase()
-      if (!['www', 'admin', 'affiliate', 'api'].includes(firstPart)) {
+      if (!['www', 'admin', 'affiliate', 'api', 'prev', 'preprod'].includes(firstPart)) {
         subdomain = firstPart
       }
     }
@@ -80,7 +80,7 @@ export function proxy(request: NextRequest) {
     // Vercel deployment subdomain check (e.g. arik.terasumkm.vercel.app)
     if (hostParts.length > 3) {
       const firstPart = hostParts[0].toLowerCase()
-      if (!['www', 'admin', 'affiliate', 'api'].includes(firstPart)) {
+      if (!['www', 'admin', 'affiliate', 'api', 'prev', 'preprod'].includes(firstPart)) {
         subdomain = firstPart
       }
     }
@@ -88,7 +88,7 @@ export function proxy(request: NextRequest) {
     // Production subdomain check (e.g. arik.saloka.id)
     if (hostParts.length > 2) {
       const firstPart = hostParts[0].toLowerCase()
-      if (!['www', 'admin', 'affiliate', 'api'].includes(firstPart)) {
+      if (!['www', 'admin', 'affiliate', 'api', 'prev', 'preprod'].includes(firstPart)) {
         subdomain = firstPart
       }
     }
