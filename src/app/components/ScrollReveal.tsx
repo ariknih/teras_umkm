@@ -8,15 +8,23 @@ interface ScrollRevealProps {
   delay?: number
   duration?: number
   y?: number
+  className?: string
 }
 
-export default function ScrollReveal({ children, delay = 0, duration = 0.8, y = 30 }: ScrollRevealProps) {
+export default function ScrollReveal({ 
+  children, 
+  delay = 0, 
+  duration = 0.8, 
+  y = 30,
+  className = "w-full flex flex-col items-center"
+}: ScrollRevealProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration, delay, ease: [0.16, 1, 0.3, 1] }} // smooth easeOutExpo
+      className={className}
     >
       {children}
     </motion.div>
