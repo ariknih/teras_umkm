@@ -33,7 +33,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://salokaid.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://saloka.id"),
   title: "Saloka.id | Platform Digital UMKM Premium Indonesia",
   description: "Ekosistem digital terlengkap untuk UMKM Indonesia: Marketplace, LMS Academy, Affiliate Hub, dan Community Forum dalam satu platform premium.",
   keywords: "UMKM, marketplace, toko online, jasa, affiliate, kursus bisnis, Indonesia",

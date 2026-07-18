@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { DataStore } from '@/lib/data-store'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://salokaid.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://saloka.id'
 
   let productEntries: any[] = []
   try {

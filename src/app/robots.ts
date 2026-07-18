@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/admin/', '/merchant/dashboard/', '/api/'],
     },
-    sitemap: 'https://salokaid.vercel.app/sitemap.xml',
+    sitemap: `${process.env.NEXT_PUBLIC_APP_URL || 'https://saloka.id'}/sitemap.xml`,
   }
 }
