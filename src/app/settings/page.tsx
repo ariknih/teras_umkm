@@ -455,30 +455,6 @@ export default function SettingsPage() {
                   </button>
                 )}
 
-                {kycStatus !== 'VERIFIED' && (
-                  <button
-                    onClick={async () => {
-                      if (confirm('Simulasikan KYC instan berhasil?')) {
-                        const res = await fetch('/api/kyc/simulate', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ status: 'VERIFIED' })
-                        })
-                        const d = await res.json()
-                        if (d.success) {
-                          goeyToast.success('Simulasi KYC Berhasil!')
-                          setKycStatus('VERIFIED')
-                          setKycVerifiedAt(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }))
-                        } else {
-                          goeyToast.error('Gagal mensimulasikan KYC.')
-                        }
-                      }
-                    }}
-                    className="w-full sm:w-auto px-6 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer border-none"
-                  >
-                    ⚙️ Simulasi KYC Lulus (Bypass)
-                  </button>
-                )}
 
                 {kycStatus === 'PENDING' && (
                   <button
