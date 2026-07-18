@@ -160,6 +160,8 @@ model User {
   kycKtpUrl         String?
   kycSelfieUrl      String?
   kycSubmittedAt    DateTime?
+  kycSessionId      String?
+  kycVerifiedAt     DateTime?
 
   // Komunitas Induk (set saat pertama kali daftar, tidak bisa diganti)
   indukCommunityId  String?

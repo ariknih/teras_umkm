@@ -723,6 +723,33 @@ export default function ProfileViewerClient({
                               </>
                             )}
                           </button>
+                          
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (confirm('Simulasikan KYC instan berhasil?')) {
+                                try {
+                                  const res = await fetch('/api/kyc/simulate', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: 'VERIFIED' })
+                                  })
+                                  const d = await res.json()
+                                  if (d.success) {
+                                    goeyToast.success('Simulasi KYC Berhasil!')
+                                    window.location.reload()
+                                  } else {
+                                    goeyToast.error('Gagal mensimulasikan KYC.')
+                                  }
+                                } catch (e) {
+                                  goeyToast.error('Terjadi kesalahan jaringan.')
+                                }
+                              }
+                            }}
+                            className="w-full py-3 mt-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border-none"
+                          >
+                            ⚙️ Simulasi KYC Lulus (Bypass)
+                          </button>
                         </div>
                       </div>
                     )}

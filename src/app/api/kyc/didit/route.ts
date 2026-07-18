@@ -37,9 +37,18 @@ export async function POST(req: NextRequest) {
     if (!response.ok) {
       const errText = await response.text()
       console.error('[Didit KYC] Session creation failed:', response.status, errText)
+      
+      let errorMsg = 'Gagal membuat sesi verifikasi KYC. Silakan coba lagi.'
+      try {
+        const errObj = JSON.parse(errText)
+        if (errObj.detail && (errObj.detail.includes('credits') || errObj.detail.includes('credit'))) {
+          errorMsg = 'Sesi verifikasi gagal karena kuota API Didit habis. Silakan gunakan fitur "Simulasi KYC Lulus (Bypass)" di halaman Pengaturan.'
+        }
+      } catch (_) {}
+
       return NextResponse.json(
-        { error: 'Gagal membuat sesi verifikasi KYC. Silakan coba lagi.' },
-        { status: 500 }
+        { error: errorMsg },
+        { status: response.status }
       )
     }
 
