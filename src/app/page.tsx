@@ -172,7 +172,7 @@ export default async function HomePage() {
 
       {/* ── BOTTOM CTA ──────────────────────────────────────────────── */}
       <section className="w-full px-6 py-20 flex justify-center relative overflow-hidden bg-surface">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden max-w-[1440px] mx-auto">
+        <div className="hidden md:block absolute inset-0 pointer-events-none overflow-hidden max-w-[1440px] mx-auto">
             {/* Floating elements styling from Figma (shadows & rotation) */}
             <div className="absolute top-[20%] left-[5%] md:left-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-10deg]">
               <img src="/images/shopping_bag.webp" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
