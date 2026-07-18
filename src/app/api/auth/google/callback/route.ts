@@ -71,8 +71,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user already exists
+    let isNewUser = false
     let user = await DataStore.findUserByEmail(email)
     if (!user) {
+      isNewUser = true
       // Create a new user with google details
       const randomPassword = crypto.randomBytes(16).toString('hex')
       const passwordHash = crypto.createHash('sha256').update(randomPassword).digest('hex')
@@ -113,7 +115,10 @@ export async function GET(request: NextRequest) {
       .sign(SECRET_KEY)
 
     // Redirect to home/dashboard with cookie set
-    const destinationUrl = user.role === 'ADMIN' ? '/admin' : user.role === 'CUSTOMER_SERVICE' ? '/cs' : '/'
+    const destinationUrl = isNewUser 
+      ? '/auth/select-role' 
+      : (user.role === 'ADMIN' ? '/admin' : user.role === 'CUSTOMER_SERVICE' ? '/cs' : '/')
+      
     const response = NextResponse.redirect(new URL(destinationUrl, request.url))
     
     response.cookies.set('session', token, {

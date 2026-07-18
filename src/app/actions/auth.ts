@@ -490,3 +490,39 @@ export async function getReferralCookie() {
   const cookieStore = await cookies()
   return cookieStore.get('affiliate_ref')?.value || null
 }
+
+export async function selectUserRole(role: 'CUSTOMER' | 'MERCHANT' | 'AFFILIATE') {
+  const user = await getCurrentUser()
+  if (!user) {
+    return { error: 'Sesi tidak valid. Silakan login kembali.' }
+  }
+
+  const updated = await DataStore.updateUserRole(user.id, role)
+  if (!updated) {
+    return { error: 'Gagal memperbarui peran pengguna.' }
+  }
+
+  // Generate a new session token with the updated role
+  const cookieStore = await cookies()
+  const headerList = await headers()
+  const host = headerList.get('host') || ''
+  const cookieDomain = getCookieDomain(host)
+
+  const token = await new SignJWT({ id: user.id, email: user.email, role: role, name: user.name })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(SECRET_KEY)
+
+  // Omit domain if undefined (e.g. on vercel.app)
+  cookieStore.set('session', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    ...(cookieDomain ? { domain: cookieDomain } : {})
+  })
+
+  return { success: true, role }
+}
