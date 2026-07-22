@@ -204,11 +204,11 @@ export default function CommunityDetailPage() {
         }
       }
 
-      // Fetch products from members of this community
+      // Fetch products from members of this community or marketplace
       const memberIds = memberList.map((m: any) => m.userId)
       const allProducts = await getProducts()
       const communityProducts = allProducts.filter(p => memberIds.includes(p.merchantId))
-      setProducts(communityProducts)
+      setProducts(communityProducts.length > 0 ? communityProducts : (allProducts && allProducts.length > 0 ? allProducts.slice(0, 4) : []))
 
       // Fetch cooperative loans
       if (currentUser && commDetail.type === 'KOPERASI') {
@@ -435,64 +435,6 @@ export default function CommunityDetailPage() {
   return (
     <div className="min-h-screen bg-[#F5F7F9] text-[#111827] pt-24 pb-20 px-3 md:px-8 font-sans">
       
-      {/* ── TOP PREVIEW MODE SWITCHER BAR ─────────────────────────────────────── */}
-      <div className="max-w-[1240px] mx-auto mb-4 bg-white border border-gray-200 rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2DB24A] animate-pulse"></span>
-          <span className="text-xs font-bold text-gray-700">Preview Tampilan Layout:</span>
-        </div>
-        <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
-          <button
-            onClick={() => setPreviewMode('FREE')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
-              activeMode === 'FREE' 
-                ? 'bg-[#2DB24A] text-white shadow-sm' 
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            FREE COMMUNITY (Foto 1)
-          </button>
-          <button
-            onClick={() => setPreviewMode('PREMIUM')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
-              activeMode === 'PREMIUM' 
-                ? 'bg-[#15803D] text-white shadow-sm' 
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            PREMIUM COMMUNITY (Foto 2)
-          </button>
-          <button
-            onClick={() => setPreviewMode('AUTO')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              previewMode === 'AUTO' 
-                ? 'bg-gray-800 text-white' 
-                : 'text-gray-500 hover:text-gray-900'
-            }`}
-          >
-            Sesuai Database ({community.type})
-          </button>
-        </div>
-        {isKetua && (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/community/${id}/coin`}
-              className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-sm"
-            >
-              <Coins className="w-3.5 h-3.5" />
-              Koin Komunitas
-            </Link>
-            <button
-              onClick={() => setEditModalOpen(true)}
-              className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-sm"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              Edit Landing Page
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* ── MAIN CONTAINER CARD (BORDER & ROUNDED CORNERS AS IN PHOTOS) ──────── */}
       <div className="max-w-[1240px] mx-auto bg-white border border-gray-200 rounded-[28px] p-4 md:p-7 shadow-sm relative overflow-hidden space-y-6">
 
@@ -1284,25 +1226,41 @@ export default function CommunityDetailPage() {
                     <div className="border-t border-gray-100 pt-2 space-y-2">
                       <div className="flex justify-between items-center">
                         <h4 className="text-xs font-bold text-gray-900">Produk Unggulan Anggota</h4>
-                        <Link href="#" className="text-[9px] font-bold text-[#2DB24A]">Lihat Semua</Link>
+                        <Link href="/market" className="text-[9px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
                       </div>
                       <div className="grid grid-cols-4 gap-1.5 text-center">
-                        <div>
-                          <img src="https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
-                          <span className="block text-[8px] font-medium truncate mt-0.5">Keripik Pisang</span>
-                        </div>
-                        <div>
-                          <img src="https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
-                          <span className="block text-[8px] font-medium truncate mt-0.5">Gula Semut</span>
-                        </div>
-                        <div>
-                          <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
-                          <span className="block text-[8px] font-medium truncate mt-0.5">Kopi Robusta</span>
-                        </div>
-                        <div>
-                          <img src="https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
-                          <span className="block text-[8px] font-medium truncate mt-0.5">Madu Murni</span>
-                        </div>
+                        {products && products.length > 0 ? (
+                          products.slice(0, 4).map((p: any) => (
+                            <Link key={p.id} href={`/market/product/${p.id}`} className="group block">
+                              <img src={p.imageUrl || 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=150&q=80'} alt={p.title} className="w-full h-10 object-cover rounded-lg group-hover:scale-105 transition-transform" />
+                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5 group-hover:text-[#2DB24A] transition-colors">{p.title}</span>
+                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp {p.price?.toLocaleString('id-ID')}</span>
+                            </Link>
+                          ))
+                        ) : (
+                          <>
+                            <div>
+                              <img src="https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
+                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5">Keripik Pisang</span>
+                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp 18.000</span>
+                            </div>
+                            <div>
+                              <img src="https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
+                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5">Gula Semut</span>
+                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp 25.000</span>
+                            </div>
+                            <div>
+                              <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
+                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5">Kopi Robusta</span>
+                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp 35.000</span>
+                            </div>
+                            <div>
+                              <img src="https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
+                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5">Madu Murni</span>
+                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp 60.000</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
