@@ -31,6 +31,7 @@ import {
   updateUserIndukCommunityAction,
   updateAdminPermissionsAction
 } from '@/app/actions/admin'
+import { calculateAndSaveShuAction } from '@/app/actions/shu'
 import {
   createCoinVoucherAdmin,
   toggleCoinVoucherActive,
@@ -48,7 +49,8 @@ const ALL_ADMIN_PERMISSIONS = [
   { key: 'transactions', label: 'Lacak Transaksi' },
   { key: 'certificates', label: 'Sertifikat Level Up' },
   { key: 'affiliates', label: 'Monitor Affiliate' },
-  { key: 'coins', label: 'Kelola Koin & Voucher' }
+  { key: 'coins', label: 'Kelola Koin & Voucher' },
+  { key: 'shu', label: 'Pengaturan SHU RAT Koperasi' }
 ]
 
 interface AdminDashboardClientProps {
@@ -68,7 +70,7 @@ interface AdminDashboardClientProps {
   initialCommunities?: any[]
 }
 
-type TabType = 'overview' | 'users' | 'admins' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins'
+type TabType = 'overview' | 'users' | 'admins' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins' | 'shu'
 
 export default function AdminDashboardClient({
   currentUser,
@@ -215,8 +217,76 @@ export default function AdminDashboardClient({
   const [lessonDuration, setLessonDuration] = useState('300')
   const [lessonOrderIndex, setLessonOrderIndex] = useState('1')
 
+  // SHU Configurator State
+  const [shuCommunityId, setShuCommunityId] = useState(initialCommunities[0]?.id || '')
+  const [shuYear, setShuYear] = useState(new Date().getFullYear())
+  const [shuNetProfit, setShuNetProfit] = useState('500000000')
+
+  const [pctCadangan, setPctCadangan] = useState('25')
+  const [pctJasaModal, setPctJasaModal] = useState('20')
+  const [pctJasaUsaha, setPctJasaUsaha] = useState('30')
+  const [pctPengurus, setPctPengurus] = useState('10')
+  const [pctPengawas, setPctPengawas] = useState('5')
+  const [pctKaryawan, setPctKaryawan] = useState('5')
+  const [pctPendidikan, setPctPendidikan] = useState('2.5')
+  const [pctSosial, setPctSosial] = useState('2.5')
+  const [pctPembangunanDaerah, setPctPembangunanDaerah] = useState('0')
+
+  const [shuCalcResult, setShuCalcResult] = useState<any>(null)
+
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionSuccess, setActionSuccess] = useState<string | null>(null)
+
+  const totalShuPct = 
+    (Number(pctCadangan) || 0) +
+    (Number(pctJasaModal) || 0) +
+    (Number(pctJasaUsaha) || 0) +
+    (Number(pctPengurus) || 0) +
+    (Number(pctPengawas) || 0) +
+    (Number(pctKaryawan) || 0) +
+    (Number(pctPendidikan) || 0) +
+    (Number(pctSosial) || 0) +
+    (Number(pctPembangunanDaerah) || 0)
+
+  const handleCalculateShuSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!shuCommunityId) {
+      alert('Pilih Komunitas Koperasi terlebih dahulu.')
+      return
+    }
+    if (Math.abs(totalShuPct - 100) > 0.01) {
+      alert(`Total persentase harus tepat 100%. Total saat ini: ${totalShuPct.toFixed(2)}%`)
+      return
+    }
+
+    setActionError(null)
+    setActionSuccess(null)
+
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.append('communityId', shuCommunityId)
+      formData.append('year', String(shuYear))
+      formData.append('totalNetProfit', shuNetProfit)
+      formData.append('pctCadangan', pctCadangan)
+      formData.append('pctJasaModal', pctJasaModal)
+      formData.append('pctJasaUsaha', pctJasaUsaha)
+      formData.append('pctPengurus', pctPengurus)
+      formData.append('pctPengawas', pctPengawas)
+      formData.append('pctKaryawan', pctKaryawan)
+      formData.append('pctPendidikan', pctPendidikan)
+      formData.append('pctSosial', pctSosial)
+      formData.append('pctPembangunanDaerah', pctPembangunanDaerah)
+
+      const res = await calculateAndSaveShuAction(formData)
+      if (res.success && res.data) {
+        setShuCalcResult(res.data)
+        setActionSuccess(`Perhitungan & Distribusi SHU Koperasi RAT ${shuYear} berhasil disimpan!`)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menghitung SHU.')
+      }
+    })
+  }
 
   // Helper stats
   const totalVolume = orders.reduce((sum, o) => sum + o.totalAmount, 0)
@@ -2963,9 +3033,202 @@ export default function AdminDashboardClient({
                   </table>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Create Voucher Modal */}
-              {isVoucherModalOpen && (
+          {/* ─── TAB 12: PENGATURAN & KALKULATOR SHU RAT KOPERASI ───────────────────── */}
+          {activeTab === 'shu' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm space-y-6">
+                <div className="border-b border-[#e2e8f0] pb-4">
+                  <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
+                    Pengaturan & Kalkulator Pembagian SHU Koperasi (Hasil RAT)
+                  </h3>
+                  <p className="text-xs text-[#64748b] mt-1">
+                    Atur alokasi persentase SHU sesuai hasil Keputusan Rapat Anggota Tahunan (RAT) Koperasi. Seluruh perhitungan ke tingkat anggota dilakukan secara otomatis dan proporsional berdasarkan regulasi Perkoperasian Indonesia (UU Koperasi).
+                  </p>
+                </div>
+
+                <form onSubmit={handleCalculateShuSubmit} className="space-y-6">
+                  {/* Community & Profit Inputs */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#f8f9fa] p-4 rounded-[var(--radius-brand)] border border-[#e2e8f0]">
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#0F5132] uppercase tracking-wider mb-1.5 font-sora">Pilih Koperasi / Komunitas Induk *</label>
+                      <select
+                        value={shuCommunityId}
+                        onChange={e => setShuCommunityId(e.target.value)}
+                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-xs text-slate-800 font-medium focus:border-[#0F5132] outline-none"
+                      >
+                        <option value="">-- Pilih Koperasi --</option>
+                        {communities.map(c => (
+                          <option key={c.id} value={c.id}>{c.name} ({c.type} - {c.category})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5 font-sora">Tahun Buku RAT *</label>
+                      <input
+                        type="number"
+                        required
+                        value={shuYear}
+                        onChange={e => setShuYear(Number(e.target.value))}
+                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-xs text-slate-800 font-bold focus:border-[#0F5132] outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5 font-sora">Laba Bersih Koperasi / SHU Kotor (Rp) *</label>
+                      <input
+                        type="number"
+                        required
+                        value={shuNetProfit}
+                        onChange={e => setShuNetProfit(e.target.value)}
+                        placeholder="e.g. 500000000"
+                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-xs text-[#0F5132] font-mono font-bold focus:border-[#0F5132] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 9 Component Percentages Grid */}
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        Komposisi Alokasi SHU (Keputusan RAT)
+                      </h4>
+                      <div className={`px-3 py-1 rounded text-xs font-bold font-mono ${
+                        Math.abs(totalShuPct - 100) < 0.01
+                          ? 'bg-green-100 text-green-800 border border-green-300'
+                          : 'bg-red-100 text-red-800 border border-red-300'
+                      }`}>
+                        {Math.abs(totalShuPct - 100) < 0.01
+                          ? `✓ Total Persentase: ${totalShuPct.toFixed(1)}% (Valid 100%)`
+                          : `⚠️ Total Persentase: ${totalShuPct.toFixed(1)}% (Wajib tepat 100%)`
+                        }
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)]">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">1. Cadangan Koperasi (%)</label>
+                        <input type="number" step="0.1" value={pctCadangan} onChange={e => setPctCadangan(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-emerald-700 font-mono font-bold">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctCadangan) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">2. SHU Jasa Modal / Simpanan (%)</label>
+                        <input type="number" step="0.1" value={pctJasaModal} onChange={e => setPctJasaModal(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-emerald-700 font-mono font-bold">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctJasaModal) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">3. SHU Jasa Usaha / Transaksi (%)</label>
+                        <input type="number" step="0.1" value={pctJasaUsaha} onChange={e => setPctJasaUsaha(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-emerald-700 font-mono font-bold">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctJasaUsaha) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">4. Dana Pengurus (%)</label>
+                        <input type="number" step="0.1" value={pctPengurus} onChange={e => setPctPengurus(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctPengurus) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">5. Dana Pengawas (%)</label>
+                        <input type="number" step="0.1" value={pctPengawas} onChange={e => setPctPengawas(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctPengawas) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">6. Dana Karyawan (%)</label>
+                        <input type="number" step="0.1" value={pctKaryawan} onChange={e => setPctKaryawan(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctKaryawan) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">7. Dana Pendidikan Koperasi (%)</label>
+                        <input type="number" step="0.1" value={pctPendidikan} onChange={e => setPctPendidikan(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctPendidikan) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">8. Dana Sosial (%)</label>
+                        <input type="number" step="0.1" value={pctSosial} onChange={e => setPctSosial(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctSosial) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">9. Dana Pembangunan Daerah (%)</label>
+                        <input type="number" step="0.1" value={pctPembangunanDaerah} onChange={e => setPctPembangunanDaerah(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
+                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctPembangunanDaerah) || 0) / 100).toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={isPending || Math.abs(totalShuPct - 100) >= 0.01}
+                      className="w-full py-3.5 bg-[#0F5132] hover:bg-[#0a3822] text-white font-sora font-extrabold text-xs uppercase tracking-wider rounded-[var(--radius-brand)] shadow-md transition-colors cursor-pointer disabled:opacity-50 border-none"
+                    >
+                      {isPending ? 'Memproses Kalkulasi & Menyimpan...' : '⚡ Hitung & Simpan Pembagian SHU RAT Koperasi'}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Calculation Results Table */}
+                {shuCalcResult && (
+                  <div className="space-y-4 pt-4 border-t border-[#e2e8f0]">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
+                        Hasil Kalkulasi Distribusi SHU Anggota (RAT {shuCalcResult.config?.year})
+                      </h4>
+                      <span className="text-xs font-bold text-slate-500">
+                        Total Anggota Terhitung: {shuCalcResult.memberDistributions?.length || 0}
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto border border-[#e2e8f0] rounded-[var(--radius-brand)]">
+                      <table className="w-full min-w-[900px] text-xs text-left">
+                        <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px] font-bold">
+                          <tr>
+                            <th className="px-4 py-3">Nama Anggota</th>
+                            <th className="px-4 py-3 text-right">Total Simpanan</th>
+                            <th className="px-4 py-3 text-right">SHU Jasa Modal</th>
+                            <th className="px-4 py-3 text-right">Total Transaksi</th>
+                            <th className="px-4 py-3 text-right">SHU Jasa Usaha</th>
+                            <th className="px-4 py-3 text-right font-extrabold text-[#0F5132]">Total SHU Diterima</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {shuCalcResult.memberDistributions?.map((m: any) => (
+                            <tr key={m.userId} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-4 py-3">
+                                <p className="font-bold text-slate-800">{m.userName}</p>
+                                <p className="text-[10px] text-slate-400">{m.userEmail}</p>
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono text-slate-600">
+                                Rp {m.simpananMember.toLocaleString('id-ID')}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono font-bold text-emerald-700">
+                                Rp {Math.round(m.shuJasaModalAmount).toLocaleString('id-ID')}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono text-slate-600">
+                                Rp {m.transaksiMember.toLocaleString('id-ID')}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono font-bold text-emerald-700">
+                                Rp {Math.round(m.shuJasaUsahaAmount).toLocaleString('id-ID')}
+                              </td>
+                              <td className="px-4 py-3 text-right font-mono font-extrabold text-[#0F5132] bg-emerald-50/50">
+                                Rp {Math.round(m.totalShuAmount).toLocaleString('id-ID')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Create Voucher Modal */}
+          {isVoucherModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                   <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -3131,8 +3394,6 @@ export default function AdminDashboardClient({
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
           {/* ─── ADD ADMIN MODAL ────────────────────────────────────── */}
           {isAdminModalOpen && currentUser.isSuperAdmin && (
