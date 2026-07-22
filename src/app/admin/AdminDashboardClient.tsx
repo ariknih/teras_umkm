@@ -24,13 +24,32 @@ import {
   injectCoinAction,
   getLevelRequestsAction,
   approveLevelRequestAction,
-  rejectLevelRequestAction
+  rejectLevelRequestAction,
+  createCommunityAdminAction,
+  updateCommunityAdminAction,
+  deleteCommunityAdminAction,
+  updateUserIndukCommunityAction,
+  updateAdminPermissionsAction
 } from '@/app/actions/admin'
 import {
   createCoinVoucherAdmin,
   toggleCoinVoucherActive,
   getCoinAdminStats
 } from '@/app/actions/coin'
+
+const ALL_ADMIN_PERMISSIONS = [
+  { key: 'overview', label: 'Dashboard Overview' },
+  { key: 'users', label: 'Kelola User & Role' },
+  { key: 'community', label: 'Komunitas Induk & Member' },
+  { key: 'approvals', label: 'Persetujuan Merchant' },
+  { key: 'withdrawals', label: 'Pencairan Dana (Withdraw)' },
+  { key: 'products', label: 'Katalog Produk & Jasa' },
+  { key: 'academy', label: 'LMS Kelola Materi' },
+  { key: 'transactions', label: 'Lacak Transaksi' },
+  { key: 'certificates', label: 'Sertifikat Level Up' },
+  { key: 'affiliates', label: 'Monitor Affiliate' },
+  { key: 'coins', label: 'Kelola Koin & Voucher' }
+]
 
 interface AdminDashboardClientProps {
   currentUser: any
@@ -46,6 +65,7 @@ interface AdminDashboardClientProps {
   initialInvoices: any[]
   initialCoinHolders: any[]
   initialLevelRequests: any[]
+  initialCommunities?: any[]
 }
 
 type TabType = 'overview' | 'users' | 'admins' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins'
@@ -63,7 +83,8 @@ export default function AdminDashboardClient({
   initialAdmins,
   initialInvoices,
   initialCoinHolders,
-  initialLevelRequests
+  initialLevelRequests,
+  initialCommunities = []
 }: AdminDashboardClientProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -88,12 +109,50 @@ export default function AdminDashboardClient({
   const [coinHolders, setCoinHolders] = useState(initialCoinHolders || [])
   const [levelRequests, setLevelRequests] = useState(initialLevelRequests || [])
 
-  // Admin CRUD Form State
+  // Community Management State
+  const [communities, setCommunities] = useState<any[]>(initialCommunities || [])
+  const [communitySearch, setCommunitySearch] = useState('')
+  const [communityTypeFilter, setCommunityTypeFilter] = useState('ALL')
+  const [communityCategoryFilter, setCommunityCategoryFilter] = useState('ALL')
+
+  const [communityModal, setCommunityModal] = useState<{ open: boolean; mode: 'add' | 'edit'; data?: any }>({
+    open: false,
+    mode: 'add'
+  })
+  const [commForm, setCommForm] = useState({
+    name: '',
+    type: 'PERKUMPULAN',
+    category: 'FREE',
+    ketuaId: '',
+    aktaNotaris: '',
+    nomorAhu: '',
+    nomorNpwp: '',
+    domisili: '',
+    kontakPj: '',
+    description: '',
+    joinFee: '0',
+    monthlyFee: '0',
+    simpananPokok: '100000',
+    simpananWajib: '25000',
+    minCoinForLoan: '1000',
+    minCoinRequired: '100',
+    isVerified: false,
+    isSuspended: false
+  })
+
+  const [memberModal, setMemberModal] = useState<{ open: boolean; community?: any }>({ open: false })
+  const [selectedMemberUserId, setSelectedMemberUserId] = useState('')
+
+  // Admin CRUD & RBAC Permission Form State
   const [adminName, setAdminName] = useState('')
   const [adminEmail, setAdminEmail] = useState('')
   const [adminPassword, setAdminPassword] = useState('')
   const [adminIsSuper, setAdminIsSuper] = useState(false)
+  const [selectedAdminPermissions, setSelectedAdminPermissions] = useState<string[]>(
+    ALL_ADMIN_PERMISSIONS.map(p => p.key)
+  )
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false)
+  const [editAdminPermModal, setEditAdminPermModal] = useState<{ open: boolean; admin?: any }>({ open: false })
 
   // Inject Coin Form State
   const [injectTargetId, setInjectTargetId] = useState('')
@@ -179,7 +238,7 @@ export default function AdminDashboardClient({
     setActionSuccess(null)
 
     startTransition(async () => {
-      const res = await updateUserRoleAndLevelAction(
+      const resRole = await updateUserRoleAndLevelAction(
         editUser.id,
         editUser.role,
         Number(editUser.level),
@@ -189,12 +248,137 @@ export default function AdminDashboardClient({
         editUser.bootcampStatus || 'NONE'
       )
 
-      if (res.success) {
+      const resInduk = await updateUserIndukCommunityAction(
+        editUser.id,
+        editUser.indukCommunityId || null
+      )
+
+      if (resRole.success && resInduk.success) {
         setUsers(prev => prev.map(u => u.id === editUser.id ? editUser : u))
         setActionSuccess(`User "${editUser.name}" berhasil diperbarui.`)
         setEditUser(null)
+        router.refresh()
       } else {
-        setActionError(res.error || 'Terjadi kesalahan.')
+        setActionError(resRole.error || resInduk.error || 'Terjadi kesalahan.')
+      }
+    })
+  }
+
+  // ─── COMMUNITY CRUD HANDLERS ────────────────────────────────────────────────
+  const handleOpenAddCommunity = () => {
+    setCommForm({
+      name: '',
+      type: 'PERKUMPULAN',
+      category: 'FREE',
+      ketuaId: users[0]?.id || '',
+      aktaNotaris: '',
+      nomorAhu: '',
+      nomorNpwp: '',
+      domisili: '',
+      kontakPj: '',
+      description: '',
+      joinFee: '0',
+      monthlyFee: '0',
+      simpananPokok: '100000',
+      simpananWajib: '25000',
+      minCoinForLoan: '1000',
+      minCoinRequired: '100',
+      isVerified: true,
+      isSuspended: false
+    })
+    setCommunityModal({ open: true, mode: 'add' })
+  }
+
+  const handleOpenEditCommunity = (comm: any) => {
+    setCommForm({
+      name: comm.name || '',
+      type: comm.type || 'PERKUMPULAN',
+      category: comm.category || 'FREE',
+      ketuaId: comm.ketuaId || '',
+      aktaNotaris: comm.aktaNotaris || '',
+      nomorAhu: comm.nomorAhu || '',
+      nomorNpwp: comm.nomorNpwp || '',
+      domisili: comm.domisili || '',
+      kontakPj: comm.kontakPj || '',
+      description: comm.description || '',
+      joinFee: String(comm.joinFee || 0),
+      monthlyFee: String(comm.monthlyFee || 0),
+      simpananPokok: String(comm.simpananPokok || 100000),
+      simpananWajib: String(comm.simpananWajib || 25000),
+      minCoinForLoan: String(comm.minCoinForLoan || 1000),
+      minCoinRequired: String(comm.minCoinRequired || 100),
+      isVerified: Boolean(comm.isVerified),
+      isSuspended: Boolean(comm.isSuspended)
+    })
+    setCommunityModal({ open: true, mode: 'edit', data: comm })
+  }
+
+  const handleSaveCommunitySubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!commForm.name || !commForm.ketuaId) {
+      alert('Nama komunitas dan Ketua Wajib diisi.')
+      return
+    }
+    setActionError(null)
+    setActionSuccess(null)
+
+    startTransition(async () => {
+      if (communityModal.mode === 'add') {
+        const res = await createCommunityAdminAction(commForm)
+        if (res.success && res.community) {
+          setCommunities(prev => [...prev, res.community])
+          setActionSuccess(`Komunitas Induk "${commForm.name}" berhasil dibuat.`)
+          setCommunityModal({ open: false, mode: 'add' })
+          router.refresh()
+        } else {
+          setActionError(res.error || 'Gagal membuat komunitas baru.')
+        }
+      } else {
+        const id = communityModal.data.id
+        const res = await updateCommunityAdminAction(id, commForm)
+        if (res.success && res.community) {
+          setCommunities(prev => prev.map(c => c.id === id ? { ...c, ...res.community } : c))
+          setActionSuccess(`Komunitas Induk "${commForm.name}" berhasil diperbarui.`)
+          setCommunityModal({ open: false, mode: 'add' })
+          router.refresh()
+        } else {
+          setActionError(res.error || 'Gagal memperbarui komunitas.')
+        }
+      }
+    })
+  }
+
+  const handleDeleteCommunity = (id: string, name: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus Komunitas Induk "${name}"?`)) return
+    setActionError(null)
+    setActionSuccess(null)
+
+    startTransition(async () => {
+      const res = await deleteCommunityAdminAction(id)
+      if (res.success) {
+        setCommunities(prev => prev.filter(c => c.id !== id))
+        setActionSuccess(`Komunitas Induk "${name}" berhasil dihapus.`)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menghapus komunitas.')
+      }
+    })
+  }
+
+  const handleAddMemberToCommunity = async (communityId: string, userId: string) => {
+    if (!userId) return
+    setActionError(null)
+    setActionSuccess(null)
+
+    startTransition(async () => {
+      const res = await updateUserIndukCommunityAction(userId, communityId)
+      if (res.success) {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, indukCommunityId: communityId } : u))
+        setActionSuccess('Anggota berhasil didaftarkan ke Komunitas Induk ini.')
+        setSelectedMemberUserId('')
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menambahkan anggota.')
       }
     })
   }
@@ -601,17 +785,29 @@ export default function AdminDashboardClient({
             {[
               { id: 'overview', label: 'Dashboard Overview', icon: 'M4 6h16M4 12h16M4 18h16' },
               { id: 'users', label: 'Kelola User & Role', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14-2a4 4 0 0 1-3.87 3M16 3.13a4 4 0 0 1 0 7.75' },
-              ...(currentUser.isSuperAdmin ? [{ id: 'admins', label: 'Kelola Admin', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-7 16a7 7 0 0 1 14 0H5z' }] : []),
+              ...(currentUser.isSuperAdmin ? [{ id: 'admins', label: 'Kelola Admin & Hak Akses', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-7 16a7 7 0 0 1 14 0H5z' }] : []),
               { id: 'approvals', label: 'Persetujuan Merchant', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
               { id: 'withdrawals', label: 'Pencairan Dana (Withdraw)', icon: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
               { id: 'products', label: 'Katalog Produk & Jasa', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
               { id: 'academy', label: 'LMS Kelola Materi', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.168.477 4 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4 1.253' },
-              { id: 'community', label: 'Daftar Komunitas', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
+              { id: 'community', label: 'Komunitas Induk & Member', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
               { id: 'transactions', label: 'Lacak Transaksi', icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4' },
               { id: 'certificates', label: 'Sertifikat Level Up', icon: 'M12 14l-4-4 1.41-1.41L12 11.17l2.59-2.58L16 10l-4 4zm-6 4h12V6H6v12zm12-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12z' },
               { id: 'affiliates', label: 'Monitor Affiliate', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
               { id: 'coins', label: 'Kelola Koin & Voucher', icon: 'M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A.75.75 0 0 0 9 9h1.5v2.25H9a.75.75 0 0 0 0 1.5h1.5V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-3V9H15a.75.75 0 0 0 0-1.5H9Z' }
-            ].map(item => {
+            ]
+            .filter(item => {
+              if (currentUser.isSuperAdmin) return true
+              if (item.id === 'admins') return false
+              let perms: string[] = []
+              try {
+                perms = currentUser.adminPermissions ? JSON.parse(currentUser.adminPermissions) : ALL_ADMIN_PERMISSIONS.map(p => p.key)
+              } catch (_) {
+                perms = ALL_ADMIN_PERMISSIONS.map(p => p.key)
+              }
+              return perms.includes(item.id)
+            })
+            .map(item => {
               const isActive = activeTab === item.id
               return (
                 <button
@@ -1081,6 +1277,20 @@ export default function AdminDashboardClient({
                             <option value="Diamond">Diamond</option>
                           </select>
                         </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#0F5132] uppercase tracking-wider mb-1.5 font-sora">Induk Komunitas Terasosiasi</label>
+                        <select
+                          value={editUser.indukCommunityId || ''}
+                          onChange={e => setEditUser({ ...editUser, indukCommunityId: e.target.value || null })}
+                          className="w-full bg-emerald-50/40 border border-[#0F5132]/30 rounded-[var(--radius-brand)] px-3.5 py-2.5 text-xs text-slate-800 font-medium outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                        >
+                          <option value="">-- Tanpa Induk Komunitas --</option>
+                          {communities.map((c: any) => (
+                            <option key={c.id} value={c.id}>{c.name} ({c.type} - {c.category})</option>
+                          ))}
+                        </select>
                       </div>
 
                       {editUser.role === 'MERCHANT' && (
@@ -1784,10 +1994,150 @@ export default function AdminDashboardClient({
             </div>
           )}
 
-          {/* ─── TAB 5: DAFTAR KOMUNITAS ───────────────────────────────────── */}
+          {/* ─── TAB 5: DAFTAR KOMUNITAS INDUK & MEMBER ───────────────────── */}
           {activeTab === 'community' && (
             <div className="space-y-6 animate-in fade-in duration-250">
-              {/* Membership Invoice Verification Section */}
+              {/* Induk Komunitas CRUD Management Card */}
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm space-y-4">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#e2e8f0] pb-4">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider text-[#0F5132]">
+                      Kelola Komunitas Induk
+                    </h3>
+                    <p className="text-xs text-[#64748b] mt-0.5">
+                      Super Admin & Admin dapat membuat, mengedit detail legalitas/fee, serta menetapkan anggota komunitas induk secara bebas.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleOpenAddCommunity}
+                    className="px-4 py-2 bg-[#0F5132] hover:bg-[#0a3822] text-white text-xs font-bold uppercase tracking-wider rounded-[var(--radius-brand)] shadow-sm transition-colors cursor-pointer flex items-center gap-2 shrink-0"
+                  >
+                    <span>+ Tambah Komunitas Induk</span>
+                  </button>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-col md:flex-row gap-3 pt-1">
+                  <input
+                    type="text"
+                    placeholder="Cari komunitas berdasarkan nama / ketua / domisili..."
+                    value={communitySearch}
+                    onChange={e => setCommunitySearch(e.target.value)}
+                    className="flex-grow bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
+                  />
+                  <select
+                    value={communityTypeFilter}
+                    onChange={e => setCommunityTypeFilter(e.target.value)}
+                    className="bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
+                  >
+                    <option value="ALL">Semua Tipe</option>
+                    <option value="PERKUMPULAN">PERKUMPULAN</option>
+                    <option value="KOPERASI">KOPERASI</option>
+                  </select>
+                  <select
+                    value={communityCategoryFilter}
+                    onChange={e => setCommunityCategoryFilter(e.target.value)}
+                    className="bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
+                  >
+                    <option value="ALL">Semua Kategori</option>
+                    <option value="FREE">FREE</option>
+                    <option value="PAID">PAID</option>
+                    <option value="KOPERASI">KOPERASI</option>
+                  </select>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto border border-[#e2e8f0] rounded-[var(--radius-brand)]">
+                  <table className="w-full min-w-[900px] text-xs text-left">
+                    <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px] font-bold">
+                      <tr>
+                        <th className="px-4 py-3">Nama Komunitas</th>
+                        <th className="px-4 py-3">Tipe & Kategori</th>
+                        <th className="px-4 py-3">Ketua Komunitas</th>
+                        <th className="px-4 py-3 text-right">Saldo Coin</th>
+                        <th className="px-4 py-3 text-center">Status</th>
+                        <th className="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {communities.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-6 text-center text-slate-400 italic">
+                            Belum ada komunitas induk terdaftar.
+                          </td>
+                        </tr>
+                      ) : (
+                        communities
+                          .filter(c => {
+                            const matchSearch = c.name?.toLowerCase().includes(communitySearch.toLowerCase()) ||
+                              c.domisili?.toLowerCase().includes(communitySearch.toLowerCase())
+                            const matchType = communityTypeFilter === 'ALL' || c.type === communityTypeFilter
+                            const matchCat = communityCategoryFilter === 'ALL' || c.category === communityCategoryFilter
+                            return matchSearch && matchType && matchCat
+                          })
+                          .map(comm => {
+                            const ketuaUser = users.find(u => u.id === comm.ketuaId)
+                            const memberCount = users.filter(u => u.indukCommunityId === comm.id).length
+                            return (
+                              <tr key={comm.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-4 py-3.5">
+                                  <p className="font-bold text-slate-800">{comm.name}</p>
+                                  <p className="text-[10px] text-slate-400 font-mono">ID: {comm.id}</p>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <div className="flex gap-1.5 items-center">
+                                    <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-emerald-50 text-[#0F5132] border border-[#0F5132]/20 uppercase">
+                                      {comm.type}
+                                    </span>
+                                    <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase">
+                                      {comm.category}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3.5">
+                                  <p className="font-bold text-slate-800">{ketuaUser?.name || comm.ketuaId}</p>
+                                  <p className="text-[10px] text-slate-400">{ketuaUser?.email || ''}</p>
+                                </td>
+                                <td className="px-4 py-3.5 text-right font-mono font-bold text-[#0F5132]">
+                                  {(comm.coinBalance || 0).toLocaleString('id-ID')} Coin
+                                </td>
+                                <td className="px-4 py-3.5 text-center">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${
+                                    comm.isSuspended ? 'bg-red-50 text-red-700 border-red-200' :
+                                    comm.isVerified ? 'bg-green-50 text-green-700 border-green-200' :
+                                    'bg-amber-50 text-amber-700 border-amber-200'
+                                  }`}>
+                                    {comm.isSuspended ? 'Suspended' : comm.isVerified ? 'Verified' : 'Pending'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3.5 text-right space-x-2">
+                                  <button
+                                    onClick={() => setMemberModal({ open: true, community: comm })}
+                                    className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                                  >
+                                    Members ({memberCount})
+                                  </button>
+                                  <button
+                                    onClick={() => handleOpenEditCommunity(comm)}
+                                    className="px-2.5 py-1 bg-[#0F5132]/10 hover:bg-[#0F5132]/20 text-[#0F5132] border border-[#0F5132]/20 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteCommunity(comm.id, comm.name)}
+                                    className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                                  >
+                                    Hapus
+                                  </button>
+                                </td>
+                              </tr>
+                            )
+                          })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
               <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
                 <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider mb-2 border-b border-[#e2e8f0] pb-3 text-[#0F5132]">
                   Verifikasi Pembayaran Invoice Keanggotaan Komunitas
@@ -2969,6 +3319,192 @@ export default function AdminDashboardClient({
             </div>
           )}
 
+          {/* ─── CREATE / EDIT COMMUNITY MODAL ─────────────────────────────── */}
+          {communityModal.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-2xl w-full p-6 space-y-6 shadow-2xl my-8 animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
+                    {communityModal.mode === 'add' ? 'Tambah Komunitas Induk Baru' : 'Edit Komunitas Induk'}
+                  </h3>
+                  <button onClick={() => setCommunityModal({ open: false, mode: 'add' })} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+
+                <form onSubmit={handleSaveCommunitySubmit} className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Nama Komunitas *</label>
+                      <input
+                        type="text"
+                        required
+                        value={commForm.name}
+                        onChange={e => setCommForm({ ...commForm, name: e.target.value })}
+                        placeholder="e.g. Komunitas UMKM Batik Solo"
+                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Ketua Komunitas *</label>
+                      <select
+                        value={commForm.ketuaId}
+                        onChange={e => setCommForm({ ...commForm, ketuaId: e.target.value })}
+                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
+                      >
+                        <option value="">-- Pilih Ketua Komunitas --</option>
+                        {users.map(u => (
+                          <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Tipe Komunitas</label>
+                      <select
+                        value={commForm.type}
+                        onChange={e => setCommForm({ ...commForm, type: e.target.value })}
+                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
+                      >
+                        <option value="PERKUMPULAN">PERKUMPULAN</option>
+                        <option value="KOPERASI">KOPERASI</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Kategori</label>
+                      <select
+                        value={commForm.category}
+                        onChange={e => setCommForm({ ...commForm, category: e.target.value })}
+                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
+                      >
+                        <option value="FREE">FREE</option>
+                        <option value="PAID">PAID</option>
+                        <option value="KOPERASI">KOPERASI</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Deskripsi Singkat</label>
+                    <textarea
+                      rows={2}
+                      value={commForm.description}
+                      onChange={e => setCommForm({ ...commForm, description: e.target.value })}
+                      className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
+                    />
+                  </div>
+
+                  {/* Legalities */}
+                  <div className="border-t border-slate-100 pt-3">
+                    <p className="text-[10px] font-bold text-[#0F5132] uppercase tracking-wider mb-2">Legalitas Komunitas</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Akta Notaris</label>
+                        <input type="text" value={commForm.aktaNotaris} onChange={e => setCommForm({ ...commForm, aktaNotaris: e.target.value })} className="w-full bg-white border border-[#cbd5e1] rounded px-2.5 py-1.5 text-xs text-slate-800" />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Nomor AHU</label>
+                        <input type="text" value={commForm.nomorAhu} onChange={e => setCommForm({ ...commForm, nomorAhu: e.target.value })} className="w-full bg-white border border-[#cbd5e1] rounded px-2.5 py-1.5 text-xs text-slate-800" />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">NPWP</label>
+                        <input type="text" value={commForm.nomorNpwp} onChange={e => setCommForm({ ...commForm, nomorNpwp: e.target.value })} className="w-full bg-white border border-[#cbd5e1] rounded px-2.5 py-1.5 text-xs text-slate-800" />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Domisili</label>
+                        <input type="text" value={commForm.domisili} onChange={e => setCommForm({ ...commForm, domisili: e.target.value })} className="w-full bg-white border border-[#cbd5e1] rounded px-2.5 py-1.5 text-xs text-slate-800" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toggles */}
+                  <div className="flex gap-6 border-t border-slate-100 pt-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={commForm.isVerified} onChange={e => setCommForm({ ...commForm, isVerified: e.target.checked })} className="rounded accent-[#0F5132]" />
+                      <span className="text-xs font-bold text-slate-700">Verified Komunitas</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={commForm.isSuspended} onChange={e => setCommForm({ ...commForm, isSuspended: e.target.checked })} className="rounded accent-red-600" />
+                      <span className="text-xs font-bold text-red-700">Suspend Komunitas</span>
+                    </label>
+                  </div>
+
+                  <div className="pt-4 flex gap-3">
+                    <button type="button" onClick={() => setCommunityModal({ open: false, mode: 'add' })} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded uppercase tracking-wider">
+                      Batal
+                    </button>
+                    <button type="submit" disabled={isPending} className="flex-1 py-2.5 bg-[#0F5132] hover:bg-[#0a3822] text-white font-bold rounded uppercase tracking-wider disabled:opacity-50">
+                      {isPending ? 'Menyimpan...' : 'Simpan Komunitas'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MANAGE COMMUNITY MEMBERS MODAL ─────────────────────────────── */}
+          {memberModal.open && memberModal.community && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in zoom-in-95 duration-200">
+              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-xl w-full p-6 space-y-6 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
+                      Anggota Komunitas: {memberModal.community.name}
+                    </h3>
+                    <p className="text-[10px] text-slate-400">Total {users.filter(u => u.indukCommunityId === memberModal.community.id).length} Anggota terdaftar</p>
+                  </div>
+                  <button onClick={() => setMemberModal({ open: false })} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+
+                {/* Quick Add Member */}
+                <div className="bg-emerald-50/50 p-4 border border-[#0F5132]/20 rounded space-y-2">
+                  <label className="block text-[10px] font-bold text-[#0F5132] uppercase tracking-wider">Daftarkan Anggota / Reassign ke Komunitas ini</label>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedMemberUserId}
+                      onChange={e => setSelectedMemberUserId(e.target.value)}
+                      className="flex-grow bg-white border border-[#cbd5e1] rounded px-3 py-2 text-xs text-slate-800"
+                    >
+                      <option value="">-- Pilih User / Merchant --</option>
+                      {users.map(u => (
+                        <option key={u.id} value={u.id}>{u.name} ({u.role} - {u.email})</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => handleAddMemberToCommunity(memberModal.community.id, selectedMemberUserId)}
+                      disabled={!selectedMemberUserId || isPending}
+                      className="px-4 py-2 bg-[#0F5132] text-white font-bold text-xs rounded uppercase tracking-wider disabled:opacity-50 cursor-pointer"
+                    >
+                      Tambahkan
+                    </button>
+                  </div>
+                </div>
+
+                {/* Current Members List */}
+                <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded">
+                  {users.filter(u => u.indukCommunityId === memberModal.community.id).length === 0 ? (
+                    <p className="p-4 text-center text-xs text-slate-400 italic">Belum ada anggota terdaftar di komunitas ini.</p>
+                  ) : (
+                    users.filter(u => u.indukCommunityId === memberModal.community.id).map(mem => (
+                      <div key={mem.id} className="p-3 flex justify-between items-center hover:bg-slate-50">
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{mem.name}</p>
+                          <p className="text-[10px] text-slate-400">{mem.email} • Role: {mem.role}</p>
+                        </div>
+                        <button
+                          onClick={() => handleAddMemberToCommunity('', mem.id)}
+                          className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[9px] font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                          Keluarkan
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* ─── REJECT LEVEL UP REASON MODAL ─────────────────────────────── */}
           {isRejectModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
