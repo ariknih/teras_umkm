@@ -61,7 +61,7 @@ export function proxy(request: NextRequest) {
   const hostParts = cleanHost.split('.')
 
   // Subdomains to ignore (system/reserved)
-  const reservedSubdomains = ['www', 'admin', 'affiliate', 'api', 'localhost', 'prev', 'preprod', 'app']
+  const reservedSubdomains = ['www', 'admin', 'affiliate', 'api', 'localhost', 'prev', 'rev', 'dev', 'stage', 'staging', 'preprod', 'preview', 'test', 'app']
 
   if (cleanHost.endsWith('localhost') || cleanHost.endsWith('127.0.0.1')) {
     // Local development (e.g. tokorijal.localhost:3000)
