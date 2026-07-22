@@ -334,3 +334,95 @@ export async function createLevelRequestAction(formData: FormData) {
     return { error: e.message || 'Gagal membuat pengajuan level.' }
   }
 }
+
+// Helper to check specific admin module permission
+export async function ensureAdminPermission(permissionKey: string) {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    throw new Error('Unauthorized: Hanya untuk Administrator.')
+  }
+  const dbUser = await DataStore.findUserById(user.id)
+  if (!dbUser) throw new Error('Unauthorized.')
+  if ((dbUser as any).isSuperAdmin) return dbUser
+
+  let permissions: string[] = []
+  try {
+    permissions = (dbUser as any).adminPermissions
+      ? JSON.parse((dbUser as any).adminPermissions)
+      : ['overview', 'users', 'community', 'approvals', 'withdrawals', 'products', 'academy', 'transactions', 'coins', 'affiliates', 'certificates']
+  } catch (_) {
+    permissions = ['overview', 'users', 'community', 'approvals', 'withdrawals', 'products', 'academy', 'transactions', 'coins', 'affiliates', 'certificates']
+  }
+
+  if (!permissions.includes(permissionKey)) {
+    throw new Error(`Unauthorized: Anda tidak memiliki akses ke modul ${permissionKey}.`)
+  }
+  return dbUser
+}
+
+// ─── COMMUNITY ADMIN ACTIONS ────────────────────────────────────────────────
+export async function getCommunitiesAdminAction() {
+  await ensureAdminPermission('community')
+  try {
+    const communities = await DataStore.getCommunities()
+    return { success: true, communities }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengambil data komunitas.' }
+  }
+}
+
+export async function createCommunityAdminAction(data: any) {
+  await ensureAdminPermission('community')
+  try {
+    const community = await DataStore.createCommunityAdmin(data)
+    revalidatePath('/admin')
+    return { success: true, community }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal membuat komunitas baru.' }
+  }
+}
+
+export async function updateCommunityAdminAction(communityId: string, data: any) {
+  await ensureAdminPermission('community')
+  try {
+    const community = await DataStore.updateCommunityAdmin(communityId, data)
+    revalidatePath('/admin')
+    return { success: true, community }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengedit komunitas.' }
+  }
+}
+
+export async function deleteCommunityAdminAction(communityId: string) {
+  await ensureAdminPermission('community')
+  try {
+    await DataStore.deleteCommunityAdmin(communityId)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menghapus komunitas.' }
+  }
+}
+
+export async function updateUserIndukCommunityAction(userId: string, communityId: string | null) {
+  await ensureAdminPermission('users')
+  try {
+    await DataStore.setIndukCommunity(userId, communityId)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menetapkan Induk Komunitas.' }
+  }
+}
+
+export async function updateAdminPermissionsAction(adminId: string, permissions: string[], isSuperAdmin: boolean) {
+  await ensureSuperAdmin()
+  try {
+    await DataStore.updateUserAdminPermissions(adminId, permissions, isSuperAdmin)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal meng-update hak akses admin.' }
+  }
+}
+
