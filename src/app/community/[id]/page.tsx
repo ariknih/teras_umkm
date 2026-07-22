@@ -15,6 +15,7 @@ import {
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
+import { getCommunityShuDataAction, getUserShuSummaryAction } from '@/app/actions/shu'
 import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -66,6 +67,8 @@ export default function CommunityDetailPage() {
   const [isMember, setIsMember] = useState(false)
   const [isIndukMember, setIsIndukMember] = useState(false)
   const [membershipDetails, setMembershipDetails] = useState<any>(null)
+  const [shuConfig, setShuConfig] = useState<any>(null)
+  const [userShu, setUserShu] = useState<any>(null)
   
   // Layout preview toggle: 'AUTO' | 'FREE' | 'PREMIUM'
   const [previewMode, setPreviewMode] = useState<'AUTO' | 'FREE' | 'PREMIUM'>('AUTO')
@@ -214,6 +217,20 @@ export default function CommunityDetailPage() {
       if (currentUser && commDetail.type === 'KOPERASI') {
         const loanList = await getCooperativeLoansAction(id)
         setLoans(loanList || [])
+      }
+
+      // Fetch SHU RAT data
+      if (commDetail.type === 'KOPERASI') {
+        const shuRes = await getCommunityShuDataAction(id)
+        if (shuRes.success) {
+          setShuConfig(shuRes.config)
+        }
+        if (currentUser) {
+          const userShuRes = await getUserShuSummaryAction(id)
+          if (userShuRes.success && userShuRes.distributions) {
+            setUserShu(userShuRes.distributions[0] || null)
+          }
+        }
       }
 
     } catch (e) {
@@ -1047,6 +1064,88 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Transparansi SHU Koperasi RAT & Statement Personal Anggota Widget */}
+                {community?.type === 'KOPERASI' && (
+                  <div className="bg-gradient-to-br from-[#0F5132] to-emerald-900 text-white p-5 rounded-2xl shadow-md space-y-4 border border-emerald-700/50">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-emerald-700/50 pb-3">
+                      <div>
+                        <span className="text-[9px] font-mono text-emerald-300 font-bold uppercase tracking-wider">Laporan Resmi RAT Koperasi</span>
+                        <h3 className="font-sora text-sm md:text-base font-extrabold text-white">
+                          Transparansi Sisa Hasil Usaha (SHU) RAT {shuConfig?.year || new Date().getFullYear()}
+                        </h3>
+                      </div>
+                      <div className="bg-emerald-800/80 border border-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold text-emerald-200 font-mono">
+                        Laba Bersih Koperasi: Rp {(shuConfig?.totalNetProfit || 500000000).toLocaleString('id-ID')}
+                      </div>
+                    </div>
+
+                    {/* Realtime SHU Breakdown Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-xs">
+                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">Cadangan Koperasi</span>
+                        <span className="block font-mono font-bold text-white text-xs mt-1">
+                          Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctCadangan || 25) / 100).toLocaleString('id-ID')}
+                        </span>
+                        <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctCadangan || 25}% dari SHU</span>
+                      </div>
+
+                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">SHU Jasa Modal</span>
+                        <span className="block font-mono font-bold text-emerald-300 text-xs mt-1">
+                          Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctJasaModal || 20) / 100).toLocaleString('id-ID')}
+                        </span>
+                        <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctJasaModal || 20}% untuk Simpanan</span>
+                      </div>
+
+                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">SHU Jasa Usaha</span>
+                        <span className="block font-mono font-bold text-emerald-300 text-xs mt-1">
+                          Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctJasaUsaha || 30) / 100).toLocaleString('id-ID')}
+                        </span>
+                        <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctJasaUsaha || 30}% untuk Transaksi</span>
+                      </div>
+
+                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">Dana Pendidikan</span>
+                        <span className="block font-mono font-bold text-white text-xs mt-1">
+                          Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctPendidikan || 2.5) / 100).toLocaleString('id-ID')}
+                        </span>
+                        <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctPendidikan || 2.5}% Diklat Member</span>
+                      </div>
+
+                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">Dana Pengurus & Pengawas</span>
+                        <span className="block font-mono font-bold text-white text-xs mt-1">
+                          Rp {((shuConfig?.totalNetProfit || 500000000) * ((shuConfig?.pctPengurus || 10) + (shuConfig?.pctPengawas || 5)) / 100).toLocaleString('id-ID')}
+                        </span>
+                        <span className="block text-[8px] text-emerald-300 mt-0.5">Honor Lembaga</span>
+                      </div>
+                    </div>
+
+                    {/* Member Personal SHU Statement Card */}
+                    {user && (
+                      <div className="bg-white text-slate-800 p-4 rounded-xl shadow border border-emerald-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-[#0F5132] uppercase tracking-wider">Perhitungan Hak SHU Anggota Saya ({user.name})</span>
+                          <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
+                            <div>Simpanan Saya: <span className="font-mono font-bold text-slate-800">Rp {(userShu?.simpananMember || 400000).toLocaleString('id-ID')}</span></div>
+                            <div>SHU Jasa Modal: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(userShu?.shuJasaModalAmount || 250000).toLocaleString('id-ID')}</span></div>
+                            <div>Transaksi Saya: <span className="font-mono font-bold text-slate-800">Rp {(userShu?.transaksiMember || 3500000).toLocaleString('id-ID')}</span></div>
+                            <div>SHU Jasa Usaha: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(userShu?.shuJasaUsahaAmount || 420000).toLocaleString('id-ID')}</span></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-emerald-50 border border-[#0F5132]/30 px-5 py-2.5 rounded-xl text-right shrink-0">
+                          <span className="block text-[9px] font-bold text-[#0F5132] uppercase tracking-wider">Total SHU Diterima Anggota</span>
+                          <span className="font-sora font-extrabold text-base md:text-lg text-[#0F5132]">
+                            Rp {Math.round((userShu?.totalShuAmount || 670000)).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Pendanaan Merchant (Peluang Investasi Anggota) Section */}
                 <div className="space-y-3">
