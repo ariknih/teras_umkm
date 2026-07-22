@@ -226,8 +226,7 @@ export default function AdminDashboardClient({
 
   const handleLogout = async () => {
     await logout()
-    router.push('/')
-    router.refresh()
+    window.location.href = '/'
   }
 
   // ─── USER SUBMIT HANDLERS ──────────────────────────────────────────────────

@@ -199,23 +199,30 @@ export async function logout() {
   const host = headerList.get('host') || ''
   const cookieDomain = getCookieDomain(host)
   
+  // Delete session cookie natively
+  cookieStore.delete('session')
+
   // Clear wildcard/subdomain cookie
+  if (cookieDomain) {
+    cookieStore.set('session', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+      expires: new Date(0),
+      domain: cookieDomain
+    })
+  }
+
+  // Clear host-only cookie (crucial for subdomains like prev.saloka.id, rev.saloka.id)
   cookieStore.set('session', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
-    domain: cookieDomain
-  })
-
-  // Clear host-only cookie (crucial for preview subdomains)
-  cookieStore.set('session', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0
+    expires: new Date(0)
   })
 
   return { success: true }

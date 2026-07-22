@@ -39,8 +39,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
       await logoutAction()
       setIsOpenProfile(false)
       setIsOpenMobile(false)
-      router.push('/')
-      router.refresh()
+      window.location.href = '/'
     })
   }
 
