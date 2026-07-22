@@ -197,33 +197,34 @@ export async function logout() {
   const cookieStore = await cookies()
   const headerList = await headers()
   const host = headerList.get('host') || ''
+  const cleanHost = host.split(':')[0].toLowerCase()
   const cookieDomain = getCookieDomain(host)
-  
+
   // Delete session cookie natively
   cookieStore.delete('session')
 
-  // Clear wildcard/subdomain cookie
-  if (cookieDomain) {
-    cookieStore.set('session', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 0,
-      expires: new Date(0),
-      domain: cookieDomain
-    })
-  }
+  const domainsToClear = [
+    undefined,
+    cleanHost,
+    `.${cleanHost}`,
+    '.saloka.id',
+    'saloka.id',
+    cookieDomain
+  ]
 
-  // Clear host-only cookie (crucial for subdomains like prev.saloka.id, rev.saloka.id)
-  cookieStore.set('session', '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-    expires: new Date(0)
-  })
+  for (const domain of domainsToClear) {
+    try {
+      cookieStore.set('session', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 0,
+        expires: new Date(0),
+        ...(domain ? { domain } : {})
+      })
+    } catch (_) {}
+  }
 
   return { success: true }
 }
