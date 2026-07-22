@@ -91,6 +91,7 @@ export default function CommunityDetailPage() {
 
   // Product CRUD Modal State
   const [productModalOpen, setProductModalOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<any>(null)
   const [prodName, setProdName] = useState('')
   const [prodType, setProdType] = useState('POKOK')
   const [prodAmount, setProdAmount] = useState('100000')
@@ -98,6 +99,28 @@ export default function CommunityDetailPage() {
   const [prodIsMandatory, setProdIsMandatory] = useState(true)
   const [prodIsPremium, setProdIsPremium] = useState(false)
   const [prodDesc, setProdDesc] = useState('')
+
+  const handleOpenCreateProduct = () => {
+    setEditingProduct(null)
+    setProdName('')
+    setProdType('SUKARELA')
+    setProdAmount('50000')
+    setProdPeriod('Setor Kapan Saja')
+    setProdIsMandatory(false)
+    setProdDesc('')
+    setProductModalOpen(true)
+  }
+
+  const handleOpenEditProduct = (cp: any) => {
+    setEditingProduct(cp)
+    setProdName(cp.name)
+    setProdType(cp.type)
+    setProdAmount(String(cp.amount))
+    setProdPeriod(cp.periodText || '')
+    setProdIsMandatory(Boolean(cp.isMandatory))
+    setProdDesc(cp.description || '')
+    setProductModalOpen(true)
+  }
 
   // Funding Project CRUD Modal State
   const [projectModalOpen, setProjectModalOpen] = useState(false)
@@ -1055,8 +1078,8 @@ export default function CommunityDetailPage() {
                     </h3>
                     {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
                       <button
-                        onClick={() => setProductModalOpen(true)}
-                        className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                        onClick={handleOpenCreateProduct}
+                        className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                       >
                         <PlusCircle className="w-3 h-3" /> Tambah Produk Simpanan
                       </button>
@@ -1069,8 +1092,8 @@ export default function CommunityDetailPage() {
                       <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan yang dibuat oleh Pengurus Koperasi.</p>
                       {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
                         <button
-                          onClick={() => setProductModalOpen(true)}
-                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors"
+                          onClick={handleOpenCreateProduct}
+                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
                         >
                           + Tambah Produk Simpanan Pertama
                         </button>
@@ -1093,19 +1116,28 @@ export default function CommunityDetailPage() {
                               </div>
                             </div>
                             {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
-                              <button
-                                onClick={async () => {
-                                  if (confirm(`Hapus produk simpanan "${cp.name}"?`)) {
-                                    await deleteCooperativeProductAction(cp.id, id)
-                                    setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                    goeyToast.success('Produk simpanan dihapus!')
-                                  }
-                                }}
-                                className="text-gray-300 hover:text-red-600 text-xs transition-colors"
-                                title="Hapus produk"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleOpenEditProduct(cp)}
+                                  className="text-gray-400 hover:text-[#0F5132] text-xs transition-colors p-0.5"
+                                  title="Edit produk simpanan"
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(`Hapus produk simpanan "${cp.name}"?`)) {
+                                      await deleteCooperativeProductAction(cp.id, id)
+                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                      goeyToast.success('Produk simpanan dihapus!')
+                                    }
+                                  }}
+                                  className="text-gray-300 hover:text-red-600 text-xs transition-colors p-0.5"
+                                  title="Hapus produk simpanan"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             )}
                           </div>
                           <span className="block text-xs font-extrabold text-[#2DB24A]">
@@ -1867,7 +1899,7 @@ export default function CommunityDetailPage() {
           </div>
         )}
 
-        {/* MODAL CRUD: TAMBAH PRODUK SIMPANAN KOPERASI */}
+        {/* MODAL CRUD: TAMBAH / EDIT PRODUK SIMPANAN KOPERASI */}
         {productModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <motion.div
@@ -1877,7 +1909,9 @@ export default function CommunityDetailPage() {
               className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100"
             >
               <div className="flex justify-between items-center border-b pb-3">
-                <h3 className="font-sora text-sm font-bold text-gray-900">Tambah Produk Simpanan Baru</h3>
+                <h3 className="font-sora text-sm font-bold text-gray-900">
+                  {editingProduct ? 'Edit Produk Simpanan' : 'Tambah Produk Simpanan Baru'}
+                </h3>
                 <button onClick={() => setProductModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
               </div>
 
@@ -1885,6 +1919,7 @@ export default function CommunityDetailPage() {
                 e.preventDefault()
                 startTransition(async () => {
                   const fd = new FormData()
+                  if (editingProduct) fd.append('id', editingProduct.id)
                   fd.append('communityId', id)
                   fd.append('name', prodName)
                   fd.append('type', prodType)
@@ -1894,14 +1929,24 @@ export default function CommunityDetailPage() {
                   fd.append('isPremium', String(prodIsPremium))
                   fd.append('description', prodDesc)
 
-                  const res = await createCooperativeProductAction(fd)
-                  if (res.success && res.product) {
-                    setCoopProducts(prev => [...prev, res.product])
-                    setProductModalOpen(false)
-                    setProdName('')
-                    goeyToast.success('Produk simpanan berhasil ditambahkan!')
+                  if (editingProduct) {
+                    const res = await updateCooperativeProductAction(fd)
+                    if (res.success && res.product) {
+                      setCoopProducts(prev => prev.map(p => p.id === res.product.id ? res.product : p))
+                      setProductModalOpen(false)
+                      goeyToast.success('Produk simpanan berhasil diperbarui!')
+                    } else {
+                      alert(res.error || 'Gagal mengubah produk simpanan.')
+                    }
                   } else {
-                    alert(res.error || 'Gagal menambahkan produk simpanan.')
+                    const res = await createCooperativeProductAction(fd)
+                    if (res.success && res.product) {
+                      setCoopProducts(prev => [...prev, res.product])
+                      setProductModalOpen(false)
+                      goeyToast.success('Produk simpanan berhasil ditambahkan!')
+                    } else {
+                      alert(res.error || 'Gagal menambahkan produk simpanan.')
+                    }
                   }
                 })
               }} className="space-y-3 text-xs">
@@ -1942,7 +1987,9 @@ export default function CommunityDetailPage() {
 
                 <div className="flex gap-2 pt-3">
                   <button type="button" onClick={() => setProductModalOpen(false)} className="flex-1 py-2.5 border rounded-xl font-bold">Batal</button>
-                  <button type="submit" disabled={actionPending} className="flex-1 py-2.5 bg-[#0F5132] text-white font-bold rounded-xl">{actionPending ? 'Menyimpan...' : 'Simpan Produk'}</button>
+                  <button type="submit" disabled={actionPending} className="flex-1 py-2.5 bg-[#0F5132] text-white font-bold rounded-xl">
+                    {actionPending ? 'Menyimpan...' : (editingProduct ? 'Simpan Perubahan' : 'Simpan Produk')}
+                  </button>
                 </div>
               </form>
             </motion.div>
