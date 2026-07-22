@@ -11,7 +11,14 @@ import {
   getCooperativeLoansAction,
   approveCooperativeLoanAction,
   rejectCooperativeLoanAction,
-  updateIndukCommunity
+  updateIndukCommunity,
+  getCommunityRealStatsAction,
+  getCooperativeProductsAction,
+  createCooperativeProductAction,
+  deleteCooperativeProductAction,
+  getMerchantFundingProjectsAction,
+  createMerchantFundingProjectAction,
+  deleteMerchantFundingProjectAction
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
@@ -69,6 +76,37 @@ export default function CommunityDetailPage() {
   const [membershipDetails, setMembershipDetails] = useState<any>(null)
   const [shuConfig, setShuConfig] = useState<any>(null)
   const [userShu, setUserShu] = useState<any>(null)
+
+  // Dynamic Real Stats (0-default)
+  const [realStats, setRealStats] = useState({
+    activeMembersCount: 0,
+    activeMerchantsCount: 0,
+    totalSavingsCollected: 0,
+    shuCurrentYearProfit: 0
+  })
+
+  // Cooperative Products & Projects
+  const [coopProducts, setCoopProducts] = useState<any[]>([])
+  const [fundingProjects, setFundingProjects] = useState<any[]>([])
+
+  // Product CRUD Modal State
+  const [productModalOpen, setProductModalOpen] = useState(false)
+  const [prodName, setProdName] = useState('')
+  const [prodType, setProdType] = useState('POKOK')
+  const [prodAmount, setProdAmount] = useState('100000')
+  const [prodPeriod, setProdPeriod] = useState('Sekali Bayar')
+  const [prodIsMandatory, setProdIsMandatory] = useState(true)
+  const [prodIsPremium, setProdIsPremium] = useState(false)
+  const [prodDesc, setProdDesc] = useState('')
+
+  // Funding Project CRUD Modal State
+  const [projectModalOpen, setProjectModalOpen] = useState(false)
+  const [projTitle, setProjTitle] = useState('')
+  const [projTarget, setProjTarget] = useState('50000000')
+  const [projMinInvest, setProjMinInvest] = useState('100000')
+  const [projReturn, setProjReturn] = useState('12')
+  const [projDuration, setProjDuration] = useState('6')
+  const [projDesc, setProjDesc] = useState('')
   
   // Layout preview toggle: 'AUTO' | 'FREE' | 'PREMIUM'
   const [previewMode, setPreviewMode] = useState<'AUTO' | 'FREE' | 'PREMIUM'>('AUTO')
@@ -218,6 +256,19 @@ export default function CommunityDetailPage() {
         const loanList = await getCooperativeLoansAction(id)
         setLoans(loanList || [])
       }
+
+      // Fetch real stats (0-default if no records)
+      const stats = await getCommunityRealStatsAction(id)
+      if (stats) {
+        setRealStats(stats)
+      }
+
+      // Fetch cooperative products & funding projects
+      const cProducts = await getCooperativeProductsAction(id)
+      setCoopProducts(cProducts || [])
+
+      const fProjects = await getMerchantFundingProjectsAction(id)
+      setFundingProjects(fProjects || [])
 
       // Fetch SHU RAT data
       if (commDetail.type === 'KOPERASI') {
@@ -505,7 +556,7 @@ export default function CommunityDetailPage() {
               <span>•</span>
               <span className="flex items-center gap-1">
                 <Users className="w-3.5 h-3.5 text-gray-400" />
-                {members.length > 0 ? members.length : 325} Anggota
+                {realStats.activeMembersCount} Anggota
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -541,7 +592,7 @@ export default function CommunityDetailPage() {
           </div>
         </div>
 
-        {/* ── METRIC STATS ROW (4 CARDS - COMMON TO BOTH VIEWS) ──────────────── */}
+        {/* ── METRIC STATS ROW (4 CARDS - DYNAMIC REALTIME METRICS) ────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
@@ -550,7 +601,7 @@ export default function CommunityDetailPage() {
             <div>
               <span className="block text-[10px] text-gray-400 font-medium">Anggota Aktif</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-extrabold text-gray-900">325</span>
+                <span className="text-lg font-extrabold text-gray-900">{realStats.activeMembersCount}</span>
                 <span className="text-[10px] text-gray-500 font-medium">Orang</span>
               </div>
             </div>
@@ -563,7 +614,7 @@ export default function CommunityDetailPage() {
             <div>
               <span className="block text-[10px] text-gray-400 font-medium">Merchant Anggota</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-extrabold text-gray-900">42</span>
+                <span className="text-lg font-extrabold text-gray-900">{realStats.activeMerchantsCount}</span>
                 <span className="text-[10px] text-gray-500 font-medium">Merchant</span>
               </div>
             </div>
@@ -576,7 +627,9 @@ export default function CommunityDetailPage() {
             <div>
               <span className="block text-[10px] text-gray-400 font-medium">Dana Kelolaan</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-extrabold text-gray-900">Rp 1,2 M</span>
+                <span className="text-base md:text-lg font-extrabold text-gray-900">
+                  {realStats.totalSavingsCollected > 0 ? `Rp ${realStats.totalSavingsCollected.toLocaleString('id-ID')}` : 'Rp 0'}
+                </span>
                 <span className="text-[10px] text-gray-500 font-medium">Total Dana</span>
               </div>
             </div>
@@ -589,7 +642,9 @@ export default function CommunityDetailPage() {
             <div>
               <span className="block text-[10px] text-gray-400 font-medium">SHU Tahun Ini</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-lg font-extrabold text-gray-900">Rp 250 Jt</span>
+                <span className="text-base md:text-lg font-extrabold text-gray-900">
+                  {realStats.shuCurrentYearProfit > 0 ? `Rp ${realStats.shuCurrentYearProfit.toLocaleString('id-ID')}` : 'Rp 0'}
+                </span>
                 <span className="text-[10px] text-gray-500 font-medium">Estimasi SHU</span>
               </div>
             </div>
@@ -992,77 +1047,79 @@ export default function CommunityDetailPage() {
               <div className="lg:col-span-2 space-y-6">
 
                 {/* Produk Simpanan (Premium) - 5 Cards Grid */}
+                {/* Produk Simpanan Koperasi Section (Dynamic Database & CRUD) */}
                 <div className="space-y-3">
-                  <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Produk Simpanan (Premium)
-                  </h3>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                    {/* Card 1: Simpanan Pokok */}
-                    <div className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between">
-                      <div className="flex items-center gap-2">
-                        <Home className="w-4 h-4 text-[#2DB24A]" />
-                        <div>
-                          <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">Simpanan Pokok</span>
-                          <span className="block text-[9px] text-gray-400">Sekali Bayar</span>
-                        </div>
-                      </div>
-                      <span className="block text-xs font-extrabold text-[#2DB24A]">Rp 150.000</span>
-                      <span className="w-max px-2 py-0.5 bg-[#E8F8EE] text-[#2DB24A] font-bold text-[8px] rounded">Wajib</span>
-                    </div>
-
-                    {/* Card 2: Simpanan Wajib */}
-                    <div className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-[#2DB24A]" />
-                        <div>
-                          <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">Simpanan Wajib</span>
-                          <span className="block text-[9px] text-gray-400 line-clamp-1">Iuran rutin setiap bulan</span>
-                        </div>
-                      </div>
-                      <span className="block text-xs font-extrabold text-[#2DB24A]">Rp 50.000 / bulan</span>
-                      <span className="w-max px-2 py-0.5 bg-[#E8F8EE] text-[#2DB24A] font-bold text-[8px] rounded">Wajib</span>
-                    </div>
-
-                    {/* Card 3: Simpanan Sukarela */}
-                    <div className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between">
-                      <div className="flex items-center gap-2">
-                        <Coins className="w-4 h-4 text-amber-500" />
-                        <div>
-                          <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">Simpanan Sukarela</span>
-                          <span className="block text-[9px] text-gray-400">Setor kapan saja</span>
-                        </div>
-                      </div>
-                      <span className="block text-xs font-extrabold text-[#2DB24A]">Mulai Rp 10.000</span>
-                      <span className="w-max px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold text-[8px] rounded">Premium</span>
-                    </div>
-
-                    {/* Card 4: Simpanan Umroh */}
-                    <div className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-emerald-600" />
-                        <div>
-                          <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">Simpanan Umroh</span>
-                          <span className="block text-[9px] text-gray-400 line-clamp-1">Tabungan khusus umroh</span>
-                        </div>
-                      </div>
-                      <span className="block text-xs font-extrabold text-[#2DB24A]">Mulai Rp 50.000</span>
-                      <span className="w-max px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold text-[8px] rounded">Premium</span>
-                    </div>
-
-                    {/* Card 5: Simpanan Qurban */}
-                    <div className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-amber-600" />
-                        <div>
-                          <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">Simpanan Qurban</span>
-                          <span className="block text-[9px] text-gray-400 line-clamp-1">Tabungan khusus qurban</span>
-                        </div>
-                      </div>
-                      <span className="block text-xs font-extrabold text-[#2DB24A]">Mulai Rp 20.000</span>
-                      <span className="w-max px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold text-[8px] rounded">Premium</span>
-                    </div>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      Produk Simpanan Koperasi
+                    </h3>
+                    {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                      <button
+                        onClick={() => setProductModalOpen(true)}
+                        className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                      >
+                        <PlusCircle className="w-3 h-3" /> Tambah Produk Simpanan
+                      </button>
+                    )}
                   </div>
+
+                  {coopProducts.length === 0 ? (
+                    <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
+                      <PiggyBank className="w-8 h-8 text-gray-300 mx-auto" />
+                      <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan yang dibuat oleh Pengurus Koperasi.</p>
+                      {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                        <button
+                          onClick={() => setProductModalOpen(true)}
+                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors"
+                        >
+                          + Tambah Produk Simpanan Pertama
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                      {coopProducts.map((cp: any) => (
+                        <div key={cp.id} className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between relative group">
+                          <div className="flex items-center justify-between gap-1">
+                            <div className="flex items-center gap-2">
+                              {cp.type === 'POKOK' ? <Home className="w-4 h-4 text-[#2DB24A]" /> :
+                               cp.type === 'WAJIB' ? <Calendar className="w-4 h-4 text-[#2DB24A]" /> :
+                               cp.type === 'SUKARELA' ? <Coins className="w-4 h-4 text-amber-500" /> :
+                               cp.type === 'UMROH' ? <Building2 className="w-4 h-4 text-emerald-600" /> :
+                               <Sparkles className="w-4 h-4 text-amber-600" />}
+                              <div>
+                                <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
+                                <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
+                              </div>
+                            </div>
+                            {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                              <button
+                                onClick={async () => {
+                                  if (confirm(`Hapus produk simpanan "${cp.name}"?`)) {
+                                    await deleteCooperativeProductAction(cp.id, id)
+                                    setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                    goeyToast.success('Produk simpanan dihapus!')
+                                  }
+                                }}
+                                className="text-gray-300 hover:text-red-600 text-xs transition-colors"
+                                title="Hapus produk"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                          <span className="block text-xs font-extrabold text-[#2DB24A]">
+                            Rp {cp.amount.toLocaleString('id-ID')}
+                          </span>
+                          <span className={`w-max px-2 py-0.5 font-bold text-[8px] rounded ${
+                            cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {cp.isMandatory ? 'Wajib' : 'Sukarela'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Transparansi SHU Koperasi RAT & Statement Personal Anggota Widget */}
@@ -1147,67 +1204,105 @@ export default function CommunityDetailPage() {
                   </div>
                 )}
 
-                {/* Pendanaan Merchant (Peluang Investasi Anggota) Section */}
+                {/* Pendanaan Merchant (Peluang Investasi Anggota) Section (Dynamic Database & CRUD) */}
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                       Pendanaan Merchant (Peluang Investasi Anggota)
                     </h3>
                     <div className="flex items-center gap-2">
-                      <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
-                      <div className="flex items-center gap-1">
-                        <button className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition-colors">
-                          <ChevronLeft className="w-3.5 h-3.5" />
+                      {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                        <button
+                          onClick={() => setProjectModalOpen(true)}
+                          className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <PlusCircle className="w-3 h-3" /> Tambah Proyek Pendanaan
                         </button>
-                        <button className="w-6 h-6 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center transition-colors">
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {merchantProjects.map((p) => (
-                      <div key={p.id} className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3 flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <img src={p.image} alt={p.title} className="w-full h-24 object-cover rounded-xl" />
-                          <div>
-                            <h4 className="text-xs font-extrabold text-gray-900 line-clamp-1">{p.title}</h4>
-                            <span className="text-[10px] text-gray-400">{p.category}</span>
-                          </div>
+                  {fundingProjects.length === 0 ? (
+                    <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
+                      <TrendingUp className="w-8 h-8 text-gray-300 mx-auto" />
+                      <p className="text-xs text-gray-500 font-medium">Belum ada proyek pendanaan merchant yang dibuka.</p>
+                      {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                        <button
+                          onClick={() => setProjectModalOpen(true)}
+                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors"
+                        >
+                          + Buka Proyek Pendanaan Pertama
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {fundingProjects.map((p: any) => {
+                        const progress = p.targetAmount > 0 ? Math.min(100, Math.round(((p.collectedAmount || 0) / p.targetAmount) * 100)) : 0
+                        return (
+                          <div key={p.id} className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3 flex flex-col justify-between relative group">
+                            <div className="space-y-2">
+                              <div className="relative">
+                                <img
+                                  src={p.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80"}
+                                  alt={p.title}
+                                  className="w-full h-28 object-cover rounded-xl"
+                                />
+                                {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm(`Hapus proyek pendanaan "${p.title}"?`)) {
+                                        await deleteMerchantFundingProjectAction(p.id, id)
+                                        setFundingProjects(prev => prev.filter(x => x.id !== p.id))
+                                        goeyToast.success('Proyek pendanaan dihapus!')
+                                      }
+                                    }}
+                                    className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors"
+                                    title="Hapus proyek"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-extrabold text-gray-900 line-clamp-1">{p.title}</h4>
+                                <span className="text-[10px] text-gray-400 font-medium">Bagi Hasil: {p.estimatedReturn}% p.a. • Tenor {p.durationMonths} bln</span>
+                              </div>
 
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-[10px]">
-                              <span className="text-gray-500">Target Dana</span>
-                              <span className="font-bold text-gray-800">Rp {p.target.toLocaleString('id-ID')}</span>
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-[10px]">
+                                  <span className="text-gray-500">Target Dana</span>
+                                  <span className="font-bold text-gray-800">Rp {p.targetAmount.toLocaleString('id-ID')}</span>
+                                </div>
+                                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                                  <div className="bg-[#2DB24A] h-full rounded-full" style={{ width: `${progress}%` }}></div>
+                                </div>
+                                <div className="text-right text-[9px] font-bold text-[#2DB24A]">
+                                  {progress}% Terkumpul
+                                </div>
+                              </div>
                             </div>
-                            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                              <div className="bg-[#2DB24A] h-full rounded-full" style={{ width: `${p.progress}%` }}></div>
-                            </div>
-                            <div className="text-right text-[9px] font-bold text-[#2DB24A]">
-                              {p.progress}%
-                            </div>
-                          </div>
-                        </div>
 
-                        <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                          <div>
-                            <span className="block text-[9px] text-gray-400">Minimal Pendanaan</span>
-                            <span className="block text-[11px] font-extrabold text-gray-900">Rp {p.minInvest.toLocaleString('id-ID')}</span>
+                            <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                              <div>
+                                <span className="block text-[9px] text-gray-400">Minimal Pendanaan</span>
+                                <span className="block text-[11px] font-extrabold text-gray-900">Rp {p.minInvestment.toLocaleString('id-ID')}</span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedProject(p)
+                                  setInvestModalOpen(true)
+                                }}
+                                className="px-3 py-1.5 bg-[#E8F8EE] border border-[#2DB24A]/30 text-[#2DB24A] font-bold text-[10px] rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all"
+                              >
+                                Lihat Detail
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => {
-                              setSelectedProject(p)
-                              setInvestModalOpen(true)
-                            }}
-                            className="px-3 py-1.5 bg-[#E8F8EE] border border-[#2DB24A]/30 text-[#2DB24A] font-bold text-[10px] rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all"
-                          >
-                            Lihat Detail
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Bottom 3-Column Grid (Riwayat Transaksi, Fitur Premium, Merchant + Produk) */}
@@ -1766,6 +1861,161 @@ export default function CommunityDetailPage() {
                   >
                     {actionPending ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* MODAL CRUD: TAMBAH PRODUK SIMPANAN KOPERASI */}
+        {productModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100"
+            >
+              <div className="flex justify-between items-center border-b pb-3">
+                <h3 className="font-sora text-sm font-bold text-gray-900">Tambah Produk Simpanan Baru</h3>
+                <button onClick={() => setProductModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                startTransition(async () => {
+                  const fd = new FormData()
+                  fd.append('communityId', id)
+                  fd.append('name', prodName)
+                  fd.append('type', prodType)
+                  fd.append('amount', prodAmount)
+                  fd.append('periodText', prodPeriod)
+                  fd.append('isMandatory', String(prodIsMandatory))
+                  fd.append('isPremium', String(prodIsPremium))
+                  fd.append('description', prodDesc)
+
+                  const res = await createCooperativeProductAction(fd)
+                  if (res.success && res.product) {
+                    setCoopProducts(prev => [...prev, res.product])
+                    setProductModalOpen(false)
+                    setProdName('')
+                    goeyToast.success('Produk simpanan berhasil ditambahkan!')
+                  } else {
+                    alert(res.error || 'Gagal menambahkan produk simpanan.')
+                  }
+                })
+              }} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Nama Produk Simpanan *</label>
+                  <input type="text" required value={prodName} onChange={e => setProdName(e.target.value)} placeholder="e.g. Simpanan Sukarela Suka-Suka" className="w-full border rounded-xl px-3 py-2 text-xs" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Tipe Simpanan</label>
+                    <select value={prodType} onChange={e => setProdType(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-xs">
+                      <option value="POKOK">Simpanan Pokok</option>
+                      <option value="WAJIB">Simpanan Wajib</option>
+                      <option value="SUKARELA">Simpanan Sukarela</option>
+                      <option value="UMROH">Simpanan Umroh</option>
+                      <option value="QURBAN">Simpanan Qurban</option>
+                      <option value="OTHER">Lain-lain</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Nominal (Rp) *</label>
+                    <input type="number" required value={prodAmount} onChange={e => setProdAmount(e.target.value)} placeholder="100000" className="w-full border rounded-xl px-3 py-2 text-xs font-mono font-bold" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Keterangan Periode (Teks Short)</label>
+                  <input type="text" value={prodPeriod} onChange={e => setProdPeriod(e.target.value)} placeholder="e.g. Setor Kapan Saja / Per Bulan" className="w-full border rounded-xl px-3 py-2 text-xs" />
+                </div>
+
+                <div className="flex gap-4 pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={prodIsMandatory} onChange={e => setProdIsMandatory(e.target.checked)} className="rounded text-[#2DB24A]" />
+                    <span className="font-bold text-gray-700">Wajib untuk Anggota</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-2 pt-3">
+                  <button type="button" onClick={() => setProductModalOpen(false)} className="flex-1 py-2.5 border rounded-xl font-bold">Batal</button>
+                  <button type="submit" disabled={actionPending} className="flex-1 py-2.5 bg-[#0F5132] text-white font-bold rounded-xl">{actionPending ? 'Menyimpan...' : 'Simpan Produk'}</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* MODAL CRUD: TAMBAH PROYEK PENDANAAN MERCHANT */}
+        {projectModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100"
+            >
+              <div className="flex justify-between items-center border-b pb-3">
+                <h3 className="font-sora text-sm font-bold text-gray-900">Buka Proyek Pendanaan Merchant</h3>
+                <button onClick={() => setProjectModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+              </div>
+
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                startTransition(async () => {
+                  const fd = new FormData()
+                  fd.append('communityId', id)
+                  fd.append('title', projTitle)
+                  fd.append('targetAmount', projTarget)
+                  fd.append('minInvestment', projMinInvest)
+                  fd.append('estimatedReturn', projReturn)
+                  fd.append('durationMonths', projDuration)
+                  fd.append('description', projDesc)
+
+                  const res = await createMerchantFundingProjectAction(fd)
+                  if (res.success && res.project) {
+                    setFundingProjects(prev => [res.project, ...prev])
+                    setProjectModalOpen(false)
+                    setProjTitle('')
+                    goeyToast.success('Proyek pendanaan berhasil dibuka!')
+                  } else {
+                    alert(res.error || 'Gagal membuka proyek pendanaan.')
+                  }
+                })
+              }} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Judul Proyek Pendanaan *</label>
+                  <input type="text" required value={projTitle} onChange={e => setProjTitle(e.target.value)} placeholder="e.g. Pengadaan Bahan Baku Kuliner Jogja" className="w-full border rounded-xl px-3 py-2 text-xs" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Target Dana (Rp) *</label>
+                    <input type="number" required value={projTarget} onChange={e => setProjTarget(e.target.value)} placeholder="50000000" className="w-full border rounded-xl px-3 py-2 text-xs font-mono font-bold" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Minimal Investasi (Rp)</label>
+                    <input type="number" value={projMinInvest} onChange={e => setProjMinInvest(e.target.value)} placeholder="100000" className="w-full border rounded-xl px-3 py-2 text-xs font-mono" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Bagi Hasil (% p.a.)</label>
+                    <input type="number" step="0.1" value={projReturn} onChange={e => setProjReturn(e.target.value)} placeholder="12.0" className="w-full border rounded-xl px-3 py-2 text-xs font-bold" />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-gray-700 mb-1">Tenor (Bulan)</label>
+                    <input type="number" value={projDuration} onChange={e => setProjDuration(e.target.value)} placeholder="6" className="w-full border rounded-xl px-3 py-2 text-xs" />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-3">
+                  <button type="button" onClick={() => setProjectModalOpen(false)} className="flex-1 py-2.5 border rounded-xl font-bold">Batal</button>
+                  <button type="submit" disabled={actionPending} className="flex-1 py-2.5 bg-[#0F5132] text-white font-bold rounded-xl">{actionPending ? 'Membuka...' : 'Buka Proyek'}</button>
                 </div>
               </form>
             </motion.div>

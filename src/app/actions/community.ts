@@ -526,3 +526,130 @@ export async function updateIndukCommunity(id: string, formData: FormData) {
   }
 }
 
+// ─── REAL STATS & COOPERATIVE PRODUCTS / FUNDING ACTIONS ───────────────────
+
+export async function getCommunityRealStatsAction(communityId: string) {
+  return await DataStore.getCommunityRealStats(communityId)
+}
+
+export async function getCooperativeProductsAction(communityId: string) {
+  return await DataStore.getCooperativeProducts(communityId)
+}
+
+export async function createCooperativeProductAction(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const communityId = formData.get('communityId') as string
+  const name = formData.get('name') as string
+  const type = (formData.get('type') as string) || 'POKOK'
+  const amount = Number(formData.get('amount') || 0)
+  const periodText = formData.get('periodText') as string
+  const isMandatory = formData.get('isMandatory') === 'true'
+  const isPremium = formData.get('isPremium') === 'true'
+  const description = formData.get('description') as string
+
+  if (!communityId || !name) {
+    return { error: 'Komunitas dan Nama Produk Simpanan wajib diisi.' }
+  }
+
+  const p = await DataStore.createCooperativeProduct({
+    communityId,
+    name,
+    type,
+    amount,
+    periodText,
+    isMandatory,
+    isPremium,
+    description
+  })
+
+  revalidatePath(`/community/${communityId}`)
+  return { success: true, product: p }
+}
+
+export async function updateCooperativeProductAction(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const id = formData.get('id') as string
+  const communityId = formData.get('communityId') as string
+  const name = formData.get('name') as string
+  const type = formData.get('type') as string
+  const amount = Number(formData.get('amount') || 0)
+  const periodText = formData.get('periodText') as string
+  const isMandatory = formData.get('isMandatory') === 'true'
+  const isPremium = formData.get('isPremium') === 'true'
+  const description = formData.get('description') as string
+
+  if (!id) return { error: 'ID Produk wajib diisi.' }
+
+  const updated = await DataStore.updateCooperativeProduct(id, {
+    name,
+    type,
+    amount,
+    periodText,
+    isMandatory,
+    isPremium,
+    description
+  })
+
+  revalidatePath(`/community/${communityId}`)
+  return { success: true, product: updated }
+}
+
+export async function deleteCooperativeProductAction(id: string, communityId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  await DataStore.deleteCooperativeProduct(id)
+  revalidatePath(`/community/${communityId}`)
+  return { success: true }
+}
+
+export async function getMerchantFundingProjectsAction(communityId: string) {
+  return await DataStore.getMerchantFundingProjects(communityId)
+}
+
+export async function createMerchantFundingProjectAction(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const communityId = formData.get('communityId') as string
+  const title = formData.get('title') as string
+  const description = formData.get('description') as string
+  const targetAmount = Number(formData.get('targetAmount') || 0)
+  const minInvestment = Number(formData.get('minInvestment') || 50000)
+  const estimatedReturn = Number(formData.get('estimatedReturn') || 12.0)
+  const durationMonths = Number(formData.get('durationMonths') || 6)
+  const imageUrl = formData.get('imageUrl') as string
+
+  if (!communityId || !title || targetAmount <= 0) {
+    return { error: 'Judul proyek dan Target Pendanaan wajib diisi.' }
+  }
+
+  const proj = await DataStore.createMerchantFundingProject({
+    communityId,
+    title,
+    description,
+    targetAmount,
+    minInvestment,
+    estimatedReturn,
+    durationMonths,
+    imageUrl
+  })
+
+  revalidatePath(`/community/${communityId}`)
+  return { success: true, project: proj }
+}
+
+export async function deleteMerchantFundingProjectAction(id: string, communityId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  await DataStore.deleteMerchantFundingProject(id)
+  revalidatePath(`/community/${communityId}`)
+  return { success: true }
+}
+
+

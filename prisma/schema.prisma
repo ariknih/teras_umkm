@@ -784,3 +784,42 @@ model ShuMemberDistribution {
 
   @@unique([shuConfigId, userId])
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Produk Simpanan Koperasi (CRUD Dikelola Pengurus/Admin)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model CooperativeProduct {
+  id          String   @id @default(cuid())
+  communityId String
+  name        String
+  type        String   @default("POKOK") // POKOK, WAJIB, SUKARELA, UMROH, QURBAN, OTHER
+  amount      Float    @default(0)
+  periodText  String?  // e.g. "Sekali Bayar", "Per Bulan", "Mulai Rp 10.000"
+  isMandatory Boolean  @default(false)
+  isPremium   Boolean  @default(false)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Proyek Pendanaan Merchant / Investasi Anggota Koperasi
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model MerchantFundingProject {
+  id              String   @id @default(cuid())
+  communityId     String
+  merchantId      String?
+  title           String
+  description     String?
+  targetAmount    Float
+  collectedAmount Float    @default(0)
+  minInvestment   Float    @default(50000)
+  estimatedReturn Float    @default(12.0) // Estimasi bagi hasil % p.a.
+  durationMonths  Int      @default(6)
+  status          String   @default("OPEN") // OPEN, FUNDED, COMPLETED
+  imageUrl        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

@@ -8265,6 +8265,256 @@ export const DataStore = {
       ...c,
       distributions: dists.filter((d: any) => d.shuConfigId === c.id)
     }))
+  },
+
+  // ─── DYNAMIC COMMUNITY METRICS & CRUD FOR PRODUCTS & FUNDING ──────────────
+  async getCommunityRealStats(communityId: string) {
+    syncMockDb()
+    let activeMembersCount = 0
+    let activeMerchantsCount = 0
+    let totalSavingsCollected = 0
+    let shuCurrentYearProfit = 0
+
+    const currentYear = new Date().getFullYear()
+
+    if (await isDbConnected()) {
+      try {
+        const memberships = await db.communityMembership.findMany({
+          where: { communityId },
+          include: { user: { select: { id: true, role: true } } }
+        })
+        activeMembersCount = memberships.length
+        activeMerchantsCount = memberships.filter(m => m.user?.role === 'MERCHANT').length
+
+        const shuDist = await db.shuMemberDistribution.findMany({
+          where: { communityId, year: currentYear }
+        })
+        totalSavingsCollected = shuDist.reduce((sum, d) => sum + (d.simpananMember || 0), 0)
+
+        const shuCfg = await db.shuConfig.findUnique({
+          where: { communityId_year: { communityId, year: currentYear } }
+        })
+        shuCurrentYearProfit = shuCfg?.totalNetProfit || 0
+      } catch (_) {}
+    } else {
+      const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === communityId)
+      activeMembersCount = memberships.length
+      
+      const allUsers = (globalThis as any).__mockUsers || globalMockUsers || []
+      const memberUserIds = memberships.map((m: any) => m.userId)
+      activeMerchantsCount = allUsers.filter((u: any) => memberUserIds.includes(u.id) && u.role === 'MERCHANT').length
+
+      const shuDists = ((globalThis as any).__mockShuMemberDistributions || []).filter((d: any) => d.communityId === communityId && d.year === currentYear)
+      totalSavingsCollected = shuDists.reduce((sum: number, d: any) => sum + (d.simpananMember || 0), 0)
+
+      const shuConfigs = (globalThis as any).__mockShuConfigs || []
+      const shuCfg = shuConfigs.find((c: any) => c.communityId === communityId && c.year === currentYear)
+      shuCurrentYearProfit = shuCfg?.totalNetProfit || 0
+    }
+
+    return {
+      activeMembersCount,
+      activeMerchantsCount,
+      totalSavingsCollected,
+      shuCurrentYearProfit
+    }
+  },
+
+  // ─── COOPERATIVE PRODUCTS (SIMPANAN) CRUD ──────────────────────────────────
+  async getCooperativeProducts(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeProduct.findMany({
+          where: { communityId },
+          orderBy: { createdAt: 'asc' }
+        })
+      } catch (_) {}
+    }
+    const products = (globalThis as any).__mockCooperativeProducts || []
+    return products.filter((p: any) => p.communityId === communityId)
+  },
+
+  async createCooperativeProduct(data: {
+    communityId: string
+    name: string
+    type: string
+    amount: number
+    periodText?: string
+    isMandatory?: boolean
+    isPremium?: boolean
+    description?: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeProduct.create({
+          data: {
+            communityId: data.communityId,
+            name: data.name,
+            type: data.type || 'POKOK',
+            amount: Number(data.amount || 0),
+            periodText: data.periodText || null,
+            isMandatory: Boolean(data.isMandatory),
+            isPremium: Boolean(data.isPremium),
+            description: data.description || null
+          }
+        })
+      } catch (_) {}
+    }
+    const products = (globalThis as any).__mockCooperativeProducts || []
+    const newP = {
+      id: `coop-prod-${Date.now()}`,
+      ...data,
+      amount: Number(data.amount || 0),
+      isMandatory: Boolean(data.isMandatory),
+      isPremium: Boolean(data.isPremium),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    products.push(newP)
+    ;(globalThis as any).__mockCooperativeProducts = products
+    saveMockDb()
+    return newP
+  },
+
+  async updateCooperativeProduct(id: string, data: any) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeProduct.update({
+          where: { id },
+          data: {
+            name: data.name,
+            type: data.type,
+            amount: typeof data.amount === 'number' ? data.amount : undefined,
+            periodText: data.periodText,
+            isMandatory: typeof data.isMandatory === 'boolean' ? data.isMandatory : undefined,
+            isPremium: typeof data.isPremium === 'boolean' ? data.isPremium : undefined,
+            description: data.description
+          }
+        })
+      } catch (_) {}
+    }
+    const products = (globalThis as any).__mockCooperativeProducts || []
+    const p = products.find((x: any) => x.id === id)
+    if (p) {
+      Object.assign(p, data, { updatedAt: new Date() })
+      saveMockDb()
+      return p
+    }
+    return null
+  },
+
+  async deleteCooperativeProduct(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        await db.cooperativeProduct.delete({ where: { id } })
+        return { success: true }
+      } catch (_) {}
+    }
+    if ((globalThis as any).__mockCooperativeProducts) {
+      ;(globalThis as any).__mockCooperativeProducts = (globalThis as any).__mockCooperativeProducts.filter((p: any) => p.id !== id)
+      saveMockDb()
+    }
+    return { success: true }
+  },
+
+  // ─── MERCHANT FUNDING PROJECTS CRUD ────────────────────────────────────────
+  async getMerchantFundingProjects(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.merchantFundingProject.findMany({
+          where: { communityId },
+          orderBy: { createdAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    const projects = (globalThis as any).__mockMerchantFundingProjects || []
+    return projects.filter((p: any) => p.communityId === communityId)
+  },
+
+  async createMerchantFundingProject(data: {
+    communityId: string
+    merchantId?: string
+    title: string
+    description?: string
+    targetAmount: number
+    minInvestment?: number
+    estimatedReturn?: number
+    durationMonths?: number
+    imageUrl?: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.merchantFundingProject.create({
+          data: {
+            communityId: data.communityId,
+            merchantId: data.merchantId || null,
+            title: data.title,
+            description: data.description || null,
+            targetAmount: Number(data.targetAmount || 0),
+            collectedAmount: 0,
+            minInvestment: Number(data.minInvestment || 50000),
+            estimatedReturn: Number(data.estimatedReturn || 12.0),
+            durationMonths: Number(data.durationMonths || 6),
+            status: 'OPEN',
+            imageUrl: data.imageUrl || null
+          }
+        })
+      } catch (_) {}
+    }
+    const projects = (globalThis as any).__mockMerchantFundingProjects || []
+    const newProj = {
+      id: `fund-proj-${Date.now()}`,
+      ...data,
+      collectedAmount: 0,
+      status: 'OPEN',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    projects.push(newProj)
+    ;(globalThis as any).__mockMerchantFundingProjects = projects
+    saveMockDb()
+    return newProj
+  },
+
+  async updateMerchantFundingProject(id: string, data: any) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.merchantFundingProject.update({
+          where: { id },
+          data
+        })
+      } catch (_) {}
+    }
+    const projects = (globalThis as any).__mockMerchantFundingProjects || []
+    const proj = projects.find((p: any) => p.id === id)
+    if (proj) {
+      Object.assign(proj, data, { updatedAt: new Date() })
+      saveMockDb()
+      return proj
+    }
+    return null
+  },
+
+  async deleteMerchantFundingProject(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        await db.merchantFundingProject.delete({ where: { id } })
+        return { success: true }
+      } catch (_) {}
+    }
+    if ((globalThis as any).__mockMerchantFundingProjects) {
+      ;(globalThis as any).__mockMerchantFundingProjects = (globalThis as any).__mockMerchantFundingProjects.filter((p: any) => p.id !== id)
+      saveMockDb()
+    }
+    return { success: true }
   }
 }
 
