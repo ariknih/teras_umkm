@@ -6603,24 +6603,168 @@ export const DataStore = {
     return communities.find((c: any) => c.id === indukId) || null
   },
 
-  async setIndukCommunity(userId: string, communityId: string) {
+  async setIndukCommunity(userId: string, communityId: string | null) {
     syncMockDb()
+    const targetCommunityId = communityId || null
     if (await isDbConnected()) {
       try {
         return await db.user.update({
           where: { id: userId },
-          data: { indukCommunityId: communityId }
+          data: { indukCommunityId: targetCommunityId }
         })
       } catch (_) {}
     }
     const user = globalMockUsers.find(u => u.id === userId)
     if (user) {
-      (user as any).indukCommunityId = communityId
+      (user as any).indukCommunityId = targetCommunityId
       user.updatedAt = new Date()
       saveMockDb()
       return user
     }
     return null
+  },
+
+  async updateUserAdminPermissions(userId: string, permissions: string[], isSuperAdmin?: boolean) {
+    syncMockDb()
+    const permString = JSON.stringify(permissions)
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({
+          where: { id: userId },
+          data: {
+            adminPermissions: permString,
+            ...(typeof isSuperAdmin === 'boolean' ? { isSuperAdmin } : {})
+          }
+        })
+      } catch (_) {}
+    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) {
+      (user as any).adminPermissions = permString
+      if (typeof isSuperAdmin === 'boolean') {
+        (user as any).isSuperAdmin = isSuperAdmin
+      }
+      user.updatedAt = new Date()
+      saveMockDb()
+      return user
+    }
+    return null
+  },
+
+  async createCommunityAdmin(data: any) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.community.create({
+          data: {
+            name: data.name,
+            type: data.type || 'PERKUMPULAN',
+            category: data.category || 'FREE',
+            ketuaId: data.ketuaId,
+            aktaNotaris: data.aktaNotaris || null,
+            nomorAhu: data.nomorAhu || null,
+            nomorNpwp: data.nomorNpwp || null,
+            domisili: data.domisili || null,
+            kontakPj: data.kontakPj || null,
+            description: data.description || null,
+            joinFee: Number(data.joinFee || 0),
+            monthlyFee: Number(data.monthlyFee || 0),
+            simpananPokok: Number(data.simpananPokok || 100000),
+            simpananWajib: Number(data.simpananWajib || 25000),
+            minCoinForLoan: Number(data.minCoinForLoan || 1000),
+            minCoinRequired: Number(data.minCoinRequired || 100),
+            isVerified: Boolean(data.isVerified),
+            isSuspended: Boolean(data.isSuspended)
+          }
+        })
+      } catch (_) {}
+    }
+
+    const newComm = {
+      id: `comm-${Date.now()}`,
+      name: data.name,
+      type: data.type || 'PERKUMPULAN',
+      category: data.category || 'FREE',
+      ketuaId: data.ketuaId,
+      aktaNotaris: data.aktaNotaris || null,
+      nomorAhu: data.nomorAhu || null,
+      nomorNpwp: data.nomorNpwp || null,
+      domisili: data.domisili || null,
+      kontakPj: data.kontakPj || null,
+      description: data.description || null,
+      joinFee: Number(data.joinFee || 0),
+      monthlyFee: Number(data.monthlyFee || 0),
+      simpananPokok: Number(data.simpananPokok || 100000),
+      simpananWajib: Number(data.simpananWajib || 25000),
+      coinBalance: 0,
+      minCoinForLoan: Number(data.minCoinForLoan || 1000),
+      minCoinRequired: Number(data.minCoinRequired || 100),
+      isVerified: Boolean(data.isVerified),
+      isSuspended: Boolean(data.isSuspended),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    if (!(globalThis as any).__mockCommunities) {
+      (globalThis as any).__mockCommunities = []
+    }
+    (globalThis as any).__mockCommunities.push(newComm)
+    saveMockDb()
+    return newComm
+  },
+
+  async updateCommunityAdmin(id: string, data: any) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.community.update({
+          where: { id },
+          data: {
+            name: data.name,
+            type: data.type,
+            category: data.category,
+            ketuaId: data.ketuaId,
+            aktaNotaris: data.aktaNotaris,
+            nomorAhu: data.nomorAhu,
+            nomorNpwp: data.nomorNpwp,
+            domisili: data.domisili,
+            kontakPj: data.kontakPj,
+            description: data.description,
+            joinFee: typeof data.joinFee === 'number' ? data.joinFee : undefined,
+            monthlyFee: typeof data.monthlyFee === 'number' ? data.monthlyFee : undefined,
+            simpananPokok: typeof data.simpananPokok === 'number' ? data.simpananPokok : undefined,
+            simpananWajib: typeof data.simpananWajib === 'number' ? data.simpananWajib : undefined,
+            minCoinForLoan: typeof data.minCoinForLoan === 'number' ? data.minCoinForLoan : undefined,
+            minCoinRequired: typeof data.minCoinRequired === 'number' ? data.minCoinRequired : undefined,
+            isVerified: typeof data.isVerified === 'boolean' ? data.isVerified : undefined,
+            isSuspended: typeof data.isSuspended === 'boolean' ? data.isSuspended : undefined
+          }
+        })
+      } catch (_) {}
+    }
+
+    const communities = (globalThis as any).__mockCommunities || []
+    const comm = communities.find((c: any) => c.id === id)
+    if (comm) {
+      Object.assign(comm, data, { updatedAt: new Date() })
+      saveMockDb()
+      return comm
+    }
+    return null
+  },
+
+  async deleteCommunityAdmin(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        await db.community.delete({ where: { id } })
+        return { success: true }
+      } catch (_) {}
+    }
+    if ((globalThis as any).__mockCommunities) {
+      (globalThis as any).__mockCommunities = (globalThis as any).__mockCommunities.filter((c: any) => c.id !== id)
+      saveMockDb()
+    }
+    return { success: true }
   },
 
   async getIndukCommunityMembers(communityId: string) {

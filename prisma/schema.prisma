@@ -133,6 +133,7 @@ model User {
   passwordHash String
   role         Role          @default(CUSTOMER)
   isSuperAdmin Boolean       @default(false)  // Superadmin flag — hanya 1 akun
+  adminPermissions String?   // JSON array string of allowed admin module keys
   latitude     Float?
   longitude    Float?
   level        Int           @default(1)
