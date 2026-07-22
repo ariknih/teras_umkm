@@ -5,11 +5,11 @@ export function proxy(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
   const { pathname } = request.nextUrl
 
-  // Set x-pathname header for layout path checks
+  // Pass custom header x-pathname for layout path checking
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-pathname', pathname)
 
-  // Skip api routes, static files, next assets
+  // 1. Exclusion Rule: Ignore API routes, Next.js static internal files, and files with extensions
   if (
     pathname.startsWith('/api') ||
     pathname.startsWith('/_next') ||
@@ -23,7 +23,7 @@ export function proxy(request: NextRequest) {
     })
   }
 
-  // Skip global platform routes so they work correctly even under merchant subdomains
+  // 2. Skip global platform routes so they function correctly under subdomains if accessed directly
   const globalPaths = [
     '/market',
     '/cart',
@@ -42,11 +42,11 @@ export function proxy(request: NextRequest) {
     '/onboarding',
     '/ref',
     '/setup-landing',
-    '/merchant'
+    '/merchant/dashboard',
+    '/merchant/builder'
   ]
 
-  const isGlobalPath = globalPaths.some(p => pathname === p || pathname.startsWith(p + '/'))
-
+  const isGlobalPath = globalPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isGlobalPath) {
     return NextResponse.next({
       request: {
@@ -55,52 +55,56 @@ export function proxy(request: NextRequest) {
     })
   }
 
-  // Parse subdomain
+  // 3. Subdomain extraction logic
   let subdomain = ''
   const cleanHost = hostname.split(':')[0]
   const hostParts = cleanHost.split('.')
-  
-  if (cleanHost.endsWith('localhost')) {
-    // Local development subdomain check (e.g. arik.localhost)
+
+  // Subdomains to ignore (system/reserved)
+  const reservedSubdomains = ['www', 'admin', 'affiliate', 'api', 'localhost', 'prev', 'preprod', 'app']
+
+  if (cleanHost.endsWith('localhost') || cleanHost.endsWith('127.0.0.1')) {
+    // Local development (e.g. tokorijal.localhost:3000)
     if (hostParts.length > 1) {
       const firstPart = hostParts[0].toLowerCase()
-      if (!['www', 'admin', 'affiliate', 'api', 'localhost', 'prev', 'preprod'].includes(firstPart)) {
+      if (!reservedSubdomains.includes(firstPart)) {
         subdomain = firstPart
       }
     }
   } else if (cleanHost.endsWith('saloka.varro.my.id')) {
-    // Cloudflare Tunnel development subdomain check (e.g. arik.saloka.varro.my.id)
+    // Cloudflare Tunnel testing (e.g. tokorijal.saloka.varro.my.id)
     if (hostParts.length > 4) {
       const firstPart = hostParts[0].toLowerCase()
-      if (!['www', 'admin', 'affiliate', 'api', 'prev', 'preprod'].includes(firstPart)) {
+      if (!reservedSubdomains.includes(firstPart)) {
         subdomain = firstPart
       }
     }
   } else if (cleanHost.endsWith('vercel.app')) {
-    // Vercel deployment subdomain check (e.g. arik.terasumkm.vercel.app)
+    // Vercel deployment (e.g. tokorijal.terasumkm.vercel.app)
     if (hostParts.length > 3) {
       const firstPart = hostParts[0].toLowerCase()
-      if (!['www', 'admin', 'affiliate', 'api', 'prev', 'preprod'].includes(firstPart)) {
+      if (!reservedSubdomains.includes(firstPart)) {
         subdomain = firstPart
       }
     }
   } else {
-    // Production subdomain check (e.g. arik.saloka.id)
+    // Production (e.g. tokorijal.saloka.id)
     if (hostParts.length > 2) {
       const firstPart = hostParts[0].toLowerCase()
-      if (!['www', 'admin', 'affiliate', 'api', 'prev', 'preprod'].includes(firstPart)) {
+      if (!reservedSubdomains.includes(firstPart)) {
         subdomain = firstPart
       }
     }
   }
 
+  // 4. Rewrite logic for merchant subdomain
   if (subdomain) {
-    const pageSlug = pathname === '/' ? '' : pathname.replace(/^\//, '')
+    const targetPath = pathname === '/' ? '' : pathname
     
-    // Internal rewrite to /store/by-subdomain/[subdomain]/[pageSlug]
+    // Internal rewrite to /merchant/[slug]
     const url = request.nextUrl.clone()
-    url.pathname = `/store/by-subdomain/${subdomain}/${pageSlug}`
-    
+    url.pathname = `/merchant/${subdomain}${targetPath}`
+
     return NextResponse.rewrite(url, {
       request: {
         headers: requestHeaders,
@@ -108,6 +112,7 @@ export function proxy(request: NextRequest) {
     })
   }
 
+  // Default: Main app / Landing page for root domain saloka.id & www.saloka.id
   return NextResponse.next({
     request: {
       headers: requestHeaders,
@@ -117,6 +122,14 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    /*
+     * Match all request paths except for:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, sitemap.xml, robots.txt
+     * - Static asset file extensions (.png, .jpg, .jpeg, .svg, .css, .js, .webp, .ico, etc.)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*).*)',
   ],
 }
