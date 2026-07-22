@@ -739,3 +739,48 @@ model MerchantLevelRequest {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sistem Pembagian Sisa Hasil Usaha (SHU) Koperasi (Dikelola via RAT Admin)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model ShuConfig {
+  id                    String                 @id @default(cuid())
+  communityId           String
+  year                  Int
+  totalNetProfit        Float
+  pctCadangan           Float                  @default(25.0)
+  pctJasaModal          Float                  @default(20.0)
+  pctJasaUsaha          Float                  @default(30.0)
+  pctPengurus           Float                  @default(10.0)
+  pctPengawas           Float                  @default(5.0)
+  pctKaryawan           Float                  @default(5.0)
+  pctPendidikan         Float                  @default(2.5)
+  pctSosial             Float                  @default(2.5)
+  pctPembangunanDaerah Float                  @default(0.0)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  distributions         ShuMemberDistribution[]
+
+  @@unique([communityId, year])
+}
+
+model ShuMemberDistribution {
+  id                      String    @id @default(cuid())
+  shuConfigId             String
+  communityId             String
+  userId                  String
+  year                    Int
+  simpananMember          Float
+  simpananTotalCommunity  Float
+  shuJasaModalAmount      Float
+  transaksiMember         Float
+  transaksiTotalCommunity Float
+  shuJasaUsahaAmount      Float
+  totalShuAmount          Float
+  createdAt               DateTime  @default(now())
+
+  shuConfig               ShuConfig @relation(fields: [shuConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([shuConfigId, userId])
+}

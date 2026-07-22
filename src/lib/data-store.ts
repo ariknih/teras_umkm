@@ -8082,6 +8082,190 @@ export const DataStore = {
     return req
   },
 
+  // ─── SHU KOPERASI RAT DATASTORE METHODS ────────────────────────────────────
+  async upsertShuConfig(data: {
+    communityId: string
+    year: number
+    totalNetProfit: number
+    pctCadangan?: number
+    pctJasaModal?: number
+    pctJasaUsaha?: number
+    pctPengurus?: number
+    pctPengawas?: number
+    pctKaryawan?: number
+    pctPendidikan?: number
+    pctSosial?: number
+    pctPembangunanDaerah?: number
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.shuConfig.upsert({
+          where: {
+            communityId_year: {
+              communityId: data.communityId,
+              year: data.year
+            }
+          },
+          create: {
+            communityId: data.communityId,
+            year: data.year,
+            totalNetProfit: data.totalNetProfit,
+            pctCadangan: data.pctCadangan ?? 25.0,
+            pctJasaModal: data.pctJasaModal ?? 20.0,
+            pctJasaUsaha: data.pctJasaUsaha ?? 30.0,
+            pctPengurus: data.pctPengurus ?? 10.0,
+            pctPengawas: data.pctPengawas ?? 5.0,
+            pctKaryawan: data.pctKaryawan ?? 5.0,
+            pctPendidikan: data.pctPendidikan ?? 2.5,
+            pctSosial: data.pctSosial ?? 2.5,
+            pctPembangunanDaerah: data.pctPembangunanDaerah ?? 0.0
+          },
+          update: {
+            totalNetProfit: data.totalNetProfit,
+            pctCadangan: data.pctCadangan ?? 25.0,
+            pctJasaModal: data.pctJasaModal ?? 20.0,
+            pctJasaUsaha: data.pctJasaUsaha ?? 30.0,
+            pctPengurus: data.pctPengurus ?? 10.0,
+            pctPengawas: data.pctPengawas ?? 5.0,
+            pctKaryawan: data.pctKaryawan ?? 5.0,
+            pctPendidikan: data.pctPendidikan ?? 2.5,
+            pctSosial: data.pctSosial ?? 2.5,
+            pctPembangunanDaerah: data.pctPembangunanDaerah ?? 0.0
+          }
+        })
+      } catch (_) {}
+    }
+
+    const configs = (globalThis as any).__mockShuConfigs || []
+    let config = configs.find((c: any) => c.communityId === data.communityId && c.year === data.year)
+    if (config) {
+      Object.assign(config, data, { updatedAt: new Date() })
+    } else {
+      config = {
+        id: `shu-cfg-${Date.now()}`,
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      configs.push(config)
+      ;(globalThis as any).__mockShuConfigs = configs
+    }
+    saveMockDb()
+    return config
+  },
+
+  async saveShuMemberDistributions(shuConfigId: string, distributions: Array<{
+    communityId: string
+    userId: string
+    year: number
+    simpananMember: number
+    simpananTotalCommunity: number
+    shuJasaModalAmount: number
+    transaksiMember: number
+    transaksiTotalCommunity: number
+    shuJasaUsahaAmount: number
+    totalShuAmount: number
+  }>) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        await db.shuMemberDistribution.deleteMany({
+          where: { shuConfigId }
+        })
+        await db.shuMemberDistribution.createMany({
+          data: distributions.map(d => ({
+            shuConfigId,
+            ...d
+          }))
+        })
+        return { success: true }
+      } catch (_) {}
+    }
+
+    const dists = (globalThis as any).__mockShuMemberDistributions || []
+    const filtered = dists.filter((d: any) => d.shuConfigId !== shuConfigId)
+    const newItems = distributions.map((d, idx) => ({
+      id: `shu-dist-${Date.now()}-${idx}`,
+      shuConfigId,
+      ...d,
+      createdAt: new Date()
+    }))
+    ;(globalThis as any).__mockShuMemberDistributions = [...filtered, ...newItems]
+    saveMockDb()
+    return { success: true }
+  },
+
+  async getShuConfigByCommunityAndYear(communityId: string, year: number) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.shuConfig.findUnique({
+          where: {
+            communityId_year: { communityId, year }
+          },
+          include: {
+            distributions: true
+          }
+        })
+      } catch (_) {}
+    }
+    const configs = (globalThis as any).__mockShuConfigs || []
+    const cfg = configs.find((c: any) => c.communityId === communityId && c.year === year)
+    if (cfg) {
+      const dists = ((globalThis as any).__mockShuMemberDistributions || []).filter((d: any) => d.shuConfigId === cfg.id)
+      return { ...cfg, distributions: dists }
+    }
+    return null
+  },
+
+  async getMemberShuDistribution(userId: string, communityId: string, year?: number) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.shuMemberDistribution.findMany({
+          where: {
+            userId,
+            communityId,
+            ...(year ? { year } : {})
+          },
+          include: {
+            shuConfig: true
+          },
+          orderBy: { year: 'desc' }
+        })
+      } catch (_) {}
+    }
+    const dists = ((globalThis as any).__mockShuMemberDistributions || []).filter(
+      (d: any) => d.userId === userId && d.communityId === communityId && (!year || d.year === year)
+    )
+    const configs = (globalThis as any).__mockShuConfigs || []
+    return dists.map((d: any) => ({
+      ...d,
+      shuConfig: configs.find((c: any) => c.id === d.shuConfigId) || null
+    }))
+  },
+
+  async getCommunityShuHistory(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.shuConfig.findMany({
+          where: { communityId },
+          include: {
+            distributions: true
+          },
+          orderBy: { year: 'desc' }
+        })
+      } catch (_) {}
+    }
+    const configs = ((globalThis as any).__mockShuConfigs || []).filter((c: any) => c.communityId === communityId)
+    const dists = (globalThis as any).__mockShuMemberDistributions || []
+    return configs.map((c: any) => ({
+      ...c,
+      distributions: dists.filter((d: any) => d.shuConfigId === c.id)
+    }))
+  }
 }
 
 
