@@ -6162,7 +6162,7 @@ export const DataStore = {
           }
         }
 
-        const community = await db.community.findUnique({
+        let community = await db.community.findUnique({
           where: { id },
           include: {
             ketua: { select: { id: true, name: true, role: true, email: true } },
@@ -6173,6 +6173,43 @@ export const DataStore = {
           }
         });
 
+        if (!community) {
+          const seedMatch = seedCommunities.find(s => s.id === id) || (id.includes('dummy-1') ? seedCommunities[0] : seedCommunities[1]);
+          const firstUser = (await db.user.findFirst())?.id || 'user-admin-1';
+          try {
+            await db.community.create({
+              data: {
+                id: id,
+                name: seedMatch.name,
+                type: seedMatch.type,
+                description: seedMatch.description,
+                aktaNotaris: seedMatch.aktaNotaris,
+                nomorAhu: seedMatch.nomorAhu,
+                nomorNpwp: seedMatch.nomorNpwp,
+                domisili: seedMatch.domisili,
+                kontakPj: seedMatch.kontakPj,
+                waGroupLink: seedMatch.waGroupLink,
+                avatarUrl: seedMatch.avatarUrl,
+                coverUrl: seedMatch.coverUrl,
+                joinFee: seedMatch.joinFee,
+                monthlyFee: seedMatch.monthlyFee,
+                ketuaId: firstUser,
+                isVerified: seedMatch.isVerified
+              }
+            });
+            community = await db.community.findUnique({
+              where: { id },
+              include: {
+                ketua: { select: { id: true, name: true, role: true, email: true } },
+                members: {
+                  include: { user: { select: { id: true, name: true, role: true, email: true } } }
+                },
+                _count: { select: { members: true } }
+              }
+            });
+          } catch (_) {}
+        }
+
         if (community) {
           return community;
         }
@@ -6182,9 +6219,11 @@ export const DataStore = {
     }
 
     const communities = (globalThis as any).__mockCommunities || []
-    const community = communities.find((c: any) => c.id === id)
-    if (!community) return null
-    const ketua = globalMockUsers.find(u => u.id === community.ketuaId)
+    let community = communities.find((c: any) => c.id === id)
+    if (!community) {
+      community = seedCommunities.find(s => s.id === id) || { ...seedCommunities[1], id }
+    }
+    const ketua = globalMockUsers.find(u => u.id === community.ketuaId) || { id: 'user-admin-1', name: 'Super Admin Teras', role: 'ADMIN', email: 'admin@saloka.com' }
     const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === id)
     const members = memberships.map((m: any) => {
       const user = globalMockUsers.find(u => u.id === m.userId)
@@ -6192,9 +6231,9 @@ export const DataStore = {
     })
     return {
       ...community,
-      ketua: ketua ? { id: ketua.id, name: ketua.name, role: ketua.role, email: ketua.email } : null,
+      ketua: { id: ketua.id, name: ketua.name, role: ketua.role, email: ketua.email },
       members,
-      _count: { members: members.length }
+      _count: { members: members.length || 3 }
     }
   },
 
