@@ -77,6 +77,18 @@ export default function CommunityDetailPage() {
   const [shuConfig, setShuConfig] = useState<any>(null)
   const [userShu, setUserShu] = useState<any>(null)
 
+  // Flag boolean untuk akses CRUD Admin / Superadmin / Ketua Koperasi
+  const isCanManageCoop = Boolean(
+    user && (
+      user.role === 'ADMIN' ||
+      user.role === 'SUPERADMIN' ||
+      user.role === 'SUPER_ADMIN' ||
+      user.isSuperAdmin ||
+      Boolean((user as any).adminPermissions) ||
+      user.id === community?.ketuaId
+    )
+  )
+
   // Dynamic Real Stats (0-default)
   const [realStats, setRealStats] = useState({
     activeMembersCount: 0,
@@ -1076,7 +1088,7 @@ export default function CommunityDetailPage() {
                     <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                       Produk Simpanan Koperasi
                     </h3>
-                    {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                    {isCanManageCoop && (
                       <button
                         onClick={handleOpenCreateProduct}
                         className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
@@ -1090,7 +1102,7 @@ export default function CommunityDetailPage() {
                     <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
                       <PiggyBank className="w-8 h-8 text-gray-300 mx-auto" />
                       <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan yang dibuat oleh Pengurus Koperasi.</p>
-                      {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                      {isCanManageCoop && (
                         <button
                           onClick={handleOpenCreateProduct}
                           className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
@@ -1115,7 +1127,7 @@ export default function CommunityDetailPage() {
                                 <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
                               </div>
                             </div>
-                            {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                            {isCanManageCoop && (
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => handleOpenEditProduct(cp)}
@@ -1243,10 +1255,10 @@ export default function CommunityDetailPage() {
                       Pendanaan Merchant (Peluang Investasi Anggota)
                     </h3>
                     <div className="flex items-center gap-2">
-                      {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                      {isCanManageCoop && (
                         <button
                           onClick={() => setProjectModalOpen(true)}
-                          className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1"
+                          className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                         >
                           <PlusCircle className="w-3 h-3" /> Tambah Proyek Pendanaan
                         </button>
@@ -1258,10 +1270,10 @@ export default function CommunityDetailPage() {
                     <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
                       <TrendingUp className="w-8 h-8 text-gray-300 mx-auto" />
                       <p className="text-xs text-gray-500 font-medium">Belum ada proyek pendanaan merchant yang dibuka.</p>
-                      {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                      {isCanManageCoop && (
                         <button
                           onClick={() => setProjectModalOpen(true)}
-                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors"
+                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
                         >
                           + Buka Proyek Pendanaan Pertama
                         </button>
@@ -1280,7 +1292,7 @@ export default function CommunityDetailPage() {
                                   alt={p.title}
                                   className="w-full h-28 object-cover rounded-xl"
                                 />
-                                {(user?.role === 'ADMIN' || user?.id === community?.ketuaId) && (
+                                {isCanManageCoop && (
                                   <button
                                     onClick={async () => {
                                       if (confirm(`Hapus proyek pendanaan "${p.title}"?`)) {
@@ -1289,7 +1301,7 @@ export default function CommunityDetailPage() {
                                         goeyToast.success('Proyek pendanaan dihapus!')
                                       }
                                     }}
-                                    className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors"
+                                    className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
                                     title="Hapus proyek"
                                   >
                                     <X className="w-3.5 h-3.5" />
