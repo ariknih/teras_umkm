@@ -174,6 +174,40 @@ export default function CommunityDetailPage() {
   const [loading, setLoading] = useState(true)
   const [actionPending, startTransition] = useTransition()
 
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    confirmText: string
+    variant?: 'danger' | 'success' | 'warning'
+    onConfirm: () => void | Promise<void>
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Konfirmasi',
+    variant: 'danger',
+    onConfirm: () => {}
+  })
+
+  const askConfirmation = (opts: {
+    title: string
+    message: string
+    confirmText?: string
+    variant?: 'danger' | 'success' | 'warning'
+    onConfirm: () => void | Promise<void>
+  }) => {
+    setConfirmModal({
+      isOpen: true,
+      title: opts.title,
+      message: opts.message,
+      confirmText: opts.confirmText || 'Ya, Lanjutkan',
+      variant: opts.variant || 'danger',
+      onConfirm: opts.onConfirm
+    })
+  }
+
   // Edit Community Landing Page / Builder States
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editName, setEditName] = useState('')
@@ -411,27 +445,39 @@ export default function CommunityDetailPage() {
   }
 
   const handleApproveLoan = async (loanId: string, role: 'KETUA' | 'ADMIN') => {
-    if (confirm('Apakah Anda yakin ingin menyetujui pengajuan pinjaman modal ini?')) {
-      const res = await approveCooperativeLoanAction(loanId, role)
-      if (res.error) {
-        goeyToast.error(res.error)
-      } else {
-        goeyToast.success('Pinjaman modal berhasil disetujui!')
-        loadData()
+    askConfirmation({
+      title: 'Setujui Pinjaman Modal',
+      message: 'Apakah Anda yakin ingin menyetujui pengajuan pinjaman modal ini?',
+      confirmText: 'Setujui',
+      variant: 'success',
+      onConfirm: async () => {
+        const res = await approveCooperativeLoanAction(loanId, role)
+        if (res.error) {
+          goeyToast.error(res.error)
+        } else {
+          goeyToast.success('Pinjaman modal berhasil disetujui!')
+          loadData()
+        }
       }
-    }
+    })
   }
 
   const handleRejectLoan = async (loanId: string, role: 'KETUA' | 'ADMIN') => {
-    if (confirm('Apakah Anda yakin ingin menolak pengajuan pinjaman modal ini?')) {
-      const res = await rejectCooperativeLoanAction(loanId, role)
-      if (res.error) {
-        goeyToast.error(res.error)
-      } else {
-        goeyToast.success('Pinjaman modal berhasil ditolak.')
-        loadData()
+    askConfirmation({
+      title: 'Tolak Pinjaman Modal',
+      message: 'Apakah Anda yakin ingin menolak pengajuan pinjaman modal ini?',
+      confirmText: 'Tolak Pinjaman',
+      variant: 'danger',
+      onConfirm: async () => {
+        const res = await rejectCooperativeLoanAction(loanId, role)
+        if (res.error) {
+          goeyToast.error(res.error)
+        } else {
+          goeyToast.success('Pinjaman modal berhasil ditolak.')
+          loadData()
+        }
       }
-    }
+    })
   }
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -1045,18 +1091,24 @@ export default function CommunityDetailPage() {
                                 <Edit3 className="w-3 h-3" />
                               </button>
                               <button
-                                onClick={async () => {
-                                  if (confirm(`Hapus produk simpanan "${cp.name}"?`)) {
-                                    const res = await deleteCooperativeProductAction(cp.id, id)
-                                    if (res?.success) {
-                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                      goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                    } else {
-                                      goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                onClick={() => {
+                                  askConfirmation({
+                                    title: 'Hapus Produk Simpanan',
+                                    message: `Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`,
+                                    confirmText: 'Ya, Hapus',
+                                    variant: 'danger',
+                                    onConfirm: async () => {
+                                      const res = await deleteCooperativeProductAction(cp.id, id)
+                                      if (res?.success) {
+                                        setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                        goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                      } else {
+                                        goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                      }
                                     }
-                                  }
+                                  })
                                 }}
-                                className="text-gray-400 hover:text-red-600 p-0.5"
+                                className="text-gray-400 hover:text-red-600 p-0.5 cursor-pointer"
                                 title="Hapus produk simpanan"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -1394,12 +1446,18 @@ export default function CommunityDetailPage() {
                                 />
                                 {isCanManageCoop && (
                                   <button
-                                    onClick={async () => {
-                                      if (confirm(`Hapus proyek pendanaan "${p.title}"?`)) {
-                                        await deleteMerchantFundingProjectAction(p.id, id)
-                                        setFundingProjects(prev => prev.filter(x => x.id !== p.id))
-                                        goeyToast.success('Proyek pendanaan dihapus!')
-                                      }
+                                    onClick={() => {
+                                      askConfirmation({
+                                        title: 'Hapus Proyek Pendanaan',
+                                        message: `Apakah Anda yakin ingin menghapus proyek pendanaan "${p.title}"?`,
+                                        confirmText: 'Ya, Hapus',
+                                        variant: 'danger',
+                                        onConfirm: async () => {
+                                          await deleteMerchantFundingProjectAction(p.id, id)
+                                          setFundingProjects(prev => prev.filter(x => x.id !== p.id))
+                                          goeyToast.success(`Proyek pendanaan "${p.title}" berhasil dihapus!`)
+                                        }
+                                      })
                                     }}
                                     className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
                                     title="Hapus proyek"
@@ -2233,6 +2291,61 @@ export default function CommunityDetailPage() {
                   <button type="submit" disabled={actionPending} className="flex-1 py-2.5 bg-[#0F5132] text-white font-bold rounded-xl">{actionPending ? 'Membuka...' : 'Buka Proyek'}</button>
                 </div>
               </form>
+            </motion.div>
+        {/* MODAL KONFIRMASI (CUSTOM ALERT / CONFIRMATION DIALOG) */}
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-gray-100"
+            >
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${
+                confirmModal.variant === 'danger' ? 'bg-red-100 text-red-600' :
+                confirmModal.variant === 'success' ? 'bg-emerald-100 text-emerald-600' :
+                'bg-amber-100 text-amber-600'
+              }`}>
+                {confirmModal.variant === 'danger' ? <Trash2 className="w-6 h-6" /> :
+                 confirmModal.variant === 'success' ? <CheckCircle2 className="w-6 h-6" /> :
+                 <Info className="w-6 h-6" />}
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="font-sora text-base font-bold text-gray-900">
+                  {confirmModal.title}
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  {confirmModal.message}
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="flex-1 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    startTransition(async () => {
+                      await confirmModal.onConfirm()
+                      setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                    })
+                  }}
+                  disabled={actionPending}
+                  className={`flex-1 py-2.5 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer ${
+                    confirmModal.variant === 'danger' ? 'bg-red-600 hover:bg-red-700' :
+                    confirmModal.variant === 'success' ? 'bg-[#0F5132] hover:bg-emerald-900' :
+                    'bg-amber-600 hover:bg-amber-700'
+                  }`}
+                >
+                  {actionPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : confirmModal.confirmText}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
