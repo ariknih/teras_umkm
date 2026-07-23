@@ -149,6 +149,7 @@ export default function CommunityDetailPage() {
   const [projReturn, setProjReturn] = useState('12')
   const [projDuration, setProjDuration] = useState('6')
   const [projDesc, setProjDesc] = useState('')
+  const [projImageUrl, setProjImageUrl] = useState('')
   
   // Layout preview toggle: 'AUTO' | 'FREE' | 'PREMIUM'
   const [previewMode, setPreviewMode] = useState<'AUTO' | 'FREE' | 'PREMIUM'>('AUTO')
@@ -2290,12 +2291,16 @@ export default function CommunityDetailPage() {
                   fd.append('estimatedReturn', projReturn)
                   fd.append('durationMonths', projDuration)
                   fd.append('description', projDesc)
+                  if (projImageUrl) {
+                    fd.append('imageUrl', projImageUrl)
+                  }
 
                   const res = await createMerchantFundingProjectAction(fd)
                   if (res.success && res.project) {
                     setFundingProjects(prev => [res.project, ...prev])
                     setProjectModalOpen(false)
                     setProjTitle('')
+                    setProjImageUrl('')
                     goeyToast.success('Proyek pendanaan berhasil dibuka!')
                   } else {
                     alert(res.error || 'Gagal membuka proyek pendanaan.')
@@ -2305,6 +2310,47 @@ export default function CommunityDetailPage() {
                 <div>
                   <label className="block font-bold text-gray-700 mb-1">Judul Proyek Pendanaan *</label>
                   <input type="text" required value={projTitle} onChange={e => setProjTitle(e.target.value)} placeholder="e.g. Pengadaan Bahan Baku Kuliner Jogja" className="w-full border rounded-xl px-3 py-2 text-xs" />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Upload Gambar / Sampul Proyek *</label>
+                  <div className="border-2 border-dashed border-gray-200 hover:border-[#0F5132] rounded-xl p-3 text-center transition-all bg-gray-50/50 relative cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          if (file.size > 5 * 1024 * 1024) {
+                            goeyToast.error('Ukuran gambar terlalu besar (maksimal 5MB)')
+                            return
+                          }
+                          const reader = new FileReader()
+                          reader.onloadend = () => {
+                            setProjImageUrl(reader.result as string)
+                          }
+                          reader.readAsDataURL(file)
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    {projImageUrl ? (
+                      <div className="relative group rounded-lg overflow-hidden h-28 w-full border border-gray-200">
+                        <img src={projImageUrl} alt="Preview Proyek" className="w-full h-full object-cover rounded-lg" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                          Klik untuk Mengganti Foto
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-2 space-y-1">
+                        <div className="w-8 h-8 rounded-full bg-[#E8F8EE] text-[#0F5132] flex items-center justify-center mx-auto">
+                          <Upload className="w-4 h-4" />
+                        </div>
+                        <span className="block text-[11px] font-bold text-gray-800">Unggah Gambar Proyek Mandiri</span>
+                        <span className="block text-[9px] text-gray-400">Pilih berkas dari HP / Komputer Anda (Maks 5MB)</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
