@@ -62,7 +62,8 @@ import {
   BarChart3,
   Award,
   Edit3,
-  Trash2
+  Trash2,
+  QrCode
 } from 'lucide-react'
 
 export default function CommunityDetailPage() {
