@@ -166,6 +166,7 @@ export default function CommunityDetailPage() {
   const [investModalOpen, setInvestModalOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState<any>(null)
   const [investAmount, setInvestAmount] = useState('100000')
+  const [investPaymentMethod, setInvestPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('QRIS')
 
   // Payment states for Koperasi Upgrade/Join
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
@@ -1861,7 +1862,7 @@ export default function CommunityDetailPage() {
                   </span>
                 </div>
 
-                <div className="space-y-1.5 pt-2">
+                <div className="space-y-1.5 pt-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Masukkan Jumlah Pendanaan (Rp)</label>
                   <input
                     type="number"
@@ -1872,21 +1873,138 @@ export default function CommunityDetailPage() {
                   />
                 </div>
 
+                {/* Payment Method Selector */}
+                <div className="space-y-1.5 pt-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pilih Metode Pembayaran</label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setInvestPaymentMethod('SALDO')}
+                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                        investPaymentMethod === 'SALDO' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <Wallet className="w-3.5 h-3.5" /> Saldo Wallet
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInvestPaymentMethod('QRIS')}
+                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                        investPaymentMethod === 'QRIS' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <QrCode className="w-3.5 h-3.5" /> QRIS Instant
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInvestPaymentMethod('BANK')}
+                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                        investPaymentMethod === 'BANK' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <Building2 className="w-3.5 h-3.5" /> Bank Transfer
+                    </button>
+                  </div>
+                </div>
+
+                {/* Details per method */}
+                {investPaymentMethod === 'SALDO' && (
+                  <div className="p-3 bg-emerald-50 border border-[#2DB24A]/30 rounded-xl space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center text-gray-700">
+                      <span>Saldo Wallet Anda:</span>
+                      <span className="font-mono font-extrabold text-[#0F5132]">Rp {userBalance.toLocaleString('id-ID')}</span>
+                    </div>
+                    {userBalance < Number(investAmount || 0) ? (
+                      <div className="pt-1 border-t border-emerald-200 space-y-2">
+                        <span className="block text-[10px] font-bold text-amber-800">⚠️ Saldo Wallet tidak mencukupi untuk investasi ini.</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserBalance(prev => prev + 200000)
+                            goeyToast.success('Saldo Wallet berhasil ditambahkan Rp 200.000 (Simulasi)!')
+                          }}
+                          className="w-full py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white text-[10px] font-extrabold rounded-lg shadow-sm transition-colors cursor-pointer"
+                        >
+                          + Top Up Rp 200k (Simulasi)
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center text-[10px] text-emerald-800 font-medium pt-1 border-t border-[#2DB24A]/20">
+                        <span>Sisa Saldo Setelah Investasi:</span>
+                        <span className="font-bold font-mono">Rp {(userBalance - Number(investAmount || 0)).toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {investPaymentMethod === 'QRIS' && (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-center space-y-2">
+                    <div className="bg-white p-2.5 rounded-xl inline-block shadow-sm border border-gray-200">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=QRIS_INVEST_${selectedProject.id}_${investAmount || 0}`}
+                        alt="QRIS Code"
+                        className="w-28 h-28 mx-auto rounded-lg"
+                      />
+                      <div className="flex items-center justify-center gap-1 mt-1 text-[9px] font-extrabold text-gray-800 uppercase tracking-wider">
+                        <QrCode className="w-3 h-3 text-[#2DB24A]" /> QRIS TERAS INVESTASI
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-gray-500 font-medium">Scan dengan GoPay, OVO, Dana, ShopeePay, atau Mobile Banking.</p>
+                  </div>
+                )}
+
+                {investPaymentMethod === 'BANK' && (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1.5 text-xs">
+                    <span className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider">Nomor Virtual Account</span>
+                    <div className="flex justify-between items-center p-2.5 bg-white rounded-xl border border-gray-200">
+                      <div>
+                        <span className="block text-[9px] text-gray-400 font-bold">BCA Virtual Account</span>
+                        <span className="font-mono font-extrabold text-gray-900 text-xs">8801 9920 3841 002</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goeyToast.success('Nomor Virtual Account BCA berhasil disalin!')}
+                        className="px-2.5 py-1 bg-[#E8F8EE] hover:bg-[#2DB24A] text-[#0F5132] hover:text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
+                      >
+                        Salin
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={() => {
                     const amt = Number(investAmount || 0)
-                    if (amt <= 0) {
-                      goeyToast.error('Nominal pendanaan tidak valid.')
+                    const minAllowed = Number(selectedProject.minInvestment ?? selectedProject.minInvest ?? 50000)
+                    if (amt < minAllowed) {
+                      goeyToast.error(`Minimal investasi adalah Rp ${minAllowed.toLocaleString('id-ID')}`)
                       return
                     }
+
+                    if (investPaymentMethod === 'SALDO' && userBalance < amt) {
+                      goeyToast.error('Saldo Wallet Anda tidak mencukupi.')
+                      return
+                    }
+
+                    if (investPaymentMethod === 'SALDO') {
+                      setUserBalance(prev => prev - amt)
+                    }
+
                     const titleStr = selectedProject.title || selectedProject.name || 'Proyek Merchant'
                     const now = new Date()
                     const timeStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+
+                    // 1. Update project collected amount progress bar
+                    setFundingProjects(prev =>
+                      prev.map(p => (p.id === selectedProject.id ? { ...p, collectedAmount: (p.collectedAmount || 0) + amt } : p))
+                    )
+
+                    // 2. Record transaction in recentTransactions history
                     setRecentTransactions(prev => [
                       {
                         id: `tx-${Date.now()}`,
                         date: timeStr,
-                        title: `Pendanaan ${titleStr}`,
+                        title: `Investasi ${titleStr}`,
                         amount: amt,
                         status: 'Berhasil',
                         type: 'INVESTMENT',
@@ -1894,10 +2012,28 @@ export default function CommunityDetailPage() {
                       },
                       ...prev
                     ])
-                    goeyToast.success(`Berhasil berinvestasi Rp ${amt.toLocaleString('id-ID')} di ${titleStr}!`)
+
+                    // 3. Update personal SHU calculation dynamically
+                    setUserShu((prev: any) => {
+                      const newTxTotal = (prev?.transaksiMember || 3500000) + amt
+                      const netProfit = shuConfig?.totalNetProfit || 500000000
+                      const poolJasaUsaha = (netProfit * (shuConfig?.pctJasaUsaha || 30)) / 100
+                      const newJasaUsaha = Math.round((newTxTotal / 500000000) * poolJasaUsaha)
+                      const jasaModal = prev?.shuJasaModalAmount || 250000
+
+                      return {
+                        ...prev,
+                        transaksiMember: newTxTotal,
+                        shuJasaUsahaAmount: newJasaUsaha,
+                        shuJasaModalAmount: jasaModal,
+                        totalShuAmount: newJasaUsaha + jasaModal
+                      }
+                    })
+
+                    goeyToast.success(`Investasi Rp ${amt.toLocaleString('id-ID')} pada "${titleStr}" berhasil dikonfirmasi!`)
                     setInvestModalOpen(false)
                   }}
-                  className="w-full py-3 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
+                  className="w-full py-3 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   Konfirmasi Investasi
                 </button>
