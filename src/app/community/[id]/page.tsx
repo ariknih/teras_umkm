@@ -259,6 +259,24 @@ export default function CommunityDetailPage() {
         totalSavingsCollected: (prev.totalSavingsCollected || 0) + amt
       }))
 
+      // Recalculate personal SHU Jasa Modal dynamically
+      setUserShu((prev: any) => {
+        const newSimpanan = (prev?.simpananMember || 0) + amt
+        const totalSavings = (realStats.totalSavingsCollected || 0) + amt
+        const netProfit = shuConfig?.totalNetProfit || 500000000
+        const poolJasaModal = (netProfit * (shuConfig?.pctJasaModal || 20)) / 100
+        const newJasaModal = totalSavings > 0 ? (newSimpanan / totalSavings) * poolJasaModal : 0
+        const jasaUsaha = prev?.shuJasaUsahaAmount || 420000
+
+        return {
+          ...prev,
+          simpananMember: newSimpanan,
+          shuJasaModalAmount: newJasaModal,
+          shuJasaUsahaAmount: jasaUsaha,
+          totalShuAmount: newJasaModal + jasaUsaha
+        }
+      })
+
       goeyToast.success(`Setor ${selectedSavingsProduct.name} sebesar Rp ${amt.toLocaleString('id-ID')} berhasil disetor!`)
       setPaySavingsModalOpen(false)
     })
@@ -1471,26 +1489,37 @@ export default function CommunityDetailPage() {
                     </div>
 
                     {/* Member Personal SHU Statement Card */}
-                    {user && (
-                      <div className="bg-white text-slate-800 p-4 rounded-xl shadow border border-emerald-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-[#0F5132] uppercase tracking-wider">Perhitungan Hak SHU Anggota Saya ({user.name})</span>
-                          <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
-                            <div>Simpanan Saya: <span className="font-mono font-bold text-slate-800">Rp {(userShu?.simpananMember || 400000).toLocaleString('id-ID')}</span></div>
-                            <div>SHU Jasa Modal: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(userShu?.shuJasaModalAmount || 250000).toLocaleString('id-ID')}</span></div>
-                            <div>Transaksi Saya: <span className="font-mono font-bold text-slate-800">Rp {(userShu?.transaksiMember || 3500000).toLocaleString('id-ID')}</span></div>
-                            <div>SHU Jasa Usaha: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(userShu?.shuJasaUsahaAmount || 420000).toLocaleString('id-ID')}</span></div>
+                    {user && (() => {
+                      const netProfit = shuConfig?.totalNetProfit || 500000000
+                      const poolJasaModal = (netProfit * (shuConfig?.pctJasaModal || 20)) / 100
+                      const mySavings = userShu?.simpananMember ?? (realStats.totalSavingsCollected > 0 ? Math.min(400000, realStats.totalSavingsCollected) : 0)
+                      const totalCommunitySavings = Math.max(1, realStats.totalSavingsCollected || 1000000)
+                      const myJasaModal = userShu?.shuJasaModalAmount ?? Math.round((mySavings / totalCommunitySavings) * poolJasaModal)
+                      const myTransaksi = userShu?.transaksiMember ?? 3500000
+                      const myJasaUsaha = userShu?.shuJasaUsahaAmount ?? 420000
+                      const myTotalShu = userShu?.totalShuAmount ?? (myJasaModal + myJasaUsaha)
+
+                      return (
+                        <div className="bg-white text-slate-800 p-4 rounded-xl shadow border border-emerald-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-[#0F5132] uppercase tracking-wider">Perhitungan Hak SHU Anggota Saya ({user.name})</span>
+                            <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
+                              <div>Simpanan Saya: <span className="font-mono font-bold text-slate-800">Rp {mySavings.toLocaleString('id-ID')}</span></div>
+                              <div>SHU Jasa Modal: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(myJasaModal).toLocaleString('id-ID')}</span></div>
+                              <div>Transaksi Saya: <span className="font-mono font-bold text-slate-800">Rp {myTransaksi.toLocaleString('id-ID')}</span></div>
+                              <div>SHU Jasa Usaha: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(myJasaUsaha).toLocaleString('id-ID')}</span></div>
+                            </div>
+                          </div>
+
+                          <div className="bg-emerald-50 border border-[#0F5132]/30 px-5 py-2.5 rounded-xl text-right shrink-0">
+                            <span className="block text-[9px] font-bold text-[#0F5132] uppercase tracking-wider">Total SHU Diterima Anggota</span>
+                            <span className="font-sora font-extrabold text-base md:text-lg text-[#0F5132]">
+                              Rp {Math.round(myTotalShu).toLocaleString('id-ID')}
+                            </span>
                           </div>
                         </div>
-
-                        <div className="bg-emerald-50 border border-[#0F5132]/30 px-5 py-2.5 rounded-xl text-right shrink-0">
-                          <span className="block text-[9px] font-bold text-[#0F5132] uppercase tracking-wider">Total SHU Diterima Anggota</span>
-                          <span className="font-sora font-extrabold text-base md:text-lg text-[#0F5132]">
-                            Rp {Math.round((userShu?.totalShuAmount || 670000)).toLocaleString('id-ID')}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                      )
+                    })()}
                   </div>
                 )}
 
