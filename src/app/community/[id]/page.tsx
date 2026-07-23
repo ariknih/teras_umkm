@@ -932,18 +932,24 @@ export default function CommunityDetailPage() {
                                 <Edit3 className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={async () => {
-                                  if (confirm(`Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`)) {
-                                    const res = await deleteCooperativeProductAction(cp.id, id)
-                                    if (res?.success) {
-                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                      goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                    } else {
-                                      goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                onClick={() => {
+                                  askConfirmation({
+                                    title: 'Hapus Produk Simpanan',
+                                    message: `Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`,
+                                    confirmText: 'Ya, Hapus',
+                                    variant: 'danger',
+                                    onConfirm: async () => {
+                                      const res = await deleteCooperativeProductAction(cp.id, id)
+                                      if (res?.success) {
+                                        setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                        goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                      } else {
+                                        goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                      }
                                     }
-                                  }
+                                  })
                                 }}
-                                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all"
+                                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all cursor-pointer"
                                 title="Hapus produk simpanan"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1295,18 +1301,24 @@ export default function CommunityDetailPage() {
                                   <Edit3 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  onClick={async () => {
-                                    if (confirm(`Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`)) {
-                                      const res = await deleteCooperativeProductAction(cp.id, id)
-                                      if (res?.success) {
-                                        setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                        goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                      } else {
-                                        goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                  onClick={() => {
+                                    askConfirmation({
+                                      title: 'Hapus Produk Simpanan',
+                                      message: `Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`,
+                                      confirmText: 'Ya, Hapus',
+                                      variant: 'danger',
+                                      onConfirm: async () => {
+                                        const res = await deleteCooperativeProductAction(cp.id, id)
+                                        if (res?.success) {
+                                          setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                          goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                        } else {
+                                          goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                        }
                                       }
-                                    }
+                                    })
                                   }}
-                                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all"
+                                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all cursor-pointer"
                                   title="Hapus produk simpanan"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
