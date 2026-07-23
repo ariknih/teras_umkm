@@ -2070,11 +2070,17 @@ export default function CommunityDetailPage() {
                       <option value="POKOK">Simpanan Pokok</option>
                       <option value="WAJIB">Simpanan Wajib</option>
                       <option value="SUKARELA">Simpanan Sukarela</option>
-                      {prodIsPremium && (
+                      {activeMode !== 'FREE' ? (
                         <>
                           <option value="UMROH">Simpanan Umroh (Premium)</option>
                           <option value="QURBAN">Simpanan Qurban (Premium)</option>
                           <option value="OTHER">Lain-lain (Premium)</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="LOCKED_UMROH" disabled>🔒 Simpanan Umroh (Perlu Upgrade Premium)</option>
+                          <option value="LOCKED_QURBAN" disabled>🔒 Simpanan Qurban (Perlu Upgrade Premium)</option>
+                          <option value="LOCKED_OTHER" disabled>🔒 Lain-lain (Perlu Upgrade Premium)</option>
                         </>
                       )}
                     </select>
@@ -2100,9 +2106,10 @@ export default function CommunityDetailPage() {
                     <input type="checkbox" checked={prodIsMandatory} onChange={e => setProdIsMandatory(e.target.checked)} className="rounded text-[#2DB24A]" />
                     <span className="font-bold text-gray-700">Wajib untuk Anggota</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className={`flex items-center gap-2 ${activeMode === 'FREE' ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
                     <input
                       type="checkbox"
+                      disabled={activeMode === 'FREE'}
                       checked={prodIsPremium}
                       onChange={e => {
                         const isPrem = e.target.checked
@@ -2113,9 +2120,34 @@ export default function CommunityDetailPage() {
                       }}
                       className="rounded text-[#2DB24A]"
                     />
-                    <span className="font-bold text-gray-700">Fitur Premium</span>
+                    <span className="font-bold text-gray-700">
+                      Fitur Premium {activeMode === 'FREE' && '🔒'}
+                    </span>
                   </label>
                 </div>
+
+                {activeMode === 'FREE' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                      <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>Simpanan Premium Terkunci</span>
+                    </div>
+                    <p className="text-[11px] text-amber-700 leading-relaxed">
+                      Anda berada dalam tampilan Free. Upgrade ke Koperasi Premium untuk menambah Simpanan Umroh, Qurban, dan fitur investasi lanjutan.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProductModalOpen(false)
+                        setPaymentModalOpen(true)
+                      }}
+                      className="w-full py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-bold text-[11px] rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                      Upgrade Ke Premium Sekarang
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-3">
                   <button type="button" onClick={() => setProductModalOpen(false)} className="flex-1 py-2.5 border rounded-xl font-bold">Batal</button>
