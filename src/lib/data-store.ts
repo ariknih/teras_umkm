@@ -8369,7 +8369,7 @@ export const DataStore = {
           amount: 10000,
           periodText: 'Setor kapan saja',
           isMandatory: false,
-          isPremium: true,
+          isPremium: false,
           description: 'Simpanan bebas untuk investasi anggota dengan imbal hasil SHU Jasa Modal.',
           createdAt: new Date(),
           updatedAt: new Date()
