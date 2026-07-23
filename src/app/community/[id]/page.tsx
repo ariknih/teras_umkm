@@ -171,6 +171,81 @@ export default function CommunityDetailPage() {
   const [isVerifying, setIsVerifying] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
 
+  // Setor Simpanan Modal & Interactive Transactions State
+  const [paySavingsModalOpen, setPaySavingsModalOpen] = useState(false)
+  const [selectedSavingsProduct, setSelectedSavingsProduct] = useState<any>(null)
+  const [depositAmount, setDepositAmount] = useState('')
+  const [depositPaymentMethod, setDepositPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('SALDO')
+
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([
+    {
+      id: 'tx-1',
+      date: '23 Jul 2026',
+      title: 'Setor Simpanan Wajib',
+      amount: 50000,
+      status: 'Berhasil',
+      type: 'WAJIB',
+      isIncome: true
+    },
+    {
+      id: 'tx-2',
+      date: '20 Jul 2026',
+      title: 'Setor Simpanan Pokok',
+      amount: 150000,
+      status: 'Berhasil',
+      type: 'POKOK',
+      isIncome: true
+    },
+    {
+      id: 'tx-3',
+      date: '15 Jul 2026',
+      title: 'Pendaftaran Anggota Koperasi',
+      amount: 0,
+      status: 'Berhasil',
+      type: 'MEMBERSHIP',
+      isIncome: true
+    }
+  ])
+
+  const handleOpenPaySavings = (cp: any) => {
+    setSelectedSavingsProduct(cp)
+    setDepositAmount(String(cp.amount || 50000))
+    setPaySavingsModalOpen(true)
+  }
+
+  const handleConfirmDeposit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedSavingsProduct) return
+    const amt = Number(depositAmount) || 0
+    if (amt <= 0) {
+      goeyToast.error('Nominal setoran tidak valid.')
+      return
+    }
+
+    startTransition(async () => {
+      const now = new Date()
+      const timeStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      const newTx = {
+        id: `tx-${Date.now()}`,
+        date: timeStr,
+        title: `Setor ${selectedSavingsProduct.name}`,
+        amount: amt,
+        status: 'Berhasil',
+        type: selectedSavingsProduct.type,
+        isIncome: true
+      }
+
+      setRecentTransactions(prev => [newTx, ...prev])
+      setRealStats(prev => ({
+        ...prev,
+        totalSavingsCollected: (prev.totalSavingsCollected || 0) + amt
+      }))
+
+      goeyToast.success(`Setor ${selectedSavingsProduct.name} sebesar Rp ${amt.toLocaleString('id-ID')} berhasil disetor!`)
+      setPaySavingsModalOpen(false)
+    })
+  }
+
   const [loading, setLoading] = useState(true)
   const [actionPending, startTransition] = useTransition()
 
@@ -917,7 +992,13 @@ export default function CommunityDetailPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`px-2.5 py-1 font-bold text-[9px] rounded-md ${
+                          <button
+                            onClick={() => handleOpenPaySavings(cp)}
+                            className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[9px] rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                          >
+                            <Wallet className="w-3 h-3" /> Setor
+                          </button>
+                          <span className={`px-2 py-1 font-bold text-[9px] rounded-md ${
                             cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
                           }`}>
                             {cp.isMandatory ? 'Wajib' : 'Sukarela'}
@@ -1130,47 +1211,31 @@ export default function CommunityDetailPage() {
                 </div>
 
                 <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between py-1.5 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-purple-600" />
-                      <div>
-                        <span className="block text-[10px] text-gray-400">20 Jul 2026</span>
-                        <span className="block font-bold text-gray-800 text-[11px]">Simpanan Wajib Bulanan</span>
+                  {recentTransactions.length === 0 ? (
+                    <p className="text-[10px] text-gray-400 text-center py-2">Belum ada riwayat transaksi.</p>
+                  ) : (
+                    recentTransactions.slice(0, 5).map((tx: any) => (
+                      <div key={tx.id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
+                            {tx.type === 'POKOK' ? <Home className="w-3.5 h-3.5" /> :
+                             tx.type === 'WAJIB' ? <Calendar className="w-3.5 h-3.5" /> :
+                             <Wallet className="w-3.5 h-3.5" />}
+                          </div>
+                          <div>
+                            <span className="block text-[9px] text-gray-400">{tx.date}</span>
+                            <span className="block font-bold text-gray-800 text-[11px] line-clamp-1">{tx.title}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`block font-black text-xs ${tx.isIncome ? 'text-[#2DB24A]' : 'text-gray-900'}`}>
+                            {tx.amount > 0 ? `${tx.isIncome ? '+' : '-'} Rp ${tx.amount.toLocaleString('id-ID')}` : '-'}
+                          </span>
+                          <span className="block text-[9px] text-[#2DB24A] font-bold">{tx.status}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="block font-black text-gray-900 text-xs">- Rp 50.000</span>
-                      <span className="block text-[9px] text-[#2DB24A] font-bold">Berhasil</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between py-1.5 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-4 h-4 text-[#2DB24A]" />
-                      <div>
-                        <span className="block text-[10px] text-gray-400">18 Jul 2026</span>
-                        <span className="block font-bold text-gray-800 text-[11px]">Simpanan Pokok</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="block font-black text-gray-900 text-xs">- Rp 150.000</span>
-                      <span className="block text-[9px] text-[#2DB24A] font-bold">Berhasil</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-[#2DB24A]" />
-                      <div>
-                        <span className="block text-[10px] text-gray-400">10 Jul 2026</span>
-                        <span className="block font-bold text-gray-800 text-[11px]">Pendaftaran Anggota</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="block font-black text-gray-900 text-xs">-</span>
-                      <span className="block text-[9px] text-[#2DB24A] font-bold">Berhasil</span>
-                    </div>
-                  </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -1302,9 +1367,17 @@ export default function CommunityDetailPage() {
                               </div>
                             )}
                           </div>
-                          <span className="block text-xs font-extrabold text-[#2DB24A]">
-                            Rp {cp.amount.toLocaleString('id-ID')}
-                          </span>
+                          <div className="flex items-center justify-between pt-1">
+                            <span className="block text-xs font-extrabold text-[#2DB24A]">
+                              Rp {cp.amount.toLocaleString('id-ID')}
+                            </span>
+                            <button
+                              onClick={() => handleOpenPaySavings(cp)}
+                              className="px-2 py-0.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[9px] rounded transition-colors cursor-pointer flex items-center gap-0.5 shadow-sm"
+                            >
+                              <Wallet className="w-2.5 h-2.5" /> Setor
+                            </button>
+                          </div>
                           <span className={`w-max px-2 py-0.5 font-bold text-[8px] rounded ${
                             cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
                           }`}>
@@ -1508,49 +1581,24 @@ export default function CommunityDetailPage() {
                     </div>
 
                     <div className="space-y-2 text-xs">
-                      <div className="flex items-center justify-between py-1 border-b border-gray-50">
-                        <div>
-                          <span className="block text-[9px] text-gray-400">20 Jul 2026</span>
-                          <span className="block font-bold text-gray-800 text-[10px]">Setor Simpanan Sukarela</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block font-extrabold text-[#2DB24A] text-[11px]">+ Rp 100.000</span>
-                          <span className="block text-[8px] text-gray-400">Berhasil</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between py-1 border-b border-gray-50">
-                        <div>
-                          <span className="block text-[9px] text-gray-400">18 Jul 2026</span>
-                          <span className="block font-bold text-gray-800 text-[10px] line-clamp-1">Pendanaan Merchant</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block font-extrabold text-gray-900 text-[11px]">- Rp 500.000</span>
-                          <span className="block text-[8px] text-[#2DB24A] font-bold">Berhasil</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between py-1 border-b border-gray-50">
-                        <div>
-                          <span className="block text-[9px] text-gray-400">15 Jul 2026</span>
-                          <span className="block font-bold text-gray-800 text-[10px]">Simpanan Wajib Bulanan</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block font-extrabold text-gray-900 text-[11px]">- Rp 50.000</span>
-                          <span className="block text-[8px] text-[#2DB24A] font-bold">Berhasil</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between py-1">
-                        <div>
-                          <span className="block text-[9px] text-gray-400">31 Des 2026</span>
-                          <span className="block font-bold text-gray-800 text-[10px]">Bagi Hasil Usaha (SHU)</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block font-extrabold text-[#2DB24A] text-[11px]">+ Rp 75.000</span>
-                          <span className="block text-[8px] text-gray-400">Berhasil</span>
-                        </div>
-                      </div>
+                      {recentTransactions.length === 0 ? (
+                        <p className="text-[10px] text-gray-400 text-center py-2">Belum ada riwayat transaksi.</p>
+                      ) : (
+                        recentTransactions.slice(0, 5).map((tx: any) => (
+                          <div key={tx.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                            <div>
+                              <span className="block text-[9px] text-gray-400">{tx.date}</span>
+                              <span className="block font-bold text-gray-800 text-[10px] line-clamp-1">{tx.title}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className={`block font-extrabold text-[11px] ${tx.isIncome ? 'text-[#2DB24A]' : 'text-gray-900'}`}>
+                                {tx.amount > 0 ? `${tx.isIncome ? '+' : '-'} Rp ${tx.amount.toLocaleString('id-ID')}` : '-'}
+                              </span>
+                              <span className="block text-[8px] text-[#2DB24A] font-bold">{tx.status}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
@@ -2339,6 +2387,116 @@ export default function CommunityDetailPage() {
                   {actionPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : confirmModal.confirmText}
                 </button>
               </div>
+            </motion.div>
+        {/* MODAL SETOR / BAYAR SIMPANAN KOPERASI */}
+        {paySavingsModalOpen && selectedSavingsProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-gray-100 relative"
+            >
+              <button
+                type="button"
+                onClick={() => setPaySavingsModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
+                  {selectedSavingsProduct.type === 'POKOK' ? <Home className="w-6 h-6" /> :
+                   selectedSavingsProduct.type === 'WAJIB' ? <Calendar className="w-6 h-6" /> :
+                   <Coins className="w-6 h-6" />}
+                </div>
+                <div>
+                  <h3 className="font-sora text-base font-extrabold text-gray-900">
+                    Setor {selectedSavingsProduct.name}
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium">
+                    {selectedSavingsProduct.periodText || 'Setor simpanan anggota'}
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleConfirmDeposit} className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Nominal Setoran (Rp) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="10000"
+                    value={depositAmount}
+                    onChange={e => setDepositAmount(e.target.value)}
+                    className="w-full border rounded-xl px-3 py-2.5 text-sm font-mono font-extrabold text-gray-900 border-gray-300 focus:ring-2 focus:ring-[#2DB24A]"
+                    placeholder="50000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1.5">Metode Pembayaran</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDepositPaymentMethod('SALDO')}
+                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${
+                        depositPaymentMethod === 'SALDO' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <Wallet className="w-4 h-4 mx-auto" />
+                      <span className="block text-[10px] font-bold">Saldo Wallet</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDepositPaymentMethod('QRIS')}
+                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${
+                        depositPaymentMethod === 'QRIS' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <QrCode className="w-4 h-4 mx-auto" />
+                      <span className="block text-[10px] font-bold">QRIS Instant</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDepositPaymentMethod('BANK')}
+                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${
+                        depositPaymentMethod === 'BANK' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      <Building2 className="w-4 h-4 mx-auto" />
+                      <span className="block text-[10px] font-bold">Bank Transfer</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-gray-500">Total Pembayaran:</span>
+                    <span className="font-extrabold text-[#2DB24A]">
+                      Rp {Number(depositAmount || 0).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaySavingsModalOpen(false)}
+                    className="flex-1 py-2.5 border rounded-xl font-bold text-gray-600 hover:bg-gray-50 cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={actionPending}
+                    className="flex-1 py-2.5 bg-[#0F5132] hover:bg-emerald-900 text-white font-extrabold rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {actionPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Konfirmasi Setor'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
