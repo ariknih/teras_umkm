@@ -1524,9 +1524,16 @@ export default function CommunityDetailPage() {
                               <button
                                 onClick={() => {
                                   setSelectedProject(p)
+                                  const minAmt = Number(p.minInvestment ?? p.minInvest ?? 50000)
+                                  setInvestAmount(String(minAmt))
+                                  if (userBalance >= minAmt) {
+                                    setInvestPaymentMethod('SALDO')
+                                  } else {
+                                    setInvestPaymentMethod('QRIS')
+                                  }
                                   setInvestModalOpen(true)
                                 }}
-                                className="px-3 py-1.5 bg-[#E8F8EE] border border-[#2DB24A]/30 text-[#2DB24A] font-bold text-[10px] rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all"
+                                className="px-3 py-1.5 bg-[#E8F8EE] border border-[#2DB24A]/30 text-[#2DB24A] font-bold text-[10px] rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all cursor-pointer"
                               >
                                 Lihat Detail
                               </button>
@@ -1909,23 +1916,26 @@ export default function CommunityDetailPage() {
 
                 {/* Details per method */}
                 {investPaymentMethod === 'SALDO' && (
-                  <div className="p-3 bg-emerald-50 border border-[#2DB24A]/30 rounded-xl space-y-1.5 text-xs">
+                  <div className="p-3 bg-white border border-gray-200 rounded-xl space-y-2 text-xs">
                     <div className="flex justify-between items-center text-gray-700">
                       <span>Saldo Wallet Anda:</span>
                       <span className="font-mono font-extrabold text-[#0F5132]">Rp {userBalance.toLocaleString('id-ID')}</span>
                     </div>
                     {userBalance < Number(investAmount || 0) ? (
-                      <div className="pt-1 border-t border-emerald-200 space-y-2">
-                        <span className="block text-[10px] font-bold text-amber-800">⚠️ Saldo Wallet tidak mencukupi untuk investasi ini.</span>
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-amber-900">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold">
+                          <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Saldo Wallet Rp {userBalance.toLocaleString('id-ID')} (Belum mencukupi)</span>
+                        </div>
+                        <p className="text-[10px] text-amber-800 font-medium leading-relaxed">
+                          Saldo Wallet Anda tidak mencukupi untuk investasi sebesar Rp {Number(investAmount || 0).toLocaleString('id-ID')}. Silakan bayar langsung lewat QRIS Instant atau Transfer Bank (Uang Rill).
+                        </p>
                         <button
                           type="button"
-                          onClick={() => {
-                            setUserBalance(prev => prev + 200000)
-                            goeyToast.success('Saldo Wallet berhasil ditambahkan Rp 200.000 (Simulasi)!')
-                          }}
-                          className="w-full py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white text-[10px] font-extrabold rounded-lg shadow-sm transition-colors cursor-pointer"
+                          onClick={() => setInvestPaymentMethod('QRIS')}
+                          className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg shadow-sm transition-colors cursor-pointer text-center"
                         >
-                          + Top Up Rp 200k (Simulasi)
+                          📱 Bayar via QRIS Instant (Uang Rill)
                         </button>
                       </div>
                     ) : (
@@ -1973,6 +1983,7 @@ export default function CommunityDetailPage() {
                 )}
 
                 <button
+                  disabled={investPaymentMethod === 'SALDO' && userBalance < Number(investAmount || 0)}
                   onClick={() => {
                     const amt = Number(investAmount || 0)
                     const minAllowed = Number(selectedProject.minInvestment ?? selectedProject.minInvest ?? 50000)
@@ -1982,7 +1993,7 @@ export default function CommunityDetailPage() {
                     }
 
                     if (investPaymentMethod === 'SALDO' && userBalance < amt) {
-                      goeyToast.error('Saldo Wallet Anda tidak mencukupi.')
+                      goeyToast.error('Saldo Wallet Anda tidak mencukupi. Silakan gunakan QRIS Instant atau Transfer Bank.')
                       return
                     }
 
@@ -2033,7 +2044,11 @@ export default function CommunityDetailPage() {
                     goeyToast.success(`Investasi Rp ${amt.toLocaleString('id-ID')} pada "${titleStr}" berhasil dikonfirmasi!`)
                     setInvestModalOpen(false)
                   }}
-                  className="w-full py-3 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                  className={`w-full py-3 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 ${
+                    investPaymentMethod === 'SALDO' && userBalance < Number(investAmount || 0)
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-[#2DB24A] hover:bg-[#228e3b] text-white cursor-pointer'
+                  }`}
                 >
                   Konfirmasi Investasi
                 </button>
@@ -2680,25 +2695,15 @@ export default function CommunityDetailPage() {
                           <span>Saldo Wallet Rp {userBalance.toLocaleString('id-ID')} (Belum mencukupi)</span>
                         </div>
                         <p className="text-[10px] text-amber-800 font-medium leading-relaxed">
-                          Anda memerlukan Rp {(Number(depositAmount || 0) - userBalance).toLocaleString('id-ID')} lagi. Silakan bayar langsung lewat QRIS Instant atau lakukan Top Up saldo.
+                          Saldo Wallet Anda tidak mencukupi untuk nominal setoran ini. Silakan bayar langsung lewat QRIS Instant atau Transfer Bank (Uang Rill).
                         </p>
-                        <div className="flex gap-2 pt-1">
+                        <div className="pt-1">
                           <button
                             type="button"
                             onClick={() => setDepositPaymentMethod('QRIS')}
-                            className="flex-1 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer text-center"
+                            className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg transition-colors cursor-pointer text-center"
                           >
-                            📱 Bayar via QRIS Instant
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUserBalance(prev => prev + 200000)
-                              goeyToast.success('Top up Saldo Rp 200.000 berhasil!')
-                            }}
-                            className="py-1.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
-                          >
-                            + Top Up Rp 200k
+                            📱 Bayar via QRIS Instant (Uang Rill)
                           </button>
                         </div>
                       </div>
@@ -2767,8 +2772,12 @@ export default function CommunityDetailPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={actionPending}
-                    className="flex-1 py-2.5 bg-[#0F5132] hover:bg-emerald-900 text-white font-extrabold rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+                    disabled={actionPending || (depositPaymentMethod === 'SALDO' && userBalance < Number(depositAmount || 0))}
+                    className={`flex-1 py-2.5 font-extrabold rounded-xl shadow-md flex items-center justify-center gap-1.5 ${
+                      depositPaymentMethod === 'SALDO' && userBalance < Number(depositAmount || 0)
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-[#0F5132] hover:bg-emerald-900 text-white cursor-pointer'
+                    }`}
                   >
                     {actionPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Konfirmasi Setor'}
                   </button>
