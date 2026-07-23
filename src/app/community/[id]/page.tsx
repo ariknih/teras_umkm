@@ -173,11 +173,11 @@ export default function CommunityDetailPage() {
   const [paymentSuccess, setPaymentSuccess] = useState(false)
 
   // Setor Simpanan Modal & Interactive Transactions State
-  const [userBalance, setUserBalance] = useState(750000)
+  const [userBalance, setUserBalance] = useState(0)
   const [paySavingsModalOpen, setPaySavingsModalOpen] = useState(false)
   const [selectedSavingsProduct, setSelectedSavingsProduct] = useState<any>(null)
   const [depositAmount, setDepositAmount] = useState('')
-  const [depositPaymentMethod, setDepositPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('SALDO')
+  const [depositPaymentMethod, setDepositPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('QRIS')
 
   const [recentTransactions, setRecentTransactions] = useState<any[]>([
     {
@@ -211,7 +211,14 @@ export default function CommunityDetailPage() {
 
   const handleOpenPaySavings = (cp: any) => {
     setSelectedSavingsProduct(cp)
-    setDepositAmount(String(cp.amount || 50000))
+    const targetAmt = Number(cp.amount || 50000)
+    setDepositAmount(String(targetAmt))
+    // If user balance is 0 or less than target amount, auto select QRIS for instant payment!
+    if (userBalance >= targetAmt) {
+      setDepositPaymentMethod('SALDO')
+    } else {
+      setDepositPaymentMethod('QRIS')
+    }
     setPaySavingsModalOpen(true)
   }
 
@@ -372,6 +379,11 @@ export default function CommunityDetailPage() {
       ])
 
       setUser(currentUser)
+      if (currentUser?.walletBalance !== undefined) {
+        setUserBalance(currentUser.walletBalance)
+      } else if (currentUser?.balance !== undefined) {
+        setUserBalance(currentUser.balance)
+      }
 
       let commDetail = commDetailRes
       if (!commDetail) {
@@ -2492,15 +2504,39 @@ export default function CommunityDetailPage() {
 
                 {/* DYNAMIC PAYMENT METHOD DETAILS */}
                 {depositPaymentMethod === 'SALDO' && (
-                  <div className="p-3 bg-[#E8F8EE] border border-[#2DB24A]/30 rounded-xl space-y-1.5">
+                  <div className="p-3 bg-white border border-gray-200 rounded-xl space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-gray-600 font-medium">Saldo Tersedia:</span>
+                      <span className="text-gray-600 font-medium">Saldo Wallet saat ini:</span>
                       <span className="font-extrabold text-[#0F5132]">Rp {userBalance.toLocaleString('id-ID')}</span>
                     </div>
                     {Number(depositAmount || 0) > userBalance ? (
-                      <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-[10px] font-bold flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5 shrink-0" />
-                        <span>Saldo Wallet tidak cukup. Kurang Rp {(Number(depositAmount || 0) - userBalance).toLocaleString('id-ID')}</span>
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-amber-900">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold">
+                          <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Saldo Wallet Rp {userBalance.toLocaleString('id-ID')} (Belum mencukupi)</span>
+                        </div>
+                        <p className="text-[10px] text-amber-800 font-medium leading-relaxed">
+                          Anda memerlukan Rp {(Number(depositAmount || 0) - userBalance).toLocaleString('id-ID')} lagi. Silakan bayar langsung lewat QRIS Instant atau lakukan Top Up saldo.
+                        </p>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setDepositPaymentMethod('QRIS')}
+                            className="flex-1 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer text-center"
+                          >
+                            📱 Bayar via QRIS Instant
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserBalance(prev => prev + 200000)
+                              goeyToast.success('Top up Saldo Rp 200.000 berhasil!')
+                            }}
+                            className="py-1.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
+                          >
+                            + Top Up Rp 200k
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex justify-between items-center text-[10px] text-emerald-800 font-medium pt-1 border-t border-[#2DB24A]/20">
