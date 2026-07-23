@@ -2388,6 +2388,9 @@ export default function CommunityDetailPage() {
                 </button>
               </div>
             </motion.div>
+          </div>
+        )}
+
         {/* MODAL SETOR / BAYAR SIMPANAN KOPERASI */}
         {paySavingsModalOpen && selectedSavingsProduct && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
