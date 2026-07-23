@@ -261,10 +261,33 @@ export default function CommunityDetailPage() {
 
   async function loadData() {
     try {
-      const currentUser = await getCurrentUser()
+      const [
+        currentUser,
+        commDetailRes,
+        memberListRes,
+        allProductsRes,
+        statsRes,
+        cProductsRes,
+        fProjectsRes,
+        loanListRes,
+        shuRes,
+        userShuRes
+      ] = await Promise.all([
+        getCurrentUser().catch(() => null),
+        getIndukCommunityDetail(id).catch(() => null),
+        getIndukCommunityMembersAction(id).catch(() => []),
+        getProducts().catch(() => []),
+        getCommunityRealStatsAction(id).catch(() => null),
+        getCooperativeProductsAction(id).catch(() => []),
+        getMerchantFundingProjectsAction(id).catch(() => []),
+        getCooperativeLoansAction(id).catch(() => []),
+        getCommunityShuDataAction(id).catch(() => null),
+        getUserShuSummaryAction(id).catch(() => null)
+      ])
+
       setUser(currentUser)
 
-      let commDetail = await getIndukCommunityDetail(id)
+      let commDetail = commDetailRes
       if (!commDetail) {
         commDetail = {
           id: id || 'comm-dummy-2',
@@ -307,8 +330,8 @@ export default function CommunityDetailPage() {
       setEditMonthlyFee(commDetail.monthlyFee ? String(commDetail.monthlyFee) : '')
 
       // Get members
-      const memberList = await getIndukCommunityMembersAction(id)
-      setMembers(memberList || [])
+      const memberList = memberListRes || []
+      setMembers(memberList)
 
       // Check if logged in user is a member
       if (currentUser) {
@@ -322,41 +345,28 @@ export default function CommunityDetailPage() {
 
       // Fetch products from members of this community or marketplace
       const memberIds = memberList.map((m: any) => m.userId)
-      const allProducts = await getProducts()
-      const communityProducts = allProducts.filter(p => memberIds.includes(p.merchantId))
-      setProducts(communityProducts.length > 0 ? communityProducts : (allProducts && allProducts.length > 0 ? allProducts.slice(0, 4) : []))
+      const allProducts = allProductsRes || []
+      const communityProducts = allProducts.filter((p: any) => memberIds.includes(p.merchantId))
+      setProducts(communityProducts.length > 0 ? communityProducts : (allProducts.length > 0 ? allProducts.slice(0, 4) : []))
 
-      // Fetch cooperative loans
-      if (currentUser && commDetail.type === 'KOPERASI') {
-        const loanList = await getCooperativeLoansAction(id)
-        setLoans(loanList || [])
+      // Set cooperative loans
+      setLoans(loanListRes || [])
+
+      // Set real stats
+      if (statsRes) {
+        setRealStats(statsRes)
       }
 
-      // Fetch real stats (0-default if no records)
-      const stats = await getCommunityRealStatsAction(id)
-      if (stats) {
-        setRealStats(stats)
+      // Set cooperative products & funding projects
+      setCoopProducts(cProductsRes || [])
+      setFundingProjects(fProjectsRes || [])
+
+      // Set SHU RAT data
+      if (shuRes?.success && shuRes.config) {
+        setShuConfig(shuRes.config)
       }
-
-      // Fetch cooperative products & funding projects
-      const cProducts = await getCooperativeProductsAction(id)
-      setCoopProducts(cProducts || [])
-
-      const fProjects = await getMerchantFundingProjectsAction(id)
-      setFundingProjects(fProjects || [])
-
-      // Fetch SHU RAT data
-      if (commDetail.type === 'KOPERASI') {
-        const shuRes = await getCommunityShuDataAction(id)
-        if (shuRes.success) {
-          setShuConfig(shuRes.config)
-        }
-        if (currentUser) {
-          const userShuRes = await getUserShuSummaryAction(id)
-          if (userShuRes.success && userShuRes.distributions) {
-            setUserShu(userShuRes.distributions[0] || null)
-          }
-        }
+      if (userShuRes?.success && userShuRes.distributions) {
+        setUserShu(userShuRes.distributions[0] || null)
       }
 
     } catch (e) {
