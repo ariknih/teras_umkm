@@ -932,22 +932,14 @@ export default function CommunityDetailPage() {
                                 <Edit3 className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={() => {
-                                  askConfirmation({
-                                    title: 'Hapus Produk Simpanan',
-                                    message: `Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`,
-                                    confirmText: 'Ya, Hapus',
-                                    variant: 'danger',
-                                    onConfirm: async () => {
-                                      const res = await deleteCooperativeProductAction(cp.id, id)
-                                      if (res?.success) {
-                                        setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                        goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                      } else {
-                                        goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
-                                      }
-                                    }
-                                  })
+                                onClick={async () => {
+                                  const res = await deleteCooperativeProductAction(cp.id, id)
+                                  if (res?.success) {
+                                    setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                    goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                  } else {
+                                    goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                  }
                                 }}
                                 className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all cursor-pointer"
                                 title="Hapus produk simpanan"
@@ -1107,22 +1099,14 @@ export default function CommunityDetailPage() {
                                 <Edit3 className="w-3 h-3" />
                               </button>
                               <button
-                                onClick={() => {
-                                  askConfirmation({
-                                    title: 'Hapus Produk Simpanan',
-                                    message: `Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`,
-                                    confirmText: 'Ya, Hapus',
-                                    variant: 'danger',
-                                    onConfirm: async () => {
-                                      const res = await deleteCooperativeProductAction(cp.id, id)
-                                      if (res?.success) {
-                                        setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                        goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                      } else {
-                                        goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
-                                      }
-                                    }
-                                  })
+                                onClick={async () => {
+                                  const res = await deleteCooperativeProductAction(cp.id, id)
+                                  if (res?.success) {
+                                    setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                    goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                  } else {
+                                    goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                  }
                                 }}
                                 className="text-gray-400 hover:text-red-600 p-0.5 cursor-pointer"
                                 title="Hapus produk simpanan"
@@ -1301,22 +1285,14 @@ export default function CommunityDetailPage() {
                                   <Edit3 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    askConfirmation({
-                                      title: 'Hapus Produk Simpanan',
-                                      message: `Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`,
-                                      confirmText: 'Ya, Hapus',
-                                      variant: 'danger',
-                                      onConfirm: async () => {
-                                        const res = await deleteCooperativeProductAction(cp.id, id)
-                                        if (res?.success) {
-                                          setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                          goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                        } else {
-                                          goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
-                                        }
-                                      }
-                                    })
+                                  onClick={async () => {
+                                    const res = await deleteCooperativeProductAction(cp.id, id)
+                                    if (res?.success) {
+                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                      goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                    } else {
+                                      goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                    }
                                   }}
                                   className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all cursor-pointer"
                                   title="Hapus produk simpanan"
@@ -1468,18 +1444,10 @@ export default function CommunityDetailPage() {
                                 />
                                 {isCanManageCoop && (
                                   <button
-                                    onClick={() => {
-                                      askConfirmation({
-                                        title: 'Hapus Proyek Pendanaan',
-                                        message: `Apakah Anda yakin ingin menghapus proyek pendanaan "${p.title}"?`,
-                                        confirmText: 'Ya, Hapus',
-                                        variant: 'danger',
-                                        onConfirm: async () => {
-                                          await deleteMerchantFundingProjectAction(p.id, id)
-                                          setFundingProjects(prev => prev.filter(x => x.id !== p.id))
-                                          goeyToast.success(`Proyek pendanaan "${p.title}" berhasil dihapus!`)
-                                        }
-                                      })
+                                    onClick={async () => {
+                                      await deleteMerchantFundingProjectAction(p.id, id)
+                                      setFundingProjects(prev => prev.filter(x => x.id !== p.id))
+                                      goeyToast.success(`Proyek pendanaan "${p.title}" berhasil dihapus!`)
                                     }}
                                     className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
                                     title="Hapus proyek"
