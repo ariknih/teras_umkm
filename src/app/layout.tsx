@@ -91,12 +91,13 @@ export default async function RootLayout({
       className={`${inter.variable} ${poppins.variable} ${geist.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
+      <head suppressHydrationWarning>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <Script
           id="theme-script"
           strategy="beforeInteractive"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -106,12 +107,15 @@ export default async function RootLayout({
             `,
           }}
         />
-        <script
+        <Script
+          id="bis-cleaner-script"
+          strategy="beforeInteractive"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 const clean = (node) => {
-                  if (node.nodeType === 1) {
+                  if (node && node.nodeType === 1) {
                     if (node.hasAttribute('bis_skin_checked')) {
                       node.removeAttribute('bis_skin_checked');
                     }
@@ -121,41 +125,48 @@ export default async function RootLayout({
                     }
                   }
                 };
-                const observer = new MutationObserver((mutations) => {
-                  for (let i = 0; i < mutations.length; i++) {
-                    const m = mutations[i];
-                    if (m.type === 'attributes' && m.attributeName === 'bis_skin_checked') {
-                      m.target.removeAttribute('bis_skin_checked');
-                    }
-                    if (m.addedNodes) {
-                      for (let j = 0; j < m.addedNodes.length; j++) {
-                        clean(m.addedNodes[j]);
+                if (typeof window !== 'undefined') {
+                  const observer = new MutationObserver((mutations) => {
+                    for (let i = 0; i < mutations.length; i++) {
+                      const m = mutations[i];
+                      if (m.type === 'attributes' && m.attributeName === 'bis_skin_checked') {
+                        m.target.removeAttribute('bis_skin_checked');
+                      }
+                      if (m.addedNodes) {
+                        for (let j = 0; j < m.addedNodes.length; j++) {
+                          clean(m.addedNodes[j]);
+                        }
                       }
                     }
+                  });
+                  if (document.documentElement) {
+                    observer.observe(document.documentElement, {
+                      childList: true,
+                      subtree: true,
+                      attributes: true,
+                      attributeFilter: ['bis_skin_checked']
+                    });
                   }
-                });
-                observer.observe(document.documentElement, {
-                  childList: true,
-                  subtree: true,
-                  attributes: true,
-                  attributeFilter: ['bis_skin_checked']
-                });
-                document.addEventListener('DOMContentLoaded', () => {
-                  clean(document.body);
-                });
+                  document.addEventListener('DOMContentLoaded', () => {
+                    clean(document.body);
+                  });
+                }
               })();
             `
           }}
         />
         <Script 
+          id="midtrans-script"
           src={process.env.MIDTRANS_IS_PRODUCTION === 'true' 
             ? "https://app.midtrans.com/snap/snap.js" 
             : "https://app.sandbox.midtrans.com/snap/snap.js"
           } 
           strategy="beforeInteractive" 
+          suppressHydrationWarning
         />
       </head>
       <body
+        suppressHydrationWarning
         className={`min-h-full flex flex-col text-on-surface font-inter select-none overflow-x-hidden ${
           isAdminRoute ? "bg-[#0c0d0e]" : isBuilderRoute ? "bg-[#e8eaed]" : "bg-bg-dark pb-16 md:pb-0"
         }`}
