@@ -116,13 +116,14 @@ export default function CommunityDetailPage() {
   const [prodIsPremium, setProdIsPremium] = useState(false)
   const [prodDesc, setProdDesc] = useState('')
 
-  const handleOpenCreateProduct = () => {
+  const handleOpenCreateProduct = (isPremium = false) => {
     setEditingProduct(null)
     setProdName('')
     setProdType('SUKARELA')
     setProdAmount('50000')
     setProdPeriod('Setor Kapan Saja')
     setProdIsMandatory(false)
+    setProdIsPremium(isPremium)
     setProdDesc('')
     setProductModalOpen(true)
   }
@@ -134,6 +135,7 @@ export default function CommunityDetailPage() {
     setProdAmount(String(cp.amount))
     setProdPeriod(cp.periodText || '')
     setProdIsMandatory(Boolean(cp.isMandatory))
+    setProdIsPremium(Boolean(cp.isPremium))
     setProdDesc(cp.description || '')
     setProductModalOpen(true)
   }
@@ -806,15 +808,15 @@ export default function CommunityDetailPage() {
                 </div>
               </div>
 
-              {/* Produk Simpanan (Free) Section */}
+              {/* Produk Simpanan (Free) Section - Hanya POKOK, WAJIB, & SUKARELA */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Produk Simpanan Koperasi
+                    Produk Simpanan Koperasi (Free)
                   </h3>
                   {isCanManageCoop && (
                     <button
-                      onClick={handleOpenCreateProduct}
+                      onClick={() => handleOpenCreateProduct(false)}
                       className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                     >
                       <PlusCircle className="w-3 h-3" /> Tambah Produk Simpanan
@@ -822,13 +824,13 @@ export default function CommunityDetailPage() {
                   )}
                 </div>
 
-                {coopProducts.length === 0 ? (
+                {coopProducts.filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type)).length === 0 ? (
                   <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
                     <PiggyBank className="w-8 h-8 text-gray-300 mx-auto" />
-                    <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan yang dibuat oleh Pengurus Koperasi.</p>
+                    <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan dasar (Pokok, Wajib, Sukarela) yang dibuat.</p>
                     {isCanManageCoop && (
                       <button
-                        onClick={handleOpenCreateProduct}
+                        onClick={() => handleOpenCreateProduct(false)}
                         className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
                       >
                         + Tambah Produk Simpanan Pertama
@@ -837,16 +839,16 @@ export default function CommunityDetailPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {coopProducts.map((cp: any) => (
-                      <div key={cp.id} className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center justify-between relative group">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-                            {cp.type === 'POKOK' ? <Home className="w-5 h-5" /> :
-                             cp.type === 'WAJIB' ? <Calendar className="w-5 h-5" /> :
-                             cp.type === 'SUKARELA' ? <Coins className="w-5 h-5" /> :
-                             cp.type === 'UMROH' ? <Building2 className="w-5 h-5" /> :
-                             <Sparkles className="w-5 h-5" />}
-                          </div>
+                    {coopProducts
+                      .filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type))
+                      .map((cp: any) => (
+                        <div key={cp.id} className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center justify-between relative group">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
+                              {cp.type === 'POKOK' ? <Home className="w-5 h-5" /> :
+                               cp.type === 'WAJIB' ? <Calendar className="w-5 h-5" /> :
+                               <Coins className="w-5 h-5" />}
+                            </div>
                           <div>
                             <span className="block text-xs font-bold text-gray-900">{cp.name}</span>
                             <span className="block text-[10px] text-gray-400 font-medium">{cp.periodText || cp.description || 'Simpanan'}</span>
@@ -997,10 +999,10 @@ export default function CommunityDetailPage() {
               {/* Simpanan yang Tersedia (Free) */}
               <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
                 <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-bold text-gray-900">Simpanan yang Tersedia</h4>
+                  <h4 className="text-xs font-bold text-gray-900">Simpanan yang Tersedia (Free)</h4>
                   {isCanManageCoop && (
                     <button
-                      onClick={handleOpenCreateProduct}
+                      onClick={() => handleOpenCreateProduct(false)}
                       className="text-[10px] font-bold text-[#0F5132] hover:underline flex items-center gap-0.5"
                     >
                       + Tambah
@@ -1009,19 +1011,19 @@ export default function CommunityDetailPage() {
                 </div>
 
                 <div className="space-y-2.5">
-                  {coopProducts.length === 0 ? (
-                    <p className="text-[10px] text-gray-400 font-medium text-center py-2">Belum ada produk simpanan.</p>
+                  {coopProducts.filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type)).length === 0 ? (
+                    <p className="text-[10px] text-gray-400 font-medium text-center py-2">Belum ada produk simpanan dasar.</p>
                   ) : (
-                    coopProducts.map((cp: any) => (
-                      <div key={cp.id} className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-                            {cp.type === 'POKOK' ? <Home className="w-4 h-4" /> :
-                             cp.type === 'WAJIB' ? <Calendar className="w-4 h-4" /> :
-                             cp.type === 'SUKARELA' ? <Coins className="w-4 h-4" /> :
-                             cp.type === 'UMROH' ? <Building2 className="w-4 h-4" /> :
-                             <Sparkles className="w-4 h-4" />}
-                          </div>
+                    coopProducts
+                      .filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type))
+                      .map((cp: any) => (
+                        <div key={cp.id} className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
+                              {cp.type === 'POKOK' ? <Home className="w-4 h-4" /> :
+                               cp.type === 'WAJIB' ? <Calendar className="w-4 h-4" /> :
+                               <Coins className="w-4 h-4" />}
+                            </div>
                           <div>
                             <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
                             <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
@@ -1180,7 +1182,7 @@ export default function CommunityDetailPage() {
                     </h3>
                     {isCanManageCoop && (
                       <button
-                        onClick={handleOpenCreateProduct}
+                        onClick={() => handleOpenCreateProduct(true)}
                         className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                       >
                         <PlusCircle className="w-3 h-3" /> Tambah Produk Simpanan
@@ -1194,7 +1196,7 @@ export default function CommunityDetailPage() {
                       <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan yang dibuat oleh Pengurus Koperasi.</p>
                       {isCanManageCoop && (
                         <button
-                          onClick={handleOpenCreateProduct}
+                          onClick={() => handleOpenCreateProduct(true)}
                           className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
                         >
                           + Tambah Produk Simpanan Pertama
@@ -2068,9 +2070,13 @@ export default function CommunityDetailPage() {
                       <option value="POKOK">Simpanan Pokok</option>
                       <option value="WAJIB">Simpanan Wajib</option>
                       <option value="SUKARELA">Simpanan Sukarela</option>
-                      <option value="UMROH">Simpanan Umroh</option>
-                      <option value="QURBAN">Simpanan Qurban</option>
-                      <option value="OTHER">Lain-lain</option>
+                      {prodIsPremium && (
+                        <>
+                          <option value="UMROH">Simpanan Umroh (Premium)</option>
+                          <option value="QURBAN">Simpanan Qurban (Premium)</option>
+                          <option value="OTHER">Lain-lain (Premium)</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div>
@@ -2095,7 +2101,18 @@ export default function CommunityDetailPage() {
                     <span className="font-bold text-gray-700">Wajib untuk Anggota</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={prodIsPremium} onChange={e => setProdIsPremium(e.target.checked)} className="rounded text-[#2DB24A]" />
+                    <input
+                      type="checkbox"
+                      checked={prodIsPremium}
+                      onChange={e => {
+                        const isPrem = e.target.checked
+                        setProdIsPremium(isPrem)
+                        if (!isPrem && ['UMROH', 'QURBAN', 'OTHER'].includes(prodType)) {
+                          setProdType('SUKARELA')
+                        }
+                      }}
+                      className="rounded text-[#2DB24A]"
+                    />
                     <span className="font-bold text-gray-700">Fitur Premium</span>
                   </label>
                 </div>
