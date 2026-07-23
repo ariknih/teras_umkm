@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useTransition } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  getIndukCommunityDetail, 
-  joinIndukCommunity, 
+import {
+  getIndukCommunityDetail,
+  joinIndukCommunity,
   getIndukCommunityMembersAction,
   submitCooperativeLoanAction,
   getCooperativeLoansAction,
@@ -26,15 +26,15 @@ import { getProducts } from '@/app/actions/products'
 import { getCommunityShuDataAction, getUserShuSummaryAction } from '@/app/actions/shu'
 import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Shield, 
-  Users, 
-  MessageSquare, 
-  MapPin, 
-  DollarSign, 
-  TrendingUp, 
-  Info, 
-  CheckCircle2, 
+import {
+  Shield,
+  Users,
+  MessageSquare,
+  MapPin,
+  DollarSign,
+  TrendingUp,
+  Info,
+  CheckCircle2,
   ExternalLink,
   PlusCircle,
   Clock,
@@ -150,7 +150,7 @@ export default function CommunityDetailPage() {
   const [projDuration, setProjDuration] = useState('6')
   const [projDesc, setProjDesc] = useState('')
   const [projImageUrl, setProjImageUrl] = useState('')
-  
+
   // Layout preview toggle: 'AUTO' | 'FREE' | 'PREMIUM'
   const [previewMode, setPreviewMode] = useState<'AUTO' | 'FREE' | 'PREMIUM'>('AUTO')
 
@@ -302,7 +302,7 @@ export default function CommunityDetailPage() {
     message: '',
     confirmText: 'Konfirmasi',
     variant: 'danger',
-    onConfirm: () => {}
+    onConfirm: () => { }
   })
 
   const askConfirmation = (opts: {
@@ -670,10 +670,10 @@ export default function CommunityDetailPage() {
 
   // Determine active view mode:
   // If previewMode is AUTO: PERKUMPULAN -> FREE, KOPERASI -> PREMIUM (or based on isMember)
-  const activeMode: 'FREE' | 'PREMIUM' = 
+  const activeMode: 'FREE' | 'PREMIUM' =
     previewMode === 'FREE' ? 'FREE' :
-    previewMode === 'PREMIUM' ? 'PREMIUM' :
-    (community.type === 'KOPERASI' || isMember) ? 'PREMIUM' : 'FREE'
+      previewMode === 'PREMIUM' ? 'PREMIUM' :
+        (community.type === 'KOPERASI' || isMember) ? 'PREMIUM' : 'FREE'
 
   // Sample Merchant Projects for Pendanaan Merchant (Foto 2)
   const merchantProjects = [
@@ -718,16 +718,15 @@ export default function CommunityDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F7F9] text-[#111827] pt-24 pb-20 px-3 md:px-8 font-sans">
-      
+
       {/* ── MAIN CONTAINER CARD (BORDER & ROUNDED CORNERS AS IN PHOTOS) ──────── */}
       <div className="max-w-[1240px] mx-auto bg-white border border-gray-200 rounded-[28px] p-4 md:p-7 shadow-sm relative overflow-hidden space-y-6">
 
         {/* TOP RIGHT BORDER BADGE (FOTO 1: FREE COMMUNITY / FOTO 2: PREMIUM COMMUNITY) */}
-        <div className={`absolute top-0 right-0 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider rounded-bl-2xl shadow-sm z-10 ${
-          activeMode === 'FREE' 
-            ? 'bg-[#2DB24A] text-white' 
+        <div className={`absolute top-0 right-0 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider rounded-bl-2xl shadow-sm z-10 ${activeMode === 'FREE'
+            ? 'bg-[#2DB24A] text-white'
             : 'bg-[#15803D] text-white'
-        }`}>
+          }`}>
           {activeMode === 'FREE' ? 'FREE COMMUNITY' : 'PREMIUM COMMUNITY'}
         </div>
 
@@ -740,10 +739,10 @@ export default function CommunityDetailPage() {
             ) : community.coverUrl ? (
               <img src={community.coverUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-              <img 
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=500&q=80" 
-                alt="Community" 
-                className="w-full h-full object-cover" 
+              <img
+                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=500&q=80"
+                alt="Community"
+                className="w-full h-full object-cover"
               />
             )}
           </div>
@@ -751,11 +750,10 @@ export default function CommunityDetailPage() {
           {/* Middle Info */}
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
-              <span className={`px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md ${
-                activeMode === 'FREE' 
-                  ? 'bg-[#E8F8EE] text-[#2DB24A] border border-[#2DB24A]/20' 
+              <span className={`px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md ${activeMode === 'FREE'
+                  ? 'bg-[#E8F8EE] text-[#2DB24A] border border-[#2DB24A]/20'
                   : 'bg-[#15803D] text-white'
-              }`}>
+                }`}>
                 {activeMode === 'FREE' ? 'FREE COMMUNITY' : 'PREMIUM COMMUNITY'}
               </span>
             </div>
@@ -876,7 +874,7 @@ export default function CommunityDetailPage() {
         {/* ─────────────────────────────────────────────────────────────────── */}
         {activeMode === 'FREE' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            
+
             {/* Left 2 Columns */}
             <div className="lg:col-span-2 space-y-6">
 
@@ -1028,58 +1026,57 @@ export default function CommunityDetailPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
                               {cp.type === 'POKOK' ? <Home className="w-5 h-5" /> :
-                               cp.type === 'WAJIB' ? <Calendar className="w-5 h-5" /> :
-                               <Coins className="w-5 h-5" />}
+                                cp.type === 'WAJIB' ? <Calendar className="w-5 h-5" /> :
+                                  <Coins className="w-5 h-5" />}
                             </div>
-                          <div>
-                            <span className="block text-xs font-bold text-gray-900">{cp.name}</span>
-                            <span className="block text-[10px] text-gray-400 font-medium">{cp.periodText || cp.description || 'Simpanan'}</span>
-                            <span className="block text-xs font-extrabold text-[#2DB24A] mt-0.5">
-                              Rp {cp.amount.toLocaleString('id-ID')}
+                            <div>
+                              <span className="block text-xs font-bold text-gray-900">{cp.name}</span>
+                              <span className="block text-[10px] text-gray-400 font-medium">{cp.periodText || cp.description || 'Simpanan'}</span>
+                              <span className="block text-xs font-extrabold text-[#2DB24A] mt-0.5">
+                                Rp {cp.amount.toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleOpenPaySavings(cp)}
+                              className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[9px] rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                            >
+                              <Wallet className="w-3 h-3" /> Setor
+                            </button>
+                            <span className={`px-2 py-1 font-bold text-[9px] rounded-md ${cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
+                              }`}>
+                              {cp.isMandatory ? 'Wajib' : 'Sukarela'}
                             </span>
+                            {isCanManageCoop && (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleOpenEditProduct(cp)}
+                                  className="text-gray-400 hover:text-[#0F5132] hover:bg-[#E8F8EE] p-1 rounded-lg transition-all"
+                                  title="Edit produk simpanan"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const res = await deleteCooperativeProductAction(cp.id, id)
+                                    if (res?.success) {
+                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                      goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                    } else {
+                                      goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                    }
+                                  }}
+                                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all cursor-pointer"
+                                  title="Hapus produk simpanan"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleOpenPaySavings(cp)}
-                            className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[9px] rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
-                          >
-                            <Wallet className="w-3 h-3" /> Setor
-                          </button>
-                          <span className={`px-2 py-1 font-bold text-[9px] rounded-md ${
-                            cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
-                          }`}>
-                            {cp.isMandatory ? 'Wajib' : 'Sukarela'}
-                          </span>
-                          {isCanManageCoop && (
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleOpenEditProduct(cp)}
-                                className="text-gray-400 hover:text-[#0F5132] hover:bg-[#E8F8EE] p-1 rounded-lg transition-all"
-                                title="Edit produk simpanan"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  const res = await deleteCooperativeProductAction(cp.id, id)
-                                  if (res?.success) {
-                                    setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                    goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                  } else {
-                                    goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
-                                  }
-                                }}
-                                className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all cursor-pointer"
-                                title="Hapus produk simpanan"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 )}
               </div>
@@ -1154,7 +1151,7 @@ export default function CommunityDetailPage() {
 
             {/* Right Sidebar Column (FREE View) */}
             <div className="space-y-4">
-              
+
               {/* Keuntungan Bergabung Card */}
               <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
                 <h4 className="text-xs font-bold text-gray-900">Keuntungan Bergabung</h4>
@@ -1208,45 +1205,45 @@ export default function CommunityDetailPage() {
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
                               {cp.type === 'POKOK' ? <Home className="w-4 h-4" /> :
-                               cp.type === 'WAJIB' ? <Calendar className="w-4 h-4" /> :
-                               <Coins className="w-4 h-4" />}
+                                cp.type === 'WAJIB' ? <Calendar className="w-4 h-4" /> :
+                                  <Coins className="w-4 h-4" />}
                             </div>
-                          <div>
-                            <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
-                            <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
+                            <div>
+                              <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
+                              <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-xs font-black text-[#2DB24A]">Rp {cp.amount.toLocaleString('id-ID')}</span>
+                            {isCanManageCoop && (
+                              <div className="flex items-center gap-0.5">
+                                <button
+                                  onClick={() => handleOpenEditProduct(cp)}
+                                  className="text-gray-400 hover:text-[#0F5132] p-0.5"
+                                  title="Edit produk simpanan"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    const res = await deleteCooperativeProductAction(cp.id, id)
+                                    if (res?.success) {
+                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                      goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                    } else {
+                                      goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                    }
+                                  }}
+                                  className="text-gray-400 hover:text-red-600 p-0.5 cursor-pointer"
+                                  title="Hapus produk simpanan"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-xs font-black text-[#2DB24A]">Rp {cp.amount.toLocaleString('id-ID')}</span>
-                          {isCanManageCoop && (
-                            <div className="flex items-center gap-0.5">
-                              <button
-                                onClick={() => handleOpenEditProduct(cp)}
-                                className="text-gray-400 hover:text-[#0F5132] p-0.5"
-                                title="Edit produk simpanan"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  const res = await deleteCooperativeProductAction(cp.id, id)
-                                  if (res?.success) {
-                                    setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                    goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                  } else {
-                                    goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
-                                  }
-                                }}
-                                className="text-gray-400 hover:text-red-600 p-0.5 cursor-pointer"
-                                title="Hapus produk simpanan"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))
+                      ))
                   )}
                 </div>
               </div>
@@ -1267,8 +1264,8 @@ export default function CommunityDetailPage() {
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
                             {tx.type === 'POKOK' ? <Home className="w-3.5 h-3.5" /> :
-                             tx.type === 'WAJIB' ? <Calendar className="w-3.5 h-3.5" /> :
-                             <Wallet className="w-3.5 h-3.5" />}
+                              tx.type === 'WAJIB' ? <Calendar className="w-3.5 h-3.5" /> :
+                                <Wallet className="w-3.5 h-3.5" />}
                           </div>
                           <div>
                             <span className="block text-[9px] text-gray-400">{tx.date}</span>
@@ -1379,10 +1376,10 @@ export default function CommunityDetailPage() {
                           <div className="flex items-center justify-between gap-1">
                             <div className="flex items-center gap-2">
                               {cp.type === 'POKOK' ? <Home className="w-4 h-4 text-[#2DB24A]" /> :
-                               cp.type === 'WAJIB' ? <Calendar className="w-4 h-4 text-[#2DB24A]" /> :
-                               cp.type === 'SUKARELA' ? <Coins className="w-4 h-4 text-amber-500" /> :
-                               cp.type === 'UMROH' ? <Building2 className="w-4 h-4 text-emerald-600" /> :
-                               <Sparkles className="w-4 h-4 text-amber-600" />}
+                                cp.type === 'WAJIB' ? <Calendar className="w-4 h-4 text-[#2DB24A]" /> :
+                                  cp.type === 'SUKARELA' ? <Coins className="w-4 h-4 text-amber-500" /> :
+                                    cp.type === 'UMROH' ? <Building2 className="w-4 h-4 text-emerald-600" /> :
+                                      <Sparkles className="w-4 h-4 text-amber-600" />}
                               <div>
                                 <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
                                 <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
@@ -1426,9 +1423,8 @@ export default function CommunityDetailPage() {
                               <Wallet className="w-2.5 h-2.5" /> Setor
                             </button>
                           </div>
-                          <span className={`w-max px-2 py-0.5 font-bold text-[8px] rounded ${
-                            cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
-                          }`}>
+                          <span className={`w-max px-2 py-0.5 font-bold text-[8px] rounded ${cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
+                            }`}>
                             {cp.isMandatory ? 'Wajib' : 'Sukarela'}
                           </span>
                         </div>
@@ -1547,7 +1543,7 @@ export default function CommunityDetailPage() {
 
                 {/* Bottom 3-Column Grid (Riwayat Transaksi, Fitur Premium, Merchant + Produk) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  
+
                   {/* Col 1: Riwayat Transaksi Terbaru */}
                   <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
                     <div className="flex justify-between items-center">
@@ -1796,9 +1792,9 @@ export default function CommunityDetailPage() {
                 {/* Investment Banner Promo Card */}
                 <div className="p-5 bg-gradient-to-b from-[#E8F8EE] to-[#d3f4de] border border-[#2DB24A]/30 rounded-2xl shadow-sm text-center space-y-3 relative overflow-hidden">
                   <div className="w-20 h-20 mx-auto relative">
-                    <img 
-                      src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=200&q=80" 
-                      alt="Investment" 
+                    <img
+                      src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=200&q=80"
+                      alt="Investment"
                       className="w-full h-full object-cover rounded-full shadow-md border-2 border-white"
                     />
                   </div>
@@ -1887,27 +1883,24 @@ export default function CommunityDetailPage() {
                     <button
                       type="button"
                       onClick={() => setInvestPaymentMethod('SALDO')}
-                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
-                        investPaymentMethod === 'SALDO' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
-                      }`}
+                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${investPaymentMethod === 'SALDO' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
+                        }`}
                     >
                       <Wallet className="w-3.5 h-3.5" /> Saldo Wallet
                     </button>
                     <button
                       type="button"
                       onClick={() => setInvestPaymentMethod('QRIS')}
-                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
-                        investPaymentMethod === 'QRIS' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
-                      }`}
+                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${investPaymentMethod === 'QRIS' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
+                        }`}
                     >
                       <QrCode className="w-3.5 h-3.5" /> QRIS Instant
                     </button>
                     <button
                       type="button"
                       onClick={() => setInvestPaymentMethod('BANK')}
-                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
-                        investPaymentMethod === 'BANK' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
-                      }`}
+                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${investPaymentMethod === 'BANK' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
+                        }`}
                     >
                       <Building2 className="w-3.5 h-3.5" /> Bank Transfer
                     </button>
@@ -1928,14 +1921,14 @@ export default function CommunityDetailPage() {
                           <span>Saldo Wallet Rp {userBalance.toLocaleString('id-ID')} (Belum mencukupi)</span>
                         </div>
                         <p className="text-[10px] text-amber-800 font-medium leading-relaxed">
-                          Saldo Wallet Anda tidak mencukupi untuk investasi sebesar Rp {Number(investAmount || 0).toLocaleString('id-ID')}. Silakan bayar langsung lewat QRIS Instant atau Transfer Bank (Uang Rill).
+                          Saldo Wallet Anda tidak mencukupi untuk investasi sebesar Rp {Number(investAmount || 0).toLocaleString('id-ID')}. Silakan bayar langsung lewat QRIS Instant atau Transfer Bank
                         </p>
                         <button
                           type="button"
                           onClick={() => setInvestPaymentMethod('QRIS')}
                           className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg shadow-sm transition-colors cursor-pointer text-center"
                         >
-                          📱 Bayar via QRIS Instant (Uang Rill)
+                          📱 Bayar via QRIS Instant
                         </button>
                       </div>
                     ) : (
@@ -2044,11 +2037,10 @@ export default function CommunityDetailPage() {
                     goeyToast.success(`Investasi Rp ${amt.toLocaleString('id-ID')} pada "${titleStr}" berhasil dikonfirmasi!`)
                     setInvestModalOpen(false)
                   }}
-                  className={`w-full py-3 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 ${
-                    investPaymentMethod === 'SALDO' && userBalance < Number(investAmount || 0)
+                  className={`w-full py-3 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 ${investPaymentMethod === 'SALDO' && userBalance < Number(investAmount || 0)
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-[#2DB24A] hover:bg-[#228e3b] text-white cursor-pointer'
-                  }`}
+                    }`}
                 >
                   Konfirmasi Investasi
                 </button>
@@ -2091,21 +2083,19 @@ export default function CommunityDetailPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setPaymentMethod('QRIS')}
-                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
-                        paymentMethod === 'QRIS'
+                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${paymentMethod === 'QRIS'
                           ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#2DB24A]'
                           : 'bg-gray-50 border-gray-200 text-gray-500'
-                      }`}
+                        }`}
                     >
                       QRIS Auto-Verify
                     </button>
                     <button
                       onClick={() => setPaymentMethod('BANK')}
-                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
-                        paymentMethod === 'BANK'
+                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${paymentMethod === 'BANK'
                           ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#2DB24A]'
                           : 'bg-gray-50 border-gray-200 text-gray-500'
-                      }`}
+                        }`}
                     >
                       Transfer Bank Saloka
                     </button>
@@ -2153,7 +2143,7 @@ export default function CommunityDetailPage() {
       <AnimatePresence>
         {editModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -2544,14 +2534,13 @@ export default function CommunityDetailPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-gray-100"
             >
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${
-                confirmModal.variant === 'danger' ? 'bg-red-100 text-red-600' :
-                confirmModal.variant === 'success' ? 'bg-emerald-100 text-emerald-600' :
-                'bg-amber-100 text-amber-600'
-              }`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${confirmModal.variant === 'danger' ? 'bg-red-100 text-red-600' :
+                  confirmModal.variant === 'success' ? 'bg-emerald-100 text-emerald-600' :
+                    'bg-amber-100 text-amber-600'
+                }`}>
                 {confirmModal.variant === 'danger' ? <Trash2 className="w-6 h-6" /> :
-                 confirmModal.variant === 'success' ? <CheckCircle2 className="w-6 h-6" /> :
-                 <Info className="w-6 h-6" />}
+                  confirmModal.variant === 'success' ? <CheckCircle2 className="w-6 h-6" /> :
+                    <Info className="w-6 h-6" />}
               </div>
 
               <div className="space-y-1">
@@ -2580,11 +2569,10 @@ export default function CommunityDetailPage() {
                     })
                   }}
                   disabled={actionPending}
-                  className={`flex-1 py-2.5 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer ${
-                    confirmModal.variant === 'danger' ? 'bg-red-600 hover:bg-red-700' :
-                    confirmModal.variant === 'success' ? 'bg-[#0F5132] hover:bg-emerald-900' :
-                    'bg-amber-600 hover:bg-amber-700'
-                  }`}
+                  className={`flex-1 py-2.5 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer ${confirmModal.variant === 'danger' ? 'bg-red-600 hover:bg-red-700' :
+                      confirmModal.variant === 'success' ? 'bg-[#0F5132] hover:bg-emerald-900' :
+                        'bg-amber-600 hover:bg-amber-700'
+                    }`}
                 >
                   {actionPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : confirmModal.confirmText}
                 </button>
@@ -2613,8 +2601,8 @@ export default function CommunityDetailPage() {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
                   {selectedSavingsProduct.type === 'POKOK' ? <Home className="w-6 h-6" /> :
-                   selectedSavingsProduct.type === 'WAJIB' ? <Calendar className="w-6 h-6" /> :
-                   <Coins className="w-6 h-6" />}
+                    selectedSavingsProduct.type === 'WAJIB' ? <Calendar className="w-6 h-6" /> :
+                      <Coins className="w-6 h-6" />}
                 </div>
                 <div>
                   <h3 className="font-sora text-base font-extrabold text-gray-900">
@@ -2646,9 +2634,8 @@ export default function CommunityDetailPage() {
                     <button
                       type="button"
                       onClick={() => setDepositPaymentMethod('SALDO')}
-                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${
-                        depositPaymentMethod === 'SALDO' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
-                      }`}
+                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${depositPaymentMethod === 'SALDO' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
+                        }`}
                     >
                       <Wallet className="w-4 h-4 mx-auto text-[#2DB24A]" />
                       <span className="block text-[10px] font-bold">Saldo Wallet</span>
@@ -2659,9 +2646,8 @@ export default function CommunityDetailPage() {
                     <button
                       type="button"
                       onClick={() => setDepositPaymentMethod('QRIS')}
-                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${
-                        depositPaymentMethod === 'QRIS' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
-                      }`}
+                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${depositPaymentMethod === 'QRIS' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
+                        }`}
                     >
                       <QrCode className="w-4 h-4 mx-auto text-[#2DB24A]" />
                       <span className="block text-[10px] font-bold">QRIS Instant</span>
@@ -2670,9 +2656,8 @@ export default function CommunityDetailPage() {
                     <button
                       type="button"
                       onClick={() => setDepositPaymentMethod('BANK')}
-                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${
-                        depositPaymentMethod === 'BANK' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
-                      }`}
+                      className={`p-2.5 border rounded-xl text-center space-y-1 transition-all cursor-pointer ${depositPaymentMethod === 'BANK' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
+                        }`}
                     >
                       <Building2 className="w-4 h-4 mx-auto text-[#2DB24A]" />
                       <span className="block text-[10px] font-bold">Bank Transfer</span>
@@ -2695,7 +2680,7 @@ export default function CommunityDetailPage() {
                           <span>Saldo Wallet Rp {userBalance.toLocaleString('id-ID')} (Belum mencukupi)</span>
                         </div>
                         <p className="text-[10px] text-amber-800 font-medium leading-relaxed">
-                          Saldo Wallet Anda tidak mencukupi untuk nominal setoran ini. Silakan bayar langsung lewat QRIS Instant atau Transfer Bank (Uang Rill).
+                          Saldo Wallet Anda tidak mencukupi untuk nominal setoran ini. Silakan bayar langsung lewat QRIS Instant atau Transfer Bank
                         </p>
                         <div className="pt-1">
                           <button
@@ -2703,7 +2688,7 @@ export default function CommunityDetailPage() {
                             onClick={() => setDepositPaymentMethod('QRIS')}
                             className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg transition-colors cursor-pointer text-center"
                           >
-                            📱 Bayar via QRIS Instant (Uang Rill)
+                            📱 Bayar via QRIS Instant
                           </button>
                         </div>
                       </div>
@@ -2773,11 +2758,10 @@ export default function CommunityDetailPage() {
                   <button
                     type="submit"
                     disabled={actionPending || (depositPaymentMethod === 'SALDO' && userBalance < Number(depositAmount || 0))}
-                    className={`flex-1 py-2.5 font-extrabold rounded-xl shadow-md flex items-center justify-center gap-1.5 ${
-                      depositPaymentMethod === 'SALDO' && userBalance < Number(depositAmount || 0)
+                    className={`flex-1 py-2.5 font-extrabold rounded-xl shadow-md flex items-center justify-center gap-1.5 ${depositPaymentMethod === 'SALDO' && userBalance < Number(depositAmount || 0)
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : 'bg-[#0F5132] hover:bg-emerald-900 text-white cursor-pointer'
-                    }`}
+                      }`}
                   >
                     {actionPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Konfirmasi Setor'}
                   </button>
