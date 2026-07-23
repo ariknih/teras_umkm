@@ -94,9 +94,7 @@ export default async function RootLayout({
       <head suppressHydrationWarning>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <Script
-          id="theme-script"
-          strategy="beforeInteractive"
+        <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
@@ -107,9 +105,7 @@ export default async function RootLayout({
             `,
           }}
         />
-        <Script
-          id="bis-cleaner-script"
-          strategy="beforeInteractive"
+        <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
@@ -155,23 +151,22 @@ export default async function RootLayout({
             `
           }}
         />
-        <Script 
-          id="midtrans-script"
-          src={process.env.MIDTRANS_IS_PRODUCTION === 'true' 
-            ? "https://app.midtrans.com/snap/snap.js" 
-            : "https://app.sandbox.midtrans.com/snap/snap.js"
-          } 
-          strategy="beforeInteractive" 
-          suppressHydrationWarning
-        />
       </head>
       <body
         suppressHydrationWarning
         className={`min-h-full flex flex-col text-on-surface font-inter select-none overflow-x-hidden ${
           isAdminRoute ? "bg-[#0c0d0e]" : isBuilderRoute ? "bg-[#e8eaed]" : "bg-bg-dark pb-16 md:pb-0"
         }`}
-        suppressHydrationWarning
       >
+        <Script 
+          id="midtrans-script"
+          src={process.env.MIDTRANS_IS_PRODUCTION === 'true' 
+            ? "https://app.midtrans.com/snap/snap.js" 
+            : "https://app.sandbox.midtrans.com/snap/snap.js"
+          } 
+          strategy="lazyOnload" 
+          suppressHydrationWarning
+        />
         <GoeyToastProvider />
         {isAdminRoute || isBuilderRoute ? (
           <main className="flex-grow flex flex-col">
