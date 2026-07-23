@@ -808,34 +808,37 @@ export default function CommunityDetailPage() {
                 </div>
               </div>
 
-              {/* Produk Simpanan (Free) Section - Hanya POKOK, WAJIB, & SUKARELA */}
+              {/* Produk Simpanan (Free) Section - Hanya Simpanan Pokok & Wajib (Fixed) */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Produk Simpanan Koperasi (Free)
+                    Produk Simpanan (Free)
                   </h3>
-                  {isCanManageCoop && (
-                    <button
-                      onClick={() => handleOpenCreateProduct(false)}
-                      className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                    >
-                      <PlusCircle className="w-3 h-3" /> Tambah Produk Simpanan
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      goeyToast.error('Fitur Tambah Produk Simpanan Koperasi hanya untuk Anggota Premium.')
+                      setPaymentModalOpen(true)
+                    }}
+                    className="px-3 py-1 bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <Lock className="w-3 h-3 text-amber-600" />
+                    <span>+ Tambah Produk (Khusus Premium)</span>
+                  </button>
                 </div>
 
                 {coopProducts.filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type)).length === 0 ? (
                   <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
                     <PiggyBank className="w-8 h-8 text-gray-300 mx-auto" />
                     <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan dasar (Pokok, Wajib, Sukarela) yang dibuat.</p>
-                    {isCanManageCoop && (
-                      <button
-                        onClick={() => handleOpenCreateProduct(false)}
-                        className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
-                      >
-                        + Tambah Produk Simpanan Pertama
-                      </button>
-                    )}
+                    <button
+                      onClick={() => {
+                        goeyToast.error('Upgrade ke Premium untuk menambah produk simpanan.')
+                        setPaymentModalOpen(true)
+                      }}
+                      className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
+                    >
+                      + Upgrade Ke Premium
+                    </button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1000,14 +1003,15 @@ export default function CommunityDetailPage() {
               <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
                 <div className="flex justify-between items-center">
                   <h4 className="text-xs font-bold text-gray-900">Simpanan yang Tersedia (Free)</h4>
-                  {isCanManageCoop && (
-                    <button
-                      onClick={() => handleOpenCreateProduct(false)}
-                      className="text-[10px] font-bold text-[#0F5132] hover:underline flex items-center gap-0.5"
-                    >
-                      + Tambah
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      goeyToast.error('Upgrade ke Premium untuk menambah tipe simpanan.')
+                      setPaymentModalOpen(true)
+                    }}
+                    className="text-[10px] font-bold text-amber-700 hover:underline flex items-center gap-0.5 cursor-pointer"
+                  >
+                    <Lock className="w-2.5 h-2.5 text-amber-600" /> Upgrade
+                  </button>
                 </div>
 
                 <div className="space-y-2.5">
