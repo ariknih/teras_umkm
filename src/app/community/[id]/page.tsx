@@ -178,6 +178,7 @@ export default function CommunityDetailPage() {
   const [selectedSavingsProduct, setSelectedSavingsProduct] = useState<any>(null)
   const [depositAmount, setDepositAmount] = useState('')
   const [depositPaymentMethod, setDepositPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('QRIS')
+  const [shuDetailModalOpen, setShuDetailModalOpen] = useState(false)
 
   const [recentTransactions, setRecentTransactions] = useState<any[]>([
     {
@@ -848,7 +849,11 @@ export default function CommunityDetailPage() {
             </div>
           </div>
 
-          <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3.5">
+          <div
+            onClick={() => setShuDetailModalOpen(true)}
+            className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3.5 cursor-pointer hover:border-[#2DB24A]/40 transition-all"
+            title="Klik untuk melihat detail SHU"
+          >
             <div className="w-11 h-11 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
               <BarChart3 className="w-5.5 h-5.5" />
             </div>
@@ -856,7 +861,7 @@ export default function CommunityDetailPage() {
               <span className="block text-[10px] text-gray-400 font-medium">SHU Tahun Ini</span>
               <div className="flex items-baseline gap-1">
                 <span className="text-base md:text-lg font-extrabold text-gray-900">
-                  {realStats.shuCurrentYearProfit > 0 ? `Rp ${realStats.shuCurrentYearProfit.toLocaleString('id-ID')}` : 'Rp 0'}
+                  Rp {Math.round(userShu?.totalShuAmount || (realStats.shuCurrentYearProfit > 0 ? realStats.shuCurrentYearProfit : 670000)).toLocaleString('id-ID')}
                 </span>
                 <span className="text-[10px] text-gray-500 font-medium">Estimasi SHU</span>
               </div>
@@ -1790,10 +1795,23 @@ export default function CommunityDetailPage() {
                 </div>
 
                 {/* SHU Tahun Ini Card */}
-                <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-2">
+                <div
+                  onClick={() => setShuDetailModalOpen(true)}
+                  className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-2 cursor-pointer hover:border-[#2DB24A]/40 transition-all"
+                  title="Klik untuk melihat detail SHU"
+                >
                   <div className="flex justify-between items-center">
                     <h4 className="text-xs font-bold text-gray-900">SHU Tahun Ini</h4>
-                    <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Detail</Link>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShuDetailModalOpen(true)
+                      }}
+                      className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer bg-transparent border-0"
+                    >
+                      Lihat Detail
+                    </button>
                   </div>
 
                   <div className="p-3.5 bg-gray-50 rounded-xl flex items-center gap-3">
@@ -1802,7 +1820,9 @@ export default function CommunityDetailPage() {
                     </div>
                     <div>
                       <span className="block text-[10px] text-gray-400 font-medium">Estimasi SHU</span>
-                      <span className="block text-base font-extrabold text-[#2DB24A]">Rp 250.000</span>
+                      <span className="block text-base font-extrabold text-[#2DB24A]">
+                        Rp {Math.round(userShu?.totalShuAmount || 670000).toLocaleString('id-ID')}
+                      </span>
                       <span className="block text-[9px] text-gray-500 mt-0.5">Akan dibagikan pada akhir tahun buku 2026</span>
                     </div>
                   </div>
@@ -2639,6 +2659,98 @@ export default function CommunityDetailPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        {/* MODAL DETAIL SHU & PERHITUNGAN RAT ANGGOTA */}
+        {shuDetailModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-gray-100 relative text-gray-800"
+            >
+              <button
+                type="button"
+                onClick={() => setShuDetailModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
+                  <BarChart3 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-sora text-base font-extrabold text-gray-900">
+                    Detail SHU RAT {shuConfig?.year || new Date().getFullYear()}
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Sisa Hasil Usaha Koperasi Anggota
+                  </p>
+                </div>
+              </div>
+
+              {/* Total Card */}
+              <div className="p-4 bg-gradient-to-br from-[#0F5132] to-emerald-800 text-white rounded-2xl shadow-sm flex items-center justify-between">
+                <div>
+                  <span className="block text-[10px] text-emerald-200 font-bold uppercase tracking-wider">Estimasi Total SHU Diterima</span>
+                  <span className="font-sora font-extrabold text-xl md:text-2xl text-white">
+                    Rp {Math.round(userShu?.totalShuAmount || 670000).toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold text-emerald-100 font-mono">
+                  RAT 2026
+                </div>
+              </div>
+
+              {/* Breakdown Grid */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Rincian Komponen Pembagian:</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 bg-[#E8F8EE] border border-[#2DB24A]/30 rounded-xl space-y-1">
+                    <span className="block text-[10px] font-bold text-[#0F5132] uppercase">1. SHU Jasa Modal</span>
+                    <span className="block font-mono font-extrabold text-emerald-800 text-sm">
+                      Rp {Math.round(userShu?.shuJasaModalAmount || 250000).toLocaleString('id-ID')}
+                    </span>
+                    <span className="block text-[9px] text-gray-500">
+                      Berdasarkan Simpanan Saya: Rp {(userShu?.simpananMember || 400000).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                    <span className="block text-[10px] font-bold text-amber-800 uppercase">2. SHU Jasa Usaha</span>
+                    <span className="block font-mono font-extrabold text-amber-900 text-sm">
+                      Rp {Math.round(userShu?.shuJasaUsahaAmount || 420000).toLocaleString('id-ID')}
+                    </span>
+                    <span className="block text-[9px] text-gray-500">
+                      Berdasarkan Transaksi Saya: Rp {(userShu?.transaksiMember || 3500000).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* RAT Allocation Config Info */}
+              <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2 text-xs">
+                <span className="block font-bold text-gray-700 text-[11px]">Komposisi Pembagian Hasil RAT Koperasi:</span>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-600 font-medium">
+                  <div className="flex justify-between"><span>Cadangan Koperasi:</span> <span className="font-bold">{shuConfig?.pctCadangan || 25}%</span></div>
+                  <div className="flex justify-between"><span>SHU Jasa Modal:</span> <span className="font-bold">{shuConfig?.pctJasaModal || 20}%</span></div>
+                  <div className="flex justify-between"><span>SHU Jasa Usaha:</span> <span className="font-bold">{shuConfig?.pctJasaUsaha || 30}%</span></div>
+                  <div className="flex justify-between"><span>Dana Diklat Member:</span> <span className="font-bold">{shuConfig?.pctPendidikan || 2.5}%</span></div>
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShuDetailModalOpen(false)}
+                  className="w-full py-2.5 bg-[#0F5132] hover:bg-emerald-900 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Tutup Detail SHU
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
