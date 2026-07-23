@@ -173,6 +173,7 @@ export default function CommunityDetailPage() {
   const [paymentSuccess, setPaymentSuccess] = useState(false)
 
   // Setor Simpanan Modal & Interactive Transactions State
+  const [userBalance, setUserBalance] = useState(750000)
   const [paySavingsModalOpen, setPaySavingsModalOpen] = useState(false)
   const [selectedSavingsProduct, setSelectedSavingsProduct] = useState<any>(null)
   const [depositAmount, setDepositAmount] = useState('')
@@ -223,7 +224,16 @@ export default function CommunityDetailPage() {
       return
     }
 
+    if (depositPaymentMethod === 'SALDO' && amt > userBalance) {
+      goeyToast.error(`Saldo Wallet Anda tidak cukup! (Sisa Saldo: Rp ${userBalance.toLocaleString('id-ID')})`)
+      return
+    }
+
     startTransition(async () => {
+      if (depositPaymentMethod === 'SALDO') {
+        setUserBalance(prev => prev - amt)
+      }
+
       const now = new Date()
       const timeStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
       const newTx = {
@@ -2449,8 +2459,11 @@ export default function CommunityDetailPage() {
                         depositPaymentMethod === 'SALDO' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
                       }`}
                     >
-                      <Wallet className="w-4 h-4 mx-auto" />
+                      <Wallet className="w-4 h-4 mx-auto text-[#2DB24A]" />
                       <span className="block text-[10px] font-bold">Saldo Wallet</span>
+                      <span className="block text-[8px] font-semibold text-gray-500">
+                        Rp {userBalance.toLocaleString('id-ID')}
+                      </span>
                     </button>
                     <button
                       type="button"
@@ -2459,8 +2472,9 @@ export default function CommunityDetailPage() {
                         depositPaymentMethod === 'QRIS' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
                       }`}
                     >
-                      <QrCode className="w-4 h-4 mx-auto" />
+                      <QrCode className="w-4 h-4 mx-auto text-[#2DB24A]" />
                       <span className="block text-[10px] font-bold">QRIS Instant</span>
+                      <span className="block text-[8px] font-semibold text-gray-500">Scan & Pay</span>
                     </button>
                     <button
                       type="button"
@@ -2469,11 +2483,70 @@ export default function CommunityDetailPage() {
                         depositPaymentMethod === 'BANK' ? 'border-[#2DB24A] bg-[#E8F8EE] text-[#0F5132]' : 'border-gray-200 text-gray-600'
                       }`}
                     >
-                      <Building2 className="w-4 h-4 mx-auto" />
+                      <Building2 className="w-4 h-4 mx-auto text-[#2DB24A]" />
                       <span className="block text-[10px] font-bold">Bank Transfer</span>
+                      <span className="block text-[8px] font-semibold text-gray-500">VA Automated</span>
                     </button>
                   </div>
                 </div>
+
+                {/* DYNAMIC PAYMENT METHOD DETAILS */}
+                {depositPaymentMethod === 'SALDO' && (
+                  <div className="p-3 bg-[#E8F8EE] border border-[#2DB24A]/30 rounded-xl space-y-1.5">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-600 font-medium">Saldo Tersedia:</span>
+                      <span className="font-extrabold text-[#0F5132]">Rp {userBalance.toLocaleString('id-ID')}</span>
+                    </div>
+                    {Number(depositAmount || 0) > userBalance ? (
+                      <div className="p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-[10px] font-bold flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 shrink-0" />
+                        <span>Saldo Wallet tidak cukup. Kurang Rp {(Number(depositAmount || 0) - userBalance).toLocaleString('id-ID')}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center text-[10px] text-emerald-800 font-medium pt-1 border-t border-[#2DB24A]/20">
+                        <span>Sisa Saldo Setelah Setor:</span>
+                        <span className="font-bold">Rp {(userBalance - Number(depositAmount || 0)).toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {depositPaymentMethod === 'QRIS' && (
+                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3 text-center">
+                    <div className="bg-white p-3 rounded-2xl inline-block shadow-sm border border-gray-200">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=QRIS_SETOR_${selectedSavingsProduct.id}_${depositAmount || 0}`}
+                        alt="QRIS Code"
+                        className="w-36 h-36 mx-auto rounded-lg"
+                      />
+                      <div className="flex items-center justify-center gap-1 mt-2 text-[10px] font-extrabold text-gray-800 uppercase tracking-wider">
+                        <QrCode className="w-3.5 h-3.5 text-[#2DB24A]" /> QRIS TERAS KOPERASI
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
+                      Scan QRIS ini dengan mobile banking atau e-wallet (GoPay, OVO, Dana, ShopeePay, LinkAja).
+                    </p>
+                  </div>
+                )}
+
+                {depositPaymentMethod === 'BANK' && (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2 text-xs">
+                    <span className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider">Nomor Virtual Account</span>
+                    <div className="flex justify-between items-center p-2.5 bg-white rounded-xl border border-gray-200">
+                      <div>
+                        <span className="block text-[9px] text-gray-400 font-bold">BCA Virtual Account</span>
+                        <span className="font-mono font-extrabold text-gray-900 text-xs">8801 2398 4920 192</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goeyToast.success('Nomor Virtual Account BCA berhasil disalin!')}
+                        className="px-2.5 py-1 bg-[#E8F8EE] hover:bg-[#2DB24A] text-[#0F5132] hover:text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
+                      >
+                        Salin
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1">
                   <div className="flex justify-between text-xs font-medium">
