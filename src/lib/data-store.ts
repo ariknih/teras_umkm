@@ -8331,8 +8331,81 @@ export const DataStore = {
         })
       } catch (_) {}
     }
-    const products = (globalThis as any).__mockCooperativeProducts || []
-    return products.filter((p: any) => p.communityId === communityId)
+    let products = (globalThis as any).__mockCooperativeProducts || []
+    let commProducts = products.filter((p: any) => p.communityId === communityId)
+    if (commProducts.length === 0) {
+      commProducts = [
+        {
+          id: `coop-prod-pokok-${communityId}`,
+          communityId,
+          name: 'Simpanan Pokok',
+          type: 'POKOK',
+          amount: 150000,
+          periodText: 'Sekali Bayar',
+          isMandatory: true,
+          isPremium: false,
+          description: 'Simpanan pokok dibayarkan satu kali saat mendaftar keanggotaan koperasi.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: `coop-prod-wajib-${communityId}`,
+          communityId,
+          name: 'Simpanan Wajib',
+          type: 'WAJIB',
+          amount: 50000,
+          periodText: 'Iuran rutin setiap bulan',
+          isMandatory: true,
+          isPremium: false,
+          description: 'Simpanan wajib dibayarkan rutin setiap bulan oleh seluruh anggota.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: `coop-prod-sukarela-${communityId}`,
+          communityId,
+          name: 'Simpanan Sukarela',
+          type: 'SUKARELA',
+          amount: 10000,
+          periodText: 'Setor kapan saja',
+          isMandatory: false,
+          isPremium: true,
+          description: 'Simpanan bebas untuk investasi anggota dengan imbal hasil SHU Jasa Modal.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: `coop-prod-umroh-${communityId}`,
+          communityId,
+          name: 'Simpanan Umroh',
+          type: 'UMROH',
+          amount: 50000,
+          periodText: 'Tabungan khusus umroh',
+          isMandatory: false,
+          isPremium: true,
+          description: 'Tabungan terencana khusus persiapan ibadah umroh anggota.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: `coop-prod-qurban-${communityId}`,
+          communityId,
+          name: 'Simpanan Qurban',
+          type: 'QURBAN',
+          amount: 20000,
+          periodText: 'Tabungan khusus qurban',
+          isMandatory: false,
+          isPremium: true,
+          description: 'Tabungan terencana untuk pelaksanaan ibadah qurban tahunan.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ]
+      products = [...products, ...commProducts]
+      ;(globalThis as any).__mockCooperativeProducts = products
+      saveMockDb()
+    }
+    return commProducts
   },
 
   async createCooperativeProduct(data: {

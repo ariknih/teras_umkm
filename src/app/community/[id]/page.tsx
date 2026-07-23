@@ -15,6 +15,7 @@ import {
   getCommunityRealStatsAction,
   getCooperativeProductsAction,
   createCooperativeProductAction,
+  updateCooperativeProductAction,
   deleteCooperativeProductAction,
   getMerchantFundingProjectsAction,
   createMerchantFundingProjectAction,
@@ -59,7 +60,9 @@ import {
   Store,
   Wallet,
   BarChart3,
-  Award
+  Award,
+  Edit3,
+  Trash2
 } from 'lucide-react'
 
 export default function CommunityDetailPage() {
@@ -1131,23 +1134,27 @@ export default function CommunityDetailPage() {
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => handleOpenEditProduct(cp)}
-                                  className="text-gray-400 hover:text-[#0F5132] text-xs transition-colors p-0.5"
+                                  className="text-gray-400 hover:text-[#0F5132] hover:bg-[#E8F8EE] p-1 rounded-lg transition-all"
                                   title="Edit produk simpanan"
                                 >
-                                  ✏️
+                                  <Edit3 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
                                   onClick={async () => {
-                                    if (confirm(`Hapus produk simpanan "${cp.name}"?`)) {
-                                      await deleteCooperativeProductAction(cp.id, id)
-                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                      goeyToast.success('Produk simpanan dihapus!')
+                                    if (confirm(`Apakah Anda yakin ingin menghapus produk simpanan "${cp.name}"?`)) {
+                                      const res = await deleteCooperativeProductAction(cp.id, id)
+                                      if (res?.success) {
+                                        setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                        goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
+                                      } else {
+                                        goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
+                                      }
                                     }
                                   }}
-                                  className="text-gray-300 hover:text-red-600 text-xs transition-colors p-0.5"
+                                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all"
                                   title="Hapus produk simpanan"
                                 >
-                                  <X className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
                             )}
@@ -1990,10 +1997,19 @@ export default function CommunityDetailPage() {
                   <input type="text" value={prodPeriod} onChange={e => setProdPeriod(e.target.value)} placeholder="e.g. Setor Kapan Saja / Per Bulan" className="w-full border rounded-xl px-3 py-2 text-xs" />
                 </div>
 
+                <div>
+                  <label className="block font-bold text-gray-700 mb-1">Deskripsi Produk Simpanan</label>
+                  <textarea rows={2} value={prodDesc} onChange={e => setProdDesc(e.target.value)} placeholder="Tuliskan rincian atau ketentuan simpanan ini..." className="w-full border rounded-xl px-3 py-2 text-xs" />
+                </div>
+
                 <div className="flex gap-4 pt-1">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" checked={prodIsMandatory} onChange={e => setProdIsMandatory(e.target.checked)} className="rounded text-[#2DB24A]" />
                     <span className="font-bold text-gray-700">Wajib untuk Anggota</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={prodIsPremium} onChange={e => setProdIsPremium(e.target.checked)} className="rounded text-[#2DB24A]" />
+                    <span className="font-bold text-gray-700">Fitur Premium</span>
                   </label>
                 </div>
 
