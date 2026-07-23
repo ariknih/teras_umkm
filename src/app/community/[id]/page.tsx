@@ -1932,19 +1932,23 @@ export default function CommunityDetailPage() {
                   <h3 className="font-sora text-sm font-bold text-gray-900">
                     Pendanaan Merchant
                   </h3>
-                  <span className="text-[10px] text-gray-400">{selectedProject.title}</span>
+                  <span className="text-[10px] text-gray-400">{selectedProject.title || selectedProject.name || 'Proyek Pendanaan'}</span>
                 </div>
-                <button onClick={() => setInvestModalOpen(false)} className="text-gray-400 hover:text-gray-700 text-sm font-bold">✕</button>
+                <button onClick={() => setInvestModalOpen(false)} className="text-gray-400 hover:text-gray-700 text-sm font-bold cursor-pointer">✕</button>
               </div>
 
               <div className="space-y-3 text-xs">
                 <div className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
                   <span className="text-gray-500">Target Dana:</span>
-                  <span className="font-bold text-gray-900">Rp {selectedProject.target.toLocaleString('id-ID')}</span>
+                  <span className="font-bold text-gray-900">
+                    Rp {Number(selectedProject.targetAmount ?? selectedProject.target ?? 0).toLocaleString('id-ID')}
+                  </span>
                 </div>
                 <div className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
                   <span className="text-gray-500">Minimal Pendanaan:</span>
-                  <span className="font-bold text-[#2DB24A]">Rp {selectedProject.minInvest.toLocaleString('id-ID')}</span>
+                  <span className="font-bold text-[#2DB24A]">
+                    Rp {Number(selectedProject.minInvestment ?? selectedProject.minInvest ?? 50000).toLocaleString('id-ID')}
+                  </span>
                 </div>
 
                 <div className="space-y-1.5 pt-2">
@@ -1953,17 +1957,37 @@ export default function CommunityDetailPage() {
                     type="number"
                     value={investAmount}
                     onChange={(e) => setInvestAmount(e.target.value)}
-                    min={selectedProject.minInvest}
+                    min={Number(selectedProject.minInvestment ?? selectedProject.minInvest ?? 50000)}
                     className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#2DB24A]"
                   />
                 </div>
 
                 <button
                   onClick={() => {
-                    goeyToast.success(`Berhasil berinvestasi Rp ${Number(investAmount).toLocaleString('id-ID')} di ${selectedProject.title}!`)
+                    const amt = Number(investAmount || 0)
+                    if (amt <= 0) {
+                      goeyToast.error('Nominal pendanaan tidak valid.')
+                      return
+                    }
+                    const titleStr = selectedProject.title || selectedProject.name || 'Proyek Merchant'
+                    const now = new Date()
+                    const timeStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                    setRecentTransactions(prev => [
+                      {
+                        id: `tx-${Date.now()}`,
+                        date: timeStr,
+                        title: `Pendanaan ${titleStr}`,
+                        amount: amt,
+                        status: 'Berhasil',
+                        type: 'INVESTMENT',
+                        isIncome: false
+                      },
+                      ...prev
+                    ])
+                    goeyToast.success(`Berhasil berinvestasi Rp ${amt.toLocaleString('id-ID')} di ${titleStr}!`)
                     setInvestModalOpen(false)
                   }}
-                  className="w-full py-3 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all"
+                  className="w-full py-3 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all cursor-pointer"
                 >
                   Konfirmasi Investasi
                 </button>
