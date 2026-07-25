@@ -3,6 +3,17 @@
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import {
+  Sparkles,
+  Activity,
+  MessageSquare,
+  Calendar,
+  ShoppingBag,
+  Image as ImageIcon,
+  Users as UsersIcon,
+  Sliders,
+  Settings
+} from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { Logo } from '@/components/Logo'
 import {
@@ -120,6 +131,17 @@ export default function AdminDashboardClient({
   const [communityModal, setCommunityModal] = useState<{ open: boolean; mode: 'add' | 'edit'; data?: any }>({
     open: false,
     mode: 'add'
+  })
+  const [selectedTemplate, setSelectedTemplate] = useState('Community')
+  const [moduleSettingsOpen, setModuleSettingsOpen] = useState(false)
+  const [modulesConfig, setModulesConfig] = useState<Record<string, boolean>>({
+    heroBanner: true,
+    aktivitas: true,
+    diskusi: true,
+    event: true,
+    produkAnggota: true,
+    galeri: true,
+    anggota: true,
   })
   const [commForm, setCommForm] = useState({
     name: '',
@@ -825,7 +847,7 @@ export default function AdminDashboardClient({
           <div className={`h-[74px] border-b border-[#e2e8f0] flex items-center justify-between transition-all duration-300 ${isSidebarCollapsed ? 'px-3 justify-center' : 'px-6 gap-3'}`}>
             {!isSidebarCollapsed ? (
               <div className="flex items-center gap-3 overflow-hidden">
-                <img src="/images/logo+nama_saloka.webp" alt="Saloka.id" className="h-8 object-contain" />
+                <img src="/images/logo+nama_saloka.svg" alt="Saloka.id" className="h-8 object-contain" />
                 <div className="flex flex-col justify-center border-l border-slate-200 pl-3 min-w-max">
                   <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none">Admin</p>
                   <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none mt-0.5">Control</p>
@@ -2212,7 +2234,7 @@ export default function AdminDashboardClient({
                   Verifikasi Pembayaran Invoice Keanggotaan Komunitas
                 </h3>
                 <p className="text-xs text-[#64748b] mb-4">
-                  Daftar tagihan pendaftaran keanggotaan Komunitas Koperasi (Simpanan Pokok & Wajib) dan Komunitas Berbayar yang dikelola Saloka.
+                  Daftar tagihan pendaftaran keanggotaan Komunitas Koperasi (Simpanan Pokok & Wajib) dan Perkumpulan Berbayar yang dikelola Saloka.
                 </p>
 
                 <div className="overflow-x-auto">
@@ -3579,125 +3601,364 @@ export default function AdminDashboardClient({
             </div>
           )}
 
-          {/* ─── CREATE / EDIT COMMUNITY MODAL ─────────────────────────────── */}
+          {/* ─── CREATE / EDIT COMMUNITY MODAL (HIGH FIDELITY UI/UX SALOKA) ─── */}
           {communityModal.open && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-2xl w-full p-6 space-y-6 shadow-2xl my-8 animate-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                  <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 font-sans">
+              <div className="bg-white border border-gray-200 rounded-[12px] max-w-2xl w-full p-4 sm:p-5 shadow-2xl animate-in zoom-in-95 duration-200 text-gray-900 flex flex-col max-h-[88vh]">
+
+                {/* JUDUL MODAL - STICKY TOP */}
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3 shrink-0">
+                  <h3 className="font-sora text-sm font-extrabold text-[#16A34A] uppercase tracking-wider">
                     {communityModal.mode === 'add' ? 'Tambah Komunitas Induk Baru' : 'Edit Komunitas Induk'}
                   </h3>
-                  <button onClick={() => setCommunityModal({ open: false, mode: 'add' })} className="text-slate-400 hover:text-slate-600">✕</button>
+                  <button
+                    type="button"
+                    onClick={() => setCommunityModal({ open: false, mode: 'add' })}
+                    className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                <form onSubmit={handleSaveCommunitySubmit} className="space-y-4 text-xs">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Nama Komunitas *</label>
-                      <input
-                        type="text"
-                        required
-                        value={commForm.name}
-                        onChange={e => setCommForm({ ...commForm, name: e.target.value })}
-                        placeholder="e.g. Komunitas UMKM Batik Solo"
-                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Ketua Komunitas *</label>
-                      <select
-                        value={commForm.ketuaId}
-                        onChange={e => setCommForm({ ...commForm, ketuaId: e.target.value })}
-                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
-                      >
-                        <option value="">-- Pilih Ketua Komunitas --</option>
-                        {users.map(u => (
-                          <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                <form onSubmit={handleSaveCommunitySubmit} className="flex flex-col flex-1 overflow-hidden pt-3">
+                  {/* SCROLLABLE BODY */}
+                  <div className="overflow-y-auto pr-1.5 space-y-4 flex-1 text-xs">
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Tipe Komunitas</label>
-                      <select
-                        value={commForm.type}
-                        onChange={e => setCommForm({ ...commForm, type: e.target.value })}
-                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
-                      >
-                        <option value="PERKUMPULAN">PERKUMPULAN</option>
-                        <option value="KOPERASI">KOPERASI</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Kategori</label>
-                      <select
-                        value={commForm.category}
-                        onChange={e => setCommForm({ ...commForm, category: e.target.value })}
-                        className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
-                      >
-                        <option value="FREE">FREE</option>
-                        <option value="PAID">PAID</option>
-                        <option value="KOPERASI">KOPERASI</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1">Deskripsi Singkat</label>
-                    <textarea
-                      rows={2}
-                      value={commForm.description}
-                      onChange={e => setCommForm({ ...commForm, description: e.target.value })}
-                      className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-2 text-slate-800 focus:border-[#0F5132]"
-                    />
-                  </div>
-
-                  {/* Legalities */}
-                  <div className="border-t border-slate-100 pt-3">
-                    <p className="text-[10px] font-bold text-[#0F5132] uppercase tracking-wider mb-2">Legalitas Komunitas</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div>
-                        <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Akta Notaris</label>
-                        <input type="text" value={commForm.aktaNotaris} onChange={e => setCommForm({ ...commForm, aktaNotaris: e.target.value })} className="w-full bg-white border border-[#cbd5e1] rounded px-2.5 py-1.5 text-xs text-slate-800" />
+                    {/* BAGIAN 1: INFORMASI DASAR */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>
+                        <h4 className="text-[10px] font-extrabold text-[#16A34A] uppercase tracking-wider">
+                          INFORMASI DASAR
+                        </h4>
                       </div>
-                      <div>
-                        <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Nomor AHU</label>
-                        <input type="text" value={commForm.nomorAhu} onChange={e => setCommForm({ ...commForm, nomorAhu: e.target.value })} className="w-full bg-white border border-[#cbd5e1] rounded px-2.5 py-1.5 text-xs text-slate-800" />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1">
+                            Nama Komunitas <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={commForm.name}
+                            onChange={e => setCommForm({ ...commForm, name: e.target.value })}
+                            placeholder="e.g. Komunitas UMKM Batik Solo"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1">
+                            Ketua Komunitas <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            required
+                            value={commForm.ketuaId}
+                            onChange={e => setCommForm({ ...commForm, ketuaId: e.target.value })}
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer"
+                          >
+                            <option value="">-- Pilih Ketua Komunitas --</option>
+                            {users.map(u => (
+                              <option key={u.id} value={u.id}>
+                                {u.name} ({u.email})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">NPWP</label>
-                        <input type="text" value={commForm.nomorNpwp} onChange={e => setCommForm({ ...commForm, nomorNpwp: e.target.value })} className="w-full bg-white border border-[#cbd5e1] rounded px-2.5 py-1.5 text-xs text-slate-800" />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1">
+                            Tipe Komunitas
+                          </label>
+                          <select
+                            value={commForm.type}
+                            onChange={e => setCommForm({ ...commForm, type: e.target.value })}
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer"
+                          >
+                            <option value="PERKUMPULAN">PERKUMPULAN</option>
+                            <option value="KOPERASI">KOPERASI</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1">
+                            Kategori
+                          </label>
+                          <select
+                            value={commForm.category}
+                            onChange={e => setCommForm({ ...commForm, category: e.target.value })}
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer"
+                          >
+                            <option value="FREE">FREE</option>
+                            <option value="PAID">PAID</option>
+                            <option value="KOPERASI">KOPERASI</option>
+                          </select>
+                        </div>
                       </div>
+
                       <div>
-                        <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Domisili</label>
-                        <input type="text" value={commForm.domisili} onChange={e => setCommForm({ ...commForm, domisili: e.target.value })} className="w-full bg-white border border-[#cbd5e1] rounded px-2.5 py-1.5 text-xs text-slate-800" />
+                        <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1">
+                          Deskripsi Singkat
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={commForm.description}
+                          onChange={e => setCommForm({ ...commForm, description: e.target.value })}
+                          placeholder="Tuliskan deskripsi visi dan tujuan komunitas..."
+                          className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                        />
+                      </div>
+                    </div>
+
+                    {/* BAGIAN 2: TEMPLATE HALAMAN */}
+                    <div className="space-y-3 pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>
+                        <h4 className="text-[10px] font-extrabold text-[#16A34A] uppercase tracking-wider">
+                          TEMPLATE HALAMAN
+                        </h4>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1">
+                          Pilih Template Halaman
+                        </label>
+                        <select
+                          value={selectedTemplate}
+                          onChange={e => setSelectedTemplate(e.target.value)}
+                          className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs font-semibold cursor-pointer"
+                        >
+                          <option value="Community">▼ Community</option>
+                          <option value="Business">▼ Business</option>
+                          <option value="Education">▼ Education</option>
+                          <option value="Culinary">▼ Culinary</option>
+                          <option value="Koperasi">▼ Koperasi</option>
+                        </select>
+                      </div>
+
+                      {/* PREVIEW LAYOUT (CARD KECIL) */}
+                      <div className="p-3 bg-gray-50 border border-gray-200 rounded-[10px] shadow-2xs space-y-2">
+                        <div className="flex justify-between items-center border-b border-gray-200/60 pb-1.5">
+                          <span className="text-[9px] font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                            <Sliders className="w-3 h-3 text-[#16A34A]" /> Preview Layout ({selectedTemplate})
+                          </span>
+                          <span className="px-2 py-0.5 bg-[#E8F5E9] border border-[#16A34A]/30 text-[#16A34A] font-extrabold text-[8px] rounded uppercase">
+                            Card Layout Kecil
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+                          {[
+                            { title: 'Hero Banner', bg: 'bg-[#16A34A] text-white', icon: Sparkles },
+                            { title: 'Aktivitas Terbaru', bg: 'bg-white border border-gray-200 text-gray-800', icon: Activity },
+                            { title: 'Diskusi', bg: 'bg-white border border-gray-200 text-gray-800', icon: MessageSquare },
+                            { title: 'Event', bg: 'bg-white border border-gray-200 text-gray-800', icon: Calendar },
+                            { title: 'Produk Anggota', bg: 'bg-white border border-gray-200 text-gray-800', icon: ShoppingBag },
+                            { title: 'Galeri', bg: 'bg-white border border-gray-200 text-gray-800', icon: ImageIcon },
+                            { title: 'Anggota', bg: 'bg-white border border-gray-200 text-gray-800', icon: UsersIcon },
+                          ].map((m, idx) => {
+                            const IconComp = m.icon
+                            return (
+                              <div key={idx} className={`p-1.5 rounded-[6px] flex items-center gap-1.5 text-[10px] font-bold ${m.bg}`}>
+                                <IconComp className="w-3 h-3 shrink-0" />
+                                <span className="truncate">{m.title}</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* MODUL BAWAAN & BUTTON SESUAIKAN MODUL */}
+                      <div className="p-3 bg-emerald-50/50 border border-[#16A34A]/20 rounded-[10px] flex items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <span className="block text-[10px] font-extrabold text-gray-900 uppercase tracking-wider">
+                            Modul Bawaan
+                          </span>
+                          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-gray-700 font-semibold">
+                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Hero Banner</span>
+                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Aktivitas</span>
+                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Diskusi</span>
+                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Event</span>
+                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Produk Anggota</span>
+                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Galeri</span>
+                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Anggota</span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setModuleSettingsOpen(true)}
+                          className="px-3 py-1.5 bg-white border border-[#16A34A] text-[#16A34A] hover:bg-[#16A34A] hover:text-white font-extrabold text-[11px] rounded-[8px] transition-all shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
+                        >
+                          <Settings className="w-3 h-3" /> Sesuaikan Modul
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* BAGIAN 3: LEGALITAS KOMUNITAS */}
+                    <div className="space-y-3 pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>
+                        <h4 className="text-[10px] font-extrabold text-[#16A34A] uppercase tracking-wider">
+                          LEGALITAS KOMUNITAS
+                        </h4>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="block text-[9px] font-bold text-gray-600 uppercase mb-1">
+                            Akta Notaris
+                          </label>
+                          <input
+                            type="text"
+                            value={commForm.aktaNotaris}
+                            onChange={e => setCommForm({ ...commForm, aktaNotaris: e.target.value })}
+                            placeholder="No. Akta Notaris"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-gray-600 uppercase mb-1">
+                            Nomor AHU
+                          </label>
+                          <input
+                            type="text"
+                            value={commForm.nomorAhu}
+                            onChange={e => setCommForm({ ...commForm, nomorAhu: e.target.value })}
+                            placeholder="AHU-xxxxx"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-gray-600 uppercase mb-1">
+                            NPWP
+                          </label>
+                          <input
+                            type="text"
+                            value={commForm.nomorNpwp}
+                            onChange={e => setCommForm({ ...commForm, nomorNpwp: e.target.value })}
+                            placeholder="xx.xxx.xxx.x-xxx.xxx"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold text-gray-600 uppercase mb-1">
+                            Domisili
+                          </label>
+                          <input
+                            type="text"
+                            value={commForm.domisili}
+                            onChange={e => setCommForm({ ...commForm, domisili: e.target.value })}
+                            placeholder="Kota / Kabupaten"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex gap-6 pt-1">
+                        <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-gray-800">
+                          <input
+                            type="checkbox"
+                            checked={commForm.isVerified}
+                            onChange={e => setCommForm({ ...commForm, isVerified: e.target.checked })}
+                            className="w-4 h-4 rounded accent-[#16A34A] cursor-pointer"
+                          />
+                          <span>Verified Komunitas</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-red-700">
+                          <input
+                            type="checkbox"
+                            checked={commForm.isSuspended}
+                            onChange={e => setCommForm({ ...commForm, isSuspended: e.target.checked })}
+                            className="w-4 h-4 rounded accent-red-600 cursor-pointer"
+                          />
+                          <span>Suspend Komunitas</span>
+                        </label>
                       </div>
                     </div>
                   </div>
 
-                  {/* Toggles */}
-                  <div className="flex gap-6 border-t border-slate-100 pt-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={commForm.isVerified} onChange={e => setCommForm({ ...commForm, isVerified: e.target.checked })} className="rounded accent-[#0F5132]" />
-                      <span className="text-xs font-bold text-slate-700">Verified Komunitas</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="checkbox" checked={commForm.isSuspended} onChange={e => setCommForm({ ...commForm, isSuspended: e.target.checked })} className="rounded accent-red-600" />
-                      <span className="text-xs font-bold text-red-700">Suspend Komunitas</span>
-                    </label>
-                  </div>
-
-                  <div className="pt-4 flex gap-3">
-                    <button type="button" onClick={() => setCommunityModal({ open: false, mode: 'add' })} className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded uppercase tracking-wider">
+                  {/* FOOTER ACTIONS - STICKY BOTTOM */}
+                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setCommunityModal({ open: false, mode: 'add' })}
+                      className="px-5 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 font-extrabold text-xs rounded-[8px] transition-all cursor-pointer shadow-2xs"
+                    >
                       Batal
                     </button>
-                    <button type="submit" disabled={isPending} className="flex-1 py-2.5 bg-[#0F5132] hover:bg-[#0a3822] text-white font-bold rounded uppercase tracking-wider disabled:opacity-50">
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="px-5 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white font-extrabold text-xs rounded-[8px] transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                    >
                       {isPending ? 'Menyimpan...' : 'Simpan Komunitas'}
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* ─── MODAL SESUAIKAN MODUL (SETTINGS SUB-MODAL) ──────────────── */}
+          {moduleSettingsOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 font-sans">
+              <div className="bg-white border border-gray-200 rounded-[12px] max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 text-gray-900">
+                <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                  <h3 className="font-sora text-sm font-extrabold text-[#16A34A] uppercase tracking-wider flex items-center gap-2">
+                    <Settings className="w-4 h-4" /> Pengaturan Modul Halaman
+                  </h3>
+                  <button onClick={() => setModuleSettingsOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+
+                <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                  Pilih modul bawaan yang diizinkan aktif pada template <strong className="text-[#16A34A] font-bold">{selectedTemplate}</strong>.
+                </p>
+
+                <div className="space-y-2.5 pt-1">
+                  {[
+                    { key: 'heroBanner', label: 'Hero Banner Dashboard' },
+                    { key: 'aktivitas', label: 'Feed Aktivitas Terbaru' },
+                    { key: 'diskusi', label: 'Forum Diskusi Anggota' },
+                    { key: 'event', label: 'Kalender & Event Komunitas' },
+                    { key: 'produkAnggota', label: 'Katalog Produk Anggota' },
+                    { key: 'galeri', label: 'Galeri Foto & Dokumen' },
+                    { key: 'anggota', label: 'Direktori Anggota Aktif' },
+                  ].map((item) => (
+                    <label key={item.key} className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200/80 rounded-[8px] cursor-pointer hover:bg-gray-100 transition-colors">
+                      <span className="text-xs font-bold text-gray-800">{item.label}</span>
+                      <input
+                        type="checkbox"
+                        checked={!!modulesConfig[item.key]}
+                        onChange={e => setModulesConfig({ ...modulesConfig, [item.key]: e.target.checked })}
+                        className="w-4 h-4 rounded accent-[#16A34A] cursor-pointer"
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                <div className="pt-3 flex gap-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setModuleSettingsOpen(false)}
+                    className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-[12px] transition-all cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModuleSettingsOpen(false)
+                      alert('Konfigurasi modul berhasil disimpan!')
+                    }}
+                    className="flex-1 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs rounded-[12px] transition-all cursor-pointer shadow-2xs"
+                  >
+                    Simpan Modul
+                  </button>
+                </div>
               </div>
             </div>
           )}

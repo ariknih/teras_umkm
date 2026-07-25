@@ -214,7 +214,7 @@ export default function FloatingChat() {
             initial={{ opacity: 0, y: 15, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
-            className="absolute bottom-16 right-0 w-48 bg-surface/95 backdrop-blur-md border border-[#2DB24A]/35 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1 z-50"
+            className="absolute bottom-16 right-0 w-56 bg-surface/95 backdrop-blur-md border border-[#2DB24A]/35 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1 z-50"
           >
             {/* Livechat Option */}
             <button
@@ -226,14 +226,14 @@ export default function FloatingChat() {
                 setIsOpen(true)
                 setShowMenu(false)
               }}
-              className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-[#2DB24A]/10 text-left transition-colors cursor-pointer w-full border-none bg-transparent group"
+              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#2DB24A]/10 text-left transition-colors cursor-pointer w-full border-none bg-transparent group"
             >
-              <div className="w-6 h-6 rounded-lg bg-[#2DB24A]/10 text-[#2DB24A] flex items-center justify-center text-xs group-hover:bg-[#2DB24A] group-hover:text-white transition-colors shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-[#2DB24A]/10 text-[#2DB24A] flex items-center justify-center text-sm group-hover:bg-[#2DB24A] group-hover:text-white transition-colors shrink-0">
                 💬
               </div>
               <div className="leading-tight">
-                <span className="block text-[10px] font-extrabold text-foreground">Livechat Saloka</span>
-                <span className="block text-[7px] text-foreground/50 font-bold tracking-tight uppercase">Platform Support</span>
+                <span className="block text-xs font-extrabold text-foreground">Livechat Saloka</span>
+                <span className="block text-[9px] text-foreground/60 font-semibold tracking-wider uppercase mt-0.5">Platform Support</span>
               </div>
             </button>
 
@@ -243,16 +243,16 @@ export default function FloatingChat() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setShowMenu(false)}
-              className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-green-500/10 text-left transition-colors cursor-pointer w-full group"
+              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-green-500/10 text-left transition-colors cursor-pointer w-full group"
             >
-              <div className="w-6 h-6 rounded-lg bg-green-500/10 text-green-600 flex items-center justify-center text-xs group-hover:bg-green-500 group-hover:text-white transition-colors shrink-0">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <div className="w-7 h-7 rounded-lg bg-green-500/10 text-green-600 flex items-center justify-center text-sm group-hover:bg-green-500 group-hover:text-white transition-colors shrink-0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.5-5.739-1.451L0 24zm6.59-4.846c1.666.988 3.311 1.5 5.353 1.502 5.52.002 10.011-4.486 10.014-10.009.002-2.677-1.04-5.193-2.932-7.087-1.892-1.893-4.41-2.934-7.093-2.936-5.525 0-10.016 4.488-10.019 10.012-.001 2.01.523 3.655 1.514 5.323L1.51 21.054l4.908-1.285-.23-.393-.14-.236z"/>
                 </svg>
               </div>
               <div className="leading-tight">
-                <span className="block text-[10px] font-extrabold text-foreground">WhatsApp Chat</span>
-                <span className="block text-[7px] text-green-600 font-bold tracking-tight uppercase">Admin WhatsApp</span>
+                <span className="block text-xs font-extrabold text-foreground">WhatsApp Chat</span>
+                <span className="block text-[9px] text-green-600 font-semibold tracking-wider uppercase mt-0.5">Admin WhatsApp</span>
               </div>
             </a>
 
@@ -262,16 +262,16 @@ export default function FloatingChat() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setShowMenu(false)}
-              className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-sky-500/10 text-left transition-colors cursor-pointer w-full group"
+              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-sky-500/10 text-left transition-colors cursor-pointer w-full group"
             >
-              <div className="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-600 flex items-center justify-center text-xs group-hover:bg-sky-600 group-hover:text-white transition-colors shrink-0">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-600 flex items-center justify-center text-sm group-hover:bg-sky-600 group-hover:text-white transition-colors shrink-0">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.944 0C5.337 0 0 5.348 0 12c0 6.652 5.337 12 11.944 12 6.607 0 11.944-5.348 11.944-12 0-6.652-5.337-12-11.944-12zm5.728 8.232l-2.008 9.472c-.152.67-.549.835-1.11.519l-3.059-2.257-1.478 1.423c-.164.163-.3.3-.615.3l.22-3.11 5.666-5.116c.246-.22-.054-.34-.383-.12l-7.001 4.41-3.018-.944c-.656-.205-.67-.655.137-.971l11.782-4.542c.546-.2.102.13.003.836z"/>
                 </svg>
               </div>
               <div className="leading-tight">
-                <span className="block text-[10px] font-extrabold text-foreground">Telegram Support</span>
-                <span className="block text-[7px] text-sky-600 font-bold tracking-tight uppercase">CS Telegram</span>
+                <span className="block text-xs font-extrabold text-foreground">Telegram Support</span>
+                <span className="block text-[9px] text-sky-600 font-semibold tracking-wider uppercase mt-0.5">CS Telegram</span>
               </div>
             </a>
           </motion.div>

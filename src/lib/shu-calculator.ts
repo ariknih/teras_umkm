@@ -100,15 +100,15 @@ export async function calculateAndSaveShuDistribution(
   }
 
   // 3. Fetch all users registered under this community (as primary or member)
-  const allUsers = await DataStore.getUsers()
-  const communityMembers = allUsers.filter(u => u.indukCommunityId === communityId)
+  const allUsers: any[] = typeof (DataStore as any).getUsers === 'function' ? await (DataStore as any).getUsers() : []
+  const communityMembers = allUsers.filter((u: any) => u.indukCommunityId === communityId)
 
   // 4. Fetch orders in the year to compute transactions
-  const allOrders = await DataStore.getOrders()
+  const allOrders: any[] = typeof (DataStore as any).getAllOrders === 'function' ? await (DataStore as any).getAllOrders() : []
   const yearStartDate = new Date(year, 0, 1)
   const yearEndDate = new Date(year, 11, 31, 23, 59, 59)
 
-  const completedOrdersInYear = allOrders.filter(o => {
+  const completedOrdersInYear = allOrders.filter((o: any) => {
     const d = new Date(o.createdAt)
     return d >= yearStartDate && d <= yearEndDate && o.status === 'COMPLETED'
   })
@@ -121,13 +121,14 @@ export async function calculateAndSaveShuDistribution(
 
   for (const user of communityMembers) {
     // Get community membership info or default fees
-    const comm = await DataStore.getCommunities().then(comms => comms.find(c => c.id === communityId))
+    const comms: any[] = typeof (DataStore as any).getCommunities === 'function' ? await (DataStore as any).getCommunities() : []
+    const comm = comms.find((c: any) => c.id === communityId)
     const sPokok = comm?.simpananPokok || 100000
     const sWajib = comm?.simpananWajib || 25000
     const userSimpanan = sPokok + sWajib * 12 // Annual estimated mandatory savings
 
-    const userOrders = completedOrdersInYear.filter(o => o.buyerId === user.id)
-    const userTransaksi = userOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+    const userOrders = completedOrdersInYear.filter((o: any) => o.buyerId === user.id)
+    const userTransaksi = userOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0)
 
     memberDataMap[user.id] = {
       simpanan: userSimpanan,
@@ -139,7 +140,7 @@ export async function calculateAndSaveShuDistribution(
   }
 
   // 6. Calculate member distribution breakdown
-  const memberDistributions = communityMembers.map(user => {
+  const memberDistributions = communityMembers.map((user: any) => {
     const data = memberDataMap[user.id] || { simpanan: 0, transaksi: 0 }
     
     const shuJasaModalAmount = simpananTotalCommunity > 0

@@ -295,7 +295,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Filter</span>
               {activeFilterCount > 0 && (
-                <span className="btn-primary flex items-center justify-center w-4 text-[9px] font-black">
+                <span className="w-4 h-4 rounded-full bg-primary text-black text-[9px] font-black flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}

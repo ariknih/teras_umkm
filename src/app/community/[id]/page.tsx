@@ -37,6 +37,7 @@ import {
   CheckCircle2,
   ExternalLink,
   PlusCircle,
+  Plus,
   Clock,
   Check,
   X,
@@ -63,8 +64,30 @@ import {
   Award,
   Edit3,
   Trash2,
-  QrCode
+  QrCode,
+  Megaphone,
+  Image as ImageIcon,
+  Utensils,
+  ChefHat,
+  Handshake,
+  BookOpen,
+  Trophy,
+  Rocket,
+  Truck,
+  Tag,
+  Landmark,
+  Activity,
+  ShoppingBag
 } from 'lucide-react'
+
+const SailboatIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 21h20" />
+    <path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4a11.6 11.6 0 0 0 1.62 6" fill="currentColor" fillOpacity="0.2" />
+    <path d="M12 3v11" />
+    <path d="M12 3 4.5 14h15L12 3z" fill="currentColor" fillOpacity="0.3" />
+  </svg>
+)
 
 export default function CommunityDetailPage() {
   const router = useRouter()
@@ -181,6 +204,34 @@ export default function CommunityDetailPage() {
   const [depositAmount, setDepositAmount] = useState('')
   const [depositPaymentMethod, setDepositPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('QRIS')
   const [shuDetailModalOpen, setShuDetailModalOpen] = useState(false)
+
+  // Perahu Kita Perkumpulan navigation & filter states
+  const [activeSidebarNav, setActiveSidebarNav] = useState<
+    | 'beranda'
+    | 'aktivitas'
+    | 'diskusi'
+    | 'event'
+    | 'marketplace'
+    | 'anggota'
+    | 'galeri'
+    | 'pengumuman'
+    | 'tentang'
+    | 'business_matching'
+    | 'pelatihan'
+    | 'mentor'
+    | 'kolaborasi'
+    | 'kelas'
+    | 'kompetisi'
+    | 'startup'
+    | 'merchant'
+    | 'supplier'
+    | 'promo'
+    | 'simpanan'
+    | 'pendanaan'
+    | 'shu'
+    | 'laporan'
+  >('beranda')
+  const [feedFilter, setFeedFilter] = useState<'semua' | 'diskusi' | 'pengumuman' | 'event' | 'produk'>('semua')
 
   const [recentTransactions, setRecentTransactions] = useState<any[]>([
     {
@@ -400,38 +451,41 @@ export default function CommunityDetailPage() {
       ])
 
       setUser(currentUser)
-      if (currentUser?.walletBalance !== undefined) {
-        setUserBalance(currentUser.walletBalance)
-      } else if (currentUser?.balance !== undefined) {
-        setUserBalance(currentUser.balance)
+      const userAny = currentUser as any
+      if (userAny?.walletBalance !== undefined) {
+        setUserBalance(userAny.walletBalance)
+      } else if (userAny?.balance !== undefined) {
+        setUserBalance(userAny.balance)
       }
 
       let commDetail = commDetailRes
       if (!commDetail) {
         commDetail = {
           id: id || 'comm-dummy-2',
-          name: id?.includes('dummy-1') ? 'Asosiasi Kuliner Kreatif Jogja' : 'Koperasi Produksi Maju Bersama',
-          type: id?.includes('dummy-1') ? 'PERKUMPULAN' : 'KOPERASI',
-          description: id?.includes('dummy-1')
-            ? 'Wadah kolaborasi dan diskusi antar pemilik usaha kuliner kreatif di wilayah Yogyakarta. Kami fokus pada peningkatan mutu produk, sertifikasi halal, dan pemasaran digital bersama.'
+          name: id?.includes('dummy-1') || id?.includes('perahu') ? 'Perahu Kita' : 'Koperasi Produksi Maju Bersama',
+          type: id?.includes('dummy-1') || id?.includes('perahu') ? 'PERKUMPULAN' : 'KOPERASI',
+          category: id?.includes('dummy-1') || id?.includes('perahu') ? 'FREE' : 'KOPERASI',
+          description: id?.includes('dummy-1') || id?.includes('perahu')
+            ? 'Wadah bagi pelaku usaha, UMKM, dan masyarakat untuk saling berbagi pengalaman, memperluas relasi dan menciptakan peluang bersama.'
             : 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah untuk pengadaan bahan baku bersama, fasilitasi permodalan modal produksi, dan bagi hasil usaha (SHU) untuk kesejahteraan anggota.',
-          aktaNotaris: id?.includes('dummy-1') ? 'Akta Notaris No. 12 Tgl 10 April 2024' : 'Akta Notaris Koperasi No. 98 Tgl 01 Februari 2025',
-          nomorAhu: id?.includes('dummy-1') ? 'AHU-0010243.AH.01.07' : 'AHU-KOP-0029311.AH.01.11',
-          nomorNpwp: id?.includes('dummy-1') ? '12.345.678.9-012.000' : '12.987.654.3-012.000',
-          domisili: id?.includes('dummy-1') ? 'Kota Yogyakarta, DIY' : 'Sleman, DIY',
-          kontakPj: '089876543210',
-          waGroupLink: 'https://chat.whatsapp.com/LhB2P9qK10zF6sD',
-          avatarUrl: id?.includes('dummy-1')
-            ? 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=150&h=150&fit=crop&q=80'
+          slogan: id?.includes('dummy-1') || id?.includes('perahu') ? 'Komunitas Kolaborasi, Belajar dan Berkembang Bersama' : undefined,
+          aktaNotaris: id?.includes('dummy-1') || id?.includes('perahu') ? 'Akta Notaris Perkumpulan No. 25 Tgl 25 Juli 2026' : 'Akta Notaris Koperasi No. 98 Tgl 01 Februari 2025',
+          nomorAhu: id?.includes('dummy-1') || id?.includes('perahu') ? 'AHU-00250726.AH.01.07' : 'AHU-KOP-0029311.AH.01.11',
+          nomorNpwp: id?.includes('dummy-1') || id?.includes('perahu') ? '98.765.432.1-012.000' : '12.987.654.3-012.000',
+          domisili: id?.includes('dummy-1') || id?.includes('perahu') ? 'Kota Yogyakarta, DIY' : 'Sleman, DIY',
+          kontakPj: '081234567890',
+          waGroupLink: 'https://chat.whatsapp.com/JdK8X4bY12eD5xG',
+          avatarUrl: id?.includes('dummy-1') || id?.includes('perahu')
+            ? 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=150&h=150&fit=crop&q=80'
             : 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=150&h=150&fit=crop&q=80',
-          coverUrl: id?.includes('dummy-1')
-            ? 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=300&fit=crop&q=80'
+          coverUrl: id?.includes('dummy-1') || id?.includes('perahu')
+            ? 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&h=400&fit=crop&q=80'
             : 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=300&fit=crop&q=80',
-          joinFee: id?.includes('dummy-1') ? 0 : 150000,
-          monthlyFee: id?.includes('dummy-1') ? 0 : 50000,
+          joinFee: 0,
+          monthlyFee: 0,
           ketuaId: 'user-admin-1',
           ketua: { name: 'Super Admin Teras' },
-          createdAt: new Date('2026-02-15')
+          createdAt: new Date('2026-07-25')
         }
       }
       setCommunity(commDetail)
@@ -709,7 +763,145 @@ export default function CommunityDetailPage() {
     }
   ]
 
-  // Default avatars for merchant list
+  const nameLower = (community?.name || '').toLowerCase()
+  const catLower = (community?.category || '').toLowerCase()
+  const typeLower = (community?.type || '').toLowerCase()
+
+  const isKoperasi = typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi')
+  const isKuliner = !isKoperasi && (catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner'))
+  const isBusiness = !isKoperasi && !isKuliner && (catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm'))
+  const isEducation = !isKoperasi && !isKuliner && !isBusiness && (catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan'))
+  const isPerahu = !isKoperasi && !isKuliner && !isBusiness && !isEducation
+
+  const bannerBadge = isKoperasi ? 'KOPERASI PRODUKSI' : isKuliner ? 'ASOSIASI KULINER' : isBusiness ? 'KOMUNITAS BISNIS & UMKM' : isEducation ? 'PENDIDIKAN & STARTUP' : 'KOMUNITAS UMUM'
+  
+  const bannerCover = community?.coverUrl || (
+    isKuliner ? 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80' :
+    isKoperasi ? 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80' :
+    isBusiness ? 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1200&q=80' :
+    isEducation ? 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80' :
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80'
+  )
+
+  const bannerSlogan = community?.slogan || (
+    isKuliner ? 'Bersama Memajukan Industri Kuliner Kreatif' :
+    isKoperasi ? 'Membangun Ekonomi Bersama, Sejahtera untuk Anggota' :
+    isBusiness ? 'Kolaborasi • Inovasi • Sejahtera Bersama Komunitas Bisnis & UMKM' :
+    isEducation ? 'Belajar Bisnis Sejak Dini, Wujudkan Ide Jadi Nyata' :
+    'Bersama Belajar, Berbagi dan Bertumbuh'
+  )
+
+  const bannerCta = isKoperasi ? 'Menjadi Anggota' : isKuliner ? 'Jelajahi Merchant' : isBusiness ? 'Ajukan Kolaborasi' : isEducation ? 'Daftar Kelas' : 'Gabung Komunitas'
+
+  const statCards = isKoperasi ? [
+    { label: 'Anggota', value: '788', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Total Simpanan', value: 'Rp 1,2 M', icon: Wallet, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'SHU Tahun Ini', value: 'Rp 185 Jt', icon: PieChart, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Unit Usaha', value: '12', icon: Building2, color: 'text-blue-600 bg-blue-50' },
+  ] : isBusiness ? [
+    { label: 'Anggota', value: '2.156', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Mitra', value: '128', icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Pelatihan', value: '36', icon: GraduationCap, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Peluang Usaha', value: '54', icon: Rocket, color: 'text-blue-600 bg-blue-50' },
+  ] : isEducation ? [
+    { label: 'Anggota', value: '1.532', icon: Users, color: 'text-purple-600 bg-purple-50' },
+    { label: 'Kelas', value: '32', icon: BookOpen, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Kompetisi', value: '18', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Startup', value: '46', icon: Rocket, color: 'text-indigo-600 bg-indigo-50' },
+  ] : isKuliner ? [
+    { label: 'Merchant', value: '245', icon: Store, color: 'text-orange-600 bg-orange-50' },
+    { label: 'Produk', value: '512', icon: ShoppingBag, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Supplier', value: '68', icon: Truck, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Event', value: '22', icon: Calendar, color: 'text-rose-600 bg-rose-50' },
+  ] : [
+    { label: 'Anggota', value: '1.248', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Diskusi', value: '156', icon: MessageSquare, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Event', value: '24', icon: Calendar, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Galeri', value: '87', icon: ImageIcon, color: 'text-indigo-600 bg-indigo-50' },
+  ]
+
+  const sidebarNavList = isKoperasi ? [
+    { id: 'beranda', label: 'Beranda', icon: Home },
+    { id: 'simpanan', label: 'Simpanan', icon: Wallet },
+    { id: 'pendanaan', label: 'Pendanaan', icon: Landmark },
+    { id: 'shu', label: 'SHU', icon: PieChart },
+    { id: 'marketplace', label: 'Marketplace', icon: Store },
+    { id: 'laporan', label: 'Laporan', icon: FileText },
+    { id: 'anggota', label: 'Anggota', icon: Users },
+    { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
+    { id: 'tentang', label: 'Tentang', icon: Info },
+  ] : isBusiness ? [
+    { id: 'beranda', label: 'Beranda', icon: Home },
+    { id: 'business_matching', label: 'Business Matching', icon: Handshake },
+    { id: 'pelatihan', label: 'Pelatihan', icon: GraduationCap },
+    { id: 'mentor', label: 'Mentor', icon: Award },
+    { id: 'kolaborasi', label: 'Kolaborasi', icon: Users },
+    { id: 'marketplace', label: 'Produk UMKM', icon: Store },
+    { id: 'anggota', label: 'Anggota', icon: Users },
+    { id: 'event', label: 'Event', icon: Calendar },
+    { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
+    { id: 'tentang', label: 'Tentang', icon: Info },
+  ] : isEducation ? [
+    { id: 'beranda', label: 'Beranda', icon: Home },
+    { id: 'kelas', label: 'Kelas', icon: BookOpen },
+    { id: 'mentor', label: 'Mentor', icon: Award },
+    { id: 'kompetisi', label: 'Kompetisi', icon: Trophy },
+    { id: 'startup', label: 'Startup', icon: Rocket },
+    { id: 'event', label: 'Event', icon: Calendar },
+    { id: 'diskusi', label: 'Diskusi', icon: MessageSquare },
+    { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
+    { id: 'tentang', label: 'Tentang', icon: Info },
+  ] : isKuliner ? [
+    { id: 'beranda', label: 'Beranda', icon: Home },
+    { id: 'merchant', label: 'Merchant', icon: Store },
+    { id: 'marketplace', label: 'Produk', icon: ShoppingBag },
+    { id: 'supplier', label: 'Supplier', icon: Truck },
+    { id: 'event', label: 'Event', icon: Calendar },
+    { id: 'galeri', label: 'Galeri', icon: ImageIcon },
+    { id: 'anggota', label: 'Anggota', icon: Users },
+    { id: 'promo', label: 'Promo', icon: Tag },
+    { id: 'tentang', label: 'Tentang', icon: Info },
+  ] : [
+    { id: 'beranda', label: 'Beranda', icon: Home },
+    { id: 'aktivitas', label: 'Aktivitas', icon: Activity },
+    { id: 'diskusi', label: 'Diskusi', icon: MessageSquare },
+    { id: 'event', label: 'Event', icon: Calendar },
+    { id: 'galeri', label: 'Galeri', icon: ImageIcon },
+    { id: 'anggota', label: 'Anggota', icon: Users },
+    { id: 'marketplace', label: 'Produk Anggota', icon: Store },
+    { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
+    { id: 'tentang', label: 'Tentang', icon: Info },
+  ]
+
+  const promoWidget = isKoperasi ? {
+    icon: Building2,
+    title: 'Menjadi Anggota',
+    desc: 'Bergabung dan dapatkan manfaat koperasi bersama.',
+    buttonText: 'Menjadi Anggota',
+  } : isBusiness ? {
+    icon: Handshake,
+    title: 'Ajukan Kolaborasi',
+    desc: 'Temukan peluang bisnis bersama anggota Kopjaswara.',
+    buttonText: 'Ajukan Kolaborasi',
+  } : isEducation ? {
+    icon: GraduationCap,
+    title: 'Daftar Kelas',
+    desc: 'Tingkatkan skill dan wujudkan ide bisnismu sekarang!',
+    buttonText: 'Daftar Kelas',
+  } : isKuliner ? {
+    icon: Utensils,
+    title: 'Jelajahi Merchant',
+    desc: 'Temukan kuliner terbaik dari anggota kami.',
+    buttonText: 'Jelajahi Merchant',
+  } : {
+    icon: SailboatIcon,
+    title: 'Gabung Komunitas',
+    desc: 'Bersama lebih kuat, berbagi, belajar, dan bertumbuh.',
+    buttonText: 'Gabung Komunitas',
+  }
+
+  const PromoIcon = promoWidget.icon
+
   const merchantAvatars = [
     { name: 'Super Admin Teras', initial: 'SU', bg: 'bg-emerald-100 text-emerald-800' },
     { name: 'rijal Merchant', initial: 'RI', bg: 'bg-[#E8F8EE] text-[#2DB24A]' },
@@ -718,1113 +910,1296 @@ export default function CommunityDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F7F9] text-[#111827] pt-24 pb-20 px-3 md:px-8 font-sans">
+      <div className="max-w-[1280px] mx-auto space-y-6">
 
-      {/* ── MAIN CONTAINER CARD (BORDER & ROUNDED CORNERS AS IN PHOTOS) ──────── */}
-      <div className="max-w-[1240px] mx-auto bg-white border border-gray-200 rounded-[28px] p-4 md:p-7 shadow-sm relative overflow-hidden space-y-6">
+        {/* ── 2-PANEL FLEX LAYOUT: UNIFIED SALOKA DESIGN SYSTEM FOR ALL 5 COMMUNITIES ── */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          
+          {/* ── LEFT SIDEBAR MENU PANEL ──────────────────────────────────────── */}
+          <div className="w-full lg:w-60 shrink-0 space-y-4">
+            <Link href="/community" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 font-semibold transition-colors">
+              <ChevronLeft className="w-4 h-4" /> Kembali ke Komunitas
+            </Link>
 
-        {/* TOP RIGHT BORDER BADGE (FOTO 1: FREE COMMUNITY / FOTO 2: PREMIUM COMMUNITY) */}
-        <div className={`absolute top-0 right-0 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider rounded-bl-2xl shadow-sm z-10 ${activeMode === 'FREE'
-            ? 'bg-[#2DB24A] text-white'
-            : 'bg-[#15803D] text-white'
-          }`}>
-          {activeMode === 'FREE' ? 'FREE COMMUNITY' : 'PREMIUM COMMUNITY'}
-        </div>
-
-        {/* ── HERO HEADER CARD ──────────────────────────────────────────────── */}
-        <div className="p-4 md:p-6 bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col md:flex-row items-stretch md:items-center gap-5">
-          {/* Left Thumbnail Image */}
-          <div className="w-full md:w-56 h-40 md:h-36 rounded-2xl overflow-hidden shrink-0 bg-gray-100 border border-gray-200">
-            {community.avatarUrl ? (
-              <img src={community.avatarUrl} alt="" className="w-full h-full object-cover" />
-            ) : community.coverUrl ? (
-              <img src={community.coverUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <img
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=500&q=80"
-                alt="Community"
-                className="w-full h-full object-cover"
-              />
-            )}
-          </div>
-
-          {/* Middle Info */}
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className={`px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md ${activeMode === 'FREE'
-                  ? 'bg-[#E8F8EE] text-[#2DB24A] border border-[#2DB24A]/20'
-                  : 'bg-[#15803D] text-white'
-                }`}>
-                {activeMode === 'FREE' ? 'FREE COMMUNITY' : 'PREMIUM COMMUNITY'}
-              </span>
-            </div>
-
-            <h1 className="text-xl md:text-2xl font-extrabold text-gray-900 font-sora tracking-tight">
+            <h2 className="text-xl font-black text-gray-900 font-sora px-1 tracking-tight">
               {community.name}
-            </h1>
+            </h2>
 
-            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 font-medium">
-              <span className="flex items-center gap-1 text-gray-700 font-semibold">
-                <Shield className="w-3.5 h-3.5 text-[#2DB24A]" />
-                Ketua: {community.ketua?.name || 'Super Admin Teras'}
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <Users className="w-3.5 h-3.5 text-gray-400" />
-                {realStats.activeMembersCount} Anggota
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                Dibentuk {community.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID') : '15/2/2026'}
-              </span>
-            </div>
-
-            <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-              {community.description || 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah untuk pengadaan bahan baku bersama, fasilitasi permodalan modal produksi, dan bagi hasil usaha (SHU) untuk kesejahteraan anggota.'}
-            </p>
-          </div>
-
-          {/* Right Status Card */}
-          <div className="shrink-0 flex flex-col justify-center items-center md:items-end gap-2">
-            {activeMode === 'FREE' ? (
-              <div className="p-3.5 bg-white border border-[#2DB24A] rounded-2xl text-center min-w-[170px] shadow-sm">
-                <div className="flex items-center justify-center gap-1.5 text-[#2DB24A] font-bold text-xs">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Anggota Free</span>
-                </div>
-                <p className="text-[10px] text-gray-500 font-medium mt-1">Bergabung 20/07/2026</p>
-              </div>
-            ) : (
-              <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/30 rounded-2xl text-center min-w-[170px] shadow-sm">
-                <div className="flex items-center justify-center gap-1.5 text-[#15803D] font-extrabold text-xs">
-                  <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  <span>Anggota Premium</span>
-                </div>
-                <p className="text-[10px] text-gray-600 font-medium mt-1">Bergabung 20/07/2026</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── METRIC STATS ROW (4 CARDS - DYNAMIC REALTIME METRICS) ────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-              <Users className="w-5.5 h-5.5" />
-            </div>
-            <div>
-              <span className="block text-[10px] text-gray-400 font-medium">Anggota Aktif</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-extrabold text-gray-900">{realStats.activeMembersCount}</span>
-                <span className="text-[10px] text-gray-500 font-medium">Orang</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-              <Store className="w-5.5 h-5.5" />
-            </div>
-            <div>
-              <span className="block text-[10px] text-gray-400 font-medium">Merchant Anggota</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-extrabold text-gray-900">{realStats.activeMerchantsCount}</span>
-                <span className="text-[10px] text-gray-500 font-medium">Merchant</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-              <Wallet className="w-5.5 h-5.5" />
-            </div>
-            <div>
-              <span className="block text-[10px] text-gray-400 font-medium">Dana Kelolaan</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-base md:text-lg font-extrabold text-gray-900">
-                  {realStats.totalSavingsCollected > 0 ? `Rp ${realStats.totalSavingsCollected.toLocaleString('id-ID')}` : 'Rp 0'}
-                </span>
-                <span className="text-[10px] text-gray-500 font-medium">Total Dana</span>
-              </div>
-            </div>
-          </div>
-
-          <div
-            onClick={() => setShuDetailModalOpen(true)}
-            className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-3.5 cursor-pointer hover:border-[#2DB24A]/40 transition-all"
-            title="Klik untuk melihat detail SHU"
-          >
-            <div className="w-11 h-11 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-              <BarChart3 className="w-5.5 h-5.5" />
-            </div>
-            <div>
-              <span className="block text-[10px] text-gray-400 font-medium">SHU Tahun Ini</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-base md:text-lg font-extrabold text-gray-900">
-                  Rp {Math.round(userShu?.totalShuAmount || (realStats.shuCurrentYearProfit > 0 ? realStats.shuCurrentYearProfit : 670000)).toLocaleString('id-ID')}
-                </span>
-                <span className="text-[10px] text-gray-500 font-medium">Estimasi SHU</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* ── FREE COMMUNITY LAYOUT (FOTO 1) ───────────────────────────────── */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'FREE' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
-            {/* Left 2 Columns */}
-            <div className="lg:col-span-2 space-y-6">
-
-              {/* Jenis Keanggotaan Section */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Jenis Keanggotaan
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* FREE Card */}
-                  <div className="p-5 bg-white border-2 border-[#2DB24A] rounded-2xl shadow-sm relative flex flex-col justify-between space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-black text-[#2DB24A]">FREE</h4>
-                        <p className="text-[10px] text-gray-500 font-semibold">Keanggotaan Dasar</p>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-[#E8F8EE] flex items-center justify-center text-[#2DB24A]">
-                        <Users className="w-5 h-5" />
-                      </div>
-                    </div>
-
-                    <ul className="space-y-2 text-xs text-gray-600 font-medium">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Akses Forum & Komunitas</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Marketplace Anggota</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Edukasi Dasar</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Simpanan Pokok</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Simpanan Wajib</span>
-                      </li>
-                    </ul>
-
-                    <button
-                      disabled
-                      className="w-full py-2.5 border border-[#2DB24A] text-[#2DB24A] bg-[#E8F8EE]/50 font-extrabold text-[11px] uppercase tracking-wider rounded-xl text-center"
-                    >
-                      ANDA ADALAH ANGGOTA FREE
-                    </button>
-                  </div>
-
-                  {/* PREMIUM Card */}
-                  <div className="p-5 bg-gray-50/70 border border-gray-200 rounded-2xl relative flex flex-col justify-between space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-black text-gray-800">PREMIUM</h4>
-                        <p className="text-[10px] text-gray-500 font-semibold">Keanggotaan Koperasi Lengkap</p>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-2 text-[11px] text-gray-600 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Semua fitur FREE</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Pendanaan Merchant</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Simpanan Sukarela</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>SHU & Bagi Hasil</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Simpanan Umroh</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Laporan Keuangan Koperasi</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Simpanan Qurban</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Hak Suara Rapat</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setPaymentModalOpen(true)}
-                      className="w-full py-2.5 border border-gray-300 hover:border-gray-400 text-gray-700 bg-white font-extrabold text-[11px] uppercase tracking-wider rounded-xl text-center transition-all shadow-sm"
-                    >
-                      UPGRADE KE PREMIUM
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Produk Simpanan (Free) Section - Hanya Simpanan Pokok & Wajib (Fixed) */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Produk Simpanan (Free)
-                  </h3>
+            {/* Vertical Menu Navigation List */}
+            <div className="bg-white border border-gray-200/80 rounded-2xl p-2 shadow-sm space-y-1">
+              {sidebarNavList.map((item) => {
+                const Icon = item.icon
+                const isActive = activeSidebarNav === item.id
+                return (
                   <button
-                    onClick={() => {
-                      goeyToast.error('Fitur Tambah Produk Simpanan Koperasi hanya untuk Anggota Premium.')
-                      setPaymentModalOpen(true)
-                    }}
-                    className="px-3 py-1 bg-amber-50 border border-amber-300 text-amber-800 hover:bg-amber-100 text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                    key={item.id}
+                    onClick={() => setActiveSidebarNav(item.id as any)}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                      isActive
+                        ? 'bg-[#E8F8EE] text-[#0F5132] shadow-xs'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }`}
                   >
-                    <Lock className="w-3 h-3 text-amber-600" />
-                    <span>+ Tambah Produk (Khusus Premium)</span>
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
+                    <span>{item.label}</span>
                   </button>
+                )
+              })}
+            </div>
+
+            {/* Bottom Green Promotional Card */}
+            <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl text-center space-y-3 shadow-xs">
+              <div className="w-11 h-11 rounded-2xl bg-[#2DB24A] text-white flex items-center justify-center mx-auto shadow-sm">
+                <PromoIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-[#0F5132] text-xs">
+                  {promoWidget.title}
+                </h4>
+                <p className="text-[10px] text-emerald-800/80 font-medium mt-1 leading-relaxed">
+                  {promoWidget.desc}
+                </p>
+              </div>
+              <button
+                onClick={() => handleJoin()}
+                className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" /> {promoWidget.buttonText}
+              </button>
+            </div>
+          </div>
+
+          {/* ── RIGHT MAIN DASHBOARD CONTENT (DYNAMIC TABS) ────────────────────── */}
+          <div className="flex-1 space-y-6 min-w-0 w-full">
+
+            {/* TAB 1: BERANDA ─────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'beranda' && (
+              <>
+                {/* HERO BANNER CARD */}
+                <div className="relative rounded-3xl overflow-hidden text-white shadow-sm border border-gray-200/60">
+                  <img
+                    src={bannerCover}
+                    alt="Cover"
+                    className="w-full h-64 md:h-72 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0F5132]/95 via-[#0F5132]/80 to-transparent p-6 md:p-8 flex flex-col justify-between">
+                    <div>
+                      <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md text-white font-extrabold text-[10px] uppercase tracking-wider rounded-full border border-white/30 mb-3 shadow-xs">
+                        {bannerBadge}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shrink-0">
+                          <PromoIcon className="w-6 h-6" />
+                        </div>
+                        <h1 className="text-2xl md:text-3xl font-black font-sora tracking-tight drop-shadow-sm">
+                          {community.name}
+                        </h1>
+                      </div>
+                      <p className="text-xs md:text-sm font-semibold text-emerald-100 mt-1">
+                        {bannerSlogan}
+                      </p>
+                      <p className="text-xs text-emerald-100/90 max-w-xl mt-2 leading-relaxed line-clamp-2">
+                        {community.description || "Wadah bagi pelaku usaha, UMKM, dan masyarakat untuk saling berbagi pengalaman, memperluas relasi dan menciptakan peluang bersama."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-white/20 text-xs text-emerald-100 font-medium">
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1.5 font-semibold text-white">
+                          <Shield className="w-4 h-4 text-emerald-300" />
+                          Ketua: {community.ketua?.name || 'Super Admin Teras'}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-emerald-300" />
+                          Dibentuk {community.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '25 Juli 2026'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleJoin()}
+                        className="px-5 py-2.5 bg-white text-[#0F5132] hover:bg-emerald-50 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <Users className="w-4 h-4" /> {bannerCta}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {coopProducts.filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type)).length === 0 ? (
-                  <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
-                    <PiggyBank className="w-8 h-8 text-gray-300 mx-auto" />
-                    <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan dasar (Pokok, Wajib, Sukarela) yang dibuat.</p>
-                    <button
-                      onClick={() => {
-                        goeyToast.error('Upgrade ke Premium untuk menambah produk simpanan.')
-                        setPaymentModalOpen(true)
-                      }}
-                      className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
-                    >
-                      + Upgrade Ke Premium
+                {/* ── 4 STAT METRIC CARDS BAR (MATCHING BLUEPRINT SYSTEM) ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                  {statCards.map((stat, idx) => {
+                    const StatIcon = stat.icon
+                    return (
+                      <div key={idx} className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 ${stat.color}`}>
+                          <StatIcon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-black text-gray-900 block leading-tight">{stat.value}</span>
+                          <span className="text-[11px] text-gray-500 font-semibold block mt-0.5">{stat.label}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* PRODUK UNGGULAN ANGGOTA */}
+                <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" /> {isKuliner ? 'Menu Kuliner Unggulan Anggota' : isKoperasi ? 'Bahan Baku & Produk Koperasi' : 'Produk Unggulan Anggota'}
+                      </h3>
+                      <p className="text-[11px] text-gray-500 font-medium mt-0.5">Produk pilihan berkualitas karya terbaik dari UMKM & anggota {community.name}</p>
+                    </div>
+                    <button onClick={() => setActiveSidebarNav('marketplace')} className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1 cursor-pointer">
+                      Lihat Semua <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {coopProducts
-                      .filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type))
-                      .map((cp: any) => (
-                        <div key={cp.id} className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center justify-between relative group">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-                              {cp.type === 'POKOK' ? <Home className="w-5 h-5" /> :
-                                cp.type === 'WAJIB' ? <Calendar className="w-5 h-5" /> :
-                                  <Coins className="w-5 h-5" />}
-                            </div>
-                            <div>
-                              <span className="block text-xs font-bold text-gray-900">{cp.name}</span>
-                              <span className="block text-[10px] text-gray-400 font-medium">{cp.periodText || cp.description || 'Simpanan'}</span>
-                              <span className="block text-xs font-extrabold text-[#2DB24A] mt-0.5">
-                                Rp {cp.amount.toLocaleString('id-ID')}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-1">
+                    {products && products.length > 0 ? (
+                      products.slice(0, 4).map((p, idx) => (
+                        <div 
+                          key={p.id || idx} 
+                          onClick={() => router.push(`/cart`)}
+                          className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2 group hover:border-[#2DB24A]/40 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+                        >
+                          <div className="space-y-2">
+                            <div className="relative rounded-lg overflow-hidden h-28 bg-gray-100">
+                              <img 
+                                src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=200&fit=crop&q=80'} 
+                                alt={p.name || p.title} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                              />
+                              <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                {p.category || 'Unggulan'}
                               </span>
                             </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">{p.name || p.title}</h4>
+                              <p className="text-[10px] text-gray-400 font-semibold">{p.merchant?.name || p.merchantName || p.merchant || 'Merchant Saloka'}</p>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleOpenPaySavings(cp)}
-                              className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[9px] rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-200/60">
+                            <span className="text-xs font-black text-[#0F5132]">Rp {Number(p.price || 0).toLocaleString('id-ID')}</span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                goeyToast.success(`"${p.name || p.title}" ditambahkan ke keranjang belanja!`)
+                              }} 
+                              className="px-2.5 py-1 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-lg transition-all cursor-pointer"
                             >
-                              <Wallet className="w-3 h-3" /> Setor
+                              Beli
                             </button>
-                            <span className={`px-2 py-1 font-bold text-[9px] rounded-md ${cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
-                              }`}>
-                              {cp.isMandatory ? 'Wajib' : 'Sukarela'}
-                            </span>
-                            {isCanManageCoop && (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => handleOpenEditProduct(cp)}
-                                  className="text-gray-400 hover:text-[#0F5132] hover:bg-[#E8F8EE] p-1 rounded-lg transition-all"
-                                  title="Edit produk simpanan"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const res = await deleteCooperativeProductAction(cp.id, id)
-                                    if (res?.success) {
-                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                      goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                    } else {
-                                      goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
-                                    }
-                                  }}
-                                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all cursor-pointer"
-                                  title="Hapus produk simpanan"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            )}
                           </div>
                         </div>
-                      ))}
+                      ))
+                    ) : (
+                      <div className="col-span-full p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl space-y-2">
+                        <Store className="w-8 h-8 text-[#2DB24A] mx-auto opacity-70" />
+                        <h4 className="text-xs font-bold text-gray-800">Belum Ada Produk Anggota</h4>
+                        <p className="text-[11px] text-gray-500 max-w-sm mx-auto">Admin atau merchant anggota komunitas belum menambahkan produk. Klik tombol di bawah untuk menambah produk baru.</p>
+                        <button onClick={() => setActiveSidebarNav('marketplace')} className="px-3.5 py-1.5 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5 mt-1">
+                          <Plus className="w-3.5 h-3.5" /> Kelola Produk Anggota
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Merchant Anggota & Produk Unggulan Anggota */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Merchant Anggota Card */}
-                <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
+                {/* PRODUK SIMPANAN / IURAN KEANGGOTAAN (SIMPANAN POKOK & WAJIB SAJA) */}
+                <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
                   <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-gray-900">Merchant Anggota</h4>
-                    <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Wallet className="w-4 h-4 text-[#2DB24A]" /> Simpanan & Iuran Keanggotaan
+                      </h3>
+                      <p className="text-[11px] text-gray-500 font-medium mt-0.5">Iuran resmi anggota {community.name} untuk operasional dan pengembangan usaha bersama</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                    {merchantAvatars.map((m, idx) => (
-                      <div key={idx} className="p-2 bg-gray-50 border border-gray-100 rounded-xl flex items-center gap-2 shrink-0">
-                        <div className={`w-7 h-7 rounded-lg ${m.bg} font-bold text-[10px] flex items-center justify-center`}>
-                          {m.initial}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <div className="p-4 bg-gray-50/80 border border-gray-200/80 rounded-xl space-y-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center font-bold">
+                          <Home className="w-5 h-5" />
                         </div>
-                        <div className="text-left">
-                          <span className="block text-[10px] font-bold text-gray-800 line-clamp-1">{m.name}</span>
-                          <span className="block text-[8px] text-gray-400">ADMIN • LV 1001</span>
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-900">Simpanan Pokok</h4>
+                          <p className="text-[10px] text-gray-500 font-medium">Iuran awal registrasi anggota resmi</p>
+                          <span className="text-xs font-extrabold text-[#0F5132] block mt-0.5">Rp 150.000</span>
                         </div>
-                        <ExternalLink className="w-3 h-3 text-gray-400 ml-1" />
+                      </div>
+                      <button
+                        onClick={() => handleOpenPaySavings({ name: 'Simpanan Pokok', amount: 150000, type: 'POKOK' })}
+                        className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+                      >
+                        Setor Pokok
+                      </button>
+                    </div>
+
+                    <div className="p-4 bg-gray-50/80 border border-gray-200/80 rounded-xl space-y-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center font-bold">
+                          <Calendar className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-gray-900">Simpanan Wajib</h4>
+                          <p className="text-[10px] text-gray-500 font-medium">Iuran rutin bulanan anggota</p>
+                          <span className="text-xs font-extrabold text-[#0F5132] block mt-0.5">Rp 50.000 / bulan</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleOpenPaySavings({ name: 'Simpanan Wajib', amount: 50000, type: 'WAJIB' })}
+                        className="px-3 py-1.5 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shrink-0"
+                      >
+                        Setor Wajib
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3-COLUMN DASHBOARD GRID */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-5 items-start">
+                  <div className="md:col-span-1 lg:col-span-2 space-y-4">
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Tentang {community.name}</h3>
+                        <button onClick={() => setActiveSidebarNav('tentang')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Selengkapnya →</button>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                        {community.name} adalah perkumpulan yang menghubungkan orang-orang dengan minat dan tujuan yang sama untuk belajar, berkolaborasi, dan berkembang bersama.
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {['Kolaborasi', 'Edukasi', 'Networking', 'Promosi Produk', 'Pengembangan Usaha'].map((tag) => (
+                          <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 font-semibold text-[10px] rounded-lg">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Anggota Aktif</h3>
+                        <button onClick={() => setActiveSidebarNav('anggota')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Semua</button>
+                      </div>
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                        {[
+                          { name: 'Andi', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&q=80' },
+                          { name: 'Siti', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&q=80' },
+                          { name: 'Budi', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&q=80' },
+                          { name: 'Rina', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&q=80' },
+                          { name: 'Dewi', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop&q=80' },
+                        ].map((m, idx) => (
+                          <div key={idx} className="flex flex-col items-center gap-1 shrink-0">
+                            <img src={m.img} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs" />
+                            <span className="text-[10px] font-medium text-gray-700">{m.name}</span>
+                          </div>
+                        ))}
+                        <div className="flex flex-col items-center justify-center shrink-0">
+                          <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 font-extrabold text-xs flex items-center justify-center border-2 border-white shadow-xs">
+                            +123
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl space-y-2 text-center shadow-xs">
+                      <div className="flex justify-center text-[#2DB24A]"><Users className="w-7 h-7" /></div>
+                      <h4 className="font-extrabold text-xs text-[#0F5132]">Ajak Teman Bergabung</h4>
+                      <p className="text-[10px] text-emerald-800/80 leading-relaxed font-medium">
+                        Semakin banyak anggota, semakin besar peluang yang kita ciptakan bersama.
+                      </p>
+                      <button className="w-full py-2 bg-white border border-[#2DB24A] text-[#0F5132] font-bold text-xs rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                        <Share2 className="w-3.5 h-3.5" /> Bagikan Komunitas
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 lg:col-span-3 space-y-4">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                      {['Semua', 'Diskusi', 'Pengumuman', 'Event', 'Produk'].map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() => setFeedFilter(tab.toLowerCase() as any)}
+                          className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all shrink-0 cursor-pointer ${
+                            feedFilter === tab.toLowerCase()
+                              ? 'bg-[#2DB24A] text-white shadow-xs'
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+
+                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Aktivitas Terbaru</h3>
+
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
+                      <div className="flex justify-between items-start">
+                        <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 font-extrabold text-[10px] rounded-md uppercase">
+                          Pengumuman
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">2 jam lalu</span>
+                      </div>
+                      <h4 className="font-extrabold text-sm text-gray-900">
+                        Workshop Digital Marketing untuk UMKM
+                      </h4>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                        Mari tingkatkan penjualan produk lokal melalui strategi digital yang tepat. Terbuka untuk semua anggota {community.name}!
+                      </p>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">👍 24</span>
+                          <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">💬 12</span>
+                        </div>
+                        <button onClick={() => setActiveSidebarNav('pengumuman')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Detail →</button>
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
+                      <div className="flex justify-between items-start">
+                        <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md uppercase">
+                          Diskusi
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">5 jam lalu</span>
+                      </div>
+                      <h4 className="font-extrabold text-sm text-gray-900">
+                        Bagaimana cara mendapatkan supplier kemasan ramah lingkungan?
+                      </h4>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                        Saya sedang mencari rekomendasi supplier kemasan untuk produk makanan. Ada yang punya pengalaman?
+                      </p>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">👍 18</span>
+                          <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">💬 28</span>
+                        </div>
+                        <button onClick={() => setActiveSidebarNav('diskusi')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Diskusi →</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-1 lg:col-span-2 space-y-4">
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Event Mendatang</h3>
+                        <button onClick={() => setActiveSidebarNav('event')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Semua</button>
+                      </div>
+                      <div className="space-y-2.5">
+                        {[
+                          { day: '30', month: 'JUL', title: 'Workshop Digital Marketing', desc: 'Online (Zoom)' },
+                          { day: '12', month: 'AGS', title: 'Kopdar Perahu Kita', desc: 'Yogyakarta' },
+                          { day: '25', month: 'AGS', title: 'Bazaar Produk Anggota', desc: 'Alun-Alun Kidul' },
+                        ].map((ev, idx) => (
+                          <div key={idx} className="flex items-center gap-2.5 p-2 bg-gray-50 rounded-xl">
+                            <div className="w-11 h-11 rounded-xl bg-white border border-gray-200 text-center flex flex-col justify-center shrink-0">
+                              <span className="text-xs font-black text-gray-900 leading-none">{ev.day}</span>
+                              <span className="text-[9px] font-bold text-[#2DB24A] leading-none mt-0.5">{ev.month}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-[11px] font-bold text-gray-900 line-clamp-1">{ev.title}</h4>
+                              <p className="text-[9px] text-gray-500 font-medium line-clamp-1">{ev.desc}</p>
+                            </div>
+                            <button onClick={() => setActiveSidebarNav('event')} className="px-2 py-1 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-lg transition-colors cursor-pointer shrink-0">
+                              Daftar
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Galeri Kegiatan</h3>
+                        <button onClick={() => setActiveSidebarNav('galeri')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Semua</button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&h=200&fit=crop&q=80',
+                          'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=200&h=200&fit=crop&q=80',
+                          'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=200&h=200&fit=crop&q=80',
+                        ].map((imgUrl, idx) => (
+                          <img key={idx} src={imgUrl} alt="" onClick={() => setActiveSidebarNav('galeri')} className="w-full h-16 rounded-xl object-cover border border-gray-100 hover:opacity-90 transition-opacity cursor-pointer" />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* TAB 2: DISKUSI ─────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'diskusi' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <MessageSquare className="w-6 h-6 text-[#2DB24A]" /> Forum Diskusi {community.name}
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Ruang bertukar pikiran, bertanya, berbagi pengalaman usaha, dan kolaborasi antar anggota.</p>
+                    </div>
+                    <button onClick={() => goeyToast.info('Tuliskan ide atau pertanyaan diskusi Anda.')} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                      <Plus className="w-4 h-4" /> Buat Topik Diskusi
+                    </button>
+                  </div>
+
+                  <div className="space-y-3.5">
+                    {[
+                      { title: 'Bagaimana cara meningkatkan omzet produk UMKM melalui Instagram & TikTok Ads?', author: 'Siti Rahmawati', role: 'Merchant Kuliner', date: '2 jam lalu', category: 'Pemasaran', likes: 34, comments: 19, views: 142 },
+                      { title: 'Rekomendasi Supplier Kemasan Ramah Lingkungan (Biodegradable) Wilayah Jogja', author: 'Budi Santoso', role: 'Craft Merchant', date: '5 jam lalu', category: 'Tanya Jawab', likes: 28, comments: 24, views: 198 },
+                      { title: 'Panduan Lengkap Pendaftaran Sertifikat Halal Gratis (SEHATI) 2026', author: 'Super Admin Teras', role: 'Ketua Komunitas', date: '1 hari lalu', category: 'Edukasi & Bisnis', isPinned: true, likes: 89, comments: 45, views: 512 },
+                      { title: 'Sharing Pengalaman Mengikuti Bazaar & Pameran Produk UMKM Tingkat Nasional', author: 'Rina Wijaya', role: 'Coffee Merchant', date: '2 hari lalu', category: 'Pengalaman', likes: 42, comments: 15, views: 230 },
+                    ].map((thread, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-100 hover:border-[#2DB24A]/30 hover:bg-white rounded-2xl shadow-xs transition-all space-y-3">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            {thread.isPinned && <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md">📌 TERPAKU</span>}
+                            <span className="px-2.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[10px] rounded-md">{thread.category}</span>
+                          </div>
+                          <span className="text-[10px] text-gray-400 font-semibold">{thread.date}</span>
+                        </div>
+                        <h3 className="text-sm font-extrabold text-gray-900 hover:text-[#2DB24A] transition-colors cursor-pointer">{thread.title}</h3>
+                        <div className="flex flex-wrap justify-between items-center pt-2 border-t border-gray-200/60 text-xs text-gray-500 font-medium">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-[#2DB24A] text-white font-bold text-[10px] flex items-center justify-center">
+                              {thread.author.charAt(0)}
+                            </div>
+                            <span className="font-bold text-gray-800 text-[11px]">{thread.author}</span>
+                            <span className="text-[10px] text-gray-400">({thread.role})</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs font-semibold">
+                            <span className="hover:text-gray-900 cursor-pointer">👍 {thread.likes}</span>
+                            <span className="hover:text-gray-900 cursor-pointer">💬 {thread.comments} Komentar</span>
+                            <span className="text-gray-400 text-[11px]">👁️ {thread.views}</span>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
 
-                {/* Produk Unggulan Anggota Card */}
-                <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-gray-900">Produk Unggulan Anggota</h4>
-                    <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
+            {/* TAB 3: EVENT ────────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'event' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Calendar className="w-6 h-6 text-[#2DB24A]" /> Event & Agenda Kegiatan {community.name}
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Ikuti workshop, web seminar, bazaar UMKM, dan kegiatan kopdar rutin anggota.</p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="p-1.5 border border-gray-100 rounded-xl space-y-1">
-                      <img src="https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-12 object-cover rounded-lg" />
-                      <span className="block text-[9px] font-bold text-gray-800 line-clamp-1">Keripik Pisang Manis</span>
-                      <span className="block text-[9px] font-extrabold text-gray-900">Rp 18.000</span>
-                    </div>
-                    <div className="p-1.5 border border-gray-100 rounded-xl space-y-1">
-                      <img src="https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-12 object-cover rounded-lg" />
-                      <span className="block text-[9px] font-bold text-gray-800 line-clamp-1">Gula Semut Premium</span>
-                      <span className="block text-[9px] font-extrabold text-gray-900">Rp 25.000</span>
-                    </div>
-                    <div className="p-1.5 border border-gray-100 rounded-xl space-y-1">
-                      <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=200&q=80" alt="" className="w-full h-12 object-cover rounded-lg" />
-                      <span className="block text-[9px] font-bold text-gray-800 line-clamp-1">Kopi Bubuk Robusta</span>
-                      <span className="block text-[9px] font-extrabold text-gray-900">Rp 35.000</span>
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { day: '30', month: 'JUL', year: '2026', title: 'Workshop Digital Marketing & Branding UMKM 2026', time: '10:00 - 12:00 WIB', location: 'Online via Zoom', speaker: 'Dr. Irvan Prasetya (Pakar Digital)', slots: '45/100 Terisi', status: 'Mendatang' },
+                      { day: '12', month: 'AGS', year: '2026', title: 'Kopdar Rutin & Temu Jejaring Anggota Perahu Kita', time: '14:00 - 17:00 WIB', location: 'Kopi Teras Jogja, Jl. Kaliurang KM 7', speaker: 'Pengurus Perahu Kita', slots: '28/50 Terisi', status: 'Mendatang' },
+                      { day: '25', month: 'AGS', year: '2026', title: 'Bazaar Kuliner & Produk Anggota UMKM Perahu Kita', time: '08:00 - 17:00 WIB', location: 'Alun-Alun Kidul, Yogyakarta', speaker: 'Terbuka Untuk Umum', slots: '15 Stand Tersisa', status: 'Mendatang' },
+                      { day: '15', month: 'JUL', year: '2026', title: 'Pelatihan Pengemasan & Foto Produk Profesional', time: '09:00 - 15:00 WIB', location: 'Gedung PLUT KUMKM DIY', speaker: 'Tim Fotografi Teras', slots: 'Selesai (85 Peserta)', status: 'Selesai' },
+                    ].map((ev, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-4 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div className="w-14 h-14 rounded-2xl bg-white border border-gray-200 text-center flex flex-col justify-center shadow-xs shrink-0">
+                              <span className="text-base font-black text-gray-900 leading-none">{ev.day}</span>
+                              <span className="text-[10px] font-bold text-[#2DB24A] leading-none mt-1 uppercase">{ev.month} {ev.year}</span>
+                            </div>
+                            <span className={`px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider ${ev.status === 'Mendatang' ? 'bg-[#E8F8EE] text-[#0F5132]' : 'bg-gray-200 text-gray-600'}`}>
+                              {ev.status}
+                            </span>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-extrabold text-gray-900 leading-snug">{ev.title}</h3>
+                            <p className="text-xs text-gray-500 font-medium mt-1">📍 {ev.location}</p>
+                            <p className="text-xs text-gray-500 font-medium">🕒 {ev.time} • 👤 {ev.speaker}</p>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-3 border-t border-gray-200/60">
+                          <span className="text-[11px] font-semibold text-gray-500">{ev.slots}</span>
+                          <button onClick={() => goeyToast.success(`Pendaftaran event "${ev.title}" berhasil dicatat!`)} className="px-4 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                            {ev.status === 'Mendatang' ? 'Daftar Event' : 'Lihat Dokumentasi'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Free Alert Banner at Bottom */}
-              <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/20 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 text-xs text-gray-700">
-                  <Info className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                  <span>Free Community hanya mendapatkan fitur dasar koperasi. Upgrade ke Premium untuk pengalaman yang lebih lengkap dan menguntungkan.</span>
-                </div>
-                <button
-                  onClick={() => setPaymentModalOpen(true)}
-                  className="px-4 py-1.5 bg-white border border-[#2DB24A] text-[#2DB24A] font-bold text-xs rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all shrink-0"
-                >
-                  Upgrade Sekarang
-                </button>
-              </div>
+            {/* TAB 4: PRODUK ANGGOTA (MARKETPLACE) ─────────────────────────────── */}
+            {activeSidebarNav === 'marketplace' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Store className="w-6 h-6 text-[#2DB24A]" /> Produk Anggota {community.name}
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Dukung produk lokal! Belanja langsung beragam produk berkualitas dari UMKM anggota.</p>
+                    </div>
+                    <Link href="/cart" className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                      <Store className="w-4 h-4" /> Buka Marketplace Lengkap
+                    </Link>
+                  </div>
 
-            </div>
-
-            {/* Right Sidebar Column (FREE View) */}
-            <div className="space-y-4">
-
-              {/* Keuntungan Bergabung Card */}
-              <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                <h4 className="text-xs font-bold text-gray-900">Keuntungan Bergabung</h4>
-                <ul className="space-y-2 text-xs text-gray-600 font-medium">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                    <span>Akses marketplace anggota</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                    <span>Simpanan dan investasi aman</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                    <span>Komunitas dan edukasi bisnis</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                    <span>Transparansi laporan keuangan</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                    <span>SHU untuk kesejahteraan anggota</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Simpanan yang Tersedia (Free) */}
-              <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-bold text-gray-900">Simpanan yang Tersedia (Free)</h4>
-                  <button
-                    onClick={() => {
-                      goeyToast.error('Upgrade ke Premium untuk menambah tipe simpanan.')
-                      setPaymentModalOpen(true)
-                    }}
-                    className="text-[10px] font-bold text-amber-700 hover:underline flex items-center gap-0.5 cursor-pointer"
-                  >
-                    <Lock className="w-2.5 h-2.5 text-amber-600" /> Upgrade
-                  </button>
-                </div>
-
-                <div className="space-y-2.5">
-                  {coopProducts.filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type)).length === 0 ? (
-                    <p className="text-[10px] text-gray-400 font-medium text-center py-2">Belum ada produk simpanan dasar.</p>
-                  ) : (
-                    coopProducts
-                      .filter((cp: any) => !cp.isPremium && ['POKOK', 'WAJIB', 'SUKARELA'].includes(cp.type))
-                      .map((cp: any) => (
-                        <div key={cp.id} className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-                              {cp.type === 'POKOK' ? <Home className="w-4 h-4" /> :
-                                cp.type === 'WAJIB' ? <Calendar className="w-4 h-4" /> :
-                                  <Coins className="w-4 h-4" />}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {products && products.length > 0 ? (
+                      products.map((p: any, idx: number) => (
+                        <div key={p.id || idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between group">
+                          <div className="space-y-2.5">
+                            <div className="relative rounded-xl overflow-hidden h-36 bg-gray-100">
+                              <img src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=200&fit=crop&q=80'} alt={p.name || p.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              <span className="absolute top-2 left-2 px-2.5 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                {p.category || 'Produk'}
+                              </span>
                             </div>
                             <div>
-                              <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
-                              <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
+                              <span className="text-[10px] text-gray-400 font-semibold">{p.merchant?.name || p.merchantName || p.merchant || 'Merchant Saloka'}</span>
+                              <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-2">{p.name || p.title}</h4>
+                              <p className="text-[10px] text-amber-600 font-bold mt-0.5">⭐ 5.0 (Produk Terverifikasi)</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-xs font-black text-[#2DB24A]">Rp {cp.amount.toLocaleString('id-ID')}</span>
-                            {isCanManageCoop && (
-                              <div className="flex items-center gap-0.5">
-                                <button
-                                  onClick={() => handleOpenEditProduct(cp)}
-                                  className="text-gray-400 hover:text-[#0F5132] p-0.5"
-                                  title="Edit produk simpanan"
-                                >
-                                  <Edit3 className="w-3 h-3" />
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const res = await deleteCooperativeProductAction(cp.id, id)
-                                    if (res?.success) {
-                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                      goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                    } else {
-                                      goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
-                                    }
-                                  }}
-                                  className="text-gray-400 hover:text-red-600 p-0.5 cursor-pointer"
-                                  title="Hapus produk simpanan"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
+                          <div className="flex justify-between items-center pt-2.5 border-t border-gray-200/60">
+                            <span className="text-sm font-black text-[#0F5132]">Rp {Number(p.price || 0).toLocaleString('id-ID')}</span>
+                            <button onClick={() => goeyToast.success(`"${p.name || p.title}" ditambahkan ke keranjang belanja!`)} className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                              + Keranjang
+                            </button>
                           </div>
                         </div>
                       ))
-                  )}
-                </div>
-              </div>
-
-              {/* Riwayat Transaksi Terbaru */}
-              <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-bold text-gray-900">Riwayat Transaksi Terbaru</h4>
-                  <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  {recentTransactions.length === 0 ? (
-                    <p className="text-[10px] text-gray-400 text-center py-2">Belum ada riwayat transaksi.</p>
-                  ) : (
-                    recentTransactions.slice(0, 5).map((tx: any) => (
-                      <div key={tx.id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-                            {tx.type === 'POKOK' ? <Home className="w-3.5 h-3.5" /> :
-                              tx.type === 'WAJIB' ? <Calendar className="w-3.5 h-3.5" /> :
-                                <Wallet className="w-3.5 h-3.5" />}
-                          </div>
-                          <div>
-                            <span className="block text-[9px] text-gray-400">{tx.date}</span>
-                            <span className="block font-bold text-gray-800 text-[11px] line-clamp-1">{tx.title}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className={`block font-black text-xs ${tx.isIncome ? 'text-[#2DB24A]' : 'text-gray-900'}`}>
-                            {tx.amount > 0 ? `${tx.isIncome ? '+' : '-'} Rp ${tx.amount.toLocaleString('id-ID')}` : '-'}
-                          </span>
-                          <span className="block text-[9px] text-[#2DB24A] font-bold">{tx.status}</span>
-                        </div>
+                    ) : (
+                      <div className="col-span-full p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                        <Store className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
+                        <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Katalog Produk Anggota</h4>
+                        <p className="text-xs text-gray-500 max-w-md mx-auto">Admin atau merchant anggota komunitas belum menambahkan katalog produk. Silakan tambahkan produk baru untuk ditampilkan di marketplace ini.</p>
+                        <button onClick={() => handleOpenCreateProduct(false)} className="px-4 py-2 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5">
+                          <Plus className="w-4 h-4" /> Tambah Produk Baru
+                        </button>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Merchant Anggota List */}
-              <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                <div className="flex justify-between items-center">
-                  <h4 className="text-xs font-bold text-gray-900">Merchant Anggota</h4>
-                  <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
-                      SU
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-700">Super Admin Teras</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#E8F8EE] text-[#2DB24A] font-bold text-xs flex items-center justify-center">
-                      RI
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-700">rijal Merchant</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#E8F8EE] text-[#2DB24A] font-bold text-xs flex items-center justify-center">
-                      SA
-                    </div>
-                    <span className="text-[10px] font-bold text-gray-700">saloka Merchant</span>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 font-bold text-xs flex items-center justify-center border border-gray-200">
-                    +
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        )}
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* ── PREMIUM COMMUNITY LAYOUT (FOTO 2) ─────────────────────────────── */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'PREMIUM' && (
-          <div className="space-y-6">
-
-            {/* Top Green Notification Alert */}
-            <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl flex items-center gap-3 text-xs text-gray-800 font-medium">
-              <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-              <span>Terima kasih telah menjadi anggota Premium. Anda mendapatkan akses penuh ke semua layanan koperasi dan peluang pendanaan merchant.</span>
-            </div>
-
-            {/* Main Content Layout with Sidebar */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
-              {/* Left 2 Columns Main Content */}
-              <div className="lg:col-span-2 space-y-6">
-
-                {/* Produk Simpanan (Premium) - 5 Cards Grid */}
-                {/* Produk Simpanan Koperasi Section (Dynamic Database & CRUD) */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                      Produk Simpanan Koperasi
-                    </h3>
-                    {isCanManageCoop && (
-                      <button
-                        onClick={() => handleOpenCreateProduct(true)}
-                        className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                      >
-                        <PlusCircle className="w-3 h-3" /> Tambah Produk Simpanan
-                      </button>
                     )}
                   </div>
-
-                  {coopProducts.length === 0 ? (
-                    <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
-                      <PiggyBank className="w-8 h-8 text-gray-300 mx-auto" />
-                      <p className="text-xs text-gray-500 font-medium">Belum ada produk simpanan yang dibuat oleh Pengurus Koperasi.</p>
-                      {isCanManageCoop && (
-                        <button
-                          onClick={() => handleOpenCreateProduct(true)}
-                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
-                        >
-                          + Tambah Produk Simpanan Pertama
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                      {coopProducts.map((cp: any) => (
-                        <div key={cp.id} className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between relative group">
-                          <div className="flex items-center justify-between gap-1">
-                            <div className="flex items-center gap-2">
-                              {cp.type === 'POKOK' ? <Home className="w-4 h-4 text-[#2DB24A]" /> :
-                                cp.type === 'WAJIB' ? <Calendar className="w-4 h-4 text-[#2DB24A]" /> :
-                                  cp.type === 'SUKARELA' ? <Coins className="w-4 h-4 text-amber-500" /> :
-                                    cp.type === 'UMROH' ? <Building2 className="w-4 h-4 text-emerald-600" /> :
-                                      <Sparkles className="w-4 h-4 text-amber-600" />}
-                              <div>
-                                <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
-                                <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
-                              </div>
-                            </div>
-                            {isCanManageCoop && (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => handleOpenEditProduct(cp)}
-                                  className="text-gray-400 hover:text-[#0F5132] hover:bg-[#E8F8EE] p-1 rounded-lg transition-all"
-                                  title="Edit produk simpanan"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    const res = await deleteCooperativeProductAction(cp.id, id)
-                                    if (res?.success) {
-                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                      goeyToast.success(`Produk simpanan "${cp.name}" berhasil dihapus!`)
-                                    } else {
-                                      goeyToast.error(res?.error || 'Gagal menghapus produk simpanan.')
-                                    }
-                                  }}
-                                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition-all cursor-pointer"
-                                  title="Hapus produk simpanan"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="block text-xs font-extrabold text-[#2DB24A]">
-                              Rp {cp.amount.toLocaleString('id-ID')}
-                            </span>
-                            <button
-                              onClick={() => handleOpenPaySavings(cp)}
-                              className="px-2 py-0.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[9px] rounded transition-colors cursor-pointer flex items-center gap-0.5 shadow-sm"
-                            >
-                              <Wallet className="w-2.5 h-2.5" /> Setor
-                            </button>
-                          </div>
-                          <span className={`w-max px-2 py-0.5 font-bold text-[8px] rounded ${cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
-                            }`}>
-                            {cp.isMandatory ? 'Wajib' : 'Sukarela'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
-
-
-
-                {/* Pendanaan Merchant (Peluang Investasi Anggota) Section (Dynamic Database & CRUD) */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                      Pendanaan Merchant (Peluang Investasi Anggota)
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {isCanManageCoop && (
-                        <button
-                          onClick={() => setProjectModalOpen(true)}
-                          className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <PlusCircle className="w-3 h-3" /> Tambah Proyek Pendanaan
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {fundingProjects.length === 0 ? (
-                    <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
-                      <TrendingUp className="w-8 h-8 text-gray-300 mx-auto" />
-                      <p className="text-xs text-gray-500 font-medium">Belum ada proyek pendanaan merchant yang dibuka.</p>
-                      {isCanManageCoop && (
-                        <button
-                          onClick={() => setProjectModalOpen(true)}
-                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
-                        >
-                          + Buka Proyek Pendanaan Pertama
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {fundingProjects.map((p: any) => {
-                        const progress = p.targetAmount > 0 ? Math.min(100, Math.round(((p.collectedAmount || 0) / p.targetAmount) * 100)) : 0
-                        return (
-                          <div key={p.id} className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3 flex flex-col justify-between relative group">
-                            <div className="space-y-2">
-                              <div className="relative">
-                                <img
-                                  src={p.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80"}
-                                  alt={p.title}
-                                  className="w-full h-28 object-cover rounded-xl"
-                                />
-                                {isCanManageCoop && (
-                                  <button
-                                    onClick={async () => {
-                                      await deleteMerchantFundingProjectAction(p.id, id)
-                                      setFundingProjects(prev => prev.filter(x => x.id !== p.id))
-                                      goeyToast.success(`Proyek pendanaan "${p.title}" berhasil dihapus!`)
-                                    }}
-                                    className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
-                                    title="Hapus proyek"
-                                  >
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                              <div>
-                                <h4 className="text-xs font-extrabold text-gray-900 line-clamp-1">{p.title}</h4>
-                                <span className="text-[10px] text-gray-400 font-medium">Bagi Hasil: {p.estimatedReturn}% p.a. • Tenor {p.durationMonths} bln</span>
-                              </div>
-
-                              <div className="space-y-1">
-                                <div className="flex justify-between text-[10px]">
-                                  <span className="text-gray-500">Target Dana</span>
-                                  <span className="font-bold text-gray-800">Rp {p.targetAmount.toLocaleString('id-ID')}</span>
-                                </div>
-                                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                  <div className="bg-[#2DB24A] h-full rounded-full" style={{ width: `${progress}%` }}></div>
-                                </div>
-                                <div className="text-right text-[9px] font-bold text-[#2DB24A]">
-                                  {progress}% Terkumpul
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                              <div>
-                                <span className="block text-[9px] text-gray-400">Minimal Pendanaan</span>
-                                <span className="block text-[11px] font-extrabold text-gray-900">Rp {p.minInvestment.toLocaleString('id-ID')}</span>
-                              </div>
-                              <button
-                                onClick={() => {
-                                  setSelectedProject(p)
-                                  const minAmt = Number(p.minInvestment ?? p.minInvest ?? 50000)
-                                  setInvestAmount(String(minAmt))
-                                  if (userBalance >= minAmt) {
-                                    setInvestPaymentMethod('SALDO')
-                                  } else {
-                                    setInvestPaymentMethod('QRIS')
-                                  }
-                                  setInvestModalOpen(true)
-                                }}
-                                className="px-3 py-1.5 bg-[#E8F8EE] border border-[#2DB24A]/30 text-[#2DB24A] font-bold text-[10px] rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all cursor-pointer"
-                              >
-                                Lihat Detail
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom 3-Column Grid (Riwayat Transaksi, Fitur Premium, Merchant + Produk) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-                  {/* Col 1: Riwayat Transaksi Terbaru */}
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-bold text-gray-900">Riwayat Transaksi Terbaru</h4>
-                      <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
-                    </div>
-
-                    <div className="space-y-2 text-xs">
-                      {recentTransactions.length === 0 ? (
-                        <p className="text-[10px] text-gray-400 text-center py-2">Belum ada riwayat transaksi.</p>
-                      ) : (
-                        recentTransactions.slice(0, 5).map((tx: any) => (
-                          <div key={tx.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                            <div>
-                              <span className="block text-[9px] text-gray-400">{tx.date}</span>
-                              <span className="block font-bold text-gray-800 text-[10px] line-clamp-1">{tx.title}</span>
-                            </div>
-                            <div className="text-right">
-                              <span className={`block font-extrabold text-[11px] ${tx.isIncome ? 'text-[#2DB24A]' : 'text-gray-900'}`}>
-                                {tx.amount > 0 ? `${tx.isIncome ? '+' : '-'} Rp ${tx.amount.toLocaleString('id-ID')}` : '-'}
-                              </span>
-                              <span className="block text-[8px] text-[#2DB24A] font-bold">{tx.status}</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Col 2: Fitur Premium Anda Grid */}
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                    <h4 className="text-xs font-bold text-gray-900">Fitur Premium Anda</h4>
-
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <PiggyBank className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Simpanan Lengkap</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <TrendingUp className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Pendanaan & Investasi</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <FileText className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Laporan Keuangan</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <Users className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Hak Suara Rapat</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <Coins className="w-5 h-5 text-amber-500" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">SHU Lebih Optimal</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <Calendar className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Event Eksklusif</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <GraduationCap className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Edukasi Premium</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <Shield className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Komunitas Prioritas</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Col 3: Merchant Anggota & Produk Unggulan */}
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-xs font-bold text-gray-900">Merchant Anggota</h4>
-                        <Link href="#" className="text-[9px] font-bold text-[#2DB24A]">Lihat Semua</Link>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold flex items-center justify-center">SU</div>
-                        <div className="w-7 h-7 rounded-full bg-[#E8F8EE] text-[#2DB24A] text-[9px] font-bold flex items-center justify-center">RI</div>
-                        <div className="w-7 h-7 rounded-full bg-[#E8F8EE] text-[#2DB24A] text-[9px] font-bold flex items-center justify-center">SA</div>
-                        <div className="w-7 h-7 rounded-full bg-gray-100 text-gray-500 text-[9px] font-bold flex items-center justify-center">+</div>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-gray-100 pt-2 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-xs font-bold text-gray-900">Produk Unggulan Anggota</h4>
-                        <Link href="/market" className="text-[9px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
-                      </div>
-                      <div className="grid grid-cols-4 gap-1.5 text-center">
-                        {products && products.length > 0 ? (
-                          products.slice(0, 4).map((p: any) => (
-                            <Link key={p.id} href={`/market/product/${p.id}`} className="group block">
-                              <img src={p.imageUrl || 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=150&q=80'} alt={p.title} className="w-full h-10 object-cover rounded-lg group-hover:scale-105 transition-transform" />
-                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5 group-hover:text-[#2DB24A] transition-colors">{p.title}</span>
-                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp {p.price?.toLocaleString('id-ID')}</span>
-                            </Link>
-                          ))
-                        ) : (
-                          <>
-                            <div>
-                              <img src="https://images.unsplash.com/photo-1621939514649-280e2ee25f60?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
-                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5">Keripik Pisang</span>
-                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp 18.000</span>
-                            </div>
-                            <div>
-                              <img src="https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
-                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5">Gula Semut</span>
-                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp 25.000</span>
-                            </div>
-                            <div>
-                              <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
-                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5">Kopi Robusta</span>
-                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp 35.000</span>
-                            </div>
-                            <div>
-                              <img src="https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=150&q=80" alt="" className="w-full h-10 object-cover rounded-lg" />
-                              <span className="block text-[8px] font-bold text-gray-800 truncate mt-0.5">Madu Murni</span>
-                              <span className="block text-[8px] font-extrabold text-[#2DB24A]">Rp 60.000</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
               </div>
+            )}
 
-              {/* Right Sidebar Column (PREMIUM View) */}
-              <div className="space-y-4">
-
-                {/* Manfaat Bergabung Premium */}
-                <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                  <h4 className="text-xs font-bold text-gray-900">Manfaat Bergabung Premium</h4>
-                  <ul className="space-y-2 text-xs text-gray-600 font-medium">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                      <span>Akses semua fitur Free Community</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                      <span>Simpanan lengkap (Pokok, Wajib, Sukarela, Umroh, Qurban)</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                      <span>Pendanaan merchant & potensi bagi hasil</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                      <span>SHU tahunan dan laporan keuangan</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                      <span>Hak suara dalam rapat koperasi</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                      <span>Event, edukasi & komunitas premium</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* SHU Tahun Ini Card */}
-                <div
-                  onClick={() => setShuDetailModalOpen(true)}
-                  className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-2 cursor-pointer hover:border-[#2DB24A]/40 transition-all"
-                  title="Klik untuk melihat detail SHU"
-                >
-                  <div className="flex justify-between items-center">
-                    <h4 className="text-xs font-bold text-gray-900">SHU Tahun Ini</h4>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setShuDetailModalOpen(true)
-                      }}
-                      className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer bg-transparent border-0"
-                    >
-                      Lihat Detail
+            {/* TAB 5: ANGGOTA ──────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'anggota' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Users className="w-6 h-6 text-[#2DB24A]" /> Direktori Anggota {community.name}
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Jejaring resmi pelaku UMKM, pemilik usaha, dan pengurus komunitas.</p>
+                    </div>
+                    <button onClick={() => handleJoin()} className="px-4 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0">
+                      <Plus className="w-4 h-4" /> Undang Anggota Baru
                     </button>
                   </div>
 
-                  <div className="p-3.5 bg-gray-50 rounded-xl flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center shrink-0">
-                      <BarChart3 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="block text-[10px] text-gray-400 font-medium">Estimasi SHU</span>
-                      <span className="block text-base font-extrabold text-[#2DB24A]">
-                        Rp {Math.round(userShu?.totalShuAmount || 670000).toLocaleString('id-ID')}
-                      </span>
-                      <span className="block text-[9px] text-gray-500 mt-0.5">Akan dibagikan pada akhir tahun buku 2026</span>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {members && members.length > 0 ? (
+                      members.map((m: any, idx: number) => (
+                        <div key={m.id || idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all">
+                          <div className="flex items-center gap-3">
+                            <img src={m.user?.avatarUrl || m.img || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&q=80'} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs shrink-0" />
+                            <div>
+                              <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-md uppercase tracking-wider ${m.role === 'ADMIN' || m.role === 'KETUA' ? 'bg-amber-100 text-amber-800' : 'bg-[#E8F8EE] text-[#0F5132]'}`}>
+                                {m.role || 'Anggota'}
+                              </span>
+                              <h4 className="text-xs font-black text-gray-900 mt-0.5">{m.user?.name || m.name || 'Anggota Saloka'}</h4>
+                              <p className="text-[10px] text-gray-500 font-semibold">{m.user?.locationName || m.loc || 'DIY Yogyakarta'}</p>
+                            </div>
+                          </div>
+                          <div className="pt-2 border-t border-gray-200/60 text-xs">
+                            <p className="text-[11px] font-bold text-[#0F5132]">Usaha: {m.user?.storeName || m.biz || 'Merchant UMKM'}</p>
+                            <button onClick={() => window.open(`https://wa.me/${(m.user?.phone || '6285223061670').replace(/[^0-9]/g, '')}`, '_blank')} className="w-full mt-2 py-1.5 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer">
+                              💬 Hubungi WhatsApp
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                        <Users className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
+                        <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Anggota Terdaftar</h4>
+                        <p className="text-xs text-gray-500 max-w-md mx-auto">Komunitas ini belum memiliki daftar anggota terdaftar. Pengurus atau ketua dapat mengundang anggota baru.</p>
+                        <button onClick={() => handleJoin()} className="px-4 py-2 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5">
+                          <Plus className="w-4 h-4" /> Gabung Jadi Anggota Pertama
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Informasi Legalitas Koperasi */}
-                <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                  <h4 className="text-xs font-bold text-gray-900">Informasi Legalitas Koperasi</h4>
-
-                  <div className="space-y-2 text-xs">
-                    <div className="flex items-start gap-2">
-                      <Shield className="w-4 h-4 text-[#2DB24A] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="block text-[9px] text-gray-400">Tipe Komunitas</span>
-                        <span className="block font-bold text-gray-800 text-[11px]">{community.type === 'KOPERASI' ? 'Koperasi Produksi (Berbayar)' : 'Perkumpulan (Berbayar)'}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <Shield className="w-4 h-4 text-[#2DB24A] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="block text-[9px] text-gray-400">Akta Notaris</span>
-                        <span className="block font-semibold text-gray-800 text-[11px] font-mono">{community.aktaNotaris || 'Akta Notaris Koperasi No. 98 Tgl 01 Februari 2025'}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <Info className="w-4 h-4 text-[#2DB24A] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="block text-[9px] text-gray-400">Nomor AHU</span>
-                        <span className="block font-semibold text-gray-800 text-[11px] font-mono">{community.nomorAhu || 'AHU-KOP-0029311.AH.01.11'}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <FileText className="w-4 h-4 text-[#2DB24A] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="block text-[9px] text-gray-400">NPWP Organisasi</span>
-                        <span className="block font-semibold text-gray-800 text-[11px] font-mono">{community.nomorNpwp || '12.987.654.3-012.000'}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-4 h-4 text-[#2DB24A] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="block text-[9px] text-gray-400">Domisili Kantor</span>
-                        <span className="block font-semibold text-gray-800 text-[11px]">{community.domisili || 'Sleman, DIY'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Investment Banner Promo Card */}
-                <div className="p-5 bg-gradient-to-b from-[#E8F8EE] to-[#d3f4de] border border-[#2DB24A]/30 rounded-2xl shadow-sm text-center space-y-3 relative overflow-hidden">
-                  <div className="w-20 h-20 mx-auto relative">
-                    <img
-                      src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=200&q=80"
-                      alt="Investment"
-                      className="w-full h-full object-cover rounded-full shadow-md border-2 border-white"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-black text-gray-900">Investasi kecil, dampak besar untuk kita semua</h4>
-                    <p className="text-[10px] text-gray-600 mt-1 leading-relaxed">
-                      Bersama membangun ekonomi anggota yang mandiri dan sejahtera.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (merchantProjects.length > 0) {
-                        setSelectedProject(merchantProjects[0])
-                        setInvestModalOpen(true)
-                      }
-                    }}
-                    className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1"
-                  >
-                    <span>Mulai Pendanaan Sekarang</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-
               </div>
+            )}
 
-            </div>
+            {/* TAB 6: GALERI ──────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'galeri' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <ImageIcon className="w-6 h-6 text-[#2DB24A]" /> Galeri Kegiatan {community.name}
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Dokumentasi momen kebersamaan, workshop, pelatihan, bazaar, dan kopdar anggota.</p>
+                  </div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                      { title: 'Workshop Digital Marketing 2026', category: 'Workshop', img: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500&h=300&fit=crop&q=80' },
+                      { title: 'Kopdar Rutin Kaliurang', category: 'Kopdar', img: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=500&h=300&fit=crop&q=80' },
+                      { title: 'Bazaar UMKM Alun-Alun Kidul', category: 'Bazaar', img: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=500&h=300&fit=crop&q=80' },
+                      { title: 'Pelatihan Sertifikasi Halal Gratis', category: 'Workshop', img: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=500&h=300&fit=crop&q=80' },
+                      { title: 'Penyerahan Sertifikat Komunitas', category: 'Kopdar', img: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=500&h=300&fit=crop&q=80' },
+                      { title: 'Kunjungan Sentra Kerajinan Jogja', category: 'Kunjungan', img: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&h=300&fit=crop&q=80' },
+                    ].map((item, idx) => (
+                      <div key={idx} className="group relative rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 shadow-xs cursor-pointer">
+                        <img src={item.img} alt={item.title} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end text-white">
+                          <span className="px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider w-max mb-1">
+                            {item.category}
+                          </span>
+                          <h4 className="text-xs font-bold leading-tight">{item.title}</h4>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 7: PENGUMUMAN ──────────────────────────────────────────────── */}
+            {activeSidebarNav === 'pengumuman' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Megaphone className="w-6 h-6 text-[#2DB24A]" /> Pengumuman Resmi Komunitas
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Informasi penting, edaran resmi pengurus, serta pengumuman program kerja {community.name}.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {[
+                      { title: 'Jadwal Rapat Anggota & Evaluasi Program Semester II 2026', date: '24 Juli 2026', sender: 'Pengurus Komunitas', content: 'Diberitahukan kepada seluruh anggota Perahu Kita bahwa Rapat Evaluasi Program Semester II akan dilaksanakan pada hari Sabtu, 15 Agustus 2026. Kehadiran seluruh anggota sangat diharapkan.', isPinned: true },
+                      { title: 'Program Pendampingan Sertifikasi Halal Gratis Tahap 3', date: '18 Juli 2026', sender: 'Divisi Edukasi UMKM', content: 'Pendaftaran pendampingan pengajuan sertifikat Halal gratis (SEHATI) tahap 3 telah dibuka. Silakan mengisi formulir pendaftaran melalui sekretariat komunitas.', isPinned: false },
+                      { title: 'Pembukaan Pendaftaran Stand Bazaar UMKM Perahu Kita', date: '10 Juli 2026', sender: 'Divisi Acara & Bazaar', content: 'Bazaar produk anggota akan digelar pada tanggal 25 Agustus 2026 di Alun-Alun Kidul. Kuota stand terbatas untuk 30 merchant pertama.', isPinned: false },
+                    ].map((p, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-2.5">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            {p.isPinned && <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 font-extrabold text-[10px] rounded-md">📌 TERPAKU</span>}
+                            <span className="text-[10px] text-gray-400 font-semibold">{p.date} • Oleh {p.sender}</span>
+                          </div>
+                        </div>
+                        <h3 className="text-sm font-extrabold text-gray-900">{p.title}</h3>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">{p.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 8: TENTANG ─────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'tentang' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Info className="w-6 h-6 text-[#2DB24A]" /> Tentang {community.name}
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Profil lengkap, visi & misi, struktur pengurus, serta legalitas hukum perkumpulan.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Visi & Misi</h3>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                        <strong className="text-gray-900">Visi:</strong> Menjadi perkumpulan UMKM terdepan di Indonesia yang mandiri, berdaya saing tinggi, berlandaskan semangat kolaborasi dan kebersamaan.
+                      </p>
+                      <div className="text-xs text-gray-600 space-y-1 font-medium pt-1">
+                        <strong className="text-gray-900 block">Misi:</strong>
+                        <p>1. Mendorong edukasi & literasi digital pemasaran UMKM.</p>
+                        <p>2. Memfasilitasi jejaring promosi produk anggota secara luas.</p>
+                        <p>3. Memperkuat sinergi usaha dan kolaborasi bisnis antar anggota.</p>
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Informasi Legalitas Hukum</h3>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
+                          <span className="text-gray-500">Bentuk Organisasi:</span>
+                          <span className="font-bold text-gray-800">Perkumpulan Resmi (Non-Koperasi)</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
+                          <span className="text-gray-500">Akta Notaris:</span>
+                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.aktaNotaris || 'Akta Notaris No. 25 Tgl 25 Juli 2026'}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
+                          <span className="text-gray-500">Nomor AHU Kemenkumham:</span>
+                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.nomorAhu || 'AHU-00250726.AH.01.07'}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
+                          <span className="text-gray-500">Nomor NPWP Organisasi:</span>
+                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.nomorNpwp || '98.765.432.1-012.000'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Domisili Sekretariat:</span>
+                          <span className="font-bold text-gray-800">{community.domisili || 'Kota Yogyakarta, DIY'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 9: AKTIVITAS ───────────────────────────────────────────────── */}
+            {activeSidebarNav === 'aktivitas' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Activity className="w-6 h-6 text-[#2DB24A]" /> Log Aktivitas & Timeline {community.name}
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Jejak kegiatan terbaru, pendaftaran anggota, diskusi, dan perkembangan proyek komunitas.</p>
+                  </div>
+
+                  <div className="space-y-3.5">
+                    {[
+                      { title: 'Kopdar Rutin Perahu Kita Juli 2026', time: 'Hari ini, 14:00 WIB', category: 'Kopdar', author: 'Super Admin Teras', desc: 'Pertemuan bulanan anggota membahas program pameran UMKM.' },
+                      { title: 'Peluncuran Fitur Marketplace Komunitas', time: 'Kemarin, 09:30 WIB', category: 'Sistem', author: 'Tim Perahu Kita', desc: 'Anggota kini dapat menampilkan katalog produk di tab Marketplace.' },
+                      { title: 'Pendaftaran 15 Anggota Baru Minggu Ini', time: '2 hari lalu', category: 'Keanggotaan', author: 'Sekretariat', desc: 'Selamat bergabung bagi para pelaku usaha kuliner & kriya!' },
+                    ].map((act, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50/70 border border-gray-100 rounded-2xl flex items-start gap-4 hover:border-[#2DB24A]/30 transition-all">
+                        <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center font-bold shrink-0">
+                          <Activity className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{act.category}</span>
+                            <span className="text-[10px] text-gray-400 font-semibold">{act.time}</span>
+                          </div>
+                          <h4 className="text-xs font-extrabold text-gray-900">{act.title}</h4>
+                          <p className="text-xs text-gray-600 font-medium leading-relaxed">{act.desc}</p>
+                          <span className="text-[10px] text-gray-400 font-semibold block pt-1">Oleh: {act.author}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 10: BUSINESS MATCHING ───────────────────────────────────────── */}
+            {activeSidebarNav === 'business_matching' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Handshake className="w-6 h-6 text-[#2DB24A]" /> Business Matching & Temu Investor
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Temukan mitra distributor, investor F&B, dan kerjasama pemasaran skala nasional.</p>
+                    </div>
+                    <button onClick={() => goeyToast.info('Formulir pengajuan business matching telah dibuka!')} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                      <Plus className="w-4 h-4" /> Ajukan Kolaborasi
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { title: 'Distributor Produk Makanan Olahan Kemasan', partner: 'PT Boga Nusantara Jabar', target: 'Rp 150.000.000', status: 'Terbuka', slots: '3 Kuota Partner' },
+                      { title: 'Kerjasama Pemasaran Export Batik & Fashion', partner: 'ExportHub Asia Singapore', target: 'Rp 300.000.000', status: 'Terbuka', slots: '5 Kuota Partner' },
+                      { title: 'Kemitraan Franchise Outlet Kuliner Jogja', partner: 'Kopjaswara Commercial', target: 'Rp 75.000.000', status: 'Proses Matching', slots: '2 Kuota Partner' },
+                      { title: 'Pendanaan Investor Angel untuk Startup F&B', partner: 'Jogja Ventures Group', target: 'Rp 500.000.000', status: 'Terbuka', slots: '1 Startup Tersisa' },
+                    ].map((bm, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="px-2.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[10px] rounded-md">{bm.status}</span>
+                            <span className="text-[10px] text-gray-400 font-semibold">{bm.slots}</span>
+                          </div>
+                          <h4 className="text-xs font-black text-gray-900">{bm.title}</h4>
+                          <p className="text-[11px] text-gray-500 font-semibold">Mitra: {bm.partner}</p>
+                          <span className="text-xs font-black text-[#0F5132] block">Potensi Nilai: {bm.target}</span>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Pengajuan proposal matching untuk "${bm.partner}" dikirim!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer text-center">
+                          Ajukan Matching Proposal
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 11: PELATIHAN ───────────────────────────────────────────────── */}
+            {activeSidebarNav === 'pelatihan' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <GraduationCap className="w-6 h-6 text-[#2DB24A]" /> Pelatihan & Certification Bootcamps
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Tingkatkan kapabilitas bisnis, literasi keuangan, dan legalitas usaha bersama narasumber ahli.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { title: 'Strategi Digital Marketing & TikTok Live 2026', trainer: 'Siska Putri (Praktisi E-Commerce)', level: 'Semua Level', date: '30 Juli 2026', price: 'Gratis Anggota' },
+                      { title: 'Penyusunan Laporan Keuangan Standar SAK EMKM', trainer: 'Dra. Tri Haryati, Ak.', level: 'Menengah', date: '05 Agustus 2026', price: 'Gratis Anggota' },
+                      { title: 'Pendampingan Sertifikasi Halal Gratis (SEHATI)', trainer: 'LPPOM MUI DIY', level: 'Resmi', date: '12 Agustus 2026', price: 'Gratis Anggota' },
+                    ].map((tc, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{tc.level}</span>
+                          <h4 className="text-xs font-black text-gray-900">{tc.title}</h4>
+                          <p className="text-[10px] text-gray-500 font-semibold">Pemateri: {tc.trainer}</p>
+                          <p className="text-[10px] text-gray-400 font-medium">📅 {tc.date}</p>
+                        </div>
+                        <div className="pt-2 border-t border-gray-200/60 flex justify-between items-center">
+                          <span className="text-xs font-bold text-[#0F5132]">{tc.price}</span>
+                          <button onClick={() => goeyToast.success(`Anda terdaftar di kelas "${tc.title}"!`)} className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                            Ikuti Kelas
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 12: MENTOR ──────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'mentor' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Award className="w-6 h-6 text-[#2DB24A]" /> Direktori Mentor Bisnis Terverifikasi
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Dapatkan bimbingan 1-on-1 langsung dari praktisi usaha, akademisi, dan pakar industri.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { name: 'Dr. Irvan Prasetya, M.M.', specialty: 'Branding & Scale-Up Bisnis', rating: '⭐ 4.9 (120 Sesi)', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&q=80' },
+                      { name: 'Hj. Endang Setyowati', specialty: 'Manufaktur & Ekspor Pangan', rating: '⭐ 5.0 (95 Sesi)', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&q=80' },
+                      { name: 'Budi Santoso, S.T.', specialty: 'Perencanaan Keuangan & Startup', rating: '⭐ 4.8 (80 Sesi)', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&q=80' },
+                    ].map((m, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all text-center">
+                        <div className="space-y-2">
+                          <img src={m.img} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-xs mx-auto" />
+                          <h4 className="text-xs font-black text-gray-900">{m.name}</h4>
+                          <p className="text-[10px] font-bold text-[#0F5132]">{m.specialty}</p>
+                          <span className="text-[10px] text-amber-600 font-semibold block">{m.rating}</span>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Sesi konsultasi dengan ${m.name} berhasil dijadwalkan!`)} className="w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Jadwalkan Konsultasi
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 13: KOLABORASI ──────────────────────────────────────────────── */}
+            {activeSidebarNav === 'kolaborasi' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Users className="w-6 h-6 text-[#2DB24A]" /> Proyek Kolaborasi Bersama
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Gabung dalam proyek patungan, kargo bersama, dan pameran kolektif anggota.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { title: 'Pengiriman Kargo Bersama (Hemat 35% Ongkir)', desc: 'Konsolidasi pengiriman bahan baku dari Surabaya ke Jogja.', slots: '12 Merchant Terdaftar' },
+                      { title: 'Pameran Stand Joint Booth Saloka Festival 2026', desc: 'Sewa space booth besar untuk display 10 merchant UMKM.', slots: '8 Merchant Terdaftar' },
+                    ].map((col, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-black text-gray-900">{col.title}</h4>
+                          <p className="text-xs text-gray-600 font-medium leading-relaxed">{col.desc}</p>
+                          <span className="text-[10px] text-[#0F5132] font-bold block">Status: {col.slots}</span>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Anda bergabung dalam proyek "${col.title}"!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Bergabung Kolaborasi
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 14: KELAS ───────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'kelas' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <BookOpen className="w-6 h-6 text-[#2DB24A]" /> Katalog Kelas Pelajar Pengusaha
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Modul pembelajaran interaktif bisnis sejak dini untuk siswa dan mahasiswa.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { title: 'Business Model Canvas (BMC) Pemula', duration: '4 Modul Video', badge: 'Terpopuler' },
+                      { title: 'Digital Marketing & Content Creator', duration: '6 Modul Video', badge: 'Favorit' },
+                      { title: 'Leadership & Public Speaking Mastery', duration: '3 Modul Live', badge: 'Baru' },
+                      { title: 'Financial Literacy untuk Pelajar', duration: '5 Modul Video', badge: 'Dasar' },
+                    ].map((k, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{k.badge}</span>
+                          <h4 className="text-xs font-extrabold text-gray-900 leading-snug">{k.title}</h4>
+                          <p className="text-[10px] text-gray-400 font-medium">🕒 {k.duration}</p>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Kelas "${k.title}" dimulai!`)} className="w-full py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Mulai Belajar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 15: KOMPETISI ───────────────────────────────────────────────── */}
+            {activeSidebarNav === 'kompetisi' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Trophy className="w-6 h-6 text-[#2DB24A]" /> Kompetisi & Challenge Pengusaha Muda
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Uji ide bisnismu dan menangkan total hadiah puluhan juta rupiah serta fasilitas inkubasi.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { title: 'Saloka Youth Business Plan Competition 2026', prize: 'Rp 25.000.000 Total Hadiah', dl: '15 Agustus 2026', status: 'Pendaftaran Buka' },
+                      { title: 'National EdTech & Eco-Startup Challenge', prize: 'Rp 15.000.000 Total Hadiah', dl: '30 Agustus 2026', status: 'Pendaftaran Buka' },
+                    ].map((comp, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <span className="px-2.5 py-0.5 bg-emerald-100 text-[#0F5132] font-extrabold text-[10px] rounded-md">{comp.status}</span>
+                          <h4 className="text-xs font-black text-gray-900">{comp.title}</h4>
+                          <p className="text-xs font-black text-[#0F5132]">🏆 {comp.prize}</p>
+                          <p className="text-[10px] text-gray-400 font-medium">⏳ Deadline: {comp.dl}</p>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Pendaftaran tim untuk "${comp.title}" dibuka!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Daftar Tim Kompetisi
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 16: STARTUP ─────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'startup' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Rocket className="w-6 h-6 text-[#2DB24A]" /> Showcase Startup Anggota Pelajar
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Inovasi teknologi dan produk kreatif buatan generasi muda pengusaha.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { title: 'EduForm', desc: 'Platform Pembelajaran Interaktif Pelajar SMR/SMA', founder: 'Rian & Tim', stage: 'Pre-Seed' },
+                      { title: 'GreenPack', desc: 'Kemasan Ramah Lingkungan dari Ampas Tebu', founder: 'Anisa Student', stage: 'Seed Stage' },
+                      { title: 'StudyBox', desc: 'Layanan Subscription Alat Tulis & Buku Edukasi', founder: 'Fajar Youth', stage: 'Early Stage' },
+                    ].map((st, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{st.stage}</span>
+                          <h4 className="text-xs font-black text-gray-900">{st.title}</h4>
+                          <p className="text-xs text-gray-600 font-medium leading-relaxed">{st.desc}</p>
+                          <p className="text-[10px] text-gray-400 font-semibold">Founder: {st.founder}</p>
+                        </div>
+                        <button onClick={() => goeyToast.info(`Pitch deck "${st.title}" sedang diunduh.`)} className="w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Lihat Pitch Deck
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 17: MERCHANT ────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'merchant' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Store className="w-6 h-6 text-[#2DB24A]" /> Direktori Merchant Kuliner Resmi
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Jelajahi outlet kuliner khas dan restoran unggulan anggota Asosiasi Kuliner Kreatif Jogja.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { name: 'Gudeg Yu Djum Wijilan', menu: 'Gudeg Kendil & Gudeg Kaleng Asli', address: 'Jl. Wijilan No. 167, Kraton, Yogyakarta', status: 'BUKA (06:00 - 21:00)' },
+                      { name: 'Bakmi Jawa Mbah Mo', menu: 'Bakmi Godhog & Bakmi Goreng Nyemek', address: 'Code, Trirenggo, Bantul, DIY', status: 'BUKA (17:00 - 23:00)' },
+                      { name: 'Sate Klatak Pak Bari', menu: 'Sate Kambing Muda Jeruji Besi', address: 'Pasar Jejeran, Imogiri Timur, Bantul', status: 'BUKA (18:00 - 24:00)' },
+                      { name: 'Kopi Joss Lik Man', menu: 'Kopi Arang Arang & Nasi Kucing Joss', address: 'Jl. Pangeran Mangkubumi, Stasiun Tugu', status: 'BUKA (16:00 - 02:00)' },
+                    ].map((merch, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <span className="px-2 py-0.5 bg-emerald-100 text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{merch.status}</span>
+                          <h4 className="text-sm font-black text-gray-900">{merch.name}</h4>
+                          <p className="text-xs font-bold text-[#0F5132]">🍲 Menu Utama: {merch.menu}</p>
+                          <p className="text-xs text-gray-500 font-medium">📍 {merch.address}</p>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Detail lokasi merchant "${merch.name}" dibuka!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Lihat Menu & Lokasi
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 18: SUPPLIER ────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'supplier' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Truck className="w-6 h-6 text-[#2DB24A]" /> Direktori Supplier Bahan Baku Kuliner
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Dapatkan pasokan bahan segar, bumbu rempah, dan kemasan food-grade harga grosir.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { item: 'Suplai Daging Ayam & Sapi Segar', supplier: 'UD Ayam Segar Sleman', moq: 'Min. Order 10 kg', price: 'Harga Grosir' },
+                      { item: 'Sentra Box Kemasan Food Grade Custom', supplier: 'PT Kemasan Pack Jogja', moq: 'Min. Order 500 pcs', price: 'Rp 1.200 / pcs' },
+                      { item: 'Distro Rempah & Bumbu Tradisional', supplier: 'Toko Rempah Merapi', moq: 'Min. Order 5 kg', price: 'Harga Pabrik' },
+                    ].map((sup, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-black text-gray-900">{sup.item}</h4>
+                          <p className="text-[11px] text-gray-500 font-semibold">Supplier: {sup.supplier}</p>
+                          <span className="text-[10px] text-gray-400 font-medium block">📦 {sup.moq}</span>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Permintaan penawaran grosir untuk "${sup.item}" dikirim!`)} className="w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Minta Penawaran Grosir
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 19: PROMO ───────────────────────────────────────────────────── */}
+            {activeSidebarNav === 'promo' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Tag className="w-6 h-6 text-[#2DB24A]" /> Voucher & Promo Khusus Anggota
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Gunakan voucher promo eksklusif untuk menikmati kuliner anggota dengan harga hemat.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { title: 'Diskon 20% Gudeg Kendil Wijilan', code: 'GUDEG20', valid: '31 Agu 2026' },
+                      { title: 'Buy 1 Get 1 Kopi Joss Lik Man', code: 'KOPIJOSS', valid: '15 Agu 2026' },
+                      { title: 'Cashback Rp 15.000 Sate Klatak', code: 'KLATAK15', valid: '31 Agu 2026' },
+                    ].map((pr, idx) => (
+                      <div key={idx} className="p-5 bg-gradient-to-br from-[#E8F8EE] to-emerald-50 border border-[#2DB24A]/30 rounded-2xl space-y-3 text-center flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-black text-[#0F5132]">{pr.title}</h4>
+                          <div className="px-3 py-1 bg-white border border-dashed border-[#2DB24A] rounded-lg inline-block font-mono text-xs font-bold text-emerald-800">
+                            {pr.code}
+                          </div>
+                          <p className="text-[10px] text-gray-500 font-medium block">Berlaku s/d {pr.valid}</p>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Voucher "${pr.code}" berhasil diklaim!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Klaim Voucher
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 20: SIMPANAN KOPERASI ───────────────────────────────────────── */}
+            {activeSidebarNav === 'simpanan' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Wallet className="w-6 h-6 text-[#2DB24A]" /> Portal Simpanan Koperasi Produksi
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Kelola simpanan pokok, simpanan wajib bulanan, dan simpanan sukarela terproteksi.</p>
+                    </div>
+                    <button onClick={() => handleOpenPaySavings({ name: 'Simpanan Koperasi', amount: 50000, type: 'WAJIB' })} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                      <Wallet className="w-4 h-4" /> Setor Simpanan
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { title: 'Simpanan Pokok', desc: 'Wajib 1x registrasi', price: 'Rp 150.000', badge: 'Pokok', type: 'POKOK', amount: 150000 },
+                      { title: 'Simpanan Wajib', desc: 'Rutin setiap bulan', price: 'Rp 50.000 / bln', badge: 'Bulanan', type: 'WAJIB', amount: 50000 },
+                      { title: 'Simpanan Sukarela', desc: 'Bebas disetor kapan saja', price: 'Bebas Nominal', badge: 'Sukarela', type: 'SUKARELA', amount: 100000 },
+                    ].map((sp, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all">
+                        <div className="space-y-2">
+                          <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{sp.badge}</span>
+                          <h4 className="text-xs font-black text-gray-900">{sp.title}</h4>
+                          <p className="text-[10px] text-gray-500 font-medium">{sp.desc}</p>
+                          <span className="text-sm font-black text-[#0F5132] block">{sp.price}</span>
+                        </div>
+                        <button onClick={() => handleOpenPaySavings({ name: sp.title, amount: sp.amount, type: sp.type })} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Setor {sp.title}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 21: PENDANAAN KOPERASI ──────────────────────────────────────── */}
+            {activeSidebarNav === 'pendanaan' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Landmark className="w-6 h-6 text-[#2DB24A]" /> Portal Permodalan Usaha Koperasi
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Fasilitas pinjaman permodalan modal kerja & pengadaan alat produksi bunga ringan.</p>
+                    </div>
+                    <button onClick={() => setLoanModalOpen(true)} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                      <Plus className="w-4 h-4" /> Ajukan Pinjaman Permodalan
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { title: 'Pinjaman Modal Kerja Pembelian Bahan Baku', ceiling: 'Plafon s/d Rp 25.000.000', rate: 'Bunga 0,8% / bulan', tenor: 'Tenor 3 - 12 Bulan' },
+                      { title: 'Pinjaman Pengadaan Mesin & Alat Produksi', ceiling: 'Plafon s/d Rp 50.000.000', rate: 'Bunga 0,9% / bulan', tenor: 'Tenor 6 - 24 Bulan' },
+                    ].map((fund, idx) => (
+                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-black text-gray-900">{fund.title}</h4>
+                          <span className="text-sm font-black text-[#0F5132] block">{fund.ceiling}</span>
+                          <p className="text-[10px] text-gray-500 font-semibold">{fund.rate} • {fund.tenor}</p>
+                        </div>
+                        <button onClick={() => setLoanModalOpen(true)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Ajukan Permodalan
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 22: SHU KOPERASI ────────────────────────────────────────────── */}
+            {activeSidebarNav === 'shu' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <PieChart className="w-6 h-6 text-[#2DB24A]" /> Laporan & Simulasi Bagi Hasil SHU
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Transparansi perhitungan Sisa Hasil Usaha (SHU) Koperasi Produksi tahun berjalan.</p>
+                    </div>
+                    <button onClick={() => setShuDetailModalOpen(true)} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                      <PieChart className="w-4 h-4" /> Detail Perhitungan SHU
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-5 bg-emerald-50 border border-[#2DB24A]/30 rounded-2xl space-y-2">
+                      <span className="text-[10px] font-bold text-[#0F5132] uppercase">Total SHU Koperasi 2026</span>
+                      <span className="text-xl font-black text-gray-900 block">Rp 185.000.000</span>
+                      <p className="text-[10px] text-gray-500 font-medium">Hasil usaha terkumpul dari 12 unit bisnis.</p>
+                    </div>
+                    <div className="p-5 bg-amber-50 border border-amber-300/40 rounded-2xl space-y-2">
+                      <span className="text-[10px] font-bold text-amber-800 uppercase">Jasa Simpanan (40%)</span>
+                      <span className="text-xl font-black text-gray-900 block">Rp 74.000.000</span>
+                      <p className="text-[10px] text-gray-500 font-medium">Dibagikan proporsional saldo simpanan.</p>
+                    </div>
+                    <div className="p-5 bg-blue-50 border border-blue-300/40 rounded-2xl space-y-2">
+                      <span className="text-[10px] font-bold text-blue-800 uppercase">Jasa Transaksi (60%)</span>
+                      <span className="text-xl font-black text-gray-900 block">Rp 111.000.000</span>
+                      <p className="text-[10px] text-gray-500 font-medium">Dibagikan proporsional keaktifan belanja.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 23: LAPORAN KOPERASI ────────────────────────────────────────── */}
+            {activeSidebarNav === 'laporan' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <FileText className="w-6 h-6 text-[#2DB24A]" /> Laporan Keuangan Audited & Dokumentasi RAT
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Unduh berkas laporan keuangan, neraca saldo, serta risalah Rapat Anggota Tahunan (RAT).</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      { title: 'Laporan Keuangan Audited Koperasi Tahun 2025 (PDF)', date: 'Diunggah 01 Feb 2026', size: '2.4 MB' },
+                      { title: 'Neraca Saldo & Rugi Laba Triwulan I Tahun 2026 (PDF)', date: 'Diunggah 15 Apr 2026', size: '1.8 MB' },
+                      { title: 'Risalah Berita Acara RAT Koperasi Tahun Buku 2025 (PDF)', date: 'Diunggah 05 Feb 2026', size: '3.1 MB' },
+                    ].map((rep, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl flex justify-between items-center hover:border-[#2DB24A]/40 transition-all">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-6 h-6 text-[#2DB24A]" />
+                          <div>
+                            <h4 className="text-xs font-bold text-gray-900">{rep.title}</h4>
+                            <p className="text-[10px] text-gray-400 font-semibold">{rep.date} • {rep.size}</p>
+                          </div>
+                        </div>
+                        <button onClick={() => goeyToast.success(`Mengunduh "${rep.title}"...`)} className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                          Unduh PDF
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-
+        </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────── */}

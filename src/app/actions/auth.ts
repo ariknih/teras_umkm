@@ -302,7 +302,7 @@ export async function sendOtpWhatsApp(phone: string, otp: string) {
       recipientPhone: phone,
       message: `Kode OTP verifikasi WhatsApp Saloka.id Anda adalah: ${otp}. Harap tidak membagikan kode ini kepada siapapun.`
     })
-    return { success: true }
+    return { success: true, otpCode: otp }
   } catch (err: any) {
     return { error: err.message || 'Gagal mengirim OTP' }
   }
@@ -428,8 +428,9 @@ export async function saveOnboardingData(data: {
 
 export async function checkWhatsAppUnique(whatsapp: string) {
   try {
+    const user = await getCurrentUser()
     const existing = await DataStore.findUserByWhatsApp(whatsapp)
-    if (existing) {
+    if (existing && existing.id !== user?.id) {
       return { unique: false }
     }
     return { unique: true }

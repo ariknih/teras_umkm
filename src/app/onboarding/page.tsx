@@ -443,9 +443,16 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-white/10 text-[10px] text-white/40 font-medium">
-            Layanan bantuan merchant:<br/>
-            <span className="text-[#FFC107] font-bold">cs@saloka.id</span>
+          <div className="mt-8 pt-6 border-t border-white/10 text-[10px] text-white/40 font-medium space-y-1">
+            <p>Layanan bantuan merchant (CS Saloka):</p>
+            <a 
+              href="https://wa.me/6285223061670" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-[#FFC107] font-bold hover:underline inline-flex items-center gap-1"
+            >
+              💬 WhatsApp CS: 085223061670
+            </a>
           </div>
         </div>
 
@@ -483,7 +490,7 @@ export default function OnboardingPage() {
                   {isDuplicateWa && (
                     <div className="mt-3 pt-3 border-t border-red-200/50 flex flex-wrap gap-3">
                       <a 
-                        href={`https://wa.me/628122222900?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20password%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
+                        href={`https://wa.me/6281234567890?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20password%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-[10px] font-bold"
@@ -491,7 +498,7 @@ export default function OnboardingPage() {
                         Lupa Password? Hubungi CS
                       </a>
                       <a 
-                        href={`https://wa.me/628122222900?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20email%20atau%20informasi%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
+                        href={`https://wa.me/6281234567890?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20email%20atau%20informasi%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-colors text-[10px] font-bold"
@@ -601,7 +608,7 @@ export default function OnboardingPage() {
 
                       <div className="text-[10px] text-text-secondary pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5">
                         Ada kendala? <span>Hubungi CS Saloka di WhatsApp:</span> 
-                        <a href="https://wa.me/628122222900" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline">08122222900</a>
+                        <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline">0812-3456-7890</a>
                       </div>
                     </div>
                   )}

@@ -433,7 +433,7 @@ function AuthContent() {
                   >
                     {communities.map((comm) => (
                       <option key={comm.id} value={comm.id}>
-                        {comm.name} ({comm.type === 'KOPERASI' ? 'Koperasi - Berbayar' : 'Perkumpulan - Gratis'})
+                        {comm.name} ({comm.type === 'KOPERASI' ? 'Koperasi' : comm.category === 'PAID' ? 'Perkumpulan - Berbayar' : 'Perkumpulan - Gratis'})
                       </option>
                     ))}
                   </select>

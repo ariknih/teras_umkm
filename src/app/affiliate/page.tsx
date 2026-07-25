@@ -490,13 +490,13 @@ export default function AffiliatePage() {
             <Link
               id="aff-switch-account"
               href="/auth"
-              className="btn-primary text-xs"
+              className="w-full py-3.5 bg-primary hover:bg-primary/95 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-primary/10 text-center block"
             >
               Beralih Akun / Daftar
             </Link>
             <Link
               href="/"
-              className="py-3.5 bg-surface-container border border-border-subtle text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
+              className="w-full py-3.5 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-colors text-center block"
             >
               Kembali ke Beranda
             </Link>
