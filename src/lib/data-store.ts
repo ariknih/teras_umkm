@@ -1942,6 +1942,7 @@ function loadMockDb(): {
   communities?: any[];
   communityMemberships?: any[];
   cooperativeLoans?: any[];
+  cooperativeProducts?: any[];
 } {
   try {
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2002,6 +2003,9 @@ function loadMockDb(): {
       if (parsed.cooperativeLoans) {
         parsed.cooperativeLoans = parsed.cooperativeLoans.map((l: any) => ({ ...l, createdAt: new Date(l.createdAt), updatedAt: new Date(l.updatedAt) }))
       }
+      if (parsed.cooperativeProducts) {
+        parsed.cooperativeProducts = parsed.cooperativeProducts.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
+      }
       return parsed
     }
   } catch (e) {
@@ -2048,7 +2052,8 @@ function saveMockDb() {
       orderTrackings: globalMockOrderTrackings,
       communities: (globalThis as any).__mockCommunities,
       communityMemberships: (globalThis as any).__mockCommunityMemberships,
-      cooperativeLoans: (globalThis as any).__mockCooperativeLoans
+      cooperativeLoans: (globalThis as any).__mockCooperativeLoans,
+      cooperativeProducts: (globalThis as any).__mockCooperativeProducts
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2154,6 +2159,13 @@ function syncMockDb() {
           updatedAt: new Date(l.updatedAt)
         }))
       }
+      if (parsed.cooperativeProducts) {
+        (globalThis as any).__mockCooperativeProducts = parsed.cooperativeProducts.map((p: any) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+          updatedAt: new Date(p.updatedAt)
+        }))
+      }
     }
   } catch (e) {
     // ignore
@@ -2167,6 +2179,7 @@ const _persistedDb = loadMockDb()
 ;(globalThis as any).__mockCommunities = _persistedDb.communities || []
 ;(globalThis as any).__mockCommunityMemberships = _persistedDb.communityMemberships || []
 ;(globalThis as any).__mockCooperativeLoans = _persistedDb.cooperativeLoans || []
+;(globalThis as any).__mockCooperativeProducts = _persistedDb.cooperativeProducts || []
 
 // Global state in-memory database helpers for local updates in sandbox mode
 let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products).map((p: any) => ({
@@ -8323,16 +8336,120 @@ export const DataStore = {
   // ─── COOPERATIVE PRODUCTS (SIMPANAN) CRUD ──────────────────────────────────
   async getCooperativeProducts(communityId: string) {
     syncMockDb()
+    let list: any[] = []
     if (await isDbConnected()) {
       try {
-        return await db.cooperativeProduct.findMany({
+        list = await db.cooperativeProduct.findMany({
           where: { communityId },
           orderBy: { createdAt: 'asc' }
         })
       } catch (_) {}
+    } else {
+      const products = (globalThis as any).__mockCooperativeProducts || []
+      list = products.filter((p: any) => p.communityId === communityId)
     }
-    const products = (globalThis as any).__mockCooperativeProducts || []
-    return products.filter((p: any) => p.communityId === communityId)
+
+    if (list.length === 0) {
+      let isKoperasi = false
+      if (await isDbConnected()) {
+        try {
+          const comm = await db.community.findUnique({ where: { id: communityId } })
+          isKoperasi = comm?.type === 'KOPERASI'
+        } catch (_) {}
+      } else {
+        const comms = (globalThis as any).__mockCommunities || []
+        const comm = comms.find((c: any) => c.id === communityId)
+        isKoperasi = comm?.type === 'KOPERASI'
+      }
+
+      if (isKoperasi) {
+        const defaults = [
+          {
+            id: `coop-pokok-${communityId}`,
+            communityId,
+            name: 'Simpanan Pokok',
+            type: 'POKOK',
+            amount: 150000,
+            isMandatory: true,
+            isPremium: false,
+            description: 'Sekali Bayar',
+            periodText: 'Sekali Bayar',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: `coop-wajib-${communityId}`,
+            communityId,
+            name: 'Simpanan Wajib',
+            type: 'WAJIB',
+            amount: 50000,
+            isMandatory: true,
+            isPremium: false,
+            description: 'Iuran rutin setiap bulan',
+            periodText: 'Rp 50.000 / bulan',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: `coop-sukarela-${communityId}`,
+            communityId,
+            name: 'Simpanan Sukarela',
+            type: 'SUKARELA',
+            amount: 10000,
+            isMandatory: false,
+            isPremium: true,
+            description: 'Setor kapan saja',
+            periodText: 'Mulai Rp 10.000',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: `coop-umroh-${communityId}`,
+            communityId,
+            name: 'Simpanan Umroh',
+            type: 'UMROH',
+            amount: 50000,
+            isMandatory: false,
+            isPremium: true,
+            description: 'Tabungan khusus umroh',
+            periodText: 'Mulai Rp 50.000',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: `coop-qurban-${communityId}`,
+            communityId,
+            name: 'Simpanan Qurban',
+            type: 'QURBAN',
+            amount: 20000,
+            isMandatory: false,
+            isPremium: true,
+            description: 'Tabungan khusus qurban',
+            periodText: 'Mulai Rp 20.000',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ]
+
+        if (await isDbConnected()) {
+          try {
+            await db.cooperativeProduct.createMany({ data: defaults })
+            list = await db.cooperativeProduct.findMany({
+              where: { communityId },
+              orderBy: { createdAt: 'asc' }
+            })
+          } catch (_) {
+            list = defaults
+          }
+        } else {
+          const products = (globalThis as any).__mockCooperativeProducts || []
+          ;(globalThis as any).__mockCooperativeProducts = [...products, ...defaults]
+          saveMockDb()
+          list = defaults
+        }
+      }
+    }
+    return list
   },
 
   async createCooperativeProduct(data: {

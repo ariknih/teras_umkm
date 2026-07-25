@@ -12,6 +12,7 @@ import {
   approveCooperativeLoanAction,
   rejectCooperativeLoanAction,
   updateIndukCommunity,
+  updateCooperativeProductAction,
   getCommunityRealStatsAction,
   getCooperativeProductsAction,
   createCooperativeProductAction,
@@ -332,7 +333,7 @@ export default function CommunityDetailPage() {
 
   const handleJoin = async () => {
     if (!user) {
-      router.push('/auth?tab=register')
+      router.push(`/auth?tab=register&communityId=${id}`)
       return
     }
 
@@ -487,12 +488,16 @@ export default function CommunityDetailPage() {
   const isKetua = user && community.ketuaId === user.id
   const isAdmin = user && user.role === 'ADMIN'
 
-  // Determine active view mode:
-  // If previewMode is AUTO: PERKUMPULAN -> FREE, KOPERASI -> PREMIUM (or based on isMember)
-  const activeMode: 'FREE' | 'PREMIUM' = 
-    previewMode === 'FREE' ? 'FREE' :
-    previewMode === 'PREMIUM' ? 'PREMIUM' :
-    (community.type === 'KOPERASI' || isMember) ? 'PREMIUM' : 'FREE'
+  // Determine membership tiers based on payment/upgrade status
+  const isPremiumMember = isMember && 
+    (membershipDetails?.isPaid || membershipDetails?.invoiceStatus === 'VERIFIED' || membershipDetails?.invoiceStatus === 'PAID')
+
+  const isFreeMember = isMember && !isPremiumMember
+
+  // Keep activeMode for compatibility
+  const activeMode: 'FREE' | 'PREMIUM' = isPremiumMember ? 'PREMIUM' : 'FREE'
+
+  const freeSavings = coopProducts.filter((cp: any) => cp.isMandatory)
 
   // Sample Merchant Projects for Pendanaan Merchant (Foto 2)
   const merchantProjects = [
@@ -541,13 +546,13 @@ export default function CommunityDetailPage() {
       {/* ── MAIN CONTAINER CARD (BORDER & ROUNDED CORNERS AS IN PHOTOS) ──────── */}
       <div className="max-w-[1240px] mx-auto bg-white border border-gray-200 rounded-[28px] p-4 md:p-7 shadow-sm relative overflow-hidden space-y-6">
 
-        {/* TOP RIGHT BORDER BADGE (FOTO 1: FREE COMMUNITY / FOTO 2: PREMIUM COMMUNITY) */}
+        {/* TOP RIGHT BORDER BADGE */}
         <div className={`absolute top-0 right-0 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider rounded-bl-2xl shadow-sm z-10 ${
-          activeMode === 'FREE' 
-            ? 'bg-[#2DB24A] text-white' 
-            : 'bg-[#15803D] text-white'
+          community.type === 'KOPERASI'
+            ? 'bg-[#15803D] text-white' 
+            : 'bg-[#2DB24A] text-white'
         }`}>
-          {activeMode === 'FREE' ? 'FREE COMMUNITY' : 'PREMIUM COMMUNITY'}
+          {community.type === 'KOPERASI' ? 'KOPERASI' : 'FREE COMMUNITY'}
         </div>
 
         {/* ── HERO HEADER CARD ──────────────────────────────────────────────── */}
@@ -571,11 +576,11 @@ export default function CommunityDetailPage() {
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
               <span className={`px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded-md ${
-                activeMode === 'FREE' 
-                  ? 'bg-[#E8F8EE] text-[#2DB24A] border border-[#2DB24A]/20' 
-                  : 'bg-[#15803D] text-white'
+                community.type === 'KOPERASI'
+                  ? 'bg-[#15803D] text-white'
+                  : 'bg-[#E8F8EE] text-[#2DB24A] border border-[#2DB24A]/20'
               }`}>
-                {activeMode === 'FREE' ? 'FREE COMMUNITY' : 'PREMIUM COMMUNITY'}
+                {community.type === 'KOPERASI' ? 'KOPERASI' : 'FREE COMMUNITY'}
               </span>
             </div>
 
@@ -607,21 +612,45 @@ export default function CommunityDetailPage() {
 
           {/* Right Status Card */}
           <div className="shrink-0 flex flex-col justify-center items-center md:items-end gap-2">
-            {activeMode === 'FREE' ? (
-              <div className="p-3.5 bg-white border border-[#2DB24A] rounded-2xl text-center min-w-[170px] shadow-sm">
+            {!isMember ? (
+              <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-center min-w-[170px] shadow-sm">
+                <div className="flex items-center justify-center gap-1.5 text-gray-500 font-bold text-xs">
+                  <Info className="w-4 h-4" />
+                  <span>Bukan Anggota</span>
+                </div>
+                <p className="text-[10px] text-gray-400 font-medium mt-1">
+                  {community.type === 'KOPERASI' ? 'Harap gabung Koperasi' : 'Silakan gabung komunitas'}
+                </p>
+              </div>
+            ) : community.type === 'PERKUMPULAN' ? (
+              <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/30 rounded-2xl text-center min-w-[170px] shadow-sm">
                 <div className="flex items-center justify-center gap-1.5 text-[#2DB24A] font-bold text-xs">
                   <CheckCircle2 className="w-4 h-4" />
+                  <span>Anggota Aktif</span>
+                </div>
+                <p className="text-[10px] text-gray-500 font-medium mt-1">
+                  Bergabung {membershipDetails?.joinedAt ? new Date(membershipDetails.joinedAt).toLocaleDateString('id-ID') : 'Baru saja'}
+                </p>
+              </div>
+            ) : isFreeMember ? (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-center min-w-[170px] shadow-sm">
+                <div className="flex items-center justify-center gap-1.5 text-[#2DB24A] font-bold text-xs">
+                  <CheckCircle2 className="w-4 h-4 text-[#2DB24A]" />
                   <span>Anggota Free</span>
                 </div>
-                <p className="text-[10px] text-gray-500 font-medium mt-1">Bergabung 20/07/2026</p>
+                <p className="text-[10px] text-gray-500 font-medium mt-1">
+                  Bergabung {membershipDetails?.joinedAt ? new Date(membershipDetails.joinedAt).toLocaleDateString('id-ID') : 'Baru saja'}
+                </p>
               </div>
             ) : (
               <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/30 rounded-2xl text-center min-w-[170px] shadow-sm">
                 <div className="flex items-center justify-center gap-1.5 text-[#15803D] font-extrabold text-xs">
-                  <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  <CheckCircle2 className="w-4 h-4 text-[#15803D]" />
                   <span>Anggota Premium</span>
                 </div>
-                <p className="text-[10px] text-gray-600 font-medium mt-1">Bergabung 20/07/2026</p>
+                <p className="text-[10px] text-gray-600 font-medium mt-1">
+                  Bergabung {membershipDetails?.joinedAt ? new Date(membershipDetails.joinedAt).toLocaleDateString('id-ID') : 'Baru saja'}
+                </p>
               </div>
             )}
           </div>
@@ -689,157 +718,106 @@ export default function CommunityDetailPage() {
         {/* ─────────────────────────────────────────────────────────────────── */}
         {/* ── FREE COMMUNITY LAYOUT (FOTO 1) ───────────────────────────────── */}
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'FREE' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {!isMember ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             
             {/* Left 2 Columns */}
             <div className="lg:col-span-2 space-y-6">
 
-              {/* Jenis Keanggotaan Section */}
-              <div className="space-y-3">
+              {/* Tentang Koperasi/Komunitas Card */}
+              <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-4">
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Jenis Keanggotaan
+                  {community.type === 'KOPERASI' ? 'Tentang Koperasi' : 'Tentang Komunitas'}
                 </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* FREE Card */}
-                  <div className="p-5 bg-white border-2 border-[#2DB24A] rounded-2xl shadow-sm relative flex flex-col justify-between space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-black text-[#2DB24A]">FREE</h4>
-                        <p className="text-[10px] text-gray-500 font-semibold">Keanggotaan Dasar</p>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-[#E8F8EE] flex items-center justify-center text-[#2DB24A]">
-                        <Users className="w-5 h-5" />
-                      </div>
-                    </div>
-
-                    <ul className="space-y-2 text-xs text-gray-600 font-medium">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Akses Forum & Komunitas</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Marketplace Anggota</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Edukasi Dasar</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Simpanan Pokok</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                        <span>Simpanan Wajib</span>
-                      </li>
-                    </ul>
-
-                    <button
-                      disabled
-                      className="w-full py-2.5 border border-[#2DB24A] text-[#2DB24A] bg-[#E8F8EE]/50 font-extrabold text-[11px] uppercase tracking-wider rounded-xl text-center"
-                    >
-                      ANDA ADALAH ANGGOTA FREE
-                    </button>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {community.description || (community.type === 'KOPERASI' 
+                    ? 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah untuk pengadaan bahan baku bersama, fasilitasi permodalan modal produksi, dan bagi hasil usaha (SHU) untuk kesejahteraan anggota.'
+                    : 'Wadah kolaborasi dan diskusi antar pemilik usaha kreatif untuk berjejaring sesama pelaku usaha, mempromosikan produk, dan bertukar informasi.')}
+                </p>
+                <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="text-left space-y-1">
+                    <h4 className="text-xs font-bold text-gray-900">
+                      {community.type === 'KOPERASI' ? `Gabung ${community.name}` : `Gabung ${community.name} (Gratis)`}
+                    </h4>
+                    <p className="text-[10px] text-gray-500 leading-relaxed">
+                      {community.type === 'KOPERASI'
+                        ? 'Bergabunglah dengan Koperasi kami untuk membuka akses ke semua layanan simpanan, pendanaan merchant, dan bagi hasil usaha (SHU).'
+                        : 'Bergabunglah dengan Komunitas kami secara gratis untuk membuka forum diskusi, networking sesama merchant, dan simpanan Pokok/Wajib/Sukarela.'}
+                    </p>
                   </div>
-
-                  {/* PREMIUM Card */}
-                  <div className="p-5 bg-gray-50/70 border border-gray-200 rounded-2xl relative flex flex-col justify-between space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-lg font-black text-gray-800">PREMIUM</h4>
-                        <p className="text-[10px] text-gray-500 font-semibold">Keanggotaan Koperasi Lengkap</p>
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                        <Lock className="w-4 h-4" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-2 text-[11px] text-gray-600 font-medium">
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Semua fitur FREE</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Pendanaan Merchant</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Simpanan Sukarela</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>SHU & Bagi Hasil</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Simpanan Umroh</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Laporan Keuangan Koperasi</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Simpanan Qurban</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Check className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                        <span>Hak Suara Rapat</span>
-                      </div>
-                    </div>
-
+                  {community.type === 'KOPERASI' ? (
                     <button
                       onClick={() => setPaymentModalOpen(true)}
-                      className="w-full py-2.5 border border-gray-300 hover:border-gray-400 text-gray-700 bg-white font-extrabold text-[11px] uppercase tracking-wider rounded-xl text-center transition-all shadow-sm"
+                      className="px-5 py-2 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow shrink-0 cursor-pointer"
                     >
-                      UPGRADE KE PREMIUM
+                      Gabung Koperasi
                     </button>
-                  </div>
+                  ) : (
+                    <button
+                      onClick={handleJoin}
+                      disabled={actionPending}
+                      className="px-5 py-2 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow shrink-0 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {actionPending && <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>}
+                      {actionPending ? 'Memproses...' : 'Gabung Komunitas'}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Produk Simpanan (Free) Section */}
+              {/* Produk Simpanan Section */}
               <div className="space-y-3">
                 <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Produk Simpanan (Free)
+                  Produk Simpanan
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center">
-                        <Home className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <span className="block text-xs font-bold text-gray-900">Simpanan Pokok</span>
-                        <span className="block text-[10px] text-gray-400 font-medium">Sekali Bayar</span>
-                        <span className="block text-xs font-extrabold text-[#2DB24A] mt-0.5">Rp 150.000</span>
-                      </div>
-                    </div>
-                    <span className="px-2.5 py-1 bg-[#E8F8EE] text-[#2DB24A] font-bold text-[9px] rounded-md">
-                      Sekali Bayar
-                    </span>
-                  </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                  {coopProducts.map((cp: any) => {
+                    const isLocked = community.type === 'PERKUMPULAN' && cp.type !== 'POKOK' && cp.type !== 'WAJIB' && cp.type !== 'SUKARELA'
+                    return (
+                      <div key={cp.id} className="relative group h-full">
+                        {/* Card Content */}
+                        <div className={`p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between h-full relative ${
+                          isLocked ? 'blur-[1.5px] opacity-60 pointer-events-none select-none' : ''
+                        }`}>
+                          <div className="flex items-start gap-2">
+                            {cp.type === 'POKOK' ? <Home className="w-4 h-4 text-[#2DB24A] shrink-0" /> :
+                             cp.type === 'WAJIB' ? <Calendar className="w-4 h-4 text-[#2DB24A] shrink-0" /> :
+                             cp.type === 'SUKARELA' ? <Coins className="w-4 h-4 text-amber-500 shrink-0" /> :
+                             cp.type === 'UMROH' ? <Building2 className="w-4 h-4 text-emerald-600 shrink-0" /> :
+                             <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />}
+                            <div>
+                              <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
+                              <span className="block text-[9px] text-gray-400 line-clamp-2 leading-tight">
+                                {cp.periodText || cp.description || (cp.type === 'POKOK' ? 'Sekali Bayar' : 'Simpanan')}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-1 mt-auto pt-2">
+                            <span className="block text-xs font-extrabold text-[#2DB24A]">
+                              {cp.isMandatory ? '' : 'Mulai '}Rp {cp.amount.toLocaleString('id-ID')}{cp.type === 'WAJIB' ? ' / bulan' : ''}
+                            </span>
+                            <span className="inline-block px-2 py-0.5 font-bold text-[8px] bg-[#E8F8EE] text-[#2DB24A] rounded">
+                              {cp.isMandatory ? 'Wajib' : 'Premium'}
+                            </span>
+                          </div>
+                        </div>
 
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center">
-                        <Calendar className="w-5 h-5" />
+                        {/* Lock Overlay */}
+                        {isLocked && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[0.5px] rounded-xl z-10 text-center p-2">
+                            <Lock className="w-4 h-4 text-[#0F5132] mb-0.5" />
+                            <span className="text-[8px] font-bold text-[#0F5132] uppercase tracking-widest">Premium</span>
+                          </div>
+                        )}
                       </div>
-                      <div>
-                        <span className="block text-xs font-bold text-gray-900">Simpanan Wajib</span>
-                        <span className="block text-[10px] text-gray-400 font-medium">Iuran rutin setiap bulan</span>
-                        <span className="block text-xs font-extrabold text-[#2DB24A] mt-0.5">Rp 50.000 / bulan</span>
-                      </div>
+                    )
+                  })}
+                  {coopProducts.length === 0 && (
+                    <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm text-center col-span-5 text-xs text-gray-400">
+                      Belum ada produk simpanan yang terdaftar.
                     </div>
-                    <span className="px-2.5 py-1 bg-[#E8F8EE] text-[#2DB24A] font-bold text-[9px] rounded-md">
-                      Wajib
-                    </span>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -895,19 +873,7 @@ export default function CommunityDetailPage() {
                 </div>
               </div>
 
-              {/* Free Alert Banner at Bottom */}
-              <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/20 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 text-xs text-gray-700">
-                  <Info className="w-4 h-4 text-[#2DB24A] shrink-0" />
-                  <span>Free Community hanya mendapatkan fitur dasar koperasi. Upgrade ke Premium untuk pengalaman yang lebih lengkap dan menguntungkan.</span>
-                </div>
-                <button
-                  onClick={() => setPaymentModalOpen(true)}
-                  className="px-4 py-1.5 bg-white border border-[#2DB24A] text-[#2DB24A] font-bold text-xs rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all shrink-0"
-                >
-                  Upgrade Sekarang
-                </button>
-              </div>
+              {/* Info banner removed to align with single Koperasi tier */}
 
             </div>
 
@@ -943,7 +909,7 @@ export default function CommunityDetailPage() {
 
               {/* Simpanan yang Tersedia (Free) */}
               <div className="p-5 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                <h4 className="text-xs font-bold text-gray-900">Simpanan yang Tersedia (Free)</h4>
+                <h4 className="text-xs font-bold text-gray-900">Syarat Simpanan Koperasi</h4>
                 
                 <div className="space-y-2.5">
                   <div className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
@@ -1061,19 +1027,31 @@ export default function CommunityDetailPage() {
             </div>
 
           </div>
-        )}
-
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* ── PREMIUM COMMUNITY LAYOUT (FOTO 2) ─────────────────────────────── */}
-        {/* ─────────────────────────────────────────────────────────────────── */}
-        {activeMode === 'PREMIUM' && (
+        ) : (
           <div className="space-y-6">
 
-            {/* Top Green Notification Alert */}
-            <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl flex items-center gap-3 text-xs text-gray-800 font-medium">
-              <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
-              <span>Terima kasih telah menjadi anggota Premium. Anda mendapatkan akses penuh ke semua layanan koperasi dan peluang pendanaan merchant.</span>
-            </div>
+            {/* Top Notification Alert (Dynamic Free vs Premium Banner) */}
+            {isFreeMember ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm animate-in fade-in duration-300">
+                <div className="text-left space-y-1">
+                  <h4 className="text-sm font-bold text-emerald-900">Buka Potensi Penuh Komunitas Anda! Upgrade ke Premium</h4>
+                  <p className="text-xs text-emerald-750 leading-relaxed">
+                    Anda saat ini berada di keanggotaan **Free**. Upgrade ke keanggotaan Premium untuk membuka produk simpanan eksklusif (Sukarela, Umroh, Qurban), bagi hasil SHU, dan akses pendanaan/investasi merchant pelaku UMKM.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPaymentModalOpen(true)}
+                  className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow shrink-0 cursor-pointer"
+                >
+                  Upgrade ke Premium
+                </button>
+              </div>
+            ) : (
+              <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl flex items-center gap-3 text-xs text-gray-800 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-[#2DB24A] shrink-0" />
+                <span>Terima kasih telah menjadi anggota Premium. Anda mendapatkan akses penuh ke semua layanan komunitas, simpanan lengkap, dan peluang pendanaan merchant.</span>
+              </div>
+            )}
 
             {/* Main Content Layout with Sidebar */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -1113,235 +1091,66 @@ export default function CommunityDetailPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-                      {coopProducts.map((cp: any) => (
-                        <div key={cp.id} className="p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between relative group">
-                          <div className="flex items-center justify-between gap-1">
-                            <div className="flex items-center gap-2">
-                              {cp.type === 'POKOK' ? <Home className="w-4 h-4 text-[#2DB24A]" /> :
-                               cp.type === 'WAJIB' ? <Calendar className="w-4 h-4 text-[#2DB24A]" /> :
-                               cp.type === 'SUKARELA' ? <Coins className="w-4 h-4 text-amber-500" /> :
-                               cp.type === 'UMROH' ? <Building2 className="w-4 h-4 text-emerald-600" /> :
-                               <Sparkles className="w-4 h-4 text-amber-600" />}
-                              <div>
-                                <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
-                                <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
-                              </div>
-                            </div>
-                            {isCanManageCoop && (
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => handleOpenEditProduct(cp)}
-                                  className="text-gray-400 hover:text-[#0F5132] text-xs transition-colors p-0.5"
-                                  title="Edit produk simpanan"
-                                >
-                                  ✏️
-                                </button>
-                                <button
-                                  onClick={async () => {
-                                    if (confirm(`Hapus produk simpanan "${cp.name}"?`)) {
-                                      await deleteCooperativeProductAction(cp.id, id)
-                                      setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
-                                      goeyToast.success('Produk simpanan dihapus!')
-                                    }
-                                  }}
-                                  className="text-gray-300 hover:text-red-600 text-xs transition-colors p-0.5"
-                                  title="Hapus produk simpanan"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          <span className="block text-xs font-extrabold text-[#2DB24A]">
-                            Rp {cp.amount.toLocaleString('id-ID')}
-                          </span>
-                          <span className={`w-max px-2 py-0.5 font-bold text-[8px] rounded ${
-                            cp.isMandatory ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-emerald-100 text-emerald-700'
-                          }`}>
-                            {cp.isMandatory ? 'Wajib' : 'Sukarela'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Transparansi SHU Koperasi RAT & Statement Personal Anggota Widget */}
-                {community?.type === 'KOPERASI' && (
-                  <div className="bg-gradient-to-br from-[#0F5132] to-emerald-900 text-white p-5 rounded-2xl shadow-md space-y-4 border border-emerald-700/50">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-emerald-700/50 pb-3">
-                      <div>
-                        <span className="text-[9px] font-mono text-emerald-300 font-bold uppercase tracking-wider">Laporan Resmi RAT Koperasi</span>
-                        <h3 className="font-sora text-sm md:text-base font-extrabold text-white">
-                          Transparansi Sisa Hasil Usaha (SHU) RAT {shuConfig?.year || new Date().getFullYear()}
-                        </h3>
-                      </div>
-                      <div className="bg-emerald-800/80 border border-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold text-emerald-200 font-mono">
-                        Laba Bersih Koperasi: Rp {(shuConfig?.totalNetProfit || 500000000).toLocaleString('id-ID')}
-                      </div>
-                    </div>
-
-                    {/* Realtime SHU Breakdown Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-xs">
-                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
-                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">Cadangan Koperasi</span>
-                        <span className="block font-mono font-bold text-white text-xs mt-1">
-                          Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctCadangan || 25) / 100).toLocaleString('id-ID')}
-                        </span>
-                        <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctCadangan || 25}% dari SHU</span>
-                      </div>
-
-                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
-                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">SHU Jasa Modal</span>
-                        <span className="block font-mono font-bold text-emerald-300 text-xs mt-1">
-                          Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctJasaModal || 20) / 100).toLocaleString('id-ID')}
-                        </span>
-                        <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctJasaModal || 20}% untuk Simpanan</span>
-                      </div>
-
-                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
-                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">SHU Jasa Usaha</span>
-                        <span className="block font-mono font-bold text-emerald-300 text-xs mt-1">
-                          Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctJasaUsaha || 30) / 100).toLocaleString('id-ID')}
-                        </span>
-                        <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctJasaUsaha || 30}% untuk Transaksi</span>
-                      </div>
-
-                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
-                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">Dana Pendidikan</span>
-                        <span className="block font-mono font-bold text-white text-xs mt-1">
-                          Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctPendidikan || 2.5) / 100).toLocaleString('id-ID')}
-                        </span>
-                        <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctPendidikan || 2.5}% Diklat Member</span>
-                      </div>
-
-                      <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
-                        <span className="block text-[9px] text-emerald-200 font-bold uppercase">Dana Pengurus & Pengawas</span>
-                        <span className="block font-mono font-bold text-white text-xs mt-1">
-                          Rp {((shuConfig?.totalNetProfit || 500000000) * ((shuConfig?.pctPengurus || 10) + (shuConfig?.pctPengawas || 5)) / 100).toLocaleString('id-ID')}
-                        </span>
-                        <span className="block text-[8px] text-emerald-300 mt-0.5">Honor Lembaga</span>
-                      </div>
-                    </div>
-
-                    {/* Member Personal SHU Statement Card */}
-                    {user && (
-                      <div className="bg-white text-slate-800 p-4 rounded-xl shadow border border-emerald-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-[#0F5132] uppercase tracking-wider">Perhitungan Hak SHU Anggota Saya ({user.name})</span>
-                          <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
-                            <div>Simpanan Saya: <span className="font-mono font-bold text-slate-800">Rp {(userShu?.simpananMember || 400000).toLocaleString('id-ID')}</span></div>
-                            <div>SHU Jasa Modal: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(userShu?.shuJasaModalAmount || 250000).toLocaleString('id-ID')}</span></div>
-                            <div>Transaksi Saya: <span className="font-mono font-bold text-slate-800">Rp {(userShu?.transaksiMember || 3500000).toLocaleString('id-ID')}</span></div>
-                            <div>SHU Jasa Usaha: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(userShu?.shuJasaUsahaAmount || 420000).toLocaleString('id-ID')}</span></div>
-                          </div>
-                        </div>
-
-                        <div className="bg-emerald-50 border border-[#0F5132]/30 px-5 py-2.5 rounded-xl text-right shrink-0">
-                          <span className="block text-[9px] font-bold text-[#0F5132] uppercase tracking-wider">Total SHU Diterima Anggota</span>
-                          <span className="font-sora font-extrabold text-base md:text-lg text-[#0F5132]">
-                            Rp {Math.round((userShu?.totalShuAmount || 670000)).toLocaleString('id-ID')}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Pendanaan Merchant (Peluang Investasi Anggota) Section (Dynamic Database & CRUD) */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
-                      Pendanaan Merchant (Peluang Investasi Anggota)
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {isCanManageCoop && (
-                        <button
-                          onClick={() => setProjectModalOpen(true)}
-                          className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <PlusCircle className="w-3 h-3" /> Tambah Proyek Pendanaan
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {fundingProjects.length === 0 ? (
-                    <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
-                      <TrendingUp className="w-8 h-8 text-gray-300 mx-auto" />
-                      <p className="text-xs text-gray-500 font-medium">Belum ada proyek pendanaan merchant yang dibuka.</p>
-                      {isCanManageCoop && (
-                        <button
-                          onClick={() => setProjectModalOpen(true)}
-                          className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
-                        >
-                          + Buka Proyek Pendanaan Pertama
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {fundingProjects.map((p: any) => {
-                        const progress = p.targetAmount > 0 ? Math.min(100, Math.round(((p.collectedAmount || 0) / p.targetAmount) * 100)) : 0
+                      {coopProducts.map((cp: any) => {
+                        const isLocked = isFreeMember && cp.type !== 'POKOK' && cp.type !== 'WAJIB' && cp.type !== 'SUKARELA'
                         return (
-                          <div key={p.id} className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3 flex flex-col justify-between relative group">
-                            <div className="space-y-2">
-                              <div className="relative">
-                                <img
-                                  src={p.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80"}
-                                  alt={p.title}
-                                  className="w-full h-28 object-cover rounded-xl"
-                                />
-                                {isCanManageCoop && (
-                                  <button
-                                    onClick={async () => {
-                                      if (confirm(`Hapus proyek pendanaan "${p.title}"?`)) {
-                                        await deleteMerchantFundingProjectAction(p.id, id)
-                                        setFundingProjects(prev => prev.filter(x => x.id !== p.id))
-                                        goeyToast.success('Proyek pendanaan dihapus!')
-                                      }
-                                    }}
-                                    className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
-                                    title="Hapus proyek"
-                                  >
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
+                          <div key={cp.id} className="relative group">
+                            {/* Card Content */}
+                            <div className={`p-3 bg-white border border-gray-100 rounded-xl shadow-sm space-y-2 flex flex-col justify-between h-full relative ${
+                              isLocked ? 'blur-[1.5px] opacity-60 pointer-events-none select-none' : ''
+                            }`}>
+                              <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center gap-2">
+                                  {cp.type === 'POKOK' ? <Home className="w-4 h-4 text-[#2DB24A]" /> :
+                                   cp.type === 'WAJIB' ? <Calendar className="w-4 h-4 text-[#2DB24A]" /> :
+                                   cp.type === 'SUKARELA' ? <Coins className="w-4 h-4 text-amber-500" /> :
+                                   cp.type === 'UMROH' ? <Building2 className="w-4 h-4 text-emerald-600" /> :
+                                   <Sparkles className="w-4 h-4 text-amber-600" />}
+                                  <div>
+                                    <span className="block text-[11px] font-bold text-gray-800 line-clamp-1">{cp.name}</span>
+                                    <span className="block text-[9px] text-gray-400 line-clamp-1">{cp.periodText || cp.description || 'Simpanan'}</span>
+                                  </div>
+                                </div>
+                                {isCanManageCoop && !isLocked && (
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={() => handleOpenEditProduct(cp)}
+                                      className="text-gray-400 hover:text-[#0F5132] text-xs transition-colors p-0.5"
+                                      title="Edit produk simpanan"
+                                    >
+                                      ✏️
+                                    </button>
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm(`Hapus produk simpanan "${cp.name}"?`)) {
+                                          await deleteCooperativeProductAction(cp.id, id)
+                                          setCoopProducts(prev => prev.filter(x => x.id !== cp.id))
+                                          goeyToast.success('Produk simpanan dihapus!')
+                                        }
+                                      }}
+                                      className="text-gray-300 hover:text-red-600 text-xs transition-colors p-0.5"
+                                      title="Hapus produk simpanan"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 )}
                               </div>
-                              <div>
-                                <h4 className="text-xs font-extrabold text-gray-900 line-clamp-1">{p.title}</h4>
-                                <span className="text-[10px] text-gray-400 font-medium">Bagi Hasil: {p.estimatedReturn}% p.a. • Tenor {p.durationMonths} bln</span>
-                              </div>
-
-                              <div className="space-y-1">
-                                <div className="flex justify-between text-[10px]">
-                                  <span className="text-gray-500">Target Dana</span>
-                                  <span className="font-bold text-gray-800">Rp {p.targetAmount.toLocaleString('id-ID')}</span>
-                                </div>
-                                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                  <div className="bg-[#2DB24A] h-full rounded-full" style={{ width: `${progress}%` }}></div>
-                                </div>
-                                <div className="text-right text-[9px] font-bold text-[#2DB24A]">
-                                  {progress}% Terkumpul
-                                </div>
-                              </div>
+                              <span className="block text-xs font-extrabold text-[#2DB24A]">
+                                {cp.isMandatory ? '' : 'Mulai '}Rp {cp.amount.toLocaleString('id-ID')}{cp.type === 'WAJIB' ? ' / bulan' : ''}
+                              </span>
+                              <span className="w-max px-2 py-0.5 font-bold text-[8px] bg-[#E8F8EE] text-[#2DB24A] rounded">
+                                {cp.isMandatory ? 'Wajib' : 'Premium'}
+                              </span>
                             </div>
 
-                            <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                              <div>
-                                <span className="block text-[9px] text-gray-400">Minimal Pendanaan</span>
-                                <span className="block text-[11px] font-extrabold text-gray-900">Rp {p.minInvestment.toLocaleString('id-ID')}</span>
+                            {/* Lock Overlay */}
+                            {isLocked && (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/10 backdrop-blur-[0.5px] rounded-xl z-10 text-center p-2">
+                                <Lock className="w-4 h-4 text-[#0F5132] mb-0.5" />
+                                <span className="text-[8px] font-bold text-[#0F5132] uppercase tracking-widest">Premium</span>
                               </div>
-                              <button
-                                onClick={() => {
-                                  setSelectedProject(p)
-                                  setInvestModalOpen(true)
-                                }}
-                                className="px-3 py-1.5 bg-[#E8F8EE] border border-[#2DB24A]/30 text-[#2DB24A] font-bold text-[10px] rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all"
-                              >
-                                Lihat Detail
-                              </button>
-                            </div>
+                            )}
                           </div>
                         )
                       })}
@@ -1349,101 +1158,327 @@ export default function CommunityDetailPage() {
                   )}
                 </div>
 
+                {/* Transparansi SHU Koperasi RAT & Statement Personal Anggota Widget */}
+                {community?.type === 'KOPERASI' && (
+                  <div className="bg-gradient-to-br from-[#0F5132] to-emerald-900 text-white p-5 rounded-2xl shadow-md border border-emerald-700/50 relative overflow-hidden">
+                    <div className={`space-y-4 ${isFreeMember ? 'blur-[2px] pointer-events-none opacity-30 select-none' : ''}`}>
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-emerald-700/50 pb-3">
+                        <div>
+                          <span className="text-[9px] font-mono text-emerald-300 font-bold uppercase tracking-wider">Laporan Resmi RAT Koperasi</span>
+                          <h3 className="font-sora text-sm md:text-base font-extrabold text-white">
+                            Transparansi Sisa Hasil Usaha (SHU) RAT {shuConfig?.year || new Date().getFullYear()}
+                          </h3>
+                        </div>
+                        <div className="bg-emerald-800/80 border border-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold text-emerald-200 font-mono">
+                          Laba Bersih Koperasi: Rp {(shuConfig?.totalNetProfit || 500000000).toLocaleString('id-ID')}
+                        </div>
+                      </div>
+
+                      {/* Realtime SHU Breakdown Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-xs">
+                        <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                          <span className="block text-[9px] text-emerald-200 font-bold uppercase">Cadangan Koperasi</span>
+                          <span className="block font-mono font-bold text-white text-xs mt-1">
+                            Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctCadangan || 25) / 100).toLocaleString('id-ID')}
+                          </span>
+                          <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctCadangan || 25}% dari SHU</span>
+                        </div>
+
+                        <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                          <span className="block text-[9px] text-emerald-200 font-bold uppercase">SHU Jasa Modal</span>
+                          <span className="block font-mono font-bold text-emerald-300 text-xs mt-1">
+                            Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctJasaModal || 20) / 100).toLocaleString('id-ID')}
+                          </span>
+                          <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctJasaModal || 20}% untuk Simpanan</span>
+                        </div>
+
+                        <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                          <span className="block text-[9px] text-emerald-200 font-bold uppercase">SHU Jasa Usaha</span>
+                          <span className="block font-mono font-bold text-emerald-300 text-xs mt-1">
+                            Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctJasaUsaha || 30) / 100).toLocaleString('id-ID')}
+                          </span>
+                          <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctJasaUsaha || 30}% untuk Transaksi</span>
+                        </div>
+
+                        <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                          <span className="block text-[9px] text-emerald-200 font-bold uppercase">Dana Pendidikan</span>
+                          <span className="block font-mono font-bold text-white text-xs mt-1">
+                            Rp {((shuConfig?.totalNetProfit || 500000000) * (shuConfig?.pctPendidikan || 2.5) / 100).toLocaleString('id-ID')}
+                          </span>
+                          <span className="block text-[8px] text-emerald-300 mt-0.5">{shuConfig?.pctPendidikan || 2.5}% Diklat Member</span>
+                        </div>
+
+                        <div className="bg-white/10 backdrop-blur p-3 rounded-xl border border-white/10">
+                          <span className="block text-[9px] text-emerald-200 font-bold uppercase">Dana Pengurus & Pengawas</span>
+                          <span className="block font-mono font-bold text-white text-xs mt-1">
+                            Rp {((shuConfig?.totalNetProfit || 500000000) * ((shuConfig?.pctPengurus || 10) + (shuConfig?.pctPengawas || 5)) / 100).toLocaleString('id-ID')}
+                          </span>
+                          <span className="block text-[8px] text-emerald-300 mt-0.5">Honor Lembaga</span>
+                        </div>
+                      </div>
+
+                      {/* Member Personal SHU Statement Card */}
+                      {user && (
+                        <div className="bg-white text-slate-800 p-4 rounded-xl shadow border border-emerald-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-[#0F5132] uppercase tracking-wider">Perhitungan Hak SHU Anggota Saya ({user.name})</span>
+                            <div className="flex flex-wrap gap-4 text-xs font-medium text-slate-600">
+                              <div>Simpanan Saya: <span className="font-mono font-bold text-slate-800">Rp {(userShu?.simpananMember || 400000).toLocaleString('id-ID')}</span></div>
+                              <div>SHU Jasa Modal: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(userShu?.shuJasaModalAmount || 250000).toLocaleString('id-ID')}</span></div>
+                              <div>Transaksi Saya: <span className="font-mono font-bold text-slate-800">Rp {(userShu?.transaksiMember || 3500000).toLocaleString('id-ID')}</span></div>
+                              <div>SHU Jasa Usaha: <span className="font-mono font-bold text-emerald-700">Rp {Math.round(userShu?.shuJasaUsahaAmount || 420000).toLocaleString('id-ID')}</span></div>
+                            </div>
+                          </div>
+
+                          <div className="bg-emerald-50 border border-[#0F5132]/30 px-5 py-2.5 rounded-xl text-right shrink-0">
+                            <span className="block text-[9px] font-bold text-[#0F5132] uppercase tracking-wider">Total SHU Diterima Anggota</span>
+                            <span className="font-sora font-extrabold text-base md:text-lg text-[#0F5132]">
+                              Rp {Math.round((userShu?.totalShuAmount || 670000)).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Lock Overlay */}
+                    {isFreeMember && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/45 backdrop-blur-[1.5px] rounded-2xl z-10 text-center p-6 space-y-2 animate-in fade-in duration-300">
+                        <Lock className="w-8 h-8 text-emerald-300" />
+                        <span className="text-sm font-bold text-white uppercase tracking-wider">Laporan & Bagi Hasil SHU Terkunci</span>
+                        <p className="text-xs text-emerald-200 mt-1 max-w-md">
+                          Bagi Hasil SHU Koperasi & kalkulator hak sisa hasil usaha hanya tersedia bagi Anggota Premium.
+                        </p>
+                        <button
+                          onClick={() => setPaymentModalOpen(true)}
+                          className="mt-3 px-4 py-2 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow cursor-pointer"
+                        >
+                          Upgrade Sekarang
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Pendanaan Merchant (Peluang Investasi Anggota) Section (Dynamic Database & CRUD) */}
+                {!isFreeMember && (
+                  <div className="space-y-3 relative overflow-hidden p-1 border border-transparent rounded-2xl">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                        Pendanaan Merchant 
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        {isCanManageCoop && (
+                          <button
+                            onClick={() => setProjectModalOpen(true)}
+                            className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3822] text-white text-[10px] font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <PlusCircle className="w-3 h-3" /> Tambah Proyek Pendanaan
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      {fundingProjects.length === 0 ? (
+                        <div className="p-6 bg-white border border-gray-100 rounded-2xl text-center space-y-2">
+                          <TrendingUp className="w-8 h-8 text-gray-300 mx-auto" />
+                          <p className="text-xs text-gray-500 font-medium">Belum ada proyek pendanaan merchant yang dibuka.</p>
+                          {isCanManageCoop && (
+                            <button
+                              onClick={() => setProjectModalOpen(true)}
+                              className="px-3 py-1.5 bg-[#E8F8EE] text-[#0F5132] text-xs font-bold rounded-xl hover:bg-[#0F5132] hover:text-white transition-colors cursor-pointer"
+                            >
+                              + Buka Proyek Pendanaan Pertama
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          {fundingProjects.map((p: any) => {
+                            const progress = p.targetAmount > 0 ? Math.min(100, Math.round(((p.collectedAmount || 0) / p.targetAmount) * 100)) : 0
+                            return (
+                              <div key={p.id} className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3 flex flex-col justify-between relative group">
+                                <div className="space-y-2">
+                                  <div className="relative">
+                                    <img
+                                      src={p.imageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80"}
+                                      alt={p.title}
+                                      className="w-full h-28 object-cover rounded-xl"
+                                    />
+                                    {isCanManageCoop && (
+                                      <button
+                                        onClick={async () => {
+                                          if (confirm(`Hapus proyek pendanaan "${p.title}"?`)) {
+                                            await deleteMerchantFundingProjectAction(p.id, id)
+                                            setFundingProjects(prev => prev.filter(x => x.id !== p.id))
+                                            goeyToast.success('Proyek pendanaan dihapus!')
+                                          }
+                                        }}
+                                        className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
+                                        title="Hapus proyek"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-extrabold text-gray-900 line-clamp-1">{p.title}</h4>
+                                    <span className="text-[10px] text-gray-400 font-medium">Bagi Hasil: {p.estimatedReturn}% p.a. • Tenor {p.durationMonths} bln</span>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between text-[10px]">
+                                      <span className="text-gray-500">Target Dana</span>
+                                      <span className="font-bold text-gray-800">Rp {p.targetAmount.toLocaleString('id-ID')}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                                      <div className="bg-[#2DB24A] h-full rounded-full" style={{ width: `${progress}%` }}></div>
+                                    </div>
+                                    <div className="text-right text-[9px] font-bold text-[#2DB24A]">
+                                      {progress}% Terkumpul
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                                  <div>
+                                    <span className="block text-[9px] text-gray-400">Minimal Pendanaan</span>
+                                    <span className="block text-[11px] font-extrabold text-gray-900">Rp {p.minInvestment.toLocaleString('id-ID')}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedProject(p)
+                                      setInvestModalOpen(true)
+                                    }}
+                                    className="px-3 py-1.5 bg-[#E8F8EE] border border-[#2DB24A]/30 text-[#2DB24A] font-bold text-[10px] rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all"
+                                  >
+                                    Lihat Detail
+                                  </button>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Bottom 3-Column Grid (Riwayat Transaksi, Fitur Premium, Merchant + Produk) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   
                   {/* Col 1: Riwayat Transaksi Terbaru */}
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-bold text-gray-900">Riwayat Transaksi Terbaru</h4>
-                      <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
+                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3 relative overflow-hidden">
+                    <div className={`space-y-3 ${isFreeMember ? 'blur-[1.5px] pointer-events-none opacity-40 select-none' : ''}`}>
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-xs font-bold text-gray-900">Riwayat Transaksi Terbaru</h4>
+                        <Link href="#" className="text-[10px] font-bold text-[#2DB24A] hover:underline">Lihat Semua</Link>
+                      </div>
+
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-center justify-between py-1 border-b border-gray-50">
+                          <div>
+                            <span className="block text-[9px] text-gray-400">20 Jul 2026</span>
+                            <span className="block font-bold text-gray-800 text-[10px]">Setor Simpanan Sukarela</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="block font-extrabold text-[#2DB24A] text-[11px]">+ Rp 100.000</span>
+                            <span className="block text-[8px] text-gray-400">Berhasil</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between py-1 border-b border-gray-50">
+                          <div>
+                            <span className="block text-[9px] text-gray-400">18 Jul 2026</span>
+                            <span className="block font-bold text-gray-800 text-[10px] line-clamp-1">Pendanaan Merchant</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="block font-extrabold text-gray-900 text-[11px]">- Rp 500.000</span>
+                            <span className="block text-[8px] text-[#2DB24A] font-bold">Berhasil</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between py-1 border-b border-gray-50">
+                          <div>
+                            <span className="block text-[9px] text-gray-400">15 Jul 2026</span>
+                            <span className="block font-bold text-gray-800 text-[10px]">Simpanan Wajib Bulanan</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="block font-extrabold text-gray-900 text-[11px]">- Rp 50.000</span>
+                            <span className="block text-[8px] text-[#2DB24A] font-bold">Berhasil</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between py-1">
+                          <div>
+                            <span className="block text-[9px] text-gray-400">31 Des 2026</span>
+                            <span className="block font-bold text-gray-800 text-[10px]">Bagi Hasil Usaha (SHU)</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="block font-extrabold text-[#2DB24A] text-[11px]">+ Rp 75.000</span>
+                            <span className="block text-[8px] text-gray-400">Berhasil</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-center justify-between py-1 border-b border-gray-50">
-                        <div>
-                          <span className="block text-[9px] text-gray-400">20 Jul 2026</span>
-                          <span className="block font-bold text-gray-800 text-[10px]">Setor Simpanan Sukarela</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block font-extrabold text-[#2DB24A] text-[11px]">+ Rp 100.000</span>
-                          <span className="block text-[8px] text-gray-400">Berhasil</span>
-                        </div>
+                    {/* Lock Overlay */}
+                    {isFreeMember && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/45 backdrop-blur-[0.5px] rounded-2xl z-10 text-center p-2">
+                        <Lock className="w-4 h-4 text-gray-400 mb-0.5" />
+                        <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Premium</span>
                       </div>
-
-                      <div className="flex items-center justify-between py-1 border-b border-gray-50">
-                        <div>
-                          <span className="block text-[9px] text-gray-400">18 Jul 2026</span>
-                          <span className="block font-bold text-gray-800 text-[10px] line-clamp-1">Pendanaan Merchant</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block font-extrabold text-gray-900 text-[11px]">- Rp 500.000</span>
-                          <span className="block text-[8px] text-[#2DB24A] font-bold">Berhasil</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between py-1 border-b border-gray-50">
-                        <div>
-                          <span className="block text-[9px] text-gray-400">15 Jul 2026</span>
-                          <span className="block font-bold text-gray-800 text-[10px]">Simpanan Wajib Bulanan</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block font-extrabold text-gray-900 text-[11px]">- Rp 50.000</span>
-                          <span className="block text-[8px] text-[#2DB24A] font-bold">Berhasil</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between py-1">
-                        <div>
-                          <span className="block text-[9px] text-gray-400">31 Des 2026</span>
-                          <span className="block font-bold text-gray-800 text-[10px]">Bagi Hasil Usaha (SHU)</span>
-                        </div>
-                        <div className="text-right">
-                          <span className="block font-extrabold text-[#2DB24A] text-[11px]">+ Rp 75.000</span>
-                          <span className="block text-[8px] text-gray-400">Berhasil</span>
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Col 2: Fitur Premium Anda Grid */}
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
-                    <h4 className="text-xs font-bold text-gray-900">Fitur Premium Anda</h4>
+                  <div className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3 relative overflow-hidden">
+                    <div className={`space-y-3 ${isFreeMember ? 'blur-[1.5px] pointer-events-none opacity-40 select-none' : ''}`}>
+                      <h4 className="text-xs font-bold text-gray-900">Fitur Koperasi Anda</h4>
 
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <PiggyBank className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Simpanan Lengkap</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <TrendingUp className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Pendanaan & Investasi</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <FileText className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Laporan Keuangan</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <Users className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Hak Suara Rapat</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <Coins className="w-5 h-5 text-amber-500" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">SHU Lebih Optimal</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <Calendar className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Event Eksklusif</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <GraduationCap className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Edukasi Premium</span>
-                      </div>
-                      <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
-                        <Shield className="w-5 h-5 text-[#2DB24A]" />
-                        <span className="text-[8px] font-bold text-gray-700 leading-tight">Komunitas Prioritas</span>
+                      <div className="grid grid-cols-4 gap-2 text-center">
+                        <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
+                          <PiggyBank className="w-5 h-5 text-[#2DB24A]" />
+                          <span className="text-[8px] font-bold text-gray-700 leading-tight">Simpanan Lengkap</span>
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
+                          <TrendingUp className="w-5 h-5 text-[#2DB24A]" />
+                          <span className="text-[8px] font-bold text-gray-700 leading-tight">Pendanaan & Investasi</span>
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
+                          <FileText className="w-5 h-5 text-[#2DB24A]" />
+                          <span className="text-[8px] font-bold text-gray-700 leading-tight">Laporan Keuangan</span>
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
+                          <Users className="w-5 h-5 text-[#2DB24A]" />
+                          <span className="text-[8px] font-bold text-gray-700 leading-tight">Hak Suara Rapat</span>
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
+                          <Coins className="w-5 h-5 text-amber-500" />
+                          <span className="text-[8px] font-bold text-gray-700 leading-tight">SHU Lebih Optimal</span>
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
+                          <Calendar className="w-5 h-5 text-[#2DB24A]" />
+                          <span className="text-[8px] font-bold text-gray-700 leading-tight">Event Eksklusif</span>
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
+                          <GraduationCap className="w-5 h-5 text-[#2DB24A]" />
+                          <span className="text-[8px] font-bold text-gray-700 leading-tight">Edukasi Premium</span>
+                        </div>
+                        <div className="p-2 bg-gray-50 rounded-xl flex flex-col items-center justify-center space-y-1">
+                          <Shield className="w-5 h-5 text-[#2DB24A]" />
+                          <span className="text-[8px] font-bold text-gray-700 leading-tight">Komunitas Prioritas</span>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Lock Overlay */}
+                    {isFreeMember && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/45 backdrop-blur-[0.5px] rounded-2xl z-10 text-center p-2">
+                        <Lock className="w-4 h-4 text-gray-400 mb-0.5" />
+                        <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Premium</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Col 3: Merchant Anggota & Produk Unggulan */}
@@ -1608,33 +1643,35 @@ export default function CommunityDetailPage() {
                 </div>
 
                 {/* Investment Banner Promo Card */}
-                <div className="p-5 bg-gradient-to-b from-[#E8F8EE] to-[#d3f4de] border border-[#2DB24A]/30 rounded-2xl shadow-sm text-center space-y-3 relative overflow-hidden">
-                  <div className="w-20 h-20 mx-auto relative">
-                    <img 
-                      src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=200&q=80" 
-                      alt="Investment" 
-                      className="w-full h-full object-cover rounded-full shadow-md border-2 border-white"
-                    />
+                {!isFreeMember && (
+                  <div className="p-5 bg-gradient-to-b from-[#E8F8EE] to-[#d3f4de] border border-[#2DB24A]/30 rounded-2xl shadow-sm text-center space-y-3 relative overflow-hidden">
+                    <div className="w-20 h-20 mx-auto relative">
+                      <img 
+                        src="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=200&q=80" 
+                        alt="Investment" 
+                        className="w-full h-full object-cover rounded-full shadow-md border-2 border-white"
+                      />
+                    </div>      
+                    <div>
+                      <h4 className="text-xs font-black text-gray-900">Investasi kecil, dampak besar untuk kita semua</h4>
+                      <p className="text-[10px] text-gray-600 mt-1 leading-relaxed">
+                        Bersama membangun ekonomi anggota yang mandiri dan sejahtera.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (merchantProjects.length > 0) {
+                          setSelectedProject(merchantProjects[0])
+                          setInvestModalOpen(true)
+                        }
+                      }}
+                      className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <span>Mulai Pendanaan Sekarang</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-black text-gray-900">Investasi kecil, dampak besar untuk kita semua</h4>
-                    <p className="text-[10px] text-gray-600 mt-1 leading-relaxed">
-                      Bersama membangun ekonomi anggota yang mandiri dan sejahtera.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (merchantProjects.length > 0) {
-                        setSelectedProject(merchantProjects[0])
-                        setInvestModalOpen(true)
-                      }
-                    }}
-                    className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1"
-                  >
-                    <span>Mulai Pendanaan Sekarang</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                )}
 
               </div>
 
@@ -1974,10 +2011,15 @@ export default function CommunityDetailPage() {
                       <option value="POKOK">Simpanan Pokok</option>
                       <option value="WAJIB">Simpanan Wajib</option>
                       <option value="SUKARELA">Simpanan Sukarela</option>
-                      <option value="UMROH">Simpanan Umroh</option>
-                      <option value="QURBAN">Simpanan Qurban</option>
-                      <option value="OTHER">Lain-lain</option>
+                      <option value="UMROH" disabled={isFreeMember}>Simpanan Umroh {isFreeMember && '(Premium)'}</option>
+                      <option value="QURBAN" disabled={isFreeMember}>Simpanan Qurban {isFreeMember && '(Premium)'}</option>
+                      <option value="OTHER" disabled={isFreeMember}>Lain-lain {isFreeMember && '(Premium)'}</option>
                     </select>
+                    {isFreeMember && (
+                      <p className="text-[9px] text-emerald-600 mt-1 font-semibold leading-tight">
+                        * Upgrade ke Premium untuk menambah tipe Umroh, Qurban, atau Lain-lain.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block font-bold text-gray-700 mb-1">Nominal (Rp) *</label>

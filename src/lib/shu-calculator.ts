@@ -100,11 +100,11 @@ export async function calculateAndSaveShuDistribution(
   }
 
   // 3. Fetch all users registered under this community (as primary or member)
-  const allUsers = await DataStore.getUsers()
+  const allUsers = await DataStore.getAllUsers()
   const communityMembers = allUsers.filter(u => u.indukCommunityId === communityId)
 
   // 4. Fetch orders in the year to compute transactions
-  const allOrders = await DataStore.getOrders()
+  const allOrders = await DataStore.getAllOrders()
   const yearStartDate = new Date(year, 0, 1)
   const yearEndDate = new Date(year, 11, 31, 23, 59, 59)
 
@@ -117,13 +117,14 @@ export async function calculateAndSaveShuDistribution(
   let simpananTotalCommunity = 0
   let transaksiTotalCommunity = 0
 
+  const comms = await DataStore.getCommunities()
+  const comm = comms.find((c: any) => c.id === communityId)
+  const sPokok = comm?.simpananPokok || 100000
+  const sWajib = comm?.simpananWajib || 25000
+
   const memberDataMap: Record<string, { simpanan: number; transaksi: number }> = {}
 
   for (const user of communityMembers) {
-    // Get community membership info or default fees
-    const comm = await DataStore.getCommunities().then(comms => comms.find(c => c.id === communityId))
-    const sPokok = comm?.simpananPokok || 100000
-    const sWajib = comm?.simpananWajib || 25000
     const userSimpanan = sPokok + sWajib * 12 // Annual estimated mandatory savings
 
     const userOrders = completedOrdersInYear.filter(o => o.buyerId === user.id)
