@@ -7838,7 +7838,7 @@ export const DataStore = {
             data: { 
               coinBalance: { increment: amount },
               isRecruitmentLocked: false
-            }
+            } as any
           })
           await db.coinTransaction.create({
             data: {
