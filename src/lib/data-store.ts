@@ -6196,6 +6196,25 @@ export const DataStore = {
         });
 
         if (!community) {
+          // Fallback lookup by prefix or name slug
+          const allComms = await db.community.findMany({
+            include: {
+              ketua: { select: { id: true, name: true, role: true, email: true } },
+              members: {
+                include: { user: { select: { id: true, name: true, role: true, email: true } } }
+              },
+              _count: { select: { members: true } }
+            }
+          });
+          const cleanId = id.toLowerCase().replace(/[^a-z0-9]/g, '');
+          community = allComms.find(c =>
+            c.id === id ||
+            c.id.startsWith(id) ||
+            (c.name && c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId)
+          ) || null;
+        }
+
+        if (!community) {
           const seedMatch = seedCommunities.find(s => s.id === id) || (id.includes('dummy-1') ? seedCommunities[0] : seedCommunities[1]);
           const firstUser = (await db.user.findFirst())?.id || 'user-admin-1';
           try {
@@ -6241,9 +6260,14 @@ export const DataStore = {
     }
 
     const communities = (globalThis as any).__mockCommunities || []
-    let community = communities.find((c: any) => c.id === id)
+    const cleanId = id.toLowerCase().replace(/[^a-z0-9]/g, '')
+    let community = communities.find((c: any) =>
+      c.id === id ||
+      c.id.startsWith(id) ||
+      (c.name && c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanId)
+    )
     if (!community) {
-      community = seedCommunities.find(s => s.id === id) || { ...seedCommunities[1], id }
+      community = seedCommunities.find(s => s.id === id || s.id.startsWith(id)) || { ...seedCommunities[1], id }
     }
     const ketua = globalMockUsers.find(u => u.id === community.ketuaId) || { id: 'user-admin-1', name: 'Super Admin Teras', role: 'ADMIN', email: 'admin@saloka.com' }
     const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === id)
@@ -6274,6 +6298,7 @@ export const DataStore = {
     waGroupLink?: string
     joinFee?: number
     monthlyFee?: number
+    isKycRequired?: boolean
   }) {
     syncMockDb()
     if (await isDbConnected()) {
@@ -6293,6 +6318,7 @@ export const DataStore = {
             waGroupLink: data.waGroupLink || null,
             joinFee: data.joinFee || 0,
             monthlyFee: data.monthlyFee || 0,
+            isKycRequired: Boolean(data.isKycRequired),
             ketuaId: data.ketuaId
           }
         })
@@ -6329,6 +6355,7 @@ export const DataStore = {
       landingPageConfig: null,
       joinFee: data.joinFee || 0,
       monthlyFee: data.monthlyFee || 0,
+      isKycRequired: Boolean(data.isKycRequired),
       isSuspended: false,
       isVerified: false,
       ketuaId: data.ketuaId,
@@ -6365,6 +6392,7 @@ export const DataStore = {
     landingPageConfig?: string
     joinFee?: number
     monthlyFee?: number
+    isKycRequired?: boolean
   }) {
     syncMockDb()
     if (await isDbConnected()) {
@@ -6385,6 +6413,7 @@ export const DataStore = {
             landingPageConfig: data.landingPageConfig || null,
             joinFee: data.joinFee || 0,
             monthlyFee: data.monthlyFee || 0,
+            ...(data.isKycRequired !== undefined && { isKycRequired: data.isKycRequired }),
           }
         })
         return dbUpdated
@@ -6410,6 +6439,7 @@ export const DataStore = {
         landingPageConfig: data.landingPageConfig ?? existing.landingPageConfig,
         joinFee: data.joinFee ?? existing.joinFee,
         monthlyFee: data.monthlyFee ?? existing.monthlyFee,
+        ...(data.isKycRequired !== undefined && { isKycRequired: data.isKycRequired }),
         updatedAt: new Date()
       };
       (globalThis as any).__mockCommunities[idx] = mockUpdated
@@ -6439,6 +6469,15 @@ export const DataStore = {
         
         const community = await db.community.findUnique({ where: { id: communityId } })
         if (!community) return { error: 'Komunitas tidak ditemukan.' }
+
+        // KYC check if community requires KYC
+        if (community.isKycRequired) {
+          const userObj = await db.user.findUnique({ where: { id: userId } })
+          const isKycOk = userObj && (userObj.kycStatus === 'VERIFIED' || userObj.kycStatus === 'APPROVED')
+          if (!isKycOk) {
+            return { error: 'Komunitas ini mewajibkan verifikasi KYC (KTP/Selfie) untuk bergabung.', needsKyc: true }
+          }
+        }
         
         // Auto-lock recruitment if coinBalance <= 0 (only for non-free communities) or isRecruitmentLocked
         const isFree = (community.joinFee || 0) === 0 || community.category === 'FREE';
@@ -6535,6 +6574,15 @@ export const DataStore = {
     const communities = (globalThis as any).__mockCommunities || []
     const community = communities.find((c: any) => c.id === communityId)
     if (!community) return { error: 'Komunitas tidak ditemukan.' }
+
+    // KYC check for mock DB
+    if (community.isKycRequired) {
+      const userObj = globalMockUsers.find(u => u.id === userId)
+      const isKycOk = userObj && ((userObj as any).kycStatus === 'VERIFIED' || (userObj as any).kycStatus === 'APPROVED')
+      if (!isKycOk) {
+        return { error: 'Komunitas ini mewajibkan verifikasi KYC (KTP/Selfie) untuk bergabung.', needsKyc: true }
+      }
+    }
 
     // Auto-lock check for mock
     const isFree = (community.joinFee || 0) === 0 || community.category === 'FREE';

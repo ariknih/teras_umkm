@@ -25,6 +25,7 @@ export async function getCommunityReferralConfig(communityId: string) {
         communityProfitShare: community.communityProfitShare ?? 60000,
         maxTiers: community.maxTiers ?? 3,
         tierPercentages,
+        isKycRequired: Boolean(community.isKycRequired)
       }
     }
   } catch (e: any) {
@@ -39,6 +40,7 @@ export async function updateCommunityReferralConfig(data: {
   communityProfitShare: number
   maxTiers: number
   tierPercentages: number[]
+  isKycRequired?: boolean
 }) {
   try {
     if (data.maxTiers < 3 || data.maxTiers > 5) {
@@ -62,6 +64,13 @@ export async function updateCommunityReferralConfig(data: {
       maxTiers: data.maxTiers,
       tierPercentages: JSON.stringify(data.tierPercentages)
     })
+
+    if (data.isKycRequired !== undefined) {
+      await DataStore.updateCommunity(data.communityId, {
+        name: updated.name,
+        isKycRequired: data.isKycRequired
+      })
+    }
 
     return { success: true, updated }
   } catch (e: any) {

@@ -229,14 +229,16 @@ export default function CommunityDetailPage() {
   const [depositPaymentMethod, setDepositPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('QRIS')
   const [shuDetailModalOpen, setShuDetailModalOpen] = useState(false)
 
-  // Multi-Tier Referral States
+  // Multi-Tier Referral & KYC States
   const [refJoinFee, setRefJoinFee] = useState<number>(100000)
   const [refReferralBudget, setRefReferralBudget] = useState<number>(40000)
   const [refCommunityProfitShare, setRefCommunityProfitShare] = useState<number>(60000)
   const [refMaxTiers, setRefMaxTiers] = useState<number>(3)
   const [refTierPercentages, setRefTierPercentages] = useState<number[]>([50, 30, 20])
+  const [refIsKycRequired, setRefIsKycRequired] = useState<boolean>(false)
   const [refLogs, setRefLogs] = useState<any[]>([])
   const [isSavingRefSettings, setIsSavingRefSettings] = useState(false)
+  const [kycWarningModalOpen, setKycWarningModalOpen] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -247,6 +249,9 @@ export default function CommunityDetailPage() {
           setRefCommunityProfitShare(res.config.communityProfitShare)
           setRefMaxTiers(res.config.maxTiers)
           setRefTierPercentages(res.config.tierPercentages)
+          if (res.config.isKycRequired !== undefined) {
+            setRefIsKycRequired(res.config.isKycRequired)
+          }
         }
       })
       getCommunityReferralHistory(id).then(res => {
@@ -270,11 +275,12 @@ export default function CommunityDetailPage() {
       referralBudget: refReferralBudget,
       communityProfitShare: refCommunityProfitShare,
       maxTiers: refMaxTiers,
-      tierPercentages: refTierPercentages.slice(0, refMaxTiers)
+      tierPercentages: refTierPercentages.slice(0, refMaxTiers),
+      isKycRequired: refIsKycRequired
     })
     setIsSavingRefSettings(false)
     if (res.success) {
-      goeyToast.success('Pengaturan Referral Multi-Tier berhasil disimpan!')
+      goeyToast.success('Pengaturan Referral Multi-Tier & KYC berhasil disimpan!')
     } else {
       goeyToast.error(res.error || 'Gagal menyimpan pengaturan referral.')
     }
@@ -282,9 +288,10 @@ export default function CommunityDetailPage() {
 
   const handleShareReferralLink = () => {
     const code = user?.referralCode || user?.username || 'REF001'
-    const shareUrl = `${window.location.origin}/community/${id}?ref=${code}`
+    const shortCommId = id && id.length > 12 ? id.slice(0, 8) : id
+    const shareUrl = `${window.location.origin}/community/${shortCommId}?ref=${code}`
     navigator.clipboard.writeText(shareUrl)
-    goeyToast.success(`Link referral 6-digit (${code}) disalin! Bagikan ke merchant lain.`)
+    goeyToast.success(`Link referral disalin: ${shareUrl}`)
   }
 
   // Perahu Kita Perkumpulan navigation & filter states
@@ -678,6 +685,10 @@ export default function CommunityDetailPage() {
     // Free Perkumpulan join
     startTransition(async () => {
       const res = await joinIndukCommunity(id, true)
+      if (res.needsKyc || (res.error && res.error.includes('KYC'))) {
+        setKycWarningModalOpen(true)
+        return
+      }
       if (res.error) {
         goeyToast.error(res.error)
       } else {
@@ -692,6 +703,12 @@ export default function CommunityDetailPage() {
     setTimeout(async () => {
       try {
         const res = await joinIndukCommunity(id, true)
+        if (res.needsKyc || (res.error && res.error.includes('KYC'))) {
+          setIsVerifying(false)
+          setPaymentModalOpen(false)
+          setKycWarningModalOpen(true)
+          return
+        }
         if (res.error) {
           goeyToast.error(res.error)
           setIsVerifying(false)
@@ -1151,8 +1168,8 @@ export default function CommunityDetailPage() {
               })}
             </div>
 
-            {/* Bottom Green Promotional Card */}
-            {!isMember && (
+            {/* Bottom Green Promotional Card / Invite Card */}
+            {!isMember ? (
               <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl text-center space-y-3 shadow-xs">
                 <div className="w-11 h-11 rounded-2xl bg-[#2DB24A] text-white flex items-center justify-center mx-auto shadow-sm">
                   <PromoIcon className="w-6 h-6" />
@@ -1170,6 +1187,26 @@ export default function CommunityDetailPage() {
                   className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" /> {promoWidget.buttonText}
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl text-center space-y-3 shadow-xs">
+                <div className="w-11 h-11 rounded-2xl bg-[#2DB24A]/10 text-[#2DB24A] flex items-center justify-center mx-auto">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-[#0F5132] text-xs font-sora">
+                    Ajak Teman Bergabung
+                  </h4>
+                  <p className="text-[10px] text-emerald-800/80 font-medium mt-1 leading-relaxed">
+                    Semakin banyak anggota, semakin besar peluang yang kita ciptakan bersama.
+                  </p>
+                </div>
+                <button
+                  onClick={handleShareReferralLink}
+                  className="w-full py-2.5 bg-white border border-[#2DB24A] hover:bg-[#2DB24A] hover:text-white text-[#0F5132] font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Share2 className="w-4 h-4" /> Bagikan Komunitas
                 </button>
               </div>
             )}
@@ -2563,6 +2600,27 @@ export default function CommunityDetailPage() {
                       </div>
                     </div>
 
+                    {/* KYC Requirement Toggle */}
+                    <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl flex items-center justify-between gap-3">
+                      <div>
+                        <span className="text-xs font-extrabold text-[#0F5132] block font-sora">
+                          Wajibkan Verifikasi KYC (KTP/Selfie) untuk Anggota
+                        </span>
+                        <p className="text-[10px] text-emerald-800/80 font-medium mt-0.5 leading-relaxed">
+                          Aktifkan untuk membatasi pendaftaran hanya bagi merchant yang telah terverifikasi KYC.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setRefIsKycRequired(!refIsKycRequired)}
+                        className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
+                          refIsKycRequired ? 'bg-[#2DB24A] justify-end' : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="bg-white w-4 h-4 rounded-full shadow-xs transition-all" />
+                      </button>
+                    </div>
+
                     {/* Tier Selector (3, 4, 5) */}
                     <div className="space-y-2">
                       <label className="block text-xs font-bold text-gray-800">Jumlah Tier Referral (Min 3, Max 5 Tier):</label>
@@ -3797,6 +3855,35 @@ export default function CommunityDetailPage() {
                 className="flex-1 py-2.5 bg-[#FF9800] hover:bg-[#F57C00] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
               >
                 Pindah
+              </button>
+            </div>
+      {/* KYC WARNING MODAL */}
+      {kycWarningModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full mx-4 shadow-xl space-y-4 text-center animate-scaleUp">
+            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto text-amber-600 border border-amber-200">
+              <Shield className="w-6 h-6" />
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-base font-extrabold text-gray-900 font-sora">Verifikasi KYC Dibutuhkan</h3>
+              <p className="text-xs text-gray-600 font-medium leading-relaxed px-2">
+                Komunitas ini mewajibkan verifikasi identitas KYC (KTP/Selfie) bagi seluruh anggotanya. Silakan selesaikan verifikasi identitas Anda terlebih dahulu.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <Link
+                href="/settings"
+                className="w-full py-2.5 bg-[#0F5132] hover:bg-emerald-900 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all text-center block"
+              >
+                🪪 Verifikasi KYC Sekarang
+              </Link>
+              <button
+                onClick={() => setKycWarningModalOpen(false)}
+                className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Tutup
               </button>
             </div>
           </div>

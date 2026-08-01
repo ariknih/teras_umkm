@@ -45,6 +45,7 @@ export default function CommunityDirectoryPage() {
   const [waGroupLink, setWaGroupLink] = useState('')
   const [joinFee, setJoinFee] = useState('')
   const [monthlyFee, setMonthlyFee] = useState('')
+  const [isKycRequired, setIsKycRequired] = useState(false)
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -130,6 +131,7 @@ export default function CommunityDirectoryPage() {
       formData.append('waGroupLink', waGroupLink)
       formData.append('joinFee', joinFee)
       formData.append('monthlyFee', monthlyFee)
+      formData.append('isKycRequired', String(isKycRequired))
 
       const res = await createIndukCommunity(formData)
       if (res.error) {
@@ -152,6 +154,7 @@ export default function CommunityDirectoryPage() {
         setWaGroupLink('')
         setJoinFee('')
         setMonthlyFee('')
+        setIsKycRequired(false)
 
         loadData()
       }
@@ -592,8 +595,28 @@ export default function CommunityDirectoryPage() {
                           </label>
                         )}
                       </div>
+
+                      {/* FITUR VERIFIKASI KYC ANGGOTA */}
+                      <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl flex items-center justify-between gap-3">
+                        <div>
+                          <label className="text-xs font-extrabold text-[#0F5132] block font-sora">
+                            Wajibkan Verifikasi KYC Anggota
+                          </label>
+                          <p className="text-[10px] text-emerald-800/80 font-medium mt-0.5 leading-relaxed">
+                            Jika diaktifkan, calon anggota harus lulus verifikasi KYC (KTP/Selfie) terlebih dahulu sebelum dapat bergabung.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsKycRequired(!isKycRequired)}
+                          className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
+                            isKycRequired ? 'bg-[#2DB24A] justify-end' : 'bg-gray-300 justify-start'
+                          }`}
+                        >
+                          <span className="bg-white w-4 h-4 rounded-full shadow-xs transition-all" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
                   <button
                     type="submit"

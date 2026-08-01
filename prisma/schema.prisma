@@ -549,7 +549,8 @@ model Community {
   coinBalance       Float             @default(0.0)    // Kas coin komunitas
   minCoinForLoan    Float             @default(1000.0) // Min coin untuk buka akses pinjaman
   minCoinRequired   Float             @default(100.0)  // Min topup awal (100 FREE, 1000 PAID)
-  isRecruitmentLocked Boolean         @default(false)  // Auto-lock bila saldo coin = 0
+  // KYC Requirements
+  isKycRequired     Boolean           @default(false)  // Opsi Admin: Wajibkan verifikasi KYC untuk bergabung
 
   // Multi-Tier Referral System (Customizable 3-5 Tiers)
   referralBudget      Float             @default(40000)  // Dana referral (contoh: 40k dari 100k join fee)

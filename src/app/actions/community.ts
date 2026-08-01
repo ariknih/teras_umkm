@@ -234,6 +234,7 @@ export async function createIndukCommunity(formData: FormData) {
   const waGroupLink = formData.get('waGroupLink') as string || undefined
   const joinFee = parseFloat(formData.get('joinFee') as string) || 0
   const monthlyFee = parseFloat(formData.get('monthlyFee') as string) || 0
+  const isKycRequired = formData.get('isKycRequired') === 'true' || formData.get('isKycRequired') === 'on'
 
   if (!name || !description) {
     return { error: 'Nama dan deskripsi komunitas wajib diisi.' }
@@ -258,7 +259,8 @@ export async function createIndukCommunity(formData: FormData) {
       coverUrl,
       waGroupLink,
       joinFee,
-      monthlyFee
+      monthlyFee,
+      isKycRequired
     })
     revalidatePath('/community')
     return { success: true, community }
