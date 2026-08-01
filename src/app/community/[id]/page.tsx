@@ -1259,21 +1259,22 @@ export default function CommunityDetailPage() {
                           Dibentuk {community.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '25 Juli 2026'}
                         </span>
                       </div>
-                      {!isMember ? (
-                        <button
-                          onClick={() => handleJoin()}
-                          className="px-5 py-2.5 bg-white text-[#0F5132] hover:bg-emerald-50 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
-                        >
-                          <Users className="w-4 h-4" /> {bannerCta}
-                        </button>
-                      ) : (
+                      <div className="flex items-center gap-2">
+                        {!isMember && (
+                          <button
+                            onClick={() => handleJoin()}
+                            className="px-5 py-2.5 bg-white text-[#0F5132] hover:bg-emerald-50 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                          >
+                            <Users className="w-4 h-4" /> {bannerCta}
+                          </button>
+                        )}
                         <button
                           onClick={handleShareReferralLink}
                           className="px-4 py-2 bg-white/20 hover:bg-white/35 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer border border-white/30 backdrop-blur-md"
                         >
                           <Share2 className="w-4 h-4 text-emerald-200" /> Share Link Referral ({user?.referralCode || user?.username || 'REF001'})
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
