@@ -161,7 +161,8 @@ export default function AdminDashboardClient({
     minCoinForLoan: '1000',
     minCoinRequired: '100',
     isVerified: false,
-    isSuspended: false
+    isSuspended: false,
+    isKycRequired: false
   })
 
   const [memberModal, setMemberModal] = useState<{ open: boolean; community?: any }>({ open: false })
@@ -375,7 +376,8 @@ export default function AdminDashboardClient({
       minCoinForLoan: '1000',
       minCoinRequired: '100',
       isVerified: true,
-      isSuspended: false
+      isSuspended: false,
+      isKycRequired: false
     })
     setCommunityModal({ open: true, mode: 'add' })
   }
@@ -399,9 +401,27 @@ export default function AdminDashboardClient({
       minCoinForLoan: String(comm.minCoinForLoan || 1000),
       minCoinRequired: String(comm.minCoinRequired || 100),
       isVerified: Boolean(comm.isVerified),
-      isSuspended: Boolean(comm.isSuspended)
+      isSuspended: Boolean(comm.isSuspended),
+      isKycRequired: Boolean(comm.isKycRequired)
     })
     setCommunityModal({ open: true, mode: 'edit', data: comm })
+  }
+
+  const handleToggleKycCommunity = (comm: any) => {
+    const newKyc = !comm.isKycRequired
+    startTransition(async () => {
+      const res = await updateCommunityAdminAction(comm.id, {
+        ...comm,
+        isKycRequired: newKyc
+      })
+      if (res.success) {
+        setCommunities(prev => prev.map(c => c.id === comm.id ? { ...c, isKycRequired: newKyc } : c))
+        setActionSuccess(`Syarat KYC Komunitas "${comm.name}" diubah menjadi ${newKyc ? 'WAJIB' : 'OPSIONAL'}.`)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal mengubah status KYC.')
+      }
+    })
   }
 
   const handleSaveCommunitySubmit = (e: React.FormEvent) => {
@@ -2145,6 +2165,7 @@ export default function AdminDashboardClient({
                         <th className="px-4 py-3">Nama Komunitas</th>
                         <th className="px-4 py-3">Tipe & Kategori</th>
                         <th className="px-4 py-3">Ketua Komunitas</th>
+                        <th className="px-4 py-3 text-center">Status KYC</th>
                         <th className="px-4 py-3 text-right">Saldo Coin</th>
                         <th className="px-4 py-3 text-center">Status</th>
                         <th className="px-4 py-3 text-right">Aksi</th>
@@ -2153,7 +2174,7 @@ export default function AdminDashboardClient({
                     <tbody className="divide-y divide-slate-100">
                       {communities.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-4 py-6 text-center text-slate-400 italic">
+                          <td colSpan={7} className="px-4 py-6 text-center text-slate-400 italic">
                             Belum ada komunitas induk terdaftar.
                           </td>
                         </tr>
@@ -2188,6 +2209,19 @@ export default function AdminDashboardClient({
                                 <td className="px-4 py-3.5">
                                   <p className="font-bold text-slate-800">{ketuaUser?.name || comm.ketuaId}</p>
                                   <p className="text-[10px] text-slate-400">{ketuaUser?.email || ''}</p>
+                                </td>
+                                <td className="px-4 py-3.5 text-center">
+                                  <button
+                                    onClick={() => handleToggleKycCommunity(comm)}
+                                    className={`px-2.5 py-1 rounded text-[9px] font-extrabold uppercase border cursor-pointer transition-all shadow-2xs ${
+                                      comm.isKycRequired
+                                        ? 'bg-emerald-100 text-[#0F5132] border-[#2DB24A]/40 hover:bg-emerald-200'
+                                        : 'bg-gray-100 text-gray-500 border-gray-300 hover:bg-gray-200'
+                                    }`}
+                                    title="Klik untuk mengubah status syarat KYC"
+                                  >
+                                    🪪 KYC: {comm.isKycRequired ? 'WAJIB' : 'OPSIONAL'}
+                                  </button>
                                 </td>
                                 <td className="px-4 py-3.5 text-right font-mono font-bold text-[#0F5132]">
                                   {(comm.coinBalance || 0).toLocaleString('id-ID')} Coin
@@ -3860,7 +3894,16 @@ export default function AdminDashboardClient({
                         </div>
                       </div>
 
-                      <div className="flex gap-6 pt-1">
+                      <div className="flex flex-wrap gap-4 pt-1">
+                        <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-[#0F5132]">
+                          <input
+                            type="checkbox"
+                            checked={commForm.isKycRequired}
+                            onChange={e => setCommForm({ ...commForm, isKycRequired: e.target.checked })}
+                            className="w-4 h-4 rounded accent-[#0F5132] cursor-pointer"
+                          />
+                          <span>Wajibkan Verifikasi KYC (KTP/Selfie)</span>
+                        </label>
                         <label className="flex items-center gap-2 cursor-pointer font-bold text-xs text-gray-800">
                           <input
                             type="checkbox"

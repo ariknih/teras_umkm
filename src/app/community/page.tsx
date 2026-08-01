@@ -621,6 +621,7 @@ export default function CommunityDirectoryPage() {
                         </button>
                       </div>
                     </div>
+                  </div>
 
                   <button
                     type="submit"

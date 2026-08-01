@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 
 export async function getCommunityReferralConfig(communityId: string) {
   try {
-    const community = await DataStore.findCommunityById(communityId)
+    const community = await DataStore.getCommunityById(communityId)
     if (!community) return { error: 'Komunitas tidak ditemukan.' }
 
     let tierPercentages: number[] = [50, 30, 20]

@@ -685,7 +685,7 @@ export default function CommunityDetailPage() {
     // Free Perkumpulan join
     startTransition(async () => {
       const res = await joinIndukCommunity(id, true)
-      if (res.needsKyc || (res.error && res.error.includes('KYC'))) {
+      if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
         setKycWarningModalOpen(true)
         return
       }
@@ -703,7 +703,7 @@ export default function CommunityDetailPage() {
     setTimeout(async () => {
       try {
         const res = await joinIndukCommunity(id, true)
-        if (res.needsKyc || (res.error && res.error.includes('KYC'))) {
+        if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
           setIsVerifying(false)
           setPaymentModalOpen(false)
           setKycWarningModalOpen(true)
@@ -3859,6 +3859,10 @@ export default function CommunityDetailPage() {
                 Pindah
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
       {/* KYC WARNING MODAL */}
       {kycWarningModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] animate-fadeIn">

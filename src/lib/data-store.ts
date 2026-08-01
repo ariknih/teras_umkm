@@ -6320,7 +6320,7 @@ export const DataStore = {
             monthlyFee: data.monthlyFee || 0,
             isKycRequired: Boolean(data.isKycRequired),
             ketuaId: data.ketuaId
-          }
+          } as any
         })
         // Auto-join ketua as member with isInduk
         await db.communityMembership.create({
@@ -6471,7 +6471,7 @@ export const DataStore = {
         if (!community) return { error: 'Komunitas tidak ditemukan.' }
 
         // KYC check if community requires KYC
-        if (community.isKycRequired) {
+        if ((community as any).isKycRequired) {
           const userObj = await db.user.findUnique({ where: { id: userId } })
           const isKycOk = userObj && (userObj.kycStatus === 'VERIFIED' || userObj.kycStatus === 'APPROVED')
           if (!isKycOk) {
@@ -8618,10 +8618,6 @@ export const DataStore = {
     }
     if ((globalThis as any).__mockMerchantFundingProjects) {
       ;(globalThis as any).__mockMerchantFundingProjects = (globalThis as any).__mockMerchantFundingProjects.filter((p: any) => p.id !== id)
-      } catch (_) {}
-    }
-    if ((globalThis as any).__mockMerchantFundingProjects) {
-      ;(globalThis as any).__mockMerchantFundingProjects = (globalThis as any).__mockMerchantFundingProjects.filter((p: any) => p.id !== id)
       saveMockDb()
     }
     return { success: true }
@@ -8637,7 +8633,7 @@ export const DataStore = {
         const u = await db.user.findFirst({
           where: {
             OR: [
-              { referralCode: cleanCode },
+              { referralCode: cleanCode } as any,
               { username: cleanCode },
               { id: code },
               { email: code }
@@ -8676,7 +8672,7 @@ export const DataStore = {
             communityProfitShare: data.communityProfitShare,
             maxTiers: data.maxTiers,
             tierPercentages: data.tierPercentages
-          }
+          } as any
         })
         return updated
       } catch (_) {}
@@ -8704,7 +8700,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        const logs = await db.communityReferralLog.findMany({
+        const logs = await (db as any).communityReferralLog?.findMany({
           where: { communityId },
           orderBy: { createdAt: 'desc' },
           take: 100
@@ -8843,7 +8839,7 @@ export const DataStore = {
                   description: `Komisi Referral Tier ${tier} (${recipientType}) Komunitas ${community.name} dari pendaftaran ${buyer.name}`
                 }
               })
-              await db.communityReferralLog.create({
+              await (db as any).communityReferralLog?.create({
                 data: {
                   communityId,
                   buyerId,
