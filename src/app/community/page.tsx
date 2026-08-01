@@ -411,8 +411,8 @@ export default function CommunityDirectoryPage() {
                           onChange={(e) => setType(e.target.value as any)}
                           className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                         >
-                          <option value="PERKUMPULAN">Perkumpulan (Gratis / Free)</option>
-                          <option value="KOPERASI">Koperasi Produksi</option>
+                          <option value="PERKUMPULAN">Perkumpulan</option>
+                          <option value="KOPERASI">Koperasi</option>
                         </select>
                       </div>
                     </div>
