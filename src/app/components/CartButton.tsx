@@ -40,6 +40,7 @@ export default function CartButton({ userId }: { userId?: string }) {
   return (
     <Link
       href="/cart"
+      aria-label="Keranjang Belanja"
       className="relative w-8 h-8 rounded-full border border-outline-variant/15 hover:border-primary bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-primary transition-all duration-300 cursor-pointer shadow-sm outline-none group"
       id="global-cart-button"
       title="Keranjang Belanja"

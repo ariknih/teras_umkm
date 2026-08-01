@@ -81,6 +81,7 @@ export default function NotificationBell() {
     <div className="relative shrink-0" ref={dropdownRef}>
       <button
         id="notification-bell-btn"
+        aria-label="Notifikasi"
         onClick={() => setIsOpen(!isOpen)}
         className="relative w-8 h-8 rounded-full border border-outline-variant/15 hover:border-primary bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-primary transition-all duration-300 cursor-pointer shadow-sm outline-none"
       >

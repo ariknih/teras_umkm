@@ -99,6 +99,7 @@ export default function MobileBottomNav({ isLoggedIn }: MobileBottomNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.label}
               className={`flex flex-col items-center justify-center transition-all duration-200 ease-in-out flex-1 active:scale-95 ${
                 isActive ? 'text-primary' : 'text-zinc-500 hover:text-primary'
               }`}

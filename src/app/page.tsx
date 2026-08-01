@@ -42,7 +42,7 @@ export default async function HomePage() {
       <section className="w-full px-6 md:px-20 py-16 flex flex-col items-center bg-surface">
         <ScrollReveal>
           <div className="w-full max-w-[1280px] py-8 px-6 bg-surface rounded-3xl border border-border shadow-sm flex flex-col items-center gap-8 overflow-hidden">
-          <h3 className="text-center text-text-primary text-base font-semibold">Ekosistem Lengkap untuk UMKM Indonesia</h3>
+          <h2 className="text-center text-text-primary text-base font-semibold">Ekosistem Lengkap untuk UMKM Indonesia</h2>
           <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div className="flex flex-col items-center gap-2 text-center">
               <span className="text-3xl md:text-4xl font-bold text-primary">🛒</span>
@@ -118,7 +118,7 @@ export default async function HomePage() {
               <Link key={product.id} href={`/market/product/${product.id}`} className="w-56 md:w-64 shrink-0 snap-center group">
                 <div className="w-full h-40 md:h-48 rounded-2xl overflow-hidden bg-surface-container shadow-md">
                   {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img src={product.imageUrl} alt={product.title} width={256} height={192} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-text-secondary text-sm">Tidak ada gambar</div>
                   )}
@@ -175,16 +175,16 @@ export default async function HomePage() {
         <div className="hidden md:block absolute inset-0 pointer-events-none overflow-hidden max-w-[1440px] mx-auto">
             {/* Floating elements styling from Figma (shadows & rotation) */}
             <div className="absolute top-[20%] left-[5%] md:left-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-10deg]">
-              <img src="/images/shopping_bag.webp" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
+              <img src="/images/shopping_bag.webp" alt="Shopping bag icon" width={64} height={64} loading="lazy" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" />
             </div>
             <div className="absolute bottom-[20%] left-[15%] md:left-[20%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[18deg]">
-              <img src="/images/coffee_cup.webp" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
+              <img src="/images/coffee_cup.webp" alt="Coffee cup icon" width={80} height={80} loading="lazy" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" />
             </div>
             <div className="absolute top-[10%] right-[10%] md:right-[15%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[6deg]">
-              <img src="/images/tools_service.webp" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" alt="icon" />
+              <img src="/images/tools_service.webp" alt="Tools service icon" width={64} height={64} loading="lazy" className="w-12 h-12 md:w-16 md:h-16 rounded-xl" />
             </div>
             <div className="absolute bottom-[25%] right-[5%] md:right-[10%] p-3 bg-surface rounded-2xl shadow-glow-card rotate-[-12deg]">
-              <img src="/images/premium_package.webp" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" alt="icon" />
+              <img src="/images/premium_package.webp" alt="Premium package icon" width={80} height={80} loading="lazy" className="w-16 h-16 md:w-20 md:h-20 rounded-xl" />
             </div>
          </div>
         

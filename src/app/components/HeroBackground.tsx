@@ -23,7 +23,11 @@ export default function HeroBackground() {
       {/* Parallax background image */}
       <motion.img 
         src="/images/lamanawal.jpg" 
-        alt="Saloka Market" 
+        alt="Saloka Market"
+        width={1440}
+        height={768}
+        fetchPriority="high"
+        loading="eager"
         style={{ y, opacity }}
         className="w-full h-full object-cover scale-110 origin-top"
       />

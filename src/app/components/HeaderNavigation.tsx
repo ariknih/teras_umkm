@@ -49,7 +49,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
         <div className="w-full max-w-[1280px] bg-surface/95 backdrop-blur-md rounded-[9999px] shadow-sm border border-border-subtle px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between pointer-events-auto">
           {/* Left: Brand logo */}
           <Link href="/" className="flex items-center shrink-0">
-            <img src="/images/logo+nama_saloka.svg" alt="Saloka.id" className="h-9 md:h-10 w-auto object-contain shrink-0" />
+            <img src="/images/logo+nama_saloka.svg" alt="Saloka.id" width={160} height={40} fetchPriority="high" className="h-9 md:h-10 w-auto object-contain shrink-0" />
           </Link>
 
           {/* Middle: Links */}
@@ -85,6 +85,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <div className="relative" ref={profileRef}>
                   <button
                     id="profile-dropdown-btn"
+                    aria-label="Menu Profil"
                     onClick={() => setIsOpenProfile(!isOpenProfile)}
                     className="flex relative w-8 h-8 rounded-full overflow-hidden border border-primary/40 hover:border-primary transition-colors items-center justify-center bg-gradient-to-br from-primary to-primary-container shadow shadow-primary/5 shrink-0 outline-none cursor-pointer"
                   >
@@ -200,7 +201,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
               </div>
             )}
 
-            <button onClick={() => setIsOpenMobile(!isOpenMobile)} className="hidden w-8 h-8 rounded-full border border-outline-variant/15 bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-[#2DB24A] transition-all cursor-pointer">
+            <button aria-label="Menu Navigasi Mobile" onClick={() => setIsOpenMobile(!isOpenMobile)} className="hidden w-8 h-8 rounded-full border border-outline-variant/15 bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-[#2DB24A] transition-all cursor-pointer">
               {isOpenMobile ? <X size={16} /> : <Menu size={16} />}
             </button>
           </div>

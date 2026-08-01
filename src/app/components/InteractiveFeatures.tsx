@@ -88,6 +88,9 @@ export default function InteractiveFeatures() {
               <img
                 src={currentTab.image}
                 alt={currentTab.label}
+                width={340}
+                height={604}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
               {/* Overlay shading */}

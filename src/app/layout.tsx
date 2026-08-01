@@ -20,17 +20,20 @@ import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 const geist = Geist({
   variable: "--font-geist",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -90,6 +93,8 @@ export default async function RootLayout({
       <head suppressHydrationWarning>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="preload" href="/images/logo+nama_saloka.svg" as="image" type="image/svg+xml" fetchPriority="high" />
+        <link rel="preload" href="/images/lamanawal.jpg" as="image" type="image/jpeg" fetchPriority="high" />
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
