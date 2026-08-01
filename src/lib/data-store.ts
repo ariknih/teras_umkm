@@ -6349,6 +6349,7 @@ export const DataStore = {
     joinFee?: number
     monthlyFee?: number
     isKycRequired?: boolean
+    landingPageConfig?: string
   }) {
     syncMockDb()
     if (await isDbConnected()) {
@@ -6369,6 +6370,7 @@ export const DataStore = {
             joinFee: data.joinFee || 0,
             monthlyFee: data.monthlyFee || 0,
             isKycRequired: Boolean(data.isKycRequired),
+            landingPageConfig: data.landingPageConfig || null,
             ketuaId: data.ketuaId
           } as any
         })
@@ -6402,7 +6404,7 @@ export const DataStore = {
       avatarUrl: data.avatarUrl || null,
       coverUrl: data.coverUrl || null,
       waGroupLink: data.waGroupLink || null,
-      landingPageConfig: null,
+      landingPageConfig: data.landingPageConfig || null,
       joinFee: data.joinFee || 0,
       monthlyFee: data.monthlyFee || 0,
       isKycRequired: Boolean(data.isKycRequired),
@@ -8443,6 +8445,30 @@ export const DataStore = {
               description: 'Simpanan wajib dibayarkan secara rutin setiap bulan oleh anggota koperasi.'
             }
           ]
+
+          let hasSukarela = false
+          if (community.landingPageConfig) {
+            try {
+              const cfg = JSON.parse(community.landingPageConfig)
+              if (cfg.coopTier === 'PLUS' || cfg.coopTier === 'PRO') {
+                hasSukarela = true
+              }
+            } catch (_) {}
+          }
+
+          if (hasSukarela) {
+            defaultData.push({
+              communityId,
+              name: 'Simpanan Sukarela',
+              type: 'SUKARELA',
+              amount: 0,
+              periodText: 'Bebas Nominal',
+              isMandatory: false,
+              isPremium: false,
+              description: 'Simpanan sukarela dapat disetorkan kapan saja dengan nominal bebas.'
+            })
+          }
+
           const createdProds = []
           for (const item of defaultData) {
             const p = await db.cooperativeProduct.create({ data: item })
@@ -8456,13 +8482,26 @@ export const DataStore = {
     let products = (globalThis as any).__mockCooperativeProducts || []
     let commProducts = products.filter((p: any) => p.communityId === communityId)
     if (commProducts.length === 0) {
+      const communities = (globalThis as any).__mockCommunities || []
+      const community = communities.find((c: any) => c.id === communityId)
+      
+      let hasSukarela = false
+      if (community && community.landingPageConfig) {
+        try {
+          const cfg = JSON.parse(community.landingPageConfig)
+          if (cfg.coopTier === 'PLUS' || cfg.coopTier === 'PRO') {
+            hasSukarela = true
+          }
+        } catch (_) {}
+      }
+
       commProducts = [
         {
           id: `coop-prod-pokok-${communityId}`,
           communityId,
           name: 'Simpanan Pokok',
           type: 'POKOK',
-          amount: 150000,
+          amount: community ? Number(community.joinFee || 150000) : 150000,
           periodText: 'Sekali Bayar',
           isMandatory: true,
           isPremium: false,
@@ -8475,7 +8514,7 @@ export const DataStore = {
           communityId,
           name: 'Simpanan Wajib',
           type: 'WAJIB',
-          amount: 50000,
+          amount: community ? Number(community.monthlyFee || 50000) : 50000,
           periodText: 'Iuran rutin setiap bulan',
           isMandatory: true,
           isPremium: false,
@@ -8484,6 +8523,23 @@ export const DataStore = {
           updatedAt: new Date()
         }
       ]
+
+      if (hasSukarela) {
+        commProducts.push({
+          id: `coop-prod-sukarela-${communityId}`,
+          communityId,
+          name: 'Simpanan Sukarela',
+          type: 'SUKARELA',
+          amount: 0,
+          periodText: 'Bebas Nominal',
+          isMandatory: false,
+          isPremium: false,
+          description: 'Simpanan sukarela dapat disetorkan kapan saja dengan nominal bebas.',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+      }
+
       products = [...products, ...commProducts]
       ;(globalThis as any).__mockCooperativeProducts = products
       saveMockDb()

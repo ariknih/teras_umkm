@@ -235,6 +235,7 @@ export async function createIndukCommunity(formData: FormData) {
   const joinFee = parseFloat(formData.get('joinFee') as string) || 0
   const monthlyFee = parseFloat(formData.get('monthlyFee') as string) || 0
   const isKycRequired = formData.get('isKycRequired') === 'true' || formData.get('isKycRequired') === 'on'
+  const coopTier = (formData.get('coopTier') as string) || 'BASIC'
 
   if (!name || !description) {
     return { error: 'Nama dan deskripsi komunitas wajib diisi.' }
@@ -256,6 +257,18 @@ export async function createIndukCommunity(formData: FormData) {
     }
   }
 
+  let landingPageConfig = undefined
+  if (type === 'KOPERASI') {
+    const disabledModules = []
+    if (coopTier === 'BASIC' || coopTier === 'PLUS') {
+      disabledModules.push('pendanaan')
+    }
+    landingPageConfig = JSON.stringify({
+      coopTier,
+      disabledModules
+    })
+  }
+
   try {
     const community = await DataStore.createCommunity({
       ketuaId: user.id,
@@ -272,7 +285,8 @@ export async function createIndukCommunity(formData: FormData) {
       waGroupLink,
       joinFee,
       monthlyFee,
-      isKycRequired
+      isKycRequired,
+      landingPageConfig
     })
     revalidatePath('/community')
     return { success: true, community }

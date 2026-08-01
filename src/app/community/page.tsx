@@ -21,7 +21,10 @@ import {
   FileText,
   Upload,
   X,
-  Loader2
+  Loader2,
+  Building,
+  TrendingUp,
+  Briefcase
 } from 'lucide-react'
 
 export default function CommunityDirectoryPage() {
@@ -47,6 +50,7 @@ export default function CommunityDirectoryPage() {
   const [joinFee, setJoinFee] = useState('')
   const [monthlyFee, setMonthlyFee] = useState('')
   const [isKycRequired, setIsKycRequired] = useState(false)
+  const [coopTier, setCoopTier] = useState<'BASIC' | 'PLUS' | 'PRO'>('BASIC')
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -150,6 +154,7 @@ export default function CommunityDirectoryPage() {
       formData.append('joinFee', joinFee)
       formData.append('monthlyFee', monthlyFee)
       formData.append('isKycRequired', String(isKycRequired))
+      formData.append('coopTier', coopTier)
 
       const res = await createIndukCommunity(formData)
       if (res.error) {
@@ -173,6 +178,7 @@ export default function CommunityDirectoryPage() {
         setJoinFee('')
         setMonthlyFee('')
         setIsKycRequired(false)
+        setCoopTier('BASIC')
 
         loadData()
       }
@@ -508,6 +514,161 @@ export default function CommunityDirectoryPage() {
                             placeholder="e.g. 50000"
                             className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                           />
+                        </div>
+                      </div>
+
+                      {/* KONFIGURASI FITUR KOPERASI */}
+                      <div className="space-y-3 pt-3 border-t border-black/5">
+                        <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#2DB24A]"></span>
+                          <h4 className="text-[10px] font-extrabold text-[#2DB24A] uppercase tracking-wider">Konfigurasi Fitur Koperasi</h4>
+                        </div>
+                        <p className="text-[9px] text-gray-500 font-semibold">Pilih salah satu paket fitur yang sesuai dengan kebutuhan komunitas Anda.</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {/* Card 1: BASIC */}
+                          <div 
+                            onClick={() => setCoopTier('BASIC')}
+                            className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                              coopTier === 'BASIC' 
+                                ? 'bg-emerald-50/20 border-[#2DB24A] shadow-xs' 
+                                : 'bg-white border-black/5 hover:border-black/10'
+                            }`}
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                  coopTier === 'BASIC' ? 'border-[#2DB24A]' : 'border-gray-300'
+                                }`}>
+                                  {coopTier === 'BASIC' && <div className="w-2.5 h-2.5 rounded-full bg-[#2DB24A]" />}
+                                </div>
+                                <div className="text-right">
+                                  <h5 className="font-black text-xs text-[#0F5132] font-sora">BASIC</h5>
+                                  <span className="text-[8px] text-emerald-700/80 font-bold block">Paket Dasar</span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
+                                  <span className="w-3 h-3 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Simpanan Pokok
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
+                                  <span className="w-3 h-3 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Simpanan Wajib
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 pt-4">
+                              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-[#2DB24A] flex items-center justify-center mx-auto">
+                                <Building className="w-4 h-4" />
+                              </div>
+                              <p className="text-[9px] text-gray-500 font-medium leading-relaxed">
+                                Cocok untuk komunitas yang baru memulai dengan fitur simpanan dasar.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Card 2: PLUS */}
+                          <div 
+                            onClick={() => setCoopTier('PLUS')}
+                            className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                              coopTier === 'PLUS' 
+                                ? 'bg-blue-50/20 border-blue-500 shadow-xs' 
+                                : 'bg-white border-black/5 hover:border-black/10'
+                            }`}
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                  coopTier === 'PLUS' ? 'border-blue-500' : 'border-gray-300'
+                                }`}>
+                                  {coopTier === 'PLUS' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                                </div>
+                                <div className="text-right">
+                                  <h5 className="font-black text-xs text-blue-800 font-sora">PLUS</h5>
+                                  <span className="text-[8px] text-blue-600/80 font-bold block">Paket Pengembangan</span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                  <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Simpanan Pokok
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                  <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Simpanan Wajib
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                  <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Simpanan Sukarela
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 pt-4">
+                              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mx-auto">
+                                <TrendingUp className="w-4 h-4" />
+                              </div>
+                              <p className="text-[9px] text-gray-500 font-medium leading-relaxed">
+                                Menambahkan simpanan sukarela untuk fleksibilitas anggota yang lebih besar.
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Card 3: PRO */}
+                          <div 
+                            onClick={() => setCoopTier('PRO')}
+                            className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                              coopTier === 'PRO' 
+                                ? 'bg-purple-50/20 border-purple-500 shadow-xs' 
+                                : 'bg-white border-black/5 hover:border-black/10'
+                            }`}
+                          >
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                  coopTier === 'PRO' ? 'border-purple-500' : 'border-gray-300'
+                                }`}>
+                                  {coopTier === 'PRO' && <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />}
+                                </div>
+                                <div className="text-right">
+                                  <h5 className="font-black text-xs text-purple-800 font-sora">PRO</h5>
+                                  <span className="text-[8px] text-purple-600/80 font-bold block">Paket Profesional</span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                  <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Simpanan Pokok
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                  <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Simpanan Wajib
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                  <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Simpanan Sukarela
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                  <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                  Pendanaan Merchant
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="space-y-2 pt-4">
+                              <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
+                                <Briefcase className="w-4 h-4" />
+                              </div>
+                              <p className="text-[9px] text-gray-500 font-medium leading-relaxed">
+                                Fitur lengkap termasuk pendanaan untuk mendukung pertumbuhan merchant.
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
