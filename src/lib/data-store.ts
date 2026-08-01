@@ -8347,10 +8347,46 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.cooperativeProduct.findMany({
+        const dbProds = await db.cooperativeProduct.findMany({
           where: { communityId },
           orderBy: { createdAt: 'asc' }
         })
+        if (dbProds.length > 0) {
+          return dbProds
+        }
+        // Auto-create defaults for Koperasi and Perkumpulan Free in the real database
+        const community = await db.community.findUnique({ where: { id: communityId } })
+        if (community && (community.type === 'KOPERASI' || (community.type === 'PERKUMPULAN' && community.category === 'FREE'))) {
+          const defaultData = [
+            {
+              communityId,
+              name: 'Simpanan Pokok',
+              type: 'POKOK',
+              amount: Number(community.joinFee || 150000),
+              periodText: 'Sekali Bayar',
+              isMandatory: true,
+              isPremium: false,
+              description: 'Simpanan pokok dibayarkan satu kali saat mendaftar keanggotaan koperasi.'
+            },
+            {
+              communityId,
+              name: 'Simpanan Wajib',
+              type: 'WAJIB',
+              amount: Number(community.monthlyFee || 50000),
+              periodText: 'Iuran rutin setiap bulan',
+              isMandatory: true,
+              isPremium: false,
+              description: 'Simpanan wajib dibayarkan secara rutin setiap bulan oleh anggota koperasi.'
+            }
+          ]
+          const createdProds = []
+          for (const item of defaultData) {
+            const p = await db.cooperativeProduct.create({ data: item })
+            createdProds.push(p)
+          }
+          return createdProds
+        }
+        return []
       } catch (_) {}
     }
     let products = (globalThis as any).__mockCooperativeProducts || []
@@ -8380,45 +8416,6 @@ export const DataStore = {
           isMandatory: true,
           isPremium: false,
           description: 'Simpanan wajib dibayarkan rutin setiap bulan oleh seluruh anggota.',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: `coop-prod-sukarela-${communityId}`,
-          communityId,
-          name: 'Simpanan Sukarela',
-          type: 'SUKARELA',
-          amount: 10000,
-          periodText: 'Setor kapan saja',
-          isMandatory: false,
-          isPremium: false,
-          description: 'Simpanan bebas untuk investasi anggota dengan imbal hasil SHU Jasa Modal.',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: `coop-prod-umroh-${communityId}`,
-          communityId,
-          name: 'Simpanan Umroh',
-          type: 'UMROH',
-          amount: 50000,
-          periodText: 'Tabungan khusus umroh',
-          isMandatory: false,
-          isPremium: true,
-          description: 'Tabungan terencana khusus persiapan ibadah umroh anggota.',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        },
-        {
-          id: `coop-prod-qurban-${communityId}`,
-          communityId,
-          name: 'Simpanan Qurban',
-          type: 'QURBAN',
-          amount: 20000,
-          periodText: 'Tabungan khusus qurban',
-          isMandatory: false,
-          isPremium: true,
-          description: 'Tabungan terencana untuk pelaksanaan ibadah qurban tahunan.',
           createdAt: new Date(),
           updatedAt: new Date()
         }

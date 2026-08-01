@@ -145,8 +145,8 @@ export default function AdminDashboardClient({
   })
   const [commForm, setCommForm] = useState({
     name: '',
-    type: 'PERKUMPULAN',
-    category: 'FREE',
+    type: '',
+    category: '',
     ketuaId: '',
     aktaNotaris: '',
     nomorAhu: '',
@@ -359,8 +359,8 @@ export default function AdminDashboardClient({
   const handleOpenAddCommunity = () => {
     setCommForm({
       name: '',
-      type: 'PERKUMPULAN',
-      category: 'FREE',
+      type: '',
+      category: '',
       ketuaId: users[0]?.id || '',
       aktaNotaris: '',
       nomorAhu: '',
@@ -406,8 +406,8 @@ export default function AdminDashboardClient({
 
   const handleSaveCommunitySubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!commForm.name || !commForm.ketuaId) {
-      alert('Nama komunitas dan Ketua Wajib diisi.')
+    if (!commForm.name || !commForm.ketuaId || !commForm.type || !commForm.category) {
+      alert('Nama komunitas, Ketua, Tipe Komunitas, dan Kategori Wajib diisi.')
       return
     }
     setActionError(null)
@@ -3675,9 +3675,10 @@ export default function AdminDashboardClient({
                           </label>
                           <select
                             value={commForm.type}
-                            onChange={e => setCommForm({ ...commForm, type: e.target.value })}
+                            onChange={e => setCommForm({ ...commForm, type: e.target.value, category: e.target.value ? commForm.category : '' })}
                             className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer"
                           >
+                            <option value="">-- Pilih Tipe Komunitas --</option>
                             <option value="PERKUMPULAN">PERKUMPULAN</option>
                             <option value="KOPERASI">KOPERASI</option>
                           </select>
@@ -3688,13 +3689,14 @@ export default function AdminDashboardClient({
                             Kategori
                           </label>
                           <select
+                            disabled={!commForm.type}
                             value={commForm.category}
                             onChange={e => setCommForm({ ...commForm, category: e.target.value })}
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                           >
+                            <option value="">-- Pilih Kategori --</option>
                             <option value="FREE">FREE</option>
                             <option value="PAID">PAID</option>
-                            <option value="KOPERASI">KOPERASI</option>
                           </select>
                         </div>
                       </div>

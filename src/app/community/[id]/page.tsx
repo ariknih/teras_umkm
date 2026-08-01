@@ -77,7 +77,8 @@ import {
   Tag,
   Landmark,
   Activity,
-  ShoppingBag
+  ShoppingBag,
+  Sliders
 } from 'lucide-react'
 
 const SailboatIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -164,6 +165,19 @@ export default function CommunityDetailPage() {
     setProductModalOpen(true)
   }
 
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus produk simpanan ini?')) return
+    startTransition(async () => {
+      const res = await deleteCooperativeProductAction(productId, id)
+      if (res.success) {
+        setCoopProducts(prev => prev.filter(p => p.id !== productId))
+        goeyToast.success('Produk simpanan berhasil dihapus!')
+      } else {
+        alert(res.error || 'Gagal menghapus produk simpanan.')
+      }
+    })
+  }
+
   // Funding Project CRUD Modal State
   const [projectModalOpen, setProjectModalOpen] = useState(false)
   const [projTitle, setProjTitle] = useState('')
@@ -190,6 +204,11 @@ export default function CommunityDetailPage() {
   const [selectedProject, setSelectedProject] = useState<any>(null)
   const [investAmount, setInvestAmount] = useState('100000')
   const [investPaymentMethod, setInvestPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('QRIS')
+  const [disabledModules, setDisabledModules] = useState<string[]>([])
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [savedDisabledModules, setSavedDisabledModules] = useState<string[]>([])
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false)
+  const [pendingTargetNav, setPendingTargetNav] = useState<string | null>(null)
 
   // Payment states for Koperasi Upgrade/Join
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
@@ -230,7 +249,14 @@ export default function CommunityDetailPage() {
     | 'pendanaan'
     | 'shu'
     | 'laporan'
+    | 'pengaturan'
   >('beranda')
+  
+  useEffect(() => {
+    if (disabledModules.includes(activeSidebarNav)) {
+      setActiveSidebarNav('beranda')
+    }
+  }, [disabledModules, activeSidebarNav])
   const [feedFilter, setFeedFilter] = useState<'semua' | 'diskusi' | 'pengumuman' | 'event' | 'produk'>('semua')
 
   const [recentTransactions, setRecentTransactions] = useState<any[]>([
@@ -509,10 +535,12 @@ export default function CommunityDetailPage() {
       // Check if logged in user is a member
       if (currentUser) {
         const mem = memberList.find((m: any) => m.userId === currentUser.id)
-        if (mem) {
+        if (mem || currentUser.id === commDetail?.ketuaId) {
           setIsMember(true)
-          setIsIndukMember(mem.isInduk)
-          setMembershipDetails(mem)
+          if (mem) {
+            setIsIndukMember(mem.isInduk)
+            setMembershipDetails(mem)
+          }
         }
       }
 
@@ -533,6 +561,26 @@ export default function CommunityDetailPage() {
       // Set cooperative products & funding projects
       setCoopProducts(cProductsRes || [])
       setFundingProjects(fProjectsRes || [])
+
+      // Get disabled modules from landingPageConfig
+      if (commDetailRes?.landingPageConfig) {
+        try {
+          const cfg = JSON.parse(commDetailRes.landingPageConfig)
+          if (cfg?.disabledModules) {
+            setDisabledModules(cfg.disabledModules)
+            setSavedDisabledModules(cfg.disabledModules)
+          } else {
+            setDisabledModules([])
+            setSavedDisabledModules([])
+          }
+        } catch (_) {
+          setDisabledModules([])
+          setSavedDisabledModules([])
+        }
+      } else {
+        setDisabledModules([])
+        setSavedDisabledModules([])
+      }
 
       // Set SHU RAT data
       if (shuRes?.success && shuRes.config) {
@@ -599,6 +647,86 @@ export default function CommunityDetailPage() {
         setIsVerifying(false)
       }
     }, 2000)
+  }
+
+  const handleToggleModule = (moduleId: string) => {
+    setDisabledModules((prev) =>
+      prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId]
+    )
+  }
+
+  const arraysEqual = (a: string[], b: string[]) => {
+    if (a.length !== b.length) return false
+    const sortedA = [...a].sort()
+    const sortedB = [...b].sort()
+    return sortedA.every((val, index) => val === sortedB[index])
+  }
+
+  const handleSidebarClick = (targetId: string) => {
+    if (activeSidebarNav === 'pengaturan' && targetId !== 'pengaturan' && !arraysEqual(disabledModules, savedDisabledModules)) {
+      setPendingTargetNav(targetId)
+      setShowUnsavedModal(true)
+    } else {
+      setActiveSidebarNav(targetId as any)
+    }
+  }
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (activeSidebarNav === 'pengaturan' && !arraysEqual(disabledModules, savedDisabledModules)) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [disabledModules, savedDisabledModules, activeSidebarNav])
+
+  const handleSaveSettings = async () => {
+    if (!community) return
+    setIsSavingSettings(true)
+    try {
+      const formData = new FormData()
+      formData.append('name', community.name)
+      formData.append('description', community.description || '')
+      if (community.aktaNotaris) formData.append('aktaNotaris', community.aktaNotaris)
+      if (community.nomorAhu) formData.append('nomorAhu', community.nomorAhu)
+      if (community.nomorNpwp) formData.append('nomorNpwp', community.nomorNpwp)
+      if (community.domisili) formData.append('domisili', community.domisili)
+      if (community.kontakPj) formData.append('kontakPj', community.kontakPj)
+      if (community.avatarUrl) formData.append('avatarUrl', community.avatarUrl)
+      if (community.coverUrl) formData.append('coverUrl', community.coverUrl)
+      if (community.waGroupLink) formData.append('waGroupLink', community.waGroupLink)
+      formData.append('joinFee', String(community.joinFee || 0))
+      formData.append('monthlyFee', String(community.monthlyFee || 0))
+
+      // Update landingPageConfig
+      let currentCfg: any = {}
+      if (community.landingPageConfig) {
+        try {
+          currentCfg = JSON.parse(community.landingPageConfig)
+        } catch (_) {}
+      }
+      currentCfg.disabledModules = disabledModules
+      formData.append('landingPageConfig', JSON.stringify(currentCfg))
+
+      const res = await updateIndukCommunity(community.id, formData)
+      if (res.success) {
+        goeyToast.success('Pengaturan fitur komunitas berhasil disimpan!')
+        setSavedDisabledModules(disabledModules)
+        if (res.community) {
+          setCommunity(res.community)
+        }
+      } else {
+        goeyToast.error(res.error || 'Gagal menyimpan pengaturan.')
+      }
+    } catch (e: any) {
+      goeyToast.error('Gagal menyimpan pengaturan.')
+    } finally {
+      setIsSavingSettings(false)
+    }
   }
 
   const handleLoanSubmit = async (e: React.FormEvent) => {
@@ -873,6 +1001,19 @@ export default function CommunityDetailPage() {
     { id: 'tentang', label: 'Tentang', icon: Info },
   ]
 
+  const togglableModules = sidebarNavList.filter(
+    (item) => item.id !== 'beranda' && item.id !== 'tentang' && item.id !== 'anggota'
+  )
+
+  const settingsTab = isCanManageCoop
+    ? [{ id: 'pengaturan', label: 'Pengaturan', icon: Sliders }]
+    : []
+
+  const activeSidebarNavList = [
+    ...sidebarNavList.filter((item) => !disabledModules.includes(item.id)),
+    ...settingsTab
+  ]
+
   const promoWidget = isKoperasi ? {
     icon: Building2,
     title: 'Menjadi Anggota',
@@ -925,15 +1066,15 @@ export default function CommunityDetailPage() {
               {community.name}
             </h2>
 
-            {/* Vertical Menu Navigation List */}
-            <div className="bg-white border border-gray-200/80 rounded-2xl p-2 shadow-sm space-y-1">
-              {sidebarNavList.map((item) => {
+            {/* Sidebar Navigation Links (Diferensiasi Template Dinamis) */}
+            <div className="space-y-1">
+              {activeSidebarNavList.map((item) => {
                 const Icon = item.icon
                 const isActive = activeSidebarNav === item.id
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveSidebarNav(item.id as any)}
+                    onClick={() => handleSidebarClick(item.id)}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
                       isActive
                         ? 'bg-[#E8F8EE] text-[#0F5132] shadow-xs'
@@ -948,25 +1089,27 @@ export default function CommunityDetailPage() {
             </div>
 
             {/* Bottom Green Promotional Card */}
-            <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl text-center space-y-3 shadow-xs">
-              <div className="w-11 h-11 rounded-2xl bg-[#2DB24A] text-white flex items-center justify-center mx-auto shadow-sm">
-                <PromoIcon className="w-6 h-6" />
+            {!isMember && (
+              <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl text-center space-y-3 shadow-xs">
+                <div className="w-11 h-11 rounded-2xl bg-[#2DB24A] text-white flex items-center justify-center mx-auto shadow-sm">
+                  <PromoIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-[#0F5132] text-xs">
+                    {promoWidget.title}
+                  </h4>
+                  <p className="text-[10px] text-emerald-800/80 font-medium mt-1 leading-relaxed">
+                    {promoWidget.desc}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleJoin()}
+                  className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> {promoWidget.buttonText}
+                </button>
               </div>
-              <div>
-                <h4 className="font-extrabold text-[#0F5132] text-xs">
-                  {promoWidget.title}
-                </h4>
-                <p className="text-[10px] text-emerald-800/80 font-medium mt-1 leading-relaxed">
-                  {promoWidget.desc}
-                </p>
-              </div>
-              <button
-                onClick={() => handleJoin()}
-                className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> {promoWidget.buttonText}
-              </button>
-            </div>
+            )}
           </div>
 
           {/* ── RIGHT MAIN DASHBOARD CONTENT (DYNAMIC TABS) ────────────────────── */}
@@ -1015,12 +1158,14 @@ export default function CommunityDetailPage() {
                           Dibentuk {community.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '25 Juli 2026'}
                         </span>
                       </div>
-                      <button
-                        onClick={() => handleJoin()}
-                        className="px-5 py-2.5 bg-white text-[#0F5132] hover:bg-emerald-50 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
-                      >
-                        <Users className="w-4 h-4" /> {bannerCta}
-                      </button>
+                      {!isMember && (
+                        <button
+                          onClick={() => handleJoin()}
+                          className="px-5 py-2.5 bg-white text-[#0F5132] hover:bg-emerald-50 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                          <Users className="w-4 h-4" /> {bannerCta}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1108,57 +1253,70 @@ export default function CommunityDetailPage() {
                   </div>
                 </div>
 
-                {/* PRODUK SIMPANAN / IURAN KEANGGOTAAN (SIMPANAN POKOK & WAJIB SAJA) */}
-                <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                        <Wallet className="w-4 h-4 text-[#2DB24A]" /> Simpanan & Iuran Keanggotaan
-                      </h3>
-                      <p className="text-[11px] text-gray-500 font-medium mt-0.5">Iuran resmi anggota {community.name} untuk operasional dan pengembangan usaha bersama</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                    <div className="p-4 bg-gray-50/80 border border-gray-200/80 rounded-xl space-y-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center font-bold">
-                          <Home className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-gray-900">Simpanan Pokok</h4>
-                          <p className="text-[10px] text-gray-500 font-medium">Iuran awal registrasi anggota resmi</p>
-                          <span className="text-xs font-extrabold text-[#0F5132] block mt-0.5">Rp 150.000</span>
-                        </div>
+                {/* PRODUK SIMPANAN / IURAN KEANGGOTAAN (HANYA UNTUK KOPERASI) */}
+                {isKoperasi && (
+                  <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <Wallet className="w-4 h-4 text-[#2DB24A]" /> Simpanan & Iuran Keanggotaan
+                        </h3>
+                        <p className="text-[11px] text-gray-500 font-medium mt-0.5">Iuran resmi anggota {community.name} untuk operasional dan pengembangan usaha bersama</p>
                       </div>
-                      <button
-                        onClick={() => handleOpenPaySavings({ name: 'Simpanan Pokok', amount: 150000, type: 'POKOK' })}
-                        className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
-                      >
-                        Setor Pokok
-                      </button>
+                      {isKoperasi && isCanManageCoop && (
+                        <button
+                          onClick={() => handleOpenCreateProduct(false)}
+                          className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer shrink-0 animate-pulse"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Tambah Baru
+                        </button>
+                      )}
                     </div>
 
-                    <div className="p-4 bg-gray-50/80 border border-gray-200/80 rounded-xl space-y-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center font-bold">
-                          <Calendar className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-gray-900">Simpanan Wajib</h4>
-                          <p className="text-[10px] text-gray-500 font-medium">Iuran rutin bulanan anggota</p>
-                          <span className="text-xs font-extrabold text-[#0F5132] block mt-0.5">Rp 50.000 / bulan</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleOpenPaySavings({ name: 'Simpanan Wajib', amount: 50000, type: 'WAJIB' })}
-                        className="px-3 py-1.5 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer shrink-0"
-                      >
-                        Setor Wajib
-                      </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                      {coopProducts && coopProducts.length > 0 ? (
+                        coopProducts.map((p: any, idx: number) => {
+                          const Icon = p.type === 'POKOK' ? Home : p.type === 'WAJIB' ? Calendar : p.type === 'SUKARELA' ? PiggyBank : p.type === 'UMROH' ? Landmark : p.type === 'QURBAN' ? Award : Wallet
+                          const priceText = p.type === 'SUKARELA' ? 'Bebas Nominal' : `Rp ${Number(p.amount || 0).toLocaleString('id-ID')}${p.periodText ? ` / ${p.periodText}` : ''}`
+                          
+                          return (
+                            <div key={p.id || idx} className="p-4 bg-gray-50/80 border border-gray-200/80 rounded-xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all">
+                              <div className="flex justify-between items-start">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center font-bold shrink-0">
+                                    <Icon className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-bold text-gray-900">{p.name}</h4>
+                                    <p className="text-[10px] text-gray-500 font-medium line-clamp-1">{p.description || '-'}</p>
+                                    <span className="text-xs font-extrabold text-[#0F5132] block mt-0.5">{priceText}</span>
+                                  </div>
+                                </div>
+                                {isKoperasi && isCanManageCoop && (
+                                  <div className="flex items-center gap-1 text-[10px] shrink-0">
+                                    <button onClick={() => handleOpenEditProduct(p)} className="text-gray-500 hover:text-[#2DB24A] font-bold cursor-pointer">Edit</button>
+                                    <span className="text-gray-300">|</span>
+                                    <button onClick={() => handleDeleteProduct(p.id)} className="text-gray-500 hover:text-red-500 font-bold cursor-pointer">Hapus</button>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="pt-2 border-t border-gray-200/60 flex justify-end">
+                                <button
+                                  onClick={() => handleOpenPaySavings({ name: p.name, amount: p.amount || 50000, type: p.type })}
+                                  className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+                                >
+                                  Setor
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <p className="text-xs text-gray-500 col-span-full text-center">Belum ada iuran keanggotaan tersedia.</p>
+                      )}
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* 3-COLUMN DASHBOARD GRID */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-5 items-start">
@@ -2062,29 +2220,55 @@ export default function CommunityDetailPage() {
                       </h2>
                       <p className="text-xs text-gray-500 font-medium mt-1">Kelola simpanan pokok, simpanan wajib bulanan, dan simpanan sukarela terproteksi.</p>
                     </div>
-                    <button onClick={() => handleOpenPaySavings({ name: 'Simpanan Koperasi', amount: 50000, type: 'WAJIB' })} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
-                      <Wallet className="w-4 h-4" /> Setor Simpanan
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {isCanManageCoop && (
+                        <button
+                          onClick={() => handleOpenCreateProduct(false)}
+                          className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                        >
+                          <Plus className="w-4 h-4" /> Tambah Simpanan Baru
+                        </button>
+                      )}
+                      <button onClick={() => handleOpenPaySavings({ name: 'Simpanan Koperasi', amount: 50000, type: 'WAJIB' })} className="px-4 py-2.5 bg-white border border-[#2DB24A] hover:bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                        <Wallet className="w-4 h-4" /> Setor Simpanan
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { title: 'Simpanan Pokok', desc: 'Wajib 1x registrasi', price: 'Rp 150.000', badge: 'Pokok', type: 'POKOK', amount: 150000 },
-                      { title: 'Simpanan Wajib', desc: 'Rutin setiap bulan', price: 'Rp 50.000 / bln', badge: 'Bulanan', type: 'WAJIB', amount: 50000 },
-                      { title: 'Simpanan Sukarela', desc: 'Bebas disetor kapan saja', price: 'Bebas Nominal', badge: 'Sukarela', type: 'SUKARELA', amount: 100000 },
-                    ].map((sp, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all">
-                        <div className="space-y-2">
-                          <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{sp.badge}</span>
-                          <h4 className="text-xs font-black text-gray-900">{sp.title}</h4>
-                          <p className="text-[10px] text-gray-500 font-medium">{sp.desc}</p>
-                          <span className="text-sm font-black text-[#0F5132] block">{sp.price}</span>
-                        </div>
-                        <button onClick={() => handleOpenPaySavings({ name: sp.title, amount: sp.amount, type: sp.type })} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Setor {sp.title}
-                        </button>
+                    {coopProducts && coopProducts.length > 0 ? (
+                      coopProducts.map((p: any, idx: number) => {
+                        const badge = p.type === 'POKOK' ? 'Pokok' : p.type === 'WAJIB' ? 'Bulanan' : p.type === 'SUKARELA' ? 'Sukarela' : p.type === 'UMROH' ? 'Umroh' : p.type === 'QURBAN' ? 'Qurban' : 'Lain-lain'
+                        const priceText = p.type === 'SUKARELA' ? 'Bebas Nominal' : `Rp ${Number(p.amount || 0).toLocaleString('id-ID')}${p.periodText ? ` / ${p.periodText}` : ''}`
+                        
+                        return (
+                          <div key={p.id || idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all">
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-start">
+                                <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{badge}</span>
+                                {isCanManageCoop && (
+                                  <div className="flex items-center gap-1">
+                                    <button onClick={() => handleOpenEditProduct(p)} className="text-[10px] text-gray-500 hover:text-[#2DB24A] font-bold cursor-pointer">Edit</button>
+                                    <span className="text-gray-300 text-[10px]">|</span>
+                                    <button onClick={() => handleDeleteProduct(p.id)} className="text-[10px] text-gray-500 hover:text-red-500 font-bold cursor-pointer">Hapus</button>
+                                  </div>
+                                )}
+                              </div>
+                              <h4 className="text-xs font-black text-gray-900">{p.name}</h4>
+                              <p className="text-[10px] text-gray-500 font-medium min-h-[32px]">{p.description || '-'}</p>
+                              <span className="text-sm font-black text-[#0F5132] block">{priceText}</span>
+                            </div>
+                            <button onClick={() => handleOpenPaySavings({ name: p.name, amount: p.amount || 50000, type: p.type })} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                              Setor {p.name}
+                            </button>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="col-span-full p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
+                        <p className="text-xs text-gray-500">Belum ada produk simpanan tersedia.</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </div>
@@ -2194,6 +2378,78 @@ export default function CommunityDetailPage() {
                         </button>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 24: PENGATURAN FITUR KOMUNITAS (CRUD TOGGLE MODULES) ────────── */}
+            {activeSidebarNav === 'pengaturan' && isCanManageCoop && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
+                  <div className="border-b border-gray-100 pb-4">
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Sliders className="w-6 h-6 text-[#2DB24A]" /> Pengaturan Fitur Komunitas
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">
+                      Kelola fitur dan menu navigasi yang aktif di halaman {community?.name}.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      Daftar Fitur Navigasi
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {togglableModules.map((mod) => {
+                        const isEnabled = !disabledModules.includes(mod.id)
+                        const ModIcon = mod.icon
+                        return (
+                          <div
+                            key={mod.id}
+                            className="p-4 bg-gray-50/60 border border-gray-200/80 rounded-2xl flex items-center justify-between hover:border-gray-300 transition-all"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${
+                                isEnabled ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-gray-200 text-gray-400'
+                              }`}>
+                                <ModIcon className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-black text-gray-900">{mod.label}</h4>
+                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">
+                                  {isEnabled ? 'Navigasi aktif di menu' : 'Navigasi disembunyikan'}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleToggleModule(mod.id)}
+                              className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 ${
+                                isEnabled ? 'bg-[#2DB24A] justify-end' : 'bg-gray-300 justify-start'
+                              }`}
+                            >
+                              <span className="bg-white w-4 h-4 rounded-full shadow-xs transition-all" />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 flex justify-end">
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={isSavingSettings}
+                      className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSavingSettings ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                        </>
+                      ) : (
+                        'Simpan Pengaturan'
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -3240,6 +3496,53 @@ export default function CommunityDetailPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* UNSAVED SETTINGS WARNING MODAL (EXACTLY MATCHING THE USER'S ATTACHED DESIGN) */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full mx-4 shadow-xl space-y-4 animate-scaleUp text-center">
+            <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto text-amber-500">
+              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-base font-bold text-gray-800 font-sora">Pengaturan belum tersimpan</h3>
+              <p className="text-[11px] text-gray-500 font-medium leading-relaxed px-2">
+                Pengaturan belum kamu simpan, apakah kamu ingin pindah ke halaman lain?
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setShowUnsavedModal(false)
+                  setPendingTargetNav(null)
+                }}
+                className="flex-1 py-2.5 bg-white border border-gray-200 text-gray-600 font-extrabold text-xs rounded-xl hover:bg-gray-50 transition-all cursor-pointer"
+              >
+                Tidak Pindah
+              </button>
+              <button
+                onClick={() => {
+                  setDisabledModules(savedDisabledModules)
+                  if (pendingTargetNav) {
+                    setActiveSidebarNav(pendingTargetNav as any)
+                  }
+                  setShowUnsavedModal(false)
+                  setPendingTargetNav(null)
+                }}
+                className="flex-1 py-2.5 bg-[#FF9800] hover:bg-[#F57C00] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                Pindah
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

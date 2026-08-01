@@ -271,16 +271,17 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
-  // Prevent changing induk community if already set
-  if (asInduk) {
+  let effectiveAsInduk = asInduk
+  if (effectiveAsInduk) {
     const existingInduk = await DataStore.getUserIndukCommunity(user.id)
     if (existingInduk) {
-      return { error: 'Anda sudah memiliki Komunitas Induk. Komunitas Induk tidak bisa diganti.' }
+      // Jika sudah memiliki Komunitas Induk, secara otomatis daftar sebagai anggota biasa
+      effectiveAsInduk = false
     }
   }
 
   try {
-    const result = await DataStore.joinCommunity(user.id, communityId, asInduk)
+    const result = await DataStore.joinCommunity(user.id, communityId, effectiveAsInduk)
     revalidatePath('/community')
     revalidatePath('/merchant/dashboard')
     return { success: true, ...result }
