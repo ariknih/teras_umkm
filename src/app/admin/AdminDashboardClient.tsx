@@ -2234,7 +2234,7 @@ export default function AdminDashboardClient({
                   Verifikasi Pembayaran Invoice Keanggotaan Komunitas
                 </h3>
                 <p className="text-xs text-[#64748b] mb-4">
-                  Daftar tagihan pendaftaran keanggotaan Komunitas Koperasi (Simpanan Pokok & Wajib) dan Perkumpulan Berbayar yang dikelola Saloka.
+                  Daftar tagihan pendaftaran keanggotaan Komunitas Koperasi (Simpanan Pokok & Wajib) dan Perkumpulan Premium yang dikelola Saloka.
                 </p>
 
                 <div className="overflow-x-auto">
