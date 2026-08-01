@@ -6295,12 +6295,19 @@ export const DataStore = {
   async getGlobalKycRequirementToCreateCommunity(): Promise<boolean> {
     if (await isDbConnected()) {
       try {
-        // Use a system setting stored in UserSetting or just use the mock fallback
-        // since Prisma schema may not have a global settings table
-      } catch (e) { /* fallback to mock */ }
+        const setting = await db.systemSetting.findUnique({
+          where: { key: 'globalKycRequired' }
+        })
+        if (setting !== null) {
+          return setting.value === 'true'
+        }
+        // Default: true (first time, never set)
+        return true
+      } catch (e) {
+        // fallback to mock below
+      }
     }
     syncMockDb()
-    // Default true if never been set
     if ((globalThis as any).__isKycRequiredToCreateCommunity === undefined) {
       (globalThis as any).__isKycRequiredToCreateCommunity = true
     }
@@ -6308,8 +6315,20 @@ export const DataStore = {
   },
 
   async setGlobalKycRequirementToCreateCommunity(required: boolean): Promise<boolean> {
-    syncMockDb();
-    (globalThis as any).__isKycRequiredToCreateCommunity = required
+    if (await isDbConnected()) {
+      try {
+        await db.systemSetting.upsert({
+          where: { key: 'globalKycRequired' },
+          update: { value: String(required) },
+          create: { key: 'globalKycRequired', value: String(required) }
+        })
+        return required
+      } catch (e) {
+        // fallback to mock below
+      }
+    }
+    syncMockDb()
+    ;(globalThis as any).__isKycRequiredToCreateCommunity = required
     saveMockDb()
     return required
   },
