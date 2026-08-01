@@ -192,7 +192,8 @@ export default function CommunityDirectoryPage() {
     )
   }
 
-  const isKycApproved = user && user.kycStatus === 'APPROVED'
+  const isKycApproved = user && (user.kycStatus === 'VERIFIED' || user.kycStatus === 'APPROVED')
+  const requiresKycToCreate = globalKycRequired && !isKycApproved
 
   return (
     <div className="min-h-screen bg-[#F5F7F9] text-[#111111] pt-28 pb-24 px-4 md:px-10 relative overflow-hidden">
@@ -363,7 +364,7 @@ export default function CommunityDirectoryPage() {
                 <button onClick={() => setCreateModalOpen(false)} className="text-text-secondary hover:text-[#111111] text-sm font-bold">✕</button>
               </div>
 
-              {!isKycApproved ? (
+              {requiresKycToCreate ? (
                 <div className="p-6 border border-amber-500/20 bg-amber-500/5 rounded-2xl space-y-4 text-center">
                   <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
                   <h4 className="font-sora font-bold text-[#111111] text-sm">Verifikasi KYC Diperlukan</h4>
