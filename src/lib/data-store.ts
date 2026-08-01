@@ -6518,8 +6518,8 @@ export const DataStore = {
               where: { id: communityId },
               data: { 
                 coinBalance: { decrement: 3 },
-                isRecruitmentLocked: community.coinBalance - 3 <= 0 ? true : community.isRecruitmentLocked
-              }
+                isRecruitmentLocked: community.coinBalance - 3 <= 0 ? true : (community as any).isRecruitmentLocked
+              } as any
             })
             
             // Add to referrer
