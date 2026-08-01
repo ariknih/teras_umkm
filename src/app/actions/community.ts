@@ -247,7 +247,7 @@ export async function createIndukCommunity(formData: FormData) {
   // Check global Superadmin setting: Is KYC required to create a community?
   const globalKycRequired = await DataStore.getGlobalKycRequirementToCreateCommunity()
   if (globalKycRequired) {
-    const isUserKycVerified = user.kycStatus === 'VERIFIED' || user.kycStatus === 'APPROVED'
+    const isUserKycVerified = (user as any).kycStatus === 'VERIFIED' || (user as any).kycStatus === 'APPROVED'
     if (!isUserKycVerified) {
       return { 
         error: 'Syarat verifikasi KYC (KTP/Selfie) aktif. Anda harus memverifikasi akun Anda sebelum membuat Komunitas Induk.',
