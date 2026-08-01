@@ -288,16 +288,20 @@ export default function CommunityDirectoryPage() {
                       <h3 className="font-sora text-sm font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
                       <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider mt-1 ${
                         c.type === 'KOPERASI'
-                          ? 'bg-amber-500/10 border-amber-500/35 text-amber-600'
-                          : c.category === 'PAID'
+                          ? (c.joinFee > 0 || c.monthlyFee > 0 || c.category === 'PAID')
+                            ? 'bg-amber-600/10 border-amber-600/35 text-amber-700'
+                            : 'bg-amber-500/10 border-amber-500/35 text-amber-600'
+                          : (c.category === 'PAID' || c.joinFee > 0 || c.monthlyFee > 0)
                             ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
                             : 'bg-cyan-500/10 border-cyan-500/35 text-cyan-600'
                       }`}>
                         {c.type === 'KOPERASI'
-                          ? 'KOPERASI'
-                          : c.category === 'PAID'
-                            ? 'PERKUMPULAN BERBAYAR'
-                            : 'PERKUMPULAN FREE'}
+                          ? (c.joinFee > 0 || c.monthlyFee > 0 || c.category === 'PAID')
+                            ? 'KOPERASI PREMIUM'
+                            : 'KOPERASI'
+                          : (c.category === 'PAID' || c.joinFee > 0 || c.monthlyFee > 0)
+                            ? 'PERKUMPULAN PREMIUM'
+                            : 'PERKUMPULAN'}
                       </span>
                     </div>
                   </div>

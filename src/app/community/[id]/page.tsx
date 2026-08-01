@@ -976,6 +976,7 @@ export default function CommunityDetailPage() {
   const typeLower = (community?.type || '').toLowerCase()
 
   const isKoperasi = typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi')
+  const isKoperasiPremium = isKoperasi && (community?.joinFee > 0 || community?.monthlyFee > 0 || community?.category === 'PAID')
   const isKuliner = !isKoperasi && (catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner'))
   const isBusiness = !isKoperasi && !isKuliner && (catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm'))
   const isEducation = !isKoperasi && !isKuliner && !isBusiness && (catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan'))
@@ -1370,7 +1371,7 @@ export default function CommunityDetailPage() {
                         </h3>
                         <p className="text-[11px] text-gray-500 font-medium mt-0.5">Iuran resmi anggota {community.name} untuk operasional dan pengembangan usaha bersama</p>
                       </div>
-                      {isKoperasi && isCanManageCoop && (
+                      {isKoperasiPremium && isCanManageCoop && (
                         <button
                           onClick={() => handleOpenCreateProduct(false)}
                           className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer shrink-0 animate-pulse"
@@ -1399,7 +1400,7 @@ export default function CommunityDetailPage() {
                                     <span className="text-xs font-extrabold text-[#0F5132] block mt-0.5">{priceText}</span>
                                   </div>
                                 </div>
-                                {isKoperasi && isCanManageCoop && (
+                                {isKoperasiPremium && isCanManageCoop && (
                                   <div className="flex items-center gap-1 text-[10px] shrink-0">
                                     <button onClick={() => handleOpenEditProduct(p)} className="text-gray-500 hover:text-[#2DB24A] font-bold cursor-pointer">Edit</button>
                                     <span className="text-gray-300">|</span>
@@ -2328,7 +2329,7 @@ export default function CommunityDetailPage() {
                       <p className="text-xs text-gray-500 font-medium mt-1">Kelola simpanan pokok, simpanan wajib bulanan, dan simpanan sukarela terproteksi.</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      {isCanManageCoop && (
+                      {isKoperasiPremium && isCanManageCoop && (
                         <button
                           onClick={() => handleOpenCreateProduct(false)}
                           className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
@@ -2353,7 +2354,7 @@ export default function CommunityDetailPage() {
                             <div className="space-y-2">
                               <div className="flex justify-between items-start">
                                 <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{badge}</span>
-                                {isCanManageCoop && (
+                                {isKoperasiPremium && isCanManageCoop && (
                                   <div className="flex items-center gap-1">
                                     <button onClick={() => handleOpenEditProduct(p)} className="text-[10px] text-gray-500 hover:text-[#2DB24A] font-bold cursor-pointer">Edit</button>
                                     <span className="text-gray-300 text-[10px]">|</span>
