@@ -244,6 +244,18 @@ export async function createIndukCommunity(formData: FormData) {
     return { error: 'Tipe komunitas tidak valid.' }
   }
 
+  // Check global Superadmin setting: Is KYC required to create a community?
+  const globalKycRequired = await DataStore.getGlobalKycRequirementToCreateCommunity()
+  if (globalKycRequired) {
+    const isUserKycVerified = user.kycStatus === 'VERIFIED' || user.kycStatus === 'APPROVED'
+    if (!isUserKycVerified) {
+      return { 
+        error: 'Syarat verifikasi KYC (KTP/Selfie) aktif. Anda harus memverifikasi akun Anda sebelum membuat Komunitas Induk.',
+        needsKyc: true 
+      }
+    }
+  }
+
   try {
     const community = await DataStore.createCommunity({
       ketuaId: user.id,

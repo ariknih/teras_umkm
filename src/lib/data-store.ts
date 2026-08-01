@@ -6283,6 +6283,22 @@ export const DataStore = {
     }
   },
 
+  // ─── GLOBAL KYC SETTINGS FOR COMMUNITY CREATION ────────────────────────────
+  async getGlobalKycRequirementToCreateCommunity(): Promise<boolean> {
+    syncMockDb()
+    if ((globalThis as any).__isKycRequiredToCreateCommunity === undefined) {
+      (globalThis as any).__isKycRequiredToCreateCommunity = true
+    }
+    return Boolean((globalThis as any).__isKycRequiredToCreateCommunity)
+  },
+
+  async setGlobalKycRequirementToCreateCommunity(required: boolean): Promise<boolean> {
+    syncMockDb();
+    (globalThis as any).__isKycRequiredToCreateCommunity = required
+    saveMockDb()
+    return required
+  },
+
   async createCommunity(data: {
     ketuaId: string
     name: string

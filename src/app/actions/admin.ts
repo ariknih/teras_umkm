@@ -360,6 +360,28 @@ export async function ensureAdminPermission(permissionKey: string) {
   return dbUser
 }
 
+// ─── GLOBAL KYC SETTINGS ACTIONS ───────────────────────────────────────────
+export async function getGlobalKycSettingAction() {
+  try {
+    const required = await DataStore.getGlobalKycRequirementToCreateCommunity()
+    return { success: true, required }
+  } catch (e: any) {
+    return { success: true, required: true }
+  }
+}
+
+export async function updateGlobalKycSettingAction(required: boolean) {
+  await ensureAdminPermission('community')
+  try {
+    await DataStore.setGlobalKycRequirementToCreateCommunity(required)
+    revalidatePath('/admin')
+    revalidatePath('/community')
+    return { success: true, required }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengubah pengaturan KYC.' }
+  }
+}
+
 // ─── COMMUNITY ADMIN ACTIONS ────────────────────────────────────────────────
 export async function getCommunitiesAdminAction() {
   await ensureAdminPermission('community')

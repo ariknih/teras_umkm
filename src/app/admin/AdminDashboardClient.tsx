@@ -40,7 +40,9 @@ import {
   updateCommunityAdminAction,
   deleteCommunityAdminAction,
   updateUserIndukCommunityAction,
-  updateAdminPermissionsAction
+  updateAdminPermissionsAction,
+  getGlobalKycSettingAction,
+  updateGlobalKycSettingAction
 } from '@/app/actions/admin'
 import { calculateAndSaveShuAction } from '@/app/actions/shu'
 import {
@@ -167,6 +169,28 @@ export default function AdminDashboardClient({
 
   const [memberModal, setMemberModal] = useState<{ open: boolean; community?: any }>({ open: false })
   const [selectedMemberUserId, setSelectedMemberUserId] = useState('')
+  const [globalKycRequired, setGlobalKycRequired] = useState(true)
+
+  React.useEffect(() => {
+    getGlobalKycSettingAction().then(res => {
+      if (res && res.required !== undefined) {
+        setGlobalKycRequired(res.required)
+      }
+    })
+  }, [])
+
+  const handleToggleGlobalKycSetting = async () => {
+    const nextState = !globalKycRequired
+    startTransition(async () => {
+      const res = await updateGlobalKycSettingAction(nextState)
+      if (res.success) {
+        setGlobalKycRequired(nextState)
+        setActionSuccess(`Syarat KYC untuk membuat Komunitas Induk diubah menjadi ${nextState ? 'WAJIB (Aktif)' : 'OPSIONAL / MATI (Bebas untuk Semua Merchant)'}.`)
+      } else {
+        setActionError(res.error || 'Gagal mengubah pengaturan.')
+      }
+    })
+  }
 
   // Admin CRUD & RBAC Permission Form State
   const [adminName, setAdminName] = useState('')
@@ -2108,6 +2132,32 @@ export default function AdminDashboardClient({
           {/* ─── TAB 5: DAFTAR KOMUNITAS INDUK & MEMBER ───────────────────── */}
           {activeTab === 'community' && (
             <div className="space-y-6 animate-in fade-in duration-250">
+              {/* Global KYC Setting for Community Creation */}
+              <div className="bg-emerald-50/80 border border-emerald-200 p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider flex items-center gap-2">
+                    <span className="text-sm">🛡️</span>
+                    <span>Pengaturan Superadmin: Syarat KYC Membuat Komunitas Induk</span>
+                  </h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {globalKycRequired
+                      ? 'Status: WAJIB AKTIF. Hanya merchant yang sudah terverifikasi KYC (KTP/Selfie) yang dapat membuat Komunitas Induk baru.'
+                      : 'Status: OPSIONAL / MATI. Semua merchant dapat membuat Komunitas Induk baru secara bebas tanpa syarat verifikasi KYC.'
+                    }
+                  </p>
+                </div>
+                <button
+                  onClick={handleToggleGlobalKycSetting}
+                  className={`px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider cursor-pointer border transition-all shrink-0 shadow-sm ${
+                    globalKycRequired
+                      ? 'bg-[#0F5132] text-white border-[#0F5132] hover:bg-[#0a3822]'
+                      : 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600'
+                  }`}
+                >
+                  Syarat KYC Buat Komunitas: {globalKycRequired ? 'WAJIB (ON)' : 'OPSIONAL (OFF)'}
+                </button>
+              </div>
+
               {/* Induk Komunitas CRUD Management Card */}
               <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm space-y-4">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#e2e8f0] pb-4">

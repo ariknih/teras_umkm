@@ -4,6 +4,7 @@ import React, { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getIndukCommunities, createIndukCommunity } from '@/app/actions/community'
+import { getGlobalKycSettingAction } from '@/app/actions/admin'
 import { getCurrentUser } from '@/app/actions/auth'
 import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -84,6 +85,18 @@ export default function CommunityDirectoryPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  const [globalKycRequired, setGlobalKycRequired] = useState(true)
+  const [kycWarningModalOpen, setKycWarningModalOpen] = useState(false)
+
+  const handleOpenCreateModal = () => {
+    const isKycVerified = user && (user.kycStatus === 'VERIFIED' || user.kycStatus === 'APPROVED')
+    if (globalKycRequired && !isKycVerified) {
+      setKycWarningModalOpen(true)
+      return
+    }
+    setCreateModalOpen(true)
+  }
+
   async function loadData() {
     try {
       const currentUser = await getCurrentUser()
@@ -91,6 +104,11 @@ export default function CommunityDirectoryPage() {
 
       const comms = await getIndukCommunities()
       setCommunities(comms || [])
+
+      const kycRes = await getGlobalKycSettingAction()
+      if (kycRes && kycRes.required !== undefined) {
+        setGlobalKycRequired(kycRes.required)
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -199,7 +217,7 @@ export default function CommunityDirectoryPage() {
           <div className="pt-2 flex justify-center">
             {user ? (
               <button
-                onClick={() => setCreateModalOpen(true)}
+                onClick={handleOpenCreateModal}
                 className="px-6 py-3 bg-primary hover:bg-primary/95 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-primary/10 flex items-center gap-2"
               >
                 <PlusCircle className="w-4 h-4" />
@@ -636,6 +654,43 @@ export default function CommunityDirectoryPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* KYC WARNING MODAL FOR COMMUNITY CREATION */}
+      {kycWarningModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full border border-black/10 shadow-2xl text-center space-y-4 relative">
+            <button
+              onClick={() => setKycWarningModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
+              <Shield className="w-8 h-8" />
+            </div>
+            <h3 className="font-sora text-lg font-bold text-slate-900">
+              Verifikasi KYC Diperlukan
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Superadmin menetapkan verifikasi KYC (KTP & Selfie) wajib untuk pendiri Komunitas Induk. Silakan lengkapi verifikasi KYC Anda terlebih dahulu.
+            </p>
+            <div className="pt-2 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setKycWarningModalOpen(false)}
+                className="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                Nanti Saja
+              </button>
+              <Link
+                href="/settings?tab=kyc"
+                className="flex-1 py-2.5 bg-primary text-white font-bold text-xs rounded-xl hover:bg-primary/95 transition-all text-center flex items-center justify-center gap-1"
+              >
+                Verifikasi KYC Sekarang
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
