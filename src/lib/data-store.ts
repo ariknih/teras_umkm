@@ -6481,7 +6481,7 @@ export const DataStore = {
         
         // Auto-lock recruitment if coinBalance <= 0 (only for non-free communities) or isRecruitmentLocked
         const isFree = (community.joinFee || 0) === 0 || community.category === 'FREE';
-        if (community.isRecruitmentLocked) {
+        if ((community as any).isRecruitmentLocked) {
           return { error: 'Rekrutmen komunitas dikunci. Hubungi ketua komunitas.' }
         }
         if (!isFree && community.coinBalance <= 0) {
