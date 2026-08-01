@@ -24,6 +24,11 @@ import {
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
 import { getCommunityShuDataAction, getUserShuSummaryAction } from '@/app/actions/shu'
+import {
+  getCommunityReferralConfig,
+  updateCommunityReferralConfig,
+  getCommunityReferralHistory
+} from '@/app/actions/community-referral'
 import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -223,6 +228,64 @@ export default function CommunityDetailPage() {
   const [depositAmount, setDepositAmount] = useState('')
   const [depositPaymentMethod, setDepositPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('QRIS')
   const [shuDetailModalOpen, setShuDetailModalOpen] = useState(false)
+
+  // Multi-Tier Referral States
+  const [refJoinFee, setRefJoinFee] = useState<number>(100000)
+  const [refReferralBudget, setRefReferralBudget] = useState<number>(40000)
+  const [refCommunityProfitShare, setRefCommunityProfitShare] = useState<number>(60000)
+  const [refMaxTiers, setRefMaxTiers] = useState<number>(3)
+  const [refTierPercentages, setRefTierPercentages] = useState<number[]>([50, 30, 20])
+  const [refLogs, setRefLogs] = useState<any[]>([])
+  const [isSavingRefSettings, setIsSavingRefSettings] = useState(false)
+
+  useEffect(() => {
+    if (id) {
+      getCommunityReferralConfig(id).then(res => {
+        if (res.success && res.config) {
+          setRefJoinFee(res.config.joinFee)
+          setRefReferralBudget(res.config.referralBudget)
+          setRefCommunityProfitShare(res.config.communityProfitShare)
+          setRefMaxTiers(res.config.maxTiers)
+          setRefTierPercentages(res.config.tierPercentages)
+        }
+      })
+      getCommunityReferralHistory(id).then(res => {
+        if (res.success && res.logs) {
+          setRefLogs(res.logs)
+        }
+      })
+    }
+  }, [id])
+
+  const handleSaveReferralSettings = async () => {
+    const totalPct = refTierPercentages.slice(0, refMaxTiers).reduce((a, b) => a + Number(b || 0), 0)
+    if (Math.abs(totalPct - 100) > 0.1) {
+      goeyToast.error('Total persentase tier harus 100%!')
+      return
+    }
+    setIsSavingRefSettings(true)
+    const res = await updateCommunityReferralConfig({
+      communityId: id,
+      joinFee: refJoinFee,
+      referralBudget: refReferralBudget,
+      communityProfitShare: refCommunityProfitShare,
+      maxTiers: refMaxTiers,
+      tierPercentages: refTierPercentages.slice(0, refMaxTiers)
+    })
+    setIsSavingRefSettings(false)
+    if (res.success) {
+      goeyToast.success('Pengaturan Referral Multi-Tier berhasil disimpan!')
+    } else {
+      goeyToast.error(res.error || 'Gagal menyimpan pengaturan referral.')
+    }
+  }
+
+  const handleShareReferralLink = () => {
+    const code = user?.referralCode || user?.username || 'REF001'
+    const shareUrl = `${window.location.origin}/community/${id}?ref=${code}`
+    navigator.clipboard.writeText(shareUrl)
+    goeyToast.success(`Link referral 6-digit (${code}) disalin! Bagikan ke merchant lain.`)
+  }
 
   // Perahu Kita Perkumpulan navigation & filter states
   const [activeSidebarNav, setActiveSidebarNav] = useState<
@@ -1158,12 +1221,19 @@ export default function CommunityDetailPage() {
                           Dibentuk {community.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '25 Juli 2026'}
                         </span>
                       </div>
-                      {!isMember && (
+                      {!isMember ? (
                         <button
                           onClick={() => handleJoin()}
                           className="px-5 py-2.5 bg-white text-[#0F5132] hover:bg-emerald-50 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
                         >
                           <Users className="w-4 h-4" /> {bannerCta}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleShareReferralLink}
+                          className="px-4 py-2 bg-white/20 hover:bg-white/35 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer border border-white/30 backdrop-blur-md"
+                        >
+                          <Share2 className="w-4 h-4 text-emerald-200" /> Share Link Referral ({user?.referralCode || user?.username || 'REF001'})
                         </button>
                       )}
                     </div>
@@ -2450,6 +2520,195 @@ export default function CommunityDetailPage() {
                         'Simpan Pengaturan'
                       )}
                     </button>
+                  </div>
+
+                  {/* SECTION 2: PENGATURAN REFERRAL MULTI-TIER (3-5 TIER) */}
+                  <div className="pt-6 border-t border-gray-100 space-y-5">
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Handshake className="w-4 h-4 text-[#2DB24A]" /> Pengaturan Referral Multi-Tier Komunitas
+                      </h3>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">
+                        Atur alokasi dana pendaftaran, jumlah tier referral (3 - 5 tier), dan persentase komisi per tier. Total dana referral tidak bisa melebihi alokasi yang ditentukan.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Harga Masuk Komunitas (Rp)</label>
+                        <input
+                          type="number"
+                          value={refJoinFee}
+                          onChange={e => setRefJoinFee(Number(e.target.value))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Keuntungan Kas Komunitas (Rp)</label>
+                        <input
+                          type="number"
+                          value={refCommunityProfitShare}
+                          onChange={e => setRefCommunityProfitShare(Number(e.target.value))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Total Alokasi Dana Referral (Rp)</label>
+                        <input
+                          type="number"
+                          value={refReferralBudget}
+                          onChange={e => setRefReferralBudget(Number(e.target.value))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Tier Selector (3, 4, 5) */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-gray-800">Jumlah Tier Referral (Min 3, Max 5 Tier):</label>
+                      <div className="flex gap-2">
+                        {[3, 4, 5].map(tCount => (
+                          <button
+                            key={tCount}
+                            type="button"
+                            onClick={() => {
+                              setRefMaxTiers(tCount)
+                              if (tCount === 3) setRefTierPercentages([50, 30, 20])
+                              else if (tCount === 4) setRefTierPercentages([40, 30, 20, 10])
+                              else if (tCount === 5) setRefTierPercentages([40, 30, 15, 10, 5])
+                            }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              refMaxTiers === tCount
+                                ? 'bg-[#2DB24A] text-white shadow-xs'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            {tCount} Tier
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Percentage inputs per tier */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-gray-800">Persentase Komisi per Tier (Total Harus 100% dari Dana Referral):</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                        {Array.from({ length: refMaxTiers }).map((_, idx) => {
+                          const pct = refTierPercentages[idx] ?? 0
+                          const calcAmount = Math.round((refReferralBudget * pct) / 100)
+                          return (
+                            <div key={idx} className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1">
+                              <span className="block text-[10px] font-bold text-gray-600 uppercase">Tier {idx + 1}</span>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  value={pct}
+                                  onChange={e => {
+                                    const val = Number(e.target.value)
+                                    setRefTierPercentages(prev => {
+                                      const newArr = [...prev]
+                                      newArr[idx] = val
+                                      return newArr
+                                    })
+                                  }}
+                                  className="w-full border rounded-lg px-2 py-1 text-xs font-bold font-mono"
+                                />
+                                <span className="text-xs font-bold text-gray-500">%</span>
+                              </div>
+                              <span className="block text-[9px] font-bold text-[#0F5132] font-mono">
+                                Rp {calcAmount.toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      {(() => {
+                        const total = refTierPercentages.slice(0, refMaxTiers).reduce((a, b) => a + Number(b || 0), 0)
+                        const isValid = Math.abs(total - 100) <= 0.1
+                        return (
+                          <p className={`text-[11px] font-bold ${isValid ? 'text-emerald-700' : 'text-red-600'}`}>
+                            Total Persentase Tier: {total}% {isValid ? '✓ (Valid)' : '⚠️ Total harus persis 100%'}
+                          </p>
+                        )
+                      })()}
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={handleSaveReferralSettings}
+                        disabled={isSavingRefSettings}
+                        className="px-5 py-2.5 bg-[#0F5132] hover:bg-emerald-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        {isSavingRefSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Pengaturan Referral Multi-Tier'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SECTION 3: HISTORI REFERRAL DOWNLINE & AUDIT LOG */}
+                  <div className="pt-6 border-t border-gray-100 space-y-4">
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Users className="w-4 h-4 text-[#2DB24A]" /> Audit History Downline & Pembagian Referral
+                      </h3>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">
+                        Histori lengkap aliran dana komisi referral dari setiap merchant yang mendaftar.
+                      </p>
+                    </div>
+
+                    <div className="overflow-x-auto border border-gray-200 rounded-2xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-[10px] uppercase font-bold text-gray-500">
+                          <tr>
+                            <th className="p-3">Tanggal</th>
+                            <th className="p-3">Tier</th>
+                            <th className="p-3">Penerima Komisi</th>
+                            <th className="p-3">Tipe Penerima</th>
+                            <th className="p-3">Nominal</th>
+                            <th className="p-3">Keterangan</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 text-gray-700 font-medium">
+                          {refLogs && refLogs.length > 0 ? (
+                            refLogs.map((log: any, idx: number) => (
+                              <tr key={log.id || idx} className="hover:bg-gray-50/80">
+                                <td className="p-3 text-[10px] text-gray-500 font-mono">
+                                  {log.createdAt ? new Date(log.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}
+                                </td>
+                                <td className="p-3">
+                                  <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-bold text-[9px] rounded-full">
+                                    Tier {log.tierLevel}
+                                  </span>
+                                </td>
+                                <td className="p-3 font-bold text-gray-900">
+                                  {log.recipientType === 'REFERRER' ? 'Merchant (Referrer)' : log.recipientType === 'KOMUNITAS' ? 'Kas Komunitas' : 'Saloka.id Platform'}
+                                </td>
+                                <td className="p-3">
+                                  <span className={`px-2 py-0.5 font-bold text-[9px] rounded-full ${
+                                    log.recipientType === 'REFERRER' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                    log.recipientType === 'KOMUNITAS' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                    'bg-purple-50 text-purple-700 border border-purple-200'
+                                  }`}>
+                                    {log.recipientType}
+                                  </span>
+                                </td>
+                                <td className="p-3 font-mono font-extrabold text-[#0F5132]">
+                                  Rp {Number(log.amount || 0).toLocaleString('id-ID')}
+                                </td>
+                                <td className="p-3 text-[11px] text-gray-500">
+                                  {log.description || '-'}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="p-6 text-center text-xs text-gray-400 font-medium">
+                                Belum ada histori transaksi referral downline.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>

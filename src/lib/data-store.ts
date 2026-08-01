@@ -7634,47 +7634,13 @@ export const DataStore = {
           }
         })
 
-        // Trigger 3-coin referral commission
-        if (membership.community.type === 'KOPERASI' || membership.community.category === 'PAID') {
-          const userObj = membership.user
-          const community = membership.community
-          if (userObj.parentAffiliateId && community.coinBalance >= 3) {
-            const referrerId = userObj.parentAffiliateId
-            
-            await db.community.update({
-              where: { id: community.id },
-              data: {
-                coinBalance: { decrement: 3 },
-                isRecruitmentLocked: community.coinBalance - 3 <= 0 ? true : community.isRecruitmentLocked
-              }
-            })
-
-            await db.user.update({
-              where: { id: referrerId },
-              data: { coinBalance: { increment: 3 } }
-            })
-
-            await db.coinTransaction.create({
-              data: {
-                type: 'REFERRAL_COMMISSION',
-                amount: 3,
-                description: `Komisi referral cross-community dari pendaftaran ${userObj.name} ke ${community.name}`,
-                userId: referrerId,
-                relatedUserId: userObj.id
-              }
-            })
-
-            await db.coinTransaction.create({
-              data: {
-                type: 'REFERRAL_COMMISSION',
-                amount: -3,
-                description: `Biaya komisi referral untuk anggota baru ${userObj.name}`,
-                userId: community.ketuaId,
-                communityId: community.id,
-                relatedUserId: userObj.id
-              }
-            })
-          }
+        // Trigger multi-tier community referral distribution
+        if (membership.community.category === 'PAID' || membership.community.type === 'KOPERASI') {
+          await this.processMultiTierCommunityReferral({
+            communityId: membership.community.id,
+            buyerId: membership.user.id,
+            totalFee: membership.community.joinFee || 100000
+          })
         }
         return { success: true, membership }
       } catch (e: any) {
@@ -8604,9 +8570,268 @@ export const DataStore = {
     }
     if ((globalThis as any).__mockMerchantFundingProjects) {
       ;(globalThis as any).__mockMerchantFundingProjects = (globalThis as any).__mockMerchantFundingProjects.filter((p: any) => p.id !== id)
+      } catch (_) {}
+    }
+    if ((globalThis as any).__mockMerchantFundingProjects) {
+      ;(globalThis as any).__mockMerchantFundingProjects = (globalThis as any).__mockMerchantFundingProjects.filter((p: any) => p.id !== id)
       saveMockDb()
     }
     return { success: true }
+  },
+
+  async findUserByReferralCode(code: string) {
+    syncMockDb()
+    if (!code) return null
+    const cleanCode = code.trim().toUpperCase()
+
+    if (await isDbConnected()) {
+      try {
+        const u = await db.user.findFirst({
+          where: {
+            OR: [
+              { referralCode: cleanCode },
+              { username: cleanCode },
+              { id: code },
+              { email: code }
+            ]
+          }
+        })
+        if (u) return u
+      } catch (_) {}
+    }
+
+    const mock = globalMockUsers.find((u: any) =>
+      (u.referralCode && u.referralCode.toUpperCase() === cleanCode) ||
+      (u.username && u.username.toUpperCase() === cleanCode) ||
+      u.id === code ||
+      u.email === code
+    )
+    return mock || null
+  },
+
+  async updateCommunityReferralConfig(data: {
+    communityId: string
+    joinFee: number
+    referralBudget: number
+    communityProfitShare: number
+    maxTiers: number
+    tierPercentages: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const updated = await db.community.update({
+          where: { id: data.communityId },
+          data: {
+            joinFee: data.joinFee,
+            referralBudget: data.referralBudget,
+            communityProfitShare: data.communityProfitShare,
+            maxTiers: data.maxTiers,
+            tierPercentages: data.tierPercentages
+          }
+        })
+        return updated
+      } catch (_) {}
+    }
+
+    const communities = (globalThis as any).__mockCommunities || []
+    const idx = communities.findIndex((c: any) => c.id === data.communityId)
+    if (idx !== -1) {
+      communities[idx] = {
+        ...communities[idx],
+        joinFee: data.joinFee,
+        referralBudget: data.referralBudget,
+        communityProfitShare: data.communityProfitShare,
+        maxTiers: data.maxTiers,
+        tierPercentages: data.tierPercentages,
+        updatedAt: new Date()
+      }
+      saveMockDb()
+      return communities[idx]
+    }
+    throw new Error('Komunitas tidak ditemukan.')
+  },
+
+  async getCommunityReferralLogs(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const logs = await db.communityReferralLog.findMany({
+          where: { communityId },
+          orderBy: { createdAt: 'desc' },
+          take: 100
+        })
+        return logs
+      } catch (_) {}
+    }
+
+    const logs = (globalThis as any).__mockCommunityReferralLogs || []
+    return logs.filter((l: any) => l.communityId === communityId)
+  },
+
+  async processMultiTierCommunityReferral(data: {
+    communityId: string
+    buyerId: string
+    totalFee: number
+  }) {
+    syncMockDb()
+    const { communityId, buyerId, totalFee } = data
+
+    let community: any = null
+    let buyer: any = null
+
+    if (await isDbConnected()) {
+      try {
+        community = await db.community.findUnique({ where: { id: communityId } })
+        buyer = await db.user.findUnique({ where: { id: buyerId } })
+      } catch (_) {}
+    }
+
+    if (!community) {
+      const communities = (globalThis as any).__mockCommunities || []
+      community = communities.find((c: any) => c.id === communityId)
+    }
+
+    if (!buyer) {
+      buyer = globalMockUsers.find((u: any) => u.id === buyerId)
+    }
+
+    if (!community || !buyer) return { error: 'Komunitas atau user tidak ditemukan.' }
+
+    if (community.category === 'FREE' || totalFee <= 0) {
+      return { success: true, processed: false, reason: 'Komunitas gratis' }
+    }
+
+    const referralBudget = community.referralBudget ?? 40000
+    const communityProfitShare = community.communityProfitShare ?? Math.max(0, totalFee - referralBudget)
+    const maxTiers = community.maxTiers ?? 3
+
+    let percentages: number[] = [50, 30, 20]
+    if (community.tierPercentages) {
+      try {
+        percentages = JSON.parse(community.tierPercentages)
+      } catch (_) {}
+    }
+
+    const ketuaId = community.ketuaId
+    if (ketuaId && communityProfitShare > 0) {
+      if (await isDbConnected()) {
+        try {
+          const w = await db.wallet.findUnique({ where: { userId: ketuaId } })
+          if (w) {
+            await db.wallet.update({ where: { userId: ketuaId }, data: { balance: { increment: communityProfitShare } } })
+            await db.walletTransaction.create({
+              data: {
+                walletId: w.id,
+                amount: communityProfitShare,
+                type: 'COMMISSION',
+                description: `Keuntungan Kas Komunitas ${community.name} dari pendaftaran ${buyer.name}`
+              }
+            })
+          }
+        } catch (_) {}
+      } else {
+        const kw = globalMockWallets.find(w => w.userId === ketuaId)
+        if (kw) kw.balance += communityProfitShare
+      }
+    }
+
+    let currentReferrerId: string | null = buyer.parentAffiliateId || null
+    const logs: any[] = []
+
+    for (let tier = 1; tier <= maxTiers; tier++) {
+      const pct = percentages[tier - 1] || 0
+      const tierAmount = (referralBudget * pct) / 100
+      if (tierAmount <= 0) continue
+
+      let recipientId: string | null = null
+      let recipientType: 'REFERRER' | 'KOMUNITAS' | 'PLATFORM' = 'PLATFORM'
+      let recipientName = 'Saloka.id Platform'
+
+      if (currentReferrerId) {
+        let refUser: any = null
+        if (await isDbConnected()) {
+          try {
+            refUser = await db.user.findUnique({ where: { id: currentReferrerId } })
+          } catch (_) {}
+        }
+        if (!refUser) {
+          refUser = globalMockUsers.find((u: any) => u.id === currentReferrerId)
+        }
+
+        if (refUser) {
+          recipientId = refUser.id
+          recipientType = 'REFERRER'
+          recipientName = refUser.name
+          currentReferrerId = refUser.parentAffiliateId || null
+        } else {
+          currentReferrerId = null
+        }
+      }
+
+      if (!recipientId) {
+        if (tier === 1) {
+          recipientId = ketuaId
+          recipientType = 'KOMUNITAS'
+          recipientName = `Kas Komunitas ${community.name}`
+        } else {
+          recipientId = 'user-admin-1'
+          recipientType = 'PLATFORM'
+          recipientName = 'Saloka.id Platform'
+        }
+      }
+
+      if (recipientId && tierAmount > 0) {
+        if (await isDbConnected()) {
+          try {
+            const rWallet = await db.wallet.findUnique({ where: { userId: recipientId } })
+            if (rWallet) {
+              await db.wallet.update({ where: { userId: recipientId }, data: { balance: { increment: tierAmount } } })
+              await db.walletTransaction.create({
+                data: {
+                  walletId: rWallet.id,
+                  amount: tierAmount,
+                  type: 'COMMISSION',
+                  description: `Komisi Referral Tier ${tier} (${recipientType}) Komunitas ${community.name} dari pendaftaran ${buyer.name}`
+                }
+              })
+              await db.communityReferralLog.create({
+                data: {
+                  communityId,
+                  buyerId,
+                  referrerId: recipientType === 'REFERRER' ? recipientId : null,
+                  tierLevel: tier,
+                  amount: tierAmount,
+                  recipientType,
+                  description: `Komisi Tier ${tier} (${recipientType}: ${recipientName}) sebesar Rp ${tierAmount.toLocaleString('id-ID')}`
+                }
+              })
+            }
+          } catch (_) {}
+        } else {
+          const rw = globalMockWallets.find(w => w.userId === recipientId)
+          if (rw) rw.balance += tierAmount
+
+          if (!(globalThis as any).__mockCommunityReferralLogs) (globalThis as any).__mockCommunityReferralLogs = []
+          const logEntry = {
+            id: `crl-${Date.now()}-${tier}`,
+            communityId,
+            buyerId,
+            referrerId: recipientType === 'REFERRER' ? recipientId : null,
+            tierLevel: tier,
+            amount: tierAmount,
+            recipientType,
+            description: `Komisi Tier ${tier} (${recipientType}: ${recipientName}) sebesar Rp ${tierAmount.toLocaleString('id-ID')}`,
+            createdAt: new Date()
+          }
+          ;(globalThis as any).__mockCommunityReferralLogs.push(logEntry)
+          logs.push(logEntry)
+        }
+      }
+    }
+
+    saveMockDb()
+    return { success: true, processed: true, logs }
   }
 }
 

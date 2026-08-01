@@ -128,6 +128,7 @@ model User {
   id           String        @id @default(uuid())
   email        String        @unique
   username     String?       @unique // Kode referral (unik, tidak bisa sama)
+  referralCode String?       @unique // Kode 6-digit referral unik per user
   name         String
   image        String?       // Profile picture URL
   passwordHash String
@@ -550,6 +551,12 @@ model Community {
   minCoinRequired   Float             @default(100.0)  // Min topup awal (100 FREE, 1000 PAID)
   isRecruitmentLocked Boolean         @default(false)  // Auto-lock bila saldo coin = 0
 
+  // Multi-Tier Referral System (Customizable 3-5 Tiers)
+  referralBudget      Float             @default(40000)  // Dana referral (contoh: 40k dari 100k join fee)
+  communityProfitShare Float            @default(60000)  // Keuntungan komunitas (contoh: 60k dari 100k join fee)
+  maxTiers            Int               @default(3)      // Jumlah tier (3, 4, atau 5)
+  tierPercentages     String            @default("[50,30,20]") // JSON array persentase komisi per tier
+
   isSuspended       Boolean           @default(false)
   isVerified        Boolean           @default(false)
   createdAt         DateTime          @default(now())
@@ -567,6 +574,20 @@ model Community {
 
   // Coin komunitas
   coinTransactions  CoinTransaction[] @relation("CommunityCoinTx")
+  referralLogs      CommunityReferralLog[]
+}
+
+model CommunityReferralLog {
+  id            String    @id @default(uuid())
+  communityId   String
+  community     Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  buyerId       String
+  referrerId    String?   // null jika recipientType = 'KOMUNITAS' atau 'PLATFORM'
+  tierLevel     Int       // 1, 2, 3, 4, atau 5
+  amount        Float     // Nominal komisi (Rupiah)
+  recipientType String    // 'REFERRER' | 'KOMUNITAS' | 'PLATFORM'
+  description   String
+  createdAt     DateTime  @default(now())
 }
 
 model CommunityMembership {
