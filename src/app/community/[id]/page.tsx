@@ -3263,7 +3263,7 @@ export default function CommunityDetailPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-gray-700 mb-1">Tipe Simpanan</label>
-                    <select value={prodType} onChange={e => setProdType(e.target.value)} className="w-full border rounded-xl px-3 py-2 text-xs">
+                    <select value={prodType} onChange={e => setProdType(e.target.value)} disabled={isDefaultProduct} className="w-full border rounded-xl px-3 py-2 text-xs disabled:bg-gray-100 disabled:text-gray-400">
                       <option value="POKOK">Simpanan Pokok</option>
                       <option value="WAJIB">Simpanan Wajib</option>
                       <option value="SUKARELA">Simpanan Sukarela</option>
@@ -3284,13 +3284,13 @@ export default function CommunityDetailPage() {
                   </div>
                   <div>
                     <label className="block font-bold text-gray-700 mb-1">Nominal (Rp) *</label>
-                    <input type="number" required value={prodAmount} onChange={e => setProdAmount(e.target.value)} placeholder="100000" className="w-full border rounded-xl px-3 py-2 text-xs font-mono font-bold" />
+                    <input type="number" required value={prodAmount} onChange={e => setProdAmount(e.target.value)} disabled={isDefaultProduct} placeholder="100000" className="w-full border rounded-xl px-3 py-2 text-xs font-mono font-bold disabled:bg-gray-100 disabled:text-gray-400" />
                   </div>
                 </div>
 
                 <div>
                   <label className="block font-bold text-gray-700 mb-1">Keterangan Periode (Teks Short)</label>
-                  <input type="text" value={prodPeriod} onChange={e => setProdPeriod(e.target.value)} placeholder="e.g. Setor Kapan Saja / Per Bulan" className="w-full border rounded-xl px-3 py-2 text-xs" />
+                  <input type="text" value={prodPeriod} onChange={e => setProdPeriod(e.target.value)} disabled={isDefaultProduct} placeholder="e.g. Setor Kapan Saja / Per Bulan" className="w-full border rounded-xl px-3 py-2 text-xs disabled:bg-gray-100 disabled:text-gray-400" />
                 </div>
 
                 <div>
