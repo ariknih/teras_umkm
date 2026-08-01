@@ -381,165 +381,177 @@ export default function CommunityDirectoryPage() {
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleCreateCommunity} className="space-y-6">
+                <form onSubmit={handleCreateCommunity} className="space-y-5">
                   {formError && (
                     <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 font-semibold">{formError}</div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* BAGIAN 1: INFO DASAR */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary"></span>
+                      <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Informasi Dasar Komunitas</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Nama Komunitas <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          required
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="e.g. Asosiasi Kuliner Kreatif Jogja"
+                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Jenis Komunitas <span className="text-red-500">*</span></label>
+                        <select
+                          value={type}
+                          onChange={(e) => setType(e.target.value as any)}
+                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                        >
+                          <option value="PERKUMPULAN">Perkumpulan (Gratis / Free)</option>
+                          <option value="KOPERASI">Koperasi Produksi</option>
+                        </select>
+                      </div>
+                    </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Nama Komunitas</label>
-                      <input
-                        type="text"
+                      <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Deskripsi Komunitas <span className="text-red-500">*</span></label>
+                      <textarea
                         required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Asosiasi Kuliner Kreatif Jogja"
-                        className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Jelaskan visi misi, cakupan anggota merchant, dan target pasar komunitas bisnis Anda..."
+                        rows={3}
+                        className="w-full px-3 py-2 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 resize-none transition-all"
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Jenis Komunitas</label>
-                      <select
-                        value={type}
-                        onChange={(e) => setType(e.target.value as any)}
-                        className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
-                      >
-                        <option value="PERKUMPULAN">Perkumpulan (Gratis / Free)</option>
-                        <option value="KOPERASI">Koperasi Produksi</option>
-                      </select>
+                  </div>
+
+                  {/* BAGIAN 2: LEGALITAS */}
+                  <div className="space-y-3 pt-1 border-t border-black/5">
+                    <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary"></span>
+                      <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Legalitas Organisasi</h4>
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Deskripsi Komunitas</label>
-                    <textarea
-                      required
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Jelaskan visi misi, cakupan anggota merchant, dan target pasar komunitas bisnis Anda..."
-                      rows={3}
-                      className="w-full px-3 py-2 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50 resize-none"
-                    />
-                  </div>
-
-                  {/* Legalitas */}
-                  <div className="space-y-3 pt-2 border-t border-black/5">
-                    <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5" />
-                      Legalitas Organisasi
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Akta Notaris Pendirian</label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Akta Notaris</label>
                         <input
                           type="text"
                           value={aktaNotaris}
                           onChange={(e) => setAktaNotaris(e.target.value)}
-                          placeholder="e.g. Akta Notaris No. 24 Tgl 12 Jan 2026"
-                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                          placeholder="No. Akta Notaris"
+                          className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Nomor AHU Kemenkumham</label>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Nomor AHU</label>
                         <input
                           type="text"
                           value={nomorAhu}
                           onChange={(e) => setNomorAhu(e.target.value)}
-                          placeholder="e.g. AHU-0001234.AH.01.07"
-                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                          placeholder="AHU-xxxxx"
+                          className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Nomor NPWP Organisasi</label>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">NPWP Organisasi</label>
                         <input
                           type="text"
                           value={nomorNpwp}
                           onChange={(e) => setNomorNpwp(e.target.value)}
-                          placeholder="e.g. 12.345.678.9-012.000"
-                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                          placeholder="xx.xxx.xxx.x-xxx.xxx"
+                          className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Domisili Organisasi</label>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Domisili</label>
                         <input
                           type="text"
                           value={domisili}
                           onChange={(e) => setDomisili(e.target.value)}
-                          placeholder="e.g. Kota Yogyakarta, DIY"
-                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                          placeholder="Kota / Kabupaten"
+                          className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Koperasi Financial Fields */}
+                  {/* BAGIAN 3: FINANSIAL KOPERASI */}
                   {type === 'KOPERASI' && (
-                    <div className="space-y-3 pt-2 border-t border-black/5 animate-in fade-in duration-300">
-                      <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
-                        Pengaturan Finansial Koperasi
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3 pt-1 border-t border-black/5">
+                      <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <h4 className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">Pengaturan Finansial Koperasi</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Simpanan Pokok / Biaya Masuk (Rp)</label>
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Simpanan Pokok / Biaya Masuk (Rp) <span className="text-red-500">*</span></label>
                           <input
                             type="number"
                             required
                             value={joinFee}
                             onChange={(e) => setJoinFee(e.target.value)}
                             placeholder="e.g. 150000"
-                            className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                            className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Iuran Wajib Bulanan (Rp)</label>
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Iuran Wajib Bulanan (Rp) <span className="text-red-500">*</span></label>
                           <input
                             type="number"
                             required
                             value={monthlyFee}
                             onChange={(e) => setMonthlyFee(e.target.value)}
                             placeholder="e.g. 50000"
-                            className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                            className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                           />
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Media & Links */}
-                  <div className="space-y-3 pt-2 border-t border-black/5">
-                    <h4 className="text-[11px] font-bold text-primary uppercase tracking-widest">
-                      Media, Kontak & Tautan Diskusi
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* BAGIAN 4: KONTAK & MEDIA */}
+                  <div className="space-y-3 pt-1 border-t border-black/5">
+                    <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary"></span>
+                      <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Media, Kontak & Tautan Diskusi</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider font-geist">No. Kontak Penanggung Jawab</label>
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">No. Kontak Penanggung Jawab <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           required
                           value={kontakPj}
                           onChange={(e) => setKontakPj(e.target.value)}
                           placeholder="e.g. 081234567890"
-                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider font-geist">Tautan Grup WhatsApp Diskusi</label>
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Tautan Grup WhatsApp Diskusi</label>
                         <input
                           type="text"
                           value={waGroupLink}
                           onChange={(e) => setWaGroupLink(e.target.value)}
                           placeholder="e.g. https://chat.whatsapp.com/..."
-                          className="w-full h-10 px-3 bg-[#F5F7F9] border border-black/10 rounded-xl text-xs text-[#111111] focus:outline-none focus:border-primary/50"
+                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                         />
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {/* Avatar Upload */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Logo Komunitas / Avatar</label>
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Logo Komunitas / Avatar</label>
                         {avatarUrl ? (
-                          <div className="relative border border-black/10 rounded-xl overflow-hidden bg-[#F5F7F9] p-1.5 flex items-center justify-between">
+                          <div className="relative border border-black/10 rounded-lg bg-[#F5F7F9] p-1.5 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <img src={avatarUrl} alt="Logo Preview" className="w-10 h-10 object-cover rounded-lg" />
-                              <span className="text-[10px] font-medium text-[#111111] truncate max-w-[120px]">Logo Terpilih</span>
+                              <img src={avatarUrl} alt="Logo Preview" className="w-9 h-9 object-cover rounded-lg" />
+                              <span className="text-[10px] font-medium text-[#111111] truncate max-w-[100px]">Logo Terpilih</span>
                             </div>
                             <button
                               type="button"
@@ -550,7 +562,7 @@ export default function CommunityDirectoryPage() {
                             </button>
                           </div>
                         ) : (
-                          <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-xl h-14 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
+                          <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-lg h-12 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
                             <input
                               type="file"
                               accept="image/*"
@@ -576,13 +588,14 @@ export default function CommunityDirectoryPage() {
                         )}
                       </div>
 
+                      {/* Cover Upload */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Banner Sampul / Cover</label>
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Banner Sampul / Cover</label>
                         {coverUrl ? (
-                          <div className="relative border border-black/10 rounded-xl overflow-hidden bg-[#F5F7F9] p-1.5 flex items-center justify-between">
+                          <div className="relative border border-black/10 rounded-lg bg-[#F5F7F9] p-1.5 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <img src={coverUrl} alt="Cover Preview" className="w-10 h-10 object-cover rounded-lg" />
-                              <span className="text-[10px] font-medium text-[#111111] truncate max-w-[120px]">Banner Terpilih</span>
+                              <img src={coverUrl} alt="Cover Preview" className="w-9 h-9 object-cover rounded-lg" />
+                              <span className="text-[10px] font-medium text-[#111111] truncate max-w-[100px]">Banner Terpilih</span>
                             </div>
                             <button
                               type="button"
@@ -593,7 +606,7 @@ export default function CommunityDirectoryPage() {
                             </button>
                           </div>
                         ) : (
-                          <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-xl h-14 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
+                          <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-lg h-12 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
                             <input
                               type="file"
                               accept="image/*"
@@ -618,28 +631,28 @@ export default function CommunityDirectoryPage() {
                           </label>
                         )}
                       </div>
-
-                      {/* FITUR VERIFIKASI KYC ANGGOTA */}
-                      <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl flex items-center justify-between gap-3">
-                        <div>
-                          <label className="text-xs font-extrabold text-[#0F5132] block font-sora">
-                            Wajibkan Verifikasi KYC Anggota
-                          </label>
-                          <p className="text-[10px] text-emerald-800/80 font-medium mt-0.5 leading-relaxed">
-                            Jika diaktifkan, calon anggota harus lulus verifikasi KYC (KTP/Selfie) terlebih dahulu sebelum dapat bergabung.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsKycRequired(!isKycRequired)}
-                          className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
-                            isKycRequired ? 'bg-[#2DB24A] justify-end' : 'bg-gray-300 justify-start'
-                          }`}
-                        >
-                          <span className="bg-white w-4 h-4 rounded-full shadow-xs transition-all" />
-                        </button>
-                      </div>
                     </div>
+                  </div>
+
+                  {/* BAGIAN 5: PENGATURAN KYC ANGGOTA */}
+                  <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-xl flex items-center justify-between gap-3">
+                    <div>
+                      <label className="text-xs font-extrabold text-[#0F5132] block font-sora">
+                        Wajibkan Verifikasi KYC Anggota
+                      </label>
+                      <p className="text-[10px] text-emerald-800/80 font-medium mt-0.5 leading-relaxed">
+                        Jika diaktifkan, calon anggota harus lulus verifikasi KYC (KTP/Selfie) sebelum dapat bergabung.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsKycRequired(!isKycRequired)}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
+                        isKycRequired ? 'bg-[#2DB24A] justify-end' : 'bg-gray-300 justify-start'
+                      }`}
+                    >
+                      <span className="bg-white w-4 h-4 rounded-full shadow-xs transition-all" />
+                    </button>
                   </div>
 
                   <button

@@ -2002,6 +2002,10 @@ function loadMockDb(): {
       if (parsed.cooperativeLoans) {
         parsed.cooperativeLoans = parsed.cooperativeLoans.map((l: any) => ({ ...l, createdAt: new Date(l.createdAt), updatedAt: new Date(l.updatedAt) }))
       }
+      // Load global KYC setting at startup
+      if (parsed.globalKycRequired !== undefined) {
+        ;(globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
+      }
       return parsed
     }
   } catch (e) {
@@ -2048,7 +2052,8 @@ function saveMockDb() {
       orderTrackings: globalMockOrderTrackings,
       communities: (globalThis as any).__mockCommunities,
       communityMemberships: (globalThis as any).__mockCommunityMemberships,
-      cooperativeLoans: (globalThis as any).__mockCooperativeLoans
+      cooperativeLoans: (globalThis as any).__mockCooperativeLoans,
+      globalKycRequired: (globalThis as any).__isKycRequiredToCreateCommunity
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2153,6 +2158,9 @@ function syncMockDb() {
           createdAt: new Date(l.createdAt),
           updatedAt: new Date(l.updatedAt)
         }))
+      }
+      if (parsed.globalKycRequired !== undefined) {
+        (globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
       }
     }
   } catch (e) {
@@ -6285,7 +6293,14 @@ export const DataStore = {
 
   // ─── GLOBAL KYC SETTINGS FOR COMMUNITY CREATION ────────────────────────────
   async getGlobalKycRequirementToCreateCommunity(): Promise<boolean> {
+    if (await isDbConnected()) {
+      try {
+        // Use a system setting stored in UserSetting or just use the mock fallback
+        // since Prisma schema may not have a global settings table
+      } catch (e) { /* fallback to mock */ }
+    }
     syncMockDb()
+    // Default true if never been set
     if ((globalThis as any).__isKycRequiredToCreateCommunity === undefined) {
       (globalThis as any).__isKycRequiredToCreateCommunity = true
     }

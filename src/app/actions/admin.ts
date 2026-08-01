@@ -448,3 +448,25 @@ export async function updateAdminPermissionsAction(adminId: string, permissions:
   }
 }
 
+// ─── GLOBAL KYC SETTING ACTIONS ──────────────────────────────────────────────
+export async function getGlobalKycSettingAction() {
+  try {
+    const required = await DataStore.getGlobalKycRequirementToCreateCommunity()
+    return { required }
+  } catch (e: any) {
+    return { required: true }
+  }
+}
+
+export async function updateGlobalKycSettingAction(required: boolean) {
+  await ensureSuperAdmin()
+  try {
+    await DataStore.setGlobalKycRequirementToCreateCommunity(required)
+    revalidatePath('/admin')
+    revalidatePath('/community')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengubah pengaturan KYC global.' }
+  }
+}
+
