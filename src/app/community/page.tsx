@@ -549,6 +549,8 @@ export default function CommunityDirectoryPage() {
                                 <div className="text-right">
                                   <h5 className="font-black text-xs text-[#0F5132] font-sora">BASIC</h5>
                                   <span className="text-[8px] text-emerald-700/80 font-bold block">Paket Dasar</span>
+                                  <span className="text-[9px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 99rb/bln</span>
+                                  <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 999rb/thn</span>
                                 </div>
                               </div>
 
@@ -593,6 +595,8 @@ export default function CommunityDirectoryPage() {
                                 <div className="text-right">
                                   <h5 className="font-black text-xs text-blue-800 font-sora">PLUS</h5>
                                   <span className="text-[8px] text-blue-600/80 font-bold block">Paket Pengembangan</span>
+                                  <span className="text-[9px] text-blue-600 font-extrabold block mt-0.5">Rp 199rb/bln</span>
+                                  <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 1.999rb/thn</span>
                                 </div>
                               </div>
 
@@ -641,6 +645,8 @@ export default function CommunityDirectoryPage() {
                                 <div className="text-right">
                                   <h5 className="font-black text-xs text-purple-800 font-sora">PRO</h5>
                                   <span className="text-[8px] text-purple-600/80 font-bold block">Paket Profesional</span>
+                                  <span className="text-[9px] text-purple-600 font-extrabold block mt-0.5">Rp 399rb/bln</span>
+                                  <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 3.999rb/thn</span>
                                 </div>
                               </div>
 
