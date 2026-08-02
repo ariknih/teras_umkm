@@ -443,9 +443,10 @@ export default function CommunityDirectoryPage() {
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                       <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Akta Notaris</label>
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Akta Notaris <span className="text-red-500">*</span></label>
                         <input
                           type="text"
+                          required
                           value={aktaNotaris}
                           onChange={(e) => setAktaNotaris(e.target.value)}
                           placeholder="No. Akta Notaris"
@@ -453,9 +454,10 @@ export default function CommunityDirectoryPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Nomor AHU</label>
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Nomor AHU <span className="text-red-500">*</span></label>
                         <input
                           type="text"
+                          required
                           value={nomorAhu}
                           onChange={(e) => setNomorAhu(e.target.value)}
                           placeholder="AHU-xxxxx"
@@ -463,9 +465,10 @@ export default function CommunityDirectoryPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">NPWP Organisasi</label>
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">NPWP Organisasi <span className="text-red-500">*</span></label>
                         <input
                           type="text"
+                          required
                           value={nomorNpwp}
                           onChange={(e) => setNomorNpwp(e.target.value)}
                           placeholder="xx.xxx.xxx.x-xxx.xxx"
@@ -473,9 +476,10 @@ export default function CommunityDirectoryPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Domisili</label>
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Domisili <span className="text-red-500">*</span></label>
                         <input
                           type="text"
+                          required
                           value={domisili}
                           onChange={(e) => setDomisili(e.target.value)}
                           placeholder="Kota / Kabupaten"

@@ -241,6 +241,10 @@ export async function createIndukCommunity(formData: FormData) {
     return { error: 'Nama dan deskripsi komunitas wajib diisi.' }
   }
 
+  if (!aktaNotaris || !nomorAhu || !nomorNpwp || !domisili) {
+    return { error: 'Legalitas organisasi (Akta Notaris, AHU, NPWP, Domisili) wajib diisi.' }
+  }
+
   if (type !== 'PERKUMPULAN' && type !== 'KOPERASI') {
     return { error: 'Tipe komunitas tidak valid.' }
   }
