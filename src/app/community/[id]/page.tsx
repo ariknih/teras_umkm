@@ -977,6 +977,7 @@ export default function CommunityDetailPage() {
 
   const isKoperasi = typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi')
   const isKoperasiPremium = isKoperasi && (community?.joinFee > 0 || community?.monthlyFee > 0 || community?.category === 'PAID')
+  const isDefaultProduct = editingProduct && (editingProduct.type === 'POKOK' || editingProduct.type === 'WAJIB')
   const isKuliner = !isKoperasi && (catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner'))
   const isBusiness = !isKoperasi && !isKuliner && (catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm'))
   const isEducation = !isKoperasi && !isKuliner && !isBusiness && (catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan'))
