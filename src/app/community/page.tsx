@@ -268,87 +268,106 @@ export default function CommunityDirectoryPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCommunities.map((c) => (
-              <div
-                key={c.id}
-                className="border border-black/5 bg-white rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl hover:border-primary/20 transition-all duration-300 group"
-              >
-                {/* Banner */}
-                <div className="h-28 w-full bg-gradient-to-r from-neutral-200 via-neutral-100 to-green-500/10 relative overflow-hidden">
-                  <img 
-                    src={
-                      c.coverUrl || 
-                      (c.name.toLowerCase().includes('perahu') 
-                        ? "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80" 
-                        : c.name.toLowerCase().includes('koperasi') 
-                          ? "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80" 
-                          : "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80")
-                    } 
-                    alt={c.name} 
-                    className="object-cover w-full h-full" 
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
-                </div>
+            {filteredCommunities.map((c) => {
+              // Parse coopTier
+              let coopTier = 'BASIC'
+              if (c.type === 'KOPERASI') {
+                if (c.landingPageConfig) {
+                  try {
+                    const cfg = JSON.parse(c.landingPageConfig)
+                    if (cfg.coopTier) coopTier = cfg.coopTier
+                  } catch (_) {}
+                } else if (c.joinFee > 0 || c.monthlyFee > 0 || c.category === 'PAID') {
+                  coopTier = 'PLUS'
+                }
+              }
 
-                {/* Details */}
-                <div className="p-5 flex-grow space-y-3.5">
-                  <div className="flex gap-4">
-                    {/* Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-white border border-primary/20 flex items-center justify-center font-bold text-lg text-primary shadow -mt-10 z-10 shrink-0 overflow-hidden">
-                      <img 
-                        src={
-                          c.avatarUrl || 
-                          (c.name.toLowerCase().includes('perahu') 
-                            ? "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=200&h=200&fit=crop&q=80" 
-                            : c.name.toLowerCase().includes('koperasi') 
-                              ? "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=200&h=200&fit=crop&q=80" 
-                              : "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=200&h=200&fit=crop&q=80")
-                        } 
-                        alt={c.name} 
-                        className="object-cover w-full h-full" 
-                      />
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-sora text-sm font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
-                      <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider mt-1 ${
-                        c.type === 'KOPERASI'
-                          ? (c.joinFee > 0 || c.monthlyFee > 0 || c.category === 'PAID')
-                            ? 'bg-amber-600/10 border-amber-600/35 text-amber-700'
-                            : 'bg-amber-500/10 border-amber-500/35 text-amber-600'
-                          : (c.category === 'PAID' || c.joinFee > 0 || c.monthlyFee > 0)
-                            ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                            : 'bg-cyan-500/10 border-cyan-500/35 text-cyan-600'
-                      }`}>
-                        {c.type === 'KOPERASI'
-                          ? (c.joinFee > 0 || c.monthlyFee > 0 || c.category === 'PAID')
-                            ? 'KOPERASI PREMIUM'
-                            : 'KOPERASI'
-                          : (c.category === 'PAID' || c.joinFee > 0 || c.monthlyFee > 0)
-                            ? 'PERKUMPULAN PREMIUM'
-                            : 'PERKUMPULAN'}
-                      </span>
-                    </div>
+              return (
+                <div
+                  key={c.id}
+                  className="border border-black/5 bg-white rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl hover:border-primary/20 transition-all duration-300 group"
+                >
+                  {/* Banner */}
+                  <div className="h-28 w-full bg-gradient-to-r from-neutral-200 via-neutral-100 to-green-500/10 relative overflow-hidden">
+                    <img 
+                      src={
+                        c.coverUrl || 
+                        (c.name.toLowerCase().includes('perahu') 
+                          ? "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80" 
+                          : c.name.toLowerCase().includes('koperasi') 
+                            ? "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80" 
+                            : "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80")
+                      } 
+                      alt={c.name} 
+                      className="object-cover w-full h-full" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
                   </div>
 
-                  <p className="text-xs text-text-secondary leading-relaxed line-clamp-3">{c.description}</p>
-                </div>
+                  {/* Details */}
+                  <div className="p-5 flex-grow space-y-3.5">
+                    <div className="flex gap-4">
+                      {/* Icon */}
+                      <div className="w-12 h-12 rounded-xl bg-white border border-primary/20 flex items-center justify-center font-bold text-lg text-primary shadow -mt-10 z-10 shrink-0 overflow-hidden">
+                        <img 
+                          src={
+                            c.avatarUrl || 
+                            (c.name.toLowerCase().includes('perahu') 
+                              ? "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=200&h=200&fit=crop&q=80" 
+                              : c.name.toLowerCase().includes('koperasi') 
+                                ? "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=200&h=200&fit=crop&q=80" 
+                                : "https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=200&h=200&fit=crop&q=80")
+                          } 
+                          alt={c.name} 
+                          className="object-cover w-full h-full" 
+                        />
+                      </div>
+                      
+                      <div>
+                        <h3 className="font-sora text-sm font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
+                        <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider mt-1 ${
+                          c.type === 'KOPERASI'
+                            ? coopTier === 'PRO'
+                              ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
+                              : coopTier === 'PLUS'
+                                ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
+                                : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
+                            : (c.category === 'PAID' || c.joinFee > 0 || c.monthlyFee > 0)
+                              ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
+                              : 'bg-cyan-500/10 border-cyan-500/35 text-cyan-600'
+                        }`}>
+                          {c.type === 'KOPERASI'
+                            ? coopTier === 'PRO'
+                              ? 'KOPERASI PRO'
+                              : coopTier === 'PLUS'
+                                ? 'KOPERASI PLUS'
+                                : 'KOPERASI BASIC'
+                            : (c.category === 'PAID' || c.joinFee > 0 || c.monthlyFee > 0)
+                              ? 'PERKUMPULAN PREMIUM'
+                              : 'PERKUMPULAN'}
+                        </span>
+                      </div>
+                    </div>
 
-                {/* Footer Action */}
-                <div className="px-5 py-4 border-t border-black/5 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
-                    <Users className="w-3.5 h-3.5 text-primary" />
-                    <span>{c._count?.members || 0} Anggota</span>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-3">{c.description}</p>
                   </div>
-                  <Link
-                    href={`/community/${c.id}`}
-                    className="px-4 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary font-bold text-xs uppercase tracking-wider rounded-lg transition-colors"
-                  >
-                    Buka Komunitas
-                  </Link>
+
+                  {/* Footer Action */}
+                  <div className="px-5 py-4 border-t border-black/5 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs text-text-secondary font-medium">
+                      <Users className="w-3.5 h-3.5 text-primary" />
+                      <span>{c._count?.members || 0} Anggota</span>
+                    </div>
+                    <Link
+                      href={`/community/${c.id}`}
+                      className="px-4 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary font-bold text-xs uppercase tracking-wider rounded-lg transition-colors"
+                    >
+                      Buka Komunitas
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
