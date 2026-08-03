@@ -685,4 +685,34 @@ export async function deleteMerchantFundingProjectAction(id: string, communityId
   return { success: true }
 }
 
+export async function upgradeCommunityTierAction(communityId: string, targetTier: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const community = await DataStore.getCommunityById(communityId)
+  if (!community) return { error: 'Komunitas tidak ditemukan.' }
+  if (community.ketuaId !== user.id && user.role !== 'ADMIN') {
+    return { error: 'Anda tidak memiliki wewenang untuk mengubah komunitas ini.' }
+  }
+
+  let currentCfg: any = {}
+  if (community.landingPageConfig) {
+    try {
+      currentCfg = JSON.parse(community.landingPageConfig)
+    } catch (_) {}
+  }
+
+  currentCfg.coopTier = targetTier
+
+  await DataStore.updateCommunity(communityId, {
+    name: community.name,
+    landingPageConfig: JSON.stringify(currentCfg)
+  })
+
+  revalidatePath(`/community/${communityId}`)
+  revalidatePath('/community')
+  return { success: true }
+}
+
+
 

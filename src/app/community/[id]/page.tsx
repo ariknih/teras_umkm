@@ -19,7 +19,8 @@ import {
   deleteCooperativeProductAction,
   getMerchantFundingProjectsAction,
   createMerchantFundingProjectAction,
-  deleteMerchantFundingProjectAction
+  deleteMerchantFundingProjectAction,
+  upgradeCommunityTierAction
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
@@ -83,7 +84,11 @@ import {
   Landmark,
   Activity,
   ShoppingBag,
-  Sliders
+  Sliders,
+  User,
+  ArrowUpCircle,
+  HelpCircle,
+  Headphones
 } from 'lucide-react'
 
 const SailboatIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -179,6 +184,23 @@ export default function CommunityDetailPage() {
         goeyToast.success('Produk simpanan berhasil dihapus!')
       } else {
         alert(res.error || 'Gagal menghapus produk simpanan.')
+      }
+    })
+  }
+
+  const handleUpgradeTier = async (target: string) => {
+    if (!community) return
+    startTransition(async () => {
+      try {
+        const res = await upgradeCommunityTierAction(community.id, target)
+        if (res.error) {
+          goeyToast.error(res.error)
+        } else {
+          goeyToast.success(`Berhasil upgrade ke Koperasi ${target}!`)
+          window.location.reload()
+        }
+      } catch (err: any) {
+        goeyToast.error(err.message || 'Gagal melakukan upgrade.')
       }
     })
   }
@@ -976,7 +998,18 @@ export default function CommunityDetailPage() {
   const typeLower = (community?.type || '').toLowerCase()
 
   const isKoperasi = typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi')
-  const isKoperasiPremium = isKoperasi && (community?.joinFee > 0 || community?.monthlyFee > 0 || community?.category === 'PAID')
+
+  let coopTier = 'BASIC'
+  if (community?.landingPageConfig) {
+    try {
+      const cfg = JSON.parse(community.landingPageConfig)
+      if (cfg.coopTier) coopTier = cfg.coopTier
+    } catch (_) {}
+  } else if (isKoperasi && (community?.joinFee > 0 || community?.monthlyFee > 0 || community?.category === 'PAID')) {
+    coopTier = 'PLUS'
+  }
+
+  const isKoperasiPremium = isKoperasi && coopTier !== 'BASIC'
   const isDefaultProduct = editingProduct && (editingProduct.type === 'POKOK' || editingProduct.type === 'WAJIB')
   const isKuliner = !isKoperasi && (catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner'))
   const isBusiness = !isKoperasi && !isKuliner && (catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm'))
@@ -1033,7 +1066,7 @@ export default function CommunityDetailPage() {
   const sidebarNavList = isKoperasi ? [
     { id: 'beranda', label: 'Beranda', icon: Home },
     { id: 'simpanan', label: 'Simpanan', icon: Wallet },
-    { id: 'pendanaan', label: 'Pendanaan', icon: Landmark },
+    { id: 'pendanaan', label: 'Pendanaan', icon: Landmark, badge: 'PRO' },
     { id: 'shu', label: 'SHU', icon: PieChart },
     { id: 'marketplace', label: 'Marketplace', icon: Store },
     { id: 'laporan', label: 'Laporan', icon: FileText },
@@ -1157,14 +1190,21 @@ export default function CommunityDetailPage() {
                   <button
                     key={item.id}
                     onClick={() => handleSidebarClick(item.id)}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
                       isActive
                         ? 'bg-[#E8F8EE] text-[#0F5132] shadow-xs'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
-                    <span>{item.label}</span>
+                    <div className="flex items-center gap-3">
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
+                      <span>{item.label}</span>
+                    </div>
+                    {(item as any).badge && (
+                      <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase tracking-wider scale-90 shrink-0">
+                        {(item as any).badge}
+                      </span>
+                    )}
                   </button>
                 )
               })}
@@ -2322,63 +2362,327 @@ export default function CommunityDetailPage() {
             {/* TAB 20: SIMPANAN KOPERASI ───────────────────────────────────────── */}
             {activeSidebarNav === 'simpanan' && (
               <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
-                    <div>
-                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                        <Wallet className="w-6 h-6 text-[#2DB24A]" /> Portal Simpanan Koperasi Produksi
-                      </h2>
-                      <p className="text-xs text-gray-500 font-medium mt-1">Kelola simpanan pokok, simpanan wajib bulanan, dan simpanan sukarela terproteksi.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {isKoperasiPremium && isCanManageCoop && (
-                        <button
-                          onClick={() => handleOpenCreateProduct(false)}
-                          className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
-                        >
-                          <Plus className="w-4 h-4" /> Tambah Simpanan Baru
-                        </button>
-                      )}
-                      <button onClick={() => handleOpenPaySavings({ name: 'Simpanan Koperasi', amount: 50000, type: 'WAJIB' })} className="px-4 py-2.5 bg-white border border-[#2DB24A] hover:bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
-                        <Wallet className="w-4 h-4" /> Setor Simpanan
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 font-sora">Simpanan</h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">Kelola seluruh jenis simpanan anggota koperasi {community.name}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {coopTier !== 'BASIC' && isCanManageCoop && (
+                      <button
+                        onClick={() => handleOpenCreateProduct(false)}
+                        className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                      >
+                        <Plus className="w-4 h-4" /> Tambah Simpanan Baru
                       </button>
+                    )}
+                    <button onClick={() => handleOpenPaySavings({ name: 'Simpanan Koperasi', amount: 50000, type: 'WAJIB' })} className="px-4 py-2.5 bg-white border border-[#2DB24A] hover:bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                      <Wallet className="w-4 h-4" /> Setor Simpanan
+                    </button>
+                  </div>
+                </div>
+
+                {/* Alert Box */}
+                <div className="p-4 bg-[#E8F8EE]/75 border border-[#2DB24A]/25 rounded-2xl flex items-start justify-between gap-3 shadow-xs">
+                  <div className="flex gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                      <Shield className="w-5 h-5 text-[#2DB24A]" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-[#0F5132] text-xs">Kelola simpanan dengan mudah</h4>
+                      <p className="text-[10px] text-emerald-800/80 font-medium mt-0.5 leading-relaxed">
+                        Pantau, tambah, dan kelola semua jenis simpanan anggota koperasi Anda dalam satu tempat.
+                      </p>
+                    </div>
+                  </div>
+                  <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left Column (Main cards + transactions) */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-5 shadow-xs">
+                      <h3 className="text-sm font-black text-gray-900 font-sora">Jenis Simpanan Anda</h3>
+
+                      <div className="space-y-4">
+                        {/* Simpanan Pokok Card */}
+                        {coopProducts.filter((p: any) => p.type === 'POKOK').map((p: any) => (
+                          <div key={p.id} className="p-4 bg-white border border-gray-200/80 rounded-2xl flex items-center justify-between hover:border-emerald-500/20 hover:shadow-xs transition-all gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#2DB24A] flex items-center justify-center shrink-0">
+                                <User className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-black text-gray-900">{p.name}</h4>
+                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">Simpanan wajib yang dibayarkan sekali saat menjadi anggota koperasi.</p>
+                                <span className="text-[10px] font-black text-[#0F5132] block mt-1">Rp {Number(p.amount || 0).toLocaleString('id-ID')} / Sekali Bayar</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                              <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-100 text-[#0F5132] text-[9px] font-black rounded-md shrink-0">✓ Aktif</span>
+                              {isCanManageCoop && (
+                                <button onClick={() => handleOpenEditProduct(p)} className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer shrink-0">
+                                  Kelola <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Simpanan Wajib Card */}
+                        {coopProducts.filter((p: any) => p.type === 'WAJIB').map((p: any) => (
+                          <div key={p.id} className="p-4 bg-white border border-gray-200/80 rounded-2xl flex items-center justify-between hover:border-emerald-500/20 hover:shadow-xs transition-all gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#2DB24A] flex items-center justify-center shrink-0">
+                                <Calendar className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-black text-gray-900">{p.name}</h4>
+                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">Simpanan rutin yang dibayarkan setiap bulan oleh anggota.</p>
+                                <span className="text-[10px] font-black text-[#0F5132] block mt-1">Rp {Number(p.amount || 0).toLocaleString('id-ID')} / Bulan</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                              <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-100 text-[#0F5132] text-[9px] font-black rounded-md shrink-0">✓ Aktif</span>
+                              {isCanManageCoop && (
+                                <button onClick={() => handleOpenEditProduct(p)} className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer shrink-0">
+                                  Kelola <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Tambah Jenis Simpanan Card (Premium/Locked/Unlocked depending on tier) */}
+                        {coopTier === 'BASIC' ? (
+                          // Locked card for BASIC
+                          <div className="p-5 bg-purple-50/20 border border-purple-100 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+                            <div className="absolute top-3 right-3 text-purple-400">
+                              <Lock className="w-4 h-4 opacity-50" />
+                            </div>
+                            <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                                <PiggyBank className="w-5 h-5" />
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h4 className="text-xs font-black text-gray-900">Tambah Jenis Simpanan</h4>
+                                  <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-black rounded uppercase tracking-wider">PREMIUM</span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 font-medium">Buat jenis simpanan lain seperti Simpanan Sukarela, Pendidikan, Qurban, Hari Raya, dan lainnya.</p>
+                                
+                                <div className="bg-white border border-purple-100/50 rounded-xl p-3 mt-3 space-y-1.5 max-w-sm">
+                                  <h5 className="text-[9px] font-black text-purple-950 uppercase tracking-wider">Keuntungan Fitur Ini:</h5>
+                                  <ul className="space-y-1 text-[9px] font-bold text-purple-900">
+                                    <li className="flex items-center gap-1.5">✓ Buat berbagai jenis simpanan sesuai kebutuhan</li>
+                                    <li className="flex items-center gap-1.5">✓ Tingkatkan kebiasaan menabung anggota</li>
+                                    <li className="flex items-center gap-1.5">✓ Kelola target dan periode simpanan lebih fleksibel</li>
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5 justify-center mt-2 md:mt-0 shrink-0">
+                              <span className="text-[9px] text-purple-600 font-extrabold uppercase">Tersedia di Paket</span>
+                              <span className="text-xs font-black text-purple-800">PLUS</span>
+                              <button onClick={() => handleUpgradeTier('PLUS')} className="px-4 py-2 bg-white hover:bg-purple-50 border border-purple-300 text-purple-700 font-extrabold text-[10px] rounded-xl transition-all shadow-xs flex items-center gap-1 cursor-pointer">
+                                <ArrowUpCircle className="w-3.5 h-3.5" /> Upgrade ke Plus
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          // Unlocked card for PLUS / PRO
+                          <>
+                            {coopProducts.filter((p: any) => p.type !== 'POKOK' && p.type !== 'WAJIB').map((p: any) => {
+                              const badge = p.type === 'SUKARELA' ? 'Sukarela' : p.type === 'UMROH' ? 'Umroh' : p.type === 'QURBAN' ? 'Qurban' : 'Lain-lain'
+                              const priceText = p.type === 'SUKARELA' ? 'Bebas Nominal' : `Rp ${Number(p.amount || 0).toLocaleString('id-ID')}${p.periodText ? ` / ${p.periodText}` : ''}`
+                              return (
+                                <div key={p.id} className="p-4 bg-white border border-gray-200/80 rounded-2xl flex items-center justify-between hover:border-emerald-500/20 hover:shadow-xs transition-all gap-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                                      <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="text-xs font-black text-gray-900">{p.name}</h4>
+                                        <span className="px-1.5 py-0.5 bg-purple-50 text-purple-600 text-[8px] font-black rounded uppercase tracking-wider">{badge}</span>
+                                      </div>
+                                      <p className="text-[10px] text-gray-500 font-medium mt-0.5">{p.description || '-'}</p>
+                                      <span className="text-[10px] font-black text-purple-700 block mt-1">{priceText}</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {isCanManageCoop && (
+                                      <div className="flex items-center gap-1.5 mr-2">
+                                        <button onClick={() => handleOpenEditProduct(p)} className="text-[10px] text-gray-500 hover:text-emerald-600 font-bold cursor-pointer">Edit</button>
+                                        <span className="text-gray-200 text-[10px]">|</span>
+                                        <button onClick={() => handleDeleteProduct(p.id)} className="text-[10px] text-gray-500 hover:text-red-500 font-bold cursor-pointer">Hapus</button>
+                                      </div>
+                                    )}
+                                    <button onClick={() => handleOpenPaySavings({ name: p.name, amount: p.amount || 50000, type: p.type })} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer">
+                                      Setor
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+
+                            {isCanManageCoop && (
+                              <button
+                                onClick={() => handleOpenCreateProduct(false)}
+                                className="w-full py-4 border-2 border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/5 text-purple-600 hover:bg-purple-50/20 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                              >
+                                <Plus className="w-4 h-4" /> Tambah Jenis Simpanan Baru
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Butuh bantuan? */}
+                    <div className="p-4 bg-emerald-50/20 border border-emerald-100/50 rounded-2xl flex flex-wrap justify-between items-center gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                          <HelpCircle className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-gray-900">Butuh bantuan?</h4>
+                          <p className="text-[10px] text-gray-500 font-medium">Tim kami siap membantu Anda mengelola simpanan koperasi dengan lebih baik.</p>
+                        </div>
+                      </div>
+                      <button onClick={() => goeyToast.info('Layanan pelanggan Saloka dihubungi!')} className="px-4 py-2 bg-white border border-gray-200 hover:border-[#2DB24A] text-gray-700 hover:text-[#2DB24A] font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
+                        <Headphones className="w-4 h-4" /> Hubungi Tim Saloka
+                      </button>
+                    </div>
+
+                    {/* Transaksi Terakhir */}
+                    <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
+                      <div className="flex justify-between items-center border-b border-gray-50 pb-3">
+                        <h4 className="text-sm font-black text-gray-900 font-sora">Transaksi Terakhir</h4>
+                        <button onClick={() => goeyToast.info('Membuka riwayat lengkap transaksi simpanan...')} className="text-xs font-extrabold text-emerald-600 hover:text-emerald-700">Lihat Semua</button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                              <th className="py-2 px-2">Tanggal</th>
+                              <th className="py-2 px-2">Anggota</th>
+                              <th className="py-2 px-2">Jenis Simpanan</th>
+                              <th className="py-2 px-2">Nominal</th>
+                              <th className="py-2 px-2">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
+                            {[
+                              { date: '2 Mei 2026, 10:30', name: 'Ahmad Rizki', type: 'Simpanan Wajib', amount: 100000, status: 'Berhasil' },
+                              { date: '1 Mei 2026, 14:15', name: 'Siti Aminah', type: 'Simpanan Pokok', amount: 150000, status: 'Berhasil' },
+                              { date: '28 Apr 2026, 09:00', name: 'Budi Santoso', type: 'Simpanan Wajib', amount: 100000, status: 'Berhasil' },
+                            ].map((tx, i) => (
+                              <tr key={i} className="hover:bg-gray-50/30 transition-colors">
+                                <td className="py-3 px-2 text-gray-500 font-semibold">{tx.date}</td>
+                                <td className="py-3 px-2 font-black text-gray-900">{tx.name}</td>
+                                <td className="py-3 px-2 text-gray-600 font-bold">{tx.type}</td>
+                                <td className="py-3 px-2 font-black text-[#0F5132]">Rp {tx.amount.toLocaleString('id-ID')}</td>
+                                <td className="py-3 px-2">
+                                  <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ {tx.status}</span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {coopProducts && coopProducts.length > 0 ? (
-                      coopProducts.map((p: any, idx: number) => {
-                        const badge = p.type === 'POKOK' ? 'Pokok' : p.type === 'WAJIB' ? 'Bulanan' : p.type === 'SUKARELA' ? 'Sukarela' : p.type === 'UMROH' ? 'Umroh' : p.type === 'QURBAN' ? 'Qurban' : 'Lain-lain'
-                        const priceText = p.type === 'SUKARELA' ? 'Bebas Nominal' : `Rp ${Number(p.amount || 0).toLocaleString('id-ID')}${p.periodText ? ` / ${p.periodText}` : ''}`
-                        
-                        return (
-                          <div key={p.id || idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all">
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-start">
-                                <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{badge}</span>
-                                {isKoperasiPremium && isCanManageCoop && (
-                                  <div className="flex items-center gap-1">
-                                    <button onClick={() => handleOpenEditProduct(p)} className="text-[10px] text-gray-500 hover:text-[#2DB24A] font-bold cursor-pointer">Edit</button>
-                                    <span className="text-gray-300 text-[10px]">|</span>
-                                    <button onClick={() => handleDeleteProduct(p.id)} className="text-[10px] text-gray-500 hover:text-red-500 font-bold cursor-pointer">Hapus</button>
-                                  </div>
-                                )}
-                              </div>
-                              <h4 className="text-xs font-black text-gray-900">{p.name}</h4>
-                              <p className="text-[10px] text-gray-500 font-medium min-h-[32px]">{p.description || '-'}</p>
-                              <span className="text-sm font-black text-[#0F5132] block">{priceText}</span>
+                  {/* Right Column (Sidebar packages) */}
+                  <div className="space-y-6">
+                    {/* Tingkatkan Paket Anda */}
+                    {coopTier !== 'PRO' && (
+                      <div className="bg-white border border-gray-200/80 rounded-3xl p-5 shadow-xs space-y-4">
+                        <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">Tingkatkan Paket Anda</h4>
+                        <div className="p-4 bg-gradient-to-br from-amber-50/50 to-orange-50/50 border border-amber-100 rounded-2xl space-y-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs shrink-0">
+                              <Crown className="w-5 h-5" />
                             </div>
-                            <button onClick={() => handleOpenPaySavings({ name: p.name, amount: p.amount || 50000, type: p.type })} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                              Setor {p.name}
-                            </button>
+                            <div>
+                              <h5 className="font-black text-xs text-gray-900">Upgrade ke {coopTier === 'BASIC' ? 'Plus' : 'Pro'}</h5>
+                              <p className="text-[9px] text-gray-500 font-medium">dan nikmati fitur lengkap untuk mengelola simpanan dengan lebih fleksibel.</p>
+                            </div>
                           </div>
-                        )
-                      })
-                    ) : (
-                      <div className="col-span-full p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
-                        <p className="text-xs text-gray-500">Belum ada produk simpanan tersedia.</p>
+
+                          <ul className="space-y-2 border-t border-amber-100 pt-3">
+                            {coopTier === 'BASIC' ? (
+                              <>
+                                <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Tambah jenis simpanan</li>
+                                <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Kelola target simpanan</li>
+                                <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Laporan simpanan detail</li>
+                                <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Export data simpanan</li>
+                              </>
+                            ) : (
+                              <>
+                                <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Portal permodalan merchant</li>
+                                <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Pendanaan proyek anggota</li>
+                                <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Perhitungan SHU RAT otomatis</li>
+                                <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Multi-rekening & target dinamis</li>
+                              </>
+                            )}
+                          </ul>
+
+                          <button 
+                            onClick={() => handleUpgradeTier(coopTier === 'BASIC' ? 'PLUS' : 'PRO')}
+                            className="w-full py-2.5 bg-[#FF9800] hover:bg-[#F57C00] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <ArrowUpCircle className="w-4 h-4" /> Upgrade ke {coopTier === 'BASIC' ? 'Plus' : 'Pro'}
+                          </button>
+                        </div>
                       </div>
                     )}
+
+                    {/* Paket Anda Saat Ini */}
+                    <div className="bg-white border border-gray-200/80 rounded-3xl p-5 shadow-xs space-y-4">
+                      <div className="flex justify-between items-center border-b border-gray-50 pb-2">
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Paket Anda Saat Ini</h4>
+                        <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider ${
+                          coopTier === 'PRO'
+                            ? 'bg-purple-100 text-purple-600 font-bold'
+                            : coopTier === 'PLUS'
+                              ? 'bg-blue-100 text-blue-600 font-bold'
+                              : 'bg-emerald-100 text-[#0f5132] font-bold'
+                        }`}>
+                          {coopTier}
+                        </span>
+                      </div>
+
+                      <ul className="space-y-2.5 text-[11px] font-semibold text-gray-700">
+                        <li className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 text-emerald-600">✓ Simpanan Pokok</span>
+                        </li>
+                        <li className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 text-emerald-600">✓ Simpanan Wajib</span>
+                        </li>
+                        <li className="flex items-center justify-between">
+                          {coopTier !== 'BASIC' ? (
+                            <span className="flex items-center gap-2 text-emerald-600">✓ Tambah Jenis Simpanan</span>
+                          ) : (
+                            <span className="flex items-center gap-2 text-gray-400">🔒 Tambah Jenis Simpanan</span>
+                          )}
+                        </li>
+                        <li className="flex items-center justify-between">
+                          {coopTier === 'PRO' ? (
+                            <span className="flex items-center gap-2 text-emerald-600">✓ Pendanaan Merchant</span>
+                          ) : (
+                            <span className="flex items-center gap-2 text-gray-400">🔒 Pendanaan Merchant</span>
+                          )}
+                        </li>
+                      </ul>
+
+                      <button onClick={() => goeyToast.info('Detail perbandingan fitur paket langganan dibuka.')} className="w-full py-2 bg-white border border-gray-200 hover:border-emerald-600 text-gray-600 hover:text-emerald-700 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                        Lihat Perbandingan Paket <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2386,39 +2690,71 @@ export default function CommunityDetailPage() {
 
             {/* TAB 21: PENDANAAN KOPERASI ──────────────────────────────────────── */}
             {activeSidebarNav === 'pendanaan' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
-                    <div>
-                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                        <Landmark className="w-6 h-6 text-[#2DB24A]" /> Portal Permodalan Usaha Koperasi
-                      </h2>
-                      <p className="text-xs text-gray-500 font-medium mt-1">Fasilitas pinjaman permodalan modal kerja & pengadaan alat produksi bunga ringan.</p>
-                    </div>
-                    <button onClick={() => setLoanModalOpen(true)} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
-                      <Plus className="w-4 h-4" /> Ajukan Pinjaman Permodalan
-                    </button>
+              coopTier !== 'PRO' ? (
+                // Locked screen for Pendanaan (Pro feature)
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6 text-center max-w-2xl mx-auto py-12">
+                  <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto shadow-sm">
+                    <Lock className="w-8 h-8" />
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { title: 'Pinjaman Modal Kerja Pembelian Bahan Baku', ceiling: 'Plafon s/d Rp 25.000.000', rate: 'Bunga 0,8% / bulan', tenor: 'Tenor 3 - 12 Bulan' },
-                      { title: 'Pinjaman Pengadaan Mesin & Alat Produksi', ceiling: 'Plafon s/d Rp 50.000.000', rate: 'Bunga 0,9% / bulan', tenor: 'Tenor 6 - 24 Bulan' },
-                    ].map((fund, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <h4 className="text-xs font-black text-gray-900">{fund.title}</h4>
-                          <span className="text-sm font-black text-[#0F5132] block">{fund.ceiling}</span>
-                          <p className="text-[10px] text-gray-500 font-semibold">{fund.rate} • {fund.tenor}</p>
-                        </div>
-                        <button onClick={() => setLoanModalOpen(true)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Ajukan Permodalan
-                        </button>
+                  <div className="space-y-2">
+                    <span className="px-2.5 py-1 bg-purple-100 text-purple-600 text-[10px] font-black rounded-full uppercase tracking-wider">FITUR PREMIUM PRO</span>
+                    <h2 className="text-xl font-black text-gray-900 font-sora">Pendanaan Merchant Terkunci</h2>
+                    <p className="text-xs text-gray-500 font-medium max-w-md mx-auto leading-relaxed">
+                      Fitur pendanaan merchant (Pinjaman Permodalan Usaha Koperasi) hanya tersedia bagi komunitas dengan tingkat langganan Koperasi Pro.
+                    </p>
+                  </div>
+                  <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-5 text-left max-w-md mx-auto space-y-3">
+                    <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider font-sora">Keuntungan Paket Pro:</h4>
+                    <ul className="space-y-2 text-[11px] font-bold text-purple-900">
+                      <li className="flex items-center gap-2">✓ Seluruh fitur Simpanan (Pokok, Wajib, Sukarela, dll)</li>
+                      <li className="flex items-center gap-2">✓ Penambahan jenis simpanan tanpa batas</li>
+                      <li className="flex items-center gap-2">✓ Portal Permodalan & Pendanaan Merchant</li>
+                      <li className="flex items-center gap-2">✓ Kalkulator SHU & Laporan Keuangan RAT otomatis</li>
+                    </ul>
+                  </div>
+                  <button 
+                    onClick={() => handleUpgradeTier('PRO')}
+                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+                  >
+                    <ArrowUpCircle className="w-4 h-4" /> Upgrade ke Koperasi Pro sekarang
+                  </button>
+                </div>
+              ) : (
+                // Normal view
+                <div className="space-y-6">
+                  <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                      <div>
+                        <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                          <Landmark className="w-6 h-6 text-[#2DB24A]" /> Portal Permodalan Usaha Koperasi
+                        </h2>
+                        <p className="text-xs text-gray-500 font-medium mt-1">Fasilitas pinjaman permodalan modal kerja & pengadaan alat produksi bunga ringan.</p>
                       </div>
-                    ))}
+                      <button onClick={() => setLoanModalOpen(true)} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
+                        <Plus className="w-4 h-4" /> Ajukan Pinjaman Permodalan
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        { title: 'Pinjaman Modal Kerja Pembelian Bahan Baku', ceiling: 'Plafon s/d Rp 25.000.000', rate: 'Bunga 0,8% / bulan', tenor: 'Tenor 3 - 12 Bulan' },
+                        { title: 'Pinjaman Pengadaan Mesin & Alat Produksi', ceiling: 'Plafon s/d Rp 50.000.000', rate: 'Bunga 0,9% / bulan', tenor: 'Tenor 6 - 24 Bulan' },
+                      ].map((fund, idx) => (
+                        <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                          <div className="space-y-2">
+                            <h4 className="text-xs font-black text-gray-900">{fund.title}</h4>
+                            <span className="text-sm font-black text-[#0F5132] block">{fund.ceiling}</span>
+                            <p className="text-[10px] text-gray-500 font-semibold">{fund.rate} • {fund.tenor}</p>
+                          </div>
+                          <button onClick={() => setLoanModalOpen(true)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                            Ajukan Permodalan
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* TAB 22: SHU KOPERASI ────────────────────────────────────────────── */}
@@ -3300,14 +3636,14 @@ export default function CommunityDetailPage() {
                 </div>
 
                 <div className="flex gap-4 pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={prodIsMandatory} onChange={e => setProdIsMandatory(e.target.checked)} className="rounded text-[#2DB24A]" />
+                  <label className={`flex items-center gap-2 ${isDefaultProduct ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
+                    <input type="checkbox" disabled={isDefaultProduct} checked={prodIsMandatory} onChange={e => setProdIsMandatory(e.target.checked)} className="rounded text-[#2DB24A]" />
                     <span className="font-bold text-gray-700">Wajib untuk Anggota</span>
                   </label>
-                  <label className={`flex items-center gap-2 ${activeMode === 'FREE' ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <label className={`flex items-center gap-2 ${(activeMode === 'FREE' || isDefaultProduct) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}>
                     <input
                       type="checkbox"
-                      disabled={activeMode === 'FREE'}
+                      disabled={activeMode === 'FREE' || isDefaultProduct}
                       checked={prodIsPremium}
                       onChange={e => {
                         const isPrem = e.target.checked
