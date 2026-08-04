@@ -6350,6 +6350,7 @@ export const DataStore = {
     monthlyFee?: number
     isKycRequired?: boolean
     landingPageConfig?: string
+    coinBalance?: number
   }) {
     syncMockDb()
     if (await isDbConnected()) {
@@ -6371,6 +6372,7 @@ export const DataStore = {
             monthlyFee: data.monthlyFee || 0,
             isKycRequired: Boolean(data.isKycRequired),
             landingPageConfig: data.landingPageConfig || null,
+            coinBalance: data.coinBalance || 0,
             ketuaId: data.ketuaId
           } as any
         })
@@ -6408,6 +6410,7 @@ export const DataStore = {
       joinFee: data.joinFee || 0,
       monthlyFee: data.monthlyFee || 0,
       isKycRequired: Boolean(data.isKycRequired),
+      coinBalance: data.coinBalance || 0,
       isSuspended: false,
       isVerified: false,
       ketuaId: data.ketuaId,

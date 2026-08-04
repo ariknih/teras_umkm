@@ -262,14 +262,20 @@ export async function createIndukCommunity(formData: FormData) {
   }
 
   let landingPageConfig = undefined
+  let initialCoins = 0
   if (type === 'KOPERASI') {
+    if (coopTier === 'BASIC') initialCoins = 500
+    else if (coopTier === 'PLUS') initialCoins = 1500
+    else if (coopTier === 'PRO') initialCoins = 3000
+
     const disabledModules = []
     if (coopTier === 'BASIC' || coopTier === 'PLUS') {
       disabledModules.push('pendanaan')
     }
     landingPageConfig = JSON.stringify({
       coopTier,
-      disabledModules
+      disabledModules,
+      bonusCoins: initialCoins
     })
   }
 
@@ -290,7 +296,8 @@ export async function createIndukCommunity(formData: FormData) {
       joinFee,
       monthlyFee,
       isKycRequired,
-      landingPageConfig
+      landingPageConfig,
+      coinBalance: initialCoins
     })
     revalidatePath('/community')
     return { success: true, community }

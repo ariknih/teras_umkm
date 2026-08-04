@@ -673,7 +673,7 @@ export default function CommunityDetailPage() {
         setSavedDisabledModules([])
       }
 
-      // Set SHU RAT data
+      // Set SHU data
       if (shuRes?.success && shuRes.config) {
         setShuConfig(shuRes.config)
       }
@@ -2778,7 +2778,7 @@ export default function CommunityDetailPage() {
                                 <>
                                   <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Portal permodalan merchant</li>
                                   <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Pendanaan proyek anggota</li>
-                                  <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Perhitungan SHU RAT otomatis</li>
+                                  <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Perhitungan SHU otomatis</li>
                                   <li className="flex items-center gap-2 text-[10px] font-bold text-gray-700">✓ Multi-rekening & target dinamis</li>
                                 </>
                               )}
@@ -4250,9 +4250,9 @@ export default function CommunityDetailPage() {
                 </div>
                 <div>
                   <h3 className="font-sora text-base font-extrabold text-gray-900">
-                    Detail SHU RAT {shuConfig?.year || new Date().getFullYear()}
+                    Detail SHU {shuConfig?.year || new Date().getFullYear()}
                   </h3>
-                  <p className="text-xs text-gray-500 font-medium">
+                  <p className="text-xs text-gray-500 font-medium">q
                     Sisa Hasil Usaha Koperasi Anggota
                   </p>
                 </div>
@@ -4297,9 +4297,9 @@ export default function CommunityDetailPage() {
                 </div>
               </div>
 
-              {/* RAT Allocation Config Info */}
+              {/* Allocation Config Info */}
               <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2 text-xs">
-                <span className="block font-bold text-gray-700 text-[11px]">Komposisi Pembagian Hasil RAT Koperasi:</span>
+                <span className="block font-bold text-gray-700 text-[11px]">Komposisi Pembagian Hasil Koperasi:</span>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-600 font-medium">
                   <div className="flex justify-between"><span>Cadangan Koperasi:</span> <span className="font-bold">{shuConfig?.pctCadangan || 25}%</span></div>
                   <div className="flex justify-between"><span>SHU Jasa Modal:</span> <span className="font-bold">{shuConfig?.pctJasaModal || 20}%</span></div>

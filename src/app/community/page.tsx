@@ -24,7 +24,18 @@ import {
   Loader2,
   Building,
   TrendingUp,
-  Briefcase
+  Briefcase,
+  QrCode,
+  CreditCard,
+  Wallet,
+  Landmark,
+  Check,
+  Coins,
+  Sparkles,
+  ChevronLeft,
+  ArrowLeft,
+  Lock,
+  Gift
 } from 'lucide-react'
 
 export default function CommunityDirectoryPage() {
@@ -34,6 +45,11 @@ export default function CommunityDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  // Step state for creation modal: 'FORM' | 'PAYMENT' | 'SUCCESS'
+  const [modalStep, setModalStep] = useState<'FORM' | 'PAYMENT' | 'SUCCESS'>('FORM')
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'qris' | 'va' | 'ewallet' | 'credit_card'>('qris')
+  const [createdCommunityData, setCreatedCommunityData] = useState<any>(null)
 
   // Form states for creating a community
   const [name, setName] = useState('')
@@ -124,17 +140,50 @@ export default function CommunityDirectoryPage() {
     loadData()
   }, [])
 
-  const handleCreateCommunity = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const getTierPrice = (tier: 'BASIC' | 'PLUS' | 'PRO') => {
+    if (tier === 'BASIC') return 99000
+    if (tier === 'PLUS') return 199000
+    return 399000
+  }
+
+  const getTierCoins = (tier: 'BASIC' | 'PLUS' | 'PRO') => {
+    if (tier === 'BASIC') return '500'
+    if (tier === 'PLUS') return '1.500'
+    return '3.000'
+  }
+
+  const getTierSubtitle = (tier: 'BASIC' | 'PLUS' | 'PRO') => {
+    if (tier === 'BASIC') return 'Paket Dasar'
+    if (tier === 'PLUS') return 'Paket Pengembangan'
+    return 'Paket Profesional'
+  }
+
+  const getExpirationDateString = () => {
+    const d = new Date()
+    d.setFullYear(d.getFullYear() + 1)
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
+  }
+
+  const handleCreateCommunity = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     setFormError(null)
 
     if (!name || !description) {
       setFormError('Nama dan Deskripsi wajib diisi.')
+      setModalStep('FORM')
+      return
+    }
+
+    if (!aktaNotaris || !nomorAhu || !nomorNpwp || !domisili) {
+      setFormError('Legalitas organisasi (Akta Notaris, AHU, NPWP, Domisili) wajib diisi.')
+      setModalStep('FORM')
       return
     }
 
     if (type === 'KOPERASI' && (!joinFee || !monthlyFee)) {
       setFormError('Biaya simpanan pokok dan iuran wajib koperasi wajib diisi.')
+      setModalStep('FORM')
       return
     }
 
@@ -159,9 +208,11 @@ export default function CommunityDirectoryPage() {
       const res = await createIndukCommunity(formData)
       if (res.error) {
         setFormError(res.error)
+        setModalStep('FORM')
       } else {
-        goeyToast.success('Komunitas Induk berhasil dibuat!')
-        setCreateModalOpen(false)
+        goeyToast.success('Pembayaran Berhasil! Komunitas Anda telah aktif.')
+        setCreatedCommunityData(res.community)
+        setModalStep('SUCCESS')
         
         // Reset form
         setName('')
@@ -380,479 +431,798 @@ export default function CommunityDirectoryPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-2xl border border-black/5 bg-white p-6 md:p-8 rounded-3xl shadow-2xl space-y-6 max-h-[85vh] overflow-y-auto"
+              className={`w-full bg-white rounded-3xl shadow-2xl overflow-hidden transition-all duration-300 max-h-[90vh] overflow-y-auto ${
+                modalStep === 'PAYMENT' ? 'max-w-3xl p-6 md:p-8 space-y-6' : modalStep === 'SUCCESS' ? 'max-w-lg p-6 md:p-8 space-y-6 bg-gradient-to-b from-[#E8F8EE]/70 via-white to-gray-50' : 'max-w-2xl p-6 md:p-8 space-y-6'
+              }`}
             >
-              <div className="flex justify-between items-center border-b border-black/5 pb-3">
-                <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">
-                  Daftarkan Komunitas Induk Baru
-                </h3>
-                <button onClick={() => setCreateModalOpen(false)} className="text-text-secondary hover:text-[#111111] text-sm font-bold">✕</button>
-              </div>
-
               {requiresKycToCreate ? (
-                <div className="p-6 border border-amber-500/20 bg-amber-500/5 rounded-2xl space-y-4 text-center">
-                  <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
-                  <h4 className="font-sora font-bold text-[#111111] text-sm">Verifikasi KYC Diperlukan</h4>
-                  <p className="text-xs text-text-secondary max-w-md mx-auto leading-relaxed">
-                    Sesuai dengan regulasi platform, hanya pengguna yang telah lulus verifikasi KYC (Know Your Customer) yang dapat bertindak sebagai Ketua Komunitas dan mendaftarkan Komunitas Induk baru.
-                  </p>
-                  <div className="pt-2">
-                    <Link
-                      href={user ? `/profile/${user.id}` : '/auth?tab=register'}
-                      className="inline-block px-5 py-2.5 bg-primary text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl shadow"
-                    >
-                      Lengkapi KYC di Profil
-                    </Link>
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                    <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">
+                      Daftarkan Komunitas Induk Baru
+                    </h3>
+                    <button onClick={() => { setCreateModalOpen(false); setModalStep('FORM') }} className="text-text-secondary hover:text-[#111111] text-sm font-bold">✕</button>
+                  </div>
+                  <div className="p-6 border border-amber-500/20 bg-amber-500/5 rounded-2xl space-y-4 text-center">
+                    <AlertTriangle className="w-10 h-10 text-amber-500 mx-auto" />
+                    <h4 className="font-sora font-bold text-[#111111] text-sm">Verifikasi KYC Diperlukan</h4>
+                    <p className="text-xs text-text-secondary max-w-md mx-auto leading-relaxed">
+                      Sesuai dengan regulasi platform, hanya pengguna yang telah lulus verifikasi KYC (Know Your Customer) yang dapat bertindak sebagai Ketua Komunitas dan mendaftarkan Komunitas Induk baru.
+                    </p>
+                    <div className="pt-2">
+                      <Link
+                        href={user ? `/profile/${user.id}` : '/auth?tab=register'}
+                        className="inline-block px-5 py-2.5 bg-primary text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl shadow"
+                      >
+                        Lengkapi KYC di Profil
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <form onSubmit={handleCreateCommunity} className="space-y-5">
-                  {formError && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 font-semibold">{formError}</div>
-                  )}
-
-                  {/* BAGIAN 1: INFO DASAR */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
-                      <span className="w-2 h-2 rounded-full bg-primary"></span>
-                      <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Informasi Dasar Komunitas</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Nama Komunitas <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          required
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          placeholder="e.g. Asosiasi Kuliner Kreatif Jogja"
-                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Jenis Komunitas <span className="text-red-500">*</span></label>
-                        <select
-                          value={type}
-                          onChange={(e) => setType(e.target.value as any)}
-                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
-                        >
-                          <option value="PERKUMPULAN">Perkumpulan</option>
-                          <option value="KOPERASI">Koperasi</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Deskripsi Komunitas <span className="text-red-500">*</span></label>
-                      <textarea
-                        required
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Jelaskan visi misi, cakupan anggota merchant, dan target pasar komunitas bisnis Anda..."
-                        rows={3}
-                        className="w-full px-3 py-2 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 resize-none transition-all"
-                      />
-                    </div>
+              ) : modalStep === 'FORM' ? (
+                // ── STEP 1: FORM ISIAN ──
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b border-black/5 pb-3">
+                    <h3 className="font-sora text-sm font-bold text-[#111111] uppercase tracking-wider">
+                      Daftarkan Komunitas Induk Baru
+                    </h3>
+                    <button onClick={() => { setCreateModalOpen(false); setModalStep('FORM') }} className="text-text-secondary hover:text-[#111111] text-sm font-bold">✕</button>
                   </div>
 
-                  {/* BAGIAN 2: LEGALITAS */}
-                  <div className="space-y-3 pt-1 border-t border-black/5">
-                    <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
-                      <span className="w-2 h-2 rounded-full bg-primary"></span>
-                      <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Legalitas Organisasi</h4>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Akta Notaris <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          required
-                          value={aktaNotaris}
-                          onChange={(e) => setAktaNotaris(e.target.value)}
-                          placeholder="No. Akta Notaris"
-                          className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Nomor AHU <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          required
-                          value={nomorAhu}
-                          onChange={(e) => setNomorAhu(e.target.value)}
-                          placeholder="AHU-xxxxx"
-                          className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">NPWP Organisasi <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          required
-                          value={nomorNpwp}
-                          onChange={(e) => setNomorNpwp(e.target.value)}
-                          placeholder="xx.xxx.xxx.x-xxx.xxx"
-                          className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Domisili <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          required
-                          value={domisili}
-                          onChange={(e) => setDomisili(e.target.value)}
-                          placeholder="Kota / Kabupaten"
-                          className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <form onSubmit={(e) => e.preventDefault()} className="space-y-5">
+                    {formError && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 font-semibold">{formError}</div>
+                    )}
 
-                  {/* BAGIAN 3: FINANSIAL KOPERASI */}
-                  {type === 'KOPERASI' && (
-                    <div className="space-y-3 pt-1 border-t border-black/5">
+                    {/* BAGIAN 1: INFO DASAR */}
+                    <div className="space-y-3">
                       <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
-                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                        <h4 className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">Pengaturan Finansial Koperasi</h4>
+                        <span className="w-2 h-2 rounded-full bg-primary"></span>
+                        <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Informasi Dasar Komunitas</h4>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         <div className="space-y-1.5">
-                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Simpanan Pokok / Biaya Masuk (Rp) <span className="text-red-500">*</span></label>
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Nama Komunitas <span className="text-red-500">*</span></label>
                           <input
-                            type="number"
+                            type="text"
                             required
-                            value={joinFee}
-                            onChange={(e) => setJoinFee(e.target.value)}
-                            placeholder="e.g. 150000"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="e.g. Asosiasi Kuliner Kreatif Jogja"
                             className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Iuran Wajib Bulanan (Rp) <span className="text-red-500">*</span></label>
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Jenis Komunitas <span className="text-red-500">*</span></label>
+                          <select
+                            value={type}
+                            onChange={(e) => setType(e.target.value as any)}
+                            className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                          >
+                            <option value="PERKUMPULAN">Perkumpulan</option>
+                            <option value="KOPERASI">Koperasi</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Deskripsi Komunitas <span className="text-red-500">*</span></label>
+                        <textarea
+                          required
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="Jelaskan visi misi, cakupan anggota merchant, dan target pasar komunitas bisnis Anda..."
+                          rows={3}
+                          className="w-full px-3 py-2 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 resize-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* BAGIAN 2: LEGALITAS */}
+                    <div className="space-y-3 pt-1 border-t border-black/5">
+                      <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                        <span className="w-2 h-2 rounded-full bg-primary"></span>
+                        <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Legalitas Organisasi</h4>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Akta Notaris <span className="text-red-500">*</span></label>
                           <input
-                            type="number"
+                            type="text"
                             required
-                            value={monthlyFee}
-                            onChange={(e) => setMonthlyFee(e.target.value)}
-                            placeholder="e.g. 50000"
+                            value={aktaNotaris}
+                            onChange={(e) => setAktaNotaris(e.target.value)}
+                            placeholder="No. Akta Notaris"
+                            className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Nomor AHU <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            required
+                            value={nomorAhu}
+                            onChange={(e) => setNomorAhu(e.target.value)}
+                            placeholder="AHU-xxxxx"
+                            className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">NPWP Organisasi <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            required
+                            value={nomorNpwp}
+                            onChange={(e) => setNomorNpwp(e.target.value)}
+                            placeholder="xx.xxx.xxx.x-xxx.xxx"
+                            className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Domisili <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            required
+                            value={domisili}
+                            onChange={(e) => setDomisili(e.target.value)}
+                            placeholder="Kota / Kabupaten"
+                            className="w-full h-9 px-2.5 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* BAGIAN 3: FINANSIAL KOPERASI & PAKET */}
+                    {type === 'KOPERASI' && (
+                      <div className="space-y-3 pt-1 border-t border-black/5">
+                        <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                          <h4 className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">Pengaturan Finansial Koperasi</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          <div className="space-y-1.5">
+                            <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Simpanan Pokok / Biaya Masuk (Rp) <span className="text-red-500">*</span></label>
+                            <input
+                              type="number"
+                              required
+                              value={joinFee}
+                              onChange={(e) => setJoinFee(e.target.value)}
+                              placeholder="e.g. 150000"
+                              className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Iuran Wajib Bulanan (Rp) <span className="text-red-500">*</span></label>
+                            <input
+                              type="number"
+                              required
+                              value={monthlyFee}
+                              onChange={(e) => setMonthlyFee(e.target.value)}
+                              placeholder="e.g. 50000"
+                              className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        {/* KONFIGURASI FITUR KOPERASI */}
+                        <div className="space-y-3 pt-3 border-t border-black/5">
+                          <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#007A3D]"></span>
+                            <h4 className="text-[10px] font-extrabold text-[#007A3D] uppercase tracking-wider">Pilih Paket Langganan Koperasi</h4>
+                          </div>
+                          <p className="text-[9px] text-gray-500 font-semibold">Pilih salah satu paket langganan yang sesuai dengan kebutuhan komunitas Anda.</p>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {/* Card 1: 🟢 BASIC */}
+                            <div 
+                              onClick={() => setCoopTier('BASIC')}
+                              className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                                coopTier === 'BASIC' 
+                                  ? 'bg-emerald-50/30 border-[#2DB24A] shadow-xs' 
+                                  : 'bg-white border-black/5 hover:border-black/10'
+                              }`}
+                            >
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                    coopTier === 'BASIC' ? 'border-[#2DB24A]' : 'border-gray-300'
+                                  }`}>
+                                    {coopTier === 'BASIC' && <div className="w-2.5 h-2.5 rounded-full bg-[#2DB24A]" />}
+                                  </div>
+                                  <div className="text-right">
+                                    <h5 className="font-black text-xs text-[#0F5132] font-sora">🟢 BASIC</h5>
+                                    <span className="text-[8px] text-emerald-700/80 font-bold block">Paket Dasar</span>
+                                    <span className="text-[9px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 99.000/bln</span>
+                                    <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 999.000/thn</span>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
+                                    <span className="w-3 h-3 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Simpanan Pokok
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
+                                    <span className="w-3 h-3 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Simpanan Wajib
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="pt-3 border-t border-emerald-100/50 mt-3">
+                                <div className="flex items-center justify-center gap-1 text-[9px] font-black text-[#0F5132]">
+                                  <Gift className="w-3 h-3 text-amber-500" />
+                                  <span>Bonus Aktivasi:</span>
+                                  <span className="text-amber-600 font-extrabold">🪙 500 Koin</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card 2: 🔵 PLUS */}
+                            <div 
+                              onClick={() => setCoopTier('PLUS')}
+                              className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                                coopTier === 'PLUS' 
+                                  ? 'bg-blue-50/30 border-blue-500 shadow-xs' 
+                                  : 'bg-white border-black/5 hover:border-black/10'
+                              }`}
+                            >
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                    coopTier === 'PLUS' ? 'border-blue-500' : 'border-gray-300'
+                                  }`}>
+                                    {coopTier === 'PLUS' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                                  </div>
+                                  <div className="text-right">
+                                    <h5 className="font-black text-xs text-blue-800 font-sora">🔵 PLUS</h5>
+                                    <span className="text-[8px] text-blue-600/80 font-bold block">Paket Pengembangan</span>
+                                    <span className="text-[9px] text-blue-600 font-extrabold block mt-0.5">Rp 199.000/bln</span>
+                                    <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 1.999.000/thn</span>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                    <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Simpanan Pokok
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                    <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Simpanan Wajib
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                    <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Simpanan Sukarela
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="pt-3 border-t border-blue-100/50 mt-3">
+                                <div className="flex items-center justify-center gap-1 text-[9px] font-black text-blue-900">
+                                  <Gift className="w-3 h-3 text-amber-500" />
+                                  <span>Bonus Aktivasi:</span>
+                                  <span className="text-amber-600 font-extrabold">🪙 1.500 Koin</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card 3: 🟣 PRO */}
+                            <div 
+                              onClick={() => setCoopTier('PRO')}
+                              className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                                coopTier === 'PRO' 
+                                  ? 'bg-purple-50/30 border-purple-500 shadow-xs' 
+                                  : 'bg-white border-black/5 hover:border-black/10'
+                              }`}
+                            >
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                    coopTier === 'PRO' ? 'border-purple-500' : 'border-gray-300'
+                                  }`}>
+                                    {coopTier === 'PRO' && <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />}
+                                  </div>
+                                  <div className="text-right">
+                                    <h5 className="font-black text-xs text-purple-800 font-sora">🟣 PRO</h5>
+                                    <span className="text-[8px] text-purple-600/80 font-bold block">Paket Profesional</span>
+                                    <span className="text-[9px] text-purple-600 font-extrabold block mt-0.5">Rp 399.000/bln</span>
+                                    <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 3.999.000/thn</span>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                    <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Simpanan Pokok
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                    <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Simpanan Wajib
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                    <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Simpanan Sukarela
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                    <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
+                                    Pendanaan Merchant
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="pt-3 border-t border-purple-100/50 mt-3">
+                                <div className="flex items-center justify-center gap-1 text-[9px] font-black text-purple-900">
+                                  <Gift className="w-3 h-3 text-amber-500" />
+                                  <span>Bonus Aktivasi:</span>
+                                  <span className="text-amber-600 font-extrabold">🪙 3.000 Koin</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <p className="text-[9px] text-gray-500 font-medium italic text-center pt-2 leading-relaxed">
+                            Bonus koin diberikan satu kali saat aktivasi paket dan dapat ditukarkan menjadi voucher pendanaan sesuai syarat dan ketentuan yang berlaku.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* BAGIAN 4: KONTAK & MEDIA */}
+                    <div className="space-y-3 pt-1 border-t border-black/5">
+                      <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                        <span className="w-2 h-2 rounded-full bg-primary"></span>
+                        <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Media, Kontak & Tautan Diskusi</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">No. Kontak Penanggung Jawab <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            required
+                            value={kontakPj}
+                            onChange={(e) => setKontakPj(e.target.value)}
+                            placeholder="e.g. 081234567890"
+                            className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Tautan Grup WhatsApp Diskusi</label>
+                          <input
+                            type="text"
+                            value={waGroupLink}
+                            onChange={(e) => setWaGroupLink(e.target.value)}
+                            placeholder="e.g. https://chat.whatsapp.com/..."
                             className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                           />
                         </div>
                       </div>
 
-                      {/* KONFIGURASI FITUR KOPERASI */}
-                      <div className="space-y-3 pt-3 border-t border-black/5">
-                        <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
-                          <span className="w-2 h-2 rounded-full bg-[#2DB24A]"></span>
-                          <h4 className="text-[10px] font-extrabold text-[#2DB24A] uppercase tracking-wider">Konfigurasi Fitur Koperasi</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        {/* Avatar Upload */}
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Logo Komunitas / Avatar</label>
+                          {avatarUrl ? (
+                            <div className="relative border border-black/10 rounded-lg bg-[#F5F7F9] p-1.5 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <img src={avatarUrl} alt="Logo Preview" className="w-9 h-9 object-cover rounded-lg" />
+                                <span className="text-[10px] font-medium text-[#111111] truncate max-w-[100px]">Logo Terpilih</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setAvatarUrl('')}
+                                className="p-1 bg-black/5 hover:bg-black/10 text-neutral-600 rounded-full transition-colors cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-lg h-12 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingAvatar}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) handleFileUpload(file, 'avatar')
+                                }}
+                              />
+                              {uploadingAvatar ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                  <span className="text-[10px] text-text-secondary font-medium">Mengunggah...</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Upload className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                                  <span className="text-[10px] font-bold text-text-primary">Pilih Logo Komunitas</span>
+                                </div>
+                              )}
+                            </label>
+                          )}
                         </div>
-                        <p className="text-[9px] text-gray-500 font-semibold">Pilih salah satu paket fitur yang sesuai dengan kebutuhan komunitas Anda.</p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          {/* Card 1: BASIC */}
-                          <div 
-                            onClick={() => setCoopTier('BASIC')}
-                            className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
-                              coopTier === 'BASIC' 
-                                ? 'bg-emerald-50/20 border-[#2DB24A] shadow-xs' 
-                                : 'bg-white border-black/5 hover:border-black/10'
-                            }`}
-                          >
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                  coopTier === 'BASIC' ? 'border-[#2DB24A]' : 'border-gray-300'
-                                }`}>
-                                  {coopTier === 'BASIC' && <div className="w-2.5 h-2.5 rounded-full bg-[#2DB24A]" />}
-                                </div>
-                                <div className="text-right">
-                                  <h5 className="font-black text-xs text-[#0F5132] font-sora">BASIC</h5>
-                                  <span className="text-[8px] text-emerald-700/80 font-bold block">Paket Dasar</span>
-                                  <span className="text-[9px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 99rb/bln</span>
-                                  <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 999rb/thn</span>
-                                </div>
-                              </div>
 
-                              <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
-                                  <span className="w-3 h-3 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Simpanan Pokok
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
-                                  <span className="w-3 h-3 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Simpanan Wajib
-                                </div>
+                        {/* Cover Upload */}
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Banner Sampul / Cover</label>
+                          {coverUrl ? (
+                            <div className="relative border border-black/10 rounded-lg bg-[#F5F7F9] p-1.5 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <img src={coverUrl} alt="Cover Preview" className="w-9 h-9 object-cover rounded-lg" />
+                                <span className="text-[10px] font-medium text-[#111111] truncate max-w-[100px]">Banner Terpilih</span>
                               </div>
+                              <button
+                                type="button"
+                                onClick={() => setCoverUrl('')}
+                                className="p-1 bg-black/5 hover:bg-black/10 text-neutral-600 rounded-full transition-colors cursor-pointer"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-
-                            <div className="space-y-2 pt-4">
-                              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-[#2DB24A] flex items-center justify-center mx-auto">
-                                <Building className="w-4 h-4" />
-                              </div>
-                              <p className="text-[9px] text-gray-500 font-medium leading-relaxed">
-                                Cocok untuk komunitas yang baru memulai dengan fitur simpanan dasar.
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Card 2: PLUS */}
-                          <div 
-                            onClick={() => setCoopTier('PLUS')}
-                            className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
-                              coopTier === 'PLUS' 
-                                ? 'bg-blue-50/20 border-blue-500 shadow-xs' 
-                                : 'bg-white border-black/5 hover:border-black/10'
-                            }`}
-                          >
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                  coopTier === 'PLUS' ? 'border-blue-500' : 'border-gray-300'
-                                }`}>
-                                  {coopTier === 'PLUS' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                          ) : (
+                            <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-lg h-12 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingCover}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) handleFileUpload(file, 'cover')
+                                }}
+                              />
+                              {uploadingCover ? (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                  <span className="text-[10px] text-text-secondary font-medium">Mengunggah...</span>
                                 </div>
-                                <div className="text-right">
-                                  <h5 className="font-black text-xs text-blue-800 font-sora">PLUS</h5>
-                                  <span className="text-[8px] text-blue-600/80 font-bold block">Paket Pengembangan</span>
-                                  <span className="text-[9px] text-blue-600 font-extrabold block mt-0.5">Rp 199rb/bln</span>
-                                  <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 1.999rb/thn</span>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Upload className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
+                                  <span className="text-[10px] font-bold text-text-primary">Pilih Banner Sampul</span>
                                 </div>
-                              </div>
-
-                              <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                  <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Simpanan Pokok
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                  <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Simpanan Wajib
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                  <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Simpanan Sukarela
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2 pt-4">
-                              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mx-auto">
-                                <TrendingUp className="w-4 h-4" />
-                              </div>
-                              <p className="text-[9px] text-gray-500 font-medium leading-relaxed">
-                                Menambahkan simpanan sukarela untuk fleksibilitas anggota yang lebih besar.
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Card 3: PRO */}
-                          <div 
-                            onClick={() => setCoopTier('PRO')}
-                            className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
-                              coopTier === 'PRO' 
-                                ? 'bg-purple-50/20 border-purple-500 shadow-xs' 
-                                : 'bg-white border-black/5 hover:border-black/10'
-                            }`}
-                          >
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                  coopTier === 'PRO' ? 'border-purple-500' : 'border-gray-300'
-                                }`}>
-                                  {coopTier === 'PRO' && <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />}
-                                </div>
-                                <div className="text-right">
-                                  <h5 className="font-black text-xs text-purple-800 font-sora">PRO</h5>
-                                  <span className="text-[8px] text-purple-600/80 font-bold block">Paket Profesional</span>
-                                  <span className="text-[9px] text-purple-600 font-extrabold block mt-0.5">Rp 399rb/bln</span>
-                                  <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 3.999rb/thn</span>
-                                </div>
-                              </div>
-
-                              <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                  <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Simpanan Pokok
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                  <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Simpanan Wajib
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                  <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Simpanan Sukarela
-                                </div>
-                                <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                  <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                  Pendanaan Merchant
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2 pt-4">
-                              <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
-                                <Briefcase className="w-4 h-4" />
-                              </div>
-                              <p className="text-[9px] text-gray-500 font-medium leading-relaxed">
-                                Fitur lengkap termasuk pendanaan untuk mendukung pertumbuhan merchant.
-                              </p>
-                            </div>
-                          </div>
+                              )}
+                            </label>
+                          )}
                         </div>
                       </div>
                     </div>
-                  )}
 
-                  {/* BAGIAN 4: KONTAK & MEDIA */}
-                  <div className="space-y-3 pt-1 border-t border-black/5">
-                    <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
-                      <span className="w-2 h-2 rounded-full bg-primary"></span>
-                      <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">Media, Kontak & Tautan Diskusi</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">No. Kontak Penanggung Jawab <span className="text-red-500">*</span></label>
-                        <input
-                          type="text"
-                          required
-                          value={kontakPj}
-                          onChange={(e) => setKontakPj(e.target.value)}
-                          placeholder="e.g. 081234567890"
-                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
-                        />
+                    {/* BAGIAN 5: PENGATURAN KYC ANGGOTA */}
+                    <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-xl flex items-center justify-between gap-3">
+                      <div>
+                        <label className="text-xs font-extrabold text-[#0F5132] block font-sora">
+                          Wajibkan Verifikasi KYC Anggota
+                        </label>
+                        <p className="text-[10px] text-emerald-800/80 font-medium mt-0.5 leading-relaxed">
+                          Jika diaktifkan, calon anggota harus lulus verifikasi KYC (KTP/Selfie) sebelum dapat bergabung.
+                        </p>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Tautan Grup WhatsApp Diskusi</label>
-                        <input
-                          type="text"
-                          value={waGroupLink}
-                          onChange={(e) => setWaGroupLink(e.target.value)}
-                          placeholder="e.g. https://chat.whatsapp.com/..."
-                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
-                        />
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsKycRequired(!isKycRequired)}
+                        className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
+                          isKycRequired ? 'bg-[#2DB24A] justify-end' : 'bg-gray-300 justify-start'
+                        }`}
+                      >
+                        <span className="bg-white w-4 h-4 rounded-full shadow-xs transition-all" />
+                      </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                      {/* Avatar Upload */}
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Logo Komunitas / Avatar</label>
-                        {avatarUrl ? (
-                          <div className="relative border border-black/10 rounded-lg bg-[#F5F7F9] p-1.5 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <img src={avatarUrl} alt="Logo Preview" className="w-9 h-9 object-cover rounded-lg" />
-                              <span className="text-[10px] font-medium text-[#111111] truncate max-w-[100px]">Logo Terpilih</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setAvatarUrl('')}
-                              className="p-1 bg-black/5 hover:bg-black/10 text-neutral-600 rounded-full transition-colors cursor-pointer"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-lg h-12 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={uploadingAvatar}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) handleFileUpload(file, 'avatar')
-                              }}
-                            />
-                            {uploadingAvatar ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                <span className="text-[10px] text-text-secondary font-medium">Mengunggah...</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
-                                <span className="text-[10px] font-bold text-text-primary">Pilih Logo Komunitas</span>
-                              </div>
-                            )}
-                          </label>
-                        )}
-                      </div>
-
-                      {/* Cover Upload */}
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Banner Sampul / Cover</label>
-                        {coverUrl ? (
-                          <div className="relative border border-black/10 rounded-lg bg-[#F5F7F9] p-1.5 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <img src={coverUrl} alt="Cover Preview" className="w-9 h-9 object-cover rounded-lg" />
-                              <span className="text-[10px] font-medium text-[#111111] truncate max-w-[100px]">Banner Terpilih</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setCoverUrl('')}
-                              className="p-1 bg-black/5 hover:bg-black/10 text-neutral-600 rounded-full transition-colors cursor-pointer"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <label className="border border-dashed border-black/15 hover:border-primary/45 rounded-lg h-12 flex items-center justify-center cursor-pointer bg-[#F5F7F9]/50 hover:bg-[#F5F7F9] transition-all p-3 group">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              disabled={uploadingCover}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) handleFileUpload(file, 'cover')
-                              }}
-                            />
-                            {uploadingCover ? (
-                              <div className="flex items-center gap-2">
-                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                <span className="text-[10px] text-text-secondary font-medium">Mengunggah...</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-text-secondary group-hover:text-primary transition-colors" />
-                                <span className="text-[10px] font-bold text-text-primary">Pilih Banner Sampul</span>
-                              </div>
-                            )}
-                          </label>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* BAGIAN 5: PENGATURAN KYC ANGGOTA */}
-                  <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-xl flex items-center justify-between gap-3">
-                    <div>
-                      <label className="text-xs font-extrabold text-[#0F5132] block font-sora">
-                        Wajibkan Verifikasi KYC Anggota
-                      </label>
-                      <p className="text-[10px] text-emerald-800/80 font-medium mt-0.5 leading-relaxed">
-                        Jika diaktifkan, calon anggota harus lulus verifikasi KYC (KTP/Selfie) sebelum dapat bergabung.
-                      </p>
-                    </div>
                     <button
                       type="button"
-                      onClick={() => setIsKycRequired(!isKycRequired)}
-                      className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
-                        isKycRequired ? 'bg-[#2DB24A] justify-end' : 'bg-gray-300 justify-start'
-                      }`}
+                      onClick={() => {
+                        setFormError(null)
+                        if (!name || !description) {
+                          setFormError('Nama dan Deskripsi komunitas wajib diisi.')
+                          return
+                        }
+                        if (!aktaNotaris || !nomorAhu || !nomorNpwp || !domisili) {
+                          setFormError('Legalitas organisasi (Akta Notaris, AHU, NPWP, Domisili) wajib diisi.')
+                          return
+                        }
+                        if (type === 'KOPERASI' && (!joinFee || !monthlyFee)) {
+                          setFormError('Biaya simpanan pokok dan iuran wajib koperasi wajib diisi.')
+                          return
+                        }
+                        if (!kontakPj) {
+                          setFormError('No. Kontak Penanggung Jawab wajib diisi.')
+                          return
+                        }
+                        setModalStep('PAYMENT')
+                      }}
+                      className="w-full py-3 bg-[#007A3D] hover:bg-[#006030] text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span className="bg-white w-4 h-4 rounded-full shadow-xs transition-all" />
+                      Lanjut ke Pembayaran Paket →
                     </button>
+                  </form>
+                </div>
+              ) : modalStep === 'PAYMENT' ? (
+                // ── STEP 2: PEMBAYARAN PAKET (FOTO 1 UI) ──
+                <div className="space-y-6">
+                  {/* Top Navigation */}
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <button
+                      type="button"
+                      onClick={() => setModalStep('FORM')}
+                      className="flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Kembali
+                    </button>
+                    <button onClick={() => { setCreateModalOpen(false); setModalStep('FORM') }} className="text-gray-400 hover:text-gray-700 text-sm font-bold">✕</button>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="w-full py-3 bg-primary text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 transition-all shadow-lg"
-                  >
-                    {isPending ? 'Mendaftarkan Komunitas...' : 'Daftarkan Komunitas Bisnis'}
-                  </button>
-                </form>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 font-sora">Pembayaran Paket</h2>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Selesaikan pembayaran untuk mengaktifkan komunitas Anda.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    {/* Ringkasan Pesanan Card */}
+                    <div className="border border-slate-200/80 rounded-2xl bg-white p-5 shadow-xs space-y-4">
+                      <h3 className="font-sora text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Ringkasan Pesanan</h3>
+                      
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex justify-between items-start">
+                          <span className="text-slate-500 font-medium">Nama Komunitas</span>
+                          <span className="font-bold text-slate-900 text-right max-w-[160px] truncate">{name || 'Koperasi Sejahtera Bersama'}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500 font-medium">Paket</span>
+                          <span className="font-bold text-slate-900">{coopTier} - {getTierSubtitle(coopTier)}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500 font-medium">Durasi</span>
+                          <span className="font-bold text-slate-900">1 Bulan</span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500 font-medium">Harga Paket</span>
+                          <span className="font-bold text-slate-900">Rp{getTierPrice(coopTier).toLocaleString('id-ID')}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-1">
+                          <span className="text-[#007A3D] font-extrabold flex items-center gap-1">Bonus Aktivasi</span>
+                          <span className="font-black text-[#007A3D] flex items-center gap-1.5">
+                            🪙 {getTierCoins(coopTier)} Koin
+                          </span>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-2 flex justify-between items-center">
+                          <span className="text-slate-500 font-medium">Subtotal</span>
+                          <span className="font-bold text-slate-900">Rp{getTierPrice(coopTier).toLocaleString('id-ID')}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-500 font-medium">Biaya Layanan</span>
+                          <span className="font-bold text-slate-900">Rp2.500</span>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-3 flex justify-between items-center">
+                          <span className="font-extrabold text-slate-900 text-sm">Total Bayar</span>
+                          <span className="text-lg font-black text-[#007A3D]">Rp{(getTierPrice(coopTier) + 2500).toLocaleString('id-ID')}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pilih Metode Pembayaran Card */}
+                    <div className="border border-slate-200/80 rounded-2xl bg-white p-5 shadow-xs space-y-4">
+                      <h3 className="font-sora text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Pilih Metode Pembayaran</h3>
+
+                      <div className="space-y-3">
+                        {/* QRIS */}
+                        <div
+                          onClick={() => setSelectedPaymentMethod('qris')}
+                          className={`p-3.5 rounded-xl border-2 flex items-center justify-between cursor-pointer transition-all ${
+                            selectedPaymentMethod === 'qris'
+                              ? 'bg-emerald-50/20 border-[#007A3D]'
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              selectedPaymentMethod === 'qris' ? 'border-[#007A3D]' : 'border-slate-300'
+                            }`}>
+                              {selectedPaymentMethod === 'qris' && <div className="w-2.5 h-2.5 rounded-full bg-[#007A3D]" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-xs text-slate-900">QRIS</h4>
+                              <p className="text-[10px] text-slate-500 font-medium">Bayar dengan QRIS semua bank</p>
+                            </div>
+                          </div>
+                          <QrCode className="w-6 h-6 text-slate-700" />
+                        </div>
+
+                        {/* Virtual Account */}
+                        <div
+                          onClick={() => setSelectedPaymentMethod('va')}
+                          className={`p-3.5 rounded-xl border-2 flex items-center justify-between cursor-pointer transition-all ${
+                            selectedPaymentMethod === 'va'
+                              ? 'bg-emerald-50/20 border-[#007A3D]'
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              selectedPaymentMethod === 'va' ? 'border-[#007A3D]' : 'border-slate-300'
+                            }`}>
+                              {selectedPaymentMethod === 'va' && <div className="w-2.5 h-2.5 rounded-full bg-[#007A3D]" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-xs text-slate-900">Virtual Account</h4>
+                              <p className="text-[10px] text-slate-500 font-medium">Transfer ke virtual account</p>
+                            </div>
+                          </div>
+                          <Landmark className="w-5 h-5 text-slate-500" />
+                        </div>
+
+                        {/* E-Wallet */}
+                        <div
+                          onClick={() => setSelectedPaymentMethod('ewallet')}
+                          className={`p-3.5 rounded-xl border-2 flex items-center justify-between cursor-pointer transition-all ${
+                            selectedPaymentMethod === 'ewallet'
+                              ? 'bg-emerald-50/20 border-[#007A3D]'
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              selectedPaymentMethod === 'ewallet' ? 'border-[#007A3D]' : 'border-slate-300'
+                            }`}>
+                              {selectedPaymentMethod === 'ewallet' && <div className="w-2.5 h-2.5 rounded-full bg-[#007A3D]" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-xs text-slate-900">E-Wallet</h4>
+                              <p className="text-[10px] text-slate-500 font-medium">OVO, GoPay, DANA, LinkAja</p>
+                            </div>
+                          </div>
+                          <Wallet className="w-5 h-5 text-slate-500" />
+                        </div>
+
+                        {/* Kartu Kredit / Debit */}
+                        <div
+                          onClick={() => setSelectedPaymentMethod('credit_card')}
+                          className={`p-3.5 rounded-xl border-2 flex items-center justify-between cursor-pointer transition-all ${
+                            selectedPaymentMethod === 'credit_card'
+                              ? 'bg-emerald-50/20 border-[#007A3D]'
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                              selectedPaymentMethod === 'credit_card' ? 'border-[#007A3D]' : 'border-slate-300'
+                            }`}>
+                              {selectedPaymentMethod === 'credit_card' && <div className="w-2.5 h-2.5 rounded-full bg-[#007A3D]" />}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-xs text-slate-900">Kartu Kredit / Debit</h4>
+                              <p className="text-[10px] text-slate-500 font-medium">Visa, Mastercard, JCB</p>
+                            </div>
+                          </div>
+                          <CreditCard className="w-5 h-5 text-slate-500" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Security & Action Bar */}
+                  <div className="p-4 bg-gray-50 border border-gray-200/80 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 text-left">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 text-[#007A3D] flex items-center justify-center shrink-0">
+                        <Lock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-slate-900">Transaksi aman dan terenkripsi</h4>
+                        <p className="text-[10px] text-slate-500 font-medium">Saloka.id bekerja sama dengan Midtrans untuk keamanan transaksi Anda.</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => handleCreateCommunity()}
+                      className="w-full sm:w-auto px-8 py-3 bg-[#007A3D] hover:bg-[#006030] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                    >
+                      {isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Memproses...
+                        </>
+                      ) : (
+                        <>
+                          Bayar Sekarang <Lock className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // ── STEP 3: PEMBAYARAN BERHASIL (FOTO 2 UI) ──
+                <div className="space-y-6 text-center">
+                  <div className="relative pt-2">
+                    <div className="w-16 h-16 rounded-full bg-[#007A3D] text-white flex items-center justify-center mx-auto shadow-md ring-8 ring-emerald-100">
+                      <Check className="w-10 h-10 stroke-[3]" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h2 className="text-2xl font-black text-slate-900 font-sora">Pembayaran Berhasil!</h2>
+                    <p className="text-xs text-slate-600 font-medium">Terima kasih, pembayaran Anda telah berhasil kami terima.</p>
+                  </div>
+
+                  {/* Detail Aktivasi Card */}
+                  <div className="border border-slate-200/80 rounded-2xl bg-white p-5 shadow-xs text-left space-y-3 text-xs">
+                    <h3 className="font-sora text-xs font-bold text-slate-900 border-b border-slate-100 pb-2">Detail Aktivasi</h3>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500 font-medium">Nama Komunitas</span>
+                        <span className="font-bold text-slate-900">{createdCommunityData?.name || name}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500 font-medium">Paket Aktif</span>
+                        <span className="font-bold text-slate-900">{coopTier} - {getTierSubtitle(coopTier)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500 font-medium">Durasi</span>
+                        <span className="font-bold text-slate-900">1 Bulan</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500 font-medium">Berlaku Hingga</span>
+                        <span className="font-bold text-slate-900">{getExpirationDateString()}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-1 border-t border-slate-50">
+                        <span className="text-[#007A3D] font-extrabold">Bonus Aktivasi</span>
+                        <span className="font-black text-[#007A3D] flex items-center gap-1">
+                          🪙 +{getTierCoins(coopTier)} Koin
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Saldo Koin Anda Box */}
+                  <div className="bg-[#FFFBEB] border border-[#FCD34D]/60 rounded-2xl p-5 text-center space-y-1.5 shadow-xs">
+                    <h4 className="text-xs font-bold text-slate-700">Saldo Koin Anda</h4>
+                    <div className="text-2xl font-black text-slate-900 font-sora flex items-center justify-center gap-2">
+                      🪙 <span>{getTierCoins(coopTier)} Koin</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-medium">Koin dapat ditukarkan menjadi voucher pendanaan.</p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (createdCommunityData?.id) {
+                          router.push(`/community/${createdCommunityData.id}`)
+                        } else {
+                          setCreateModalOpen(false)
+                          setModalStep('FORM')
+                        }
+                      }}
+                      className="w-full py-3.5 bg-[#007A3D] hover:bg-[#006030] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      Lihat Dashboard Komunitas
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCreateModalOpen(false)
+                        setModalStep('FORM')
+                      }}
+                      className="text-xs font-bold text-[#007A3D] hover:underline cursor-pointer block mx-auto transition-colors"
+                    >
+                      Kembali ke Beranda
+                    </button>
+                  </div>
+                </div>
               )}
             </motion.div>
           </div>
