@@ -611,48 +611,55 @@ export default function CommunityDirectoryPage() {
                           </div>
                           <p className="text-[9px] text-gray-500 font-semibold">Pilih salah satu paket langganan yang sesuai dengan kebutuhan komunitas Anda.</p>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-stretch">
                             {/* Card 1: 🟢 BASIC */}
                             <div 
                               onClick={() => setCoopTier('BASIC')}
-                              className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                              className={`p-4 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                                 coopTier === 'BASIC' 
-                                  ? 'bg-emerald-50/30 border-[#2DB24A] shadow-xs' 
-                                  : 'bg-white border-black/5 hover:border-black/10'
+                                  ? 'bg-emerald-50/30 border-[#2DB24A] shadow-sm ring-2 ring-[#2DB24A]/20' 
+                                  : 'bg-white border-black/5 hover:border-black/15 hover:shadow-xs'
                               }`}
                             >
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                    coopTier === 'BASIC' ? 'border-[#2DB24A]' : 'border-gray-300'
-                                  }`}>
-                                    {coopTier === 'BASIC' && <div className="w-2.5 h-2.5 rounded-full bg-[#2DB24A]" />}
+                              <div className="space-y-3 flex-1 flex flex-col justify-between">
+                                <div className="space-y-2">
+                                  <div className="flex items-start justify-between gap-1">
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
+                                      coopTier === 'BASIC' ? 'border-[#2DB24A]' : 'border-gray-300'
+                                    }`}>
+                                      {coopTier === 'BASIC' && <div className="w-2 h-2 rounded-full bg-[#2DB24A]" />}
+                                    </div>
+                                    <div className="text-right">
+                                      <h5 className="font-black text-xs text-[#0F5132] font-sora flex items-center justify-end gap-1">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 inline-block" /> BASIC
+                                      </h5>
+                                      <span className="text-[8px] text-emerald-700/80 font-bold block">Paket Dasar</span>
+                                      <span className="text-[10px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 99.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
+                                      <span className="text-[7px] text-gray-400 font-semibold block">atau Rp 999.000/thn</span>
+                                    </div>
                                   </div>
-                                  <div className="text-right">
-                                    <h5 className="font-black text-xs text-[#0F5132] font-sora">🟢 BASIC</h5>
-                                    <span className="text-[8px] text-emerald-700/80 font-bold block">Paket Dasar</span>
-                                    <span className="text-[9px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 99.000/bln</span>
-                                    <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 999.000/thn</span>
-                                  </div>
-                                </div>
 
-                                <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
-                                    <span className="w-3 h-3 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Simpanan Pokok
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
-                                    <span className="w-3 h-3 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Simpanan Wajib
+                                  <div className="space-y-1 text-left pt-2 border-t border-gray-100">
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Simpanan Pokok</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Simpanan Wajib</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="pt-3 border-t border-emerald-100/50 mt-3">
-                                <div className="flex items-center justify-center gap-1 text-[9px] font-black text-[#0F5132]">
-                                  <Gift className="w-3 h-3 text-amber-500" />
-                                  <span>Bonus Aktivasi:</span>
-                                  <span className="text-amber-600 font-extrabold">🪙 500 Koin</span>
+                              <div className="pt-3 border-t border-emerald-100/60 mt-3">
+                                <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1">
+                                  <span className="flex items-center gap-1 text-[9px] font-bold text-amber-900 shrink-0 whitespace-nowrap">
+                                    <Gift className="w-3 h-3 text-amber-500 shrink-0" /> Bonus Aktivasi
+                                  </span>
+                                  <span className="text-[9px] font-black text-amber-700 shrink-0 whitespace-nowrap">
+                                    🪙 500 Koin
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -660,48 +667,55 @@ export default function CommunityDirectoryPage() {
                             {/* Card 2: 🔵 PLUS */}
                             <div 
                               onClick={() => setCoopTier('PLUS')}
-                              className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                              className={`p-4 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                                 coopTier === 'PLUS' 
-                                  ? 'bg-blue-50/30 border-blue-500 shadow-xs' 
-                                  : 'bg-white border-black/5 hover:border-black/10'
+                                  ? 'bg-blue-50/30 border-blue-500 shadow-sm ring-2 ring-blue-500/20' 
+                                  : 'bg-white border-black/5 hover:border-black/15 hover:shadow-xs'
                               }`}
                             >
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                    coopTier === 'PLUS' ? 'border-blue-500' : 'border-gray-300'
-                                  }`}>
-                                    {coopTier === 'PLUS' && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />}
+                              <div className="space-y-3 flex-1 flex flex-col justify-between">
+                                <div className="space-y-2">
+                                  <div className="flex items-start justify-between gap-1">
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
+                                      coopTier === 'PLUS' ? 'border-blue-500' : 'border-gray-300'
+                                    }`}>
+                                      {coopTier === 'PLUS' && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                                    </div>
+                                    <div className="text-right">
+                                      <h5 className="font-black text-xs text-blue-800 font-sora flex items-center justify-end gap-1">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 inline-block" /> PLUS
+                                      </h5>
+                                      <span className="text-[8px] text-blue-600/80 font-bold block">Paket Pengembangan</span>
+                                      <span className="text-[10px] text-blue-600 font-extrabold block mt-0.5">Rp 199.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
+                                      <span className="text-[7px] text-gray-400 font-semibold block">atau Rp 1.999.000/thn</span>
+                                    </div>
                                   </div>
-                                  <div className="text-right">
-                                    <h5 className="font-black text-xs text-blue-800 font-sora">🔵 PLUS</h5>
-                                    <span className="text-[8px] text-blue-600/80 font-bold block">Paket Pengembangan</span>
-                                    <span className="text-[9px] text-blue-600 font-extrabold block mt-0.5">Rp 199.000/bln</span>
-                                    <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 1.999.000/thn</span>
-                                  </div>
-                                </div>
 
-                                <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                    <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Simpanan Pokok
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                    <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Simpanan Wajib
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                    <span className="w-3 h-3 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Simpanan Sukarela
+                                  <div className="space-y-1 text-left pt-2 border-t border-gray-100">
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Simpanan Pokok</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Simpanan Wajib</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Simpanan Sukarela</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="pt-3 border-t border-blue-100/50 mt-3">
-                                <div className="flex items-center justify-center gap-1 text-[9px] font-black text-blue-900">
-                                  <Gift className="w-3 h-3 text-amber-500" />
-                                  <span>Bonus Aktivasi:</span>
-                                  <span className="text-amber-600 font-extrabold">🪙 1.500 Koin</span>
+                              <div className="pt-3 border-t border-blue-100/60 mt-3">
+                                <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1">
+                                  <span className="flex items-center gap-1 text-[9px] font-bold text-amber-900 shrink-0 whitespace-nowrap">
+                                    <Gift className="w-3 h-3 text-amber-500 shrink-0" /> Bonus Aktivasi
+                                  </span>
+                                  <span className="text-[9px] font-black text-amber-700 shrink-0 whitespace-nowrap">
+                                    🪙 1.500 Koin
+                                  </span>
                                 </div>
                               </div>
                             </div>
@@ -709,52 +723,59 @@ export default function CommunityDirectoryPage() {
                             {/* Card 3: 🟣 PRO */}
                             <div 
                               onClick={() => setCoopTier('PRO')}
-                              className={`p-4 rounded-2xl border-2 text-center flex flex-col justify-between cursor-pointer transition-all ${
+                              className={`p-4 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                                 coopTier === 'PRO' 
-                                  ? 'bg-purple-50/30 border-purple-500 shadow-xs' 
-                                  : 'bg-white border-black/5 hover:border-black/10'
+                                  ? 'bg-purple-50/30 border-purple-500 shadow-sm ring-2 ring-purple-500/20' 
+                                  : 'bg-white border-black/5 hover:border-black/15 hover:shadow-xs'
                               }`}
                             >
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                                    coopTier === 'PRO' ? 'border-purple-500' : 'border-gray-300'
-                                  }`}>
-                                    {coopTier === 'PRO' && <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />}
+                              <div className="space-y-3 flex-1 flex flex-col justify-between">
+                                <div className="space-y-2">
+                                  <div className="flex items-start justify-between gap-1">
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
+                                      coopTier === 'PRO' ? 'border-purple-500' : 'border-gray-300'
+                                    }`}>
+                                      {coopTier === 'PRO' && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+                                    </div>
+                                    <div className="text-right">
+                                      <h5 className="font-black text-xs text-purple-800 font-sora flex items-center justify-end gap-1">
+                                        <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0 inline-block" /> PRO
+                                      </h5>
+                                      <span className="text-[8px] text-purple-600/80 font-bold block">Paket Profesional</span>
+                                      <span className="text-[10px] text-purple-600 font-extrabold block mt-0.5">Rp 399.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
+                                      <span className="text-[7px] text-gray-400 font-semibold block">atau Rp 3.999.000/thn</span>
+                                    </div>
                                   </div>
-                                  <div className="text-right">
-                                    <h5 className="font-black text-xs text-purple-800 font-sora">🟣 PRO</h5>
-                                    <span className="text-[8px] text-purple-600/80 font-bold block">Paket Profesional</span>
-                                    <span className="text-[9px] text-purple-600 font-extrabold block mt-0.5">Rp 399.000/bln</span>
-                                    <span className="text-[7px] text-gray-500 font-semibold block">atau Rp 3.999.000/thn</span>
-                                  </div>
-                                </div>
 
-                                <div className="space-y-1 text-left pt-1.5 border-t border-gray-100">
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                    <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Simpanan Pokok
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                    <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Simpanan Wajib
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                    <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Simpanan Sukarela
-                                  </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                    <span className="w-3 h-3 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black">✓</span>
-                                    Pendanaan Merchant
+                                  <div className="space-y-1 text-left pt-2 border-t border-gray-100">
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Simpanan Pokok</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Simpanan Wajib</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Simpanan Sukarela</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
+                                      <span className="w-3.5 h-3.5 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span>Pendanaan Merchant</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="pt-3 border-t border-purple-100/50 mt-3">
-                                <div className="flex items-center justify-center gap-1 text-[9px] font-black text-purple-900">
-                                  <Gift className="w-3 h-3 text-amber-500" />
-                                  <span>Bonus Aktivasi:</span>
-                                  <span className="text-amber-600 font-extrabold">🪙 3.000 Koin</span>
+                              <div className="pt-3 border-t border-purple-100/60 mt-3">
+                                <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1">
+                                  <span className="flex items-center gap-1 text-[9px] font-bold text-amber-900 shrink-0 whitespace-nowrap">
+                                    <Gift className="w-3 h-3 text-amber-500 shrink-0" /> Bonus Aktivasi
+                                  </span>
+                                  <span className="text-[9px] font-black text-amber-700 shrink-0 whitespace-nowrap">
+                                    🪙 3.000 Koin
+                                  </span>
                                 </div>
                               </div>
                             </div>
