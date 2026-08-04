@@ -1125,7 +1125,7 @@ export default function CommunityDetailPage() {
 
   const activeSidebarNavList = [
     ...sidebarNavList.filter((item) => {
-      if (item.id === 'laporan' && !isCanManageCoop) return false
+      if (!isCanManageCoop && ['simpanan', 'pendanaan', 'shu', 'laporan'].includes(item.id)) return false
       return !disabledModules.includes(item.id)
     }),
     ...settingsTab
@@ -1496,6 +1496,58 @@ export default function CommunityDetailPage() {
                       ) : (
                         <p className="text-xs text-gray-500 col-span-full text-center">Belum ada iuran keanggotaan tersedia.</p>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {/* SHOWCASE FITUR PENDANAAN MERCHANT & SHU (SEKILAS TAMPAK PADA LANDING PAGE) */}
+                {isKoperasi && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Card 1: Pendanaan Merchant */}
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 font-sora">
+                          <Landmark className="w-4 h-4 text-purple-600" /> Fitur Pendanaan Merchant
+                          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase">PRO</span>
+                        </h3>
+                        <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded-md">Investasi & Modal</span>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                        Program permodalan usaha antar merchant anggota koperasi untuk ekspansi bisnis dan bagi hasil bersama.
+                      </p>
+                      <div className="p-3 bg-purple-50/60 border border-purple-100/80 rounded-xl space-y-2 text-xs">
+                        <div className="flex justify-between items-center font-bold text-purple-900">
+                          <span>Estimasi Profit Margin</span>
+                          <span className="text-purple-700 font-black">12% - 15% / thn</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium">
+                          <span>Akses Pendanaan Usaha</span>
+                          <span className="font-extrabold text-emerald-700">Tersedia untuk Anggota</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 2: Estimasi & Pembagian SHU */}
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 font-sora">
+                          <PieChart className="w-4 h-4 text-[#2DB24A]" /> Fitur Sisa Hasil Usaha (SHU)
+                        </h3>
+                        <span className="text-[10px] text-emerald-700 font-extrabold bg-[#E8F8EE] px-2 py-0.5 rounded-md">RAT 2026</span>
+                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                        Perhitungan otomatis pembagian keuntungan tahunan koperasi transparan transparan berdasarkan partisipasi simpanan & transaksi.
+                      </p>
+                      <div className="p-3 bg-[#E8F8EE]/70 border border-[#2DB24A]/20 rounded-xl space-y-2 text-xs">
+                        <div className="flex justify-between items-center font-bold text-[#0F5132]">
+                          <span>Komponen SHU</span>
+                          <span className="text-[#2DB24A] font-black">Jasa Modal & Jasa Usaha</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium">
+                          <span>Sistem Perhitungan</span>
+                          <span className="font-extrabold text-emerald-700">Real-time & Transparan</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
