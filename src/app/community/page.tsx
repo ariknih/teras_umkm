@@ -210,9 +210,18 @@ export default function CommunityDirectoryPage() {
         setFormError(res.error)
         setModalStep('FORM')
       } else {
-        goeyToast.success('Pembayaran Berhasil! Komunitas Anda telah aktif.')
-        setCreatedCommunityData(res.community)
-        setModalStep('SUCCESS')
+        if (type === 'KOPERASI') {
+          goeyToast.success('Pembayaran Berhasil! Komunitas Koperasi Anda telah aktif.')
+          if (res.community) setCreatedCommunityData(res.community)
+          setModalStep('SUCCESS')
+        } else {
+          goeyToast.success('Komunitas Perkumpulan berhasil dibuat!')
+          setCreateModalOpen(false)
+          setModalStep('FORM')
+          if (res.community?.id) {
+            router.push(`/community/${res.community.id}`)
+          }
+        }
         
         // Reset form
         setName('')
@@ -497,11 +506,20 @@ export default function CommunityDirectoryPage() {
                           <select
                             value={type}
                             onChange={(e) => setType(e.target.value as any)}
-                            className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                            className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs font-bold text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                           >
-                            <option value="PERKUMPULAN">Perkumpulan</option>
-                            <option value="KOPERASI">Koperasi</option>
+                            <option value="PERKUMPULAN">Perkumpulan (Gratis / Free)</option>
+                            <option value="KOPERASI">Koperasi (Paket Berlangganan)</option>
                           </select>
+                          {type === 'PERKUMPULAN' ? (
+                            <p className="text-[9px] text-[#007A3D] font-bold mt-1 flex items-center gap-1">
+                              ✓ Komunitas Perkumpulan 100% Gratis tanpa biaya paket.
+                            </p>
+                          ) : (
+                            <p className="text-[9px] text-amber-700 font-bold mt-1 flex items-center gap-1">
+                              ⚡ Komunitas Koperasi memerlukan pilihan paket fitur berlangganan.
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="space-y-1.5">
@@ -932,6 +950,7 @@ export default function CommunityDirectoryPage() {
 
                     <button
                       type="button"
+                      disabled={isPending}
                       onClick={() => {
                         setFormError(null)
                         if (!name || !description) {
@@ -942,19 +961,28 @@ export default function CommunityDirectoryPage() {
                           setFormError('Legalitas organisasi (Akta Notaris, AHU, NPWP, Domisili) wajib diisi.')
                           return
                         }
-                        if (type === 'KOPERASI' && (!joinFee || !monthlyFee)) {
-                          setFormError('Biaya simpanan pokok dan iuran wajib koperasi wajib diisi.')
-                          return
-                        }
                         if (!kontakPj) {
                           setFormError('No. Kontak Penanggung Jawab wajib diisi.')
                           return
                         }
-                        setModalStep('PAYMENT')
+
+                        if (type === 'KOPERASI') {
+                          if (!joinFee || !monthlyFee) {
+                            setFormError('Biaya simpanan pokok dan iuran wajib koperasi wajib diisi.')
+                            return
+                          }
+                          setModalStep('PAYMENT')
+                        } else {
+                          handleCreateCommunity()
+                        }
                       }}
                       className="w-full py-3 bg-[#007A3D] hover:bg-[#006030] text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      Lanjut ke Pembayaran Paket →
+                      {type === 'KOPERASI' ? (
+                        <>Lanjut ke Pembayaran Paket →</>
+                      ) : (
+                        <>{isPending ? 'Mendaftarkan Komunitas...' : 'Daftarkan Komunitas (Gratis)'}</>
+                      )}
                     </button>
                   </form>
                 </div>
