@@ -793,16 +793,7 @@ export default function CommunityDetailPage() {
       return
     }
     setActiveSidebarNav(targetId as any)
-    const el = document.getElementById(`section-${targetId}`)
-    if (el) {
-      setIsManualScrolling(true)
-      const yOffset = -100
-      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset
-      window.scrollTo({ top: y, behavior: 'smooth' })
-      setTimeout(() => {
-        setIsManualScrolling(false)
-      }, 800)
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   useEffect(() => {
@@ -1056,30 +1047,6 @@ export default function CommunityDetailPage() {
     }),
     ...settingsTab
   ]
-
-  // ScrollSpy: Automatically sync activeSidebarNav with the section currently in viewport
-  useEffect(() => {
-    const handleScroll = () => {
-      if (isManualScrolling) return
-      const scrollPosition = window.scrollY + 200
-      const navIds = activeSidebarNavList.map((item) => item.id)
-
-      for (let i = navIds.length - 1; i >= 0; i--) {
-        const navId = navIds[i]
-        const el = document.getElementById(`section-${navId}`)
-        if (el) {
-          const top = el.offsetTop
-          if (scrollPosition >= top - 40) {
-            setActiveSidebarNav(navId as any)
-            break
-          }
-        }
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [activeSidebarNavList, isManualScrolling])
 
   const isKetua = Boolean(user && community && community.ketuaId === user.id)
   const isAdmin = Boolean(user && user.role === 'ADMIN')
@@ -1345,8 +1312,8 @@ export default function CommunityDetailPage() {
           <div className="flex-1 space-y-6 min-w-0 w-full">
 
             {/* TAB 1: BERANDA ─────────────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'beranda') && (
-              <div id="section-beranda" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'beranda' && (
+              <div className="space-y-6">
                 {/* HERO BANNER CARD */}
                 <div className="relative rounded-3xl overflow-hidden text-white shadow-sm border border-gray-200/60">
                   <img
@@ -1813,8 +1780,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 2: DISKUSI ─────────────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'diskusi') && (
-              <div id="section-diskusi" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'diskusi' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-4">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -1866,8 +1833,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 3: EVENT ────────────────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'event') && (
-              <div id="section-event" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'event' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -1914,8 +1881,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 4: PRODUK ANGGOTA (MARKETPLACE) ─────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'marketplace') && (
-              <div id="section-marketplace" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'marketplace' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -1970,8 +1937,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 5: ANGGOTA ──────────────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'anggota') && (
-              <div id="section-anggota" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'anggota' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -2045,8 +2012,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 6: GALERI ──────────────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'galeri') && (
-              <div id="section-galeri" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'galeri' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -2080,8 +2047,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 7: PENGUMUMAN ──────────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'pengumuman') && (
-              <div id="section-pengumuman" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'pengumuman' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -2113,8 +2080,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 8: TENTANG ─────────────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'tentang') && (
-              <div id="section-tentang" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'tentang' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -2555,8 +2522,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 20: SIMPANAN KOPERASI ───────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'simpanan') && (
-              <div id="section-simpanan" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'simpanan' && (
+              <div className="space-y-6">
                 {!isCanManageCoop ? (
                 // --- MEMBER (ANGGOTA) VIEW ---
                 <div className="space-y-6">
@@ -3008,8 +2975,8 @@ export default function CommunityDetailPage() {
           )}
 
             {/* TAB 21: PENDANAAN KOPERASI ──────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'pendanaan') && (
-              <div id="section-pendanaan" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'pendanaan' && (
+              <div className="space-y-6">
                 {coopTier !== 'PRO' ? (
                   !isCanManageCoop ? (
                   // Locked screen for regular members (no upgrade button)
@@ -3094,8 +3061,8 @@ export default function CommunityDetailPage() {
           )}
 
             {/* TAB 22: SHU KOPERASI ────────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'shu') && (
-              <div id="section-shu" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'shu' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -3131,8 +3098,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 23: LAPORAN KOPERASI ────────────────────────────────────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'laporan') && (
-              <div id="section-laporan" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'laporan' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -3166,8 +3133,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 24: PENGATURAN FITUR KOMUNITAS (CRUD TOGGLE MODULES) ────────── */}
-            {activeSidebarNavList.some((item) => item.id === 'pengaturan') && (
-              <div id="section-pengaturan" className="scroll-mt-28 space-y-6">
+            {activeSidebarNav === 'pengaturan' && (
+              <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
                   <div className="border-b border-gray-100 pb-4">
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
