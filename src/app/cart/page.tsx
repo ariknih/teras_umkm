@@ -93,7 +93,9 @@ export default function CartPage() {
   // Shipping & Geolocation
   const [useGps, setUseGps] = useState(false)
   const [buyerCoords, setBuyerCoords] = useState<{ latitude: number; longitude: number } | null>(null)
-  const [selectedCourier, setSelectedCourier] = useState<string>('jne')
+  const [selectedCourier, setSelectedCourier] = useState<string>('ekonomi')
+  const [isShippingDropdownOpen, setIsShippingDropdownOpen] = useState<Record<string, boolean>>({})
+  const [useInsurance, setUseInsurance] = useState<Record<string, boolean>>({})
   const [deliveryMethod, setDeliveryMethod] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY')
   const [shippingAddress, setShippingAddress] = useState('')
   const [shippingDistKm, setShippingDistKm] = useState(0)
@@ -1179,17 +1181,82 @@ export default function CartPage() {
                           })}
                         </div>
 
-                        {/* Shipping selector per merchant */}
-                        <div className="pt-1 border-t border-slate-100 space-y-2">
-                          <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2 text-xs">
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold text-slate-800">Ekonomi (Rp9.000)</span>
-                              <span className="text-[11px] text-slate-400">Estimasi tiba 28 - 31 Jul</span>
+                        {/* Shipping selector per merchant (Matching Figma State Ekspedisi) */}
+                        <div className="pt-2 border-t border-slate-100">
+                          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden">
+                            {/* Selected Header Row */}
+                            <div 
+                              onClick={() => setIsShippingDropdownOpen(prev => ({ ...prev, [mId]: !prev[mId] }))}
+                              className="p-3.5 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors"
+                            >
+                              <div>
+                                <div className="font-bold text-slate-800 text-xs">
+                                  {selectedCourier === 'instant' ? 'Instant (Rp40.000)' :
+                                   selectedCourier === 'nextday' ? 'Next Day (Rp24.000)' :
+                                   selectedCourier === 'standard' ? 'Standard (Rp12.000)' :
+                                   selectedCourier === 'pickup' ? 'Ambil di lokasi merchant' :
+                                   'Ekonomi (Rp9.000)'}
+                                </div>
+                                <div className="text-[11px] text-slate-400 mt-0.5">
+                                  {selectedCourier === 'pickup' ? 'Silakan datang ke lokasi merchant' : 'Estimasi tiba 28 - 31 Jul'}
+                                </div>
+                              </div>
+                              <span className="text-slate-400 text-[10px] font-bold">
+                                {isShippingDropdownOpen[mId] ? '▲' : '▼'}
+                              </span>
                             </div>
-                            <label className="flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer pt-1 border-t border-slate-200/40">
-                              <input type="checkbox" defaultChecked className="w-3.5 h-3.5 text-[#2DB24A] accent-[#2DB24A] rounded" />
-                              <span>Pakai Asuransi Pengiriman (Rp 2.000)</span>
-                            </label>
+
+                            {/* Expanded Dropdown Panel */}
+                            {isShippingDropdownOpen[mId] && (
+                              <div className="p-3 bg-[#F9FAFB] border-t border-slate-100 space-y-2">
+                                <div className="p-2.5 bg-white border border-slate-200/60 rounded-lg text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
+                                  <span>🏬</span>
+                                  <span>Dikirim dari Kab. Bekasi | Berat 1.9kg</span>
+                                </div>
+                                <div className="space-y-1">
+                                  {[
+                                    { id: 'ekonomi', name: 'Ekonomi (Rp7.000)', etd: 'Estimasi tiba 3 - 15 Aug' },
+                                    { id: 'standard', name: 'Standard (Rp12.000)', etd: 'Estimasi tiba 3 - 15 Aug' },
+                                    { id: 'nextday', name: 'Next Day (Rp24.000)', etd: 'Estimasi tiba 3 - 15 Aug' },
+                                    { id: 'instant', name: 'Instant (Rp40.000)', etd: 'Estimasi tiba 3 - 15 Aug' },
+                                    { id: 'pickup', name: 'Ambil di lokasi merchant', etd: 'Silakan datang ke lokasi merchant' }
+                                  ].map(opt => (
+                                    <div
+                                      key={opt.id}
+                                      onClick={() => {
+                                        setSelectedCourier(opt.id);
+                                        if (opt.id === 'pickup') setDeliveryMethod('PICKUP');
+                                        else setDeliveryMethod('DELIVERY');
+                                        setIsShippingDropdownOpen(prev => ({ ...prev, [mId]: false }));
+                                      }}
+                                      className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between ${
+                                        selectedCourier === opt.id
+                                          ? 'bg-[#F0FDF4] border-[#2DB24A] text-[#2DB24A] font-bold'
+                                          : 'bg-white border-slate-200/60 text-slate-700 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      <span className="font-semibold text-slate-800">{opt.name}</span>
+                                      <span className="text-[11px] text-slate-400">{opt.etd}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Insurance Checkbox Row */}
+                            <div className="px-3.5 py-2.5 border-t border-slate-100 bg-white flex items-center justify-between text-[11px]">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-slate-400">🛡️</span>
+                                <span className="text-[#2DB24A] font-medium underline cursor-pointer">Pakai Asuransi Pengiriman</span>
+                                <span className="text-slate-400">(Rp.2.000)</span>
+                              </div>
+                              <input
+                                type="checkbox"
+                                checked={useInsurance[mId] !== false}
+                                onChange={(e) => setUseInsurance(prev => ({ ...prev, [mId]: e.target.checked }))}
+                                className="w-4 h-4 text-[#2DB24A] accent-[#2DB24A] rounded cursor-pointer"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
