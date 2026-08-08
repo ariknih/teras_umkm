@@ -261,6 +261,15 @@ export default function CommunityDetailPage() {
   const [isSavingRefSettings, setIsSavingRefSettings] = useState(false)
   const [kycWarningModalOpen, setKycWarningModalOpen] = useState(false)
 
+  // Require Member Guard Modal State
+  const [requireMemberModalOpen, setRequireMemberModalOpen] = useState(false)
+  const [requireMemberFeature, setRequireMemberFeature] = useState('Fitur Internal')
+
+  const triggerMemberRequired = (featureName: string) => {
+    setRequireMemberFeature(featureName)
+    setRequireMemberModalOpen(true)
+  }
+
   useEffect(() => {
     if (id) {
       getCommunityReferralConfig(id).then(res => {
@@ -381,6 +390,10 @@ export default function CommunityDetailPage() {
   ])
 
   const handleOpenPaySavings = (cp: any) => {
+    if (!isMember) {
+      triggerMemberRequired('Setor Simpanan & Iuran Keanggotaan')
+      return
+    }
     setSelectedSavingsProduct(cp)
     const targetAmt = Number(cp.amount || 50000)
     setDepositAmount(String(targetAmt))
@@ -1504,49 +1517,83 @@ export default function CommunityDetailPage() {
                 {isKoperasi && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Card 1: Pendanaan Merchant */}
-                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 font-sora">
-                          <Landmark className="w-4 h-4 text-purple-600" /> Fitur Pendanaan Merchant
-                          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase">PRO</span>
-                        </h3>
-                        <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded-md">Investasi & Modal</span>
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 font-sora">
+                            <Landmark className="w-4 h-4 text-purple-600" /> Fitur Pendanaan Merchant
+                            <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase">PRO</span>
+                          </h3>
+                          <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded-md">Investasi & Modal</span>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Program permodalan usaha antar merchant anggota koperasi untuk ekspansi bisnis dan bagi hasil bersama.
+                        </p>
+                        <div className="p-3 bg-purple-50/60 border border-purple-100/80 rounded-xl space-y-2 text-xs">
+                          <div className="flex justify-between items-center font-bold text-purple-900">
+                            <span>Estimasi Profit Margin</span>
+                            <span className="text-purple-700 font-black">12% - 15% / thn</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium">
+                            <span>Akses Pendanaan Usaha</span>
+                            <span className="font-extrabold text-emerald-700">Tersedia untuk Anggota</span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                        Program permodalan usaha antar merchant anggota koperasi untuk ekspansi bisnis dan bagi hasil bersama.
-                      </p>
-                      <div className="p-3 bg-purple-50/60 border border-purple-100/80 rounded-xl space-y-2 text-xs">
-                        <div className="flex justify-between items-center font-bold text-purple-900">
-                          <span>Estimasi Profit Margin</span>
-                          <span className="text-purple-700 font-black">12% - 15% / thn</span>
-                        </div>
-                        <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium">
-                          <span>Akses Pendanaan Usaha</span>
-                          <span className="font-extrabold text-emerald-700">Tersedia untuk Anggota</span>
-                        </div>
+                      <div className="pt-2 border-t border-purple-100/80 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isMember) {
+                              triggerMemberRequired('Pendanaan Merchant & Permodalan Usaha')
+                            } else {
+                              setActiveSidebarNav('pendanaan')
+                            }
+                          }}
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          {isMember ? 'Lihat Proyek Pendanaan →' : '🔒 Menjadi Anggota untuk Akses'}
+                        </button>
                       </div>
                     </div>
 
                     {/* Card 2: Estimasi & Pembagian SHU */}
-                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 font-sora">
-                          <PieChart className="w-4 h-4 text-[#2DB24A]" /> Fitur Sisa Hasil Usaha (SHU)
-                        </h3>
-                        <span className="text-[10px] text-emerald-700 font-extrabold bg-[#E8F8EE] px-2 py-0.5 rounded-md">RAT 2026</span>
+                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 font-sora">
+                            <PieChart className="w-4 h-4 text-[#2DB24A]" /> Fitur Sisa Hasil Usaha (SHU)
+                          </h3>
+                          <span className="text-[10px] text-emerald-700 font-extrabold bg-[#E8F8EE] px-2 py-0.5 rounded-md">RAT 2026</span>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Perhitungan otomatis pembagian keuntungan tahunan koperasi secara transparan berdasarkan partisipasi simpanan & transaksi.
+                        </p>
+                        <div className="p-3 bg-[#E8F8EE]/70 border border-[#2DB24A]/20 rounded-xl space-y-2 text-xs">
+                          <div className="flex justify-between items-center font-bold text-[#0F5132]">
+                            <span>Komponen SHU</span>
+                            <span className="text-[#2DB24A] font-black">Jasa Modal & Jasa Usaha</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium">
+                            <span>Sistem Perhitungan</span>
+                            <span className="font-extrabold text-emerald-700">Real-time & Transparan</span>
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                        Perhitungan otomatis pembagian keuntungan tahunan koperasi transparan transparan berdasarkan partisipasi simpanan & transaksi.
-                      </p>
-                      <div className="p-3 bg-[#E8F8EE]/70 border border-[#2DB24A]/20 rounded-xl space-y-2 text-xs">
-                        <div className="flex justify-between items-center font-bold text-[#0F5132]">
-                          <span>Komponen SHU</span>
-                          <span className="text-[#2DB24A] font-black">Jasa Modal & Jasa Usaha</span>
-                        </div>
-                        <div className="flex justify-between items-center text-[11px] text-gray-500 font-medium">
-                          <span>Sistem Perhitungan</span>
-                          <span className="font-extrabold text-emerald-700">Real-time & Transparan</span>
-                        </div>
+                      <div className="pt-2 border-t border-emerald-100 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isMember) {
+                              triggerMemberRequired('Rincian & Pembagian SHU Koperasi')
+                            } else {
+                              setShuDetailModalOpen(true)
+                            }
+                          }}
+                          className="px-4 py-2 bg-[#007A3D] hover:bg-[#006030] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          {isMember ? 'Lihat Detail SHU →' : '🔒 Menjadi Anggota untuk Akses'}
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1897,7 +1944,29 @@ export default function CommunityDetailPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {members && members.length > 0 ? (
+                    {!isMember ? (
+                      <div className="col-span-full p-8 bg-gradient-to-b from-emerald-50/50 via-white to-gray-50 border border-emerald-200/70 rounded-3xl text-center space-y-4 shadow-xs">
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#007A3D] border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
+                          <Lock className="w-7 h-7" />
+                        </div>
+                        <div className="space-y-1.5 max-w-md mx-auto">
+                          <h4 className="font-extrabold text-sm text-gray-900 font-sora">
+                            Direktori & Kontak Anggota Khusus Anggota Terdaftar
+                          </h4>
+                          <p className="text-xs text-gray-600 font-medium leading-relaxed">
+                            Untuk menjaga privasi data dan keamanan jejaring bisnis, rincian kontak & profil lengkap anggota hanya dapat diakses oleh anggota resmi <strong className="text-gray-900">{community.name}</strong>.
+                          </p>
+                        </div>
+                        <div className="pt-2">
+                          <button
+                            onClick={handleJoin}
+                            className="px-6 py-3 bg-[#007A3D] hover:bg-[#006030] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+                          >
+                            <Users className="w-4 h-4" /> {isKoperasi ? 'Menjadi Anggota' : 'Gabung Komunitas'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : members && members.length > 0 ? (
                       members.map((m: any, idx: number) => (
                         <div key={m.id || idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all">
                           <div className="flex items-center gap-3">
@@ -4453,6 +4522,75 @@ export default function CommunityDetailPage() {
           </div>
         </div>
       )}
+
+      {/* ACCESS RESTRICTED / REQUIRE MEMBER GUARD MODAL */}
+      <AnimatePresence>
+        {requireMemberModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-[999] p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5 text-center border border-gray-100"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center mx-auto shadow-xs">
+                <Lock className="w-7 h-7" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-base font-black text-gray-900 font-sora">
+                  Akses Khusus Anggota
+                </h3>
+                <p className="text-xs text-gray-600 font-medium leading-relaxed px-2">
+                  Fitur <strong className="text-gray-900 font-bold">{requireMemberFeature}</strong> hanya dapat diakses oleh anggota terdaftar <span className="font-bold text-[#0F5132]">{community?.name || 'Komunitas'}</span>.
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/60 rounded-2xl text-left space-y-1.5 text-[11px]">
+                <span className="font-bold text-[#0F5132] flex items-center gap-1">
+                  ✨ Manfaat Bergabung {community?.type === 'KOPERASI' ? 'Koperasi' : 'Komunitas'}:
+                </span>
+                <ul className="text-gray-600 font-medium space-y-1 pl-4 list-disc text-[10px]">
+                  {community?.type === 'KOPERASI' ? (
+                    <>
+                      <li>Akses simpanan pokok, wajib, dan sukarela</li>
+                      <li>Perhitungan & pembagian Sisa Hasil Usaha (SHU)</li>
+                      <li>Akses pendanaan merchant & permodalan usaha</li>
+                      <li>Forum diskusi & jejaring bisnis antar anggota</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Forum diskusi eksklusif antar pelaku usaha</li>
+                      <li>Akses katalog marketplace & promosi produk</li>
+                      <li>Partisipasi kelas, pelatihan, & event jejaring</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequireMemberModalOpen(false)
+                    handleJoin()
+                  }}
+                  className="w-full py-3 bg-[#007A3D] hover:bg-[#006030] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Users className="w-4 h-4" /> {community?.type === 'KOPERASI' ? 'Menjadi Anggota' : 'Gabung Komunitas'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRequireMemberModalOpen(false)}
+                  className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   )
