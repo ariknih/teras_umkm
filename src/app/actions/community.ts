@@ -223,6 +223,21 @@ export async function getUserCommunitiesWithRolesAction(userId?: string) {
   return await DataStore.getUserCommunitiesWithRoles(targetUserId)
 }
 
+export async function switchActiveIndukCommunityAction(communityId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  try {
+    await DataStore.setIndukCommunity(user.id, communityId)
+    revalidatePath('/community')
+    revalidatePath('/profile')
+    revalidatePath('/merchant/dashboard')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengubah Induk Komunitas terasosiasi.' }
+  }
+}
+
 export async function createIndukCommunity(formData: FormData) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }

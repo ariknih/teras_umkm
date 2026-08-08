@@ -6537,7 +6537,7 @@ export const DataStore = {
             ketuaId: data.ketuaId
           } as any
         })
-        // Auto-join ketua as member with isInduk
+        // Auto-join ketua as member with isInduk & set active indukCommunityId
         await db.communityMembership.create({
           data: {
             communityId: community.id,
@@ -6545,6 +6545,10 @@ export const DataStore = {
             isInduk: true,
             isPaid: true
           }
+        })
+        await db.user.update({
+          where: { id: data.ketuaId },
+          data: { indukCommunityId: community.id }
         })
         return community
       } catch (_) {}
@@ -6580,7 +6584,7 @@ export const DataStore = {
     };
     (globalThis as any).__mockCommunities.push(newCommunity);
     
-    // Auto-join ketua
+    // Auto-join ketua and set active indukCommunityId
     (globalThis as any).__mockCommunityMemberships.push({
       id: `cm-${Date.now()}`,
       communityId: newCommunity.id,
@@ -6589,6 +6593,11 @@ export const DataStore = {
       isPaid: true,
       joinedAt: new Date()
     })
+
+    const ketuaUser = globalMockUsers.find((u: any) => u.id === data.ketuaId)
+    if (ketuaUser) {
+      (ketuaUser as any).indukCommunityId = newCommunity.id
+    }
     
     saveMockDb()
     return newCommunity
@@ -6716,12 +6725,10 @@ export const DataStore = {
           }
         })
 
-        if (asInduk) {
-          await db.user.update({
-            where: { id: userId },
-            data: { indukCommunityId: communityId }
-          })
-        }
+        await db.user.update({
+          where: { id: userId },
+          data: { indukCommunityId: communityId }
+        })
 
         // If joined immediately (no payment needed) and it's a paid community/koperasi, trigger 3-coin referral
         if (!needsPayment && (community.type === 'KOPERASI' || community.category === 'PAID')) {
@@ -6822,10 +6829,8 @@ export const DataStore = {
     }
     memberships.push(newMembership)
 
-    if (asInduk) {
-      const user = globalMockUsers.find(u => u.id === userId)
-      if (user) (user as any).indukCommunityId = communityId
-    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user) (user as any).indukCommunityId = communityId
 
     // Trigger mock referral commission if joined immediately
     if (!needsPayment && (community.type === 'KOPERASI' || community.category === 'PAID')) {
@@ -7002,7 +7007,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.community.update({
+        const updated = await db.community.update({
           where: { id },
           data: {
             name: data.name,
@@ -7025,6 +7030,13 @@ export const DataStore = {
             isSuspended: typeof data.isSuspended === 'boolean' ? data.isSuspended : undefined
           }
         })
+        if (data.isVerified && updated?.ketuaId) {
+          await db.user.update({
+            where: { id: updated.ketuaId },
+            data: { indukCommunityId: id }
+          })
+        }
+        return updated
       } catch (_) {}
     }
 
@@ -7032,6 +7044,12 @@ export const DataStore = {
     const comm = communities.find((c: any) => c.id === id)
     if (comm) {
       Object.assign(comm, data, { updatedAt: new Date() })
+      if (data.isVerified && comm.ketuaId) {
+        const ketuaUser = globalMockUsers.find((u: any) => u.id === comm.ketuaId)
+        if (ketuaUser) {
+          (ketuaUser as any).indukCommunityId = id
+        }
+      }
       saveMockDb()
       return comm
     }
