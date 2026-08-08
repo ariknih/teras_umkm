@@ -217,6 +217,12 @@ export async function getIndukCommunityDetail(id: string) {
   return await DataStore.getCommunityById(id)
 }
 
+export async function getUserCommunitiesWithRolesAction(userId?: string) {
+  const targetUserId = userId || (await getCurrentUser())?.id
+  if (!targetUserId) return []
+  return await DataStore.getUserCommunitiesWithRoles(targetUserId)
+}
+
 export async function createIndukCommunity(formData: FormData) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }

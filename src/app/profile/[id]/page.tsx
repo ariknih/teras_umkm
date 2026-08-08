@@ -142,14 +142,12 @@ export default async function ProfilePage({ params }: PageProps) {
   const allProducts = await getProducts();
   const userProducts = allProducts.filter((p) => p.merchantId === user.id);
 
-  // Get induk community info
-  let indukCommunity = null;
-  if (user.indukCommunityId) {
-    try {
-      indukCommunity = await DataStore.getCommunityById(user.indukCommunityId);
-    } catch (e) {
-      console.error("Failed to fetch induk community:", e);
-    }
+  // Get all community memberships and roles for this user
+  let userCommunities: any[] = [];
+  try {
+    userCommunities = await DataStore.getUserCommunitiesWithRoles(user.id);
+  } catch (e) {
+    console.error("Failed to fetch user communities with roles:", e);
   }
 
   // Dynamically generate default template and configs if they haven't set it up
@@ -181,7 +179,8 @@ export default async function ProfilePage({ params }: PageProps) {
         longitude: user.longitude || 106.8456,
         kycStatus: user.kycStatus || 'NOT_SUBMITTED',
         indukCommunityId: user.indukCommunityId,
-        indukCommunityName: indukCommunity ? indukCommunity.name : null,
+        indukCommunityName: userCommunities.length > 0 ? userCommunities[0].communityName : null,
+        userCommunities
       }}
       products={userProducts.map((p) => ({
         id: p.id,
