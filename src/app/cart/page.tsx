@@ -796,15 +796,10 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F5F7F9]">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="w-10 h-10 border-4 border-[#2DB24A]/20 border-t-[#2DB24A] rounded-full animate-spin mb-2" />
-          <span className="text-xs font-bold text-[#2DB24A] tracking-widest uppercase">
-            MEMUAT HALAMAN CHECKOUT...
-          </span>
-          <span className="text-[11px] text-slate-400 font-medium">Ganti jadi</span>
-          <span className="text-xs text-slate-400">↓</span>
-          <span className="text-xs text-slate-700 font-semibold">
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F8F9FA]">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="w-8 h-8 border-2 border-slate-200 border-t-[#2DB24A] rounded-full animate-spin" />
+          <span className="text-sm font-semibold text-slate-800 tracking-tight">
             Memuat keranjang belanjaan-mu
           </span>
         </div>
