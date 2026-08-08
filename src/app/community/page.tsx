@@ -67,6 +67,7 @@ export default function CommunityDirectoryPage() {
   const [monthlyFee, setMonthlyFee] = useState('')
   const [isKycRequired, setIsKycRequired] = useState(false)
   const [coopTier, setCoopTier] = useState<'BASIC' | 'PLUS' | 'PRO'>('BASIC')
+  const [perkumpulanTier, setPerkumpulanTier] = useState<'FREE' | 'PREMIUM'>('FREE')
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -140,19 +141,28 @@ export default function CommunityDirectoryPage() {
     loadData()
   }, [])
 
-  const getTierPrice = (tier: 'BASIC' | 'PLUS' | 'PRO') => {
+  const getTierPrice = (tier: string) => {
+    if (type === 'PERKUMPULAN') {
+      return perkumpulanTier === 'PREMIUM' ? 200000 : 0
+    }
     if (tier === 'BASIC') return 99000
     if (tier === 'PLUS') return 199000
     return 399000
   }
 
-  const getTierCoins = (tier: 'BASIC' | 'PLUS' | 'PRO') => {
+  const getTierCoins = (tier: string) => {
+    if (type === 'PERKUMPULAN') {
+      return perkumpulanTier === 'PREMIUM' ? '1.000' : '0'
+    }
     if (tier === 'BASIC') return '500'
     if (tier === 'PLUS') return '1.500'
     return '3.000'
   }
 
-  const getTierSubtitle = (tier: 'BASIC' | 'PLUS' | 'PRO') => {
+  const getTierSubtitle = (tier: string) => {
+    if (type === 'PERKUMPULAN') {
+      return perkumpulanTier === 'PREMIUM' ? 'Biaya Aktivasi One-Time' : 'Gratis Selamanya'
+    }
     if (tier === 'BASIC') return 'Paket Dasar'
     if (tier === 'PLUS') return 'Paket Pengembangan'
     return 'Paket Profesional'
@@ -204,18 +214,19 @@ export default function CommunityDirectoryPage() {
       formData.append('monthlyFee', monthlyFee)
       formData.append('isKycRequired', String(isKycRequired))
       formData.append('coopTier', coopTier)
+      formData.append('perkumpulanTier', perkumpulanTier)
 
       const res = await createIndukCommunity(formData)
       if (res.error) {
         setFormError(res.error)
         setModalStep('FORM')
       } else {
-        if (type === 'KOPERASI') {
-          goeyToast.success('Pembayaran Berhasil! Komunitas Koperasi Anda telah aktif.')
+        if (type === 'KOPERASI' || (type === 'PERKUMPULAN' && perkumpulanTier === 'PREMIUM')) {
+          goeyToast.success(`Pembayaran Berhasil! Komunitas ${type === 'PERKUMPULAN' ? 'Perkumpulan Premium' : 'Koperasi'} Anda telah aktif.`)
           if (res.community) setCreatedCommunityData(res.community)
           setModalStep('SUCCESS')
         } else {
-          goeyToast.success('Komunitas Perkumpulan berhasil dibuat!')
+          goeyToast.success('Komunitas Perkumpulan (Free) berhasil dibuat!')
           setCreateModalOpen(false)
           setModalStep('FORM')
           if (res.community?.id) {
@@ -226,6 +237,7 @@ export default function CommunityDirectoryPage() {
         // Reset form
         setName('')
         setType('PERKUMPULAN')
+        setPerkumpulanTier('FREE')
         setDescription('')
         setAktaNotaris('')
         setNomorAhu('')
@@ -513,7 +525,7 @@ export default function CommunityDirectoryPage() {
                           </select>
                           {type === 'PERKUMPULAN' ? (
                             <p className="text-[9px] text-[#007A3D] font-bold mt-1 flex items-center gap-1">
-                              ✓ Komunitas Perkumpulan 100% Gratis tanpa biaya paket.
+                              ✓ Perkumpulan tersedia opsi Gratis (Free) atau Premium (Biaya Aktivasi Rp200.000 1x).
                             </p>
                           ) : (
                             <p className="text-[9px] text-amber-700 font-bold mt-1 flex items-center gap-1">
@@ -522,6 +534,80 @@ export default function CommunityDirectoryPage() {
                           )}
                         </div>
                       </div>
+
+                      {type === 'PERKUMPULAN' && (
+                        <div className="space-y-2 pt-2 border-t border-black/5">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Pilih Tier Perkumpulan <span className="text-red-500">*</span></label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {/* Card FREE */}
+                            <div 
+                              onClick={() => setPerkumpulanTier('FREE')}
+                              className={`p-3.5 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
+                                perkumpulanTier === 'FREE' 
+                                  ? 'bg-emerald-50/30 border-[#2DB24A] shadow-sm ring-2 ring-[#2DB24A]/20' 
+                                  : 'bg-white border-black/5 hover:border-black/15'
+                              }`}
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between gap-1">
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
+                                    perkumpulanTier === 'FREE' ? 'border-[#2DB24A]' : 'border-gray-300'
+                                  }`}>
+                                    {perkumpulanTier === 'FREE' && <div className="w-2 h-2 rounded-full bg-[#2DB24A]" />}
+                                  </div>
+                                  <div className="text-right">
+                                    <h5 className="font-black text-xs text-[#0F5132] font-sora">PERKUMPULAN FREE</h5>
+                                    <span className="text-[10px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 0 (Selamanya Gratis)</span>
+                                  </div>
+                                </div>
+                                <div className="space-y-1 text-left pt-2 border-t border-gray-100 text-[9px] font-semibold text-gray-600">
+                                  <div>✓ Direktori & Forum Diskusi Komunitas</div>
+                                  <div>✓ Katalog Produk & Event Komunitas</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card PREMIUM */}
+                            <div 
+                              onClick={() => setPerkumpulanTier('PREMIUM')}
+                              className={`p-3.5 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
+                                perkumpulanTier === 'PREMIUM' 
+                                  ? 'bg-purple-50/30 border-purple-500 shadow-sm ring-2 ring-purple-500/20' 
+                                  : 'bg-white border-black/5 hover:border-black/15'
+                              }`}
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between gap-1">
+                                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
+                                    perkumpulanTier === 'PREMIUM' ? 'border-purple-500' : 'border-gray-300'
+                                  }`}>
+                                    {perkumpulanTier === 'PREMIUM' && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+                                  </div>
+                                  <div className="text-right">
+                                    <h5 className="font-black text-xs text-purple-800 font-sora flex items-center justify-end gap-1">
+                                      <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0 inline-block" /> PERKUMPULAN PREMIUM
+                                    </h5>
+                                    <span className="text-[10px] text-purple-600 font-extrabold block mt-0.5">Rp 200.000 <span className="text-[8px] font-normal text-gray-500">(Aktivasi 1x)</span></span>
+                                  </div>
+                                </div>
+                                <div className="space-y-1 text-left pt-2 border-t border-gray-100 text-[9px] font-bold text-purple-900">
+                                  <div>✓ Modul Membership Anggota Berbayar (Set Sendiri)</div>
+                                  <div>✓ Pengaturan Merchandise & Voucher Eksklusif</div>
+                                  <div>✓ Fitur Referral Multi-Tier (3-5 Tier)</div>
+                                </div>
+                              </div>
+                              <div className="pt-2 border-t border-purple-100/60 mt-2">
+                                <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-2 py-1 flex items-center justify-between gap-1">
+                                  <span className="flex items-center gap-1 text-[8px] font-bold text-amber-900">
+                                    <Gift className="w-3 h-3 text-amber-500" /> Bonus Aktivasi
+                                  </span>
+                                  <span className="text-[8px] font-black text-amber-700">🪙 1.000 Koin</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <div className="space-y-1.5">
                         <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Deskripsi Komunitas <span className="text-red-500">*</span></label>
                         <textarea
@@ -966,8 +1052,8 @@ export default function CommunityDirectoryPage() {
                           return
                         }
 
-                        if (type === 'KOPERASI') {
-                          if (!joinFee || !monthlyFee) {
+                        if (type === 'KOPERASI' || (type === 'PERKUMPULAN' && perkumpulanTier === 'PREMIUM')) {
+                          if (type === 'KOPERASI' && (!joinFee || !monthlyFee)) {
                             setFormError('Biaya simpanan pokok dan iuran wajib koperasi wajib diisi.')
                             return
                           }
@@ -978,7 +1064,7 @@ export default function CommunityDirectoryPage() {
                       }}
                       className="w-full py-3 bg-[#007A3D] hover:bg-[#006030] text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:opacity-95 transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      {type === 'KOPERASI' ? (
+                      {type === 'KOPERASI' || (type === 'PERKUMPULAN' && perkumpulanTier === 'PREMIUM') ? (
                         <>Lanjut ke Pembayaran Paket →</>
                       ) : (
                         <>{isPending ? 'Mendaftarkan Komunitas...' : 'Daftarkan Komunitas (Gratis)'}</>
@@ -1002,8 +1088,8 @@ export default function CommunityDirectoryPage() {
                   </div>
 
                   <div>
-                    <h2 className="text-xl font-black text-slate-900 font-sora">Pembayaran Paket</h2>
-                    <p className="text-xs text-slate-500 font-medium mt-1">Selesaikan pembayaran untuk mengaktifkan komunitas Anda.</p>
+                    <h2 className="text-xl font-black text-slate-900 font-sora">Pembayaran Aktivasi Komunitas</h2>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Selesaikan pembayaran untuk mengaktifkan komunitas Anda di platform Saloka.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
@@ -1014,21 +1100,25 @@ export default function CommunityDirectoryPage() {
                       <div className="space-y-2.5 text-xs">
                         <div className="flex justify-between items-start">
                           <span className="text-slate-500 font-medium">Nama Komunitas</span>
-                          <span className="font-bold text-slate-900 text-right max-w-[160px] truncate">{name || 'Koperasi Sejahtera Bersama'}</span>
+                          <span className="font-bold text-slate-900 text-right max-w-[160px] truncate">{name || 'Komunitas Bisnis Saloka'}</span>
                         </div>
 
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-500 font-medium">Paket</span>
-                          <span className="font-bold text-slate-900">{coopTier} - {getTierSubtitle(coopTier)}</span>
+                          <span className="text-slate-500 font-medium">Paket Komunitas</span>
+                          <span className="font-bold text-slate-900">
+                            {type === 'PERKUMPULAN' ? 'Perkumpulan Premium' : `Koperasi ${coopTier}`}
+                          </span>
                         </div>
 
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-500 font-medium">Durasi</span>
-                          <span className="font-bold text-slate-900">1 Bulan</span>
+                          <span className="text-slate-500 font-medium">Jenis Pembayaran</span>
+                          <span className="font-bold text-slate-900">
+                            {type === 'PERKUMPULAN' ? 'Biaya Aktivasi (Satu Kali)' : 'Berlangganan (1 Bulan)'}
+                          </span>
                         </div>
 
                         <div className="flex justify-between items-center">
-                          <span className="text-slate-500 font-medium">Harga Paket</span>
+                          <span className="text-slate-500 font-medium">Biaya Aktivasi Saloka</span>
                           <span className="font-bold text-slate-900">Rp{getTierPrice(coopTier).toLocaleString('id-ID')}</span>
                         </div>
 

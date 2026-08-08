@@ -261,6 +261,8 @@ export async function createIndukCommunity(formData: FormData) {
     }
   }
 
+  const perkumpulanTier = (formData.get('perkumpulanTier') as string) || 'FREE'
+
   let landingPageConfig = undefined
   let initialCoins = 0
   if (type === 'KOPERASI') {
@@ -276,6 +278,17 @@ export async function createIndukCommunity(formData: FormData) {
       coopTier,
       disabledModules,
       bonusCoins: initialCoins
+    })
+  } else if (type === 'PERKUMPULAN') {
+    if (perkumpulanTier === 'PREMIUM') initialCoins = 1000
+    landingPageConfig = JSON.stringify({
+      perkumpulanTier,
+      activationFeePaid: perkumpulanTier === 'PREMIUM' ? 200000 : 0,
+      bonusCoins: initialCoins,
+      disabledModules: [],
+      memberFee: 0,
+      memberFeePeriod: 'FREE',
+      benefits: ['Diskusi Komunitas', 'Katalog Produk Anggota', 'Event & Galeri']
     })
   }
 

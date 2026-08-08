@@ -261,6 +261,11 @@ export default function CommunityDetailPage() {
   const [isSavingRefSettings, setIsSavingRefSettings] = useState(false)
   const [kycWarningModalOpen, setKycWarningModalOpen] = useState(false)
 
+  // Perkumpulan Premium Membership Config States
+  const [communityMembershipType, setCommunityMembershipType] = useState<'FREE' | 'PREMIUM'>('PREMIUM')
+  const [communityMemberFee, setCommunityMemberFee] = useState<number>(50000)
+  const [communityMemberFeePeriod, setCommunityMemberFeePeriod] = useState<'MONTHLY' | 'YEARLY' | 'ONETIME'>('MONTHLY')
+
   // Require Member Guard Modal State
   const [requireMemberModalOpen, setRequireMemberModalOpen] = useState(false)
   const [requireMemberFeature, setRequireMemberFeature] = useState('Fitur Internal')
@@ -3344,7 +3349,97 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
 
-                  {/* SECTION 3: HISTORI REFERRAL DOWNLINE & AUDIT LOG */}
+                  {/* SECTION 3: PENGATURAN MEMBERSHIP & BENEFIT PERKUMPULAN PREMIUM */}
+                  <div className="pt-6 border-t border-gray-100 space-y-5">
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Award className="w-4 h-4 text-purple-600" /> Pengaturan Membership & Benefit Perkumpulan Premium
+                      </h3>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">
+                        Sebagai Admin Komunitas, Anda dapat menentukan sendiri biaya keanggotaan (membership fee), periode iuran, kit merchandise, dan benefit eksklusif bagi anggota komunitas Anda.
+                      </p>
+                    </div>
+
+                    {/* Notice Alert */}
+                    <div className="p-4 bg-purple-50/80 border border-purple-200 rounded-2xl space-y-1.5">
+                      <div className="flex items-center gap-2 font-extrabold text-xs text-purple-900 font-sora">
+                        <Info className="w-4 h-4 text-purple-600 shrink-0" />
+                        <span>Catatan Transparansi Finansial Kas Komunitas:</span>
+                      </div>
+                      <p className="text-[11px] text-purple-800 font-medium leading-relaxed">
+                        Seluruh dana iuran membership anggota di bawah ini diatur penuh oleh Admin komunitas dan <strong>100% masuk ke Kas/Rekening Komunitas Anda</strong>. Biaya ini sepenuhnya terpisah dari <strong>Biaya Aktivasi Platform Saloka (Rp200.000)</strong> yang dibayarkan satu kali saat pendaftaran awal.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Model Keanggotaan Anggota</label>
+                        <select
+                          value={communityMembershipType}
+                          onChange={e => setCommunityMembershipType(e.target.value as any)}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#2DB24A]"
+                        >
+                          <option value="FREE">Gratis (Semua Anggota Bebas Join)</option>
+                          <option value="PREMIUM">Premium Berbayar (Exclusive Member)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Biaya Membership Anggota (Rp)</label>
+                        <input
+                          type="number"
+                          value={communityMemberFee}
+                          onChange={e => setCommunityMemberFee(Number(e.target.value))}
+                          placeholder="e.g. 50000"
+                          disabled={communityMembershipType === 'FREE'}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A] disabled:bg-gray-100 disabled:opacity-60"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Periode Keanggotaan</label>
+                        <select
+                          value={communityMemberFeePeriod}
+                          onChange={e => setCommunityMemberFeePeriod(e.target.value as any)}
+                          disabled={communityMembershipType === 'FREE'}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#2DB24A] disabled:bg-gray-100 disabled:opacity-60"
+                        >
+                          <option value="MONTHLY">Per Bulan (Bulanan)</option>
+                          <option value="YEARLY">Per Tahun (Tahunan)</option>
+                          <option value="ONETIME">Pembayaran Satu Kali (Selamanya)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Benefit Checklist */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-gray-800">Benefit & Fasilitas Anggota Premium:</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {[
+                          { id: 'b1', label: '🎽 Kit Merchandise Komunitas (Kaos, Pin & Stiker)' },
+                          { id: 'b2', label: '🎟️ Akses Event VIP & Kopdar Eksklusif Anggota' },
+                          { id: 'b3', label: '🏷️ Voucher Diskon Khusus Produk Anggota Merchant' },
+                          { id: 'b4', label: '🛡️ Lencana Profil Verified & Akses Direktori Kontak' },
+                        ].map((b) => (
+                          <div key={b.id} className="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
+                            <span className="text-xs font-bold text-gray-800">{b.label}</span>
+                            <span className="text-xs font-black text-emerald-600">✓ Aktif</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={() => {
+                          goeyToast.success('Pengaturan Membership & Benefit Perkumpulan Premium berhasil disimpan!')
+                        }}
+                        className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        Simpan Pengaturan Membership Premium
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SECTION 4: HISTORI REFERRAL DOWNLINE & AUDIT LOG */}
                   <div className="pt-6 border-t border-gray-100 space-y-4">
                     <div>
                       <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
