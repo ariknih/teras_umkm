@@ -847,45 +847,45 @@ export default function CartPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#F5F7F9] pt-6 pb-24 px-4 md:px-10">
+    <div className="relative min-h-screen bg-[#F8F9FA] pt-6 pb-24 px-4 md:px-8 font-sans">
       
-      <div className="relative z-10 max-w-[1280px] mx-auto">
+      <div className="relative z-10 max-w-[1160px] mx-auto space-y-6">
         {error && (
-          <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600 font-medium">
-            ⚠️ {error}
+          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600 font-medium flex items-center gap-2">
+            ⚠️ <span>{error}</span>
           </div>
         )}
         {successMessage && (
-          <div className="mb-4 p-4 rounded-xl bg-green-50 border border-green-200 text-xs text-green-600 font-medium">
-            ✓ {successMessage}
+          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium flex items-center gap-2">
+            ✓ <span>{successMessage}</span>
           </div>
         )}
 
         {cartDetails.length === 0 ? (
           /* EMPTY CART VIEW (Screenshot 2) */
-          <div className="space-y-12">
-            <div className="text-center py-16 px-6 bg-white rounded-3xl border border-slate-100 shadow-sm max-w-xl mx-auto">
-              <div className="w-24 h-24 bg-[#2DB24A]/10 rounded-full flex items-center justify-center mx-auto mb-5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-12 h-12 text-[#2DB24A]">
+          <div className="space-y-10">
+            <div className="text-center py-16 px-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs max-w-lg mx-auto">
+              <div className="w-20 h-20 bg-[#E8F7EC] rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-10 h-10 text-[#2DB24A]">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                 </svg>
               </div>
-              <h3 className="font-sora text-xl font-bold text-slate-900 mb-2">Keranjangmu kosong nih</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6 leading-relaxed">
+              <h3 className="font-bold text-lg text-slate-800 mb-1">Keranjangmu kosong nih</h3>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto mb-6 leading-relaxed">
                 Yuk jelajahi produk-produk yang ada lalu tambahkan ke keranjang!
               </p>
               <Link
                 href="/market"
-                className="px-8 py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-full transition-all shadow-md inline-block cursor-pointer"
+                className="px-7 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-full transition-colors shadow-xs inline-block cursor-pointer"
               >
                 Cari produk lagi
               </Link>
             </div>
 
             {/* Rekomendasi produk untuk kamu */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-sora text-base font-bold text-slate-900">Rekomendasi produk untuk kamu</h3>
+                <h3 className="font-bold text-sm text-slate-800">Rekomendasi produk untuk kamu</h3>
                 <Link href="/market" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
                   Pindah ke marketplace &gt;
                 </Link>
@@ -893,7 +893,7 @@ export default function CartPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {products.slice(0, 8).map(prod => (
-                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs hover:shadow-md transition-all group">
+                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-[#2DB24A] transition-all group">
                     <div className="aspect-square bg-slate-50 relative overflow-hidden">
                       {prod.imageUrl ? (
                         <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -901,10 +901,10 @@ export default function CartPage() {
                         <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                       )}
                     </div>
-                    <div className="p-3.5 space-y-1.5">
-                      <h4 className="font-bold text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
-                      <p className="font-sora font-extrabold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                    <div className="p-3 space-y-1">
+                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
+                      <p className="font-bold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
                         <span>⭐ 4.9</span>
                         <span>•</span>
                         <span>Bandung</span>
@@ -917,18 +917,18 @@ export default function CartPage() {
           </div>
         ) : viewMode === 'cart' ? (
           /* STAGE 1: KERANJANG BELANJAMU VIEW (Screenshot 3) */
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h1 className="font-sora text-2xl font-bold text-slate-900 mb-1">Keranjang Belanjamu</h1>
-              <p className="text-xs text-slate-500">Kamu punya {cartDetails.length} produk di keranjangmu</p>
+              <h1 className="text-xl font-bold text-slate-900">Keranjang Belanjamu</h1>
+              <p className="text-xs text-slate-400 mt-0.5">Kamu punya {cartDetails.length} produk di keranjangmu</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
               {/* Left Column: Items */}
               <div className="lg:col-span-8 space-y-4">
                 {/* Select all bar */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3 text-xs text-slate-700 font-medium">
+                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3 text-xs text-slate-700 font-medium">
                   <input
                     type="checkbox"
                     checked={selectedItemIds.size === cartDetails.length && cartDetails.length > 0}
@@ -956,7 +956,7 @@ export default function CartPage() {
                   return Object.entries(groups).map(([mId, items]) => {
                     const shopName = items[0]?.merchant?.name || 'Toko Bunga Abadi';
                     return (
-                      <div key={mId} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
+                      <div key={mId} className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-4">
                         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                           <input
                             type="checkbox"
@@ -971,8 +971,8 @@ export default function CartPage() {
                             }}
                             className="w-4 h-4 text-[#2DB24A] accent-[#2DB24A] rounded cursor-pointer"
                           />
-                          <span className="text-base">🏪</span>
-                          <span className="font-sora font-bold text-xs text-slate-900">{shopName}</span>
+                          <span className="w-2 h-2 rounded-full bg-[#2DB24A]" />
+                          <span className="font-bold text-xs text-slate-800">{shopName}</span>
                         </div>
 
                         <div className="space-y-4">
@@ -994,21 +994,21 @@ export default function CartPage() {
                                     }}
                                     className="w-4 h-4 text-[#2DB24A] accent-[#2DB24A] rounded cursor-pointer"
                                   />
-                                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 relative">
+                                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden shrink-0 relative">
                                     {item.imageUrl ? (
                                       <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
                                     ) : (
                                       <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
                                     )}
                                   </div>
-                                  <div className="space-y-1">
+                                  <div className="space-y-0.5">
                                     <h4 className="font-bold text-slate-800 line-clamp-1 text-xs">{item.title}</h4>
                                     <p className="text-[11px] text-slate-400">Color: Oatmeal White</p>
                                   </div>
                                 </div>
 
                                 <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
-                                  <div className="font-sora font-bold text-slate-900 text-xs">
+                                  <div className="font-bold text-slate-900 text-xs">
                                     Rp {(wholesalePrice * item.quantity).toLocaleString('id-ID')}
                                   </div>
 
@@ -1020,7 +1020,7 @@ export default function CartPage() {
                                     >
                                       Hapus
                                     </button>
-                                    <div className="inline-flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
+                                    <div className="inline-flex items-center border border-slate-200 rounded-md bg-slate-50 overflow-hidden">
                                       <button
                                         type="button"
                                         onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
@@ -1028,7 +1028,7 @@ export default function CartPage() {
                                       >
                                         -
                                       </button>
-                                      <span className="px-3 font-bold text-slate-800 text-xs">{item.quantity}</span>
+                                      <span className="px-2.5 font-bold text-slate-800 text-xs">{item.quantity}</span>
                                       <button
                                         type="button"
                                         onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
@@ -1050,13 +1050,13 @@ export default function CartPage() {
               </div>
 
               {/* Right Column: Ringkasan Belanja */}
-              <div className="lg:col-span-4 space-y-6 sticky top-24">
-                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
-                  <h3 className="font-sora text-sm font-bold text-slate-900">Ringkasan Belanja</h3>
+              <div className="lg:col-span-4 space-y-4 sticky top-24">
+                <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+                  <h3 className="font-bold text-xs text-slate-900">Ringkasan Belanja</h3>
 
                   <div className="flex justify-between items-center text-xs text-slate-600 pt-1">
                     <span>Total</span>
-                    <span className="font-sora font-extrabold text-slate-900 text-base">
+                    <span className="font-extrabold text-slate-900 text-base">
                       Rp {subtotal.toLocaleString('id-ID')}
                     </span>
                   </div>
@@ -1064,16 +1064,16 @@ export default function CartPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode('checkout')}
-                    className="w-full py-3.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-sm rounded-xl transition-all shadow-md text-center cursor-pointer"
+                    className="w-full py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl transition-colors shadow-xs text-center cursor-pointer"
                   >
                     Beli ({cartDetails.length})
                   </button>
 
-                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 text-center space-y-2 mt-4">
+                  <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl p-4 text-center space-y-2.5 mt-4">
                     <p className="text-xs text-slate-700 font-medium">Masih ingin cari barang lainnya?</p>
                     <Link
                       href="/market"
-                      className="block w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-emerald-50 font-bold text-xs rounded-xl transition-colors text-center"
+                      className="block w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] font-bold text-xs rounded-lg hover:bg-emerald-50 transition-colors text-center"
                     >
                       Lanjut belanja
                     </Link>
@@ -1084,9 +1084,9 @@ export default function CartPage() {
             </div>
 
             {/* Bottom section: Rekomendasi produk untuk kamu */}
-            <div className="space-y-6 pt-8">
+            <div className="space-y-4 pt-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-sora text-base font-bold text-slate-900">Rekomendasi produk untuk kamu</h3>
+                <h3 className="font-bold text-sm text-slate-800">Rekomendasi produk untuk kamu</h3>
                 <Link href="/market" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
                   Pindah ke marketplace &gt;
                 </Link>
@@ -1094,7 +1094,7 @@ export default function CartPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {products.slice(0, 8).map(prod => (
-                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs hover:shadow-md transition-all group">
+                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-[#2DB24A] transition-all group">
                     <div className="aspect-square bg-slate-50 relative overflow-hidden">
                       {prod.imageUrl ? (
                         <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -1102,10 +1102,10 @@ export default function CartPage() {
                         <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                       )}
                     </div>
-                    <div className="p-3.5 space-y-1.5">
-                      <h4 className="font-bold text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
-                      <p className="font-sora font-extrabold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                    <div className="p-3 space-y-1">
+                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
+                      <p className="font-bold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
                         <span>⭐ 4.9</span>
                         <span>•</span>
                         <span>Bandung</span>
@@ -1118,10 +1118,10 @@ export default function CartPage() {
           </div>
         ) : (
           /* STAGE 2: CHECKOUT VIEW (Screenshot 4) */
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="font-sora text-2xl font-bold text-slate-900 mb-1">Checkout</h1>
+                <h1 className="text-xl font-bold text-slate-900 mb-1">Checkout</h1>
                 <button
                   type="button"
                   onClick={() => setViewMode('cart')}
@@ -1132,32 +1132,32 @@ export default function CartPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
               {/* Left Column (Address & Merchant Items) */}
-              <div className="lg:col-span-8 space-y-6">
+              <div className="lg:col-span-8 space-y-4">
 
                 {/* 1. Address Card */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Alamat Pengiriman</div>
+                <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-2">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Alamat Pengiriman</div>
                   {(() => {
                     const activeAddress = addresses.find(a => a.id === selectedAddressId) || addresses[0];
                     return activeAddress ? (
                       <div>
-                        <div className="flex items-center justify-between gap-4 mb-2">
-                          <span className="px-3 py-0.5 bg-emerald-50 text-[#2DB24A] font-bold text-xs rounded-full flex items-center gap-1">
+                        <div className="flex items-center justify-between gap-4 mb-1">
+                          <span className="px-2.5 py-0.5 bg-[#E8F7EC] text-[#2DB24A] font-bold text-[11px] rounded-full flex items-center gap-1">
                             📍 {activeAddress.label || 'Alamat 1'}
                           </span>
                           <button
                             type="button"
                             onClick={() => setShowAddressModal(true)}
-                            className="text-slate-500 font-bold text-xs hover:text-[#2DB24A] underline cursor-pointer"
+                            className="text-slate-400 font-medium text-xs hover:text-[#2DB24A] underline cursor-pointer"
                           >
                             Ganti Alamat
                           </button>
                         </div>
-                        <p className="text-slate-700 text-xs font-medium leading-relaxed mt-2">
-                          <strong className="text-slate-900 font-bold">{activeAddress.name} ({activeAddress.phone})</strong> — {activeAddress.addressText}
+                        <p className="text-slate-600 text-xs font-normal leading-relaxed mt-1">
+                          <strong className="text-slate-800 font-semibold">{activeAddress.name} ({activeAddress.phone})</strong> — {activeAddress.addressText}
                         </p>
                       </div>
                     ) : (
@@ -1187,18 +1187,18 @@ export default function CartPage() {
                   return Object.entries(groups).map(([mId, items]) => {
                     const shopName = items[0]?.merchant?.name || '[Nama Merchant]';
                     return (
-                      <div key={mId} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-5">
-                        <div className="font-sora font-bold text-xs text-slate-800 border-b border-slate-100 pb-2">
+                      <div key={mId} className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+                        <div className="font-bold text-xs text-slate-800 border-b border-slate-100 pb-2">
                           {shopName}
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {items.map(item => {
                             const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
                             return (
                               <div key={item.id} className="flex items-center justify-between gap-4 pb-3 border-b border-slate-50 last:border-b-0 text-xs">
                                 <div className="flex gap-3 items-center">
-                                  <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0">
+                                  <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden shrink-0">
                                     {item.imageUrl ? (
                                       <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
                                     ) : (
@@ -1206,12 +1206,12 @@ export default function CartPage() {
                                     )}
                                   </div>
                                   <div>
-                                    <h4 className="font-bold text-slate-800">{item.title}</h4>
+                                    <h4 className="font-bold text-slate-800 text-xs">{item.title}</h4>
                                     <p className="text-[11px] text-slate-400">Color: Oatmeal White</p>
                                   </div>
                                 </div>
 
-                                <div className="text-right font-sora font-bold text-slate-900">
+                                <div className="text-right font-bold text-slate-900">
                                   <div>Rp {(wholesalePrice * item.quantity).toLocaleString('id-ID')}</div>
                                   <div className="text-[10px] text-slate-400 font-normal">{item.quantity}pcs x Rp{wholesalePrice.toLocaleString('id-ID')}</div>
                                 </div>
@@ -1221,13 +1221,13 @@ export default function CartPage() {
                         </div>
 
                         {/* Shipping selector per merchant */}
-                        <div className="pt-2 border-t border-slate-100 space-y-3">
-                          <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2 text-xs">
+                        <div className="pt-1 border-t border-slate-100 space-y-2">
+                          <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2 text-xs">
                             <div className="flex justify-between items-center">
                               <span className="font-bold text-slate-800">Ekonomi (Rp9.000)</span>
                               <span className="text-[11px] text-slate-400">Estimasi tiba 28 - 31 Jul</span>
                             </div>
-                            <label className="flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer pt-1 border-t border-slate-200/50">
+                            <label className="flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer pt-1 border-t border-slate-200/40">
                               <input type="checkbox" defaultChecked className="w-3.5 h-3.5 text-[#2DB24A] accent-[#2DB24A] rounded" />
                               <span>Pakai Asuransi Pengiriman (Rp 2.000)</span>
                             </label>
@@ -1241,11 +1241,11 @@ export default function CartPage() {
               </div>
 
               {/* Right Column (Payment Method, Promo Code, Transaction Summary) */}
-              <div className="lg:col-span-4 space-y-6 sticky top-24">
+              <div className="lg:col-span-4 space-y-4 sticky top-24">
                 
-                {/* 1. Metode Pembayaran Card (Top of Right Sidebar) */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-                  <h3 className="font-sora text-sm font-bold text-slate-900">Metode pembayaran</h3>
+                {/* 1. Metode Pembayaran Card */}
+                <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+                  <h3 className="font-bold text-xs text-slate-800">Metode pembayaran</h3>
 
                   <div className="space-y-2">
                     {[
@@ -1286,45 +1286,45 @@ export default function CartPage() {
                               setActivePaymentSubId(opt.id);
                             }
                           }}
-                          className={`p-3.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
+                          className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
-                              ? 'bg-emerald-50/40 border-[#2DB24A] text-[#2DB24A] shadow-xs'
-                              : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                              ? 'bg-[#F0FDF4] border-[#2DB24A] text-[#2DB24A]'
+                              : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300'
                           }`}
                         >
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-2">
                             <span>{opt.icon}</span>
                             <span>{opt.label}</span>
                           </div>
-                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#2DB24A]' : 'border-slate-300'}`}>
-                            {isSelected && <div className="w-2 h-2 rounded-full bg-[#2DB24A]" />}
+                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#2DB24A]' : 'border-slate-300'}`}>
+                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#2DB24A]" />}
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  <button type="button" className="text-xs font-bold text-[#2DB24A] hover:underline">
+                  <button type="button" className="text-xs font-bold text-[#2DB24A] hover:underline pt-1">
                     Lihat semua metode pembayaran &gt;
                   </button>
                 </div>
 
                 {/* 2. State Kode Promo Card */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
+                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs space-y-2">
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={couponCode}
                       onChange={e => setCouponCode(e.target.value.toUpperCase())}
                       placeholder="Masukkan kode promo"
-                      className={`bg-slate-50 border rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none flex-1 ${
-                        couponSuccess ? 'border-[#2DB24A] bg-emerald-50/30' : couponError ? 'border-red-400 bg-red-50/30' : 'border-slate-200 focus:border-[#2DB24A]'
+                      className={`bg-slate-50 border rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none flex-1 ${
+                        couponSuccess ? 'border-[#2DB24A] bg-[#F0FDF4]' : couponError ? 'border-red-400 bg-red-50' : 'border-slate-200 focus:border-[#2DB24A]'
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => handleApplyCoupon(couponCode)}
-                      className="bg-[#2DB24A] hover:bg-[#259a3f] text-white text-xs font-bold rounded-xl px-5 py-2.5 transition-colors cursor-pointer shrink-0"
+                      className="bg-[#2DB24A] hover:bg-[#259a3f] text-white text-xs font-bold rounded-lg px-4 py-2 transition-colors cursor-pointer shrink-0"
                     >
                       Gunakan
                     </button>
@@ -1334,17 +1334,17 @@ export default function CartPage() {
                 </div>
 
                 {/* 3. Cek ringkasan transaksi dulu ya! Card */}
-                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
-                  <h3 className="font-sora text-sm font-bold text-slate-900">Cek ringkasan transaksi dulu ya!</h3>
+                <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+                  <h3 className="font-bold text-xs text-slate-800">Cek ringkasan transaksi dulu ya!</h3>
 
-                  <div className="space-y-2.5 text-xs text-slate-600 pt-1">
+                  <div className="space-y-2 text-xs text-slate-600 pt-1">
                     <div className="flex justify-between items-center">
                       <span>Subtotal</span>
                       <span className="font-semibold text-slate-800">Rp {subtotal.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Pengiriman</span>
-                      <span className="font-semibold text-emerald-600 font-bold">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
+                      <span className="font-semibold text-[#2DB24A] font-bold">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
                     </div>
                     {couponDiscount > 0 && (
                       <div className="flex justify-between items-center text-[#2DB24A] font-bold">
@@ -1353,9 +1353,9 @@ export default function CartPage() {
                       </div>
                     )}
 
-                    <div className="border-t border-slate-100 pt-3 flex justify-between items-center">
-                      <span className="font-sora font-bold text-xs text-slate-800">Total Tagihan</span>
-                      <span className="font-sora text-xl font-extrabold text-slate-900">
+                    <div className="border-t border-slate-100 pt-2.5 flex justify-between items-center">
+                      <span className="font-bold text-xs text-slate-800">Total Tagihan</span>
+                      <span className="font-extrabold text-slate-900 text-lg">
                         Rp {total.toLocaleString('id-ID')}
                       </span>
                     </div>
@@ -1372,7 +1372,7 @@ export default function CartPage() {
                       hasOwnProduct ||
                       (paymentMethod === 'WALLET' && (walletBalance === null || walletBalance < total))
                     }
-                    className="w-full py-3.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-sm rounded-xl transition-all shadow-md cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                    className="w-full py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed mt-1"
                   >
                     {isPendingCheckout 
                       ? 'Memproses Transaksi...' 
@@ -1386,13 +1386,19 @@ export default function CartPage() {
                   </button>
 
                   {hasOwnProduct && (
-                    <p className="text-[10px] text-red-500 font-semibold text-center mt-2">
+                    <p className="text-[10px] text-red-500 font-semibold text-center mt-1">
                       ⚠️ Hapus produk toko Anda sendiri untuk membuat pesanan.
                     </p>
                   )}
                 </div>
 
               </div>
+
+            </div>
+          </div>
+        )}
+      </div>
+    </div>iv>
 
             </div>
           </div>
