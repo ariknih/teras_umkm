@@ -1224,7 +1224,7 @@ export default function CommunityDetailPage() {
         {/* ── 2-PANEL FLEX LAYOUT: UNIFIED SALOKA DESIGN SYSTEM FOR ALL 5 COMMUNITIES ── */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           
-          {/* ── LEFT SIDEBAR MENU PANEL ──────────────────────────────────────── */}
+          {/* ── LEFT SIDEBAR MENU PANEL (Normal Page Flow - Moving naturally on Scroll) ──────────────────────────────────────── */}
           <div className="w-full lg:w-60 shrink-0 space-y-4">
             <Link href="/community" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 font-semibold transition-colors">
               <ChevronLeft className="w-4 h-4" /> Kembali ke Komunitas
@@ -1234,7 +1234,7 @@ export default function CommunityDetailPage() {
               {community.name}
             </h2>
 
-            {/* Sidebar Navigation Links (Diferensiasi Template Dinamis) */}
+            {/* Sidebar Navigation Links (Responsive for Koperasi & Perkumpulan based on User Role) */}
             <div className="space-y-1">
               {activeSidebarNavList.map((item) => {
                 const Icon = item.icon
@@ -1243,18 +1243,18 @@ export default function CommunityDetailPage() {
                   <button
                     key={item.id}
                     onClick={() => handleSidebarClick(item.id)}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-left cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all text-left cursor-pointer ${
                       isActive
-                        ? 'bg-[#E8F8EE] text-[#0F5132] shadow-xs'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-[#E8F8EE] text-[#0F5132] font-black shadow-xs'
+                        : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
-                      <span>{item.label}</span>
+                    <div className="flex items-center gap-3.5">
+                      <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
+                      <span className="font-extrabold">{item.label}</span>
                     </div>
                     {(item as any).badge && (
-                      <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase tracking-wider scale-90 shrink-0">
+                      <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase tracking-wider shrink-0">
                         {(item as any).badge}
                       </span>
                     )}
