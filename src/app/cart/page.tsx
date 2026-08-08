@@ -710,59 +710,22 @@ export default function CartPage() {
       return
     }
 
-    // Midtrans checkout
+    // Direct payment checkout (Bypass Midtrans popup)
     try {
-      const res = await fetch('/api/midtrans/snap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'checkout',
-          items: itemsPayload,
-          affiliateId: affiliateId || undefined,
-          shippingDetails
-        }),
-      })
-
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Gagal memproses pembayaran.')
-      }
-
-      setPendingOrderId(data.orderId)
-
-      const snap = (window as any).snap
-      if (snap) {
-        snap.pay(data.token, {
-          onSuccess: async (result: any) => {
-            setSuccessMessage('Pembayaran berhasil! Memverifikasi kas...')
-            await verifyCheckout(result.order_id || data.orderId, false)
-            setIsPendingCheckout(false)
-          },
-          onPending: (result: any) => {
-            const ordId = result.order_id || data.orderId
-            setPendingOrderId(ordId)
-            const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
-            localStorage.removeItem(cartKey)
-            localStorage.removeItem('teras_affiliate_id')
-            setCart([])
-            setAffiliateId('')
-            router.push(`/orders/${ordId}`)
-          },
-          onError: (result: any) => {
-            setError('Terjadi kesalahan pada pembayaran Midtrans.')
-            setIsPendingCheckout(false)
-          },
-          onClose: () => {
-            setError(`Pembayaran belum selesai. Silakan selesaikan pembayaran atau coba lagi.`)
-            setIsPendingCheckout(false)
-          }
-        })
-      } else {
-        setError(`Pembayaran sedang diproses. Jika sudah membayar, silakan tunggu beberapa saat.`)
-        setIsPendingCheckout(false)
-      }
+      const res = await checkoutCart(itemsPayload, affiliateId || undefined, activePaymentSubId || 'BANK', shippingDetails)
+      if (res.error || !res.order) throw new Error(res.error || 'Gagal membuat pesanan.')
+      
+      const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+      localStorage.removeItem(cartKey)
+      localStorage.removeItem('teras_affiliate_id')
+      setCart([])
+      setAffiliateId('')
+      setSuccessMessage('Pesanan Anda telah berhasil dibuat!')
+      setCheckoutSuccess(true)
+      setIsPendingCheckout(false)
+      router.push(`/orders/${res.order.id}`)
     } catch (err: any) {
-      setError(err.message || 'Gagal terhubung dengan Midtrans.')
+      setError(err.message || 'Gagal memproses pesanan.')
       setIsPendingCheckout(false)
     }
   }
