@@ -356,7 +356,12 @@ export default function CommunityDetailPage() {
     if (disabledModules.includes(activeSidebarNav)) {
       setActiveSidebarNav('beranda')
     }
-  }, [disabledModules, activeSidebarNav])
+    if (!isCanManageCoop && !isMember) {
+      if (!['beranda', 'marketplace', 'tentang'].includes(activeSidebarNav)) {
+        setActiveSidebarNav('beranda')
+      }
+    }
+  }, [disabledModules, activeSidebarNav, isCanManageCoop, isMember])
   const [feedFilter, setFeedFilter] = useState<'semua' | 'diskusi' | 'pengumuman' | 'event' | 'produk'>('semua')
 
   const [recentTransactions, setRecentTransactions] = useState<any[]>([
@@ -1138,6 +1143,9 @@ export default function CommunityDetailPage() {
 
   const activeSidebarNavList = [
     ...sidebarNavList.filter((item) => {
+      if (!isCanManageCoop && !isMember) {
+        return ['beranda', 'marketplace', 'tentang'].includes(item.id)
+      }
       if (!isCanManageCoop && ['simpanan', 'pendanaan', 'shu', 'laporan'].includes(item.id)) return false
       return !disabledModules.includes(item.id)
     }),
