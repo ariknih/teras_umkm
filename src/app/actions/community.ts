@@ -280,11 +280,11 @@ export async function createIndukCommunity(formData: FormData) {
       bonusCoins: initialCoins
     })
   } else if (type === 'PERKUMPULAN') {
-    if (perkumpulanTier === 'PREMIUM') initialCoins = 1000
+    initialCoins = 0
     landingPageConfig = JSON.stringify({
       perkumpulanTier,
       activationFeePaid: perkumpulanTier === 'PREMIUM' ? 200000 : 0,
-      bonusCoins: initialCoins,
+      bonusCoins: 0,
       disabledModules: [],
       memberFee: 0,
       memberFeePeriod: 'FREE',

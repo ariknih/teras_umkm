@@ -151,9 +151,7 @@ export default function CommunityDirectoryPage() {
   }
 
   const getTierCoins = (tier: string) => {
-    if (type === 'PERKUMPULAN') {
-      return perkumpulanTier === 'PREMIUM' ? '1.000' : '0'
-    }
+    if (type === 'PERKUMPULAN') return '0'
     if (tier === 'BASIC') return '500'
     if (tier === 'PLUS') return '1.500'
     return '3.000'
@@ -594,14 +592,6 @@ export default function CommunityDirectoryPage() {
                                   <div>✓ Modul Membership Anggota Berbayar (Set Sendiri)</div>
                                   <div>✓ Pengaturan Merchandise & Voucher Eksklusif</div>
                                   <div>✓ Fitur Referral Multi-Tier (3-5 Tier)</div>
-                                </div>
-                              </div>
-                              <div className="pt-2 border-t border-purple-100/60 mt-2">
-                                <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-2 py-1 flex items-center justify-between gap-1">
-                                  <span className="flex items-center gap-1 text-[8px] font-bold text-amber-900">
-                                    <Gift className="w-3 h-3 text-amber-500" /> Bonus Aktivasi
-                                  </span>
-                                  <span className="text-[8px] font-black text-amber-700">🪙 1.000 Koin</span>
                                 </div>
                               </div>
                             </div>
@@ -1122,12 +1112,14 @@ export default function CommunityDirectoryPage() {
                           <span className="font-bold text-slate-900">Rp{getTierPrice(coopTier).toLocaleString('id-ID')}</span>
                         </div>
 
-                        <div className="flex justify-between items-center pt-1">
-                          <span className="text-[#007A3D] font-extrabold flex items-center gap-1">Bonus Aktivasi</span>
-                          <span className="font-black text-[#007A3D] flex items-center gap-1.5">
-                            🪙 {getTierCoins(coopTier)} Koin
-                          </span>
-                        </div>
+                        {type === 'KOPERASI' && (
+                          <div className="flex justify-between items-center pt-1">
+                            <span className="text-[#007A3D] font-extrabold flex items-center gap-1">Bonus Aktivasi</span>
+                            <span className="font-black text-[#007A3D] flex items-center gap-1.5">
+                              🪙 {getTierCoins(coopTier)} Koin
+                            </span>
+                          </div>
+                        )}
 
                         <div className="border-t border-slate-100 pt-2 flex justify-between items-center">
                           <span className="text-slate-500 font-medium">Subtotal</span>
