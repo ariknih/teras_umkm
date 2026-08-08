@@ -73,6 +73,9 @@ export default function CartPage() {
     })
     .filter(Boolean) as Array<ProductDetails & { quantity: number }>
 
+  const [viewMode, setViewMode] = useState<'cart' | 'checkout'>('cart')
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
+
   const [affiliateId, setAffiliateId] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -793,11 +796,16 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F5F5F5]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#2DB24A]/20 border-t-[#2DB24A] rounded-full animate-spin"></div>
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F5F7F9]">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="w-10 h-10 border-4 border-[#2DB24A]/20 border-t-[#2DB24A] rounded-full animate-spin mb-2" />
           <span className="text-xs font-bold text-[#2DB24A] tracking-widest uppercase">
-            Memuat Halaman Checkout...
+            MEMUAT HALAMAN CHECKOUT...
+          </span>
+          <span className="text-[11px] text-slate-400 font-medium">Ganti jadi</span>
+          <span className="text-xs text-slate-400">↓</span>
+          <span className="text-xs text-slate-700 font-semibold">
+            Memuat keranjang belanjaan-mu
           </span>
         </div>
       </div>
@@ -806,32 +814,29 @@ export default function CartPage() {
 
   if (checkoutSuccess) {
     return (
-      <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F5F5F5] py-12 px-6">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(45,178,74,0.04)_0%,transparent_65%)] pointer-events-none z-0" />
-        <div className="relative z-10 w-full max-w-md text-center border border-slate-200 bg-white shadow-lg p-8 rounded-lg">
-          <div className="w-16 h-16 bg-green-500/10 border border-green-500/20 text-green-500 flex items-center justify-center mx-auto rounded-full mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
+      <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F5F7F9] py-12 px-6">
+        <div className="relative z-10 w-full max-w-md text-center border border-slate-100 bg-white shadow-xl p-8 rounded-3xl">
+          <div className="w-16 h-16 bg-emerald-50 text-[#2DB24A] flex items-center justify-center mx-auto rounded-full mb-6 text-2xl font-bold">
+            ✓
           </div>
-          <h2 className="font-sora text-2xl font-bold text-slate-800 mb-3">Transaksi Berhasil!</h2>
+          <h2 className="font-sora text-2xl font-bold text-slate-900 mb-3">Pesanan Berhasil dibuat!</h2>
           <p className="text-xs text-slate-500 leading-relaxed mb-6">
-            Pesanan Anda telah berhasil dibuat dan data transaksi telah disinkronkan.
+            Pesanan Anda telah berhasil tercatat di sistem Saloka UMKM.
           </p>
-          <div className="bg-slate-50 border border-slate-200/50 p-4 mb-8 rounded-xl text-left text-xs text-slate-600 space-y-2">
+          <div className="bg-slate-50 border border-slate-100 p-4 mb-8 rounded-2xl text-left text-xs text-slate-600 space-y-2">
             <div className="flex justify-between"><span>Poin Diperoleh (1%):</span><span className="text-[#2DB24A] font-bold">+{Math.round(total * 0.01)} Poin</span></div>
             <div className="flex justify-between"><span>Cashback Dompet (5%):</span><span className="text-[#2DB24A] font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span></div>
           </div>
           <div className="flex flex-col gap-3">
             <Link
-              href="/wallet"
-              className="py-3 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-bold text-xs uppercase tracking-wider rounded text-center transition-colors shadow"
+              href="/orders"
+              className="py-3.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl text-center transition-all shadow-md"
             >
-              Buka Dompet / Ledger
+              Lihat Detail Tagihan & Status Pesanan
             </Link>
             <Link
               href="/market"
-              className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded text-center transition-colors"
+              className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl text-center transition-colors"
             >
               Kembali Belanja
             </Link>
@@ -842,36 +847,26 @@ export default function CartPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#F5F5F5] pt-6 pb-24 px-4 md:px-10">
+    <div className="relative min-h-screen bg-[#F5F7F9] pt-6 pb-24 px-4 md:px-10">
       
-      {/* 1. Header Checkout (Shopee Style) */}
-      <div className="max-w-[1200px] mx-auto mb-5 bg-white border border-slate-200/70 p-4 rounded flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/market" className="font-sora text-xl font-black text-[#2DB24A] tracking-tight">
-            Saloka <span className="text-slate-700 font-normal">| Checkout</span>
-          </Link>
-        </div>
-        <div className="text-[11px] text-slate-400 font-medium">Sistem Pembayaran Terenkripsi Aman</div>
-      </div>
-
-      <div className="relative z-10 max-w-[1200px] mx-auto">
+      <div className="relative z-10 max-w-[1280px] mx-auto">
         {error && (
-          <div className="mb-4 p-4 rounded bg-red-50 border border-red-200 text-xs text-red-600 font-medium">
+          <div className="mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600 font-medium">
             ⚠️ {error}
           </div>
         )}
         {successMessage && (
-          <div className="mb-4 p-4 rounded bg-green-50 border border-green-200 text-xs text-green-600 font-medium">
+          <div className="mb-4 p-4 rounded-xl bg-green-50 border border-green-200 text-xs text-green-600 font-medium">
             ✓ {successMessage}
           </div>
         )}
 
         {cartDetails.length === 0 ? (
+          /* EMPTY CART VIEW (Screenshot 2) */
           <div className="space-y-12">
-            {/* Empty Cart Card matching Figma "Shopping Cart - Kosong" */}
             <div className="text-center py-16 px-6 bg-white rounded-3xl border border-slate-100 shadow-sm max-w-xl mx-auto">
-              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 text-[#2DB24A]">
+              <div className="w-24 h-24 bg-[#2DB24A]/10 rounded-full flex items-center justify-center mx-auto mb-5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-12 h-12 text-[#2DB24A]">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                 </svg>
               </div>
@@ -905,9 +900,207 @@ export default function CartPage() {
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                       )}
-                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-red-500 text-white font-bold text-[9px] rounded-md">
-                        HOT
-                      </span>
+                    </div>
+                    <div className="p-3.5 space-y-1.5">
+                      <h4 className="font-bold text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
+                      <p className="font-sora font-extrabold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                        <span>⭐ 4.9</span>
+                        <span>•</span>
+                        <span>Bandung</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : viewMode === 'cart' ? (
+          /* STAGE 1: KERANJANG BELANJAMU VIEW (Screenshot 3) */
+          <div className="space-y-6">
+            <div>
+              <h1 className="font-sora text-2xl font-bold text-slate-900 mb-1">Keranjang Belanjamu</h1>
+              <p className="text-xs text-slate-500">Kamu punya {cartDetails.length} produk di keranjangmu</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* Left Column: Items */}
+              <div className="lg:col-span-8 space-y-4">
+                {/* Select all bar */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-3 text-xs text-slate-700 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={selectedItemIds.size === cartDetails.length && cartDetails.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedItemIds(new Set(cartDetails.map(i => i.id)))
+                      } else {
+                        setSelectedItemIds(new Set())
+                      }
+                    }}
+                    className="w-4 h-4 text-[#2DB24A] accent-[#2DB24A] rounded cursor-pointer"
+                  />
+                  <span>Pilih semua barang ({cartDetails.length})</span>
+                </div>
+
+                {/* Items grouped by Merchant */}
+                {(() => {
+                  const groups: Record<string, typeof cartDetails> = {};
+                  cartDetails.forEach(item => {
+                    const mId = item.merchantId || 'unknown';
+                    if (!groups[mId]) groups[mId] = [];
+                    groups[mId].push(item);
+                  });
+
+                  return Object.entries(groups).map(([mId, items]) => {
+                    const shopName = items[0]?.merchant?.name || 'Toko Bunga Abadi';
+                    return (
+                      <div key={mId} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
+                        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                          <input
+                            type="checkbox"
+                            checked={items.every(i => selectedItemIds.has(i.id))}
+                            onChange={(e) => {
+                              const next = new Set(selectedItemIds)
+                              items.forEach(i => {
+                                if (e.target.checked) next.add(i.id)
+                                else next.delete(i.id)
+                              })
+                              setSelectedItemIds(next)
+                            }}
+                            className="w-4 h-4 text-[#2DB24A] accent-[#2DB24A] rounded cursor-pointer"
+                          />
+                          <span className="text-base">🏪</span>
+                          <span className="font-sora font-bold text-xs text-slate-900">{shopName}</span>
+                        </div>
+
+                        <div className="space-y-4">
+                          {items.map(item => {
+                            const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
+                            const isChecked = selectedItemIds.has(item.id) || selectedItemIds.size === 0;
+
+                            return (
+                              <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 last:border-b-0 last:pb-0 text-xs">
+                                <div className="flex gap-3 items-center flex-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      const next = new Set(selectedItemIds)
+                                      if (e.target.checked) next.add(item.id)
+                                      else next.delete(item.id)
+                                      setSelectedItemIds(next)
+                                    }}
+                                    className="w-4 h-4 text-[#2DB24A] accent-[#2DB24A] rounded cursor-pointer"
+                                  />
+                                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 relative">
+                                    {item.imageUrl ? (
+                                      <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
+                                    )}
+                                  </div>
+                                  <div className="space-y-1">
+                                    <h4 className="font-bold text-slate-800 line-clamp-1 text-xs">{item.title}</h4>
+                                    <p className="text-[11px] text-slate-400">Color: Oatmeal White</p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
+                                  <div className="font-sora font-bold text-slate-900 text-xs">
+                                    Rp {(wholesalePrice * item.quantity).toLocaleString('id-ID')}
+                                  </div>
+
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveItem(item.id)}
+                                      className="text-slate-400 hover:text-red-500 text-xs font-medium cursor-pointer"
+                                    >
+                                      Hapus
+                                    </button>
+                                    <div className="inline-flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
+                                        className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
+                                      >
+                                        -
+                                      </button>
+                                      <span className="px-3 font-bold text-slate-800 text-xs">{item.quantity}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
+                                        className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
+              {/* Right Column: Ringkasan Belanja */}
+              <div className="lg:col-span-4 space-y-6 sticky top-24">
+                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
+                  <h3 className="font-sora text-sm font-bold text-slate-900">Ringkasan Belanja</h3>
+
+                  <div className="flex justify-between items-center text-xs text-slate-600 pt-1">
+                    <span>Total</span>
+                    <span className="font-sora font-extrabold text-slate-900 text-base">
+                      Rp {subtotal.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('checkout')}
+                    className="w-full py-3.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-sm rounded-xl transition-all shadow-md text-center cursor-pointer"
+                  >
+                    Beli ({cartDetails.length})
+                  </button>
+
+                  <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 text-center space-y-2 mt-4">
+                    <p className="text-xs text-slate-700 font-medium">Masih ingin cari barang lainnya?</p>
+                    <Link
+                      href="/market"
+                      className="block w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-emerald-50 font-bold text-xs rounded-xl transition-colors text-center"
+                    >
+                      Lanjut belanja
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom section: Rekomendasi produk untuk kamu */}
+            <div className="space-y-6 pt-8">
+              <div className="flex items-center justify-between">
+                <h3 className="font-sora text-base font-bold text-slate-900">Rekomendasi produk untuk kamu</h3>
+                <Link href="/market" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
+                  Pindah ke marketplace &gt;
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {products.slice(0, 8).map(prod => (
+                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs hover:shadow-md transition-all group">
+                    <div className="aspect-square bg-slate-50 relative overflow-hidden">
+                      {prod.imageUrl ? (
+                        <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                      )}
                     </div>
                     <div className="p-3.5 space-y-1.5">
                       <h4 className="font-bold text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
@@ -924,211 +1117,143 @@ export default function CartPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* 1. Address Card */}
-            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-6">
-              {(() => {
-                const activeAddress = addresses.find(a => a.id === selectedAddressId) || addresses[0];
-                return activeAddress ? (
-                  <div>
-                    <div className="flex items-center justify-between gap-4 mb-2">
-                      <span className="px-3.5 py-1 bg-emerald-50 text-[#2DB24A] font-bold text-xs rounded-full flex items-center gap-1.5">
-                        📍 {activeAddress.label || 'Alamat 1'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddressModal(true)}
-                        className="text-slate-600 font-bold text-xs hover:text-[#2DB24A] underline cursor-pointer"
-                      >
-                        Ganti Alamat
-                      </button>
-                    </div>
-                    <p className="text-slate-700 text-xs font-medium leading-relaxed mt-2">
-                      <strong className="text-slate-900 font-bold">{activeAddress.name} ({activeAddress.phone})</strong> — {activeAddress.addressText}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-slate-500">Belum ada alamat pengiriman diatur.</span>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddAddressModal(true)}
-                      className="text-[#2DB24A] hover:underline font-bold"
-                    >
-                      + Tambah Alamat
-                    </button>
-                  </div>
-                );
-              })()}
+          /* STAGE 2: CHECKOUT VIEW (Screenshot 4) */
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="font-sora text-2xl font-bold text-slate-900 mb-1">Checkout</h1>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('cart')}
+                  className="text-xs text-[#2DB24A] font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                >
+                  ← Kembali ke Keranjang Belanja
+                </button>
+              </div>
             </div>
 
-            {/* 2. Main 2-Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
-              {/* Left Column (Items & Shipping options) */}
+              {/* Left Column (Address & Merchant Items) */}
               <div className="lg:col-span-8 space-y-6">
 
-                {/* Items grouped by Merchant */}
-                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
+                {/* 1. Address Card */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Alamat Pengiriman</div>
                   {(() => {
-                    const groups: Record<string, typeof cartDetails> = {};
-                    cartDetails.forEach(item => {
-                      const mId = item.merchantId || 'unknown';
-                      if (!groups[mId]) groups[mId] = [];
-                      groups[mId].push(item);
-                    });
-
-                    return Object.entries(groups).map(([mId, items]) => {
-                      const shopName = items[0]?.merchant?.name || 'Toko UMKM';
-                      return (
-                        <div key={mId} className="space-y-4">
-                          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-                            <span className="text-base">🏪</span>
-                            <span className="font-sora font-bold text-xs text-slate-900">{shopName}</span>
-                            <span className="text-slate-300">|</span>
-                            <Link href={`/chat?sellerId=${mId}`} className="text-xs text-[#2DB24A] hover:underline flex items-center gap-1 font-medium">
-                              💬 chat sekarang
-                            </Link>
-                          </div>
-
-                          <div className="space-y-4">
-                            {items.map(item => {
-                              const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
-                              const hasDiscount = wholesalePrice < item.price;
-                              const isOwnProduct = currentUser && item.merchantId === currentUser.id;
-
-                              return (
-                                <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 last:border-b-0 last:pb-0 text-xs">
-                                  <div className="flex gap-3 items-center flex-1">
-                                    <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 relative">
-                                      {item.imageUrl ? (
-                                        <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
-                                      )}
-                                    </div>
-                                    <div className="space-y-1">
-                                      <h4 className="font-bold text-slate-800 line-clamp-1 text-xs">{item.title}</h4>
-                                      <div className="flex flex-wrap gap-1.5 items-center">
-                                        <span className="px-2 py-0.5 bg-emerald-50 text-[9px] text-[#2DB24A] font-bold rounded-md">
-                                          {item.category}
-                                        </span>
-                                        <span className="px-2 py-0.5 bg-slate-100 text-[9px] text-slate-500 rounded-md">
-                                          Variasi: Standard
-                                        </span>
-                                        {isOwnProduct && (
-                                          <span className="px-2 py-0.5 bg-red-50 text-[9px] text-red-500 font-bold rounded-md">
-                                            Toko Sendiri
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
-                                    <div className="font-bold text-slate-900 text-xs">
-                                      {hasDiscount ? (
-                                        <div className="flex flex-col items-end">
-                                          <span className="line-through text-slate-400 text-[10px]">Rp {item.price.toLocaleString('id-ID')}</span>
-                                          <span>Rp {wholesalePrice.toLocaleString('id-ID')}</span>
-                                        </div>
-                                      ) : (
-                                        <span>Rp {item.price.toLocaleString('id-ID')}</span>
-                                      )}
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                      <div className="inline-flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
-                                          className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
-                                        >
-                                          -
-                                        </button>
-                                        <span className="px-3 font-bold text-slate-800 text-xs">{item.quantity}</span>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
-                                          className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
-                                        >
-                                          +
-                                        </button>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRemoveItem(item.id)}
-                                        className="text-red-400 hover:text-red-600 text-xs font-medium cursor-pointer ml-1"
-                                      >
-                                        Hapus
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                    const activeAddress = addresses.find(a => a.id === selectedAddressId) || addresses[0];
+                    return activeAddress ? (
+                      <div>
+                        <div className="flex items-center justify-between gap-4 mb-2">
+                          <span className="px-3 py-0.5 bg-emerald-50 text-[#2DB24A] font-bold text-xs rounded-full flex items-center gap-1">
+                            📍 {activeAddress.label || 'Alamat 1'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setShowAddressModal(true)}
+                            className="text-slate-500 font-bold text-xs hover:text-[#2DB24A] underline cursor-pointer"
+                          >
+                            Ganti Alamat
+                          </button>
                         </div>
-                      );
-                    });
+                        <p className="text-slate-700 text-xs font-medium leading-relaxed mt-2">
+                          <strong className="text-slate-900 font-bold">{activeAddress.name} ({activeAddress.phone})</strong> — {activeAddress.addressText}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-slate-500">Belum ada alamat pengiriman diatur.</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddAddressModal(true)}
+                          className="text-[#2DB24A] hover:underline font-bold"
+                        >
+                          + Tambah Alamat
+                        </button>
+                      </div>
+                    );
                   })()}
                 </div>
 
-                {/* Shipping Options Selector */}
-                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
-                  <h3 className="font-sora text-sm font-bold text-slate-800 flex items-center gap-2">🚚 Opsi Pengiriman</h3>
-                  
-                  <div className="space-y-2">
-                    {[
-                      { code: 'ekonomi', name: 'Ekonomi', price: 9000, etd: 'Estimasi Tiba 2 - 13 Aug' },
-                      { code: 'standard', name: 'Standard', price: 12000, etd: 'Estimasi Tiba 3 - 15 Aug' },
-                      { code: 'nextday', name: 'Next Day', price: 24000, etd: 'Estimasi Tiba 3 - 15 Aug' },
-                      { code: 'instant', name: 'Instant', price: 45000, etd: 'Estimasi Tiba 3 - 15 Aug' },
-                    ].map((opt) => {
-                      const isSelected = selectedCourier === opt.code;
-                      return (
-                        <div
-                          key={opt.code}
-                          onClick={() => setSelectedCourier(opt.code)}
-                          className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                            isSelected
-                              ? 'border-[#2DB24A] bg-emerald-50/20 text-slate-900 shadow-xs'
-                              : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
-                          }`}
-                        >
-                          <div>
-                            <div className="font-bold text-xs text-slate-800">
-                              {opt.name} <span className="text-[#2DB24A]">(Rp{opt.price.toLocaleString('id-ID')})</span>
-                            </div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">{opt.etd}</div>
-                          </div>
-                          {isSelected && (
-                            <div className="w-5 h-5 rounded-full bg-[#2DB24A] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                              ✓
-                            </div>
-                          )}
+                {/* 2. Merchant Store Card & Items */}
+                {(() => {
+                  const groups: Record<string, typeof cartDetails> = {};
+                  cartDetails.forEach(item => {
+                    const mId = item.merchantId || 'unknown';
+                    if (!groups[mId]) groups[mId] = [];
+                    groups[mId].push(item);
+                  });
+
+                  return Object.entries(groups).map(([mId, items]) => {
+                    const shopName = items[0]?.merchant?.name || '[Nama Merchant]';
+                    return (
+                      <div key={mId} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-5">
+                        <div className="font-sora font-bold text-xs text-slate-800 border-b border-slate-100 pb-2">
+                          {shopName}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+
+                        <div className="space-y-4">
+                          {items.map(item => {
+                            const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
+                            return (
+                              <div key={item.id} className="flex items-center justify-between gap-4 pb-3 border-b border-slate-50 last:border-b-0 text-xs">
+                                <div className="flex gap-3 items-center">
+                                  <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0">
+                                    {item.imageUrl ? (
+                                      <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <h4 className="font-bold text-slate-800">{item.title}</h4>
+                                    <p className="text-[11px] text-slate-400">Color: Oatmeal White</p>
+                                  </div>
+                                </div>
+
+                                <div className="text-right font-sora font-bold text-slate-900">
+                                  <div>Rp {(wholesalePrice * item.quantity).toLocaleString('id-ID')}</div>
+                                  <div className="text-[10px] text-slate-400 font-normal">{item.quantity}pcs x Rp{wholesalePrice.toLocaleString('id-ID')}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Shipping selector per merchant */}
+                        <div className="pt-2 border-t border-slate-100 space-y-3">
+                          <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2 text-xs">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-slate-800">Ekonomi (Rp9.000)</span>
+                              <span className="text-[11px] text-slate-400">Estimasi tiba 28 - 31 Jul</span>
+                            </div>
+                            <label className="flex items-center gap-2 text-[11px] text-slate-600 cursor-pointer pt-1 border-t border-slate-200/50">
+                              <input type="checkbox" defaultChecked className="w-3.5 h-3.5 text-[#2DB24A] accent-[#2DB24A] rounded" />
+                              <span>Pakai Asuransi Pengiriman (Rp 2.000)</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
 
               </div>
 
-              {/* Right Column (Payment Method, Promo Code & Transaction Summary Card - matching Figma Checkout middle screen) */}
+              {/* Right Column (Payment Method, Promo Code, Transaction Summary) */}
               <div className="lg:col-span-4 space-y-6 sticky top-24">
                 
-                {/* 1. Payment Method Selector Card (Top of Right Sidebar in Figma) */}
+                {/* 1. Metode Pembayaran Card (Top of Right Sidebar) */}
                 <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
-                  <h3 className="font-sora text-sm font-bold text-slate-800 flex items-center gap-2">💳 Metode Pembayaran</h3>
+                  <h3 className="font-sora text-sm font-bold text-slate-900">Metode pembayaran</h3>
 
                   <div className="space-y-2">
                     {[
-                      { id: 'MIDTRANS_BANK', label: 'BCA Virtual Account', icon: '🏦' },
-                      { id: 'MIDTRANS_BANK_BRI', label: 'BRI Virtual Account', icon: '🏦' },
+                      { id: 'MIDTRANS_BANK', label: 'BRI Virtual Account', icon: '🏦' },
+                      { id: 'MIDTRANS_BANK_BCA', label: 'BCA Virtual Account', icon: '🏦' },
                       { id: 'MIDTRANS_QRIS', label: 'QRIS', icon: '📱' },
+                      { id: 'COD', label: 'Alfamart', icon: '🏬' },
                       { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, icon: '⚡' },
-                      { id: 'COD', label: 'COD (Bayar di Tempat)', icon: '📦' },
                       ...dynamicPaymentMethods.map(m => ({
                         id: m.id,
                         label: m.providerName + (m.accountName ? ` (${m.accountName})` : ''),
@@ -1140,7 +1265,7 @@ export default function CartPage() {
                       const isSelected = 
                         (opt.id === 'WALLET' && paymentMethod === 'WALLET') ||
                         (opt.id === 'COD' && paymentMethod === 'COD') ||
-                        (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_BANK_BRI', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
+                        (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_BANK_BCA', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
                         ((opt as any).isManual && paymentMethod === 'MANUAL' && activePaymentSubId === opt.id);
 
                       return (
@@ -1179,57 +1304,12 @@ export default function CartPage() {
                     })}
                   </div>
 
-                  <div className="text-[11px] text-slate-600 bg-slate-50 border border-slate-200/60 p-3.5 rounded-xl leading-relaxed">
-                    {paymentMethod === 'WALLET' && (
-                      <div>
-                        <strong>Saldo Dompet Saloka</strong>
-                        <p className="mt-0.5 text-slate-500">⚡ Potong saldo instan 1-Click dari Dompet Saloka Anda.</p>
-                      </div>
-                    )}
-                    {paymentMethod === 'COD' && (
-                      <div>
-                        <strong>COD (Cash on Delivery)</strong>
-                        <p className="mt-0.5 text-slate-500">📦 Bayar tunai kepada kurir ekspedisi saat paket sampai di alamat rumah Anda.</p>
-                      </div>
-                    )}
-                    {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_QRIS' && (
-                      <div>
-                        <strong>QRIS (Midtrans)</strong>
-                        <p className="mt-0.5 text-slate-500">📱 Scan QRIS menggunakan Gopay, OVO, Dana, LinkAja, ShopeePay, atau BCA Mobile.</p>
-                      </div>
-                    )}
-                    {paymentMethod === 'MIDTRANS' && (activePaymentSubId === 'MIDTRANS_BANK' || activePaymentSubId === 'MIDTRANS_BANK_BRI') && (
-                      <div>
-                        <strong>Virtual Account Bank</strong>
-                        <p className="mt-0.5 text-slate-500">🏦 Pembayaran Virtual Account otomatis terverifikasi 24/7.</p>
-                      </div>
-                    )}
-                    {paymentMethod === 'MANUAL' && (() => {
-                      const selectedPm = dynamicPaymentMethods.find(m => m.id === activePaymentSubId)
-                      if (!selectedPm) return null
-                      return (
-                        <div>
-                          <strong className="text-slate-800">Transfer Manual — {selectedPm.providerName}</strong>
-                          {selectedPm.type === 'BANK' && (
-                            <p className="mt-1 text-slate-700 font-medium flex items-center gap-2">
-                              <span>🏦 No. Rekening:</span>
-                              <span className="font-bold font-mono text-[#2DB24A] text-xs">{selectedPm.accountNumber}</span>
-                              <span className="text-slate-500 text-[11px]">(a.n {selectedPm.accountName})</span>
-                            </p>
-                          )}
-                          {selectedPm.type === 'QRIS' && (
-                            <p className="mt-1 text-slate-700 font-medium">
-                              📱 QRIS UMKM — Barcode / Kode QRIS akan ditampilkan setelah membuat pesanan.
-                            </p>
-                          )}
-                          <p className="mt-1 text-[10px] text-slate-400">Instruksi transfer lengkap dan verifikasi manual akan diproses oleh admin.</p>
-                        </div>
-                      )
-                    })()}
-                  </div>
+                  <button type="button" className="text-xs font-bold text-[#2DB24A] hover:underline">
+                    Lihat semua metode pembayaran &gt;
+                  </button>
                 </div>
 
-                {/* 2. Voucher Promo Input */}
+                {/* 2. State Kode Promo Card */}
                 <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
                   <div className="flex gap-2">
                     <input
@@ -1237,7 +1317,9 @@ export default function CartPage() {
                       value={couponCode}
                       onChange={e => setCouponCode(e.target.value.toUpperCase())}
                       placeholder="Masukkan kode promo"
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2DB24A] flex-1"
+                      className={`bg-slate-50 border rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none flex-1 ${
+                        couponSuccess ? 'border-[#2DB24A] bg-emerald-50/30' : couponError ? 'border-red-400 bg-red-50/30' : 'border-slate-200 focus:border-[#2DB24A]'
+                      }`}
                     />
                     <button
                       type="button"
@@ -1247,11 +1329,11 @@ export default function CartPage() {
                       Gunakan
                     </button>
                   </div>
-                  {couponError && <p className="text-[11px] text-red-500 font-medium">{couponError}</p>}
-                  {couponSuccess && <p className="text-[11px] text-[#2DB24A] font-medium">{couponSuccess}</p>}
+                  {couponSuccess && <p className="text-[11px] text-[#2DB24A] font-bold">✔ Kode promo berhasil dipasang!</p>}
+                  {couponError && <p className="text-[11px] text-red-500 font-medium">Kode promo tidak ditemukan, pastikan kode promo sudah benar</p>}
                 </div>
 
-                {/* 3. Transaction Summary Card */}
+                {/* 3. Cek ringkasan transaksi dulu ya! Card */}
                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
                   <h3 className="font-sora text-sm font-bold text-slate-900">Cek ringkasan transaksi dulu ya!</h3>
 
@@ -1262,18 +1344,12 @@ export default function CartPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Pengiriman</span>
-                      <span className="font-semibold text-slate-800">Rp {shippingFee.toLocaleString('id-ID')}</span>
+                      <span className="font-semibold text-emerald-600 font-bold">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
                     </div>
                     {couponDiscount > 0 && (
                       <div className="flex justify-between items-center text-[#2DB24A] font-bold">
                         <span>Diskon Voucher</span>
                         <span>-Rp {couponDiscount.toLocaleString('id-ID')}</span>
-                      </div>
-                    )}
-                    {coinRedemptionValue > 0 && (
-                      <div className="flex justify-between items-center text-[#2DB24A] font-bold">
-                        <span>Koin Ditukarkan</span>
-                        <span>-Rp {coinRedemptionValue.toLocaleString('id-ID')}</span>
                       </div>
                     )}
 
