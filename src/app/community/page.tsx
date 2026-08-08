@@ -395,27 +395,31 @@ export default function CommunityDirectoryPage() {
                       
                       <div>
                         <h3 className="font-sora text-sm font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
-                        <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider mt-1 ${
-                          c.type === 'KOPERASI'
-                            ? coopTier === 'PRO'
-                              ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                              : coopTier === 'PLUS'
-                                ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
-                                : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
-                            : (c.category === 'PAID' || c.joinFee > 0 || c.monthlyFee > 0)
-                              ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                              : 'bg-cyan-500/10 border-cyan-500/35 text-cyan-600'
-                        }`}>
-                          {c.type === 'KOPERASI'
-                            ? coopTier === 'PRO'
-                              ? 'KOPERASI PRO'
-                              : coopTier === 'PLUS'
-                                ? 'KOPERASI PLUS'
-                                : 'KOPERASI BASIC'
-                            : (c.category === 'PAID' || c.joinFee > 0 || c.monthlyFee > 0)
-                              ? 'PERKUMPULAN PREMIUM'
-                              : 'PERKUMPULAN'}
-                        </span>
+                        {(() => {
+                          const parsedConfig = c.landingPageConfig ? (typeof c.landingPageConfig === 'string' ? JSON.parse(c.landingPageConfig) : c.landingPageConfig) : {}
+                          const isPerkumpulanPrem = c.type === 'PERKUMPULAN' && (parsedConfig?.perkumpulanTier === 'PREMIUM' || (parsedConfig?.activationFeePaid ?? 0) > 0 || c.category === 'PAID')
+                          const itemCoopTier = parsedConfig?.coopTier || 'BASIC'
+
+                          return (
+                            <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider mt-1 ${
+                              c.type === 'KOPERASI'
+                                ? itemCoopTier === 'PRO'
+                                  ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
+                                  : itemCoopTier === 'PLUS'
+                                    ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
+                                    : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
+                                : isPerkumpulanPrem
+                                  ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
+                                  : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
+                            }`}>
+                              {c.type === 'KOPERASI'
+                                ? `KOPERASI ${itemCoopTier}`
+                                : isPerkumpulanPrem
+                                  ? 'PERKUMPULAN PREMIUM'
+                                  : 'PERKUMPULAN REGULER'}
+                            </span>
+                          )
+                        })()}
                       </div>
                     </div>
 

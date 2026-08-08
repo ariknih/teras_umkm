@@ -1111,7 +1111,15 @@ export default function CommunityDetailPage() {
     )
   }
 
-  const bannerBadge = isKoperasi ? 'KOPERASI PRODUKSI' : isKuliner ? 'ASOSIASI KULINER' : isBusiness ? 'KOMUNITAS BISNIS & UMKM' : isEducation ? 'PENDIDIKAN & STARTUP' : 'KOMUNITAS UMUM'
+  const parsedCommunityConfig = community?.landingPageConfig ? (typeof community.landingPageConfig === 'string' ? JSON.parse(community.landingPageConfig) : community.landingPageConfig) : {}
+
+  const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
+
+  const bannerBadge = isKoperasi 
+    ? `KOPERASI (${parsedCommunityConfig?.coopTier || 'PRODUKSI'})`
+    : isPerkumpulanPrem
+      ? 'PERKUMPULAN PREMIUM'
+      : 'PERKUMPULAN REGULER'
   
   const bannerCover = community?.coverUrl || (
     isKuliner ? 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80' :
