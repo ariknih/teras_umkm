@@ -847,7 +847,8 @@ export default function CartPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#F8F9FA] pt-6 pb-24 px-4 md:px-8 font-sans">
+    <>
+      <div className="relative min-h-screen bg-[#F8F9FA] pt-6 pb-24 px-4 md:px-8 font-sans">
       
       <div className="relative z-10 max-w-[1160px] mx-auto space-y-6">
         {error && (
@@ -1398,12 +1399,7 @@ export default function CartPage() {
           </div>
         )}
       </div>
-    </div>iv>
-
-            </div>
-          </div>
-        )}
-      </div>
+    </div>
 
       {/* ─── MODAL ALAMAT SAYA (Shopee Style) ─── */}
       {showAddressModal && (
@@ -1660,7 +1656,6 @@ export default function CartPage() {
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-sFQP1v53tr2M3CQd'}
         strategy="lazyOnload"
       />
-
-    </div>
+    </>
   )
 }
