@@ -1342,6 +1342,28 @@ export default function CartPage() {
                     <p className="mt-0.5 text-slate-400">💳 Pembayaran instan aman menggunakan kartu kredit berlogo Visa, Mastercard, atau JCB.</p>
                   </div>
                 )}
+                {paymentMethod === 'MANUAL' && (() => {
+                  const selectedPm = dynamicPaymentMethods.find(m => m.id === activePaymentSubId)
+                  if (!selectedPm) return null
+                  return (
+                    <div>
+                      <strong className="text-slate-800">Transfer Manual — {selectedPm.providerName}</strong>
+                      {selectedPm.type === 'BANK' && (
+                        <p className="mt-1 text-slate-700 font-medium flex items-center gap-2">
+                          <span>🏦 No. Rekening:</span>
+                          <span className="font-bold font-mono text-[#2DB24A] text-xs">{selectedPm.accountNumber}</span>
+                          <span className="text-slate-500 text-[11px]">(a.n {selectedPm.accountName})</span>
+                        </p>
+                      )}
+                      {selectedPm.type === 'QRIS' && (
+                        <p className="mt-1 text-slate-700 font-medium">
+                          📱 QRIS UMKM — Barcode / Kode QRIS akan ditampilkan setelah membuat pesanan.
+                        </p>
+                      )}
+                      <p className="mt-1 text-[10px] text-slate-400">Instruksi transfer lengkap dan verifikasi manual akan diproses oleh admin.</p>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Invoice calculation layout */}
