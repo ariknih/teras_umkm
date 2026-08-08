@@ -352,6 +352,8 @@ export default function CommunityDetailPage() {
     | 'pengaturan'
   >('beranda')
   
+  const [isManualScrolling, setIsManualScrolling] = useState(false)
+
   useEffect(() => {
     if (disabledModules.includes(activeSidebarNav)) {
       setActiveSidebarNav('beranda')
@@ -362,6 +364,7 @@ export default function CommunityDetailPage() {
       }
     }
   }, [disabledModules, activeSidebarNav, isCanManageCoop, isMember])
+
   const [feedFilter, setFeedFilter] = useState<'semua' | 'diskusi' | 'pengumuman' | 'event' | 'produk'>('semua')
 
   const [recentTransactions, setRecentTransactions] = useState<any[]>([
@@ -787,8 +790,18 @@ export default function CommunityDetailPage() {
     if (activeSidebarNav === 'pengaturan' && targetId !== 'pengaturan' && !arraysEqual(disabledModules, savedDisabledModules)) {
       setPendingTargetNav(targetId)
       setShowUnsavedModal(true)
-    } else {
-      setActiveSidebarNav(targetId as any)
+      return
+    }
+    setActiveSidebarNav(targetId as any)
+    const el = document.getElementById(`section-${targetId}`)
+    if (el) {
+      setIsManualScrolling(true)
+      const yOffset = -100
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset
+      window.scrollTo({ top: y, behavior: 'smooth' })
+      setTimeout(() => {
+        setIsManualScrolling(false)
+      }, 800)
     }
   }
 
@@ -1033,53 +1046,6 @@ export default function CommunityDetailPage() {
   const isEducation = !isKoperasi && !isKuliner && !isBusiness && (catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan'))
   const isPerahu = !isKoperasi && !isKuliner && !isBusiness && !isEducation
 
-  const bannerBadge = isKoperasi ? 'KOPERASI PRODUKSI' : isKuliner ? 'ASOSIASI KULINER' : isBusiness ? 'KOMUNITAS BISNIS & UMKM' : isEducation ? 'PENDIDIKAN & STARTUP' : 'KOMUNITAS UMUM'
-  
-  const bannerCover = community?.coverUrl || (
-    isKuliner ? 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80' :
-    isKoperasi ? 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80' :
-    isBusiness ? 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1200&q=80' :
-    isEducation ? 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80' :
-    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80'
-  )
-
-  const bannerSlogan = community?.slogan || (
-    isKuliner ? 'Bersama Memajukan Industri Kuliner Kreatif' :
-    isKoperasi ? 'Membangun Ekonomi Bersama, Sejahtera untuk Anggota' :
-    isBusiness ? 'Kolaborasi • Inovasi • Sejahtera Bersama Komunitas Bisnis & UMKM' :
-    isEducation ? 'Belajar Bisnis Sejak Dini, Wujudkan Ide Jadi Nyata' :
-    'Bersama Belajar, Berbagi dan Bertumbuh'
-  )
-
-  const bannerCta = isKoperasi ? 'Menjadi Anggota' : isKuliner ? 'Jelajahi Merchant' : isBusiness ? 'Ajukan Kolaborasi' : isEducation ? 'Daftar Kelas' : 'Gabung Komunitas'
-
-  const statCards = isKoperasi ? [
-    { label: 'Anggota', value: '788', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Total Simpanan', value: 'Rp 1,2 M', icon: Wallet, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'SHU Tahun Ini', value: 'Rp 185 Jt', icon: PieChart, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Unit Usaha', value: '12', icon: Building2, color: 'text-blue-600 bg-blue-50' },
-  ] : isBusiness ? [
-    { label: 'Anggota', value: '2.156', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Mitra', value: '128', icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'Pelatihan', value: '36', icon: GraduationCap, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Peluang Usaha', value: '54', icon: Rocket, color: 'text-blue-600 bg-blue-50' },
-  ] : isEducation ? [
-    { label: 'Anggota', value: '1.532', icon: Users, color: 'text-purple-600 bg-purple-50' },
-    { label: 'Kelas', value: '32', icon: BookOpen, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'Kompetisi', value: '18', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Startup', value: '46', icon: Rocket, color: 'text-indigo-600 bg-indigo-50' },
-  ] : isKuliner ? [
-    { label: 'Merchant', value: '245', icon: Store, color: 'text-orange-600 bg-orange-50' },
-    { label: 'Produk', value: '512', icon: ShoppingBag, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'Supplier', value: '68', icon: Truck, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Event', value: '22', icon: Calendar, color: 'text-rose-600 bg-rose-50' },
-  ] : [
-    { label: 'Anggota', value: '1.248', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Diskusi', value: '156', icon: MessageSquare, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'Event', value: '24', icon: Calendar, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Galeri', value: '87', icon: ImageIcon, color: 'text-indigo-600 bg-indigo-50' },
-  ]
-
   const sidebarNavList = isKoperasi ? [
     { id: 'beranda', label: 'Beranda', icon: Home },
     { id: 'simpanan', label: 'Simpanan', icon: Wallet },
@@ -1150,6 +1116,77 @@ export default function CommunityDetailPage() {
       return !disabledModules.includes(item.id)
     }),
     ...settingsTab
+  ]
+
+  // ScrollSpy: Automatically sync activeSidebarNav with the section currently in viewport
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isManualScrolling) return
+      const scrollPosition = window.scrollY + 200
+      const navIds = activeSidebarNavList.map((item) => item.id)
+
+      for (let i = navIds.length - 1; i >= 0; i--) {
+        const navId = navIds[i]
+        const el = document.getElementById(`section-${navId}`)
+        if (el) {
+          const top = el.offsetTop
+          if (scrollPosition >= top - 40) {
+            setActiveSidebarNav(navId as any)
+            break
+          }
+        }
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [activeSidebarNavList, isManualScrolling])
+
+  const bannerBadge = isKoperasi ? 'KOPERASI PRODUKSI' : isKuliner ? 'ASOSIASI KULINER' : isBusiness ? 'KOMUNITAS BISNIS & UMKM' : isEducation ? 'PENDIDIKAN & STARTUP' : 'KOMUNITAS UMUM'
+  
+  const bannerCover = community?.coverUrl || (
+    isKuliner ? 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80' :
+    isKoperasi ? 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80' :
+    isBusiness ? 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1200&q=80' :
+    isEducation ? 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80' :
+    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80'
+  )
+
+  const bannerSlogan = community?.slogan || (
+    isKuliner ? 'Bersama Memajukan Industri Kuliner Kreatif' :
+    isKoperasi ? 'Membangun Ekonomi Bersama, Sejahtera untuk Anggota' :
+    isBusiness ? 'Kolaborasi • Inovasi • Sejahtera Bersama Komunitas Bisnis & UMKM' :
+    isEducation ? 'Belajar Bisnis Sejak Dini, Wujudkan Ide Jadi Nyata' :
+    'Bersama Belajar, Berbagi dan Bertumbuh'
+  )
+
+  const bannerCta = isKoperasi ? 'Menjadi Anggota' : isKuliner ? 'Jelajahi Merchant' : isBusiness ? 'Ajukan Kolaborasi' : isEducation ? 'Daftar Kelas' : 'Gabung Komunitas'
+
+  const statCards = isKoperasi ? [
+    { label: 'Anggota', value: '788', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Total Simpanan', value: 'Rp 1,2 M', icon: Wallet, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'SHU Tahun Ini', value: 'Rp 185 Jt', icon: PieChart, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Unit Usaha', value: '12', icon: Building2, color: 'text-blue-600 bg-blue-50' },
+  ] : isBusiness ? [
+    { label: 'Anggota', value: '2.156', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Mitra', value: '128', icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Pelatihan', value: '36', icon: GraduationCap, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Peluang Usaha', value: '54', icon: Rocket, color: 'text-blue-600 bg-blue-50' },
+  ] : isEducation ? [
+    { label: 'Anggota', value: '1.532', icon: Users, color: 'text-purple-600 bg-purple-50' },
+    { label: 'Kelas', value: '32', icon: BookOpen, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Kompetisi', value: '18', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Startup', value: '46', icon: Rocket, color: 'text-indigo-600 bg-indigo-50' },
+  ] : isKuliner ? [
+    { label: 'Merchant', value: '245', icon: Store, color: 'text-orange-600 bg-orange-50' },
+    { label: 'Produk', value: '512', icon: ShoppingBag, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Supplier', value: '68', icon: Truck, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Event', value: '22', icon: Calendar, color: 'text-rose-600 bg-rose-50' },
+  ] : [
+    { label: 'Anggota', value: '1.248', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Diskusi', value: '156', icon: MessageSquare, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Event', value: '24', icon: Calendar, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Galeri', value: '87', icon: ImageIcon, color: 'text-indigo-600 bg-indigo-50' },
   ]
 
   const promoWidget = isKoperasi ? {
@@ -1224,8 +1261,8 @@ export default function CommunityDetailPage() {
         {/* ── 2-PANEL FLEX LAYOUT: UNIFIED SALOKA DESIGN SYSTEM FOR ALL 5 COMMUNITIES ── */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           
-          {/* ── LEFT SIDEBAR MENU PANEL (Normal Page Flow - Moving naturally on Scroll) ──────────────────────────────────────── */}
-          <div className="w-full lg:w-60 shrink-0 space-y-4">
+          {/* ── LEFT SIDEBAR MENU PANEL (Sticky Docked with ScrollSpy active state) ──────────────────────────────────────── */}
+          <div className="w-full lg:w-60 shrink-0 space-y-4 lg:sticky lg:top-24 self-start">
             <Link href="/community" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 font-semibold transition-colors">
               <ChevronLeft className="w-4 h-4" /> Kembali ke Komunitas
             </Link>
@@ -1311,8 +1348,8 @@ export default function CommunityDetailPage() {
           <div className="flex-1 space-y-6 min-w-0 w-full">
 
             {/* TAB 1: BERANDA ─────────────────────────────────────────────────── */}
-            {activeSidebarNav === 'beranda' && (
-              <>
+            {activeSidebarNavList.some((item) => item.id === 'beranda') && (
+              <div id="section-beranda" className="scroll-mt-28 space-y-6">
                 {/* HERO BANNER CARD */}
                 <div className="relative rounded-3xl overflow-hidden text-white shadow-sm border border-gray-200/60">
                   <img
@@ -1775,12 +1812,12 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
                 </div>
-              </>
+              </div>
             )}
 
             {/* TAB 2: DISKUSI ─────────────────────────────────────────────────── */}
-            {activeSidebarNav === 'diskusi' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'diskusi') && (
+              <div id="section-diskusi" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-4">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -1832,8 +1869,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 3: EVENT ────────────────────────────────────────────────────── */}
-            {activeSidebarNav === 'event' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'event') && (
+              <div id="section-event" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -1880,8 +1917,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 4: PRODUK ANGGOTA (MARKETPLACE) ─────────────────────────────── */}
-            {activeSidebarNav === 'marketplace' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'marketplace') && (
+              <div id="section-marketplace" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -1936,8 +1973,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 5: ANGGOTA ──────────────────────────────────────────────────── */}
-            {activeSidebarNav === 'anggota' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'anggota') && (
+              <div id="section-anggota" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -2011,8 +2048,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 6: GALERI ──────────────────────────────────────────────────── */}
-            {activeSidebarNav === 'galeri' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'galeri') && (
+              <div id="section-galeri" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -2046,8 +2083,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 7: PENGUMUMAN ──────────────────────────────────────────────── */}
-            {activeSidebarNav === 'pengumuman' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'pengumuman') && (
+              <div id="section-pengumuman" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -2079,8 +2116,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 8: TENTANG ─────────────────────────────────────────────────── */}
-            {activeSidebarNav === 'tentang' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'tentang') && (
+              <div id="section-tentang" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -2521,8 +2558,9 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 20: SIMPANAN KOPERASI ───────────────────────────────────────── */}
-            {activeSidebarNav === 'simpanan' && (
-              !isCanManageCoop ? (
+            {activeSidebarNavList.some((item) => item.id === 'simpanan') && (
+              <div id="section-simpanan" className="scroll-mt-28 space-y-6">
+                {!isCanManageCoop ? (
                 // --- MEMBER (ANGGOTA) VIEW ---
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -2968,13 +3006,15 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
                 </div>
-              )
-            )}
+              )}
+            </div>
+          )}
 
             {/* TAB 21: PENDANAAN KOPERASI ──────────────────────────────────────── */}
-            {activeSidebarNav === 'pendanaan' && (
-              coopTier !== 'PRO' ? (
-                !isCanManageCoop ? (
+            {activeSidebarNavList.some((item) => item.id === 'pendanaan') && (
+              <div id="section-pendanaan" className="scroll-mt-28 space-y-6">
+                {coopTier !== 'PRO' ? (
+                  !isCanManageCoop ? (
                   // Locked screen for regular members (no upgrade button)
                   <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6 text-center max-w-2xl mx-auto py-12">
                     <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-sm">
@@ -3052,12 +3092,13 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
                 </div>
-              )
-            )}
+              )}
+            </div>
+          )}
 
             {/* TAB 22: SHU KOPERASI ────────────────────────────────────────────── */}
-            {activeSidebarNav === 'shu' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'shu') && (
+              <div id="section-shu" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
@@ -3093,8 +3134,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 23: LAPORAN KOPERASI ────────────────────────────────────────── */}
-            {activeSidebarNav === 'laporan' && (
-              <div className="space-y-6">
+            {activeSidebarNavList.some((item) => item.id === 'laporan') && (
+              <div id="section-laporan" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
@@ -3128,8 +3169,8 @@ export default function CommunityDetailPage() {
             )}
 
             {/* TAB 24: PENGATURAN FITUR KOMUNITAS (CRUD TOGGLE MODULES) ────────── */}
-            {activeSidebarNav === 'pengaturan' && isCanManageCoop && (
-              <div className="space-y-6 animate-fadeIn">
+            {activeSidebarNavList.some((item) => item.id === 'pengaturan') && (
+              <div id="section-pengaturan" className="scroll-mt-28 space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
                   <div className="border-b border-gray-100 pb-4">
                     <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
