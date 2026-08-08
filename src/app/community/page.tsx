@@ -67,7 +67,7 @@ export default function CommunityDirectoryPage() {
   const [monthlyFee, setMonthlyFee] = useState('')
   const [isKycRequired, setIsKycRequired] = useState(false)
   const [coopTier, setCoopTier] = useState<'BASIC' | 'PLUS' | 'PRO'>('BASIC')
-  const [perkumpulanTier, setPerkumpulanTier] = useState<'FREE' | 'PREMIUM'>('FREE')
+  const [perkumpulanTier, setPerkumpulanTier] = useState<'REGULER' | 'PREMIUM'>('REGULER')
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -224,7 +224,7 @@ export default function CommunityDirectoryPage() {
           if (res.community) setCreatedCommunityData(res.community)
           setModalStep('SUCCESS')
         } else {
-          goeyToast.success('Komunitas Perkumpulan (Free) berhasil dibuat!')
+          goeyToast.success('Komunitas Perkumpulan (Reguler) berhasil dibuat!')
           setCreateModalOpen(false)
           setModalStep('FORM')
           if (res.community?.id) {
@@ -235,7 +235,7 @@ export default function CommunityDirectoryPage() {
         // Reset form
         setName('')
         setType('PERKUMPULAN')
-        setPerkumpulanTier('FREE')
+        setPerkumpulanTier('REGULER')
         setDescription('')
         setAktaNotaris('')
         setNomorAhu('')
@@ -518,12 +518,12 @@ export default function CommunityDirectoryPage() {
                             onChange={(e) => setType(e.target.value as any)}
                             className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs font-bold text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
                           >
-                            <option value="PERKUMPULAN">Perkumpulan (Gratis / Free)</option>
+                            <option value="PERKUMPULAN">Perkumpulan (Reguler & Premium)</option>
                             <option value="KOPERASI">Koperasi (Paket Berlangganan)</option>
                           </select>
                           {type === 'PERKUMPULAN' ? (
                             <p className="text-[9px] text-[#007A3D] font-bold mt-1 flex items-center gap-1">
-                              ✓ Perkumpulan tersedia opsi Gratis (Free) atau Premium (Biaya Aktivasi Rp200.000 1x).
+                              ✓ Perkumpulan tersedia opsi Gratis (Reguler) atau Premium (Biaya Aktivasi Rp200.000 1x).
                             </p>
                           ) : (
                             <p className="text-[9px] text-amber-700 font-bold mt-1 flex items-center gap-1">
@@ -537,11 +537,11 @@ export default function CommunityDirectoryPage() {
                         <div className="space-y-2 pt-2 border-t border-black/5">
                           <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Pilih Tier Perkumpulan <span className="text-red-500">*</span></label>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {/* Card FREE */}
+                            {/* Card REGULER */}
                             <div 
-                              onClick={() => setPerkumpulanTier('FREE')}
+                              onClick={() => setPerkumpulanTier('REGULER')}
                               className={`p-3.5 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
-                                perkumpulanTier === 'FREE' 
+                                perkumpulanTier === 'REGULER' 
                                   ? 'bg-emerald-50/30 border-[#2DB24A] shadow-sm ring-2 ring-[#2DB24A]/20' 
                                   : 'bg-white border-black/5 hover:border-black/15'
                               }`}
@@ -549,12 +549,12 @@ export default function CommunityDirectoryPage() {
                               <div className="space-y-2">
                                 <div className="flex items-start justify-between gap-1">
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                                    perkumpulanTier === 'FREE' ? 'border-[#2DB24A]' : 'border-gray-300'
+                                    perkumpulanTier === 'REGULER' ? 'border-[#2DB24A]' : 'border-gray-300'
                                   }`}>
-                                    {perkumpulanTier === 'FREE' && <div className="w-2 h-2 rounded-full bg-[#2DB24A]" />}
+                                    {perkumpulanTier === 'REGULER' && <div className="w-2 h-2 rounded-full bg-[#2DB24A]" />}
                                   </div>
                                   <div className="text-right">
-                                    <h5 className="font-black text-xs text-[#0F5132] font-sora">PERKUMPULAN FREE</h5>
+                                    <h5 className="font-black text-xs text-[#0F5132] font-sora">PERKUMPULAN REGULER</h5>
                                     <span className="text-[10px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 0 (Selamanya Gratis)</span>
                                   </div>
                                 </div>
