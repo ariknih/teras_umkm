@@ -1051,7 +1051,7 @@ export default function CommunityDetailPage() {
       if (!isCanManageCoop && !isMember) {
         return ['beranda', 'marketplace', 'tentang'].includes(item.id)
       }
-      if (!isCanManageCoop && ['simpanan', 'pendanaan', 'shu', 'laporan'].includes(item.id)) return false
+      if (!isCanManageCoop && item.id === 'laporan') return false
       return !disabledModules.includes(item.id)
     }),
     ...settingsTab
