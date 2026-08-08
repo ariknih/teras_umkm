@@ -867,24 +867,65 @@ export default function CartPage() {
         )}
 
         {cartDetails.length === 0 ? (
-          <div className="text-center py-20 border border-slate-200 bg-white rounded shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-slate-300 mx-auto mb-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-            </svg>
-            <h3 className="font-sora text-base font-bold text-slate-800 mb-2">Keranjang Anda Kosong</h3>
-            <p className="text-xs text-slate-500 max-w-xs mx-auto mb-6">
-              Kembali ke pasar dan isi keranjang belanja Anda untuk melakukan checkout.
-            </p>
-            <Link
-              href="/market"
-              className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors inline-block shadow-sm"
-            >
-              Belanja Sekarang
-            </Link>
+          <div className="space-y-12">
+            {/* Empty Cart Card matching Figma "Shopping Cart - Kosong" */}
+            <div className="text-center py-16 px-6 bg-white rounded-3xl border border-slate-100 shadow-sm max-w-xl mx-auto">
+              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 text-[#2DB24A]">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                </svg>
+              </div>
+              <h3 className="font-sora text-xl font-bold text-slate-900 mb-2">Keranjangmu kosong nih</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto mb-6 leading-relaxed">
+                Yuk jelajahi produk-produk yang ada lalu tambahkan ke keranjang!
+              </p>
+              <Link
+                href="/market"
+                className="px-8 py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-full transition-all shadow-md inline-block cursor-pointer"
+              >
+                Cari produk lagi
+              </Link>
+            </div>
+
+            {/* Rekomendasi produk untuk kamu */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="font-sora text-base font-bold text-slate-900">Rekomendasi produk untuk kamu</h3>
+                <Link href="/market" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
+                  Pindah ke marketplace &gt;
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {products.slice(0, 8).map(prod => (
+                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-xs hover:shadow-md transition-all group">
+                    <div className="aspect-square bg-slate-50 relative overflow-hidden">
+                      {prod.imageUrl ? (
+                        <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                      )}
+                      <span className="absolute top-2 left-2 px-2 py-0.5 bg-red-500 text-white font-bold text-[9px] rounded-md">
+                        HOT
+                      </span>
+                    </div>
+                    <div className="p-3.5 space-y-1.5">
+                      <h4 className="font-bold text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
+                      <p className="font-sora font-extrabold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
+                      <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                        <span>⭐ 4.9</span>
+                        <span>•</span>
+                        <span>Bandung</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
-              {/* 1. Address Card */}
+            {/* 1. Address Card */}
             <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-6">
               {(() => {
                 const activeAddress = addresses.find(a => a.id === selectedAddressId) || addresses[0];
@@ -899,7 +940,7 @@ export default function CartPage() {
                         onClick={() => setShowAddressModal(true)}
                         className="text-slate-600 font-bold text-xs hover:text-[#2DB24A] underline cursor-pointer"
                       >
-                        Ubah Alamat
+                        Ganti Alamat
                       </button>
                     </div>
                     <p className="text-slate-700 text-xs font-medium leading-relaxed mt-2">
@@ -924,7 +965,7 @@ export default function CartPage() {
             {/* 2. Main 2-Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
-              {/* Left Column (Items, Shipping, Payment) */}
+              {/* Left Column (Items & Shipping options) */}
               <div className="lg:col-span-8 space-y-6">
 
                 {/* Items grouped by Merchant */}
@@ -1033,7 +1074,7 @@ export default function CartPage() {
                   })()}
                 </div>
 
-                {/* Shipping Options Selector (matching Figma design) */}
+                {/* Shipping Options Selector */}
                 <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
                   <h3 className="font-sora text-sm font-bold text-slate-800 flex items-center gap-2">🚚 Opsi Pengiriman</h3>
                   
@@ -1072,36 +1113,39 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Payment Method Selector */}
+              </div>
+
+              {/* Right Column (Payment Method, Promo Code & Transaction Summary Card - matching Figma Checkout middle screen) */}
+              <div className="lg:col-span-4 space-y-6 sticky top-24">
+                
+                {/* 1. Payment Method Selector Card (Top of Right Sidebar in Figma) */}
                 <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
                   <h3 className="font-sora text-sm font-bold text-slate-800 flex items-center gap-2">💳 Metode Pembayaran</h3>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="space-y-2">
                     {[
-                      { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, disabled: false },
-                      { id: 'COD', label: 'COD (Bayar di Tempat)', disabled: false },
-                      { id: 'MIDTRANS_QRIS', label: 'QRIS', disabled: false },
-                      { id: 'MIDTRANS_BANK', label: 'Transfer Bank', disabled: false },
-                      { id: 'MIDTRANS_CARD', label: 'Kartu Kredit/Debit', disabled: false },
+                      { id: 'MIDTRANS_BANK', label: 'BCA Virtual Account', icon: '🏦' },
+                      { id: 'MIDTRANS_BANK_BRI', label: 'BRI Virtual Account', icon: '🏦' },
+                      { id: 'MIDTRANS_QRIS', label: 'QRIS', icon: '📱' },
+                      { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, icon: '⚡' },
+                      { id: 'COD', label: 'COD (Bayar di Tempat)', icon: '📦' },
                       ...dynamicPaymentMethods.map(m => ({
                         id: m.id,
                         label: m.providerName + (m.accountName ? ` (${m.accountName})` : ''),
-                        disabled: false,
                         isManual: true,
+                        icon: '🏦',
                         original: m
                       }))
                     ].map(opt => {
                       const isSelected = 
                         (opt.id === 'WALLET' && paymentMethod === 'WALLET') ||
                         (opt.id === 'COD' && paymentMethod === 'COD') ||
-                        (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
+                        (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_BANK_BRI', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
                         ((opt as any).isManual && paymentMethod === 'MANUAL' && activePaymentSubId === opt.id);
 
                       return (
-                        <button
+                        <div
                           key={opt.id}
-                          type="button"
-                          disabled={opt.disabled}
                           onClick={() => {
                             if (opt.id === 'WALLET') {
                               setPaymentMethod('WALLET');
@@ -1117,14 +1161,20 @@ export default function CartPage() {
                               setActivePaymentSubId(opt.id);
                             }
                           }}
-                          className={`h-11 px-3 border text-xs font-bold rounded-xl transition-all flex items-center justify-center text-center relative ${
+                          className={`p-3.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
                               ? 'bg-emerald-50/40 border-[#2DB24A] text-[#2DB24A] shadow-xs'
-                              : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
+                              : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
                           }`}
                         >
-                          {opt.label}
-                        </button>
+                          <div className="flex items-center gap-2.5">
+                            <span>{opt.icon}</span>
+                            <span>{opt.label}</span>
+                          </div>
+                          <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#2DB24A]' : 'border-slate-300'}`}>
+                            {isSelected && <div className="w-2 h-2 rounded-full bg-[#2DB24A]" />}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
@@ -1148,16 +1198,10 @@ export default function CartPage() {
                         <p className="mt-0.5 text-slate-500">📱 Scan QRIS menggunakan Gopay, OVO, Dana, LinkAja, ShopeePay, atau BCA Mobile.</p>
                       </div>
                     )}
-                    {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_BANK' && (
+                    {paymentMethod === 'MIDTRANS' && (activePaymentSubId === 'MIDTRANS_BANK' || activePaymentSubId === 'MIDTRANS_BANK_BRI') && (
                       <div>
-                        <strong>Transfer Bank / Virtual Account (Midtrans)</strong>
-                        <p className="mt-0.5 text-slate-500">🏦 Bayar melalui Virtual Account bank pilihan Anda (BCA, Mandiri, BNI, BRI, Permata, dll).</p>
-                      </div>
-                    )}
-                    {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_CARD' && (
-                      <div>
-                        <strong>Kartu Kredit/Debit (Midtrans)</strong>
-                        <p className="mt-0.5 text-slate-500">💳 Pembayaran instan aman menggunakan kartu kredit berlogo Visa, Mastercard, atau JCB.</p>
+                        <strong>Virtual Account Bank</strong>
+                        <p className="mt-0.5 text-slate-500">🏦 Pembayaran Virtual Account otomatis terverifikasi 24/7.</p>
                       </div>
                     )}
                     {paymentMethod === 'MANUAL' && (() => {
@@ -1185,12 +1229,7 @@ export default function CartPage() {
                   </div>
                 </div>
 
-              </div>
-
-              {/* Right Column (Promo Code & Transaction Summary Card) (matching Figma design) */}
-              <div className="lg:col-span-4 space-y-6 sticky top-24">
-                
-                {/* Voucher Promo Input */}
+                {/* 2. Voucher Promo Input */}
                 <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
                   <div className="flex gap-2">
                     <input
@@ -1212,7 +1251,7 @@ export default function CartPage() {
                   {couponSuccess && <p className="text-[11px] text-[#2DB24A] font-medium">{couponSuccess}</p>}
                 </div>
 
-                {/* Transaction Summary Card */}
+                {/* 3. Transaction Summary Card */}
                 <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
                   <h3 className="font-sora text-sm font-bold text-slate-900">Cek ringkasan transaksi dulu ya!</h3>
 
