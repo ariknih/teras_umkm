@@ -347,14 +347,18 @@ export default function CommunityDirectoryPage() {
                       {mc.communityType === 'PERKUMPULAN' ? 'Perkumpulan' : 'Koperasi'}
                     </span>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 space-y-0.5">
                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider block ${
-                      mc.role === 'KETUA' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      mc.role === 'KETUA' 
+                        ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                        : mc.role === 'PEMBUAT_PENDING'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                     }`}>
-                      {mc.role === 'KETUA' ? '👑 Ketua / Admin' : '👤 Anggota'}
+                      {mc.role === 'KETUA' ? '👑 Ketua / Admin' : mc.role === 'PEMBUAT_PENDING' ? '⏳ Calon Ketua' : '👤 Anggota'}
                     </span>
-                    <span className="text-[8px] font-bold text-gray-400 block mt-0.5">
-                      {mc.isVerified ? '✓ Aktif' : '⏳ Pending'}
+                    <span className="text-[8px] font-bold text-gray-400 block">
+                      {mc.isVerified ? '✓ Aktif' : '⏳ Pending Verifikasi'}
                     </span>
                   </div>
                 </div>

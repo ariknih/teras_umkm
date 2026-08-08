@@ -6206,7 +6206,7 @@ export const DataStore = {
       communityType: string
       landingPageConfig?: string
       isVerified: boolean
-      role: 'KETUA' | 'ANGGOTA'
+      role: 'KETUA' | 'ANGGOTA' | 'PEMBUAT_PENDING'
       roleLabel: string
       statusLabel: string
     }> = []
@@ -6221,9 +6221,9 @@ export const DataStore = {
         communityType: c.type,
         landingPageConfig: c.landingPageConfig,
         isVerified: Boolean(c.isVerified),
-        role: 'KETUA',
-        roleLabel: 'Ketua / Admin',
-        statusLabel: c.isVerified ? 'Aktif' : 'Pending Verifikasi'
+        role: c.isVerified ? 'KETUA' : 'PEMBUAT_PENDING',
+        roleLabel: c.isVerified ? 'Ketua / Admin' : 'Calon Ketua (Pending Verifikasi)',
+        statusLabel: c.isVerified ? 'Aktif' : 'Pending Verifikasi Super Admin'
       })
     }
 
