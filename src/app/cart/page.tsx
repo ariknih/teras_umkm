@@ -884,555 +884,394 @@ export default function CartPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            
-            {/* 2. Shopee-Style Shipping Address Panel */}
-            <div className="bg-white border border-slate-200/80 rounded shadow-sm overflow-hidden relative">
-              {/* Ribbon border */}
-              <div 
-                className="h-1.5 w-full" 
-                style={{
-                  background: 'repeating-linear-gradient(-45deg, #2DB24A, #2DB24A 12px, #FFFFFF 12px, #FFFFFF 20px, #0F5132 20px, #0F5132 32px, #FFFFFF 32px, #FFFFFF 40px)'
-                }}
-              />
-              
-              <div className="p-5 space-y-3">
-                <div className="flex items-center gap-1.5 text-[#0F5132] font-bold text-sm">
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                  Alamat Pengiriman
-                </div>
-
-                {(() => {
-                  const activeAddress = addresses.find(a => a.id === selectedAddressId) || addresses[0];
-                  return activeAddress ? (
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
-                      <div className="flex flex-col sm:flex-row sm:items-baseline gap-x-6 gap-y-1.5 flex-1">
-                        <strong className="text-slate-800 text-[13px] shrink-0 sm:w-48">
-                          {activeAddress.name} ({activeAddress.phone})
-                        </strong>
-                        <p className="text-slate-600 leading-relaxed text-[12px] flex flex-wrap items-center gap-2">
-                          <span>{activeAddress.addressText}</span>
-                          <span className="px-1.5 py-0.5 border border-[#2DB24A] text-[#2DB24A] text-[9px] font-semibold rounded shrink-0 scale-90 uppercase">
-                            {activeAddress.label}
-                          </span>
-                        </p>
-                      </div>
-                      
+              {/* 1. Address Card */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm mb-6">
+              {(() => {
+                const activeAddress = addresses.find(a => a.id === selectedAddressId) || addresses[0];
+                return activeAddress ? (
+                  <div>
+                    <div className="flex items-center justify-between gap-4 mb-2">
+                      <span className="px-3.5 py-1 bg-emerald-50 text-[#2DB24A] font-bold text-xs rounded-full flex items-center gap-1.5">
+                        📍 {activeAddress.label || 'Alamat 1'}
+                      </span>
                       <button
                         type="button"
                         onClick={() => setShowAddressModal(true)}
-                        className="text-[#2DB24A] hover:text-[#0F5132] hover:underline font-bold text-xs uppercase tracking-wide shrink-0 md:w-12 text-right"
+                        className="text-slate-600 font-bold text-xs hover:text-[#2DB24A] underline cursor-pointer"
                       >
-                        Ubah
+                        Ubah Alamat
                       </button>
                     </div>
-                  ) : (
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-500">Belum ada alamat pengiriman diatur.</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddAddressModal(true)}
-                        className="text-[#2DB24A] hover:underline font-bold"
-                      >
-                        + Tambah Alamat
-                      </button>
-                    </div>
-                  );
-                })()}
-              </div>
+                    <p className="text-slate-700 text-xs font-medium leading-relaxed mt-2">
+                      <strong className="text-slate-900 font-bold">{activeAddress.name} ({activeAddress.phone})</strong> — {activeAddress.addressText}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-500">Belum ada alamat pengiriman diatur.</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddAddressModal(true)}
+                      className="text-[#2DB24A] hover:underline font-bold"
+                    >
+                      + Tambah Alamat
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* 3. Products Grouped by Store / Merchant */}
-            <div className="bg-white border border-slate-200/80 rounded shadow-sm overflow-hidden p-5">
-              <div className="grid grid-cols-6 text-slate-400 font-bold text-xs pb-3 border-b border-slate-100 mb-4 hidden md:grid">
-                <div className="col-span-3">Produk Dipesan</div>
-                <div className="text-center">Harga Satuan</div>
-                <div className="text-center">Jumlah</div>
-                <div className="text-right">Subtotal Produk</div>
-              </div>
+            {/* 2. Main 2-Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* Left Column (Items, Shipping, Payment) */}
+              <div className="lg:col-span-8 space-y-6">
 
-              <div className="space-y-8">
-                {(() => {
-                  const groups: Record<string, typeof cartDetails> = {};
-                  cartDetails.forEach(item => {
-                    const mId = item.merchantId || 'unknown';
-                    if (!groups[mId]) groups[mId] = [];
-                    groups[mId].push(item);
-                  });
+                {/* Items grouped by Merchant */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
+                  {(() => {
+                    const groups: Record<string, typeof cartDetails> = {};
+                    cartDetails.forEach(item => {
+                      const mId = item.merchantId || 'unknown';
+                      if (!groups[mId]) groups[mId] = [];
+                      groups[mId].push(item);
+                    });
 
-                  return Object.entries(groups).map(([mId, items]) => {
-                    const shopName = items[0]?.merchant?.name || 'Toko UMKM';
-                    const merchantObj = items[0]?.merchant;
-                    let merchantAddress = '';
-                    if ((merchantObj as any)?.landingPageConfig) {
-                      try {
-                        const config = JSON.parse((merchantObj as any).landingPageConfig);
-                        merchantAddress = config.detailAddress || config.locationName || '';
-                      } catch (e) {}
-                    }
-                    if (!merchantAddress) merchantAddress = 'Alamat Toko UMKM (Silakan konfirmasi via Chat)';
-                    
-                    return (
-                      <div key={mId} className="space-y-4">
-                        {/* Shop Header */}
-                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100/50">
-                          <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-slate-600"><path d="M20 4H4v2h16V4zm1 10v-2l-1-5H4L3 12v2c0 1.66 1.34 3 3 3h12c1.66 0 3-1.34 3-3zm-12 1H6v-2h3v2zm5 0h-3v-2h3v2zm4 0h-3v-2h3v2z"/></svg>
-                          <span className="font-sora font-extrabold text-xs text-slate-800">{shopName}</span>
-                          <span className="text-[10px] text-slate-400">|</span>
-                          <Link href={`/chat?sellerId=${mId}`} className="text-xs text-[#2DB24A] hover:underline flex items-center gap-1">
-                            <span className="text-[10px]">💬</span> chat sekarang
-                          </Link>
-                        </div>
+                    return Object.entries(groups).map(([mId, items]) => {
+                      const shopName = items[0]?.merchant?.name || 'Toko UMKM';
+                      return (
+                        <div key={mId} className="space-y-4">
+                          <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                            <span className="text-base">🏪</span>
+                            <span className="font-sora font-bold text-xs text-slate-900">{shopName}</span>
+                            <span className="text-slate-300">|</span>
+                            <Link href={`/chat?sellerId=${mId}`} className="text-xs text-[#2DB24A] hover:underline flex items-center gap-1 font-medium">
+                              💬 chat sekarang
+                            </Link>
+                          </div>
 
-                        {/* Items Rows */}
-                        <div className="space-y-4">
-                          {items.map(item => {
-                            const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
-                            const hasDiscount = wholesalePrice < item.price;
-                            const isOwnProduct = currentUser && item.merchantId === currentUser.id;
+                          <div className="space-y-4">
+                            {items.map(item => {
+                              const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
+                              const hasDiscount = wholesalePrice < item.price;
+                              const isOwnProduct = currentUser && item.merchantId === currentUser.id;
 
-                            return (
-                              <div key={item.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center justify-between pb-4 border-b border-slate-100/50 last:border-b-0 last:pb-0 text-xs">
-                                
-                                {/* Info / Title */}
-                                <div className="col-span-1 md:col-span-3 flex gap-3">
-                                  <div className="w-14 h-14 bg-slate-50 border border-slate-200 rounded overflow-hidden flex-shrink-0 relative">
-                                    {item.imageUrl ? (
-                                      <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-lg bg-slate-100">📦</div>
-                                    )}
-                                  </div>
-                                  <div className="space-y-1">
-                                    <h4 className="font-bold text-slate-800 line-clamp-1">{item.title}</h4>
-                                    <div className="flex flex-wrap gap-1 items-center">
-                                      <span className="px-1 py-0.2 bg-[#2DB24A]/10 text-[8px] text-[#2DB24A] font-bold rounded">
-                                        {item.category}
-                                      </span>
-                                      <span className="px-1 py-0.2 bg-slate-100 text-[8px] text-slate-500 rounded">
-                                        Variasi: Standard
-                                      </span>
-                                      {isOwnProduct && (
-                                        <span className="px-1 py-0.2 bg-red-500/10 text-[8px] text-red-500 font-bold rounded">
-                                          Toko Sendiri
-                                        </span>
+                              return (
+                                <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 last:border-b-0 last:pb-0 text-xs">
+                                  <div className="flex gap-3 items-center flex-1">
+                                    <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 relative">
+                                      {item.imageUrl ? (
+                                        <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
+                                      ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
                                       )}
                                     </div>
-                                  </div>
-                                </div>
-
-                                {/* Harga Satuan */}
-                                <div className="text-left md:text-center font-semibold text-slate-700">
-                                  {hasDiscount ? (
-                                    <div className="flex md:flex-col items-center md:justify-center gap-1">
-                                      <span className="line-through text-slate-400 text-[10px]">Rp {item.price.toLocaleString('id-ID')}</span>
-                                      <span>Rp {wholesalePrice.toLocaleString('id-ID')}</span>
+                                    <div className="space-y-1">
+                                      <h4 className="font-bold text-slate-800 line-clamp-1 text-xs">{item.title}</h4>
+                                      <div className="flex flex-wrap gap-1.5 items-center">
+                                        <span className="px-2 py-0.5 bg-emerald-50 text-[9px] text-[#2DB24A] font-bold rounded-md">
+                                          {item.category}
+                                        </span>
+                                        <span className="px-2 py-0.5 bg-slate-100 text-[9px] text-slate-500 rounded-md">
+                                          Variasi: Standard
+                                        </span>
+                                        {isOwnProduct && (
+                                          <span className="px-2 py-0.5 bg-red-50 text-[9px] text-red-500 font-bold rounded-md">
+                                            Toko Sendiri
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
-                                  ) : (
-                                    <span>Rp {item.price.toLocaleString('id-ID')}</span>
-                                  )}
-                                </div>
-
-                                {/* Jumlah */}
-                                <div className="text-left md:text-center">
-                                  <div className="inline-flex items-center border border-slate-200 rounded">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
-                                      className="px-2 py-0.5 text-xs hover:bg-slate-50 font-bold text-slate-500"
-                                    >
-                                      -
-                                    </button>
-                                    <span className="px-2 font-bold text-slate-700">{item.quantity}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
-                                      className="px-2 py-0.5 text-xs hover:bg-slate-50 font-bold text-slate-500"
-                                    >
-                                      +
-                                    </button>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveItem(item.id)}
-                                    className="text-red-500 hover:text-red-600 block text-[9px] mt-1 md:mx-auto font-medium"
-                                  >
-                                    Hapus
-                                  </button>
-                                </div>
 
-                                {/* Subtotal Produk */}
-                                <div className="text-right font-bold text-slate-800 text-[13px]">
-                                  Rp {(wholesalePrice * item.quantity).toLocaleString('id-ID')}
-                                </div>
+                                  <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
+                                    <div className="font-bold text-slate-900 text-xs">
+                                      {hasDiscount ? (
+                                        <div className="flex flex-col items-end">
+                                          <span className="line-through text-slate-400 text-[10px]">Rp {item.price.toLocaleString('id-ID')}</span>
+                                          <span>Rp {wholesalePrice.toLocaleString('id-ID')}</span>
+                                        </div>
+                                      ) : (
+                                        <span>Rp {item.price.toLocaleString('id-ID')}</span>
+                                      )}
+                                    </div>
 
-                              </div>
-                            );
-                          })}
-                        </div>
-                        
-                        {/* Shipping Option & Message */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-100 rounded text-xs mt-3">
-                          <div className="space-y-1">
-                            <label className="block text-slate-500 font-medium">Catatan Pesanan:</label>
-                            <input
-                              type="text"
-                              placeholder="(Opsional) Tinggalkan pesan ke penjual..."
-                              className="w-full h-10 px-3 bg-white border border-slate-200 rounded focus:outline-none focus:border-[#2DB24A]"
-                            />
+                                    <div className="flex items-center gap-2">
+                                      <div className="inline-flex items-center border border-slate-200 rounded-lg bg-slate-50 overflow-hidden">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
+                                          className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
+                                        >
+                                          -
+                                        </button>
+                                        <span className="px-3 font-bold text-slate-800 text-xs">{item.quantity}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
+                                          className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveItem(item.id)}
+                                        className="text-red-400 hover:text-red-600 text-xs font-medium cursor-pointer ml-1"
+                                      >
+                                        Hapus
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
 
-                          <div className="space-y-3">
-                            <div className="space-y-1.5 pb-2.5 border-b border-slate-200/60">
-                              <span className="text-slate-500 font-medium block">Metode Pengiriman:</span>
-                              <div className="flex flex-wrap gap-4 mt-2">
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                  <input 
-                                    type="radio" 
-                                    name="delivery-method"
-                                    value="DELIVERY"
-                                    checked={deliveryMethod === 'DELIVERY'}
-                                    onChange={() => setDeliveryMethod('DELIVERY')}
-                                    className="w-4 h-4 text-[#2DB24A] border-slate-300 focus:ring-[#2DB24A] cursor-pointer accent-[#2DB24A]"
-                                  />
-                                  <span className="font-bold text-slate-700">Kirim via Kurir / Ekspedisi</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer select-none">
-                                  <input 
-                                    type="radio" 
-                                    name="delivery-method"
-                                    value="PICKUP"
-                                    checked={deliveryMethod === 'PICKUP'}
-                                    onChange={() => setDeliveryMethod('PICKUP')}
-                                    className="w-4 h-4 text-[#2DB24A] border-slate-300 focus:ring-[#2DB24A] cursor-pointer accent-[#2DB24A]"
-                                  />
-                                  <span className="font-bold text-slate-700">Ambil Sendiri / Pickup (Rp 0)</span>
-                                </label>
-                              </div>
+                {/* Shipping Options Selector (matching Figma design) */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
+                  <h3 className="font-sora text-sm font-bold text-slate-800 flex items-center gap-2">🚚 Opsi Pengiriman</h3>
+                  
+                  <div className="space-y-2">
+                    {[
+                      { code: 'ekonomi', name: 'Ekonomi', price: 9000, etd: 'Estimasi Tiba 2 - 13 Aug' },
+                      { code: 'standard', name: 'Standard', price: 12000, etd: 'Estimasi Tiba 3 - 15 Aug' },
+                      { code: 'nextday', name: 'Next Day', price: 24000, etd: 'Estimasi Tiba 3 - 15 Aug' },
+                      { code: 'instant', name: 'Instant', price: 45000, etd: 'Estimasi Tiba 3 - 15 Aug' },
+                    ].map((opt) => {
+                      const isSelected = selectedCourier === opt.code;
+                      return (
+                        <div
+                          key={opt.code}
+                          onClick={() => setSelectedCourier(opt.code)}
+                          className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                            isSelected
+                              ? 'border-[#2DB24A] bg-emerald-50/20 text-slate-900 shadow-xs'
+                              : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+                          }`}
+                        >
+                          <div>
+                            <div className="font-bold text-xs text-slate-800">
+                              {opt.name} <span className="text-[#2DB24A]">(Rp{opt.price.toLocaleString('id-ID')})</span>
                             </div>
-
-                            {deliveryMethod === 'DELIVERY' ? (
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-slate-500 font-medium">Opsi Pengiriman:</span>
-                                  <span className="font-bold text-slate-800">
-                                    {selectedCourierRate ? selectedCourierRate.courier_name : 'REGULAR'}
-                                  </span>
-                                </div>
-                                
-                                <div className="flex justify-between items-center text-[11px] text-slate-400">
-                                  <span>Estimasi Tiba:</span>
-                                  <span>{selectedCourierRate ? selectedCourierRate.etd : '2-3 hari'}</span>
-                                </div>
-
-                                <div className="flex justify-between items-center pt-1 border-t border-slate-200/50">
-                                  <span className="text-slate-500">Ongkos Kirim:</span>
-                                  <span className="font-extrabold text-slate-800 text-[13px]">
-                                    Rp {shippingFee.toLocaleString('id-ID')}
-                                  </span>
-                                </div>
-
-                                <div className="text-right">
-                                  <select
-                                    value={selectedCourier}
-                                    onChange={(e) => setSelectedCourier(e.target.value)}
-                                    className="mt-1 px-2.5 py-1 border border-slate-200 bg-white rounded text-[10px] font-bold text-slate-600 focus:outline-none cursor-pointer"
-                                  >
-                                    {courierRates.map(rate => (
-                                      <option key={rate.courier_code} value={rate.courier_code}>
-                                        {rate.courier_name} (Rp {rate.price.toLocaleString('id-ID')})
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-slate-500 font-medium">Opsi Pengiriman:</span>
-                                  <span className="font-bold text-slate-800">Ambil Sendiri / Pickup</span>
-                                </div>
-                                <div className="flex justify-between items-center text-[11px] text-slate-400">
-                                  <span>Estimasi Tiba:</span>
-                                  <span>Bisa diambil langsung / janjian</span>
-                                </div>
-                                <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-200/50">
-                                  <span className="text-slate-500 font-medium">Alamat Pengambilan / Toko:</span>
-                                  <span className="font-bold text-slate-800 bg-green-50/50 p-2 border border-[#2DB24A]/20 rounded text-[11px] leading-relaxed">
-                                    📍 {merchantAddress}
-                                  </span>
-                                </div>
-                                <div className="flex justify-between items-center pt-1">
-                                  <span className="text-slate-500">Ongkos Kirim:</span>
-                                  <span className="font-extrabold text-green-600 text-[13px]">Gratis (Rp 0)</span>
-                                </div>
-                              </div>
-                            )}
+                            <div className="text-[11px] text-slate-400 mt-0.5">{opt.etd}</div>
                           </div>
+                          {isSelected && (
+                            <div className="w-5 h-5 rounded-full bg-[#2DB24A] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                              ✓
+                            </div>
+                          )}
                         </div>
-                        {/* Store Subtotal Footer */}
-                        <div className="text-right text-xs text-slate-500 pt-2 flex justify-end gap-2 items-center">
-                          <span>Total Pesanan ({items.reduce((a, b) => a + b.quantity, 0)} Produk):</span>
-                          <strong className="text-[#2DB24A] text-sm font-extrabold">
-                            Rp {(items.reduce((s, i) => s + getProductPriceWithWholesale(i.price, i.quantity) * i.quantity, 0) + shippingFee).toLocaleString('id-ID')}
-                          </strong>
-                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
+                {/* Payment Method Selector */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-4">
+                  <h3 className="font-sora text-sm font-bold text-slate-800 flex items-center gap-2">💳 Metode Pembayaran</h3>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {[
+                      { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, disabled: false },
+                      { id: 'COD', label: 'COD (Bayar di Tempat)', disabled: false },
+                      { id: 'MIDTRANS_QRIS', label: 'QRIS', disabled: false },
+                      { id: 'MIDTRANS_BANK', label: 'Transfer Bank', disabled: false },
+                      { id: 'MIDTRANS_CARD', label: 'Kartu Kredit/Debit', disabled: false },
+                      ...dynamicPaymentMethods.map(m => ({
+                        id: m.id,
+                        label: m.providerName + (m.accountName ? ` (${m.accountName})` : ''),
+                        disabled: false,
+                        isManual: true,
+                        original: m
+                      }))
+                    ].map(opt => {
+                      const isSelected = 
+                        (opt.id === 'WALLET' && paymentMethod === 'WALLET') ||
+                        (opt.id === 'COD' && paymentMethod === 'COD') ||
+                        (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
+                        ((opt as any).isManual && paymentMethod === 'MANUAL' && activePaymentSubId === opt.id);
+
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          disabled={opt.disabled}
+                          onClick={() => {
+                            if (opt.id === 'WALLET') {
+                              setPaymentMethod('WALLET');
+                              setActivePaymentSubId('');
+                            } else if (opt.id === 'COD') {
+                              setPaymentMethod('COD');
+                              setActivePaymentSubId('');
+                            } else if ((opt as any).isManual) {
+                              setPaymentMethod('MANUAL');
+                              setActivePaymentSubId(opt.id);
+                            } else {
+                              setPaymentMethod('MIDTRANS');
+                              setActivePaymentSubId(opt.id);
+                            }
+                          }}
+                          className={`h-11 px-3 border text-xs font-bold rounded-xl transition-all flex items-center justify-center text-center relative ${
+                            isSelected
+                              ? 'bg-emerald-50/40 border-[#2DB24A] text-[#2DB24A] shadow-xs'
+                              : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="text-[11px] text-slate-600 bg-slate-50 border border-slate-200/60 p-3.5 rounded-xl leading-relaxed">
+                    {paymentMethod === 'WALLET' && (
+                      <div>
+                        <strong>Saldo Dompet Saloka</strong>
+                        <p className="mt-0.5 text-slate-500">⚡ Potong saldo instan 1-Click dari Dompet Saloka Anda.</p>
                       </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
+                    )}
+                    {paymentMethod === 'COD' && (
+                      <div>
+                        <strong>COD (Cash on Delivery)</strong>
+                        <p className="mt-0.5 text-slate-500">📦 Bayar tunai kepada kurir ekspedisi saat paket sampai di alamat rumah Anda.</p>
+                      </div>
+                    )}
+                    {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_QRIS' && (
+                      <div>
+                        <strong>QRIS (Midtrans)</strong>
+                        <p className="mt-0.5 text-slate-500">📱 Scan QRIS menggunakan Gopay, OVO, Dana, LinkAja, ShopeePay, atau BCA Mobile.</p>
+                      </div>
+                    )}
+                    {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_BANK' && (
+                      <div>
+                        <strong>Transfer Bank / Virtual Account (Midtrans)</strong>
+                        <p className="mt-0.5 text-slate-500">🏦 Bayar melalui Virtual Account bank pilihan Anda (BCA, Mandiri, BNI, BRI, Permata, dll).</p>
+                      </div>
+                    )}
+                    {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_CARD' && (
+                      <div>
+                        <strong>Kartu Kredit/Debit (Midtrans)</strong>
+                        <p className="mt-0.5 text-slate-500">💳 Pembayaran instan aman menggunakan kartu kredit berlogo Visa, Mastercard, atau JCB.</p>
+                      </div>
+                    )}
+                    {paymentMethod === 'MANUAL' && (() => {
+                      const selectedPm = dynamicPaymentMethods.find(m => m.id === activePaymentSubId)
+                      if (!selectedPm) return null
+                      return (
+                        <div>
+                          <strong className="text-slate-800">Transfer Manual — {selectedPm.providerName}</strong>
+                          {selectedPm.type === 'BANK' && (
+                            <p className="mt-1 text-slate-700 font-medium flex items-center gap-2">
+                              <span>🏦 No. Rekening:</span>
+                              <span className="font-bold font-mono text-[#2DB24A] text-xs">{selectedPm.accountNumber}</span>
+                              <span className="text-slate-500 text-[11px]">(a.n {selectedPm.accountName})</span>
+                            </p>
+                          )}
+                          {selectedPm.type === 'QRIS' && (
+                            <p className="mt-1 text-slate-700 font-medium">
+                              📱 QRIS UMKM — Barcode / Kode QRIS akan ditampilkan setelah membuat pesanan.
+                            </p>
+                          )}
+                          <p className="mt-1 text-[10px] text-slate-400">Instruksi transfer lengkap dan verifikasi manual akan diproses oleh admin.</p>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
 
-            {/* 4. Voucher & Coins (Shopee Platform Selection Style) */}
-            <div className="bg-white border border-slate-200/80 rounded shadow-sm p-5 space-y-4">
-              <div className="flex items-center gap-1.5 text-slate-800 font-bold text-sm border-b border-slate-100 pb-3 mb-2">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-yellow-500"><path d="M2 17h20v2H2zm11.84-5.43L11.02 8.75l1.41-1.41 2.83 2.83zm-2.02-4.24l-2.83-2.83 1.41-1.41 2.83 2.83zM10 20c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2z"/></svg>
-                Voucher & Koin Saloka
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Coupon Panel */}
-                <div className="border border-slate-200/70 p-4 rounded bg-slate-50/50 space-y-3">
-                  <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide">🏷️ Klaim Voucher Saloka</span>
+
+              {/* Right Column (Promo Code & Transaction Summary Card) (matching Figma design) */}
+              <div className="lg:col-span-4 space-y-6 sticky top-24">
+                
+                {/* Voucher Promo Input */}
+                <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm space-y-3">
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value)}
-                      placeholder="DISKON10, GRATISONGKIR"
-                      className="flex-1 h-9 px-3 bg-white border border-slate-200 rounded text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2DB24A]"
+                      onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="Masukkan kode promo"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2DB24A] flex-1"
                     />
                     <button
                       type="button"
                       onClick={() => handleApplyCoupon(couponCode)}
-                      className="px-4 h-9 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-bold text-xs rounded transition-colors uppercase tracking-wider"
+                      className="bg-[#2DB24A] hover:bg-[#259a3f] text-white text-xs font-bold rounded-xl px-5 py-2.5 transition-colors cursor-pointer shrink-0"
                     >
-                      Klaim
+                      Gunakan
                     </button>
                   </div>
-                  {couponError && <p className="text-[10px] text-red-500 font-bold">{couponError}</p>}
-                  {couponSuccess && <p className="text-[10px] text-green-600 font-bold">{couponSuccess}</p>}
+                  {couponError && <p className="text-[11px] text-red-500 font-medium">{couponError}</p>}
+                  {couponSuccess && <p className="text-[11px] text-[#2DB24A] font-medium">{couponSuccess}</p>}
                 </div>
 
-                {/* Coins redemption box */}
-                <div className="border border-slate-200/70 p-4 rounded bg-slate-50/50 flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-4">
-                    <div>
-                      <span className="block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1">🪙 Tukarkan Koin Saloka</span>
-                      <p className="text-[10px] text-slate-400 leading-normal">
-                        Koin Anda: {userCoins.toLocaleString('id-ID')} koin (Senilai Rp {maxCoinsVal.toLocaleString('id-ID')})
-                        <br />
-                        <span className="italic text-[9px] text-slate-500">*Maksimal penukaran adalah 50% dari subtotal produk.</span>
-                      </p>
+                {/* Transaction Summary Card */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
+                  <h3 className="font-sora text-sm font-bold text-slate-900">Cek ringkasan transaksi dulu ya!</h3>
+
+                  <div className="space-y-2.5 text-xs text-slate-600 pt-1">
+                    <div className="flex justify-between items-center">
+                      <span>Subtotal</span>
+                      <span className="font-semibold text-slate-800">Rp {subtotal.toLocaleString('id-ID')}</span>
                     </div>
-
-                    <input
-                      type="checkbox"
-                      disabled={userCoins <= 0}
-                      checked={useCoins}
-                      onChange={(e) => setUseCoins(e.target.checked)}
-                      className="w-4 h-4 text-[#2DB24A] border-slate-300 rounded focus:ring-[#2DB24A] cursor-pointer accent-[#2DB24A] disabled:opacity-50"
-                    />
-                  </div>
-
-                  {useCoins && coinRedemptionValue > 0 && (
-                    <div className="pt-2 text-right text-xs text-[#2DB24A] font-bold">
-                      Koin Terpakai: {coinsRedeemed.toFixed(1)} Koin (-Rp {coinRedemptionValue.toLocaleString('id-ID')})
+                    <div className="flex justify-between items-center">
+                      <span>Pengiriman</span>
+                      <span className="font-semibold text-slate-800">Rp {shippingFee.toLocaleString('id-ID')}</span>
                     </div>
-                  )}
-                </div>
-              </div>
-            </div>
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between items-center text-[#2DB24A] font-bold">
+                        <span>Diskon Voucher</span>
+                        <span>-Rp {couponDiscount.toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
+                    {coinRedemptionValue > 0 && (
+                      <div className="flex justify-between items-center text-[#2DB24A] font-bold">
+                        <span>Koin Ditukarkan</span>
+                        <span>-Rp {coinRedemptionValue.toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
 
-            {/* 5. Payment Methods & Final Bill Summary */}
-            <div className="bg-white border border-slate-200/80 rounded shadow-sm p-5 space-y-6">
-              <div className="flex items-center gap-1.5 text-slate-800 font-bold text-sm border-b border-slate-100 pb-3 mb-2">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#2DB24A]"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-                Metode Pembayaran
-              </div>
-
-              {/* Grid buttons matching Shopee layout */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {[
-                  { id: 'DEBIT_INSTAN', label: 'Debit Instan', disabled: true },
-                  { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, disabled: false },
-                  { id: 'COD', label: 'COD (Bayar di Tempat)', disabled: false },
-                  { id: 'COD_CEK_DULU', label: 'COD - Cek Dulu', disabled: true },
-                  { id: 'MIDTRANS_QRIS', label: 'QRIS', disabled: false },
-                  { id: 'MIDTRANS_BANK', label: 'Transfer Bank', disabled: false },
-                  { id: 'MIDTRANS_CARD', label: 'Kartu Kredit/Debit', disabled: false },
-                  { id: 'MITRA_AGEN', label: 'Bayar Tunai di Mitra/Agen', disabled: true },
-                  ...dynamicPaymentMethods.map(m => ({
-                    id: m.id,
-                    label: m.providerName + (m.accountName ? ` (${m.accountName})` : ''),
-                    disabled: false,
-                    isManual: true,
-                    original: m
-                  }))
-                ].map(opt => {
-                  const isSelected = 
-                    (opt.id === 'WALLET' && paymentMethod === 'WALLET') ||
-                    (opt.id === 'COD' && paymentMethod === 'COD') ||
-                    (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
-                    ((opt as any).isManual && paymentMethod === 'MANUAL' && activePaymentSubId === opt.id);
-
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      disabled={opt.disabled}
-                      onClick={() => {
-                        if (opt.id === 'WALLET') {
-                          setPaymentMethod('WALLET');
-                          setActivePaymentSubId('');
-                        } else if (opt.id === 'COD') {
-                          setPaymentMethod('COD');
-                          setActivePaymentSubId('');
-                        } else if ((opt as any).isManual) {
-                          setPaymentMethod('MANUAL');
-                          setActivePaymentSubId(opt.id);
-                        } else {
-                          setPaymentMethod('MIDTRANS');
-                          setActivePaymentSubId(opt.id);
-                        }
-                      }}
-                      className={`h-11 px-3 border text-xs font-bold rounded transition-all flex items-center justify-center text-center relative ${
-                        opt.disabled
-                          ? 'bg-[#F9FAFB] border-slate-100 text-slate-300 cursor-not-allowed'
-                          : isSelected
-                          ? 'bg-white border-[#2DB24A] text-[#2DB24A] shadow-sm after:content-[""] after:absolute after:bottom-0 after:right-0 after:w-0 after:h-0 after:border-t-[12px] after:border-t-transparent after:border-r-[12px] after:border-r-[#2DB24A] before:content-["✓"] before:absolute before:bottom-0 before:right-0 before:text-white before:text-[7px] before:font-bold before:z-10 before:leading-none before:p-0.5'
-                          : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200/50 p-3.5 rounded leading-relaxed">
-                {paymentMethod === 'WALLET' && (
-                  <div>
-                    <strong>Saldo Dompet Saloka</strong>
-                    <p className="mt-0.5 text-slate-400">⚡ Potong saldo instan 1-Click dari Dompet Saloka Anda.</p>
-                  </div>
-                )}
-                {paymentMethod === 'COD' && (
-                  <div>
-                    <strong>COD (Cash on Delivery)</strong>
-                    <p className="mt-0.5 text-slate-400">📦 Bayar tunai kepada kurir ekspedisi saat paket sampai di alamat rumah Anda.</p>
-                  </div>
-                )}
-                {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_QRIS' && (
-                  <div>
-                    <strong>QRIS (Midtrans)</strong>
-                    <p className="mt-0.5 text-slate-400">📱 Scan QRIS menggunakan Gopay, OVO, Dana, LinkAja, ShopeePay, atau BCA Mobile.</p>
-                  </div>
-                )}
-                {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_BANK' && (
-                  <div>
-                    <strong>Transfer Bank / Virtual Account (Midtrans)</strong>
-                    <p className="mt-0.5 text-slate-400">🏦 Bayar melalui Virtual Account bank pilihan Anda (BCA, Mandiri, BNI, BRI, Permata, dll).</p>
-                  </div>
-                )}
-                {paymentMethod === 'MIDTRANS' && activePaymentSubId === 'MIDTRANS_CARD' && (
-                  <div>
-                    <strong>Kartu Kredit/Debit (Midtrans)</strong>
-                    <p className="mt-0.5 text-slate-400">💳 Pembayaran instan aman menggunakan kartu kredit berlogo Visa, Mastercard, atau JCB.</p>
-                  </div>
-                )}
-                {paymentMethod === 'MANUAL' && (() => {
-                  const selectedPm = dynamicPaymentMethods.find(m => m.id === activePaymentSubId)
-                  if (!selectedPm) return null
-                  return (
-                    <div>
-                      <strong className="text-slate-800">Transfer Manual — {selectedPm.providerName}</strong>
-                      {selectedPm.type === 'BANK' && (
-                        <p className="mt-1 text-slate-700 font-medium flex items-center gap-2">
-                          <span>🏦 No. Rekening:</span>
-                          <span className="font-bold font-mono text-[#2DB24A] text-xs">{selectedPm.accountNumber}</span>
-                          <span className="text-slate-500 text-[11px]">(a.n {selectedPm.accountName})</span>
-                        </p>
-                      )}
-                      {selectedPm.type === 'QRIS' && (
-                        <p className="mt-1 text-slate-700 font-medium">
-                          📱 QRIS UMKM — Barcode / Kode QRIS akan ditampilkan setelah membuat pesanan.
-                        </p>
-                      )}
-                      <p className="mt-1 text-[10px] text-slate-400">Instruksi transfer lengkap dan verifikasi manual akan diproses oleh admin.</p>
+                    <div className="border-t border-slate-100 pt-3 flex justify-between items-center">
+                      <span className="font-sora font-bold text-xs text-slate-800">Total Tagihan</span>
+                      <span className="font-sora text-xl font-extrabold text-slate-900">
+                        Rp {total.toLocaleString('id-ID')}
+                      </span>
                     </div>
-                  )
-                })()}
-              </div>
-
-              {/* Invoice calculation layout */}
-              <div className="border-t border-slate-100 pt-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                
-                {/* Stats panel on left */}
-                <div className="text-[11px] text-slate-400 space-y-1">
-                  <div className="flex gap-2"><span>Poin Diperoleh:</span><span className="text-[#2DB24A] font-bold">+{Math.round(total * 0.01)} Poin</span></div>
-                  <div className="flex gap-2"><span>Cashback Dompet:</span><span className="text-[#2DB24A] font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span></div>
-                </div>
-
-                {/* Subtotals on right */}
-                <div className="w-full md:w-auto space-y-2.5 text-xs text-right">
-                  <div className="flex justify-between md:justify-end gap-12 text-slate-500">
-                    <span>Subtotal untuk Produk:</span>
-                    <span className="w-28 font-semibold text-slate-800">Rp {subtotal.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between md:justify-end gap-12 text-slate-500">
-                    <span>Subtotal Pengiriman:</span>
-                    <span className="w-28 font-semibold text-slate-800">Rp {shippingFee.toLocaleString('id-ID')}</span>
-                  </div>
-                  {couponDiscount > 0 && (
-                    <div className="flex justify-between md:justify-end gap-12 text-[#2DB24A] font-bold">
-                      <span>Voucher Potongan:</span>
-                      <span className="w-28">-Rp {couponDiscount.toLocaleString('id-ID')}</span>
-                    </div>
-                  )}
-                  {coinRedemptionValue > 0 && (
-                    <div className="flex justify-between md:justify-end gap-12 text-[#2DB24A] font-bold">
-                      <span>Koin Ditukarkan:</span>
-                      <span className="w-28">-Rp {coinRedemptionValue.toLocaleString('id-ID')}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between md:justify-end gap-12 text-slate-800 font-extrabold border-t border-slate-100 pt-3 items-center">
-                    <span className="text-sm">Total Pembayaran:</span>
-                    <span className="w-36 text-2xl font-black text-[#2DB24A] font-geist">
-                      Rp {total.toLocaleString('id-ID')}
-                    </span>
                   </div>
 
-                  <div className="pt-4 flex md:justify-end">
-                    <button
-                      id="cart-checkout"
-                      onClick={handleCheckout}
-                      disabled={
-                        isPending ||
-                        isPendingCheckout ||
-                        isVerifying ||
-                        cart.length === 0 ||
-                        hasOwnProduct ||
-                        (paymentMethod === 'WALLET' && (walletBalance === null || walletBalance < total))
-                      }
-                      className="w-full md:w-60 h-12 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-bold text-sm uppercase tracking-wider rounded shadow transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isPendingCheckout 
-                        ? 'Memproses Transaksi...' 
-                        : isVerifying 
-                        ? 'Memverifikasi Pembayaran...' 
-                        : paymentMethod === 'WALLET' 
-                        ? (walletBalance === null || walletBalance < total) 
-                          ? 'Saldo Dompet Tidak Mencukupi' 
-                          : '⚡ Buat Pesanan (Dompet)' 
-                        : 'Buat Pesanan'}
-                    </button>
-                  </div>
-                  
+                  <button
+                    id="cart-checkout"
+                    onClick={handleCheckout}
+                    disabled={
+                      isPending ||
+                      isPendingCheckout ||
+                      isVerifying ||
+                      cart.length === 0 ||
+                      hasOwnProduct ||
+                      (paymentMethod === 'WALLET' && (walletBalance === null || walletBalance < total))
+                    }
+                    className="w-full py-3.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-sm rounded-xl transition-all shadow-md cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                  >
+                    {isPendingCheckout 
+                      ? 'Memproses Transaksi...' 
+                      : isVerifying 
+                      ? 'Memverifikasi Pembayaran...' 
+                      : paymentMethod === 'WALLET' 
+                      ? (walletBalance === null || walletBalance < total) 
+                        ? 'Saldo Dompet Tidak Mencukupi' 
+                        : '⚡ Bayar Sekarang (Dompet)' 
+                      : 'Bayar Sekarang'}
+                  </button>
+
                   {hasOwnProduct && (
-                    <p className="text-[10px] text-red-500 font-semibold mt-2 text-center md:text-right">
+                    <p className="text-[10px] text-red-500 font-semibold text-center mt-2">
                       ⚠️ Hapus produk toko Anda sendiri untuk membuat pesanan.
                     </p>
                   )}
@@ -1441,7 +1280,6 @@ export default function CartPage() {
               </div>
 
             </div>
-
           </div>
         )}
       </div>
