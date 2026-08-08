@@ -2240,6 +2240,34 @@ let globalMockWaLogs: any[] = []
 let globalMockReviews: any[] = _persistedDb.reviews || []
 let globalMockNotifications: any[] = _persistedDb.notifications || []
 let globalMockOrderTrackings: any[] = _persistedDb.orderTrackings || []
+let globalMockPaymentMethods: any[] = (_persistedDb as any).paymentMethods && (_persistedDb as any).paymentMethods.length > 0 ? (_persistedDb as any).paymentMethods : [
+  {
+    id: 'pm-1',
+    type: 'BANK',
+    providerName: 'Bank BCA',
+    accountName: 'PT Saloka Indonesia',
+    accountNumber: '8830123456',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pm-2',
+    type: 'BANK',
+    providerName: 'Bank Mandiri',
+    accountName: 'PT Saloka Indonesia',
+    accountNumber: '1370001234567',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'pm-3',
+    type: 'QRIS',
+    providerName: 'QRIS Saloka UMKM',
+    qrRawString: '00020101021126670016ID.CO.QRIS.WWW01189360050300000806460215ID10200388471130303UME5204581253033605802ID5913SALOKA UMKM6007JAKARTA61051211062070803M016304A1B2',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  }
+]
 
 // Database Access Verification Utility with cache and timeout race
 let lastDbCheckTime = 0;
@@ -3317,7 +3345,7 @@ export const DataStore = {
     buyerId: string,
     items: Array<{ productId: string; quantity: number }>,
     affiliateId?: string,
-    paymentMethod: 'MIDTRANS' | 'WALLET' = 'MIDTRANS',
+    paymentMethod: string = 'MIDTRANS',
     shippingDetails?: {
       shippingFee?: number
       courier?: string
@@ -4650,6 +4678,75 @@ export const DataStore = {
   },
 
 
+
+  async getAffiliateCommission(affiliateId: string) {
+    const stats = await this.getAffiliateStats(affiliateId)
+    return stats ? stats.totalEarnings : 0
+  },
+
+  async getPaymentMethods(activeOnly: boolean = false) {
+    syncMockDb()
+    if (activeOnly) {
+      return globalMockPaymentMethods.filter(p => p.isActive)
+    }
+    return globalMockPaymentMethods
+  },
+
+  async createPaymentMethod(data: {
+    type: string
+    providerName: string
+    accountName?: string
+    accountNumber?: string
+    qrImageUrl?: string
+    qrRawString?: string
+    isActive?: boolean
+  }) {
+    syncMockDb()
+    const newMethod = {
+      id: `pm-${Date.now()}`,
+      type: data.type,
+      providerName: data.providerName,
+      accountName: data.accountName || null,
+      accountNumber: data.accountNumber || null,
+      qrImageUrl: data.qrImageUrl || null,
+      qrRawString: data.qrRawString || null,
+      isActive: data.isActive !== undefined ? data.isActive : true,
+      createdAt: new Date().toISOString()
+    }
+    globalMockPaymentMethods.unshift(newMethod)
+    saveMockDb()
+    return newMethod
+  },
+
+  async updatePaymentMethod(id: string, data: Partial<{
+    type: string
+    providerName: string
+    accountName: string
+    accountNumber: string
+    qrImageUrl: string
+    qrRawString: string
+    isActive: boolean
+  }>) {
+    syncMockDb()
+    const idx = globalMockPaymentMethods.findIndex(p => p.id === id)
+    if (idx !== -1) {
+      globalMockPaymentMethods[idx] = { ...globalMockPaymentMethods[idx], ...data }
+      saveMockDb()
+      return globalMockPaymentMethods[idx]
+    }
+    return null
+  },
+
+  async deletePaymentMethod(id: string) {
+    syncMockDb()
+    const idx = globalMockPaymentMethods.findIndex(p => p.id === id)
+    if (idx !== -1) {
+      const deleted = globalMockPaymentMethods.splice(idx, 1)[0]
+      saveMockDb()
+      return deleted
+    }
+    return null
+  },
 
   // AFFILIATE PORTAL DATA
   async getAffiliateStats(affiliateId: string) {

@@ -50,6 +50,7 @@ import {
   toggleCoinVoucherActive,
   getCoinAdminStats
 } from '@/app/actions/coin'
+import PaymentMethodsTab from './components/PaymentMethodsTab'
 
 const ALL_ADMIN_PERMISSIONS = [
   { key: 'overview', label: 'Dashboard Overview' },
@@ -63,7 +64,8 @@ const ALL_ADMIN_PERMISSIONS = [
   { key: 'certificates', label: 'Sertifikat Level Up' },
   { key: 'affiliates', label: 'Monitor Affiliate' },
   { key: 'coins', label: 'Kelola Koin & Voucher' },
-  { key: 'shu', label: 'Pengaturan SHU RAT Koperasi' }
+  { key: 'shu', label: 'Pengaturan SHU RAT Koperasi' },
+  { key: 'payment_methods', label: 'Kelola Metode Pembayaran' }
 ]
 
 interface AdminDashboardClientProps {
@@ -83,7 +85,7 @@ interface AdminDashboardClientProps {
   initialCommunities?: any[]
 }
 
-type TabType = 'overview' | 'users' | 'admins' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins' | 'shu'
+type TabType = 'overview' | 'users' | 'admins' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins' | 'shu' | 'payment_methods'
 
 export default function AdminDashboardClient({
   currentUser,
@@ -905,7 +907,7 @@ export default function AdminDashboardClient({
   })
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f4f5f7] text-[#334155] font-sans antialiased relative">
+    <div className="flex h-screen overflow-hidden bg-[#f8f9fb] text-[#191c1e] font-sans antialiased relative">
       {/* Sidebar mobile overlay */}
       {isSidebarOpen && (
         <div 
@@ -914,30 +916,32 @@ export default function AdminDashboardClient({
         />
       )}
 
-      {/* ─── SIDEBAR (Minimal Luxury Light Style) ─────────────────────────── */}
-      <aside className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-[#e2e8f0] flex flex-col justify-between transition-all duration-300 lg:translate-x-0 lg:static lg:flex-shrink-0 ${
-        isSidebarCollapsed ? 'w-[76px]' : 'w-[280px]'
+      {/* ─── SIDEBAR (Stitch Corporate Enterprise Redesign) ─────────────────────────── */}
+      <aside className={`fixed inset-y-0 left-0 z-40 bg-white border-r border-[#E5E7EB] flex flex-col justify-between transition-all duration-300 lg:translate-x-0 lg:static lg:flex-shrink-0 ${
+        isSidebarCollapsed ? 'w-[76px]' : 'w-[260px]'
       } ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}>
         <div className="flex-1 overflow-y-auto scrollbar-none">
-          {/* Sidebar Brand Logo */}
-          <div className={`h-[74px] border-b border-[#e2e8f0] flex items-center justify-between transition-all duration-300 ${isSidebarCollapsed ? 'px-3 justify-center' : 'px-6 gap-3'}`}>
+          {/* Sidebar Brand Header */}
+          <div className={`h-[64px] border-b border-[#E5E7EB] flex items-center justify-between transition-all duration-300 ${isSidebarCollapsed ? 'px-3 justify-center' : 'px-5 gap-3'}`}>
             {!isSidebarCollapsed ? (
               <div className="flex items-center gap-3 overflow-hidden">
-                <img src="/images/logo+nama_saloka.svg" alt="Saloka.id" className="h-8 object-contain" />
-                <div className="flex flex-col justify-center border-l border-slate-200 pl-3 min-w-max">
-                  <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none">Admin</p>
-                  <p className="text-[8px] font-geist font-black uppercase tracking-widest text-[#54AD21] leading-none mt-0.5">Control</p>
+                <div className="w-9 h-9 bg-[#2db24a] text-white rounded-lg flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                  S
+                </div>
+                <div className="flex flex-col justify-center min-w-max">
+                  <h1 className="font-bold text-sm text-[#006e24] leading-tight tracking-tight">Saloka Admin</h1>
+                  <p className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">Enterprise Control</p>
                 </div>
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-black font-sora text-sm">
+              <div className="w-9 h-9 rounded-lg bg-[#2db24a] text-white flex items-center justify-center font-bold text-lg shadow-sm">
                 S
               </div>
             )}
             
-            {/* Collapse Toggle Button (Visible only on desktop lg:) */}
+            {/* Collapse Toggle Button */}
             <button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               className="hidden lg:flex items-center justify-center p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors border-none bg-transparent"
@@ -949,118 +953,155 @@ export default function AdminDashboardClient({
             </button>
           </div>
 
-          {/* Navigation links */}
-          <nav className={`p-4 space-y-1.5 ${isSidebarCollapsed ? 'px-2' : ''}`}>
+          {/* Grouped Navigation Links */}
+          <nav className={`py-4 space-y-4 ${isSidebarCollapsed ? 'px-2' : 'px-3'}`}>
             {[
-              { id: 'overview', label: 'Dashboard Overview', icon: 'M4 6h16M4 12h16M4 18h16' },
-              { id: 'users', label: 'Kelola User & Role', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14-2a4 4 0 0 1-3.87 3M16 3.13a4 4 0 0 1 0 7.75' },
-              ...(currentUser.isSuperAdmin ? [{ id: 'admins', label: 'Kelola Admin & Hak Akses', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-7 16a7 7 0 0 1 14 0H5z' }] : []),
-              { id: 'approvals', label: 'Persetujuan Merchant', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
-              { id: 'withdrawals', label: 'Pencairan Dana (Withdraw)', icon: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
-              { id: 'products', label: 'Katalog Produk & Jasa', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
-              { id: 'academy', label: 'LMS Kelola Materi', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.168.477 4 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4 1.253' },
-              { id: 'community', label: 'Komunitas Induk & Member', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
-              { id: 'transactions', label: 'Lacak Transaksi', icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4' },
-              { id: 'certificates', label: 'Sertifikat Level Up', icon: 'M12 14l-4-4 1.41-1.41L12 11.17l2.59-2.58L16 10l-4 4zm-6 4h12V6H6v12zm12-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12z' },
-              { id: 'affiliates', label: 'Monitor Affiliate', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
-              { id: 'coins', label: 'Kelola Koin & Voucher', icon: 'M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A.75.75 0 0 0 9 9h1.5v2.25H9a.75.75 0 0 0 0 1.5h1.5V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-3V9H15a.75.75 0 0 0 0-1.5H9Z' }
-            ]
-            .filter(item => {
-              if (currentUser.isSuperAdmin) return true
-              if (item.id === 'admins') return false
-              let perms: string[] = []
-              try {
-                perms = currentUser.adminPermissions ? JSON.parse(currentUser.adminPermissions) : ALL_ADMIN_PERMISSIONS.map(p => p.key)
-              } catch (_) {
-                perms = ALL_ADMIN_PERMISSIONS.map(p => p.key)
+              {
+                title: null,
+                items: [
+                  { id: 'overview', label: 'Dashboard Overview', icon: 'M4 6h16M4 12h16M4 18h16' }
+                ]
+              },
+              {
+                title: 'Management',
+                items: [
+                  { id: 'users', label: 'User Management', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14-2a4 4 0 0 1-3.87 3M16 3.13a4 4 0 0 1 0 7.75' },
+                  ...(currentUser.isSuperAdmin ? [{ id: 'admins', label: 'Admin RBAC', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-7 16a7 7 0 0 1 14 0H5z' }] : []),
+                  { id: 'approvals', label: 'Merchant Approval', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' }
+                ]
+              },
+              {
+                title: 'Operations',
+                items: [
+                  { id: 'withdrawals', label: 'Withdrawal Dana', icon: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
+                  { id: 'products', label: 'Product Catalog', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
+                  { id: 'academy', label: 'LMS Management', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.168.477 4 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4 1.253' },
+                  { id: 'payment_methods', label: 'Metode Pembayaran', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.64-2.25 1.64-1.74 0-2.26-.95-2.32-1.81h-1.7c.07 1.78 1.12 3.06 2.96 3.53V20h2.16v-1.63c1.63-.35 2.86-1.46 2.86-3.04 0-1.71-1.12-2.71-3.51-3.26z' },
+                  { id: 'shu', label: 'SHU Koperasi', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }
+                ]
+              },
+              {
+                title: 'Insights',
+                items: [
+                  { id: 'community', label: 'Community & Members', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
+                  { id: 'transactions', label: 'Transaction Tracking', icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4' },
+                  { id: 'certificates', label: 'Certification', icon: 'M12 14l-4-4 1.41-1.41L12 11.17l2.59-2.58L16 10l-4 4zm-6 4h12V6H6v12zm12-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12z' },
+                  { id: 'affiliates', label: 'Monitor Affiliate', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+                  { id: 'coins', label: 'Koin & Voucher', icon: 'M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A.75.75 0 0 0 9 9h1.5v2.25H9a.75.75 0 0 0 0 1.5h1.5V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-3V9H15a.75.75 0 0 0 0-1.5H9Z' }
+                ]
               }
-              return perms.includes(item.id)
-            })
-            .map(item => {
-              const isActive = activeTab === item.id
+            ].map((group, groupIdx) => {
+              const allowedItems = group.items.filter(item => {
+                if (currentUser.isSuperAdmin) return true
+                if (item.id === 'admins') return false
+                let perms: string[] = []
+                try {
+                  perms = currentUser.adminPermissions ? JSON.parse(currentUser.adminPermissions) : ALL_ADMIN_PERMISSIONS.map(p => p.key)
+                } catch (_) {
+                  perms = ALL_ADMIN_PERMISSIONS.map(p => p.key)
+                }
+                return perms.includes(item.id)
+              })
+
+              if (allowedItems.length === 0) return null
+
               return (
-                <button
-                  key={item.id}
-                  onClick={() => { setActiveTab(item.id as TabType); setSelectedTx(null); setIsSidebarOpen(false); }}
-                  className={`w-full flex items-center transition-all duration-200 cursor-pointer ${
-                    isSidebarCollapsed ? 'justify-center p-3 rounded-xl' : 'gap-3 px-3.5 py-3 rounded-[var(--radius-brand)]'
-                  } ${
-                    isActive 
-                      ? 'bg-[#E8F5E9] text-[#0F5132] border-l-4 border-[#0F5132] shadow-sm' 
-                      : 'text-[#475569] hover:text-[#0f172a] hover:bg-slate-50'
-                  }`}
-                  title={isSidebarCollapsed ? item.label : undefined}
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                    <path d={item.icon} />
-                  </svg>
-                  {!isSidebarCollapsed && <span className="text-xs font-bold uppercase tracking-wider">{item.label}</span>}
-                </button>
+                <div key={groupIdx} className="space-y-1">
+                  {group.title && !isSidebarCollapsed && (
+                    <p className="px-3 pt-2 pb-1 text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">
+                      {group.title}
+                    </p>
+                  )}
+                  {allowedItems.map(item => {
+                    const isActive = activeTab === item.id
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => { setActiveTab(item.id as TabType); setSelectedTx(null); setIsSidebarOpen(false); }}
+                        className={`w-full flex items-center transition-all duration-200 cursor-pointer ${
+                          isSidebarCollapsed ? 'justify-center p-2.5 rounded-lg' : 'gap-3 px-3.5 py-2.5 rounded-lg'
+                        } ${
+                          isActive 
+                            ? 'bg-[#b0f1c7]/40 text-[#0f5132] font-semibold border-l-4 border-[#006e24] shadow-xs' 
+                            : 'text-[#6B7280] hover:text-[#111111] hover:bg-[#f2f4f6]'
+                        }`}
+                        title={isSidebarCollapsed ? item.label : undefined}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                          <path d={item.icon} />
+                        </svg>
+                        {!isSidebarCollapsed && <span className="text-xs font-medium">{item.label}</span>}
+                      </button>
+                    )
+                  })}
+                </div>
               )
             })}
           </nav>
         </div>
 
         {/* Sidebar Footer User Info */}
-        <div className={`p-4 border-t border-[#e2e8f0] bg-[#f8f9fa] flex ${isSidebarCollapsed ? 'flex-col gap-3 items-center justify-center' : 'items-center justify-between'}`}>
+        <div className={`p-4 border-t border-[#E5E7EB] bg-[#f8f9fb] flex ${isSidebarCollapsed ? 'flex-col gap-3 items-center justify-center' : 'items-center justify-between'}`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#0F5132] to-[#2DB24A] flex items-center justify-center font-bold text-white shadow-sm text-sm shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[#006e24] flex items-center justify-center font-bold text-white shadow-xs text-xs shrink-0">
               {currentUser.name?.charAt(0).toUpperCase()}
             </div>
             {!isSidebarCollapsed && (
               <div className="min-w-0">
-                <p className="text-xs font-bold truncate text-[#0f172a]">{currentUser.name}</p>
-                <p className="text-[10px] text-[#64748b] truncate">{currentUser.email}</p>
+                <p className="text-xs font-bold truncate text-[#111111]">{currentUser.name}</p>
+                <p className="text-[10px] text-[#6B7280] truncate">{currentUser.email}</p>
               </div>
             )}
           </div>
           <button
             onClick={handleLogout}
             title="Log Out"
-            className={`p-2 rounded-[var(--radius-brand)] bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer transition-colors border border-red-100 ${isSidebarCollapsed ? 'w-8 h-8 flex items-center justify-center' : ''}`}
+            className={`p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer transition-colors border border-red-100 ${isSidebarCollapsed ? 'w-8 h-8 flex items-center justify-center' : ''}`}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
             </svg>
           </button>
         </div>
       </aside>
 
-      {/* ─── MAIN CONTENT (Light theme) ───────────────────────────────────── */}
+      {/* ─── MAIN CONTENT ───────────────────────────────────── */}
       <main className="flex-grow flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="h-[74px] border-b border-[#e2e8f0] bg-white px-4 md:px-8 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-2.5">
+        <header className="h-[64px] border-b border-[#E5E7EB] bg-white px-6 flex items-center justify-between flex-shrink-0 z-10 shadow-xs">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 -ml-2 rounded-[var(--radius-brand)] hover:bg-slate-50 lg:hidden text-[#475569] focus:outline-none cursor-pointer"
+              className="p-2 -ml-2 rounded-lg hover:bg-slate-100 lg:hidden text-slate-600 focus:outline-none cursor-pointer"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h2 className="font-sora text-xs md:text-sm font-black text-slate-800 tracking-wider uppercase">
+            <h2 className="font-sora text-sm md:text-base font-bold text-[#111111] tracking-tight">
               { activeTab === 'overview' && 'Dashboard Overview' }
-              { activeTab === 'users' && 'Kelola User & Role' }
-              { activeTab === 'admins' && 'Kelola Admin' }
-              { activeTab === 'approvals' && 'Persetujuan Merchant' }
-              { activeTab === 'withdrawals' && 'Pencairan Dana (Withdrawals)' }
-              { activeTab === 'products' && 'Katalog Produk & Jasa' }
-              {activeTab === 'academy' && 'LMS Academy - Kelola Materi'}
-              {activeTab === 'community' && 'Daftar Forum Komunitas'}
-              {activeTab === 'transactions' && 'Lacak Transaksi Jual Beli'}
-              {activeTab === 'certificates' && 'Sertifikat Level Up'}
-              {activeTab === 'affiliates' && 'Monitor Sistem Affiliate'}
-              {activeTab === 'coins' && 'Kelola Koin & Voucher'}
+              { activeTab === 'users' && 'User Management' }
+              { activeTab === 'admins' && 'Admin Management & RBAC' }
+              { activeTab === 'approvals' && 'Merchant Approval' }
+              { activeTab === 'withdrawals' && 'Financials & Withdrawals' }
+              { activeTab === 'products' && 'Product Catalog' }
+              { activeTab === 'academy' && 'LMS Management' }
+              { activeTab === 'community' && 'Community & Members' }
+              { activeTab === 'transactions' && 'Transaction Tracking' }
+              { activeTab === 'certificates' && 'Certification Management' }
+              { activeTab === 'affiliates' && 'Affiliate Monitoring' }
+              { activeTab === 'coins' && 'Kelola Koin & Voucher' }
+              { activeTab === 'shu' && 'Pengaturan SHU Koperasi' }
+              { activeTab === 'payment_methods' && 'Kelola Metode Pembayaran' }
             </h2>
           </div>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132] bg-[#E8F5E9] border border-[#0F5132]/20 px-2.5 py-1 rounded uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 bg-[#0F5132] rounded-full animate-pulse inline-block" />
-              Sistem Aktif
-            </span>
-            <Link href="/" className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 rounded-[var(--radius-brand)] transition-colors border border-[#e2e8f0] uppercase tracking-wider shadow-sm">
-              Kembali ke Landing
+            <div className="hidden sm:flex items-center gap-2 bg-[#eef8e9] px-3 py-1.5 rounded-full border border-[#2db24a]/20">
+              <span className="w-2 h-2 rounded-full bg-[#006e24] animate-pulse" />
+              <span className="text-[11px] font-semibold text-[#006e24] tracking-wider uppercase">System Status: Active</span>
+            </div>
+            <Link href="/" className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-xs font-semibold text-[#6B7280] hover:text-[#111111] rounded-lg transition-colors border border-[#E5E7EB] shadow-xs">
+              Return to Landing
             </Link>
           </div>
         </header>
@@ -1080,120 +1121,88 @@ export default function AdminDashboardClient({
             </div>
           )}
 
-                    {/* ─── TAB 1: OVERVIEW ───────────────────────────────────────────── */}
+                    {/* ─── TAB 1: OVERVIEW (Stitch Bento Grid Redesign) ───────────────────────────── */}
           {activeTab === 'overview' && (
-            <div className="space-y-8 animate-fade-in">
+            <div className="space-y-6 animate-fade-in">
               {/* Stat Cards Bento Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-12 gap-6">
                 
-                {/* Bento Card 1: Large Highlight (Total Volume) */}
-                <div className="lg:col-span-2 p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50/40 rounded-full blur-3xl -mr-5 -mt-5 group-hover:bg-emerald-100/40 transition-colors duration-300 pointer-events-none" />
+                {/* Financial Performance Card (Span 8) */}
+                <div className="col-span-12 lg:col-span-8 bg-white rounded-xl border border-[#E5E7EB] shadow-xs p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                  <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#eef8e9] rounded-full opacity-50 blur-3xl group-hover:bg-[#b0f1c7]/40 transition-colors duration-500 pointer-events-none" />
                   <div className="relative z-10 flex flex-col justify-between h-full">
                     <div>
-                      <span className="text-[9px] font-bold font-mono tracking-widest text-[#0F5132] bg-[#E8F5E9] border border-[#0F5132]/10 px-2.5 py-1 rounded-full uppercase">
-                        Kinerja Finansial
+                      <span className="inline-block px-2.5 py-1 bg-[#eef8e9] text-[#006e24] font-semibold text-[11px] uppercase tracking-wider rounded-md mb-4">
+                        KINERJA FINANSIAL
                       </span>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-5">Total Volume Jual Beli</p>
+                      <h3 className="font-semibold text-xs text-[#6B7280] mb-2 uppercase tracking-wider">TOTAL VOLUME JUAL BELI</h3>
+                      <div className="flex items-baseline gap-3">
+                        <span className="font-sora text-3xl font-extrabold text-[#2db24a] tracking-tight">
+                          Rp {totalVolume.toLocaleString('id-ID')}
+                        </span>
+                      </div>
                     </div>
-                    <div className="mt-6">
-                      <p className="text-3xl font-sora font-extrabold text-[#0F5132] tracking-tight font-mono">
-                        Rp {totalVolume.toLocaleString('id-ID')}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-2 font-mono flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 bg-[#2DB24A] rounded-full inline-block animate-pulse" />
-                        {orders.length} order sukses
-                      </p>
+                    <div className="mt-8 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#2db24a] animate-pulse" />
+                      <span className="text-xs font-semibold text-[#6B7280]">{orders.length} order sukses terverifikasi</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Bento Card 2: Total Users */}
-                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50/40 rounded-full blur-2xl -mr-5 -mt-5 group-hover:bg-blue-100/40 transition-colors duration-300 pointer-events-none" />
-                  <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      <span className="text-[9px] font-bold font-mono tracking-widest text-blue-700 bg-blue-50 border border-blue-200/20 px-2.5 py-1 rounded-full uppercase">
-                        Komunitas
-                      </span>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-5">Total Pengguna</p>
-                    </div>
-                    <div className="mt-6">
-                      <p className="text-3xl font-sora font-extrabold text-blue-900 tracking-tight font-mono">
-                        {totalUsers}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-2 leading-tight">Customer, Merchant & Affiliate</p>
-                    </div>
+                {/* Total Users Card (Span 2) */}
+                <div className="col-span-12 sm:col-span-6 lg:col-span-2 bg-white rounded-xl border border-[#E5E7EB] shadow-xs p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+                  <div>
+                    <span className="inline-block px-2.5 py-1 bg-[#e0f2fe] text-[#0369a1] font-semibold text-[11px] uppercase tracking-wider rounded-md mb-3">
+                      KOMUNITAS
+                    </span>
+                    <h4 className="font-semibold text-[11px] text-[#6B7280] uppercase tracking-wider mb-1">TOTAL PENGGUNA</h4>
+                    <div className="font-sora text-2xl font-bold text-[#1e3a8a] mb-2">{totalUsers}</div>
                   </div>
+                  <p className="text-xs text-[#6B7280] leading-tight">Customer, Merchant & Affiliate</p>
                 </div>
 
-                {/* Bento Card 3: Total Products */}
-                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-50/40 rounded-full blur-2xl -mr-5 -mt-5 group-hover:bg-indigo-100/40 transition-colors duration-300 pointer-events-none" />
-                  <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      <span className="text-[9px] font-bold font-mono tracking-widest text-indigo-700 bg-indigo-50 border border-indigo-200/20 px-2.5 py-1 rounded-full uppercase">
-                        Etalase
-                      </span>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-5">Total Produk & Jasa</p>
-                    </div>
-                    <div className="mt-6">
-                      <p className="text-3xl font-sora font-extrabold text-indigo-900 tracking-tight font-mono">
-                        {totalProducts}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-2 leading-tight">Aktif di katalog UMKM</p>
-                    </div>
+                {/* Total Products Card (Span 2) */}
+                <div className="col-span-12 sm:col-span-6 lg:col-span-2 bg-white rounded-xl border border-[#E5E7EB] shadow-xs p-5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+                  <div>
+                    <span className="inline-block px-2.5 py-1 bg-[#ede9fe] text-[#6d28d9] font-semibold text-[11px] uppercase tracking-wider rounded-md mb-3">
+                      ETALASE
+                    </span>
+                    <h4 className="font-semibold text-[11px] text-[#6B7280] uppercase tracking-wider mb-1">TOTAL PRODUK</h4>
+                    <div className="font-sora text-2xl font-bold text-[#4c1d95] mb-2">{totalProducts}</div>
                   </div>
-                </div>
-
-                {/* Bento Card 4: Postingan Komunitas */}
-                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50/40 rounded-full blur-2xl -mr-5 -mt-5 group-hover:bg-purple-100/40 transition-colors duration-300 pointer-events-none" />
-                  <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      <span className="text-[9px] font-bold font-mono tracking-widest text-purple-700 bg-purple-50 border border-purple-200/20 px-2.5 py-1 rounded-full uppercase">
-                        Aktivitas
-                      </span>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-5">Artikel Komunitas</p>
-                    </div>
-                    <div className="mt-6">
-                      <p className="text-3xl font-sora font-extrabold text-purple-900 tracking-tight font-mono">
-                        {totalPosts}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-2 leading-tight">Artikel & tanya jawab forum</p>
-                    </div>
-                  </div>
+                  <p className="text-xs text-[#6B7280] leading-tight">Aktif di katalog UMKM</p>
                 </div>
 
               </div>
 
-              {/* Grid 2: Distribusi & Kategori */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Row 2: Role Distribution (Span 8) & Top Categories (Span 4) */}
+              <div className="grid grid-cols-12 gap-6">
                 
-                {/* User Distribution Bento Panel */}
-                <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6 hover:shadow-md transition-shadow duration-300">
-                  <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-                    <h3 className="font-sora text-sm font-extrabold text-slate-800 uppercase tracking-wider">Distribusi Peran Pengguna</h3>
-                    <span className="text-[9px] font-bold font-mono text-slate-400">DEMOGRAFI AKTIF</span>
+                {/* User Role Distribution Card */}
+                <div className="col-span-12 lg:col-span-8 bg-white rounded-xl border border-[#E5E7EB] shadow-xs p-6">
+                  <div className="flex justify-between items-center mb-6 border-b border-[#E5E7EB] pb-4">
+                    <h3 className="font-sora text-sm font-bold text-[#111111]">DISTRIBUSI PERAN PENGGUNA</h3>
+                    <span className="text-[11px] font-semibold text-[#6B7280] uppercase tracking-wider">DEMOGRAFI AKTIF</span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
-                      { role: 'MERCHANT', count: users.filter(u => u.role === 'MERCHANT').length, desc: 'Penjual & Mitra Toko', color: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50' },
-                      { role: 'AFFILIATE', count: users.filter(u => u.role === 'AFFILIATE').length, desc: 'Pemasar Jaringan', color: 'bg-purple-500', text: 'text-purple-700', bg: 'bg-purple-50' },
-                      { role: 'CUSTOMER', count: users.filter(u => u.role === 'CUSTOMER').length, desc: 'Pembeli & LMS Learner', color: 'bg-blue-500', text: 'text-blue-700', bg: 'bg-blue-50' }
+                      { role: 'MERCHANT', count: users.filter(u => u.role === 'MERCHANT').length, desc: 'Penjual & Mitra Toko', barColor: 'bg-[#f59e0b]', badgeText: 'text-[#b45309]', badgeBg: 'bg-[#fffbeb]' },
+                      { role: 'AFFILIATE', count: users.filter(u => u.role === 'AFFILIATE').length, desc: 'Pemasar Jaringan', barColor: 'bg-[#a855f7]', badgeText: 'text-[#7e22ce]', badgeBg: 'bg-[#faf5ff]' },
+                      { role: 'CUSTOMER', count: users.filter(u => u.role === 'CUSTOMER').length, desc: 'Pembeli & LMS Learner', barColor: 'bg-[#3b82f6]', badgeText: 'text-[#1d4ed8]', badgeBg: 'bg-[#eff6ff]' }
                     ].map((item, idx) => {
-                      const pct = Math.round((item.count / totalUsers) * 100) || 0
+                      const pct = Math.round((item.count / (totalUsers || 1)) * 100) || 0
                       return (
-                        <div key={idx} className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-slate-200 transition-colors duration-200">
-                          <span className={`text-[9px] font-bold font-mono tracking-widest px-2.5 py-0.5 rounded ${item.bg} ${item.text}`}>
+                        <div key={idx} className="p-4 bg-[#f8f9fb] rounded-lg border border-[#E5E7EB]">
+                          <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider ${item.badgeBg} ${item.badgeText}`}>
                             {item.role}
                           </span>
-                          <p className="text-2xl font-black text-slate-800 mt-4 font-mono">
-                            {item.count} <span className="text-xs text-slate-400 font-normal">({pct}%)</span>
-                          </p>
-                          <p className="text-[10px] text-slate-400 mt-1">{item.desc}</p>
-                          <div className="w-full bg-slate-100 h-1 mt-4 overflow-hidden rounded-full">
-                            <div className={`${item.color} h-full rounded-full`} style={{ width: `${pct}%` }} />
+                          <div className="flex items-end gap-2 mt-3 mb-1">
+                            <span className="font-sora text-2xl font-bold text-[#111111]">{item.count}</span>
+                            <span className="text-xs text-[#6B7280] pb-1 font-medium">({pct}%)</span>
+                          </div>
+                          <p className="text-[11px] text-[#6B7280] mb-3">{item.desc}</p>
+                          <div className="w-full bg-[#E5E7EB] h-1.5 rounded-full overflow-hidden">
+                            <div className={`${item.barColor} h-full rounded-full transition-all duration-300`} style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       )
@@ -1201,24 +1210,24 @@ export default function AdminDashboardClient({
                   </div>
                 </div>
 
-                {/* Top Categories Bento Panel */}
-                <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6 hover:shadow-md transition-shadow duration-300">
-                  <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-                    <h3 className="font-sora text-sm font-extrabold text-slate-800 uppercase tracking-wider">Top Kategori Produk</h3>
-                    <span className="text-[9px] font-bold font-mono text-[#0F5132]">PROPORSIONAL</span>
+                {/* Top Categories Card */}
+                <div className="col-span-12 lg:col-span-4 bg-white rounded-xl border border-[#E5E7EB] shadow-xs p-6 flex flex-col">
+                  <div className="flex justify-between items-center mb-6 border-b border-[#E5E7EB] pb-4">
+                    <h3 className="font-sora text-sm font-bold text-[#111111]">TOP KATEGORI PRODUK</h3>
+                    <span className="text-[11px] font-semibold text-[#006e24] uppercase tracking-wider">PROPORSIONAL</span>
                   </div>
-                  <div className="space-y-4 max-h-[190px] overflow-y-auto pr-1 scrollbar-thin">
-                    {Array.from(new Set(products.map(p => p.category))).map(cat => {
+                  <div className="flex-1 flex flex-col justify-between gap-3.5">
+                    {Array.from(new Set(products.map(p => p.category || 'LAINNYA'))).slice(0, 5).map(cat => {
                       const count = products.filter(p => p.category === cat).length
-                      const pct = Math.round((count / totalProducts) * 100) || 0
+                      const pct = Math.round((count / (totalProducts || 1)) * 100) || 0
                       return (
-                        <div key={cat} className="group">
-                          <div className="flex justify-between text-[10px] font-bold text-slate-500 mb-1.5">
-                            <span className="uppercase tracking-wider text-slate-700 group-hover:text-slate-900 transition-colors">{cat.replace('_', ' ')}</span>
-                            <span className="font-mono text-slate-600">{count} item ({pct}%)</span>
+                        <div key={cat}>
+                          <div className="flex justify-between items-center text-xs mb-1">
+                            <span className="font-semibold text-[#111111] uppercase text-[11px]">{cat.replace('_', ' ')}</span>
+                            <span className="text-[#6B7280] font-medium text-[11px]">{count} item ({pct}%)</span>
                           </div>
-                          <div className="w-full bg-slate-50 h-1.5 rounded-full overflow-hidden">
-                            <div className="bg-gradient-to-r from-[#2DB24A] to-[#0F5132] h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                          <div className="w-full bg-[#f2f4f6] h-2 rounded-full overflow-hidden">
+                            <div className="bg-[#2db24a] h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       )
@@ -1365,41 +1374,41 @@ export default function AdminDashboardClient({
 
               {/* Edit User Modal */}
               {editUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm p-4">
-                  <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                  <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl animate-fade-in">
                     <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                      <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">Edit Pengguna</h3>
-                      <button onClick={() => setEditUser(null)} className="text-slate-400 hover:text-slate-600">✕</button>
+                      <h3 className="font-sora text-sm font-bold text-[#006e24] uppercase tracking-wider">Edit Pengguna</h3>
+                      <button onClick={() => setEditUser(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer text-lg">✕</button>
                     </div>
 
                     <form onSubmit={handleUpdateUser} className="space-y-4 text-xs">
                       <div>
-                        <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nama Lengkap</label>
+                        <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1.5">Nama Lengkap</label>
                         <input
                           type="text"
                           disabled
                           value={editUser.name}
-                          className="w-full bg-[#f8f9fa] border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-500 outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-600 outline-none"
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Email</label>
+                        <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1.5">Email</label>
                         <input
                           type="text"
                           disabled
                           value={editUser.email}
-                          className="w-full bg-[#f8f9fa] border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-500 outline-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-600 outline-none"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Role Sistem</label>
+                          <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1.5">Role Sistem</label>
                           <select
                             value={editUser.role}
                             onChange={e => setEditUser({ ...editUser, role: e.target.value })}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
                           >
                             <option value="ADMIN">ADMIN</option>
                             <option value="MERCHANT">MERCHANT</option>
@@ -1410,23 +1419,23 @@ export default function AdminDashboardClient({
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Level</label>
+                          <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1.5">Level</label>
                           <input
                             type="number"
                             value={editUser.level}
                             onChange={e => setEditUser({ ...editUser, level: Number(e.target.value), xp: Number(e.target.value) * 100 })}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Tingkatan Level</label>
+                          <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1.5">Tingkatan Level</label>
                           <select
                             value={editUser.membershipLevel}
                             onChange={e => setEditUser({ ...editUser, membershipLevel: e.target.value })}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-855 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
                           >
                             <option value="Reseller">Reseller</option>
                             <option value="Agen">Agen</option>
@@ -1435,11 +1444,11 @@ export default function AdminDashboardClient({
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Akses Keanggotaan</label>
+                          <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1.5">Akses Keanggotaan</label>
                           <select
                             value={editUser.membershipAccess}
                             onChange={e => setEditUser({ ...editUser, membershipAccess: e.target.value })}
-                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-855 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
                           >
                             <option value="Gold">Gold</option>
                             <option value="Platinum">Platinum</option>
@@ -1449,11 +1458,11 @@ export default function AdminDashboardClient({
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold text-[#0F5132] uppercase tracking-wider mb-1.5 font-sora">Induk Komunitas Terasosiasi</label>
+                        <label className="block text-[10px] font-bold text-[#006e24] uppercase tracking-wider mb-1.5 font-sora">Induk Komunitas Terasosiasi</label>
                         <select
                           value={editUser.indukCommunityId || ''}
                           onChange={e => setEditUser({ ...editUser, indukCommunityId: e.target.value || null })}
-                          className="w-full bg-emerald-50/40 border border-[#0F5132]/30 rounded-[var(--radius-brand)] px-3.5 py-2.5 text-xs text-slate-800 font-medium outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                          className="w-full bg-emerald-50/50 border border-emerald-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
                         >
                           <option value="">-- Tanpa Induk Komunitas --</option>
                           {communities.map((c: any) => (
@@ -1463,19 +1472,19 @@ export default function AdminDashboardClient({
                       </div>
 
                       {editUser.role === 'MERCHANT' && (
-                        <div className="bg-slate-50 border border-slate-100 p-3 rounded-lg space-y-2">
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">
+                        <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2">
+                          <label className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
                             Kualifikasi Bootcamp Saloka
                           </label>
                           {editUser.level < 2 ? (
-                            <div className="text-[11px] text-red-650 font-medium bg-red-50 border border-red-100 p-2.5 rounded">
+                            <div className="text-[11px] text-red-700 font-medium bg-red-50 border border-red-200 p-2.5 rounded-lg">
                               ⚠️ Merchant belum memenuhi syarat (Minimal Level 2). Saat ini: Level {editUser.level}
                             </div>
                           ) : (
                             <select
                               value={editUser.bootcampStatus || 'NONE'}
                               onChange={e => setEditUser({ ...editUser, bootcampStatus: e.target.value })}
-                              className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2 text-slate-850 outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
                             >
                               <option value="NONE">Tidak Terkualifikasi / Belum Aktif</option>
                               <option value="QUALIFIED">Lolos Kualifikasi (Tombol Aktif)</option>
@@ -1489,14 +1498,14 @@ export default function AdminDashboardClient({
                         <button
                           type="button"
                           onClick={() => setEditUser(null)}
-                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
+                          className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl uppercase tracking-wider transition-colors cursor-pointer"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                          className="flex-1 py-2.5 bg-[#2db24a] hover:bg-[#259a3f] text-white font-bold rounded-xl uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
@@ -4046,6 +4055,10 @@ export default function AdminDashboardClient({
                 </form>
               </div>
             </div>
+          )}
+
+          {activeTab === 'payment_methods' && (
+            <PaymentMethodsTab />
           )}
 
           {/* ─── MODAL SESUAIKAN MODUL (SETTINGS SUB-MODAL) ──────────────── */}

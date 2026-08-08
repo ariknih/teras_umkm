@@ -852,3 +852,20 @@ model SystemSetting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sistem Pembayaran Manual
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model PaymentMethod {
+  id            String   @id @default(uuid())
+  type          String   // 'BANK' atau 'QRIS'
+  providerName  String   // ex: "BCA", "Mandiri", "QRIS"
+  accountName   String?  // Nama Pemilik Rekening
+  accountNumber String?  // Nomor Rekening
+  qrImageUrl    String?  // URL gambar QRIS statis
+  qrRawString   String?  // String QRIS untuk di-inject nominal (Dinamis)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

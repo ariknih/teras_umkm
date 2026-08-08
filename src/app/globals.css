@@ -47,11 +47,72 @@
   --color-border: var(--border-subtle);
   --color-glow-gold: var(--glow-gold);
 
+  --color-primary-soft: var(--primary-soft, #eef8e9);
+  --color-primary-hover: var(--primary-hover, #438A1A);
+  --color-inverse-primary: var(--inverse-primary, #61df71);
+
   --font-plus-jakarta: var(--font-poppins), "Poppins", sans-serif;
-  --font-sora: var(--font-poppins), "Poppins", sans-serif;
+  --font-sora: "Sora", sans-serif;
   --font-inter: var(--font-inter), sans-serif;
   --font-geist: var(--font-geist), sans-serif;
   --font-poppins: var(--font-poppins), "Poppins", sans-serif;
+
+  /* Stitch Fonts */
+  --font-display-lg: "Sora", sans-serif;
+  --font-label-caps: "Inter", sans-serif;
+  --font-heading-md: "Poppins", sans-serif;
+  --font-headline-xl: "Sora", sans-serif;
+  --font-headline-lg: "Sora", sans-serif;
+  --font-body-medium: "Inter", sans-serif;
+  --font-body-semibold: "Inter", sans-serif;
+  --font-body-base: "Inter", sans-serif;
+  --font-headline-xl-mobile: "Sora", sans-serif;
+
+  /* Stitch Font Sizes */
+  --text-display-lg: 36px;
+  --text-display-lg--line-height: 44px;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+
+  --text-label-caps: 11px;
+  --text-label-caps--line-height: 16px;
+  --text-label-caps--letter-spacing: 0.05em;
+  --text-label-caps--font-weight: 600;
+
+  --text-heading-md: 20px;
+  --text-heading-md--line-height: 28px;
+  --text-heading-md--font-weight: 600;
+
+  --text-headline-xl: 28px;
+  --text-headline-xl--line-height: 36px;
+  --text-headline-xl--letter-spacing: -0.01em;
+  --text-headline-xl--font-weight: 700;
+
+  --text-headline-lg: 24px;
+  --text-headline-lg--line-height: 32px;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 600;
+
+  --text-body-medium: 14px;
+  --text-body-medium--line-height: 20px;
+  --text-body-medium--font-weight: 500;
+
+  --text-body-semibold: 14px;
+  --text-body-semibold--line-height: 20px;
+  --text-body-semibold--font-weight: 600;
+
+  --text-body-base: 14px;
+  --text-body-base--line-height: 20px;
+  --text-body-base--font-weight: 400;
+
+  --text-headline-xl-mobile: 24px;
+  --text-headline-xl-mobile--line-height: 32px;
+  --text-headline-xl-mobile--font-weight: 700;
+
+  /* Custom Spacing Tokens */
+  --spacing-sidebar-width: 260px;
+  --spacing-gutter: 24px;
+  --spacing-header-height: 64px;
   
   --radius-brand: 24px;
 }

@@ -4,6 +4,7 @@ import React, { useState, useEffect, use, startTransition } from 'react'
 import Link from 'next/link'
 import { getOrderDetail, updateOrderTracking } from '@/app/actions/orders'
 import { createReview } from '@/app/actions/reviews'
+import { getActivePaymentMethods } from '@/app/actions/wallet-affiliate'
 import { CheckCircle2, Package, Truck, Home, Star, AlertCircle, ArrowLeft } from 'lucide-react'
 import { goeyToast } from 'goey-toast'
 
@@ -16,6 +17,7 @@ export default function OrderDetailPage({ params }: PageProps) {
   
   const [order, setOrder] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [dynamicPayments, setDynamicPayments] = useState<any[]>([])
   
   // Review form states
   const [rating, setRating] = useState(5)
@@ -50,23 +52,21 @@ export default function OrderDetailPage({ params }: PageProps) {
       setOrder(data)
       
       // If db connected, check which products user has already reviewed
-      if (data) {
-        const reviewed = new Set<string>()
-        // Fetch product reviews for each item to check if user has already reviewed
-        for (const item of data.items || []) {
+      const res = await getOrderDetail(id)
+      if (res.order) {
+        setOrder(res.order)
+        const prods = new Set<string>()
+        res.order.items.forEach((it: any) => {
+          if (it.reviewed) prods.add(it.productId)
+        })
+        setReviewedProductIds(prods)
+        
+        if (res.order.status !== 'COMPLETED' && res.order.status !== 'CANCELLED' && res.order.bumpSales?.startsWith('MANUAL_')) {
           try {
-            const res = await fetch(`/api/products/${item.productId}/reviews-check`)
-            if (res.ok) {
-              const check = await res.json()
-              if (check.alreadyReviewed) {
-                reviewed.add(item.productId)
-              }
-            }
-          } catch (e) {
-            // Ignore
-          }
+            const payments = await getActivePaymentMethods()
+            setDynamicPayments(payments)
+          } catch (e) {}
         }
-        setReviewedProductIds(reviewed)
       }
     } catch (e) {
       console.error(e)
@@ -170,27 +170,106 @@ export default function OrderDetailPage({ params }: PageProps) {
               ID Pesanan: <span className="text-primary font-bold">{order.id.replace('order-', '#')}</span>
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-              <button
-                type="button"
-                onClick={handleCompleteOrder}
-                disabled={completing}
-                className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow transition-all cursor-pointer disabled:opacity-50"
-              >
-                {completing ? 'Memproses...' : '✓ Pesanan Diterima'}
-              </button>
-            )}
-            <span className={`px-2.5 py-1 rounded text-[9px] font-geist font-black uppercase tracking-widest border ${
-              order.status === 'COMPLETED'
-                ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                : order.status === 'CANCELLED'
-                ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 animate-pulse'
-            }`}>
-              Status: {order.status === 'COMPLETED' ? 'Selesai' : order.status === 'CANCELLED' ? 'Batal' : 'Pending'}
-            </span>
+        </div>
+
+        {/* Order Status Banner */}
+        <div className="bg-white p-4 rounded-xl border border-zinc-100 shadow-sm mb-8">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-3">
+              {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                <button
+                  type="button"
+                  onClick={handleCompleteOrder}
+                  disabled={completing}
+                  className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {completing ? 'Memproses...' : '✓ Pesanan Diterima'}
+                </button>
+              )}
+              <span className={`px-2.5 py-1 rounded text-[9px] font-geist font-black uppercase tracking-widest border ${
+                order.status === 'COMPLETED'
+                  ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                  : order.status === 'CANCELLED'
+                  ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                  : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 animate-pulse'
+              }`}>
+                <h2 className="font-bold text-zinc-900 text-sm">
+                  Status: {order.status === 'COMPLETED' ? 'Selesai' : order.status === 'CANCELLED' ? 'Batal' : 'Pending'}
+                </h2>
+              </span>
+            </div>
           </div>
+          
+          {/* Manual Payment Box if applicable */}
+          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && order.bumpSales?.startsWith('MANUAL_') && (
+            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <h3 className="text-sm font-bold text-amber-900 mb-2">Menunggu Pembayaran Manual</h3>
+              <p className="text-xs text-amber-800 mb-4">
+                Silakan lakukan pembayaran sebesar <strong>Rp{order.totalAmount.toLocaleString('id-ID')}</strong> ke metode berikut:
+              </p>
+              {(() => {
+                const methodId = order.bumpSales.replace('MANUAL_', '');
+                const method = dynamicPayments.find(p => p.id === methodId);
+                if (!method) return <p className="text-xs text-zinc-500">Memuat detail pembayaran...</p>;
+                
+                return (
+                  <div className="bg-white rounded-lg p-3 border border-amber-100 space-y-3">
+                    <div>
+                      <span className="text-[11px] font-bold text-zinc-500 uppercase">Penyedia</span>
+                      <p className="text-sm font-bold text-zinc-900">{method.providerName}</p>
+                    </div>
+                    {method.type === 'BANK' && (
+                      <div>
+                        <span className="text-[11px] font-bold text-zinc-500 uppercase">Rekening Transfer (a.n {method.accountName})</span>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="font-mono text-base font-bold text-[#2DB24A]">{method.accountNumber}</p>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(method.accountNumber)
+                              goeyToast.success('Nomor rekening disalin')
+                            }}
+                            className="text-xs font-bold text-[#2DB24A] px-3 py-1 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                          >
+                            Salin
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {method.type === 'QRIS' && (
+                      <div className="space-y-3">
+                        {method.qrImageUrl && (
+                          <div className="flex flex-col items-center">
+                            <span className="text-[11px] font-bold text-zinc-500 uppercase mb-2">Scan QRIS</span>
+                            <img src={method.qrImageUrl} alt="QRIS" className="w-48 h-48 border border-zinc-200 rounded-lg p-2 bg-white" />
+                          </div>
+                        )}
+                        {method.qrRawString && (
+                          <div>
+                            <span className="text-[11px] font-bold text-zinc-500 uppercase">Atau Copy String QRIS Dinamis</span>
+                            <div className="flex items-center justify-between mt-1 bg-zinc-50 p-2 rounded-lg border border-zinc-200">
+                              <p className="font-mono text-[10px] text-zinc-600 truncate w-48">{method.qrRawString}</p>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(method.qrRawString)
+                                  goeyToast.success('String QRIS disalin')
+                                }}
+                                className="text-xs font-bold text-[#2DB24A] px-2 py-1 bg-green-50 rounded-lg hover:bg-green-100 shrink-0"
+                              >
+                                Salin
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+              <p className="text-[10px] text-amber-700 mt-3 font-medium">
+                *Pesanan akan dikonfirmasi admin setelah bukti transfer/pembayaran divalidasi secara manual.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* TIMELINE STEPPER (Horizontal on desktop, vertical stack on mobile) */}

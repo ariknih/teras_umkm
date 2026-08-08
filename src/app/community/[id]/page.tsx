@@ -4001,7 +4001,10 @@ export default function CommunityDetailPage() {
                 <button onClick={() => setProductModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
               </div>
 
-              <form onSubmit={(e) => {
+              {(() => {
+                const isDefaultProduct = editingProduct?.isDefault || false
+                return (
+                  <form onSubmit={(e) => {
                 e.preventDefault()
                 startTransition(async () => {
                   const fd = new FormData()
@@ -4134,6 +4137,8 @@ export default function CommunityDetailPage() {
                   </button>
                 </div>
               </form>
+                )
+              })()}
             </motion.div>
           </div>
         )}

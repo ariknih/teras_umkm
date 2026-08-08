@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Script from 'next/script'
 import { getProducts } from '@/app/actions/products'
-import { checkoutCart, getWalletDetails } from '@/app/actions/wallet-affiliate'
+import { checkoutCart, getWalletDetails, getActivePaymentMethods } from '@/app/actions/wallet-affiliate'
 import { getCurrentUser, getCurrentUserProfile } from '@/app/actions/auth'
 import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api'
 
@@ -134,8 +134,9 @@ export default function CartPage() {
   const [useCoins, setUseCoins] = useState(false)
 
   // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'MIDTRANS' | 'WALLET' | 'COD'>('MIDTRANS')
+  const [paymentMethod, setPaymentMethod] = useState<'MIDTRANS' | 'WALLET' | 'COD' | 'MANUAL'>('MIDTRANS')
   const [activePaymentSubId, setActivePaymentSubId] = useState<string>('MIDTRANS_QRIS')
+  const [dynamicPaymentMethods, setDynamicPaymentMethods] = useState<any[]>([])
 
   // Google Maps state
   const [map, setMap] = useState<any>(null)
@@ -148,6 +149,18 @@ export default function CartPage() {
     googleMapsApiKey: apiKey,
     libraries: ['places']
   })
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const pms = await getActivePaymentMethods()
+        setDynamicPaymentMethods(pms)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    fetchPayments()
+  }, [])
 
   // Get seller coordinates
   const getSellerCoords = () => {
@@ -639,14 +652,34 @@ export default function CartPage() {
         if (res.error || !res.order) throw new Error(res.error || 'Gagal melakukan checkout via dompet.')
         
         // Success
+        setSuccessMessage('Pembayaran dengan Saldo Dompet berhasil.')
+        await verifyCheckout(res.order!.id, false)
+        setIsPendingCheckout(false)
+      } catch (err: any) {
+        setError(err.message || 'Pembayaran gagal.')
+        setIsPendingCheckout(false)
+      }
+      return
+    }
+
+    if (paymentMethod === 'MANUAL') {
+      try {
+        const res = await checkoutCart(itemsPayload, affiliateId || undefined, `MANUAL_${activePaymentSubId}`, {
+          ...shippingDetails,
+          bumpSales: `MANUAL_${activePaymentSubId}`
+        })
+        if (res.error) throw new Error(res.error)
+        
         const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
         localStorage.removeItem(cartKey)
         localStorage.removeItem('teras_affiliate_id')
         setCart([])
         setAffiliateId('')
-        router.push(`/orders/${res.order.id}`)
+        router.push(`/orders/${res.order!.id}`)
+        
+        setIsPendingCheckout(false)
       } catch (err: any) {
-        setError(err.message || 'Gagal melakukan checkout via dompet.')
+        setError(err.message || 'Checkout gagal.')
         setIsPendingCheckout(false)
       }
       return
@@ -1230,11 +1263,19 @@ export default function CartPage() {
                   { id: 'MIDTRANS_BANK', label: 'Transfer Bank', disabled: false },
                   { id: 'MIDTRANS_CARD', label: 'Kartu Kredit/Debit', disabled: false },
                   { id: 'MITRA_AGEN', label: 'Bayar Tunai di Mitra/Agen', disabled: true },
+                  ...dynamicPaymentMethods.map(m => ({
+                    id: m.id,
+                    label: m.providerName + (m.accountName ? ` (${m.accountName})` : ''),
+                    disabled: false,
+                    isManual: true,
+                    original: m
+                  }))
                 ].map(opt => {
                   const isSelected = 
                     (opt.id === 'WALLET' && paymentMethod === 'WALLET') ||
                     (opt.id === 'COD' && paymentMethod === 'COD') ||
-                    (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id);
+                    (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
+                    ((opt as any).isManual && paymentMethod === 'MANUAL' && activePaymentSubId === opt.id);
 
                   return (
                     <button
@@ -1248,6 +1289,9 @@ export default function CartPage() {
                         } else if (opt.id === 'COD') {
                           setPaymentMethod('COD');
                           setActivePaymentSubId('');
+                        } else if ((opt as any).isManual) {
+                          setPaymentMethod('MANUAL');
+                          setActivePaymentSubId(opt.id);
                         } else {
                           setPaymentMethod('MIDTRANS');
                           setActivePaymentSubId(opt.id);

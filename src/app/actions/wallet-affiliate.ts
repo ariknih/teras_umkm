@@ -3,6 +3,7 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { db } from '@/lib/db'
 
 export async function getWalletDetails() {
   const user = await getCurrentUser()
@@ -22,10 +23,17 @@ export async function withdrawFunds(amount: number, method: string, accountNumbe
     const description = `Tarik ke ${method} (${accountNumber} a/n ${accountName})`
     const wallet = await DataStore.withdrawFunds(user.id, amount, description)
     revalidatePath('/wallet')
+    revalidatePath('/merchant/dashboard')
     return { success: true, wallet }
   } catch (e: any) {
     return { error: e.message || 'Gagal melakukan penarikan.' }
   }
+}
+
+export async function getAffiliateCommissionAction() {
+  const user = await getCurrentUser()
+  if (!user) return 0
+  return await DataStore.getAffiliateCommission(user.id)
 }
 
 export async function getAffiliateStats() {
@@ -37,7 +45,7 @@ export async function getAffiliateStats() {
 export async function checkoutCart(
   items: Array<{ productId: string; quantity: number }>,
   affiliateId?: string,
-  paymentMethod: 'MIDTRANS' | 'WALLET' = 'MIDTRANS',
+  paymentMethod: string = 'MIDTRANS',
   shippingDetails?: {
     shippingFee?: number
     courier?: string
@@ -59,6 +67,15 @@ export async function checkoutCart(
     return { success: true, order }
   } catch (e: any) {
     return { error: e.message || 'Gagal memproses transaksi.' }
+  }
+}
+
+export async function getActivePaymentMethods() {
+  try {
+    return await DataStore.getPaymentMethods(true)
+  } catch (error) {
+    console.error('Error fetching active payment methods:', error)
+    return []
   }
 }
 
