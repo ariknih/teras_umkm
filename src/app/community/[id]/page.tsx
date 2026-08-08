@@ -962,67 +962,6 @@ export default function CommunityDetailPage() {
     })
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-[#2DB24A]/20 border-t-[#2DB24A] rounded-full animate-spin"></div>
-      </div>
-    )
-  }
-
-  if (!community) {
-    return (
-      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex flex-col items-center justify-center gap-4">
-        <h2 className="text-xl font-bold font-sora">Komunitas Tidak Ditemukan</h2>
-        <Link href="/community" className="text-xs text-[#2DB24A] hover:underline">Kembali ke direktori</Link>
-      </div>
-    )
-  }
-
-  const isKetua = user && community.ketuaId === user.id
-  const isAdmin = user && user.role === 'ADMIN'
-
-  // Determine active view mode:
-  // If previewMode is AUTO: PERKUMPULAN -> FREE, KOPERASI -> PREMIUM (or based on isMember)
-  const activeMode: 'FREE' | 'PREMIUM' =
-    previewMode === 'FREE' ? 'FREE' :
-      previewMode === 'PREMIUM' ? 'PREMIUM' :
-        (community.type === 'KOPERASI' || isMember) ? 'PREMIUM' : 'FREE'
-
-  // Sample Merchant Projects for Pendanaan Merchant (Foto 2)
-  const merchantProjects = [
-    {
-      id: 'proj-1',
-      title: 'Kopi Nusantara',
-      category: 'Minuman',
-      image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80',
-      target: 30000000,
-      collected: 19500000,
-      progress: 65,
-      minInvest: 100000
-    },
-    {
-      id: 'proj-2',
-      title: 'Warung Sembako Sejahtera',
-      category: 'Sembako',
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
-      target: 20000000,
-      collected: 8400000,
-      progress: 42,
-      minInvest: 100000
-    },
-    {
-      id: 'proj-3',
-      title: 'Keripik Pedas Mantap',
-      category: 'Makanan Ringan',
-      image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=400&q=80',
-      target: 15000000,
-      collected: 5700000,
-      progress: 38,
-      minInvest: 50000
-    }
-  ]
-
   const nameLower = (community?.name || '').toLowerCase()
   const catLower = (community?.category || '').toLowerCase()
   const typeLower = (community?.type || '').toLowerCase()
@@ -1141,6 +1080,64 @@ export default function CommunityDetailPage() {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [activeSidebarNavList, isManualScrolling])
+
+  const isKetua = Boolean(user && community && community.ketuaId === user.id)
+  const isAdmin = Boolean(user && user.role === 'ADMIN')
+
+  const activeMode: 'FREE' | 'PREMIUM' =
+    previewMode === 'FREE' ? 'FREE' :
+      previewMode === 'PREMIUM' ? 'PREMIUM' :
+        (community?.type === 'KOPERASI' || isMember) ? 'PREMIUM' : 'FREE'
+
+  const merchantProjects = [
+    {
+      id: 'proj-1',
+      title: 'Kopi Nusantara',
+      category: 'Minuman',
+      image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=400&q=80',
+      target: 30000000,
+      collected: 19500000,
+      progress: 65,
+      minInvest: 100000
+    },
+    {
+      id: 'proj-2',
+      title: 'Warung Sembako Sejahtera',
+      category: 'Sembako',
+      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
+      target: 20000000,
+      collected: 8400000,
+      progress: 42,
+      minInvest: 100000
+    },
+    {
+      id: 'proj-3',
+      title: 'Keripik Pedas Mantap',
+      category: 'Makanan Ringan',
+      image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=400&q=80',
+      target: 15000000,
+      collected: 5700000,
+      progress: 38,
+      minInvest: 50000
+    }
+  ]
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-[#2DB24A]/20 border-t-[#2DB24A] rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (!community) {
+    return (
+      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex flex-col items-center justify-center gap-4">
+        <h2 className="text-xl font-bold font-sora">Komunitas Tidak Ditemukan</h2>
+        <Link href="/community" className="text-xs text-[#2DB24A] hover:underline">Kembali ke direktori</Link>
+      </div>
+    )
+  }
 
   const bannerBadge = isKoperasi ? 'KOPERASI PRODUKSI' : isKuliner ? 'ASOSIASI KULINER' : isBusiness ? 'KOMUNITAS BISNIS & UMKM' : isEducation ? 'PENDIDIKAN & STARTUP' : 'KOMUNITAS UMUM'
   
