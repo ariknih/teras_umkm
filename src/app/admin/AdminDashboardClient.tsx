@@ -500,6 +500,40 @@ export default function AdminDashboardClient({
     })
   }
 
+  const handleApproveCommunity = (comm: any) => {
+    if (!confirm(`Setujui & Verifikasi Komunitas "${comm.name}"? Komunitas akan aktif dan otomatis dipublikasikan di halaman Direktori Komunitas.`)) return
+    setActionError(null)
+    setActionSuccess(null)
+
+    startTransition(async () => {
+      const res = await updateCommunityAdminAction(comm.id, { isVerified: true, isSuspended: false })
+      if (res.success) {
+        setCommunities(prev => prev.map(c => c.id === comm.id ? { ...c, isVerified: true, isSuspended: false } : c))
+        setActionSuccess(`Komunitas "${comm.name}" berhasil diverifikasi dan AKTIF!`)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal memverifikasi komunitas.')
+      }
+    })
+  }
+
+  const handleRejectCommunity = (comm: any) => {
+    if (!confirm(`Tolak / Tangguhkan Komunitas "${comm.name}"? Komunitas tidak akan ditampilkan publik.`)) return
+    setActionError(null)
+    setActionSuccess(null)
+
+    startTransition(async () => {
+      const res = await updateCommunityAdminAction(comm.id, { isVerified: false, isSuspended: true })
+      if (res.success) {
+        setCommunities(prev => prev.map(c => c.id === comm.id ? { ...c, isVerified: false, isSuspended: true } : c))
+        setActionSuccess(`Komunitas "${comm.name}" telah DITOLAK / DITANGGUHKAN.`)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menolak komunitas.')
+      }
+    })
+  }
+
   const handleAddMemberToCommunity = async (communityId: string, userId: string) => {
     if (!userId) return
     setActionError(null)
@@ -2285,7 +2319,23 @@ export default function AdminDashboardClient({
                                     {comm.isSuspended ? 'Suspended' : comm.isVerified ? 'Verified' : 'Pending'}
                                   </span>
                                 </td>
-                                <td className="px-4 py-3.5 text-right space-x-2">
+                                <td className="px-4 py-3.5 text-right space-x-1.5">
+                                  {!comm.isVerified && (
+                                    <button
+                                      onClick={() => handleApproveCommunity(comm)}
+                                      className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-xs"
+                                    >
+                                      ✓ Setujui
+                                    </button>
+                                  )}
+                                  {comm.isVerified && !comm.isSuspended && (
+                                    <button
+                                      onClick={() => handleRejectCommunity(comm)}
+                                      className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                                    >
+                                      Tangguhkan
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => setMemberModal({ open: true, community: comm })}
                                     className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"

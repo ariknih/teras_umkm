@@ -35,7 +35,8 @@ import {
   ChevronLeft,
   ArrowLeft,
   Lock,
-  Gift
+  Gift,
+  Clock
 } from 'lucide-react'
 
 export default function CommunityDirectoryPage() {
@@ -124,7 +125,9 @@ export default function CommunityDirectoryPage() {
       setUser(currentUser)
 
       const comms = await getIndukCommunities()
-      setCommunities(comms || [])
+      // Exclude pending and suspended communities from public directory
+      const verifiedComms = (comms || []).filter((c: any) => c.isVerified && !c.isSuspended)
+      setCommunities(verifiedComms)
 
       const kycRes = await getGlobalKycSettingAction()
       if (kycRes && kycRes.required !== undefined) {
@@ -1273,22 +1276,27 @@ export default function CommunityDirectoryPage() {
                   </div>
                 </div>
               ) : (
-                // ── STEP 3: PEMBAYARAN BERHASIL (FOTO 2 UI) ──
+                // ── STEP 3: PEMBAYARAN & PENDAFTARAN BERHASIL (PENDING VERIFIKASI) ──
                 <div className="space-y-6 text-center">
                   <div className="relative pt-2">
-                    <div className="w-16 h-16 rounded-full bg-[#007A3D] text-white flex items-center justify-center mx-auto shadow-md ring-8 ring-emerald-100">
-                      <Check className="w-10 h-10 stroke-[3]" />
+                    <div className="w-16 h-16 rounded-full bg-amber-500 text-white flex items-center justify-center mx-auto shadow-md ring-8 ring-amber-100">
+                      <Clock className="w-9 h-9 stroke-[2.5]" />
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <h2 className="text-2xl font-black text-slate-900 font-sora">Pembayaran Berhasil!</h2>
-                    <p className="text-xs text-slate-600 font-medium">Terima kasih, pembayaran Anda telah berhasil kami terima.</p>
+                  <div className="space-y-1.5">
+                    <span className="inline-block px-3 py-1 bg-amber-100 text-amber-900 text-[10px] font-extrabold rounded-full uppercase tracking-wider">
+                      Status: PENDING VERIFIKASI
+                    </span>
+                    <h2 className="text-2xl font-black text-slate-900 font-sora">Pendaftaran Berhasil!</h2>
+                    <p className="text-xs text-slate-600 font-medium max-w-sm mx-auto leading-relaxed">
+                      Terima kasih! Komunitas Anda telah terdaftar dan saat ini sedang menanti verifikasi legalitas oleh Super Admin Saloka.
+                    </p>
                   </div>
 
-                  {/* Detail Aktivasi Card */}
+                  {/* Detail Pendaftaran Card */}
                   <div className="border border-slate-200/80 rounded-2xl bg-white p-5 shadow-xs text-left space-y-3 text-xs">
-                    <h3 className="font-sora text-xs font-bold text-slate-900 border-b border-slate-100 pb-2">Detail Aktivasi</h3>
+                    <h3 className="font-sora text-xs font-bold text-slate-900 border-b border-slate-100 pb-2">Detail Komunitas</h3>
 
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -1297,36 +1305,32 @@ export default function CommunityDirectoryPage() {
                       </div>
 
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">Paket Aktif</span>
-                        <span className="font-bold text-slate-900">{coopTier} - {getTierSubtitle(coopTier)}</span>
+                        <span className="text-slate-500 font-medium">Tipe Komunitas</span>
+                        <span className="font-bold text-slate-900">
+                          {type === 'PERKUMPULAN'
+                            ? perkumpulanTier === 'PREMIUM' ? 'Perkumpulan Premium' : 'Perkumpulan Reguler'
+                            : `Koperasi ${coopTier}`}
+                        </span>
                       </div>
 
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">Durasi</span>
-                        <span className="font-bold text-slate-900">1 Bulan</span>
-                      </div>
-
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500 font-medium">Berlaku Hingga</span>
-                        <span className="font-bold text-slate-900">{getExpirationDateString()}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-1 border-t border-slate-50">
-                        <span className="text-[#007A3D] font-extrabold">Bonus Aktivasi</span>
-                        <span className="font-black text-[#007A3D] flex items-center gap-1">
-                          🪙 +{getTierCoins(coopTier)} Koin
+                        <span className="text-slate-500 font-medium">Status Verifikasi</span>
+                        <span className="font-extrabold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[10px]">
+                          ⏳ Pending Verifikasi Super Admin
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Saldo Koin Anda Box */}
-                  <div className="bg-[#FFFBEB] border border-[#FCD34D]/60 rounded-2xl p-5 text-center space-y-1.5 shadow-xs">
-                    <h4 className="text-xs font-bold text-slate-700">Saldo Koin Anda</h4>
-                    <div className="text-2xl font-black text-slate-900 font-sora flex items-center justify-center gap-2">
-                      🪙 <span>{getTierCoins(coopTier)} Koin</span>
+                  {/* Info Box Superadmin Verification */}
+                  <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-4 text-left space-y-1 shadow-xs">
+                    <div className="flex items-center gap-2 font-bold text-xs text-[#0F5132]">
+                      <Info className="w-4 h-4 text-[#2DB24A] shrink-0" />
+                      <span>Tahap Selanjutnya: Verifikasi Super Admin</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 font-medium">Koin dapat ditukarkan menjadi voucher pendanaan.</p>
+                    <p className="text-[11px] text-emerald-900/80 font-medium leading-relaxed pl-6">
+                      Komunitas akan otomatis aktif dan tampil di halaman <strong>Direktori Publik</strong> serta dapat diakses anggota umum setelah disetujui oleh Super Admin.
+                    </p>
                   </div>
 
                   {/* Action Buttons */}
@@ -1339,11 +1343,12 @@ export default function CommunityDirectoryPage() {
                         } else {
                           setCreateModalOpen(false)
                           setModalStep('FORM')
+                          loadData()
                         }
                       }}
                       className="w-full py-3.5 bg-[#007A3D] hover:bg-[#006030] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
-                      Lihat Dashboard Komunitas
+                      Buka Preview Dashboard Komunitas →
                     </button>
 
                     <button
@@ -1351,10 +1356,11 @@ export default function CommunityDirectoryPage() {
                       onClick={() => {
                         setCreateModalOpen(false)
                         setModalStep('FORM')
+                        loadData()
                       }}
                       className="text-xs font-bold text-[#007A3D] hover:underline cursor-pointer block mx-auto transition-colors"
                     >
-                      Kembali ke Beranda
+                      Tutup & Kembali ke Direktori
                     </button>
                   </div>
                 </div>

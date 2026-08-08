@@ -1111,6 +1111,25 @@ export default function CommunityDetailPage() {
     )
   }
 
+  if (community.isVerified === false || community.isSuspended) {
+    if (!isAdmin && !isKetua) {
+      return (
+        <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex flex-col items-center justify-center p-6 text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center shadow-xs">
+            <Clock className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-black font-sora text-slate-900">Komunitas Dalam Proses Verifikasi</h2>
+          <p className="text-xs text-slate-600 max-w-md leading-relaxed">
+            Komunitas <strong>"{community.name}"</strong> saat ini sedang dalam proses verifikasi legalitas oleh Super Admin Saloka. Halaman ini belum dapat diakses publik hingga verifikasi disetujui.
+          </p>
+          <Link href="/community" className="px-6 py-2.5 bg-[#2DB24A] text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#0F5132] transition-colors">
+            ← Kembali ke Direktori Komunitas
+          </Link>
+        </div>
+      )
+    }
+  }
+
   const parsedCommunityConfig = community?.landingPageConfig ? (typeof community.landingPageConfig === 'string' ? JSON.parse(community.landingPageConfig) : community.landingPageConfig) : {}
 
   const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
@@ -1232,6 +1251,25 @@ export default function CommunityDetailPage() {
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {community.isVerified === false && (
+          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-center justify-between gap-4 mb-6 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-extrabold text-amber-900 font-sora">Status Komunitas: PENDING VERIFIKASI SUPER ADMIN</h4>
+                <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+                  Komunitas Anda sedang diverifikasi secara manual oleh Super Admin Saloka. Komunitas belum ditampilkan di Direktori Publik dan belum dapat dimasuki oleh anggota umum.
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-amber-200 text-amber-900 text-[10px] font-black uppercase rounded-full shrink-0">
+              PENDING VERIFIKASI
+            </span>
           </div>
         )}
 
