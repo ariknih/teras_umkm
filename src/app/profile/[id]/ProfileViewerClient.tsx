@@ -76,6 +76,15 @@ interface User {
   kycStatus?: string | null
   indukCommunityId?: string | null
   indukCommunityName?: string | null
+  userCommunities?: Array<{
+    communityId: string
+    communityName: string
+    communityType: string
+    isVerified: boolean
+    role: 'KETUA' | 'ANGGOTA'
+    roleLabel: string
+    statusLabel: string
+  }>
 }
 
 interface Product {
@@ -424,13 +433,44 @@ export default function ProfileViewerClient({
                     </span>
                   </div>
                   {user.role === 'MERCHANT' && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-text-secondary">Komunitas Induk</span>
-                      <span className="font-bold text-text-primary text-right">
-                        {(user as any).indukCommunityName || (
-                          <span className="text-red-500 text-[10px] font-medium">Belum memilih</span>
-                        )}
-                      </span>
+                    <div className="space-y-2 pt-2 border-t border-border-subtle">
+                      <div className="flex justify-between items-center">
+                        <span className="text-text-secondary">Keanggotaan Komunitas</span>
+                        <span className="font-bold text-text-primary text-right text-xs">
+                          {user.userCommunities && user.userCommunities.length > 0
+                            ? `${user.userCommunities.length} Komunitas`
+                            : (user as any).indukCommunityName || <span className="text-red-500 text-[10px] font-medium">Belum memilih</span>}
+                        </span>
+                      </div>
+
+                      {user.userCommunities && user.userCommunities.length > 0 && (
+                        <div className="space-y-1.5 mt-1.5">
+                          {user.userCommunities.map((uc) => (
+                            <div key={uc.communityId} className="p-2 bg-gray-50 border border-gray-200/80 rounded-xl flex items-center justify-between gap-2 text-xs">
+                              <div>
+                                <Link href={`/community/${uc.communityId}`} className="font-bold text-slate-900 hover:text-[#2DB24A] transition-colors block">
+                                  {uc.communityName}
+                                </Link>
+                                <span className="text-[10px] text-gray-500">
+                                  {uc.communityType === 'PERKUMPULAN' ? 'Perkumpulan' : 'Koperasi'}
+                                </span>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider block ${
+                                  uc.role === 'KETUA' 
+                                    ? 'bg-purple-100 text-purple-700 border border-purple-200' 
+                                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                }`}>
+                                  {uc.role === 'KETUA' ? '👑 Ketua / Admin' : '👤 Anggota'}
+                                </span>
+                                <span className="text-[8px] font-bold text-gray-400 block mt-0.5">
+                                  {uc.isVerified ? '✓ Aktif' : '⏳ Pending'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="flex justify-between items-center">

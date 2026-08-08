@@ -6101,6 +6101,70 @@ export const DataStore = {
     })
   },
 
+  async getUserCommunitiesWithRoles(userId: string) {
+    syncMockDb()
+    const result: Array<{
+      communityId: string
+      communityName: string
+      communityType: string
+      landingPageConfig?: string
+      isVerified: boolean
+      role: 'KETUA' | 'ANGGOTA'
+      roleLabel: string
+      statusLabel: string
+    }> = []
+
+    const allCommunities = await this.getCommunities()
+    const ketuaCommunities = allCommunities.filter((c: any) => c.ketuaId === userId)
+
+    for (const c of ketuaCommunities) {
+      result.push({
+        communityId: c.id,
+        communityName: c.name,
+        communityType: c.type,
+        landingPageConfig: c.landingPageConfig,
+        isVerified: Boolean(c.isVerified),
+        role: 'KETUA',
+        roleLabel: 'Ketua / Admin',
+        statusLabel: c.isVerified ? 'Aktif' : 'Pending Verifikasi'
+      })
+    }
+
+    let memberships: any[] = []
+    if (await isDbConnected()) {
+      try {
+        memberships = await db.communityMembership.findMany({
+          where: { userId },
+          include: { community: true }
+        })
+      } catch (_) {}
+    } else {
+      memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.userId === userId)
+    }
+
+    for (const m of memberships) {
+      const commId = m.communityId || m.community?.id
+      if (!commId) continue
+      if (result.some(r => r.communityId === commId)) continue
+
+      const comm = m.community || allCommunities.find((c: any) => c.id === commId)
+      if (comm) {
+        result.push({
+          communityId: comm.id,
+          communityName: comm.name,
+          communityType: comm.type,
+          landingPageConfig: comm.landingPageConfig,
+          isVerified: Boolean(comm.isVerified),
+          role: 'ANGGOTA',
+          roleLabel: 'Anggota',
+          statusLabel: m.isPaid || m.invoiceStatus === 'PAID' || m.invoiceStatus === 'VERIFIED' ? 'Aktif' : 'Unpaid'
+        })
+      }
+    }
+
+    return result
+  },
+
   async getCommunityById(id: string) {
     syncMockDb()
 

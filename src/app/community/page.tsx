@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { getIndukCommunities, createIndukCommunity } from '@/app/actions/community'
+import { getIndukCommunities, createIndukCommunity, getUserCommunitiesWithRolesAction } from '@/app/actions/community'
 import { getGlobalKycSettingAction } from '@/app/actions/admin'
 import { getCurrentUser } from '@/app/actions/auth'
 import { goeyToast } from 'goey-toast'
@@ -119,10 +119,17 @@ export default function CommunityDirectoryPage() {
     setCreateModalOpen(true)
   }
 
+  const [myCommunities, setMyCommunities] = useState<any[]>([])
+
   async function loadData() {
     try {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
+
+      if (currentUser?.id) {
+        const myComms = await getUserCommunitiesWithRolesAction(currentUser.id)
+        setMyCommunities(myComms || [])
+      }
 
       const comms = await getIndukCommunities()
       // Exclude pending and suspended communities from public directory
@@ -313,6 +320,48 @@ export default function CommunityDirectoryPage() {
             )}
           </div>
         </div>
+
+        {/* Komunitas & Role Saya (Multi-Community Memberships) Widget */}
+        {user && myCommunities && myCommunities.length > 0 && (
+          <div className="bg-white border border-black/10 rounded-2xl p-5 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-[#0F5132] flex items-center justify-center font-bold">
+                  <Users className="w-4 h-4" />
+                </div>
+                <h3 className="font-sora text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Komunitas & Role Saya ({myCommunities.length})
+                </h3>
+              </div>
+              <span className="text-[10px] text-gray-500 font-medium">Role berlaku terpisah per komunitas</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {myCommunities.map((mc: any) => (
+                <div key={mc.communityId} className="p-3 bg-[#F5F7F9] border border-slate-200/80 rounded-xl flex items-center justify-between gap-3">
+                  <div>
+                    <Link href={`/community/${mc.communityId}`} className="font-bold text-xs text-slate-900 hover:text-[#007A3D] transition-colors block">
+                      {mc.communityName}
+                    </Link>
+                    <span className="text-[10px] text-slate-500 font-medium block">
+                      {mc.communityType === 'PERKUMPULAN' ? 'Perkumpulan' : 'Koperasi'}
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider block ${
+                      mc.role === 'KETUA' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    }`}>
+                      {mc.role === 'KETUA' ? '👑 Ketua / Admin' : '👤 Anggota'}
+                    </span>
+                    <span className="text-[8px] font-bold text-gray-400 block mt-0.5">
+                      {mc.isVerified ? '✓ Aktif' : '⏳ Pending'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Search Bar */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-black/5 pb-4">
