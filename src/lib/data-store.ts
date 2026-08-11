@@ -8545,7 +8545,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.cooperativeSavingsTransaction.create({
+        return await (db as any).cooperativeSavingsTransaction.create({
           data: {
             communityId: data.communityId,
             userId: data.userId,
@@ -8584,7 +8584,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.cooperativeSavingsTransaction.findMany({
+        return await (db as any).cooperativeSavingsTransaction.findMany({
           where: {
             communityId,
             ...(userId ? { userId } : {})

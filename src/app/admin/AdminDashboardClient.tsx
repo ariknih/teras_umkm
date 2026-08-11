@@ -868,6 +868,38 @@ export default function AdminDashboardClient({
     })
   }
 
+  const handleShiftLessonOrder = (lesson: any, direction: 'up' | 'down', course: any) => {
+    const sortedLessons = [...(course.lessons || [])].sort((a: any, b: any) => a.orderIndex - b.orderIndex)
+    const currentIndex = sortedLessons.findIndex((l: any) => l.id === lesson.id)
+    if (currentIndex === -1) return
+    if (direction === 'up' && currentIndex === 0) return
+    if (direction === 'down' && currentIndex === sortedLessons.length - 1) return
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    const targetLesson = sortedLessons[targetIndex]
+
+    const idxA = targetLesson.orderIndex
+    const idxB = lesson.orderIndex
+
+    startTransition(async () => {
+      await updateLessonAction(lesson.id, course.id, lesson.title, lesson.content, lesson.videoUrl, lesson.duration, idxA)
+      await updateLessonAction(targetLesson.id, course.id, targetLesson.title, targetLesson.content, targetLesson.videoUrl, targetLesson.duration, idxB)
+
+      setCourses(prev => prev.map(c => {
+        if (c.id === course.id) {
+          const lessons = (c.lessons || []).map((l: any) => {
+            if (l.id === lesson.id) return { ...l, orderIndex: idxA }
+            if (l.id === targetLesson.id) return { ...l, orderIndex: idxB }
+            return l
+          }).sort((a: any, b: any) => a.orderIndex - b.orderIndex)
+          return { ...c, lessons }
+        }
+        return c
+      }))
+      goeyToast.success(`Urutan "${lesson.title}" berhasil diperbarui.`)
+    })
+  }
+
   const resetLessonForm = () => {
     setLessonTitle('')
     setLessonContent('')
