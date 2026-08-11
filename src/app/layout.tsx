@@ -41,6 +41,14 @@ export const metadata: Metadata = {
   title: "Saloka.id | Platform Digital UMKM Premium Indonesia",
   description: "Ekosistem digital terlengkap untuk UMKM Indonesia: Marketplace, LMS Academy, Affiliate Hub, dan Community Forum dalam satu platform premium.",
   keywords: "UMKM, marketplace, toko online, jasa, affiliate, kursus bisnis, Indonesia",
+  icons: {
+    icon: [
+      { url: "/images/logo-1x1.webp", type: "image/webp" },
+      { url: "/favicon.ico" }
+    ],
+    shortcut: "/images/logo-1x1.webp",
+    apple: "/images/logo-1x1.webp",
+  },
   openGraph: {
     title: "Saloka.id | Platform Digital UMKM Premium",
     description: "Marketplace, LMS Academy, Affiliate & Community untuk UMKM Indonesia.",
@@ -93,6 +101,9 @@ export default async function RootLayout({
       <head suppressHydrationWarning>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" href="/images/logo-1x1.webp" type="image/webp" />
+        <link rel="shortcut icon" href="/images/logo-1x1.webp" type="image/webp" />
+        <link rel="apple-touch-icon" href="/images/logo-1x1.webp" />
         <link rel="preload" href="/images/logo+nama_saloka.svg" as="image" type="image/svg+xml" fetchPriority="high" />
         <link rel="preload" href="/images/lamanawal.jpg" as="image" type="image/jpeg" fetchPriority="high" />
         <script
