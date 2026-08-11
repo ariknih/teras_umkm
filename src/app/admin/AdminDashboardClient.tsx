@@ -2166,7 +2166,7 @@ export default function AdminDashboardClient({
 
                         <div className="border-t border-slate-200/60 pt-2.5">
                           <div className="flex items-center justify-between mb-1">
-                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Option B: Upload File Video (Maks 50 MB - Cloud Storage)</label>
+                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Option B: Upload File Video (Maks 500 MB - Supabase Storage)</label>
                             {isUploadingVideo && <span className="text-[10px] font-bold text-amber-600 animate-pulse">⏳ Mengunggah ke Server...</span>}
                           </div>
                           <input
@@ -2178,8 +2178,8 @@ export default function AdminDashboardClient({
                               setLessonVideoError(null)
                               if (!file) return
 
-                              if (file.size > 50 * 1024 * 1024) {
-                                setLessonVideoError(`⚠️ Ukuran file video (${(file.size / 1024 / 1024).toFixed(1)} MB) melebihi batas 50 MB. Gunakan Option A (Link Video YouTube/Drive) jika video lebih besar.`)
+                              if (file.size > 500 * 1024 * 1024) {
+                                setLessonVideoError(`⚠️ Ukuran file video (${(file.size / 1024 / 1024).toFixed(1)} MB) melebihi batas 500 MB. Gunakan Option A (Link Video YouTube/Drive) jika video lebih besar.`)
                                 return
                               }
 
