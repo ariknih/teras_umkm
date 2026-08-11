@@ -81,19 +81,51 @@ export async function POST(request: NextRequest) {
           ? `${r2PublicDomain.replace(/\/$/, '')}/${filename}`
           : `https://${r2AccountId}.r2.cloudflarestorage.com/${r2Bucket}/${filename}`
 
+      } catch (r2Error: any) {
+        console.error('Cloudflare R2 upload error, falling back to AWS S3/Supabase:', r2Error)
+      }
+    }
+
+    // ─── OPTION 2: DIRECT AWS S3 STORAGE ──────────────────────────────────────
+    const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID
+    const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
+    const awsRegion = process.env.AWS_REGION || 'ap-southeast-1'
+    const awsBucket = process.env.AWS_S3_BUCKET_NAME
+
+    if (awsAccessKeyId && awsSecretAccessKey && awsBucket) {
+      try {
+        const s3Client = new S3Client({
+          region: awsRegion,
+          credentials: {
+            accessKeyId: awsAccessKeyId,
+            secretAccessKey: awsSecretAccessKey,
+          },
+        })
+
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: awsBucket,
+            Key: filename,
+            Body: buffer,
+            ContentType: file.type,
+          })
+        )
+
+        const publicUrl = `https://${awsBucket}.s3.${awsRegion}.amazonaws.com/${filename}`
+
         return NextResponse.json({
           url: publicUrl,
           path: filename,
           filename,
           type: isImage ? 'image' : 'video',
-          provider: 'cloudflare-r2',
+          provider: 'aws-s3',
         })
-      } catch (r2Error: any) {
-        console.error('Cloudflare R2 upload error, falling back to Supabase:', r2Error)
+      } catch (awsError: any) {
+        console.error('AWS S3 upload error, falling back to Supabase:', awsError)
       }
     }
 
-    // ─── OPTION 2: SUPABASE STORAGE (DEFAULT FALLBACK) ─────────────────────────
+    // ─── OPTION 3: SUPABASE STORAGE (DEFAULT FALLBACK) ─────────────────────────
     const client = supabaseAdmin()
     const { data, error } = await client.storage
       .from(BUCKET)
