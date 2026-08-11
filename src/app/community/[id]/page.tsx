@@ -32,6 +32,8 @@ import {
 } from '@/app/actions/community-referral'
 import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
+import { LandingPageView } from './LandingPageView'
+import { LandingPageEditor } from './LandingPageEditor'
 import {
   Shield,
   Users,
@@ -216,6 +218,7 @@ export default function CommunityDetailPage() {
 
   // Layout preview toggle: 'AUTO' | 'FREE' | 'PREMIUM'
   const [previewMode, setPreviewMode] = useState<'AUTO' | 'FREE' | 'PREMIUM'>('AUTO')
+  const [viewMode, setViewMode] = useState<'landing' | 'dashboard'>('landing')
 
   // Keuangan Koperasi / Loan States
   const [loans, setLoans] = useState<any[]>([])
@@ -792,6 +795,10 @@ export default function CommunityDetailPage() {
   }
 
   const handleSidebarClick = (targetId: string) => {
+    if (targetId === 'landing_view') {
+      setViewMode('landing')
+      return
+    }
     if (activeSidebarNav === 'pengaturan' && targetId !== 'pengaturan' && !arraysEqual(disabledModules, savedDisabledModules)) {
       setPendingTargetNav(targetId)
       setShowUnsavedModal(true)
@@ -1043,6 +1050,7 @@ export default function CommunityDetailPage() {
     : []
 
   const activeSidebarNavList = [
+    { id: 'landing_view', label: 'Halaman Landing', icon: ExternalLink },
     ...sidebarNavList.filter((item) => {
       if (!isCanManageCoop && !isMember) {
         return ['beranda', 'marketplace', 'tentang'].includes(item.id)
@@ -1219,6 +1227,41 @@ export default function CommunityDetailPage() {
     { name: 'rijal Merchant', initial: 'RI', bg: 'bg-[#E8F8EE] text-[#2DB24A]' },
     { name: 'saloka Merchant', initial: 'SA', bg: 'bg-[#E8F8EE] text-[#2DB24A]' },
   ]
+
+  const handleSaveLandingPageConfig = async (newConfig: any) => {
+    const formData = new FormData()
+    formData.append('name', community.name)
+    formData.append('description', community.description || '')
+    if (community.aktaNotaris) formData.append('aktaNotaris', community.aktaNotaris)
+    if (community.nomorAhu) formData.append('nomorAhu', community.nomorAhu)
+    if (community.nomorNpwp) formData.append('nomorNpwp', community.nomorNpwp)
+    if (community.domisili) formData.append('domisili', community.domisili)
+    if (community.kontakPj) formData.append('kontakPj', community.kontakPj)
+    if (community.waGroupLink) formData.append('waGroupLink', community.waGroupLink)
+    if (community.avatarUrl) formData.append('avatarUrl', community.avatarUrl)
+    if (community.coverUrl) formData.append('coverUrl', community.coverUrl)
+    formData.append('joinFee', String(community.joinFee || 0))
+    formData.append('monthlyFee', String(community.monthlyFee || 0))
+    formData.append('landingPageConfig', JSON.stringify(newConfig))
+
+    const res = await updateIndukCommunity(id, formData)
+    if (res.error) {
+      throw new Error(res.error)
+    } else {
+      loadData()
+    }
+  }
+
+  if (viewMode === 'landing') {
+    return (
+      <LandingPageView
+        community={community}
+        config={parsedCommunityConfig}
+        onJoin={handleJoin}
+        onViewDashboard={() => setViewMode('dashboard')}
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#F5F7F9] text-[#111827] pt-24 pb-20 px-3 md:px-8 font-sans">
@@ -3551,6 +3594,15 @@ export default function CommunityDetailPage() {
                       </table>
                     </div>
                   </div>
+                </div>
+
+                {/* SECTION 5: PENGATURAN LANDING PAGE */}
+                <div className="mt-6">
+                  <LandingPageEditor
+                    community={community}
+                    config={parsedCommunityConfig}
+                    onSave={handleSaveLandingPageConfig}
+                  />
                 </div>
               </div>
             )}
