@@ -404,6 +404,13 @@ export default function MerchantDashboardPage() {
 
   useEffect(() => {
     loadData()
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const tabParam = params.get('tab')
+      if (tabParam && ['overview', 'catalog', 'add', 'orders', 'analytics', 'pages', 'customization', 'academy', 'leveling'].includes(tabParam)) {
+        setActiveTab(tabParam as any)
+      }
+    }
   }, [])
 
   useEffect(() => {

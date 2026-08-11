@@ -2003,12 +2003,12 @@ export default function CommunityDetailPage() {
                     </div>
                     <div className="flex gap-2 shrink-0">
                       {isCanManageCoop && (
-                        <button 
-                          onClick={() => handleOpenCreateProduct(false)} 
+                        <Link 
+                          href="/merchant/dashboard?tab=add" 
                           className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                           <Plus className="w-4 h-4" /> Tambah Produk Baru
-                        </button>
+                        </Link>
                       )}
                       <Link href="/cart" className="px-4 py-2.5 bg-white border border-gray-250 hover:border-[#2DB24A] hover:text-[#2DB24A] text-gray-700 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
                         <Store className="w-4 h-4" /> Buka Marketplace Lengkap
@@ -2046,9 +2046,9 @@ export default function CommunityDetailPage() {
                         <Store className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
                         <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Katalog Produk Anggota</h4>
                         <p className="text-xs text-gray-500 max-w-md mx-auto">Admin atau merchant anggota komunitas belum menambahkan katalog produk. Silakan tambahkan produk baru untuk ditampilkan di marketplace ini.</p>
-                        <button onClick={() => handleOpenCreateProduct(false)} className="px-4 py-2 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5">
+                        <Link href="/merchant/dashboard?tab=add" className="px-4 py-2 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5">
                           <Plus className="w-4 h-4" /> Tambah Produk Baru
-                        </button>
+                        </Link>
                       </div>
                     )}
                   </div>
