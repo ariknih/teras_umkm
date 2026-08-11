@@ -1259,6 +1259,13 @@ export default function CommunityDetailPage() {
         config={parsedCommunityConfig}
         onJoin={handleJoin}
         onViewDashboard={() => setViewMode('dashboard')}
+        isCanManage={isCanManageCoop}
+        isMember={isMember}
+        onEdit={() => {
+          setViewMode('dashboard')
+          setActiveSidebarNav('pengaturan')
+        }}
+        products={products}
       />
     )
   }

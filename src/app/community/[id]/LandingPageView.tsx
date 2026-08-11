@@ -1,7 +1,7 @@
 import React from 'react'
 import { 
   Users, Wallet, GraduationCap, Building2, Coins, Calendar, PieChart, 
-  MapPin, Shield, Star, HelpCircle, ArrowRight, Share2, ChevronRight, Award, Plus, Play
+  MapPin, Shield, Star, HelpCircle, ArrowRight, Share2, ChevronRight, Award, Plus, Play, Sliders
 } from 'lucide-react'
 
 // Default Kopjaswara config (Koperasi)
@@ -104,16 +104,59 @@ interface LandingPageViewProps {
   config: any
   onJoin: () => void
   onViewDashboard: () => void
+  isCanManage?: boolean
+  isMember?: boolean
+  onEdit?: () => void
+  products?: any[]
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
   community,
   config,
   onJoin,
-  onViewDashboard
+  onViewDashboard,
+  isCanManage = false,
+  isMember = false,
+  onEdit,
+  products = []
 }) => {
   const isKoperasi = (community?.type || '').toLowerCase() === 'koperasi' || (community?.category || '').toLowerCase() === 'koperasi'
   const defaults = isKoperasi ? DEFAULT_KOPERASI_CONFIG : DEFAULT_PERKUMPULAN_CONFIG
+  
+  const dummyProducts = [
+    {
+      id: '',
+      name: 'Kopi Arabika Java Preanger',
+      price: 75000,
+      category: 'MAKANAN & MINUMAN',
+      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400',
+      merchantName: 'Kopi Saloka'
+    },
+    {
+      id: '',
+      name: 'Tas Kulit Garut Premium',
+      price: 350000,
+      category: 'FASHION & AKSESORIS',
+      imageUrl: 'https://images.unsplash.com/photo-1547949003-9792a18a2601?w=400',
+      merchantName: 'Garut Leather'
+    },
+    {
+      id: '',
+      name: 'Madu Murni Hutan Sumbawa',
+      price: 120000,
+      category: 'KESEHATAN',
+      imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400',
+      merchantName: 'CV Madu Alami'
+    },
+    {
+      id: '',
+      name: 'Sepatu Kulit Formal Pria',
+      price: 450000,
+      category: 'FASHION & AKSESORIS',
+      imageUrl: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=400',
+      merchantName: 'Footwear Induk'
+    }
+  ]
   
   // Merge config with default values safely
   const hero = { ...defaults.hero, ...config?.hero }
@@ -152,18 +195,34 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
           </p>
 
           <div className="flex flex-wrap gap-4 pt-2">
-            <button 
-              onClick={onJoin}
-              className="px-6 py-4 bg-emerald-700 hover:bg-emerald-800 hover:shadow-emerald-700/20 hover:scale-[1.02] text-white font-extrabold text-sm rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer font-sora duration-300"
-            >
-              <Users className="w-5 h-5" /> {isKoperasi ? 'Menjadi Anggota' : 'Gabung Komunitas'}
-            </button>
+            {isMember ? (
+              <button 
+                className="px-6 py-4 bg-emerald-100 text-emerald-800 border border-emerald-200 font-extrabold text-sm rounded-2xl shadow-none flex items-center gap-2 cursor-default font-sora pointer-events-none"
+              >
+                <Users className="w-5 h-5" /> Sudah Menjadi Anggota
+              </button>
+            ) : (
+              <button 
+                onClick={onJoin}
+                className="px-6 py-4 bg-emerald-700 hover:bg-emerald-800 hover:shadow-emerald-700/20 hover:scale-[1.02] text-white font-extrabold text-sm rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer font-sora duration-300"
+              >
+                <Users className="w-5 h-5" /> {isKoperasi ? 'Ayo Gabung Menjadi Anggota' : 'Ayo Gabung Komunitas'}
+              </button>
+            )}
             <button 
               onClick={onViewDashboard}
               className="px-6 py-4 bg-white border border-gray-250 hover:border-emerald-600 hover:text-emerald-700 hover:scale-[1.02] text-gray-700 font-extrabold text-sm rounded-2xl shadow-xs transition-all flex items-center gap-2 cursor-pointer font-sora duration-300"
             >
               <Play className="w-4 h-4 text-emerald-600 fill-emerald-600" /> Lihat Dashboard
             </button>
+            {isCanManage && (
+              <button 
+                onClick={onEdit}
+                className="px-6 py-4 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm rounded-2xl shadow-lg hover:shadow-amber-500/20 hover:scale-[1.02] transition-all flex items-center gap-2 cursor-pointer font-sora duration-300"
+              >
+                <Sliders className="w-4 h-4" /> Edit Tampilan
+              </button>
+            )}
           </div>
 
           {/* Metadata bar */}
@@ -394,6 +453,76 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </section>
 
+      {/* 5.5. Produk Unggulan Kami Section */}
+      <section className="py-20 md:py-24 bg-white border-t border-gray-100 relative z-10">
+        <div className="max-w-[1280px] mx-auto px-4 md:px-8 space-y-12">
+          <div className="flex justify-between items-end">
+            <div className="space-y-1">
+              <span className="text-[9px] bg-emerald-50 text-emerald-800 font-black px-3 py-1 rounded-full uppercase tracking-wider font-sora">
+                Galeri Usaha Anggota
+              </span>
+              <h2 className="text-2xl md:text-3xl font-black font-sora text-slate-900 tracking-tight mt-2">
+                Produk Unggulan Kami
+              </h2>
+              <p className="text-xs text-gray-500 font-medium">Karya terbaik dan produk berkualitas dari pelaku UMKM anggota kami</p>
+            </div>
+            <button 
+              onClick={onViewDashboard}
+              className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer font-sora font-semibold"
+            >
+              Buka Marketplace <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {(products && products.length > 0 ? products.slice(0, 4) : dummyProducts).map((p: any, idx: number) => (
+              <div key={p.id || idx} className="p-4 bg-slate-50/60 border border-gray-150 rounded-3xl hover:border-emerald-500/30 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                <div className="space-y-3">
+                  <div className="relative rounded-2xl overflow-hidden h-44 bg-gray-100">
+                    <img 
+                      src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=200&fit=crop&q=80'} 
+                      alt={p.name || p.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
+                    <span className="absolute top-3 left-3 px-2 py-0.5 bg-emerald-700 text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-sm font-sora">
+                      {p.category || 'PRODUK'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider block">
+                      {p.merchant?.name || p.merchantName || p.merchant || 'Merchant Saloka'}
+                    </span>
+                    <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-relaxed mt-0.5">
+                      {p.name || p.title}
+                    </h4>
+                    <p className="text-[9px] text-amber-600 font-bold mt-1 flex items-center gap-0.5">
+                      ⭐ 5.0 <span className="text-gray-400 font-medium">(Produk Terverifikasi)</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-150/60">
+                  <span className="text-sm font-black text-emerald-850">
+                    Rp {Number(p.price || 0).toLocaleString('id-ID')}
+                  </span>
+                  <a 
+                    href={p.id ? `/market/product/${p.id}` : '#'}
+                    onClick={(e) => {
+                      if (!p.id) {
+                        e.preventDefault();
+                        onJoin();
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 hover:scale-[1.03] text-white font-extrabold text-[10px] rounded-xl shadow-xs transition-all cursor-pointer font-sora duration-200"
+                  >
+                    Detail Produk
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* 6. Bottom Banner CTA */}
       <section className="py-12 px-4 md:px-8 max-w-[1280px] mx-auto relative z-10">
         <div className="p-8 md:p-14 bg-gradient-to-br from-emerald-850 to-emerald-950 text-white rounded-[32px] flex flex-col lg:flex-row items-center justify-between gap-8 shadow-xl relative overflow-hidden group">
@@ -403,12 +532,20 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               {ctaBanner.text}
             </h3>
           </div>
-          <button 
-            onClick={onJoin}
-            className="px-8 py-4.5 bg-white hover:bg-emerald-50 hover:scale-[1.04] text-emerald-800 font-extrabold text-sm rounded-2xl shadow-lg transition-all shrink-0 cursor-pointer font-sora flex items-center gap-1.5 relative z-10 duration-300"
-          >
-            {ctaBanner.buttonText} <ArrowRight className="w-4 h-4" />
-          </button>
+          {isMember ? (
+            <button 
+              className="px-8 py-4.5 bg-emerald-800/80 text-emerald-250 border border-emerald-700/40 font-extrabold text-sm rounded-2xl shadow-none shrink-0 cursor-default font-sora flex items-center gap-1.5 relative z-10 pointer-events-none"
+            >
+              Sudah Menjadi Anggota
+            </button>
+          ) : (
+            <button 
+              onClick={onJoin}
+              className="px-8 py-4.5 bg-white hover:bg-emerald-50 hover:scale-[1.04] text-emerald-800 font-extrabold text-sm rounded-2xl shadow-lg transition-all shrink-0 cursor-pointer font-sora flex items-center gap-1.5 relative z-10 duration-300"
+            >
+              {isKoperasi ? 'Ayo Gabung Menjadi Anggota' : 'Ayo Gabung Komunitas'} <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </section>
     </div>
