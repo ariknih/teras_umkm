@@ -267,6 +267,7 @@ export default function AdminDashboardClient({
   const [lessonDuration, setLessonDuration] = useState('300')
   const [lessonOrderIndex, setLessonOrderIndex] = useState('1')
   const [lessonVideoError, setLessonVideoError] = useState<string | null>(null)
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false)
 
   // SHU Configurator State
   const [shuCommunityId, setShuCommunityId] = useState(initialCommunities[0]?.id || '')
@@ -2022,7 +2023,7 @@ export default function AdminDashboardClient({
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
                             <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Cover Image (Upload File)</label>
-                            <span className="text-[10px] font-semibold text-emerald-600">Maks. 2 MB</span>
+                            <span className="text-[10px] font-semibold text-emerald-600">Maks. 10 MB (Auto-Kompresi)</span>
                           </div>
                           <div className="space-y-2">
                             <input
@@ -2032,8 +2033,8 @@ export default function AdminDashboardClient({
                                 const file = e.target.files?.[0]
                                 setCourseImageError(null)
                                 if (file) {
-                                  if (file.size > 10 * 1024 * 1024) {
-                                    setCourseImageError(`⚠️ Ukuran file terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran file cover adalah 2 MB.`)
+                                  if (file.size > 15 * 1024 * 1024) {
+                                    setCourseImageError(`⚠️ Ukuran file terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran file cover adalah 10 MB.`)
                                     return
                                   }
 
@@ -2055,8 +2056,8 @@ export default function AdminDashboardClient({
                                       if (ctx) {
                                         ctx.drawImage(img, 0, 0, w, h)
                                         const compressed = canvas.toDataURL('image/jpeg', 0.82)
-                                        if (compressed.length > 2.5 * 1024 * 1024) {
-                                          setCourseImageError('⚠️ Ukuran gambar setelah kompresi melebihi 2 MB. Silakan pilih gambar yang lebih kecil.')
+                                        if (compressed.length > 3.5 * 1024 * 1024) {
+                                          setCourseImageError('⚠️ Ukuran gambar setelah kompresi melebihi 3 MB. Silakan pilih gambar yang lebih kecil.')
                                         } else {
                                           setCourseCover(compressed)
                                         }
@@ -2143,41 +2144,86 @@ export default function AdminDashboardClient({
                         />
                       </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Video Pembahasan (Upload File)</label>
-                          <span className="text-[10px] font-semibold text-emerald-600">Maks. 10 MB</span>
+                      {/* Video Link / File Upload */}
+                      <div className="space-y-3 p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Option A: Link / URL Video (Disarankan)</label>
+                            <span className="text-[9px] font-semibold text-emerald-600">YouTube, Vimeo, MP4 URL</span>
+                          </div>
+                          <input
+                            type="url"
+                            value={lessonVideo.startsWith('data:') ? '' : lessonVideo}
+                            onChange={e => {
+                              setLessonVideoError(null)
+                              setLessonVideo(e.target.value)
+                            }}
+                            placeholder="https://www.youtube.com/watch?v=... atau https://..."
+                            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3 py-2 text-slate-800 text-xs outline-none focus:border-[#0F5132]"
+                          />
+                          <p className="text-[10px] text-slate-400 mt-1">Dapat memasukkan tautan video YouTube, Vimeo, Drive, atau URL MP4 apa saja tanpa batasan ukuran file.</p>
                         </div>
-                        <div className="space-y-2">
+
+                        <div className="border-t border-slate-200/60 pt-2.5">
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Option B: Upload File Video (Maks 500 MB - Supabase Storage)</label>
+                            {isUploadingVideo && <span className="text-[10px] font-bold text-amber-600 animate-pulse">⏳ Mengunggah ke Server...</span>}
+                          </div>
                           <input
                             type="file"
                             accept="video/*"
-                            onChange={e => {
+                            disabled={isUploadingVideo}
+                            onChange={async (e) => {
                               const file = e.target.files?.[0]
                               setLessonVideoError(null)
-                              if (file) {
-                                if (file.size > 10 * 1024 * 1024) {
-                                  setLessonVideoError(`⚠️ Ukuran file video terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran video adalah 10 MB.`)
-                                  return
-                                }
+                              if (!file) return
 
-                                const reader = new FileReader()
-                                reader.onload = () => {
-                                  setLessonVideo(reader.result as string)
+                              if (file.size > 500 * 1024 * 1024) {
+                                setLessonVideoError(`⚠️ Ukuran file video (${(file.size / 1024 / 1024).toFixed(1)} MB) melebihi batas 500 MB. Gunakan Option A (Link Video YouTube/Drive) jika video lebih besar.`)
+                                return
+                              }
+
+                              try {
+                                setIsUploadingVideo(true)
+                                const formData = new FormData()
+                                formData.append('file', file)
+                                formData.append('folder', 'courses')
+
+                                const res = await fetch('/api/upload', {
+                                  method: 'POST',
+                                  body: formData
+                                })
+                                const data = await res.json()
+
+                                if (res.ok && data.url) {
+                                  setLessonVideo(data.url)
+                                } else {
+                                  // Fallback to inline Base64 if file <= 3.5MB
+                                  if (file.size <= 3.5 * 1024 * 1024) {
+                                    const reader = new FileReader()
+                                    reader.onload = () => setLessonVideo(reader.result as string)
+                                    reader.readAsDataURL(file)
+                                  } else {
+                                    setLessonVideoError(data.error || `⚠️ Gagal mengunggah file (${(file.size / 1024 / 1024).toFixed(1)} MB). Gunakan Option A (Link Video YouTube/Drive).`)
+                                  }
                                 }
-                                reader.readAsDataURL(file)
+                              } catch (err: any) {
+                                setLessonVideoError('⚠️ Gagal mengunggah file. Gunakan Option A (Link Video YouTube/Drive).')
+                              } finally {
+                                setIsUploadingVideo(false)
                               }
                             }}
-                            className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[11px] file:font-semibold file:bg-[#0F5132]/10 file:text-[#0F5132] hover:file:bg-[#0F5132]/20 cursor-pointer"
+                            className="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-[#0F5132]/10 file:text-[#0F5132] hover:file:bg-[#0F5132]/20 cursor-pointer disabled:opacity-50"
                           />
                           {lessonVideoError && (
-                            <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[11px] font-medium leading-relaxed">
+                            <div className="p-2.5 mt-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[11px] font-medium leading-relaxed">
                               {lessonVideoError}
                             </div>
                           )}
                           {lessonVideo && !lessonVideoError && (
-                            <div className="text-[10px] text-green-700 font-bold">
-                              ✓ Video Terpilih ({Math.round(lessonVideo.length / 1024 / 1024 * 10) / 10} MB)
+                            <div className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1">
+                              <span>✓ Video Aktif:</span>
+                              <span className="truncate max-w-[240px] font-normal">{lessonVideo}</span>
                             </div>
                           )}
                         </div>

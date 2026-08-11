@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/app/actions/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024  // 5 MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024 // 50 MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024  // 10 MB
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024 // 500 MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/mov', 'video/quicktime']
 

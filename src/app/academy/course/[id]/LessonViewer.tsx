@@ -231,13 +231,37 @@ export default function LessonViewer({
             {/* Video Player */}
             <div className="aspect-video w-full rounded bg-surface-container-lowest border border-border-subtle overflow-hidden relative">
               {activeLesson.videoUrl ? (
-                <video
-                  id="lesson-video-player"
-                  key={activeLesson.id}
-                  src={activeLesson.videoUrl}
-                  controls
-                  className="w-full h-full object-contain"
-                />
+                (() => {
+                  const embedUrl = activeLesson.videoUrl.includes('youtube.com/watch?v=')
+                    ? `https://www.youtube.com/embed/${activeLesson.videoUrl.split('v=')[1]?.split('&')[0]}`
+                    : activeLesson.videoUrl.includes('youtu.be/')
+                    ? `https://www.youtube.com/embed/${activeLesson.videoUrl.split('youtu.be/')[1]?.split('?')[0]}`
+                    : activeLesson.videoUrl.includes('vimeo.com/')
+                    ? `https://player.vimeo.com/video/${activeLesson.videoUrl.split('vimeo.com/')[1]?.split('?')[0]}`
+                    : null;
+
+                  if (embedUrl) {
+                    return (
+                      <iframe
+                        key={activeLesson.id}
+                        src={embedUrl}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    );
+                  }
+
+                  return (
+                    <video
+                      id="lesson-video-player"
+                      key={activeLesson.id}
+                      src={activeLesson.videoUrl}
+                      controls
+                      className="w-full h-full object-contain"
+                    />
+                  );
+                })()
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-[10px] font-geist font-bold text-text-secondary uppercase">
