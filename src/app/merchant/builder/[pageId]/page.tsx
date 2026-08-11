@@ -607,6 +607,37 @@ function RenderComp({ comp }: { comp: BuilderComponent }) {
 
 // ─── Upload helper ────────────────────────────────────────────────────────────
 async function uploadFile(file: File): Promise<string> {
+  try {
+    const presignedRes = await fetch('/api/upload/presigned', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: file.name,
+        fileType: file.type || 'application/octet-stream',
+        folder: 'builder'
+      })
+    })
+
+    if (presignedRes.ok) {
+      const presignedData = await presignedRes.json()
+      if (presignedData.uploadUrl && presignedData.publicUrl) {
+        const s3UploadRes = await fetch(presignedData.uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream'
+          },
+          body: file
+        })
+
+        if (s3UploadRes.ok) {
+          return presignedData.publicUrl
+        }
+      }
+    }
+  } catch (s3Err) {
+    console.warn('Presigned upload failed, falling back to /api/upload:', s3Err)
+  }
+
   const fd = new FormData()
   fd.append('file', file)
   const res = await fetch('/api/upload', { method: 'POST', body: fd })

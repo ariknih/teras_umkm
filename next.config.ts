@@ -50,18 +50,6 @@ const nextConfig: NextConfig = {
       },
     ];
 
-    if (process.env.NODE_ENV === 'development') {
-      customHeaders.push({
-        source: '/_next/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-store, no-cache, must-revalidate, force-revalidate',
-          },
-        ],
-      });
-    }
-
     return customHeaders;
   }
 };

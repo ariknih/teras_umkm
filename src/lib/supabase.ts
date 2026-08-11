@@ -15,7 +15,7 @@ export const supabaseAdmin = () => {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!url || !anon) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY env vars')
+    return null as any
   }
 
   if (!serviceKey) {

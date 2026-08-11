@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/app/actions/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { writeFile, mkdir } from 'fs/promises'
+import path from 'path'
+
+export const maxDuration = 60 // Allow 60 seconds for video processing
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024  // 10 MB
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024 // 500 MB
@@ -19,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const folder = (formData.get('folder') as string) || 'general' // misal: 'products', 'avatars'
+    const folder = (formData.get('folder') as string) || 'general' // misal: 'products', 'avatars', 'courses'
 
     if (!file) {
       return NextResponse.json({ error: 'Tidak ada file yang diunggah.' }, { status: 400 })
@@ -46,9 +50,9 @@ export async function POST(request: NextRequest) {
     const randomStr = Math.random().toString(36).slice(2, 8)
     const filename = `${folder}/${user.id}-${timestamp}-${randomStr}.${ext}`
 
-    // Convert File to Uint8Array buffer
+    // Convert File to Buffer for AWS S3 & Supabase compatibility
     const bytes = await file.arrayBuffer()
-    const buffer = new Uint8Array(bytes)
+    const buffer = Buffer.from(bytes)
 
     // ─── OPTION 1: CLOUDFLARE R2 STORAGE ──────────────────────────────────────
     const r2AccountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID
@@ -81,15 +85,22 @@ export async function POST(request: NextRequest) {
           ? `${r2PublicDomain.replace(/\/$/, '')}/${filename}`
           : `https://${r2AccountId}.r2.cloudflarestorage.com/${r2Bucket}/${filename}`
 
+        return NextResponse.json({
+          url: publicUrl,
+          path: filename,
+          filename,
+          type: isImage ? 'image' : 'video',
+          provider: 'cloudflare-r2',
+        })
       } catch (r2Error: any) {
-        console.error('Cloudflare R2 upload error, falling back to AWS S3/Supabase:', r2Error)
+        console.error('Cloudflare R2 upload error:', r2Error)
       }
     }
 
     // ─── OPTION 2: DIRECT AWS S3 STORAGE ──────────────────────────────────────
     const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID
     const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
-    const awsRegion = process.env.AWS_REGION || 'ap-southeast-1'
+    const awsRegion = process.env.AWS_REGION || 'ap-southeast-2'
     const awsBucket = process.env.AWS_S3_BUCKET_NAME
 
     if (awsAccessKeyId && awsSecretAccessKey && awsBucket) {
@@ -121,38 +132,67 @@ export async function POST(request: NextRequest) {
           provider: 'aws-s3',
         })
       } catch (awsError: any) {
-        console.error('AWS S3 upload error, falling back to Supabase:', awsError)
+        console.error('AWS S3 upload error:', awsError)
       }
     }
 
-    // ─── OPTION 3: SUPABASE STORAGE (DEFAULT FALLBACK) ─────────────────────────
-    const client = supabaseAdmin()
-    const { data, error } = await client.storage
-      .from(BUCKET)
-      .upload(filename, buffer, {
-        contentType: file.type,
-        upsert: false,
-      })
+    // ─── OPTION 3: SUPABASE STORAGE (FALLBACK) ─────────────────────────
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      try {
+        const client = supabaseAdmin()
+        if (client) {
+          const { data, error } = await client.storage
+            .from(BUCKET)
+            .upload(filename, buffer, {
+              contentType: file.type,
+              upsert: false,
+            })
 
-    if (error) {
-      console.error('Supabase Storage upload error:', error)
-      return NextResponse.json({ error: `Gagal upload ke Storage: ${error.message}` }, { status: 500 })
+          if (!error && data?.path) {
+            const { data: { publicUrl } } = client.storage
+              .from(BUCKET)
+              .getPublicUrl(data.path)
+
+            return NextResponse.json({
+              url: publicUrl,
+              path: data.path,
+              filename,
+              type: isImage ? 'image' : 'video',
+              provider: 'supabase-storage',
+            })
+          }
+          console.warn('Supabase Storage upload error, falling back to local disk:', error?.message)
+        }
+      } catch (supaErr: any) {
+        console.warn('Supabase Storage client error, falling back to local disk:', supaErr?.message)
+      }
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = client.storage
-      .from(BUCKET)
-      .getPublicUrl(data.path)
+    // ─── OPTION 4: LOCAL FILESYSTEM STORAGE (RELIABLE FALLBACK) ────────
+    try {
+      const localFilename = `${user.id}-${timestamp}-${randomStr}.${ext}`
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', folder)
+      await mkdir(uploadsDir, { recursive: true })
 
-    return NextResponse.json({
-      url: publicUrl,
-      path: data.path,
-      filename,
-      type: isImage ? 'image' : 'video',
-      provider: 'supabase-storage',
-    })
+      const filePath = path.join(uploadsDir, localFilename)
+      await writeFile(filePath, buffer)
+
+      const localPublicUrl = `/uploads/${folder}/${localFilename}`
+
+      return NextResponse.json({
+        url: localPublicUrl,
+        path: `uploads/${folder}/${localFilename}`,
+        filename: localFilename,
+        type: isImage ? 'image' : 'video',
+        provider: 'local-filesystem',
+      })
+    } catch (fsError: any) {
+      console.error('Local filesystem upload error:', fsError)
+      return NextResponse.json({ error: `Gagal menyimpan file ke server: ${fsError.message}` }, { status: 500 })
+    }
   } catch (error: any) {
     console.error('Upload error:', error)
     return NextResponse.json({ error: error.message || 'Gagal mengunggah file.' }, { status: 500 })
   }
 }
+

@@ -2145,10 +2145,10 @@ export default function AdminDashboardClient({
                       </div>
 
                       {/* Video Link / File Upload */}
-                      <div className="space-y-3 p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                      <div className="space-y-3 p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-xl">
                         <div>
                           <div className="flex items-center justify-between mb-1">
-                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Option A: Link / URL Video (Disarankan)</label>
+                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Tautan URL Video</label>
                             <span className="text-[9px] font-semibold text-emerald-600">YouTube, Vimeo, MP4 URL</span>
                           </div>
                           <input
@@ -2161,13 +2161,20 @@ export default function AdminDashboardClient({
                             placeholder="https://www.youtube.com/watch?v=... atau https://..."
                             className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3 py-2 text-slate-800 text-xs outline-none focus:border-[#0F5132]"
                           />
-                          <p className="text-[10px] text-slate-400 mt-1">Dapat memasukkan tautan video YouTube, Vimeo, Drive, atau URL MP4 apa saja tanpa batasan ukuran file.</p>
                         </div>
 
                         <div className="border-t border-slate-200/60 pt-2.5">
                           <div className="flex items-center justify-between mb-1">
-                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Option B: Upload File Video (Maks 500 MB - Supabase Storage)</label>
-                            {isUploadingVideo && <span className="text-[10px] font-bold text-amber-600 animate-pulse">⏳ Mengunggah ke Server...</span>}
+                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Atau Unggah File Video</label>
+                            {isUploadingVideo && (
+                              <div className="flex items-center gap-1.5 text-emerald-600 text-[11px] font-semibold">
+                                <svg className="animate-spin h-3.5 w-3.5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Mengunggah...</span>
+                              </div>
+                            )}
                           </div>
                           <input
                             type="file"
@@ -2179,12 +2186,47 @@ export default function AdminDashboardClient({
                               if (!file) return
 
                               if (file.size > 500 * 1024 * 1024) {
-                                setLessonVideoError(`⚠️ Ukuran file video (${(file.size / 1024 / 1024).toFixed(1)} MB) melebihi batas 500 MB. Gunakan Option A (Link Video YouTube/Drive) jika video lebih besar.`)
+                                setLessonVideoError(`⚠️ Ukuran file video (${(file.size / 1024 / 1024).toFixed(1)} MB) terlalu besar (maksimal 500 MB).`)
                                 return
                               }
 
                               try {
                                 setIsUploadingVideo(true)
+
+                                // 1. Try S3 Direct Presigned Upload (Browser -> AWS S3)
+                                try {
+                                  const presignedRes = await fetch('/api/upload/presigned', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      filename: file.name,
+                                      fileType: file.type || 'video/mp4',
+                                      folder: 'courses'
+                                    })
+                                  })
+
+                                  if (presignedRes.ok) {
+                                    const presignedData = await presignedRes.json()
+                                    if (presignedData.uploadUrl && presignedData.publicUrl) {
+                                      const s3UploadRes = await fetch(presignedData.uploadUrl, {
+                                        method: 'PUT',
+                                        headers: {
+                                          'Content-Type': file.type || 'video/mp4'
+                                        },
+                                        body: file
+                                      })
+
+                                      if (s3UploadRes.ok) {
+                                        setLessonVideo(presignedData.publicUrl)
+                                        return
+                                      }
+                                    }
+                                  }
+                                } catch (s3Err) {
+                                  console.warn('Presigned upload failed, attempting fallback server upload:', s3Err)
+                                }
+
+                                // 2. Fallback to /api/upload (Server API + Local Disk Fallback)
                                 const formData = new FormData()
                                 formData.append('file', file)
                                 formData.append('folder', 'courses')
@@ -2198,17 +2240,17 @@ export default function AdminDashboardClient({
                                 if (res.ok && data.url) {
                                   setLessonVideo(data.url)
                                 } else {
-                                  // Fallback to inline Base64 if file <= 3.5MB
+                                  // 3. Fallback to inline Base64 if small file <= 3.5MB
                                   if (file.size <= 3.5 * 1024 * 1024) {
                                     const reader = new FileReader()
                                     reader.onload = () => setLessonVideo(reader.result as string)
                                     reader.readAsDataURL(file)
                                   } else {
-                                    setLessonVideoError(data.error || `⚠️ Gagal mengunggah file (${(file.size / 1024 / 1024).toFixed(1)} MB). Gunakan Option A (Link Video YouTube/Drive).`)
+                                    setLessonVideoError(data.error || `⚠️ Gagal mengunggah file. Silakan periksa koneksi atau gunakan Tautan URL Video.`)
                                   }
                                 }
                               } catch (err: any) {
-                                setLessonVideoError('⚠️ Gagal mengunggah file. Gunakan Option A (Link Video YouTube/Drive).')
+                                setLessonVideoError('⚠️ Gagal mengunggah file. Silakan periksa koneksi atau gunakan Tautan URL Video.')
                               } finally {
                                 setIsUploadingVideo(false)
                               }
@@ -2222,7 +2264,7 @@ export default function AdminDashboardClient({
                           )}
                           {lessonVideo && !lessonVideoError && (
                             <div className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1">
-                              <span>✓ Video Aktif:</span>
+                              <span>✓ Video Terpilih:</span>
                               <span className="truncate max-w-[240px] font-normal">{lessonVideo}</span>
                             </div>
                           )}
