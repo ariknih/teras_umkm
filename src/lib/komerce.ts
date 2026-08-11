@@ -12,10 +12,10 @@ const KOMERCE_BASE_URL =
   process.env.KOMERCE_BASE_URL || 'https://api-sandbox.collaborator.komerce.id';
 
 const SHIPPING_API_KEY =
-  process.env.KOMERCE_SHIPPING_API_KEY || 'kWUvBmKG24591a4ae5cc04545oA7te0I';
+  process.env.KOMERCE_SHIPPING_API_KEY || 'q8nbLXDg7b3e7220997ac5beIryiCNKQ';
 
 const PAYMENT_API_KEY =
-  process.env.KOMERCE_PAYMENT_API_KEY || '8wnfwYar24591a4ae5cc04543H1cc1WP';
+  process.env.KOMERCE_PAYMENT_API_KEY || 'w6vijFfV7b3e7220997ac5beHas4vzwh';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
