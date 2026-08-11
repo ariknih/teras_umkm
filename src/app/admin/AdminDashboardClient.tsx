@@ -2022,7 +2022,7 @@ export default function AdminDashboardClient({
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
                             <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Cover Image (Upload File)</label>
-                            <span className="text-[10px] font-semibold text-emerald-600">Maks. 2 MB</span>
+                            <span className="text-[10px] font-semibold text-emerald-600">Maks. 10 MB (Auto-Kompresi)</span>
                           </div>
                           <div className="space-y-2">
                             <input
@@ -2032,8 +2032,8 @@ export default function AdminDashboardClient({
                                 const file = e.target.files?.[0]
                                 setCourseImageError(null)
                                 if (file) {
-                                  if (file.size > 10 * 1024 * 1024) {
-                                    setCourseImageError(`⚠️ Ukuran file terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran file cover adalah 2 MB.`)
+                                  if (file.size > 15 * 1024 * 1024) {
+                                    setCourseImageError(`⚠️ Ukuran file terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran file cover adalah 10 MB.`)
                                     return
                                   }
 
@@ -2055,8 +2055,8 @@ export default function AdminDashboardClient({
                                       if (ctx) {
                                         ctx.drawImage(img, 0, 0, w, h)
                                         const compressed = canvas.toDataURL('image/jpeg', 0.82)
-                                        if (compressed.length > 2.5 * 1024 * 1024) {
-                                          setCourseImageError('⚠️ Ukuran gambar setelah kompresi melebihi 2 MB. Silakan pilih gambar yang lebih kecil.')
+                                        if (compressed.length > 3.5 * 1024 * 1024) {
+                                          setCourseImageError('⚠️ Ukuran gambar setelah kompresi melebihi 3 MB. Silakan pilih gambar yang lebih kecil.')
                                         } else {
                                           setCourseCover(compressed)
                                         }
@@ -2146,7 +2146,7 @@ export default function AdminDashboardClient({
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
                           <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Video Pembahasan (Upload File)</label>
-                          <span className="text-[10px] font-semibold text-emerald-600">Maks. 10 MB</span>
+                          <span className="text-[10px] font-semibold text-emerald-600">Maks. 25 MB</span>
                         </div>
                         <div className="space-y-2">
                           <input
@@ -2156,8 +2156,8 @@ export default function AdminDashboardClient({
                               const file = e.target.files?.[0]
                               setLessonVideoError(null)
                               if (file) {
-                                if (file.size > 10 * 1024 * 1024) {
-                                  setLessonVideoError(`⚠️ Ukuran file video terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran video adalah 10 MB.`)
+                                if (file.size > 25 * 1024 * 1024) {
+                                  setLessonVideoError(`⚠️ Ukuran file video terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran video adalah 25 MB.`)
                                   return
                                 }
 
