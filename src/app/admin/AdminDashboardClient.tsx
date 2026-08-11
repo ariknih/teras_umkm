@@ -267,6 +267,7 @@ export default function AdminDashboardClient({
   const [lessonDuration, setLessonDuration] = useState('300')
   const [lessonOrderIndex, setLessonOrderIndex] = useState('1')
   const [lessonVideoError, setLessonVideoError] = useState<string | null>(null)
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false)
 
   // SHU Configurator State
   const [shuCommunityId, setShuCommunityId] = useState(initialCommunities[0]?.id || '')
@@ -2165,29 +2166,54 @@ export default function AdminDashboardClient({
 
                         <div className="border-t border-slate-200/60 pt-2.5">
                           <div className="flex items-center justify-between mb-1">
-                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Option B: Upload File Langsung (Maks 3.5 MB)</label>
+                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Option B: Upload File Video (Maks 50 MB - Cloud Storage)</label>
+                            {isUploadingVideo && <span className="text-[10px] font-bold text-amber-600 animate-pulse">⏳ Mengunggah ke Server...</span>}
                           </div>
                           <input
                             type="file"
                             accept="video/*"
-                            onChange={e => {
+                            disabled={isUploadingVideo}
+                            onChange={async (e) => {
                               const file = e.target.files?.[0]
                               setLessonVideoError(null)
-                              if (file) {
-                                // Vercel Serverless hard limit is 4.5MB. Base64 adds ~33% overhead, so max file size is ~3.3MB.
-                                if (file.size > 3.5 * 1024 * 1024) {
-                                  setLessonVideoError(`⚠️ Ukuran file (${(file.size / 1024 / 1024).toFixed(1)} MB) melebihi batas upload langsung Vercel (3.5 MB). Silakan gunakan Option A (Link / URL Video YouTube atau Drive di atas) agar tidak crash.`)
-                                  return
-                                }
+                              if (!file) return
 
-                                const reader = new FileReader()
-                                reader.onload = () => {
-                                  setLessonVideo(reader.result as string)
+                              if (file.size > 50 * 1024 * 1024) {
+                                setLessonVideoError(`⚠️ Ukuran file video (${(file.size / 1024 / 1024).toFixed(1)} MB) melebihi batas 50 MB. Gunakan Option A (Link Video YouTube/Drive) jika video lebih besar.`)
+                                return
+                              }
+
+                              try {
+                                setIsUploadingVideo(true)
+                                const formData = new FormData()
+                                formData.append('file', file)
+                                formData.append('folder', 'courses')
+
+                                const res = await fetch('/api/upload', {
+                                  method: 'POST',
+                                  body: formData
+                                })
+                                const data = await res.json()
+
+                                if (res.ok && data.url) {
+                                  setLessonVideo(data.url)
+                                } else {
+                                  // Fallback to inline Base64 if file <= 3.5MB
+                                  if (file.size <= 3.5 * 1024 * 1024) {
+                                    const reader = new FileReader()
+                                    reader.onload = () => setLessonVideo(reader.result as string)
+                                    reader.readAsDataURL(file)
+                                  } else {
+                                    setLessonVideoError(data.error || `⚠️ Gagal mengunggah file (${(file.size / 1024 / 1024).toFixed(1)} MB). Gunakan Option A (Link Video YouTube/Drive).`)
+                                  }
                                 }
-                                reader.readAsDataURL(file)
+                              } catch (err: any) {
+                                setLessonVideoError('⚠️ Gagal mengunggah file. Gunakan Option A (Link Video YouTube/Drive).')
+                              } finally {
+                                setIsUploadingVideo(false)
                               }
                             }}
-                            className="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-[#0F5132]/10 file:text-[#0F5132] hover:file:bg-[#0F5132]/20 cursor-pointer"
+                            className="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-[#0F5132]/10 file:text-[#0F5132] hover:file:bg-[#0F5132]/20 cursor-pointer disabled:opacity-50"
                           />
                           {lessonVideoError && (
                             <div className="p-2.5 mt-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[11px] font-medium leading-relaxed">
@@ -2197,7 +2223,7 @@ export default function AdminDashboardClient({
                           {lessonVideo && !lessonVideoError && (
                             <div className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1">
                               <span>✓ Video Aktif:</span>
-                              <span className="truncate max-w-[240px] font-normal">{lessonVideo.startsWith('data:') ? `File Lokal (${Math.round(lessonVideo.length / 1024 / 1024 * 10) / 10} MB)` : lessonVideo}</span>
+                              <span className="truncate max-w-[240px] font-normal">{lessonVideo}</span>
                             </div>
                           )}
                         </div>
