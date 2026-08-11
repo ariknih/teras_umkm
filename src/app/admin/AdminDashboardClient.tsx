@@ -2153,7 +2153,7 @@ export default function AdminDashboardClient({
                           </div>
                           <input
                             type="url"
-                            value={lessonVideo.startsWith('data:') ? '' : lessonVideo}
+                            value={lessonVideo.startsWith('data:') || lessonVideo.includes('.s3.') || lessonVideo.startsWith('/uploads/') ? '' : lessonVideo}
                             onChange={e => {
                               setLessonVideoError(null)
                               setLessonVideo(e.target.value)
@@ -2264,8 +2264,8 @@ export default function AdminDashboardClient({
                           )}
                           {lessonVideo && !lessonVideoError && (
                             <div className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1">
-                              <span>✓ Video Terpilih:</span>
-                              <span className="truncate max-w-[240px] font-normal">{lessonVideo}</span>
+                              <span>✓ Video Berhasil Diunggah</span>
+                              <span className="truncate max-w-[240px] font-normal">{lessonVideo.includes('/') ? decodeURIComponent(lessonVideo.split('/').pop() || '') : lessonVideo}</span>
                             </div>
                           )}
                         </div>
