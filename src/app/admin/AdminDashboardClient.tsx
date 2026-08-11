@@ -2263,9 +2263,41 @@ export default function AdminDashboardClient({
                             </div>
                           )}
                           {lessonVideo && !lessonVideoError && (
-                            <div className="text-[10px] text-emerald-700 font-bold mt-1.5 flex items-center gap-1">
-                              <span>✓ Video Berhasil Diunggah</span>
-                              <span className="truncate max-w-[240px] font-normal">{lessonVideo.includes('/') ? decodeURIComponent(lessonVideo.split('/').pop() || '') : lessonVideo}</span>
+                            <div className="mt-2.5 space-y-2">
+                              {/* Video Preview */}
+                              {!lessonVideo.startsWith('data:') ? (
+                                <div className="rounded-lg overflow-hidden border border-emerald-200 bg-black">
+                                  <video
+                                    src={lessonVideo}
+                                    controls
+                                    preload="metadata"
+                                    className="w-full max-h-[180px] object-contain"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="rounded-lg overflow-hidden border border-emerald-200 bg-black">
+                                  <video
+                                    src={lessonVideo}
+                                    controls
+                                    preload="metadata"
+                                    className="w-full max-h-[180px] object-contain"
+                                  />
+                                </div>
+                              )}
+                              {/* Success Label + Remove Button */}
+                              <div className="flex items-center justify-between">
+                                <div className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                                  <span>✓ Video Berhasil Diunggah</span>
+                                  <span className="truncate max-w-[180px] font-normal text-emerald-600/70">{lessonVideo.includes('/') ? decodeURIComponent(lessonVideo.split('/').pop() || '') : 'Base64 Video'}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => { setLessonVideo(''); setLessonVideoError(null) }}
+                                  className="text-[9px] font-semibold text-red-500 hover:text-red-700 transition-colors"
+                                >
+                                  ✕ Hapus
+                                </button>
+                              </div>
                             </div>
                           )}
                         </div>
