@@ -8522,6 +8522,88 @@ export const DataStore = {
       try {
         return await db.shuConfig.findMany({
           where: { communityId },
+          include: { distributions: true },
+          orderBy: { year: 'desc' }
+        })
+      } catch (_) {}
+    }
+    const configs = (globalThis as any).__mockShuConfigs || []
+    return configs.filter((c: any) => c.communityId === communityId)
+  },
+
+  // ─── TRANSAKSI SIMPANAN KOPERASI DATASTORE METHODS ─────────────────────────
+  async createSavingsTransaction(data: {
+    communityId: string
+    userId: string
+    type?: string
+    transactionType?: string
+    amount: number
+    date?: Date
+    notes?: string
+    createdById?: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeSavingsTransaction.create({
+          data: {
+            communityId: data.communityId,
+            userId: data.userId,
+            type: data.type || 'WAJIB',
+            transactionType: data.transactionType || 'SETOR',
+            amount: Number(data.amount || 0),
+            date: data.date || new Date(),
+            notes: data.notes || '',
+            createdById: data.createdById || null
+          }
+        })
+      } catch (_) {}
+    }
+
+    const txs = (globalThis as any).__mockSavingsTransactions || []
+    const newTx = {
+      id: `sav-tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      communityId: data.communityId,
+      userId: data.userId,
+      type: data.type || 'WAJIB',
+      transactionType: data.transactionType || 'SETOR',
+      amount: Number(data.amount || 0),
+      date: data.date || new Date(),
+      notes: data.notes || '',
+      createdById: data.createdById || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    txs.unshift(newTx)
+    ;(globalThis as any).__mockSavingsTransactions = txs
+    saveMockDb()
+    return newTx
+  },
+
+  async getSavingsTransactions(communityId: string, userId?: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeSavingsTransaction.findMany({
+          where: {
+            communityId,
+            ...(userId ? { userId } : {})
+          },
+          orderBy: { date: 'desc' }
+        })
+      } catch (_) {}
+    }
+
+    const txs = (globalThis as any).__mockSavingsTransactions || []
+    return txs.filter((t: any) => t.communityId === communityId && (!userId || t.userId === userId))
+  },
+
+  async getShuConfigs(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.shuConfig.findMany({
+          where: { communityId },
           include: {
             distributions: true
           },

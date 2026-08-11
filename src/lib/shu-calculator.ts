@@ -113,19 +113,34 @@ export async function calculateAndSaveShuDistribution(
     return d >= yearStartDate && d <= yearEndDate && o.status === 'COMPLETED'
   })
 
-  // 5. Calculate totals for community
+  // 5. Fetch savings transactions to calculate actual member savings balances
+  const savingsTxs: any[] = typeof (DataStore as any).getSavingsTransactions === 'function' 
+    ? await (DataStore as any).getSavingsTransactions(communityId) 
+    : []
+
   let simpananTotalCommunity = 0
   let transaksiTotalCommunity = 0
 
   const memberDataMap: Record<string, { simpanan: number; transaksi: number }> = {}
 
   for (const user of communityMembers) {
-    // Get community membership info or default fees
-    const comms: any[] = typeof (DataStore as any).getCommunities === 'function' ? await (DataStore as any).getCommunities() : []
-    const comm = comms.find((c: any) => c.id === communityId)
-    const sPokok = comm?.simpananPokok || 100000
-    const sWajib = comm?.simpananWajib || 25000
-    const userSimpanan = sPokok + sWajib * 12 // Annual estimated mandatory savings
+    const userSavingsTxs = savingsTxs.filter((t: any) => t.userId === user.id && new Date(t.date || t.createdAt) <= yearEndDate)
+    
+    let userSimpanan = 0
+    if (userSavingsTxs.length > 0) {
+      userSimpanan = userSavingsTxs.reduce((sum: number, t: any) => {
+        const val = Number(t.amount || 0)
+        return t.transactionType === 'SETOR' ? sum + val : sum - val
+      }, 0)
+      if (userSimpanan < 0) userSimpanan = 0
+    } else {
+      // Default baseline estimate if no explicit transactions recorded yet
+      const comms: any[] = typeof (DataStore as any).getCommunities === 'function' ? await (DataStore as any).getCommunities() : []
+      const comm = comms.find((c: any) => c.id === communityId)
+      const sPokok = comm?.simpananPokok || 100000
+      const sWajib = comm?.simpananWajib || 25000
+      userSimpanan = sPokok + sWajib * 12
+    }
 
     const userOrders = completedOrdersInYear.filter((o: any) => o.buyerId === user.id)
     const userTransaksi = userOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0)

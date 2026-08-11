@@ -826,6 +826,27 @@ model CooperativeProduct {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Transaksi Simpanan Anggota Koperasi (Ledger Setor / Tarik)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model CooperativeSavingsTransaction {
+  id              String   @id @default(cuid())
+  communityId     String
+  userId          String
+  type            String   @default("WAJIB") // POKOK, WAJIB, SUKARELA
+  transactionType String   @default("SETOR") // SETOR, TARIK
+  amount          Float    @default(0)
+  date            DateTime @default(now())
+  notes           String?
+  createdById     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([communityId])
+  @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Proyek Pendanaan Merchant / Investasi Anggota Koperasi
 // ═══════════════════════════════════════════════════════════════════════════════
 
