@@ -15,9 +15,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id } = await params
     const body = await request.json()
-    const { isActive } = body
+    const { type, providerName, accountName, accountNumber, qrImageUrl, qrRawString, isActive } = body
 
-    const updatedMethod = await DataStore.updatePaymentMethod(id, { isActive })
+    const updatedMethod = await DataStore.updatePaymentMethod(id, {
+      ...(type !== undefined && { type }),
+      ...(providerName !== undefined && { providerName }),
+      ...(accountName !== undefined && { accountName }),
+      ...(accountNumber !== undefined && { accountNumber }),
+      ...(qrImageUrl !== undefined && { qrImageUrl }),
+      ...(qrRawString !== undefined && { qrRawString }),
+      ...(isActive !== undefined && { isActive })
+    })
     return NextResponse.json(updatedMethod)
   } catch (error) {
     console.error('Error updating payment method:', error)
