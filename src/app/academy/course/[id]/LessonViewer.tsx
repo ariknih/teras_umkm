@@ -258,6 +258,21 @@ export default function LessonViewer({
                       key={activeLesson.id}
                       src={activeLesson.videoUrl}
                       controls
+                      onTimeUpdate={(e) => {
+                        const video = e.currentTarget
+                        if (video.duration) {
+                          localStorage.setItem(`saloka_video_pos_${activeLesson.id}`, String(video.currentTime))
+                          if (video.currentTime / video.duration >= 0.95 && !completedSet.has(activeLesson.id) && isLoggedIn) {
+                            handleToggleProgress(activeLesson.id, true)
+                          }
+                        }
+                      }}
+                      onLoadedMetadata={(e) => {
+                        const saved = localStorage.getItem(`saloka_video_pos_${activeLesson.id}`)
+                        if (saved) {
+                          e.currentTarget.currentTime = parseFloat(saved)
+                        }
+                      }}
                       className="w-full h-full object-contain"
                     />
                   );

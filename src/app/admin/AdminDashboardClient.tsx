@@ -268,6 +268,8 @@ export default function AdminDashboardClient({
   const [lessonOrderIndex, setLessonOrderIndex] = useState('1')
   const [lessonVideoError, setLessonVideoError] = useState<string | null>(null)
   const [isUploadingVideo, setIsUploadingVideo] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number>(0)
+  const [uploadSpeed, setUploadSpeed] = useState<string>('')
 
   // SHU Configurator State
   const [shuCommunityId, setShuCommunityId] = useState(initialCommunities[0]?.id || '')
@@ -1928,7 +1930,7 @@ export default function AdminDashboardClient({
                       <h5 className="text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Syllabus / Bab Pelajaran ({course.lessons?.length || 0} Bab)</h5>
                       {course.lessons && course.lessons.length > 0 ? (
                         <div className="space-y-2">
-                          {course.lessons.map((lesson: any) => (
+                          {course.lessons.map((lesson: any, idx: number) => (
                             <div key={lesson.id} className="flex justify-between items-center p-3.5 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] hover:border-[#cbd5e1] transition-colors shadow-sm">
                               <div>
                                 <div className="flex items-center gap-2">
@@ -1944,7 +1946,25 @@ export default function AdminDashboardClient({
                                   <span className="truncate max-w-[250px]" title={lesson.videoUrl}>Video: {lesson.videoUrl || 'Tidak ada video'}</span>
                                 </div>
                               </div>
-                              <div className="flex gap-2 flex-shrink-0">
+                              <div className="flex gap-1.5 flex-shrink-0 items-center">
+                                <button
+                                  type="button"
+                                  disabled={isPending || idx === 0}
+                                  onClick={() => handleShiftLessonOrder(lesson, 'up', course)}
+                                  title="Geser Urutan Ke Atas"
+                                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isPending || idx === course.lessons.length - 1}
+                                  onClick={() => handleShiftLessonOrder(lesson, 'down', course)}
+                                  title="Geser Urutan Ke Bawah"
+                                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                                >
+                                  ▼
+                                </button>
                                 <button
                                   onClick={() => openEditLesson(lesson, course.id)}
                                   className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded text-[10px] uppercase font-bold tracking-wider cursor-pointer border border-[#e2e8f0]"
@@ -2166,15 +2186,6 @@ export default function AdminDashboardClient({
                         <div className="border-t border-slate-200/60 pt-2.5">
                           <div className="flex items-center justify-between mb-1">
                             <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Atau Unggah File Video</label>
-                            {isUploadingVideo && (
-                              <div className="flex items-center gap-1.5 text-emerald-600 text-[11px] font-semibold">
-                                <svg className="animate-spin h-3.5 w-3.5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Mengunggah...</span>
-                              </div>
-                            )}
                           </div>
                           <input
                             type="file"
@@ -2192,8 +2203,10 @@ export default function AdminDashboardClient({
 
                               try {
                                 setIsUploadingVideo(true)
+                                setUploadProgress(0)
+                                setUploadSpeed('')
 
-                                // 1. Try S3 Direct Presigned Upload (Browser -> AWS S3)
+                                // 1. Try S3 Direct Presigned Upload (Browser -> AWS S3 with XHR Progress)
                                 try {
                                   const presignedRes = await fetch('/api/upload/presigned', {
                                     method: 'POST',
@@ -2208,15 +2221,32 @@ export default function AdminDashboardClient({
                                   if (presignedRes.ok) {
                                     const presignedData = await presignedRes.json()
                                     if (presignedData.uploadUrl && presignedData.publicUrl) {
-                                      const s3UploadRes = await fetch(presignedData.uploadUrl, {
-                                        method: 'PUT',
-                                        headers: {
-                                          'Content-Type': file.type || 'video/mp4'
-                                        },
-                                        body: file
+                                      const startTime = Date.now()
+                                      const s3Success = await new Promise<boolean>((resolve) => {
+                                        const xhr = new XMLHttpRequest()
+                                        xhr.open('PUT', presignedData.uploadUrl, true)
+                                        xhr.setRequestHeader('Content-Type', file.type || 'video/mp4')
+
+                                        xhr.upload.onprogress = (evt) => {
+                                          if (evt.lengthComputable) {
+                                            const percent = Math.round((evt.loaded / evt.total) * 100)
+                                            setUploadProgress(percent)
+
+                                            const duration = (Date.now() - startTime) / 1000
+                                            if (duration > 0) {
+                                              const mbps = ((evt.loaded / (1024 * 1024)) / duration).toFixed(1)
+                                              setUploadSpeed(`${mbps} MB/s`)
+                                            }
+                                          }
+                                        }
+
+                                        xhr.onload = () => resolve(xhr.status >= 200 && xhr.status < 300)
+                                        xhr.onerror = () => resolve(false)
+                                        xhr.ontimeout = () => resolve(false)
+                                        xhr.send(file)
                                       })
 
-                                      if (s3UploadRes.ok) {
+                                      if (s3Success) {
                                         setLessonVideo(presignedData.publicUrl)
                                         return
                                       }
