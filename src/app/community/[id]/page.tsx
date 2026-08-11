@@ -358,6 +358,7 @@ export default function CommunityDetailPage() {
     | 'shu'
     | 'laporan'
     | 'pengaturan'
+    | 'desain_landing'
   >('beranda')
   
   const [isManualScrolling, setIsManualScrolling] = useState(false)
@@ -1046,7 +1047,10 @@ export default function CommunityDetailPage() {
   )
 
   const settingsTab = isCanManageCoop
-    ? [{ id: 'pengaturan', label: 'Pengaturan', icon: Sliders }]
+    ? [
+        { id: 'pengaturan', label: 'Pengaturan', icon: Sliders },
+        { id: 'desain_landing', label: 'Desain Landing', icon: Sparkles }
+      ]
     : []
 
   const activeSidebarNavList = [
@@ -1263,7 +1267,7 @@ export default function CommunityDetailPage() {
         isMember={isMember}
         onEdit={() => {
           setViewMode('dashboard')
-          setActiveSidebarNav('pengaturan')
+          setActiveSidebarNav('desain_landing')
         }}
         products={products}
       />
@@ -3603,14 +3607,17 @@ export default function CommunityDetailPage() {
                   </div>
                 </div>
 
-                {/* SECTION 5: PENGATURAN LANDING PAGE */}
-                <div className="mt-6">
-                  <LandingPageEditor
-                    community={community}
-                    config={parsedCommunityConfig}
-                    onSave={handleSaveLandingPageConfig}
-                  />
-                </div>
+              </div>
+            )}
+
+            {/* TAB 25: DESAIN LANDING PAGE EDITOR ──────────────────────────────── */}
+            {activeSidebarNav === 'desain_landing' && (
+              <div className="space-y-6">
+                <LandingPageEditor
+                  community={community}
+                  config={parsedCommunityConfig}
+                  onSave={handleSaveLandingPageConfig}
+                />
               </div>
             )}
           </div>
