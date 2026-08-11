@@ -254,6 +254,7 @@ export default function AdminDashboardClient({
   const [courseDesc, setCourseDesc] = useState('')
   const [courseCover, setCourseCover] = useState('')
   const [courseAccess, setCourseAccess] = useState('Gold')
+  const [courseImageError, setCourseImageError] = useState<string | null>(null)
 
   const [lessonModal, setLessonModal] = useState<{ open: boolean; mode: 'add' | 'edit'; courseId: string; data?: any }>({
     open: false,
@@ -265,6 +266,7 @@ export default function AdminDashboardClient({
   const [lessonVideo, setLessonVideo] = useState('')
   const [lessonDuration, setLessonDuration] = useState('300')
   const [lessonOrderIndex, setLessonOrderIndex] = useState('1')
+  const [lessonVideoError, setLessonVideoError] = useState<string | null>(null)
 
   // SHU Configurator State
   const [shuCommunityId, setShuCommunityId] = useState(initialCommunities[0]?.id || '')
@@ -782,6 +784,7 @@ export default function AdminDashboardClient({
     setCourseDesc('')
     setCourseCover('')
     setCourseAccess('Gold')
+    setCourseImageError(null)
   }
 
   const openEditCourse = (course: any) => {
@@ -789,6 +792,7 @@ export default function AdminDashboardClient({
     setCourseDesc(course.description)
     setCourseCover(course.coverImage || '')
     setCourseAccess(course.accessRequired || 'Gold')
+    setCourseImageError(null)
     setCourseModal({ open: true, mode: 'edit', data: course })
   }
 
@@ -2016,24 +2020,64 @@ export default function AdminDashboardClient({
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Cover Image (Upload File)</label>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Cover Image (Upload File)</label>
+                            <span className="text-[10px] font-semibold text-emerald-600">Maks. 2 MB</span>
+                          </div>
                           <div className="space-y-2">
                             <input
                               type="file"
                               accept="image/*"
                               onChange={e => {
                                 const file = e.target.files?.[0]
+                                setCourseImageError(null)
                                 if (file) {
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    setCourseImageError(`⚠️ Ukuran file terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran file cover adalah 2 MB.`)
+                                    return
+                                  }
+
                                   const reader = new FileReader()
-                                  reader.onload = () => {
-                                    setCourseCover(reader.result as string)
+                                  reader.onload = (evt) => {
+                                    const img = new Image()
+                                    img.onload = () => {
+                                      const canvas = document.createElement('canvas')
+                                      let w = img.width
+                                      let h = img.height
+                                      const maxDim = 1200
+                                      if (w > maxDim || h > maxDim) {
+                                        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                                        else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                                      }
+                                      canvas.width = w
+                                      canvas.height = h
+                                      const ctx = canvas.getContext('2d')
+                                      if (ctx) {
+                                        ctx.drawImage(img, 0, 0, w, h)
+                                        const compressed = canvas.toDataURL('image/jpeg', 0.82)
+                                        if (compressed.length > 2.5 * 1024 * 1024) {
+                                          setCourseImageError('⚠️ Ukuran gambar setelah kompresi melebihi 2 MB. Silakan pilih gambar yang lebih kecil.')
+                                        } else {
+                                          setCourseCover(compressed)
+                                        }
+                                      } else {
+                                        setCourseCover(evt.target?.result as string)
+                                      }
+                                    }
+                                    img.onerror = () => setCourseCover(evt.target?.result as string)
+                                    img.src = evt.target?.result as string
                                   }
                                   reader.readAsDataURL(file)
                                 }
                               }}
                               className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[11px] file:font-semibold file:bg-[#0F5132]/10 file:text-[#0F5132] hover:file:bg-[#0F5132]/20 cursor-pointer"
                             />
-                            {courseCover && (
+                            {courseImageError && (
+                              <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[11px] font-medium leading-relaxed">
+                                {courseImageError}
+                              </div>
+                            )}
+                            {courseCover && !courseImageError && (
                               <div className="w-16 h-10 relative rounded overflow-hidden border border-slate-200">
                                 <img src={courseCover} alt="Preview" className="object-cover w-full h-full" />
                               </div>
@@ -2052,8 +2096,8 @@ export default function AdminDashboardClient({
                         </button>
                         <button
                           type="submit"
-                          disabled={isPending}
-                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
+                          disabled={isPending || !!courseImageError}
+                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
@@ -2100,14 +2144,23 @@ export default function AdminDashboardClient({
                       </div>
 
                       <div>
-                        <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Video Pembahasan (Upload File)</label>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider">Video Pembahasan (Upload File)</label>
+                          <span className="text-[10px] font-semibold text-emerald-600">Maks. 10 MB</span>
+                        </div>
                         <div className="space-y-2">
                           <input
                             type="file"
                             accept="video/*"
                             onChange={e => {
                               const file = e.target.files?.[0]
+                              setLessonVideoError(null)
                               if (file) {
+                                if (file.size > 10 * 1024 * 1024) {
+                                  setLessonVideoError(`⚠️ Ukuran file video terlalu besar (${(file.size / 1024 / 1024).toFixed(1)} MB)! Maksimal ukuran video adalah 10 MB.`)
+                                  return
+                                }
+
                                 const reader = new FileReader()
                                 reader.onload = () => {
                                   setLessonVideo(reader.result as string)
@@ -2117,7 +2170,12 @@ export default function AdminDashboardClient({
                             }}
                             className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[11px] file:font-semibold file:bg-[#0F5132]/10 file:text-[#0F5132] hover:file:bg-[#0F5132]/20 cursor-pointer"
                           />
-                          {lessonVideo && (
+                          {lessonVideoError && (
+                            <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-[11px] font-medium leading-relaxed">
+                              {lessonVideoError}
+                            </div>
+                          )}
+                          {lessonVideo && !lessonVideoError && (
                             <div className="text-[10px] text-green-700 font-bold">
                               ✓ Video Terpilih ({Math.round(lessonVideo.length / 1024 / 1024 * 10) / 10} MB)
                             </div>
@@ -2159,8 +2217,8 @@ export default function AdminDashboardClient({
                         </button>
                         <button
                           type="submit"
-                          disabled={isPending}
-                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
+                          disabled={isPending || !!lessonVideoError}
+                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
