@@ -108,6 +108,7 @@ interface LandingPageViewProps {
   isMember?: boolean
   onEdit?: () => void
   products?: any[]
+  onAddProduct?: () => void
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
@@ -118,7 +119,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   isCanManage = false,
   isMember = false,
   onEdit,
-  products = []
+  products = [],
+  onAddProduct
 }) => {
   const isKoperasi = (community?.type || '').toLowerCase() === 'koperasi' || (community?.category || '').toLowerCase() === 'koperasi'
   const defaults = isKoperasi ? DEFAULT_KOPERASI_CONFIG : DEFAULT_PERKUMPULAN_CONFIG
@@ -333,7 +335,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               Arah & Tujuan Kami
             </span>
             <h2 className="text-3xl md:text-4xl font-black font-sora text-slate-900 tracking-tight">
-              Visi & Misi Komunitas
+              Visi & Misi {isKoperasi ? 'Koperasi' : 'Perkumpulan'}
             </h2>
             <p className="text-xs md:text-sm text-gray-500 font-medium">
               Komitmen nyata kami untuk tumbuh bersama, berjejaring, dan memberdayakan seluruh pelaku UMKM.
@@ -466,12 +468,22 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               </h2>
               <p className="text-xs text-gray-500 font-medium">Karya terbaik dan produk berkualitas dari pelaku UMKM anggota kami</p>
             </div>
-            <button 
-              onClick={onViewDashboard}
-              className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer font-sora font-semibold"
-            >
-              Buka Marketplace <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-3">
+              {isCanManage && (
+                <button 
+                  onClick={onAddProduct}
+                  className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 hover:scale-[1.02] text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer font-sora transition-all duration-200"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Tambah Produk
+                </button>
+              )}
+              <button 
+                onClick={onViewDashboard}
+                className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer font-sora font-semibold"
+              >
+                Buka Marketplace <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

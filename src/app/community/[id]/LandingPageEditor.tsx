@@ -254,7 +254,7 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
       {/* 1.5. Visi & Misi Fields */}
       <div className="space-y-4 pt-4 border-t border-gray-100">
-        <h4 className="font-extrabold text-[#0F5132] uppercase tracking-wider border-l-4 border-emerald-600 pl-2">1.5. Visi & Misi Koprasi</h4>
+        <h4 className="font-extrabold text-[#0F5132] uppercase tracking-wider border-l-4 border-emerald-600 pl-2">1.5. Visi & Misi {isKoperasi ? 'Koperasi' : 'Perkumpulan'}</h4>
         <div className="space-y-4">
           <div>
             <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Visi Komunitas</label>

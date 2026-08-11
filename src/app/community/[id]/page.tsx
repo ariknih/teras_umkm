@@ -1270,6 +1270,11 @@ export default function CommunityDetailPage() {
           setActiveSidebarNav('desain_landing')
         }}
         products={products}
+        onAddProduct={() => {
+          setViewMode('dashboard')
+          setActiveSidebarNav('marketplace')
+          setTimeout(() => handleOpenCreateProduct(false), 200)
+        }}
       />
     )
   }
@@ -1996,9 +2001,19 @@ export default function CommunityDetailPage() {
                       </h2>
                       <p className="text-xs text-gray-500 font-medium mt-1">Dukung produk lokal! Belanja langsung beragam produk berkualitas dari UMKM anggota.</p>
                     </div>
-                    <Link href="/cart" className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
-                      <Store className="w-4 h-4" /> Buka Marketplace Lengkap
-                    </Link>
+                    <div className="flex gap-2 shrink-0">
+                      {isCanManageCoop && (
+                        <button 
+                          onClick={() => handleOpenCreateProduct(false)} 
+                          className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" /> Tambah Produk Baru
+                        </button>
+                      )}
+                      <Link href="/cart" className="px-4 py-2.5 bg-white border border-gray-250 hover:border-[#2DB24A] hover:text-[#2DB24A] text-gray-700 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer">
+                        <Store className="w-4 h-4" /> Buka Marketplace Lengkap
+                      </Link>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
