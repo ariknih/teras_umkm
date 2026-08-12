@@ -57,8 +57,8 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
 
   try {
     const transactions = await DataStore.getSavingsTransactions(communityId)
-    const allUsers: any[] = typeof (DataStore as any).getUsers === 'function' ? await (DataStore as any).getUsers() : []
-    const communityMembers = allUsers.filter((u: any) => u.indukCommunityId === communityId)
+    const memberships = await DataStore.getIndukCommunityMembers(communityId)
+    const communityMembers = (memberships || []).map((m: any) => m.user).filter(Boolean)
 
     let totalPokok = 0
     let totalWajib = 0

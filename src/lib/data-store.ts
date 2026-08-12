@@ -1942,6 +1942,11 @@ function loadMockDb(): {
   communities?: any[];
   communityMemberships?: any[];
   cooperativeLoans?: any[];
+  cooperativeSavingsTransactions?: any[];
+  cooperativeProducts?: any[];
+  shuConfigs?: any[];
+  shuMemberDistributions?: any[];
+  merchantFundingProjects?: any[];
 } {
   try {
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2002,6 +2007,21 @@ function loadMockDb(): {
       if (parsed.cooperativeLoans) {
         parsed.cooperativeLoans = parsed.cooperativeLoans.map((l: any) => ({ ...l, createdAt: new Date(l.createdAt), updatedAt: new Date(l.updatedAt) }))
       }
+      if (parsed.cooperativeSavingsTransactions) {
+        parsed.cooperativeSavingsTransactions = parsed.cooperativeSavingsTransactions.map((tx: any) => ({ ...tx, date: new Date(tx.date), createdAt: new Date(tx.createdAt), updatedAt: new Date(tx.updatedAt) }))
+      }
+      if (parsed.cooperativeProducts) {
+        parsed.cooperativeProducts = parsed.cooperativeProducts.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
+      }
+      if (parsed.shuConfigs) {
+        parsed.shuConfigs = parsed.shuConfigs.map((c: any) => ({ ...c, createdAt: new Date(c.createdAt), updatedAt: new Date(c.updatedAt) }))
+      }
+      if (parsed.shuMemberDistributions) {
+        parsed.shuMemberDistributions = parsed.shuMemberDistributions.map((d: any) => ({ ...d, createdAt: new Date(d.createdAt), updatedAt: new Date(d.updatedAt) }))
+      }
+      if (parsed.merchantFundingProjects) {
+        parsed.merchantFundingProjects = parsed.merchantFundingProjects.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
+      }
       // Load global KYC setting at startup
       if (parsed.globalKycRequired !== undefined) {
         ;(globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
@@ -2053,7 +2073,12 @@ function saveMockDb() {
       communities: (globalThis as any).__mockCommunities,
       communityMemberships: (globalThis as any).__mockCommunityMemberships,
       cooperativeLoans: (globalThis as any).__mockCooperativeLoans,
-      globalKycRequired: (globalThis as any).__isKycRequiredToCreateCommunity
+      globalKycRequired: (globalThis as any).__isKycRequiredToCreateCommunity,
+      cooperativeSavingsTransactions: (globalThis as any).__mockSavingsTransactions,
+      cooperativeProducts: (globalThis as any).__mockCooperativeProducts,
+      shuConfigs: (globalThis as any).__mockShuConfigs,
+      shuMemberDistributions: (globalThis as any).__mockShuMemberDistributions,
+      merchantFundingProjects: (globalThis as any).__mockFundingProjects
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2159,6 +2184,42 @@ function syncMockDb() {
           updatedAt: new Date(l.updatedAt)
         }))
       }
+      if (parsed.cooperativeSavingsTransactions) {
+        (globalThis as any).__mockSavingsTransactions = parsed.cooperativeSavingsTransactions.map((tx: any) => ({
+          ...tx,
+          date: new Date(tx.date),
+          createdAt: new Date(tx.createdAt),
+          updatedAt: new Date(tx.updatedAt)
+        }))
+      }
+      if (parsed.cooperativeProducts) {
+        (globalThis as any).__mockCooperativeProducts = parsed.cooperativeProducts.map((p: any) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+          updatedAt: new Date(p.updatedAt)
+        }))
+      }
+      if (parsed.shuConfigs) {
+        (globalThis as any).__mockShuConfigs = parsed.shuConfigs.map((c: any) => ({
+          ...c,
+          createdAt: new Date(c.createdAt),
+          updatedAt: new Date(c.updatedAt)
+        }))
+      }
+      if (parsed.shuMemberDistributions) {
+        (globalThis as any).__mockShuMemberDistributions = parsed.shuMemberDistributions.map((d: any) => ({
+          ...d,
+          createdAt: new Date(d.createdAt),
+          updatedAt: new Date(d.updatedAt)
+        }))
+      }
+      if (parsed.merchantFundingProjects) {
+        (globalThis as any).__mockFundingProjects = parsed.merchantFundingProjects.map((p: any) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+          updatedAt: new Date(p.updatedAt)
+        }))
+      }
       if (parsed.globalKycRequired !== undefined) {
         (globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
       }
@@ -2175,6 +2236,11 @@ const _persistedDb = loadMockDb()
 ;(globalThis as any).__mockCommunities = _persistedDb.communities || []
 ;(globalThis as any).__mockCommunityMemberships = _persistedDb.communityMemberships || []
 ;(globalThis as any).__mockCooperativeLoans = _persistedDb.cooperativeLoans || []
+;(globalThis as any).__mockSavingsTransactions = _persistedDb.cooperativeSavingsTransactions || []
+;(globalThis as any).__mockCooperativeProducts = _persistedDb.cooperativeProducts || []
+;(globalThis as any).__mockShuConfigs = _persistedDb.shuConfigs || []
+;(globalThis as any).__mockShuMemberDistributions = _persistedDb.shuMemberDistributions || []
+;(globalThis as any).__mockFundingProjects = _persistedDb.merchantFundingProjects || []
 
 // Global state in-memory database helpers for local updates in sandbox mode
 let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products).map((p: any) => ({
