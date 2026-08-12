@@ -1292,24 +1292,34 @@ export default function CommunityDetailPage() {
 
   const bannerCta = isKoperasi ? 'Menjadi Anggota' : isKuliner ? 'Jelajahi Merchant' : isBusiness ? 'Ajukan Kolaborasi' : isEducation ? 'Daftar Kelas' : 'Gabung Komunitas'
 
+  const formatCompactRupiah = (val: number) => {
+    if (val >= 1000000000) {
+      return 'Rp ' + (val / 1000000000).toFixed(1).replace('.', ',').replace(',0', '') + ' M'
+    }
+    if (val >= 1000000) {
+      return 'Rp ' + (val / 1000000).toFixed(1).replace('.', ',').replace(',0', '') + ' Jt'
+    }
+    return 'Rp ' + val.toLocaleString('id-ID')
+  }
+
   const statCards = isKoperasi ? [
-    { label: 'Anggota', value: '788', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Total Simpanan', value: 'Rp 1,2 M', icon: Wallet, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'SHU Tahun Ini', value: 'Rp 185 Jt', icon: PieChart, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Unit Usaha', value: '12', icon: Building2, color: 'text-blue-600 bg-blue-50' },
+    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Total Simpanan', value: formatCompactRupiah(communitySavingsSummary?.totalSavingsCommunity || 0), icon: Wallet, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'SHU Tahun Ini', value: formatCompactRupiah(Number(shuNetProfit || 0)), icon: PieChart, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Unit Usaha', value: String(realStats?.activeMerchantsCount || 0), icon: Building2, color: 'text-blue-600 bg-blue-50' },
   ] : isBusiness ? [
-    { label: 'Anggota', value: '2.156', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Mitra', value: '128', icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Mitra', value: String(realStats?.activeMerchantsCount || 0), icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Pelatihan', value: '36', icon: GraduationCap, color: 'text-amber-600 bg-amber-50' },
     { label: 'Peluang Usaha', value: '54', icon: Rocket, color: 'text-blue-600 bg-blue-50' },
   ] : isEducation ? [
-    { label: 'Anggota', value: '1.532', icon: Users, color: 'text-purple-600 bg-purple-50' },
+    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-purple-600 bg-purple-50' },
     { label: 'Kelas', value: '32', icon: BookOpen, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Kompetisi', value: '18', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
     { label: 'Startup', value: '46', icon: Rocket, color: 'text-indigo-600 bg-indigo-50' },
   ] : isKuliner ? [
-    { label: 'Merchant', value: '245', icon: Store, color: 'text-orange-600 bg-orange-50' },
-    { label: 'Produk', value: '512', icon: ShoppingBag, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Merchant', value: String(realStats?.activeMerchantsCount || 0), icon: Store, color: 'text-orange-600 bg-orange-50' },
+    { label: 'Produk', value: String(products.length || 0), icon: ShoppingBag, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Supplier', value: '68', icon: Truck, color: 'text-amber-600 bg-amber-50' },
     { label: 'Event', value: '22', icon: Calendar, color: 'text-rose-600 bg-rose-50' },
   ] : [
@@ -2856,30 +2866,39 @@ export default function CommunityDetailPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
-                          <tr className="hover:bg-gray-50/30 transition-colors">
-                            <td className="py-3 px-2 text-gray-500 font-semibold">2 Mei 2026, 10:30</td>
-                            <td className="py-3 px-2 text-gray-600 font-bold">Simpanan Wajib</td>
-                            <td className="py-3 px-2 font-black text-[#0F5132]">Rp 50.000</td>
-                            <td className="py-3 px-2">
-                              <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ Berhasil</span>
-                            </td>
-                          </tr>
-                          <tr className="hover:bg-gray-50/30 transition-colors">
-                            <td className="py-3 px-2 text-gray-500 font-semibold">1 Apr 2026, 09:15</td>
-                            <td className="py-3 px-2 text-gray-600 font-bold">Simpanan Wajib</td>
-                            <td className="py-3 px-2 font-black text-[#0F5132]">Rp 50.000</td>
-                            <td className="py-3 px-2">
-                              <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ Berhasil</span>
-                            </td>
-                          </tr>
-                          <tr className="hover:bg-gray-50/30 transition-colors">
-                            <td className="py-3 px-2 text-gray-500 font-semibold">1 Jan 2026, 08:00</td>
-                            <td className="py-3 px-2 text-gray-600 font-bold">Simpanan Pokok</td>
-                            <td className="py-3 px-2 font-black text-[#0F5132]">Rp 100.000</td>
-                            <td className="py-3 px-2">
-                              <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ Berhasil</span>
-                            </td>
-                          </tr>
+                          {communitySavingsSummary?.transactions && communitySavingsSummary.transactions.filter((t: any) => t.userId === user?.id).length > 0 ? (
+                            communitySavingsSummary.transactions
+                              .filter((t: any) => t.userId === user?.id)
+                              .map((tx: any, idx: number) => {
+                                const formattedDate = new Date(tx.date).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                }) + ', ' + new Date(tx.date).toLocaleTimeString('id-ID', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                                const isSetor = tx.transactionType === 'SETOR'
+                                return (
+                                  <tr key={tx.id || idx} className="hover:bg-gray-50/30 transition-colors">
+                                    <td className="py-3 px-2 text-gray-500 font-semibold">{formattedDate}</td>
+                                    <td className="py-3 px-2 text-gray-600 font-bold">Simpanan {tx.type === 'POKOK' ? 'Pokok' : tx.type === 'WAJIB' ? 'Wajib' : 'Sukarela'}</td>
+                                    <td className={`py-3 px-2 font-black ${isSetor ? 'text-[#0F5132]' : 'text-red-600'}`}>
+                                      {isSetor ? '+' : '-'} Rp {tx.amount.toLocaleString('id-ID')}
+                                    </td>
+                                    <td className="py-3 px-2">
+                                      <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase font-mono">✓ Berhasil</span>
+                                    </td>
+                                  </tr>
+                                )
+                              })
+                          ) : (
+                            <tr>
+                              <td colSpan={4} className="py-8 text-center text-gray-400 font-medium">
+                                Belum ada riwayat transaksi simpanan.
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
