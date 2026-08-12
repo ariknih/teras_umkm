@@ -7,11 +7,15 @@ import { revalidatePath } from 'next/cache'
 
 export async function calculateAndSaveShuAction(formData: FormData) {
   const currentUser = await getCurrentUser()
-  if (!currentUser || (currentUser.role !== 'ADMIN' && !(currentUser as any).isSuperAdmin)) {
+  const communityId = formData.get('communityId') as string
+  const community = communityId ? await DataStore.getCommunityById(communityId) : null
+
+  const isKetua = community && currentUser && community.ketuaId === currentUser.id
+  const isAdmin = currentUser && (currentUser.role === 'ADMIN' || (currentUser as any).isSuperAdmin)
+
+  if (!currentUser || (!isAdmin && !isKetua)) {
     return { error: 'Anda tidak memiliki hak akses untuk mengelola SHU Koperasi.' }
   }
-
-  const communityId = formData.get('communityId') as string
   const year = Number(formData.get('year') || new Date().getFullYear())
   const totalNetProfit = Number(formData.get('totalNetProfit') || 0)
 

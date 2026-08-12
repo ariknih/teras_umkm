@@ -800,35 +800,21 @@ export default function CommunityDetailPage() {
       return
     }
 
-    const totalPct =
-      shuPctCadangan +
-      shuPctJasaModal +
-      shuPctJasaUsaha +
-      shuPctPengurus +
-      shuPctPengawas +
-      shuPctKaryawan +
-      shuPctPendidikan +
-      shuPctSosial
-
-    if (Math.abs(totalPct - 100) > 0.01) {
-      goeyToast.error(`Total persentase komposisi SHU harus bernilai tepat 100%. Saat ini: ${totalPct.toFixed(2)}%`)
-      return
-    }
-
     setIsCalculatingShu(true)
     try {
       const fd = new FormData()
       fd.append('communityId', id)
       fd.append('year', String(new Date().getFullYear()))
       fd.append('totalNetProfit', String(profitNum))
-      fd.append('pctCadangan', String(shuPctCadangan))
+      fd.append('pctCadangan', '0')
       fd.append('pctJasaModal', String(shuPctJasaModal))
       fd.append('pctJasaUsaha', String(shuPctJasaUsaha))
-      fd.append('pctPengurus', String(shuPctPengurus))
-      fd.append('pctPengawas', String(shuPctPengawas))
-      fd.append('pctKaryawan', String(shuPctKaryawan))
-      fd.append('pctPendidikan', String(shuPctPendidikan))
-      fd.append('pctSosial', String(shuPctSosial))
+      fd.append('pctPengurus', '0')
+      fd.append('pctPengawas', '0')
+      fd.append('pctKaryawan', '0')
+      fd.append('pctPendidikan', '0')
+      fd.append('pctSosial', '0')
+      fd.append('pctPembangunanDaerah', '0')
 
       const res = await calculateAndSaveShuAction(fd)
       if (res.error) {
