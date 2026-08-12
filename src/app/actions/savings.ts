@@ -6,12 +6,17 @@ import { revalidatePath } from 'next/cache'
 
 export async function recordSavingsTransactionAction(formData: FormData) {
   const currentUser = await getCurrentUser()
-  if (!currentUser || (currentUser.role !== 'ADMIN' && !(currentUser as any).isSuperAdmin)) {
-    return { error: 'Anda tidak memiliki hak akses untuk mencatat transaksi simpanan.' }
+  if (!currentUser) {
+    return { error: 'Anda harus masuk terlebih dahulu.' }
+  }
+
+  const userId = formData.get('userId') as string
+  const isAdmin = currentUser.role === 'ADMIN' || !!(currentUser as any).isSuperAdmin
+  if (!isAdmin && userId !== currentUser.id) {
+    return { error: 'Anda tidak memiliki hak akses untuk mencatat transaksi simpanan anggota lain.' }
   }
 
   const communityId = formData.get('communityId') as string
-  const userId = formData.get('userId') as string
   const type = (formData.get('type') as string) || 'WAJIB' // POKOK, WAJIB, SUKARELA
   const transactionType = (formData.get('transactionType') as string) || 'SETOR' // SETOR, TARIK
   const amount = Number(formData.get('amount') || 0)
@@ -90,6 +95,27 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
 
     const totalSavingsCommunity = totalPokok + totalWajib + totalSukarela
 
+    // Fetch and aggregate completed order transaction volumes for Jasa Usaha
+    const orders: any[] = typeof (DataStore as any).getOrders === 'function' ? await (DataStore as any).getOrders() : []
+    const currentYear = new Date().getFullYear()
+    const yearStartDate = new Date(currentYear, 0, 1)
+    const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59)
+
+    const completedOrdersInYear = orders.filter((o: any) => {
+      const d = new Date(o.createdAt || o.date)
+      return d >= yearStartDate && d <= yearEndDate && o.status === 'COMPLETED'
+    })
+
+    let totalTransaksiCommunity = 0
+    const memberTransaksi: Record<string, number> = {}
+
+    for (const member of communityMembers) {
+      const userOrders = completedOrdersInYear.filter((o: any) => o.buyerId === member.id)
+      const userTotalTx = userOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0)
+      memberTransaksi[member.id] = userTotalTx
+      totalTransaksiCommunity += userTotalTx
+    }
+
     return {
       success: true,
       summary: {
@@ -98,7 +124,9 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
         totalWajib,
         totalSukarela,
         memberBalances,
-        transactions
+        transactions,
+        totalTransaksiCommunity,
+        memberTransaksi
       }
     }
   } catch (error: any) {

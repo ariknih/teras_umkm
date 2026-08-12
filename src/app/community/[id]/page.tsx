@@ -465,48 +465,32 @@ export default function CommunityDetailPage() {
     }
 
     startTransition(async () => {
-      if (depositPaymentMethod === 'SALDO') {
-        setUserBalance(prev => prev - amt)
-      }
+      try {
+        const fd = new FormData()
+        fd.append('communityId', id)
+        fd.append('userId', user?.id || '')
+        fd.append('type', selectedSavingsProduct.type)
+        fd.append('transactionType', 'SETOR')
+        fd.append('amount', String(amt))
+        fd.append('date', new Date().toISOString())
+        fd.append('notes', `Setor mandiri via ${depositPaymentMethod === 'SALDO' ? 'Saldo Wallet' : depositPaymentMethod}`)
 
-      const now = new Date()
-      const timeStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-      const newTx = {
-        id: `tx-${Date.now()}`,
-        date: timeStr,
-        title: `Setor ${selectedSavingsProduct.name}`,
-        amount: amt,
-        status: 'Berhasil',
-        type: selectedSavingsProduct.type,
-        isIncome: true
-      }
-
-      setRecentTransactions(prev => [newTx, ...prev])
-      setRealStats(prev => ({
-        ...prev,
-        totalSavingsCollected: (prev.totalSavingsCollected || 0) + amt
-      }))
-
-      // Recalculate personal SHU Jasa Modal dynamically
-      setUserShu((prev: any) => {
-        const newSimpanan = (prev?.simpananMember || 0) + amt
-        const totalSavings = (realStats.totalSavingsCollected || 0) + amt
-        const netProfit = shuConfig?.totalNetProfit || 500000000
-        const poolJasaModal = (netProfit * (shuConfig?.pctJasaModal || 20)) / 100
-        const newJasaModal = totalSavings > 0 ? (newSimpanan / totalSavings) * poolJasaModal : 0
-        const jasaUsaha = prev?.shuJasaUsahaAmount || 420000
-
-        return {
-          ...prev,
-          simpananMember: newSimpanan,
-          shuJasaModalAmount: newJasaModal,
-          shuJasaUsahaAmount: jasaUsaha,
-          totalShuAmount: newJasaModal + jasaUsaha
+        const res = await recordSavingsTransactionAction(fd)
+        if (res.error) {
+          goeyToast.error(res.error)
+          return
         }
-      })
 
-      goeyToast.success(`Setor ${selectedSavingsProduct.name} sebesar Rp ${amt.toLocaleString('id-ID')} berhasil disetor!`)
-      setPaySavingsModalOpen(false)
+        if (depositPaymentMethod === 'SALDO') {
+          setUserBalance(prev => prev - amt)
+        }
+
+        goeyToast.success(`Setor ${selectedSavingsProduct.name} sebesar Rp ${amt.toLocaleString('id-ID')} berhasil disetor!`)
+        setPaySavingsModalOpen(false)
+        loadData()
+      } catch (err) {
+        goeyToast.error('Gagal mencatat transaksi simpanan ke database.')
+      }
     })
   }
 
