@@ -293,6 +293,11 @@ export default function AdminDashboardClient({
       return
     }
 
+    if (Math.abs(totalShuPct - 100) > 0.01) {
+      alert(`Total persentase Jasa Modal & Jasa Usaha harus tepat 100%. Total saat ini: ${totalShuPct.toFixed(2)}%`)
+      return
+    }
+
     setActionError(null)
     setActionSuccess(null)
 
@@ -3485,8 +3490,15 @@ export default function AdminDashboardClient({
                       <h4 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider">
                         Komposisi Alokasi SHU (Keputusan RAT)
                       </h4>
-                      <div className="px-3 py-1 bg-green-100 text-green-800 border border-green-300 rounded text-xs font-bold font-mono">
-                        Hasil Alokasi dihitung otomatis untuk Anggota
+                      <div className={`px-3 py-1 rounded text-xs font-bold font-mono ${
+                        Math.abs(totalShuPct - 100) < 0.01
+                          ? 'bg-green-100 text-green-800 border border-green-300'
+                          : 'bg-red-100 text-red-800 border border-red-300'
+                      }`}>
+                        {Math.abs(totalShuPct - 100) < 0.01
+                          ? `✓ Total Jasa: 100% (Valid)`
+                          : `⚠️ Total Jasa: ${totalShuPct.toFixed(1)}% (Harus 100%)`
+                        }
                       </div>
                     </div>
 
@@ -3507,7 +3519,7 @@ export default function AdminDashboardClient({
                   <div className="pt-2">
                     <button
                       type="submit"
-                      disabled={isPending}
+                      disabled={isPending || Math.abs(totalShuPct - 100) >= 0.01}
                       className="w-full py-3.5 bg-[#0F5132] hover:bg-[#0a3822] text-white font-sora font-extrabold text-xs uppercase tracking-wider rounded-[var(--radius-brand)] shadow-md transition-colors cursor-pointer disabled:opacity-50 border-none"
                     >
                       {isPending ? 'Memproses Kalkulasi & Menyimpan...' : '⚡ Hitung & Simpan Pembagian SHU RAT Koperasi'}
