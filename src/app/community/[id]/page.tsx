@@ -5093,7 +5093,7 @@ export default function CommunityDetailPage() {
                   <h3 className="font-sora text-base font-extrabold text-gray-900">
                     Detail SHU {shuConfig?.year || new Date().getFullYear()}
                   </h3>
-                  <p className="text-xs text-gray-500 font-medium">q
+                  <p className="text-xs text-gray-500 font-medium">
                     Sisa Hasil Usaha Koperasi Anggota
                   </p>
                 </div>
@@ -5158,6 +5158,131 @@ export default function CommunityDetailPage() {
                   Tutup Detail SHU
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* MODAL AJUKAN PINJAMAN PERMODALAN (PENDANAAN) */}
+        {loanModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-gray-100 relative text-gray-800"
+            >
+              <button
+                type="button"
+                onClick={() => setLoanModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#2DB24A] flex items-center justify-center shrink-0">
+                  <Landmark className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-sora text-base font-extrabold text-gray-900">
+                    Ajukan Pinjaman Permodalan
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Fasilitas modal kerja &amp; pengadaan alat produksi anggota Koperasi
+                  </p>
+                </div>
+              </div>
+
+              {/* Personal Savings Requirement Validation Banner */}
+              {(() => {
+                const userSavings = communitySavingsSummary?.memberBalances?.[user?.id]?.total || 0;
+                const hasSavings = userSavings > 0;
+                
+                return (
+                  <form onSubmit={handleLoanSubmit} className="space-y-4 text-xs">
+                    <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-1">
+                      <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase">
+                        <span>Saldo Simpanan Anda saat ini:</span>
+                        <span className={hasSavings ? 'text-[#0F5132]' : 'text-red-600'}>
+                          Rp {Number(userSavings).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      {!hasSavings && (
+                        <div className="p-2.5 bg-red-50 border border-red-200 text-red-800 rounded-lg text-[10px] font-medium leading-relaxed mt-2 flex items-start gap-2">
+                          <Info className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                          <span>Anda harus memiliki saldo simpanan aktif di koperasi ini sebelum dapat mengajukan pinjaman permodalan. Silakan setor simpanan terlebih dahulu.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Pilih Rencana Plafon Pinjaman *</label>
+                      <select
+                        required
+                        className="w-full border rounded-xl px-3 py-2.5 text-xs font-semibold text-gray-900 border-gray-300 focus:ring-2 focus:ring-[#2DB24A] outline-none"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setLoanAmount(val);
+                        }}
+                      >
+                        <option value="">-- Pilih Plafon / Jenis --</option>
+                        <option value="25000000">Pinjaman Modal Kerja Pembelian Bahan Baku (Maks. Rp 25.000.000)</option>
+                        <option value="50000000">Pinjaman Pengadaan Mesin &amp; Alat Produksi (Maks. Rp 50.000.000)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Nominal yang Diajukan (Rp) *</label>
+                      <input
+                        type="number"
+                        required
+                        min="100000"
+                        value={loanAmount}
+                        onChange={e => setLoanAmount(e.target.value)}
+                        className="w-full border rounded-xl px-3 py-2.5 text-sm font-mono font-black text-gray-900 border-gray-300 focus:ring-2 focus:ring-[#2DB24A] outline-none"
+                        placeholder="Contoh: 15000000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Rencana Penggunaan &amp; Keperluan Pinjaman *</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={loanPurpose}
+                        onChange={e => setLoanPurpose(e.target.value)}
+                        className="w-full border rounded-xl px-3 py-2.5 text-xs font-medium text-gray-900 border-gray-300 focus:ring-2 focus:ring-[#2DB24A] outline-none resize-none"
+                        placeholder="Tuliskan detail rencana penggunaan dana permodalan..."
+                      />
+                    </div>
+
+                    {loanError && (
+                      <p className="text-[10px] text-red-600 font-bold text-center">{loanError}</p>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => setLoanModalOpen(false)}
+                        className="px-4 py-2.5 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={actionPending || !hasSavings}
+                        className={`px-5 py-2.5 font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-2 ${
+                          !hasSavings
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-[#2DB24A] hover:bg-[#0F5132] text-white cursor-pointer'
+                        }`}
+                      >
+                        {actionPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Kirim Pengajuan'}
+                      </button>
+                    </div>
+                  </form>
+                );
+              })()}
             </motion.div>
           </div>
         )}

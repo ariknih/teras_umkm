@@ -433,6 +433,19 @@ export async function submitCooperativeLoanAction(formData: FormData) {
     return { error: 'Jumlah pinjaman tidak valid.' }
   }
 
+  // Enforce cooperative savings requirement: member must have active savings balance > 0
+  const savingsTxs = await DataStore.getSavingsTransactions(communityId, user.id)
+  const userTotalSavings = savingsTxs.reduce((sum: number, t: any) => {
+    const val = Number(t.amount || 0)
+    return t.transactionType === 'SETOR' ? sum + val : sum - val
+  }, 0)
+
+  if (userTotalSavings <= 0) {
+    return {
+      error: 'Anda harus memiliki saldo simpanan aktif di koperasi untuk mengajukan pinjaman permodalan.'
+    }
+  }
+
   // Cek apakah komunitas memiliki cukup coin untuk membuka akses pinjaman
   const coinData = await DataStore.getCommunityCoinBalance(communityId)
   const coinBalance = coinData?.coinBalance || 0
