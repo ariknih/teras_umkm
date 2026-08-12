@@ -100,8 +100,8 @@ export async function calculateAndSaveShuDistribution(
   }
 
   // 3. Fetch all users registered under this community (as primary or member)
-  const allUsers: any[] = typeof (DataStore as any).getUsers === 'function' ? await (DataStore as any).getUsers() : []
-  const communityMembers = allUsers.filter((u: any) => u.indukCommunityId === communityId)
+  const memberships = await DataStore.getIndukCommunityMembers(communityId)
+  const communityMembers = (memberships || []).map((m: any) => m.user).filter(Boolean)
 
   // 4. Fetch orders in the year to compute transactions
   const allOrders: any[] = typeof (DataStore as any).getAllOrders === 'function' ? await (DataStore as any).getAllOrders() : []
