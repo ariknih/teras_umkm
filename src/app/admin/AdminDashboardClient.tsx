@@ -276,40 +276,20 @@ export default function AdminDashboardClient({
   const [shuYear, setShuYear] = useState(new Date().getFullYear())
   const [shuNetProfit, setShuNetProfit] = useState('500000000')
 
-  const [pctCadangan, setPctCadangan] = useState('25')
   const [pctJasaModal, setPctJasaModal] = useState('20')
   const [pctJasaUsaha, setPctJasaUsaha] = useState('30')
-  const [pctPengurus, setPctPengurus] = useState('10')
-  const [pctPengawas, setPctPengawas] = useState('5')
-  const [pctKaryawan, setPctKaryawan] = useState('5')
-  const [pctPendidikan, setPctPendidikan] = useState('2.5')
-  const [pctSosial, setPctSosial] = useState('2.5')
-  const [pctPembangunanDaerah, setPctPembangunanDaerah] = useState('0')
 
   const [shuCalcResult, setShuCalcResult] = useState<any>(null)
 
   const [actionError, setActionError] = useState<string | null>(null)
   const [actionSuccess, setActionSuccess] = useState<string | null>(null)
 
-  const totalShuPct = 
-    (Number(pctCadangan) || 0) +
-    (Number(pctJasaModal) || 0) +
-    (Number(pctJasaUsaha) || 0) +
-    (Number(pctPengurus) || 0) +
-    (Number(pctPengawas) || 0) +
-    (Number(pctKaryawan) || 0) +
-    (Number(pctPendidikan) || 0) +
-    (Number(pctSosial) || 0) +
-    (Number(pctPembangunanDaerah) || 0)
+  const totalShuPct = (Number(pctJasaModal) || 0) + (Number(pctJasaUsaha) || 0)
 
   const handleCalculateShuSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!shuCommunityId) {
       alert('Pilih Komunitas Koperasi terlebih dahulu.')
-      return
-    }
-    if (Math.abs(totalShuPct - 100) > 0.01) {
-      alert(`Total persentase harus tepat 100%. Total saat ini: ${totalShuPct.toFixed(2)}%`)
       return
     }
 
@@ -321,15 +301,15 @@ export default function AdminDashboardClient({
       formData.append('communityId', shuCommunityId)
       formData.append('year', String(shuYear))
       formData.append('totalNetProfit', shuNetProfit)
-      formData.append('pctCadangan', pctCadangan)
+      formData.append('pctCadangan', '0')
       formData.append('pctJasaModal', pctJasaModal)
       formData.append('pctJasaUsaha', pctJasaUsaha)
-      formData.append('pctPengurus', pctPengurus)
-      formData.append('pctPengawas', pctPengawas)
-      formData.append('pctKaryawan', pctKaryawan)
-      formData.append('pctPendidikan', pctPendidikan)
-      formData.append('pctSosial', pctSosial)
-      formData.append('pctPembangunanDaerah', pctPembangunanDaerah)
+      formData.append('pctPengurus', '0')
+      formData.append('pctPengawas', '0')
+      formData.append('pctKaryawan', '0')
+      formData.append('pctPendidikan', '0')
+      formData.append('pctSosial', '0')
+      formData.append('pctPembangunanDaerah', '0')
 
       const res = await calculateAndSaveShuAction(formData)
       if (res.success && res.data) {
@@ -3505,65 +3485,21 @@ export default function AdminDashboardClient({
                       <h4 className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider">
                         Komposisi Alokasi SHU (Keputusan RAT)
                       </h4>
-                      <div className={`px-3 py-1 rounded text-xs font-bold font-mono ${
-                        Math.abs(totalShuPct - 100) < 0.01
-                          ? 'bg-green-100 text-green-800 border border-green-300'
-                          : 'bg-red-100 text-red-800 border border-red-300'
-                      }`}>
-                        {Math.abs(totalShuPct - 100) < 0.01
-                          ? `✓ Total Persentase: ${totalShuPct.toFixed(1)}% (Valid 100%)`
-                          : `⚠️ Total Persentase: ${totalShuPct.toFixed(1)}% (Wajib tepat 100%)`
-                        }
+                      <div className="px-3 py-1 bg-green-100 text-green-800 border border-green-300 rounded text-xs font-bold font-mono">
+                        Hasil Alokasi dihitung otomatis untuk Anggota
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)]">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)]">
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">1. Cadangan Koperasi (%)</label>
-                        <input type="number" step="0.1" value={pctCadangan} onChange={e => setPctCadangan(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
-                        <span className="text-[10px] text-emerald-700 font-mono font-bold">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctCadangan) || 0) / 100).toLocaleString('id-ID')}</span>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">2. SHU Jasa Modal / Simpanan (%)</label>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">1. SHU Jasa Modal / Simpanan (%)</label>
                         <input type="number" step="0.1" value={pctJasaModal} onChange={e => setPctJasaModal(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
                         <span className="text-[10px] text-emerald-700 font-mono font-bold">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctJasaModal) || 0) / 100).toLocaleString('id-ID')}</span>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">3. SHU Jasa Usaha / Transaksi (%)</label>
+                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">2. SHU Jasa Usaha / Transaksi (%)</label>
                         <input type="number" step="0.1" value={pctJasaUsaha} onChange={e => setPctJasaUsaha(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
                         <span className="text-[10px] text-emerald-700 font-mono font-bold">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctJasaUsaha) || 0) / 100).toLocaleString('id-ID')}</span>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">4. Dana Pengurus (%)</label>
-                        <input type="number" step="0.1" value={pctPengurus} onChange={e => setPctPengurus(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
-                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctPengurus) || 0) / 100).toLocaleString('id-ID')}</span>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">5. Dana Pengawas (%)</label>
-                        <input type="number" step="0.1" value={pctPengawas} onChange={e => setPctPengawas(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
-                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctPengawas) || 0) / 100).toLocaleString('id-ID')}</span>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">6. Dana Karyawan (%)</label>
-                        <input type="number" step="0.1" value={pctKaryawan} onChange={e => setPctKaryawan(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
-                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctKaryawan) || 0) / 100).toLocaleString('id-ID')}</span>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">7. Dana Pendidikan Koperasi (%)</label>
-                        <input type="number" step="0.1" value={pctPendidikan} onChange={e => setPctPendidikan(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
-                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctPendidikan) || 0) / 100).toLocaleString('id-ID')}</span>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">8. Dana Sosial (%)</label>
-                        <input type="number" step="0.1" value={pctSosial} onChange={e => setPctSosial(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
-                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctSosial) || 0) / 100).toLocaleString('id-ID')}</span>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">9. Dana Pembangunan Daerah (%)</label>
-                        <input type="number" step="0.1" value={pctPembangunanDaerah} onChange={e => setPctPembangunanDaerah(e.target.value)} className="w-full bg-white border border-[#cbd5e1] rounded px-3 py-1.5 text-xs font-bold text-slate-800" />
-                        <span className="text-[10px] text-slate-500 font-mono">Nominal: Rp {((Number(shuNetProfit) || 0) * (Number(pctPembangunanDaerah) || 0) / 100).toLocaleString('id-ID')}</span>
                       </div>
                     </div>
                   </div>
@@ -3571,7 +3507,7 @@ export default function AdminDashboardClient({
                   <div className="pt-2">
                     <button
                       type="submit"
-                      disabled={isPending || Math.abs(totalShuPct - 100) >= 0.01}
+                      disabled={isPending}
                       className="w-full py-3.5 bg-[#0F5132] hover:bg-[#0a3822] text-white font-sora font-extrabold text-xs uppercase tracking-wider rounded-[var(--radius-brand)] shadow-md transition-colors cursor-pointer disabled:opacity-50 border-none"
                     >
                       {isPending ? 'Memproses Kalkulasi & Menyimpan...' : '⚡ Hitung & Simpan Pembagian SHU RAT Koperasi'}
