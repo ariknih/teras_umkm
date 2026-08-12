@@ -2790,40 +2790,64 @@ export default function CommunityDetailPage() {
                   </div>
 
                   {/* Personal Savings Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                        <User className="w-4.5 h-4.5 text-[#2DB24A]" />
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Pokok</h4>
-                        <span className="text-lg font-black text-gray-950 block mt-1">Rp 100.000</span>
-                        <span className="px-2 py-0.5 bg-emerald-100 text-[#0F5132] text-[8px] font-black rounded uppercase tracking-wider mt-2 inline-block">✓ Sudah Lunas</span>
-                      </div>
-                    </div>
+                  {(() => {
+                    const mBalance = communitySavingsSummary?.memberBalances?.[user?.id] || { pokok: 0, wajib: 0, sukarela: 0, total: 0 };
+                    const reqPokok = community?.simpananPokok || 100000;
+                    const reqWajib = community?.simpananWajib || 25000;
+                    const isPokokLunas = mBalance.pokok >= reqPokok;
+                    const wajibMonths = reqWajib > 0 ? Math.floor(mBalance.wajib / reqWajib) : 0;
 
-                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                        <Calendar className="w-4.5 h-4.5 text-[#2DB24A]" />
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Wajib</h4>
-                        <span className="text-lg font-black text-gray-950 block mt-1">Rp 250.000</span>
-                        <span className="text-[9px] text-gray-500 font-semibold block mt-2">Terbayar 5 Bulan • Rp 50.000 / bln</span>
-                      </div>
-                    </div>
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <User className="w-4.5 h-4.5 text-[#2DB24A]" />
+                          </div>
+                          <div>
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Pokok</h4>
+                            <span className="text-lg font-black text-gray-950 block mt-1">
+                              Rp {mBalance.pokok.toLocaleString('id-ID')}
+                            </span>
+                            <span className={`px-2 py-0.5 text-[8px] font-black rounded uppercase tracking-wider mt-2 inline-block ${
+                              isPokokLunas ? 'bg-emerald-100 text-[#0F5132]' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {isPokokLunas ? '✓ Sudah Lunas' : 'Belum Lunas'}
+                            </span>
+                          </div>
+                        </div>
 
-                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                        <PiggyBank className="w-4.5 h-4.5 text-[#2DB24A]" />
+                        <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <Calendar className="w-4.5 h-4.5 text-[#2DB24A]" />
+                          </div>
+                          <div>
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Wajib</h4>
+                            <span className="text-lg font-black text-gray-950 block mt-1">
+                              Rp {mBalance.wajib.toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[9px] text-gray-500 font-semibold block mt-2">
+                              Terbayar {wajibMonths} Bulan • Rp {reqWajib.toLocaleString('id-ID')} / bln
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <PiggyBank className="w-4.5 h-4.5 text-[#2DB24A]" />
+                          </div>
+                          <div>
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Sukarela</h4>
+                            <span className="text-lg font-black text-gray-950 block mt-1">
+                              Rp {mBalance.sukarela.toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[9px] text-gray-500 font-semibold block mt-2">
+                              Dapat ditarik atau disetor kapan saja
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Sukarela</h4>
-                        <span className="text-lg font-black text-gray-950 block mt-1">Rp 50.000</span>
-                        <span className="text-[9px] text-gray-500 font-semibold block mt-2">Dapat ditarik atau disetor kapan saja</span>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Jenis Simpanan Aktif Koperasi (untuk disetor) */}
                   <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
