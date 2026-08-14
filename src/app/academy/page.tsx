@@ -13,97 +13,83 @@ export default async function AcademyPage() {
   );
 
   return (
-    <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
-      {/* Mesh Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.04)_0%,transparent_70%)] pointer-events-none z-0" />
-
-      <div className="relative z-10 max-w-[1200px] mx-auto">
+    <div className="relative min-h-screen bg-[#F8FAFC] pt-24 pb-24 px-4 sm:px-6 md:px-10 font-sans text-slate-900">
+      <div className="relative z-10 max-w-[1140px] mx-auto space-y-8">
         {/* Header */}
-        <div className="mb-16 text-center max-w-2xl mx-auto">
-          <span className="btn-primary text-[10px] text-primary tracking-[0.2em] mb-4 bg-primary/10 border border-primary/20 inline-block">
-            Saloka Premium LMS Academy
-          </span>
-          <h1 className="font-sora text-3xl md:text-5xl font-bold text-text-primary mb-4">
-            Master the Craft of <span className="text-primary">Luxury Commerce.</span>
+        <div className="text-center max-w-2xl mx-auto space-y-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full text-[#006E24] text-xs font-bold">
+            <span>🎓 Saloka Digital Academy UMKM</span>
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Tingkatkan Skala Bisnis <span className="text-[#006E24]">UMKM Indonesia</span>
           </h1>
-          <p className="text-xs md:text-sm text-text-secondary">
-            Pelajari taktik pemasaran eksklusif, sains produksi artisan, dan strategi manajemen keuangan terenkripsi dari para ahli terkemuka.
+          <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+            Pelajari strategi pemasaran digital, manajemen keuangan toko, standarisasi produk, dan teknik jualan laris langsung dari praktisi berpengalaman.
           </p>
         </div>
 
         {/* Course Catalog Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {courses.map((course) => {
-            const courseLessons = course.lessons || [];
-            const totalLessons = courseLessons.length;
-            const completedCount = courseLessons.filter((l: any) => completedLessons.has(l.id)).length;
-            const percent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+            const courseLessons = course.lessons || []
+            const totalLessons = courseLessons.length
+            const completedCount = courseLessons.filter((l: any) => completedLessons.has(l.id)).length
+            const percent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0
 
             return (
               <div
                 key={course.id}
-                className="group bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] transition-all duration-300 flex flex-col justify-between"
+                className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-300 flex flex-col justify-between group"
               >
                 {/* Course Header with Image */}
                 <div>
-                  <div className="aspect-[21/9] w-full bg-slate-50 relative overflow-hidden flex items-center justify-center">
+                  <div className="aspect-[21/9] w-full bg-slate-100 relative overflow-hidden flex items-center justify-center">
                     {course.coverImage ? (
                       <img
                         src={course.coverImage}
                         alt={course.title}
-                        className="object-cover w-full h-full group-hover:scale-102 transition-transform duration-500"
+                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-60" />
+                      <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold text-sm bg-slate-100">
+                        Modul Akademi Saloka
+                      </div>
                     )}
-                    <span className="absolute top-4 left-4 px-2 py-0.5 bg-white/95 rounded text-[9px] font-bold text-primary uppercase tracking-wider">
-                      Academy Module
+                    <span className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 rounded-lg text-[10px] font-extrabold text-[#006E24] shadow-xs uppercase tracking-wider">
+                      {totalLessons} Modul Materi
                     </span>
                   </div>
 
                   {/* Course Info */}
-                  <div className="p-6">
-                    <h3 className="font-sora text-base md:text-lg font-bold text-text-primary mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                  <div className="p-6 space-y-3">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 line-clamp-1 group-hover:text-[#006E24] transition-colors">
                       {course.title}
                     </h3>
-                    <p className="text-xs text-text-secondary leading-relaxed mb-6">
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
                       {course.description}
                     </p>
 
                     {/* Progress indicator */}
                     {user ? (
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-[10px] font-geist font-bold text-text-secondary uppercase">
-                          <span>Progress Belajar</span>
-                          <span className="text-primary font-bold">{percent}% Selesai</span>
+                      <div className="space-y-1.5 pt-2">
+                        <div className="flex justify-between items-center text-[11px] font-bold text-slate-600 uppercase">
+                          <span>Progres Belajar</span>
+                          <span className="text-[#006E24]">{percent}% Selesai</span>
                         </div>
-                        <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="btn-primary duration-500"
+                            className="bg-[#006E24] h-full rounded-full transition-all duration-500"
                             style={{ width: `${percent}%` }}
                           />
                         </div>
-                        <div className="text-[10px] text-text-secondary pt-1">
-                          {completedCount} dari {totalLessons} pelajaran selesai didownload & dipelajari.
+                        <div className="text-[10px] text-slate-400">
+                          {completedCount} dari {totalLessons} pelajaran telah diselesaikan.
                         </div>
                       </div>
                     ) : (
-                      <div className="px-4 py-3 bg-slate-50 rounded flex items-center gap-2.5 text-xs text-text-secondary">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={1.5}
-                          stroke="currentColor"
-                          className="w-4 h-4 text-primary"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z"
-                          />
-                        </svg>
-                        <span>Masuk untuk melacak progres belajar.</span>
+                      <div className="px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-2 text-xs text-slate-500">
+                        <span>🔒</span>
+                        <span>Masuk akun untuk menyimpan sertifikat &amp; progres belajar.</span>
                       </div>
                     )}
                   </div>
@@ -114,26 +100,17 @@ export default async function AcademyPage() {
                   <Link
                     id={`btn-course-${course.id}`}
                     href={`/academy/course/${course.id}`}
-                    className="w-full btn-primary flex items-center justify-center gap-2"
+                    className="w-full py-2.5 bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                   >
-                    Mulai Belajar
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      stroke="currentColor"
-                      className="w-3 h-3"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                    </svg>
+                    <span>{percent === 100 ? 'Review Materi' : percent > 0 ? 'Lanjutkan Belajar' : 'Mulai Belajar'}</span>
+                    <span>→</span>
                   </Link>
                 </div>
               </div>
-            );
+            )
           })}
         </div>
       </div>
     </div>
-  );
+  )
 }
