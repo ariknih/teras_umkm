@@ -10,17 +10,24 @@ const prisma = new PrismaClient({ adapter });
 console.log("Connecting to:", connectionString);
 
 prisma.$connect()
-  .then(() => {
+  .then(async () => {
     console.log("Prisma connected successfully!");
-    return prisma.product.count();
-  })
-  .then(count => {
-    console.log("Product count in database:", count);
-    return prisma.product.findMany({ take: 10 });
-  })
-  .then(products => {
-    console.log("Sample products categories:");
-    products.forEach(p => console.log(`- ${p.title} (ID: ${p.id}) Category: [${p.category}]`));
+    
+    const configs = await prisma.shuConfig.findMany();
+    console.log("\n=== SHU CONFIGS IN DATABASE ===");
+    console.log(configs);
+    
+    const dists = await prisma.shuMemberDistribution.findMany();
+    console.log("\n=== SHU MEMBER DISTRIBUTIONS IN DATABASE ===");
+    console.log(dists.map(d => ({
+      id: d.id,
+      shuConfigId: d.shuConfigId,
+      userId: d.userId,
+      shuJasaModalAmount: d.shuJasaModalAmount,
+      shuJasaUsahaAmount: d.shuJasaUsahaAmount,
+      totalShuAmount: d.totalShuAmount
+    })));
+    
     process.exit(0);
   })
   .catch(err => {
