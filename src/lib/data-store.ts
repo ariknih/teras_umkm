@@ -1947,6 +1947,8 @@ function loadMockDb(): {
   shuConfigs?: any[];
   shuMemberDistributions?: any[];
   merchantFundingProjects?: any[];
+  announcements?: any[];
+  cooperativeReports?: any[];
 } {
   try {
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2078,7 +2080,9 @@ function saveMockDb() {
       cooperativeProducts: (globalThis as any).__mockCooperativeProducts,
       shuConfigs: (globalThis as any).__mockShuConfigs,
       shuMemberDistributions: (globalThis as any).__mockShuMemberDistributions,
-      merchantFundingProjects: (globalThis as any).__mockFundingProjects
+      merchantFundingProjects: (globalThis as any).__mockFundingProjects,
+      announcements: (globalThis as any).__mockAnnouncements,
+      cooperativeReports: (globalThis as any).__mockCooperativeReports
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2220,6 +2224,22 @@ function syncMockDb() {
           updatedAt: new Date(p.updatedAt)
         }))
       }
+      if (parsed.announcements) {
+        (globalThis as any).__mockAnnouncements = parsed.announcements.map((a: any) => ({
+          ...a,
+          publishedAt: new Date(a.publishedAt),
+          createdAt: new Date(a.createdAt),
+          updatedAt: new Date(a.updatedAt)
+        }))
+      }
+      if (parsed.cooperativeReports) {
+        (globalThis as any).__mockCooperativeReports = parsed.cooperativeReports.map((r: any) => ({
+          ...r,
+          publishedAt: new Date(r.publishedAt),
+          createdAt: new Date(r.createdAt),
+          updatedAt: new Date(r.updatedAt)
+        }))
+      }
       if (parsed.globalKycRequired !== undefined) {
         (globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
       }
@@ -2241,6 +2261,8 @@ const _persistedDb = loadMockDb()
 ;(globalThis as any).__mockShuConfigs = _persistedDb.shuConfigs || []
 ;(globalThis as any).__mockShuMemberDistributions = _persistedDb.shuMemberDistributions || []
 ;(globalThis as any).__mockFundingProjects = _persistedDb.merchantFundingProjects || []
+;(globalThis as any).__mockAnnouncements = _persistedDb.announcements || []
+;(globalThis as any).__mockCooperativeReports = _persistedDb.cooperativeReports || []
 
 // Global state in-memory database helpers for local updates in sandbox mode
 let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products).map((p: any) => ({
@@ -9312,6 +9334,232 @@ export const DataStore = {
 
     saveMockDb()
     return { success: true, processed: true, logs }
+  },
+
+  // ─── ANNOUNCEMENTS CRUD ────────────────────────────────────────
+  async getAnnouncements(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.announcement.findMany({
+          where: { communityId },
+          orderBy: [
+            { isPinned: 'desc' },
+            { publishedAt: 'desc' }
+          ]
+        })
+      } catch (_) {}
+    }
+    const list = (globalThis as any).__mockAnnouncements || []
+    return list
+      .filter((x: any) => x.communityId === communityId)
+      .sort((a: any, b: any) => {
+        if (a.isPinned !== b.isPinned) {
+          return a.isPinned ? -1 : 1
+        }
+        return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+      })
+  },
+
+  async createAnnouncement(data: {
+    communityId: string
+    title: string
+    content: string
+    publishedAt?: Date
+    isPinned?: boolean
+    status?: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.announcement.create({
+          data: {
+            communityId: data.communityId,
+            title: data.title,
+            content: data.content,
+            publishedAt: data.publishedAt || new Date(),
+            isPinned: Boolean(data.isPinned),
+            status: data.status || 'PUBLISHED'
+          }
+        })
+      } catch (_) {}
+    }
+    if (!(globalThis as any).__mockAnnouncements) {
+      (globalThis as any).__mockAnnouncements = []
+    }
+    const newAnn = {
+      id: `ann-${Date.now()}`,
+      communityId: data.communityId,
+      title: data.title,
+      content: data.content,
+      publishedAt: data.publishedAt || new Date(),
+      isPinned: Boolean(data.isPinned),
+      status: data.status || 'PUBLISHED',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    ;(globalThis as any).__mockAnnouncements.push(newAnn)
+    saveMockDb()
+    return newAnn
+  },
+
+  async updateAnnouncement(id: string, data: {
+    title?: string
+    content?: string
+    publishedAt?: Date
+    isPinned?: boolean
+    status?: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.announcement.update({
+          where: { id },
+          data: {
+            title: data.title,
+            content: data.content,
+            publishedAt: data.publishedAt,
+            isPinned: data.isPinned !== undefined ? Boolean(data.isPinned) : undefined,
+            status: data.status
+          }
+        })
+      } catch (_) {}
+    }
+    const list = (globalThis as any).__mockAnnouncements || []
+    const ann = list.find((x: any) => x.id === id)
+    if (ann) {
+      Object.assign(ann, data, { updatedAt: new Date() })
+      saveMockDb()
+      return ann
+    }
+    return null
+  },
+
+  async deleteAnnouncement(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        await db.announcement.delete({ where: { id } })
+        return { success: true }
+      } catch (_) {}
+    }
+    if ((globalThis as any).__mockAnnouncements) {
+      ;(globalThis as any).__mockAnnouncements = (globalThis as any).__mockAnnouncements.filter((x: any) => x.id !== id)
+      saveMockDb()
+    }
+    return { success: true }
+  },
+
+  // ─── COOPERATIVE REPORTS CRUD ────────────────────────────────────────
+  async getCooperativeReports(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeReport.findMany({
+          where: { communityId },
+          orderBy: { publishedAt: 'desc' }
+        })
+      } catch (_) {}
+    }
+    const list = (globalThis as any).__mockCooperativeReports || []
+    return list
+      .filter((x: any) => x.communityId === communityId)
+      .sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+  },
+
+  async createCooperativeReport(data: {
+    communityId: string
+    title: string
+    type: string
+    year: number
+    fileUrl: string
+    publishedAt?: Date
+    status?: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeReport.create({
+          data: {
+            communityId: data.communityId,
+            title: data.title,
+            type: data.type,
+            year: Number(data.year),
+            fileUrl: data.fileUrl,
+            publishedAt: data.publishedAt || new Date(),
+            status: data.status || 'PUBLISHED'
+          }
+        })
+      } catch (_) {}
+    }
+    if (!(globalThis as any).__mockCooperativeReports) {
+      (globalThis as any).__mockCooperativeReports = []
+    }
+    const newRep = {
+      id: `rep-${Date.now()}`,
+      communityId: data.communityId,
+      title: data.title,
+      type: data.type,
+      year: Number(data.year),
+      fileUrl: data.fileUrl,
+      publishedAt: data.publishedAt || new Date(),
+      status: data.status || 'PUBLISHED',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    ;(globalThis as any).__mockCooperativeReports.push(newRep)
+    saveMockDb()
+    return newRep
+  },
+
+  async updateCooperativeReport(id: string, data: {
+    title?: string
+    type?: string
+    year?: number
+    fileUrl?: string
+    publishedAt?: Date
+    status?: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.cooperativeReport.update({
+          where: { id },
+          data: {
+            title: data.title,
+            type: data.type,
+            year: data.year !== undefined ? Number(data.year) : undefined,
+            fileUrl: data.fileUrl,
+            publishedAt: data.publishedAt,
+            status: data.status
+          }
+        })
+      } catch (_) {}
+    }
+    const list = (globalThis as any).__mockCooperativeReports || []
+    const rep = list.find((x: any) => x.id === id)
+    if (rep) {
+      if (data.year !== undefined) data.year = Number(data.year)
+      Object.assign(rep, data, { updatedAt: new Date() })
+      saveMockDb()
+      return rep
+    }
+    return null
+  },
+
+  async deleteCooperativeReport(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        await db.cooperativeReport.delete({ where: { id } })
+        return { success: true }
+      } catch (_) {}
+    }
+    if ((globalThis as any).__mockCooperativeReports) {
+      ;(globalThis as any).__mockCooperativeReports = (globalThis as any).__mockCooperativeReports.filter((x: any) => x.id !== id)
+      saveMockDb()
+    }
+    return { success: true }
   }
 }
 

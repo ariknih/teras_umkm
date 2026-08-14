@@ -27,6 +27,21 @@ import { getProducts } from '@/app/actions/products'
 import { getCommunityShuDataAction, getUserShuSummaryAction, calculateAndSaveShuAction } from '@/app/actions/shu'
 import { recordSavingsTransactionAction, getCommunitySavingsSummaryAction } from '@/app/actions/savings'
 import {
+  getAnnouncementsAction,
+  createAnnouncementAction,
+  updateAnnouncementAction,
+  deleteAnnouncementAction,
+  togglePublishAnnouncementAction,
+  togglePinAnnouncementAction
+} from '@/app/actions/announcements'
+import {
+  getCooperativeReportsAction,
+  createCooperativeReportAction,
+  updateCooperativeReportAction,
+  deleteCooperativeReportAction,
+  togglePublishReportAction
+} from '@/app/actions/reports'
+import {
   getCommunityReferralConfig,
   updateCommunityReferralConfig,
   getCommunityReferralHistory
@@ -117,6 +132,33 @@ export default function CommunityDetailPage() {
   const [membershipDetails, setMembershipDetails] = useState<any>(null)
   const [shuConfig, setShuConfig] = useState<any>(null)
   const [userShu, setUserShu] = useState<any>(null)
+
+  // State for Announcements
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(false)
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false)
+  const [editingAnnouncement, setEditingAnnouncement] = useState<any>(null)
+  const [annTitle, setAnnTitle] = useState('')
+  const [annContent, setAnnContent] = useState('')
+  const [annPublishDate, setAnnPublishDate] = useState('')
+  const [annStatus, setAnnStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED')
+  const [annIsPinned, setAnnIsPinned] = useState(false)
+  const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false)
+
+  // State for Reports
+  const [reports, setReports] = useState<any[]>([])
+  const [isLoadingReports, setIsLoadingReports] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [editingReport, setEditingReport] = useState<any>(null)
+  const [repTitle, setRepTitle] = useState('')
+  const [repType, setRepType] = useState('Keuangan')
+  const [repYear, setRepYear] = useState(new Date().getFullYear())
+  const [repPublishDate, setRepPublishDate] = useState('')
+  const [repStatus, setRepStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED')
+  const [repFileUrl, setRepFileUrl] = useState('')
+  const [repFileName, setRepFileName] = useState('')
+  const [isUploadingReportFile, setIsUploadingReportFile] = useState(false)
+  const [isSavingReport, setIsSavingReport] = useState(false)
 
   // Flag boolean untuk akses CRUD Admin / Superadmin / Ketua Koperasi
   const isCanManageCoop = Boolean(
@@ -744,6 +786,21 @@ export default function CommunityDetailPage() {
         setUserShuSummary(uShuSummaryRes.distributions)
       }
 
+      // Fetch announcements and reports
+      setIsLoadingAnnouncements(true)
+      setIsLoadingReports(true)
+      try {
+        const annList = await getAnnouncementsAction(id).catch(() => [])
+        setAnnouncements(annList || [])
+      } catch (_) {}
+      setIsLoadingAnnouncements(false)
+
+      try {
+        const repList = await getCooperativeReportsAction(id).catch(() => [])
+        setReports(repList || [])
+      } catch (_) {}
+      setIsLoadingReports(false)
+
     } catch (e) {
       console.error(e)
     } finally {
@@ -754,6 +811,251 @@ export default function CommunityDetailPage() {
   useEffect(() => {
     loadData()
   }, [id])
+
+  // ─── ANNOUNCEMENTS HANDLERS ───────────────────────────────────
+  const handleOpenAnnouncementModal = (ann: any = null) => {
+    if (ann) {
+      setEditingAnnouncement(ann)
+      setAnnTitle(ann.title)
+      setAnnContent(ann.content)
+      setAnnPublishDate(ann.publishedAt ? new Date(ann.publishedAt).toISOString().split('T')[0] : '')
+      setAnnStatus(ann.status || 'PUBLISHED')
+      setAnnIsPinned(ann.isPinned || false)
+    } else {
+      setEditingAnnouncement(null)
+      setAnnTitle('')
+      setAnnContent('')
+      setAnnPublishDate(new Date().toISOString().split('T')[0])
+      setAnnStatus('PUBLISHED')
+      setAnnIsPinned(false)
+    }
+    setIsAnnouncementModalOpen(true)
+  }
+
+  const handleSubmitAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!annTitle.trim() || !annContent.trim()) {
+      goeyToast.error('Judul dan isi pengumuman wajib diisi.')
+      return
+    }
+
+    setIsSavingAnnouncement(true)
+    const fd = new FormData()
+    fd.append('communityId', id)
+    fd.append('title', annTitle)
+    fd.append('content', annContent)
+    fd.append('publishedAt', annPublishDate)
+    fd.append('status', annStatus)
+    fd.append('isPinned', String(annIsPinned))
+
+    try {
+      let res: any
+      if (editingAnnouncement) {
+        res = await updateAnnouncementAction(editingAnnouncement.id, fd)
+      } else {
+        res = await createAnnouncementAction(fd)
+      }
+
+      if (res.success) {
+        goeyToast.success(editingAnnouncement ? 'Pengumuman diperbarui!' : 'Pengumuman diterbitkan!')
+        setIsAnnouncementModalOpen(false)
+        
+        // Refresh local list
+        const annList = await getAnnouncementsAction(id).catch(() => [])
+        setAnnouncements(annList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal menyimpan pengumuman.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    } finally {
+      setIsSavingAnnouncement(false)
+    }
+  }
+
+  const handleDeleteAnnouncement = async (annId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus pengumuman ini?')) return
+
+    try {
+      const res: any = await deleteAnnouncementAction(annId, id)
+      if (res.success) {
+        goeyToast.success('Pengumuman dihapus!')
+        setAnnouncements(prev => prev.filter(x => x.id !== annId))
+      } else {
+        goeyToast.error(res.error || 'Gagal menghapus pengumuman.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  const handleTogglePublishAnnouncement = async (ann: any) => {
+    try {
+      const res: any = await togglePublishAnnouncementAction(ann.id, ann.status, id)
+      if (res.success) {
+        goeyToast.success(ann.status === 'DRAFT' ? 'Pengumuman dipublikasikan!' : 'Pengumuman disimpan sebagai draft!')
+        
+        // Refresh local list
+        const annList = await getAnnouncementsAction(id).catch(() => [])
+        setAnnouncements(annList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal mengubah status publikasi.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  const handleTogglePinAnnouncement = async (ann: any) => {
+    try {
+      const res: any = await togglePinAnnouncementAction(ann.id, ann.isPinned, id)
+      if (res.success) {
+        goeyToast.success(ann.isPinned ? 'Pin dilepas!' : 'Pengumuman dipatok/terpaku di atas!')
+        
+        // Refresh local list
+        const annList = await getAnnouncementsAction(id).catch(() => [])
+        setAnnouncements(annList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal mengubah status pin.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  // ─── REPORTS HANDLERS ──────────────────────────────────────────
+  const handleOpenReportModal = (rep: any = null) => {
+    if (rep) {
+      setEditingReport(rep)
+      setRepTitle(rep.title)
+      setRepType(rep.type)
+      setRepYear(rep.year)
+      setRepPublishDate(rep.publishedAt ? new Date(rep.publishedAt).toISOString().split('T')[0] : '')
+      setRepStatus(rep.status || 'PUBLISHED')
+      setRepFileUrl(rep.fileUrl || '')
+      setRepFileName(rep.fileUrl ? rep.fileUrl.split('/').pop() || '' : '')
+    } else {
+      setEditingReport(null)
+      setRepTitle('')
+      setRepType('Keuangan')
+      setRepYear(new Date().getFullYear())
+      setRepPublishDate(new Date().toISOString().split('T')[0])
+      setRepStatus('PUBLISHED')
+      setRepFileUrl('')
+      setRepFileName('')
+    }
+    setIsReportModalOpen(true)
+  }
+
+  const handleReportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext !== 'pdf' && ext !== 'xlsx' && ext !== 'xls') {
+      goeyToast.error('Hanya diperbolehkan mengunggah file PDF atau Excel (.xlsx/.xls).')
+      return
+    }
+
+    setIsUploadingReportFile(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('folder', 'reports')
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd
+      })
+      const resData = await response.json()
+      if (response.ok && resData.url) {
+        setRepFileUrl(resData.url)
+        setRepFileName(file.name)
+        goeyToast.success('File laporan berhasil diunggah!')
+      } else {
+        goeyToast.error(resData.error || 'Gagal mengunggah file.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal mengunggah file.')
+    } finally {
+      setIsUploadingReportFile(false)
+    }
+  }
+
+  const handleSubmitReport = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!repTitle.trim() || !repType.trim() || !repFileUrl.trim()) {
+      goeyToast.error('Judul, jenis laporan, dan file wajib diisi.')
+      return
+    }
+
+    setIsSavingReport(true)
+    const fd = new FormData()
+    fd.append('communityId', id)
+    fd.append('title', repTitle)
+    fd.append('type', repType)
+    fd.append('year', String(repYear))
+    fd.append('fileUrl', repFileUrl)
+    fd.append('publishedAt', repPublishDate)
+    fd.append('status', repStatus)
+
+    try {
+      let res: any
+      if (editingReport) {
+        res = await updateCooperativeReportAction(editingReport.id, fd)
+      } else {
+        res = await createCooperativeReportAction(fd)
+      }
+
+      if (res.success) {
+        goeyToast.success(editingReport ? 'Laporan diperbarui!' : 'Laporan ditambahkan!')
+        setIsReportModalOpen(false)
+        
+        // Refresh local list
+        const repList = await getCooperativeReportsAction(id).catch(() => [])
+        setReports(repList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal menyimpan laporan.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    } finally {
+      setIsSavingReport(false)
+    }
+  }
+
+  const handleDeleteReport = async (repId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus laporan ini?')) return
+
+    try {
+      const res: any = await deleteCooperativeReportAction(repId, id)
+      if (res.success) {
+        goeyToast.success('Laporan dihapus!')
+        setReports(prev => prev.filter(x => x.id !== repId))
+      } else {
+        goeyToast.error(res.error || 'Gagal menghapus laporan.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  const handleTogglePublishReport = async (rep: any) => {
+    try {
+      const res: any = await togglePublishReportAction(rep.id, rep.status, id)
+      if (res.success) {
+        goeyToast.success(rep.status === 'DRAFT' ? 'Laporan dipublikasikan!' : 'Laporan disimpan sebagai draft!')
+        
+        // Refresh local list
+        const repList = await getCooperativeReportsAction(id).catch(() => [])
+        setReports(repList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal mengubah status publikasi.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
 
   const handleRecordSavingsTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -2292,30 +2594,93 @@ export default function CommunityDetailPage() {
             {activeSidebarNav === 'pengumuman' && (
               <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Megaphone className="w-6 h-6 text-[#2DB24A]" /> Pengumuman Resmi Komunitas
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Informasi penting, edaran resmi pengurus, serta pengumuman program kerja {community.name}.</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Megaphone className="w-6 h-6 text-[#2DB24A]" /> Pengumuman Resmi Komunitas
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Informasi penting, edaran resmi pengurus, serta pengumuman program kerja {community.name}.</p>
+                    </div>
+                    {isCanManageCoop && (
+                      <button
+                        onClick={() => handleOpenAnnouncementModal()}
+                        className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-2xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        <Plus className="w-4 h-4" /> Tambah Pengumuman
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-4">
-                    {[
-                      { title: 'Jadwal Rapat Anggota & Evaluasi Program Semester II 2026', date: '24 Juli 2026', sender: 'Pengurus Komunitas', content: 'Diberitahukan kepada seluruh anggota Perahu Kita bahwa Rapat Evaluasi Program Semester II akan dilaksanakan pada hari Sabtu, 15 Agustus 2026. Kehadiran seluruh anggota sangat diharapkan.', isPinned: true },
-                      { title: 'Program Pendampingan Sertifikasi Halal Gratis Tahap 3', date: '18 Juli 2026', sender: 'Divisi Edukasi UMKM', content: 'Pendaftaran pendampingan pengajuan sertifikat Halal gratis (SEHATI) tahap 3 telah dibuka. Silakan mengisi formulir pendaftaran melalui sekretariat komunitas.', isPinned: false },
-                      { title: 'Pembukaan Pendaftaran Stand Bazaar UMKM Perahu Kita', date: '10 Juli 2026', sender: 'Divisi Acara & Bazaar', content: 'Bazaar produk anggota akan digelar pada tanggal 25 Agustus 2026 di Alun-Alun Kidul. Kuota stand terbatas untuk 30 merchant pertama.', isPinned: false },
-                    ].map((p, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-2.5">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            {p.isPinned && <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 font-extrabold text-[10px] rounded-md">📌 TERPAKU</span>}
-                            <span className="text-[10px] text-gray-400 font-semibold">{p.date} • Oleh {p.sender}</span>
-                          </div>
-                        </div>
-                        <h3 className="text-sm font-extrabold text-gray-900">{p.title}</h3>
-                        <p className="text-xs text-gray-600 leading-relaxed font-medium">{p.content}</p>
+                    {isLoadingAnnouncements ? (
+                      <div className="flex justify-center items-center py-10">
+                        <Loader2 className="w-8 h-8 text-[#2DB24A] animate-spin" />
                       </div>
-                    ))}
+                    ) : announcements.filter(p => isCanManageCoop || p.status === 'PUBLISHED').length === 0 ? (
+                      <div className="p-10 text-center bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-2">
+                        <Megaphone className="w-8 h-8 text-gray-400 mx-auto opacity-70" />
+                        <p className="text-sm font-bold text-gray-500">Belum ada pengumuman</p>
+                      </div>
+                    ) : (
+                      announcements
+                        .filter(p => isCanManageCoop || p.status === 'PUBLISHED')
+                        .map((p) => (
+                          <div key={p.id} className={`p-5 bg-gray-50/70 border ${p.isPinned ? 'border-amber-300 bg-amber-50/20' : 'border-gray-200/80'} rounded-2xl space-y-2.5 transition-all`}>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {p.isPinned && (
+                                  <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 font-extrabold text-[10px] rounded-md flex items-center gap-1">
+                                    📌 TERPAKU
+                                  </span>
+                                )}
+                                {isCanManageCoop && (
+                                  <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-md ${p.status === 'DRAFT' ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-800'}`}>
+                                    {p.status === 'DRAFT' ? 'DRAFT' : 'PUBLIKASI'}
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-gray-400 font-semibold">
+                                  {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+                                </span>
+                              </div>
+
+                              {isCanManageCoop && (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleTogglePinAnnouncement(p)}
+                                    title={p.isPinned ? 'Lepas Pin' : 'Patok ke Atas'}
+                                    className="p-1.5 text-gray-500 hover:text-amber-600 bg-white border border-gray-200 rounded-lg hover:border-amber-300 transition-all cursor-pointer"
+                                  >
+                                    <MapPin className={`w-3.5 h-3.5 ${p.isPinned ? 'fill-amber-600 text-amber-600' : ''}`} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleTogglePublishAnnouncement(p)}
+                                    title={p.status === 'DRAFT' ? 'Publikasikan' : 'Simpan sebagai Draft'}
+                                    className="p-1.5 text-gray-500 hover:text-green-600 bg-white border border-gray-200 rounded-lg hover:border-green-300 transition-all cursor-pointer"
+                                  >
+                                    {p.status === 'DRAFT' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button
+                                    onClick={() => handleOpenAnnouncementModal(p)}
+                                    title="Edit Pengumuman"
+                                    className="p-1.5 text-gray-500 hover:text-blue-600 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-all cursor-pointer"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteAnnouncement(p.id)}
+                                    title="Hapus Pengumuman"
+                                    className="p-1.5 text-gray-500 hover:text-red-600 bg-white border border-gray-200 rounded-lg hover:border-red-300 transition-all cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <h3 className="text-sm font-extrabold text-gray-900 font-sora">{p.title}</h3>
+                            <p className="text-xs text-gray-600 leading-relaxed font-medium whitespace-pre-wrap">{p.content}</p>
+                          </div>
+                        ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -3826,32 +4191,101 @@ export default function CommunityDetailPage() {
             {activeSidebarNav === 'laporan' && (
               <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <FileText className="w-6 h-6 text-[#2DB24A]" /> Laporan Keuangan Audited & Dokumentasi RAT
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Unduh berkas laporan keuangan, neraca saldo, serta risalah Rapat Anggota Tahunan (RAT).</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <FileText className="w-6 h-6 text-[#2DB24A]" /> Laporan Keuangan Audited & Dokumentasi RAT
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Unduh berkas laporan keuangan, neraca saldo, serta risalah Rapat Anggota Tahunan (RAT).</p>
+                    </div>
+                    {isCanManageCoop && (
+                      <button
+                        onClick={() => handleOpenReportModal()}
+                        className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-2xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        <Plus className="w-4 h-4" /> Tambah Laporan
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-3">
-                    {[
-                      { title: 'Laporan Keuangan Audited Koperasi Tahun 2025 (PDF)', date: 'Diunggah 01 Feb 2026', size: '2.4 MB' },
-                      { title: 'Neraca Saldo & Rugi Laba Triwulan I Tahun 2026 (PDF)', date: 'Diunggah 15 Apr 2026', size: '1.8 MB' },
-                      { title: 'Risalah Berita Acara RAT Koperasi Tahun Buku 2025 (PDF)', date: 'Diunggah 05 Feb 2026', size: '3.1 MB' },
-                    ].map((rep, idx) => (
-                      <div key={idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl flex justify-between items-center hover:border-[#2DB24A]/40 transition-all">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-6 h-6 text-[#2DB24A]" />
-                          <div>
-                            <h4 className="text-xs font-bold text-gray-900">{rep.title}</h4>
-                            <p className="text-[10px] text-gray-400 font-semibold">{rep.date} • {rep.size}</p>
-                          </div>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Mengunduh "${rep.title}"...`)} className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Unduh PDF
-                        </button>
+                    {isLoadingReports ? (
+                      <div className="flex justify-center items-center py-10">
+                        <Loader2 className="w-8 h-8 text-[#2DB24A] animate-spin" />
                       </div>
-                    ))}
+                    ) : reports.filter(r => isCanManageCoop || r.status === 'PUBLISHED').length === 0 ? (
+                      <div className="p-10 text-center bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-2">
+                        <FileText className="w-8 h-8 text-gray-400 mx-auto opacity-70" />
+                        <p className="text-sm font-bold text-gray-500">Belum ada laporan</p>
+                      </div>
+                    ) : (
+                      reports
+                        .filter(r => isCanManageCoop || r.status === 'PUBLISHED')
+                        .map((rep) => {
+                          const isExcel = rep.fileUrl?.toLowerCase().endsWith('.xlsx') || rep.fileUrl?.toLowerCase().endsWith('.xls')
+                          return (
+                            <div key={rep.id} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-[#2DB24A]/40 transition-all">
+                              <div className="flex items-start gap-3">
+                                <div className="p-2.5 bg-green-50 rounded-xl text-[#2DB24A] mt-0.5">
+                                  <FileText className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h4 className="text-xs font-black text-gray-900 font-sora">{rep.title}</h4>
+                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 font-bold text-[9px] rounded-md uppercase">
+                                      {rep.type}
+                                    </span>
+                                    {isCanManageCoop && (
+                                      <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-md ${rep.status === 'DRAFT' ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-800'}`}>
+                                        {rep.status === 'DRAFT' ? 'DRAFT' : 'PUBLIKASI'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                                    Tahun Buku {rep.year} • Diunggah {rep.publishedAt ? new Date(rep.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3 self-end sm:self-center">
+                                {isCanManageCoop && (
+                                  <div className="flex items-center gap-1.5 mr-2">
+                                    <button
+                                      onClick={() => handleTogglePublishReport(rep)}
+                                      title={rep.status === 'DRAFT' ? 'Publikasikan' : 'Simpan sebagai Draft'}
+                                      className="p-1.5 text-gray-500 hover:text-green-600 bg-white border border-gray-200 rounded-lg hover:border-green-300 transition-all cursor-pointer"
+                                    >
+                                      {rep.status === 'DRAFT' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                                    </button>
+                                    <button
+                                      onClick={() => handleOpenReportModal(rep)}
+                                      title="Edit Laporan"
+                                      className="p-1.5 text-gray-500 hover:text-blue-600 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-all cursor-pointer"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteReport(rep.id)}
+                                      title="Hapus Laporan"
+                                      className="p-1.5 text-gray-500 hover:text-red-600 bg-white border border-gray-200 rounded-lg hover:border-red-300 transition-all cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                                <a
+                                  href={rep.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3.5 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                  {isExcel ? 'Unduh Excel' : 'Unduh PDF'}
+                                </a>
+                              </div>
+                            </div>
+                          )
+                        })
+                    )}
                   </div>
                 </div>
               </div>
@@ -5694,6 +6128,234 @@ export default function CommunityDetailPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* MODAL CRUD PENGUMUMAN */}
+      {isAnnouncementModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full mx-4 shadow-xl space-y-4 animate-scaleUp text-left">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+              <h3 className="text-base font-bold text-gray-800 font-sora">
+                {editingAnnouncement ? 'Edit Pengumuman' : 'Tambah Pengumuman Baru'}
+              </h3>
+              <button onClick={() => setIsAnnouncementModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitAnnouncement} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700">Judul Pengumuman</label>
+                <input
+                  type="text"
+                  value={annTitle}
+                  onChange={(e) => setAnnTitle(e.target.value)}
+                  placeholder="Masukkan judul pengumuman..."
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700">Isi Pengumuman</label>
+                <textarea
+                  value={annContent}
+                  onChange={(e) => setAnnContent(e.target.value)}
+                  placeholder="Tuliskan isi pengumuman secara rinci..."
+                  rows={5}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none resize-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Tanggal Publikasi</label>
+                  <input
+                    type="date"
+                    value={annPublishDate}
+                    onChange={(e) => setAnnPublishDate(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Status</label>
+                  <select
+                    value={annStatus}
+                    onChange={(e: any) => setAnnStatus(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none bg-white"
+                  >
+                    <option value="PUBLISHED">Publikasikan Langsung</option>
+                    <option value="DRAFT">Simpan Sebagai Draft</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="annIsPinned"
+                  checked={annIsPinned}
+                  onChange={(e) => setAnnIsPinned(e.target.checked)}
+                  className="w-4 h-4 text-[#2DB24A] border-gray-300 rounded focus:ring-[#2DB24A] cursor-pointer"
+                />
+                <label htmlFor="annIsPinned" className="text-xs font-bold text-gray-700 cursor-pointer select-none">
+                  Tandai sebagai Penting / Terpaku (Pinned di atas list)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAnnouncementModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingAnnouncement}
+                  className="px-5 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isSavingAnnouncement ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingAnnouncement ? 'Simpan Perubahan' : 'Terbitkan Pengumuman')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CRUD LAPORAN */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full mx-4 shadow-xl space-y-4 animate-scaleUp text-left">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+              <h3 className="text-base font-bold text-gray-800 font-sora">
+                {editingReport ? 'Edit Laporan' : 'Tambah Laporan Baru'}
+              </h3>
+              <button onClick={() => setIsReportModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700">Judul Laporan</label>
+                <input
+                  type="text"
+                  value={repTitle}
+                  onChange={(e) => setRepTitle(e.target.value)}
+                  placeholder="Masukkan judul laporan (misal: Laporan Keuangan Audited 2025)..."
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Jenis Laporan</label>
+                  <select
+                    value={repType}
+                    onChange={(e) => setRepType(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none bg-white"
+                  >
+                    <option value="Keuangan">Laporan Keuangan</option>
+                    <option value="Neraca">Neraca Saldo / Rugi Laba</option>
+                    <option value="RAT">Risalah RAT</option>
+                    <option value="Lainnya">Lain-lain</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Tahun Buku</label>
+                  <input
+                    type="number"
+                    value={repYear}
+                    onChange={(e) => setRepYear(Number(e.target.value))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Tanggal Publikasi</label>
+                  <input
+                    type="date"
+                    value={repPublishDate}
+                    onChange={(e) => setRepPublishDate(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Status</label>
+                  <select
+                    value={repStatus}
+                    onChange={(e: any) => setRepStatus(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none bg-white"
+                  >
+                    <option value="PUBLISHED">Publikasikan Langsung</option>
+                    <option value="DRAFT">Simpan Sebagai Draft</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700">File Laporan (PDF atau Excel)</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={repFileName || repFileUrl}
+                    readOnly
+                    placeholder="Pilih file dokumen..."
+                    className="flex-1 px-4 py-2 border border-gray-200 bg-gray-50 rounded-xl text-xs outline-none"
+                  />
+                  <label className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1">
+                    <Upload className="w-3.5 h-3.5" />
+                    Unggah File
+                    <input
+                      type="file"
+                      accept=".pdf,.xlsx,.xls"
+                      onChange={handleReportFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {isUploadingReportFile && (
+                  <p className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1 animate-pulse">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengunggah berkas ke storage...
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingReport || isUploadingReportFile || !repFileUrl}
+                  className={`px-5 py-2 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 ${
+                    isSavingReport || isUploadingReportFile || !repFileUrl
+                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                      : 'bg-[#2DB24A] hover:bg-[#0F5132] cursor-pointer'
+                  }`}
+                >
+                  {isSavingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingReport ? 'Simpan Laporan' : 'Tambahkan Laporan')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   )

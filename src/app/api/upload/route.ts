@@ -9,8 +9,15 @@ export const maxDuration = 60 // Allow 60 seconds for video processing
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024  // 10 MB
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024 // 500 MB
+const MAX_DOC_SIZE = 50 * 1024 * 1024   // 50 MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/ogg', 'video/mov', 'video/quicktime']
+const ALLOWED_DOC_TYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'application/octet-stream'
+]
 
 const BUCKET = 'penyimpanan' // nama bucket di Supabase Storage
 
@@ -31,8 +38,12 @@ export async function POST(request: NextRequest) {
 
     const isImage = ALLOWED_IMAGE_TYPES.includes(file.type)
     const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type)
+    const isDoc = ALLOWED_DOC_TYPES.includes(file.type) ||
+                  file.name.endsWith('.pdf') ||
+                  file.name.endsWith('.xlsx') ||
+                  file.name.endsWith('.xls')
 
-    if (!isImage && !isVideo) {
+    if (!isImage && !isVideo && !isDoc) {
       return NextResponse.json({ error: `Tipe file tidak didukung: ${file.type}` }, { status: 400 })
     }
 
@@ -43,6 +54,12 @@ export async function POST(request: NextRequest) {
     if (isVideo && file.size > MAX_VIDEO_SIZE) {
       return NextResponse.json({ error: 'Ukuran video melebihi 500MB.' }, { status: 400 })
     }
+
+    if (isDoc && file.size > MAX_DOC_SIZE) {
+      return NextResponse.json({ error: 'Ukuran dokumen melebihi 50MB.' }, { status: 400 })
+    }
+
+    const fileTypeStr = isImage ? 'image' : (isVideo ? 'video' : 'document')
 
     // Generate unique filepath: folder/userId-timestamp-random.ext
     const ext = file.name.split('.').pop()?.toLowerCase() || 'bin'
@@ -89,7 +106,7 @@ export async function POST(request: NextRequest) {
           url: publicUrl,
           path: filename,
           filename,
-          type: isImage ? 'image' : 'video',
+          type: fileTypeStr,
           provider: 'cloudflare-r2',
         })
       } catch (r2Error: any) {
@@ -128,7 +145,7 @@ export async function POST(request: NextRequest) {
           url: publicUrl,
           path: filename,
           filename,
-          type: isImage ? 'image' : 'video',
+          type: fileTypeStr,
           provider: 'aws-s3',
         })
       } catch (awsError: any) {
@@ -157,7 +174,7 @@ export async function POST(request: NextRequest) {
               url: publicUrl,
               path: data.path,
               filename,
-              type: isImage ? 'image' : 'video',
+              type: fileTypeStr,
               provider: 'supabase-storage',
             })
           }
@@ -183,7 +200,7 @@ export async function POST(request: NextRequest) {
         url: localPublicUrl,
         path: `uploads/${folder}/${localFilename}`,
         filename: localFilename,
-        type: isImage ? 'image' : 'video',
+        type: fileTypeStr,
         provider: 'local-filesystem',
       })
     } catch (fsError: any) {
