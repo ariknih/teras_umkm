@@ -229,17 +229,11 @@ export default function CommunityDirectoryPage() {
         setFormError(res.error)
         setModalStep('FORM')
       } else {
-        if (type === 'KOPERASI' || (type === 'PERKUMPULAN' && perkumpulanTier === 'PREMIUM')) {
-          goeyToast.success(`Pembayaran Berhasil! Komunitas ${type === 'PERKUMPULAN' ? 'Perkumpulan Premium' : 'Koperasi'} Anda telah aktif.`)
-          if (res.community) setCreatedCommunityData(res.community)
-          setModalStep('SUCCESS')
-        } else {
-          goeyToast.success('Komunitas Perkumpulan (Reguler) berhasil dibuat!')
-          setCreateModalOpen(false)
-          setModalStep('FORM')
-          if (res.community?.id) {
-            router.push(`/community/${res.community.id}`)
-          }
+        goeyToast.success(`Komunitas ${res.community?.name || ''} berhasil dibuat!`)
+        setCreateModalOpen(false)
+        setModalStep('FORM')
+        if (res.community?.id) {
+          router.push(`/community/${res.community.id}`)
         }
         
         // Reset form

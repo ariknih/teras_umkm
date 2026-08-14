@@ -1393,6 +1393,7 @@ export default function CommunityDetailPage() {
           setActiveSidebarNav('marketplace')
           setTimeout(() => handleOpenCreateProduct(false), 200)
         }}
+        realStats={realStats}
       />
     )
   }
