@@ -15,7 +15,8 @@ import {
   History,
   TrendingUp,
   X,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
 
@@ -207,9 +208,18 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
     return filteredServices.slice(0, visibleServiceCount)
   }, [filteredServices, visibleServiceCount])
 
-  // Flash Sale products
+  const flashSaleSliderRef = useRef<HTMLDivElement>(null)
+
+  const scrollFlashSale = (direction: 'left' | 'right') => {
+    if (flashSaleSliderRef.current) {
+      const scrollAmount = direction === 'left' ? -320 : 320
+      flashSaleSliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
+  }
+
+  // Flash Sale products (up to 12 items for rich horizontal sliding)
   const flashSaleProducts = useMemo(() => {
-    return products.filter((p) => p.category !== 'KERJAAN' && p.category !== 'JASA').slice(0, 6)
+    return products.filter((p) => p.category !== 'KERJAAN' && p.category !== 'JASA').slice(0, 12)
   }, [products])
 
   return (
@@ -236,9 +246,9 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         })}
       </div>
 
-      {/* ── ⚡ FLASH SALE UMKM (CLEAN WHITE SALOKA GREEN STYLE) ── */}
+      {/* ── ⚡ FLASH SALE UMKM (1-BARIS SLIDEABLE / CAROUSEL) ── */}
       {flashSaleProducts.length > 0 && activeTab === 'MARKETPLACE' && (
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5 relative overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="px-2.5 py-1 bg-[#006E24] text-white text-[11px] font-extrabold rounded-md uppercase tracking-wider flex items-center gap-1 shadow-2xs">
@@ -264,17 +274,42 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
               </div>
             </div>
 
-            <Link
-              href="/market"
-              className="text-xs font-bold text-[#006E24] hover:underline flex items-center gap-0.5 shrink-0"
-            >
-              <span>Lihat Semua</span>
-              <ChevronRight size={14} />
-            </Link>
+            <div className="flex items-center gap-2">
+              {/* Desktop / Tablet Scroll Buttons */}
+              <div className="hidden sm:flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => scrollFlashSale('left')}
+                  aria-label="Scroll Flash Sale Kiri"
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#006E24] hover:text-white text-slate-600 flex items-center justify-center transition-colors cursor-pointer border-none"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollFlashSale('right')}
+                  aria-label="Scroll Flash Sale Kanan"
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#006E24] hover:text-white text-slate-600 flex items-center justify-center transition-colors cursor-pointer border-none"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+
+              <Link
+                href="/market"
+                className="text-xs font-bold text-[#006E24] hover:underline flex items-center gap-0.5 shrink-0 ml-1"
+              >
+                <span>Lihat Semua</span>
+                <ChevronRight size={14} />
+              </Link>
+            </div>
           </div>
 
-          {/* Flash Sale Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-3">
+          {/* Flash Sale Cards 1-Row Horizontal Slider */}
+          <div
+            ref={flashSaleSliderRef}
+            className="flex gap-3 overflow-x-auto pb-2 pt-0.5 px-0.5 scroll-smooth snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
             {flashSaleProducts.map((p, idx) => {
               const discountPct = 20 + ((idx * 7) % 30)
               const originalPrice = Math.round(p.price * (1 + discountPct / 100))
@@ -284,7 +319,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 <Link
                   key={p.id}
                   href={`/market/product/${p.id}`}
-                  className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group p-2.5 text-slate-900"
+                  className="w-[145px] sm:w-[165px] md:w-[175px] shrink-0 snap-start bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group p-2.5 text-slate-900"
                 >
                   <div className="space-y-2">
                     {/* Thumbnail Image Container */}
