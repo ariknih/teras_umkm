@@ -2608,6 +2608,7 @@ export const DataStore = {
   },
 
   async getAllOrders() {
+    syncMockDb()
     if (await isDbConnected()) {
       try {
         return await db.order.findMany({
@@ -2620,6 +2621,7 @@ export const DataStore = {
   },
 
   async findOrderById(id: string) {
+    syncMockDb()
     if (await isDbConnected()) {
       try {
         return await db.order.findUnique({
