@@ -9482,22 +9482,38 @@ export const DataStore = {
             data: { id: 'singleton', totalSupply: 100000, circulatingSupply: 0 }
           })
         }
-        return config
+        // Calculate real sum of all active coins held in ecosystem
+        const [userSum, commSum] = await Promise.all([
+          db.user.aggregate({ _sum: { coinBalance: true } }),
+          db.community.aggregate({ _sum: { coinBalance: true } })
+        ])
+        const actualCirculating = (userSum._sum.coinBalance || 0) + (commSum._sum.coinBalance || 0)
+        return {
+          ...config,
+          circulatingSupply: actualCirculating
+        }
       } catch (_) {}
     }
     // Mock
+    const userCirculating = globalMockUsers.reduce((sum, u) => sum + (Number(u.coinBalance) || 0), 0)
+    const communities = (globalThis as any).__mockCommunities || []
+    const commCirculating = communities.reduce((sum: number, c: any) => sum + (Number(c.coinBalance) || 0), 0)
+    const actualCirculating = userCirculating + commCirculating
+
     if (!(globalThis as any).__mockCoinSupplyConfig) {
       (globalThis as any).__mockCoinSupplyConfig = {
         id: 'singleton',
         coinRateRupiah: 1500,
         totalSupply: 100000,
-        circulatingSupply: 0,
+        circulatingSupply: actualCirculating,
         minTopupFree: 100,
         minTopupPaid: 1000,
         referralCoinAmount: 3,
         updatedAt: new Date(),
         updatedBy: null
       }
+    } else {
+      (globalThis as any).__mockCoinSupplyConfig.circulatingSupply = actualCirculating
     }
     return (globalThis as any).__mockCoinSupplyConfig
   },
