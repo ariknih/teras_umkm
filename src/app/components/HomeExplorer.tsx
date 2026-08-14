@@ -73,7 +73,7 @@ const SERVICE_CATEGORIES = [
 ]
 
 const QUICK_ACTIONS = [
-  { label: 'Promo UMKM', icon: Tag, color: 'text-rose-600 bg-rose-50', href: '/market' },
+  { label: 'Promo UMKM', icon: Tag, color: 'text-[#006E24] bg-emerald-50', href: '/market' },
   { label: 'Bebas Ongkir', icon: Truck, color: 'text-[#006E24] bg-emerald-50', href: '/market' },
   { label: 'Tukar Koin', icon: Coins, color: 'text-amber-600 bg-amber-50', href: '/wallet/coin' },
   { label: 'Flash Sale', icon: Zap, color: 'text-orange-500 bg-orange-50', href: '/market' },
@@ -236,12 +236,12 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         })}
       </div>
 
-      {/* ── ⚡ FLASH SALE UMKM (CLEAN WHITE TOKOPEDIA KEJAR DISKON STYLE) ── */}
+      {/* ── ⚡ FLASH SALE UMKM (CLEAN WHITE SALOKA GREEN STYLE) ── */}
       {flashSaleProducts.length > 0 && activeTab === 'MARKETPLACE' && (
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="px-2.5 py-1 bg-[#FF424E] text-white text-[11px] font-extrabold rounded-md uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+              <span className="px-2.5 py-1 bg-[#006E24] text-white text-[11px] font-extrabold rounded-md uppercase tracking-wider flex items-center gap-1 shadow-2xs">
                 <Zap size={13} className="fill-white" />
                 <span>Flash Sale</span>
               </span>
@@ -257,7 +257,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                     {String(countdown.minutes).padStart(2, '0')}
                   </span>
                   <span className="text-slate-700">:</span>
-                  <span className="bg-[#FF424E] px-1.5 py-0.5 rounded">
+                  <span className="bg-[#006E24] px-1.5 py-0.5 rounded">
                     {String(countdown.seconds).padStart(2, '0')}
                   </span>
                 </div>
@@ -302,8 +302,8 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                         </div>
                       )}
 
-                      {/* Clean Tokopedia-Style Discount Tag */}
-                      <span className="absolute top-1 left-1 bg-[#FFEAEF] text-[#FF424E] text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-2xs">
+                      {/* Clean Saloka Green Discount Tag */}
+                      <span className="absolute top-1 left-1 bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9] text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-2xs">
                         {discountPct}%
                       </span>
                     </div>
@@ -326,11 +326,11 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                   <div className="pt-2 space-y-1">
                     <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-[#FF424E] h-full rounded-full transition-all"
+                        className="bg-[#006E24] h-full rounded-full transition-all"
                         style={{ width: `${percentSold}%` }}
                       />
                     </div>
-                    <p className="text-[9px] font-bold text-slate-500 text-left">
+                    <p className="text-[9px] font-bold text-[#006E24] text-left">
                       Terjual {percentSold}%
                     </p>
                   </div>
@@ -681,12 +681,12 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             Rp {product.price.toLocaleString('id-ID')}
                           </p>
 
-                          {/* Strikethrough & Tokopedia Pink Discount Tag */}
+                          {/* Strikethrough & Saloka Green Discount Tag */}
                           <div className="flex items-center gap-1 text-[10px]">
                             <span className="line-through text-slate-400">
                               Rp {originalPrice.toLocaleString('id-ID')}
                             </span>
-                            <span className="font-bold text-[#FF424E] bg-[#FFEAEF] px-1 py-0.2 rounded text-[9px]">
+                            <span className="font-bold text-[#006E24] bg-[#E8F5E9] border border-[#C8E6C9] px-1 py-0.2 rounded text-[9px]">
                               {discountPct}%
                             </span>
                           </div>
