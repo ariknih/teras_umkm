@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
 import { Logo } from '@/components/Logo'
+import { formatCategoryName } from '@/lib/utils'
 import {
   updateUserRoleAndLevelAction,
   addCourseAction,
@@ -2262,7 +2263,7 @@ export default function AdminDashboardClient({
                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
                             p.category === 'JASA' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-600 border-slate-200'
                           }`}>
-                            {p.category}
+                            {formatCategoryName(p.category)}
                           </span>
                         </td>
                         <td className="px-6 py-3 text-right font-bold text-slate-800">Rp {p.price.toLocaleString('id-ID')}</td>
@@ -2916,7 +2917,7 @@ export default function AdminDashboardClient({
                                       {comm.type}
                                     </span>
                                     <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase">
-                                      {comm.category}
+                                      {formatCategoryName(comm.category)}
                                     </span>
                                   </div>
                                 </td>

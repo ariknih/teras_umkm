@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
+import { formatCategoryName } from '@/lib/utils'
 
 interface Service {
   id: string
@@ -142,8 +143,8 @@ export default function JasaClient({
                       alt={svc.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                      {svc.category}
+                    <span className="absolute top-3 left-3 bg-[#006E24] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                      {formatCategoryName(svc.category)}
                     </span>
                     {svc.location && (
                       <span className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-xs text-slate-800 text-[10px] font-medium px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs">

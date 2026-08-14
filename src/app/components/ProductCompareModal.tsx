@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Scale, X, ShoppingCart, Star, Check } from 'lucide-react'
+import { formatCategoryName } from '@/lib/utils'
 
 interface CompareProduct {
   id: string
@@ -132,8 +133,8 @@ export default function ProductCompareModal() {
                   <tr>
                     <td className="py-2.5 px-3 font-bold text-slate-500">Kategori</td>
                     {compareItems.map((p) => (
-                      <td key={p.id} className="py-2.5 px-3 font-semibold uppercase text-[10px]">
-                        {p.category}
+                      <td key={p.id} className="py-2.5 px-3 font-semibold text-slate-800 text-[11px]">
+                        {formatCategoryName(p.category)}
                       </td>
                     ))}
                   </tr>

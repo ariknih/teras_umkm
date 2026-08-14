@@ -18,6 +18,7 @@ import {
   ChevronRight
 } from 'lucide-react'
 import ShippingRateCalculatorWidget from './ShippingRateCalculatorWidget'
+import { formatCategoryName } from '@/lib/utils'
 
 interface Product {
   id: string
@@ -665,7 +666,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
 
                           {/* Category Tag */}
                           <span className="absolute top-1.5 right-1.5 bg-white/95 text-slate-800 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-2xs uppercase tracking-wider">
-                            {product.category}
+                            {formatCategoryName(product.category)}
                           </span>
                         </div>
 
@@ -783,7 +784,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <span className="absolute top-2 left-2 bg-[#006E24] text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs uppercase tracking-wider">
-                            {svc.category}
+                            {formatCategoryName(svc.category)}
                           </span>
                           {svc.location && (
                             <span className="absolute bottom-2 left-2 bg-white/95 text-slate-800 text-[9px] font-semibold px-2 py-0.5 rounded shadow-2xs">
