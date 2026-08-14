@@ -2369,10 +2369,14 @@ export async function isDbConnected(): Promise<boolean> {
   lastDbCheckTime = now;
   try {
     const connectionPromise = db.$queryRaw`SELECT 1`.then(() => true);
-    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000));
+    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 10000));
     cachedDbConnected = await Promise.race([connectionPromise, timeoutPromise]);
+    if (!cachedDbConnected) {
+      console.warn("isDbConnected: database connection check timed out (>10s)");
+    }
     return cachedDbConnected;
   } catch (e) {
+    console.error("isDbConnected connection error:", e);
     cachedDbConnected = false;
     return false;
   }
