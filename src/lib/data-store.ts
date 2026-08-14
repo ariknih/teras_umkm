@@ -3515,8 +3515,10 @@ export const DataStore = {
           }
 
           const shippingFee = shippingDetails?.shippingFee || 0
-          const adminFee = 2500 // Biaya admin per transaksi
-          const finalTotal = subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount
+          const serviceFee = subtotal > 0 ? 1000 : 0 // Biaya Layanan Aplikasi
+          const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0) // Biaya Jasa Pembayaran
+          const adminFee = serviceFee + paymentFee
+          const finalTotal = Math.max(0, subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount)
 
           // Wallet payment deduction
           if (paymentMethod === 'WALLET') {
@@ -3925,8 +3927,10 @@ export const DataStore = {
     }
 
     const shippingFee = shippingDetails?.shippingFee || 0
-    const adminFee = 2500 // Biaya admin per transaksi
-    const finalTotal = subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount
+    const serviceFee = subtotal > 0 ? 1000 : 0 // Biaya Layanan Aplikasi
+    const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0) // Biaya Jasa Pembayaran
+    const adminFee = serviceFee + paymentFee
+    const finalTotal = Math.max(0, subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount)
 
     // Wallet deduction
     if (paymentMethod === 'WALLET') {

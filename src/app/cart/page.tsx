@@ -777,9 +777,11 @@ export default function CartPage() {
   const userCoins = currentUserProfile?.coinBalance || 0;
   const maxCoinsVal = userCoins * 1500;
   const coinRedemptionValue = useCoins ? Math.min(subtotal * 0.5, maxCoinsVal) : 0; // limit coin to max 50% subtotal
-  const coinsRedeemed = coinRedemptionValue / 1500;
+  // Service and Payment Admin Fees
+  const serviceFee = subtotal > 0 ? 1000 : 0; // Biaya Layanan Aplikasi
+  const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0); // Biaya Transaksi / Admin Pembayaran
 
-  const total = Math.max(0, subtotal + shippingFee - couponDiscount - coinRedemptionValue);
+  const total = Math.max(0, subtotal + shippingFee + serviceFee + paymentFee - couponDiscount - coinRedemptionValue);
 
   // Check if cart contains user's own products
   const hasOwnProduct = currentUser && cartDetails.some(item => item.merchantId === currentUser.id);
@@ -1405,23 +1407,45 @@ export default function CartPage() {
 
                   <div className="space-y-2 text-xs text-slate-600 pt-1">
                     <div className="flex justify-between items-center">
-                      <span>Subtotal</span>
+                      <span>Subtotal Produk</span>
                       <span className="font-semibold text-slate-800">Rp {subtotal.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>Pengiriman</span>
-                      <span className="font-semibold text-[#2DB24A] font-bold">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
+                      <span>Biaya Pengiriman</span>
+                      <span className="font-semibold text-[#006E24] font-bold">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-1">
+                        <span>Biaya Layanan Aplikasi</span>
+                        <span className="text-[10px] text-slate-400">ⓘ</span>
+                      </span>
+                      <span className="font-semibold text-slate-800">Rp {serviceFee.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-1">
+                        <span>Biaya Jasa Transaksi</span>
+                        <span className="text-[10px] text-slate-400">({paymentMethod === 'WALLET' ? 'Dompet' : 'Payment Gateway'})</span>
+                      </span>
+                      <span className={`font-semibold ${paymentFee === 0 ? 'text-[#006E24] font-bold' : 'text-slate-800'}`}>
+                        {paymentFee === 0 ? 'Rp 0 (Gratis via Dompet)' : `Rp ${paymentFee.toLocaleString('id-ID')}`}
+                      </span>
                     </div>
                     {couponDiscount > 0 && (
-                      <div className="flex justify-between items-center text-[#2DB24A] font-bold">
+                      <div className="flex justify-between items-center text-[#006E24] font-bold">
                         <span>Diskon Voucher</span>
                         <span>-Rp {couponDiscount.toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
+                    {coinRedemptionValue > 0 && (
+                      <div className="flex justify-between items-center text-amber-700 font-bold">
+                        <span>Potongan Koin Saloka</span>
+                        <span>-Rp {coinRedemptionValue.toLocaleString('id-ID')}</span>
                       </div>
                     )}
 
                     <div className="border-t border-slate-100 pt-2.5 flex justify-between items-center">
                       <span className="font-bold text-xs text-slate-800">Total Tagihan</span>
-                      <span className="font-extrabold text-slate-900 text-lg">
+                      <span className="font-extrabold text-slate-900 text-lg font-mono">
                         Rp {total.toLocaleString('id-ID')}
                       </span>
                     </div>
