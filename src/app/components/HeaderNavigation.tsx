@@ -106,11 +106,11 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   {isOpenProfile && (
                     <div 
                       id="profile-dropdown-menu"
-                      className="absolute right-0 mt-4 w-64 bg-surface border border-border-subtle rounded-2xl shadow-xl py-3 z-[60] animate-in fade-in slide-in-from-top-3 duration-300"
+                      className="fixed right-3.5 left-auto top-18 sm:absolute sm:right-0 sm:top-full sm:mt-3.5 w-64 max-w-[calc(100vw-28px)] bg-white border border-slate-200/90 rounded-2xl shadow-2xl py-3 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 text-slate-900"
                     >
-                      <div className="px-4 pb-3 border-b border-border-subtle">
-                        <p className="text-xs font-extrabold text-text-primary truncate">{user.name}</p>
-                        <p className="text-[10px] text-text-secondary truncate mt-0.5">{user.email}</p>
+                      <div className="px-4 pb-3 border-b border-slate-100">
+                        <p className="text-xs font-extrabold text-slate-900 truncate">{user.name}</p>
+                        <p className="text-[10px] text-slate-500 truncate mt-0.5">{user.email}</p>
                         <div className="mt-2 flex items-center justify-between">
                           <span className="btn-primary bg-primary/10 border border-primary/25 text-[8px] font-black text-primary">
                             {user.role}

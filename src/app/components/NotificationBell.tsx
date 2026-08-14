@@ -102,25 +102,25 @@ export default function NotificationBell() {
       {isOpen && (
         <div 
           id="notification-dropdown"
-          className="absolute right-0 mt-3.5 w-80 bg-surface-dark border border-border-subtle rounded-xl shadow-2xl py-3 z-[60] animate-in fade-in slide-in-from-top-3 duration-300"
+          className="fixed left-3.5 right-3.5 top-18 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-3.5 w-auto sm:w-88 md:w-96 max-w-[calc(100vw-28px)] bg-white border border-slate-200/90 rounded-2xl shadow-2xl py-3 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 text-slate-900"
         >
-          <div className="flex justify-between items-center px-4 pb-2.5 border-b border-border-subtle">
-            <h4 className="font-sora text-xs font-bold text-text-primary">Notifikasi</h4>
+          <div className="flex justify-between items-center px-4 pb-2.5 border-b border-slate-100">
+            <h4 className="text-xs font-bold text-slate-900">Notifikasi</h4>
             {unreadCount > 0 && (
               <button
                 id="mark-all-read-btn"
                 onClick={handleMarkAllRead}
-                className="text-[9px] font-geist font-bold text-primary hover:opacity-85 uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
+                className="text-[10px] font-bold text-[#006E24] hover:underline uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
               >
                 Tandai semua dibaca
               </button>
             )}
           </div>
 
-          <div className="max-h-72 overflow-y-auto mt-2">
+          <div className="max-h-80 overflow-y-auto mt-1 divide-y divide-slate-100">
             {notifications.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-[10px] text-text-secondary">Tidak ada notifikasi baru.</p>
+                <p className="text-xs text-slate-400">Tidak ada notifikasi baru.</p>
               </div>
             ) : (
               notifications.map((notif) => (
@@ -129,40 +129,38 @@ export default function NotificationBell() {
                   onClick={async () => {
                     setIsOpen(false)
                     if (!notif.isRead) {
-                      // Optionally mark individual as read, or just let markAllRead handle it
-                      // Optimistically update
                       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n))
                     }
                   }}
-                  className={`px-4 py-3 hover:bg-surface-container-low transition-colors duration-200 border-b border-border-subtle last:border-none flex flex-col gap-1 cursor-pointer ${
-                    !notif.isRead ? 'bg-primary/5 border-l-2 border-l-primary' : ''
+                  className={`px-4 py-3 hover:bg-slate-50 transition-colors duration-150 flex flex-col gap-1 cursor-pointer ${
+                    !notif.isRead ? 'bg-[#E8F5E9]/40 border-l-3 border-l-[#006E24]' : ''
                   }`}
                 >
                   {notif.linkUrl ? (
                     <Link href={notif.linkUrl} className="block">
                       <div className="flex justify-between items-start gap-2">
-                        <span className={`text-[10px] font-bold ${!notif.isRead ? 'text-primary' : 'text-text-primary'}`}>
+                        <span className={`text-[11px] ${!notif.isRead ? 'font-bold text-[#006E24]' : 'font-semibold text-slate-800'}`}>
                           {notif.title}
                         </span>
-                        <span className="text-[8px] text-text-secondary font-medium font-geist whitespace-nowrap">
+                        <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap">
                           {formatTime(notif.createdAt)}
                         </span>
                       </div>
-                      <p className="text-[10px] text-text-secondary leading-relaxed mt-0.5 line-clamp-2">
+                      <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5 line-clamp-2">
                         {notif.body}
                       </p>
                     </Link>
                   ) : (
                     <div>
                       <div className="flex justify-between items-start gap-2">
-                        <span className={`text-[10px] font-bold ${!notif.isRead ? 'text-primary' : 'text-text-primary'}`}>
+                        <span className={`text-[11px] ${!notif.isRead ? 'font-bold text-[#006E24]' : 'font-semibold text-slate-800'}`}>
                           {notif.title}
                         </span>
-                        <span className="text-[8px] text-text-secondary font-medium font-geist whitespace-nowrap">
+                        <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap">
                           {formatTime(notif.createdAt)}
                         </span>
                       </div>
-                      <p className="text-[10px] text-text-secondary leading-relaxed mt-0.5 line-clamp-2">
+                      <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5 line-clamp-2">
                         {notif.body}
                       </p>
                     </div>
