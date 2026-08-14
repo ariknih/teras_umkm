@@ -34,31 +34,55 @@ export default async function HomePage() {
         <ScrollReveal>
           <div className="w-full max-w-[1280px] py-8 px-6 bg-surface rounded-3xl border border-border shadow-sm flex flex-col items-center gap-8 overflow-hidden">
           <h2 className="text-center text-text-primary text-base font-semibold">Ekosistem Lengkap untuk UMKM Indonesia</h2>
-          <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6">
-            <Link href="/market" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
-              <span className="text-3xl md:text-4xl font-bold text-primary group-hover:scale-110 transition-transform">🛒</span>
-              <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">Marketplace</span>
-              <span className="text-xs text-text-secondary">Produk fisik UMKM</span>
+          <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5 md:gap-5">
+            <Link href="/market" className="flex flex-col items-center gap-2 text-center p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-all duration-200 group">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-[#006e24] dark:text-emerald-300 group-hover:scale-110 transition-transform">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
+              </div>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-[#006e24] transition-colors">Marketplace</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Produk Fisik UMKM</span>
             </Link>
-            <Link href="/jasa" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
-              <span className="text-3xl md:text-4xl font-bold text-[#0F5132] group-hover:scale-110 transition-transform">🛠️</span>
-              <span className="text-xl font-bold text-text-primary group-hover:text-[#0F5132] transition-colors">Booking Jasa</span>
-              <span className="text-xs text-text-secondary">Layanan & keahlian</span>
+
+            <Link href="/jasa" className="flex flex-col items-center gap-2 text-center p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-all duration-200 group">
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-300 group-hover:scale-110 transition-transform">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                </svg>
+              </div>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-[#006e24] transition-colors">Booking Jasa</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Layanan & Keahlian</span>
             </Link>
-            <Link href="/academy" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
-              <span className="text-3xl md:text-4xl font-bold text-primary group-hover:scale-110 transition-transform">🎓</span>
-              <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">Academy</span>
-              <span className="text-xs text-text-secondary">Kursus & pelatihan</span>
+
+            <Link href="/academy" className="flex flex-col items-center gap-2 text-center p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-all duration-200 group">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-700 dark:text-amber-300 group-hover:scale-110 transition-transform">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                </svg>
+              </div>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-[#006e24] transition-colors">Academy LMS</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Kursus & Pelatihan</span>
             </Link>
-            <Link href="/affiliate" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
-              <span className="text-3xl md:text-4xl font-bold text-primary group-hover:scale-110 transition-transform">🤝</span>
-              <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">Affiliate</span>
-              <span className="text-xs text-text-secondary">Komisi multi-tier</span>
+
+            <Link href="/affiliate" className="flex flex-col items-center gap-2 text-center p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-all duration-200 group">
+              <div className="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-700 dark:text-purple-300 group-hover:scale-110 transition-transform">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-[#006e24] transition-colors">Affiliate Hub</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Komisi Multi-Tier</span>
             </Link>
-            <Link href="/community" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
-              <span className="text-3xl md:text-4xl font-bold text-primary group-hover:scale-110 transition-transform">💬</span>
-              <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">Komunitas</span>
-              <span className="text-xs text-text-secondary">Koperasi & forum</span>
+
+            <Link href="/community" className="flex flex-col items-center gap-2 text-center p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 hover:bg-emerald-50/60 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-all duration-200 group">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center text-rose-700 dark:text-rose-300 group-hover:scale-110 transition-transform">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <span className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-[#006e24] transition-colors">Komunitas</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Koperasi & Forum</span>
             </Link>
           </div>
         </div>
