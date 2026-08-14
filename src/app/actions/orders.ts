@@ -233,4 +233,16 @@ export async function getOrderInvoiceData(id: string) {
   }
 }
 
+export async function createUserNotificationAction(type: string, title: string, body: string, linkUrl?: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+  try {
+    const notif = await DataStore.createNotification(user.id, type, title, body, linkUrl)
+    return { success: true, notification: notif }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal membuat notifikasi.' }
+  }
+}
+
+
 

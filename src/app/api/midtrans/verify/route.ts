@@ -89,6 +89,22 @@ export async function POST(req: NextRequest) {
         );
         await DataStore.addXp(pending.userId, 30); // Reward 30 XP for purchase
 
+        // Create ORDER_CREATED and PAYMENT_SUCCESS database notifications for Midtrans
+        await DataStore.createNotification(
+          pending.userId,
+          'ORDER_CREATED',
+          'Pesanan Baru Dibuat',
+          `Pesanan #${order.id} berhasil dibuat via Midtrans.`,
+          `/orders/${order.id}`
+        );
+        await DataStore.createNotification(
+          pending.userId,
+          'PAYMENT_SUCCESS',
+          'Pembayaran Berhasil',
+          `Pembayaran pesanan #${order.id} via Midtrans berhasil terverifikasi.`,
+          `/orders/${order.id}`
+        );
+
         return NextResponse.json({
           success: true,
           status,

@@ -61,6 +61,43 @@ export async function checkoutCart(
   
   try {
     const order = await DataStore.createOrder(user.id, items, affiliateId, paymentMethod, shippingDetails)
+    
+    // Create base ORDER_CREATED notification
+    await DataStore.createNotification(
+      user.id,
+      'ORDER_CREATED',
+      'Pesanan Baru Dibuat',
+      `Pesanan #${order.id} berhasil dibuat. Silakan pantau status pengiriman pesanan Anda.`,
+      `/orders/${order.id}`
+    )
+
+    // Additional notifications based on payment method
+    if (paymentMethod === 'WALLET') {
+      await DataStore.createNotification(
+        user.id,
+        'PAYMENT_SUCCESS',
+        'Pembayaran Berhasil',
+        `Pembayaran pesanan #${order.id} menggunakan saldo dompet berhasil.`,
+        `/orders/${order.id}`
+      )
+    } else if (shippingDetails?.bumpSales === 'COD') {
+      await DataStore.createNotification(
+        user.id,
+        'CHECKOUT_SUCCESS',
+        'Pesanan COD Berhasil',
+        `Pesanan COD #${order.id} berhasil dikirim. Pembayaran dilakukan di tempat saat barang tiba.`,
+        `/orders/${order.id}`
+      )
+    } else if (paymentMethod.startsWith('MANUAL')) {
+      await DataStore.createNotification(
+        user.id,
+        'ORDER_CREATED',
+        'Menunggu Pembayaran Manual',
+        `Pesanan #${order.id} berhasil dibuat. Silakan lakukan transfer manual sesuai nominal.`,
+        `/orders/${order.id}`
+      )
+    }
+
     revalidatePath('/market')
     revalidatePath('/wallet')
     revalidatePath('/merchant/dashboard')

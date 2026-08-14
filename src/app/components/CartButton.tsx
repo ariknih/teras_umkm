@@ -3,13 +3,15 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 
-export default function CartButton({ userId }: { userId?: string }) {
+export default function CartButton({ userId, communityId }: { userId?: string; communityId?: string }) {
   const [itemCount, setItemCount] = useState(0)
 
   useEffect(() => {
     const updateCount = () => {
       try {
-        const cartKey = userId ? `teras_cart_${userId}` : 'teras_cart'
+        const cartKey = userId 
+          ? (communityId ? `teras_cart_${userId}_${communityId}` : `teras_cart_${userId}`) 
+          : 'teras_cart'
         const storedCart = localStorage.getItem(cartKey)
         if (storedCart) {
           const cart = JSON.parse(storedCart)
@@ -35,11 +37,11 @@ export default function CartButton({ userId }: { userId?: string }) {
       window.removeEventListener('storage', updateCount)
       clearInterval(interval)
     }
-  }, [userId])
+  }, [userId, communityId])
 
   return (
     <Link
-      href="/cart"
+      href={communityId ? `/cart?communityId=${communityId}` : '/cart'}
       aria-label="Keranjang Belanja"
       className="relative w-8 h-8 rounded-full border border-outline-variant/15 hover:border-primary bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-primary transition-all duration-300 cursor-pointer shadow-sm outline-none group"
       id="global-cart-button"

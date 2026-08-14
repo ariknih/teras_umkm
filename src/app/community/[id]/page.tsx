@@ -24,6 +24,7 @@ import {
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
+import { createUserNotificationAction } from '@/app/actions/orders'
 import { getCommunityShuDataAction, getUserShuSummaryAction, calculateAndSaveShuAction } from '@/app/actions/shu'
 import { recordSavingsTransactionAction, getCommunitySavingsSummaryAction } from '@/app/actions/savings'
 import {
@@ -1054,6 +1055,60 @@ export default function CommunityDetailPage() {
       }
     } catch (err: any) {
       goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  const handleAddToCart = async (product: any) => {
+    if (!user) {
+      goeyToast.error('Silakan login terlebih dahulu untuk menambahkan produk ke keranjang.')
+      router.push('/auth?tab=login')
+      return
+    }
+
+    try {
+      const cartKey = `teras_cart_${user.id}_${id}`
+      const storedCart = localStorage.getItem(cartKey)
+      let currentCart: any[] = []
+
+      if (storedCart) {
+        try {
+          currentCart = JSON.parse(storedCart)
+        } catch (_) {}
+      }
+
+      const existingIndex = currentCart.findIndex((item: any) => item.productId === product.id)
+      if (existingIndex > -1) {
+        const newQty = currentCart[existingIndex].quantity + 1
+        if (newQty > product.stock) {
+          goeyToast.error(`Stok produk tidak mencukupi. Maksimum tersedia: ${product.stock}`)
+          return
+        }
+        currentCart[existingIndex].quantity = newQty
+      } else {
+        if (product.stock < 1) {
+          goeyToast.error('Stok produk habis.')
+          return
+        }
+        currentCart.push({ productId: product.id, quantity: 1 })
+      }
+
+      localStorage.setItem(cartKey, JSON.stringify(currentCart))
+      
+      // Notify badge components in real-time
+      window.dispatchEvent(new Event('storage'))
+
+      goeyToast.success(`"${product.name || product.title}" ditambahkan ke keranjang!`)
+
+      // Create database notification
+      await createUserNotificationAction(
+        'CART_ADD',
+        'Produk Masuk Keranjang',
+        `Produk "${product.name || product.title}" berhasil ditambahkan ke keranjang belanja Anda.`,
+        `/cart?communityId=${id}`
+      )
+    } catch (e: any) {
+      console.error(e)
+      goeyToast.error('Gagal menambahkan produk ke keranjang.')
     }
   }
 
@@ -2459,7 +2514,7 @@ export default function CommunityDetailPage() {
                           </div>
                           <div className="flex justify-between items-center pt-2.5 border-t border-gray-200/60">
                             <span className="text-sm font-black text-[#0F5132]">Rp {Number(p.price || 0).toLocaleString('id-ID')}</span>
-                            <button onClick={() => goeyToast.success(`"${p.name || p.title}" ditambahkan ke keranjang belanja!`)} className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                            <button onClick={() => handleAddToCart(p)} className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
                               + Keranjang
                             </button>
                           </div>

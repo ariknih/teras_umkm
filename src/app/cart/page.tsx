@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Script from 'next/script'
 import { getProducts } from '@/app/actions/products'
@@ -64,6 +64,8 @@ const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => 
 
 export default function CartPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const communityId = searchParams?.get('communityId') || ''
   const [cart, setCart] = useState<CartItem[]>([])
   const [products, setProducts] = useState<ProductDetails[]>([])
   const cartDetails = cart
@@ -404,7 +406,9 @@ export default function CartPage() {
         const u = await getCurrentUser()
         setCurrentUser(u)
         
-        const cartKey = u?.id ? `teras_cart_${u.id}` : 'teras_cart'
+        const cartKey = u?.id 
+          ? (communityId ? `teras_cart_${u.id}_${communityId}` : `teras_cart_${u.id}`) 
+          : 'teras_cart'
         const storedCart = localStorage.getItem(cartKey)
         const storedAff = localStorage.getItem('teras_affiliate_id')
         if (storedCart) {
@@ -487,8 +491,12 @@ export default function CartPage() {
 
   const saveCart = (newCart: CartItem[]) => {
     setCart(newCart)
-    const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+    const cartKey = currentUser?.id 
+      ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
+      : 'teras_cart'
     localStorage.setItem(cartKey, JSON.stringify(newCart))
+    // Trigger real-time updates for navbar badge
+    window.dispatchEvent(new Event('storage'))
   }
 
   const handleUpdateQuantity = (productId: string, newQty: number, maxStock: number) => {
@@ -529,10 +537,13 @@ export default function CartPage() {
       }
 
       if (data.processed) {
-        const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+        const cartKey = currentUser?.id 
+          ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
+          : 'teras_cart'
         localStorage.removeItem(cartKey)
         localStorage.removeItem('teras_affiliate_id')
         setCart([])
+        window.dispatchEvent(new Event('storage'))
         setAffiliateId('')
         setPendingOrderId(null)
         router.push(`/orders/${orderId}`)
@@ -675,10 +686,13 @@ export default function CartPage() {
         })
         if (res.error) throw new Error(res.error)
         
-        const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+        const cartKey = currentUser?.id 
+          ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
+          : 'teras_cart'
         localStorage.removeItem(cartKey)
         localStorage.removeItem('teras_affiliate_id')
         setCart([])
+        window.dispatchEvent(new Event('storage'))
         setAffiliateId('')
         router.push(`/orders/${res.order!.id}`)
         
@@ -699,10 +713,13 @@ export default function CartPage() {
         })
         if (res.error || !res.order) throw new Error(res.error || 'Gagal melakukan checkout COD.')
         
-        const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+        const cartKey = currentUser?.id 
+          ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
+          : 'teras_cart'
         localStorage.removeItem(cartKey)
         localStorage.removeItem('teras_affiliate_id')
         setCart([])
+        window.dispatchEvent(new Event('storage'))
         setAffiliateId('')
         router.push(`/orders/${res.order.id}`)
       } catch (err: any) {
@@ -717,10 +734,13 @@ export default function CartPage() {
       const res = await checkoutCart(itemsPayload, affiliateId || undefined, activePaymentSubId || 'BANK', shippingDetails)
       if (res.error || !res.order) throw new Error(res.error || 'Gagal membuat pesanan.')
       
-      const cartKey = currentUser?.id ? `teras_cart_${currentUser.id}` : 'teras_cart'
+      const cartKey = currentUser?.id 
+        ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
+        : 'teras_cart'
       localStorage.removeItem(cartKey)
       localStorage.removeItem('teras_affiliate_id')
       setCart([])
+      window.dispatchEvent(new Event('storage'))
       setAffiliateId('')
       setSuccessMessage('Pesanan Anda telah berhasil dibuat!')
       setCheckoutSuccess(true)

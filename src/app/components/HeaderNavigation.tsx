@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useTransition } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import CartButton from './CartButton'
 import NotificationBell from './NotificationBell'
 import ChatHeaderButton from './ChatHeaderButton'
@@ -18,6 +18,10 @@ interface HeaderNavigationProps {
 
 export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderNavigationProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const communityMatch = pathname?.match(/\/community\/([^/]+)/)
+  const activeCommunityId = communityMatch ? communityMatch[1] : null
+
   const [isOpenMobile, setIsOpenMobile] = useState(false)
   const [isOpenProfile, setIsOpenProfile] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -62,7 +66,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
           {/* Right: Actions */}
           <div className="flex items-center gap-3">
-            {user && <CartButton userId={user.id} />}
+            {user && <CartButton userId={user.id} communityId={activeCommunityId || undefined} />}
             {user && <NotificationBell />}
             {user && <ChatHeaderButton userId={user.id} />}
 
