@@ -269,16 +269,17 @@ export default function CommunityDetailPage() {
   const [userShuSummary, setUserShuSummary] = useState<any>(null)
 
   // SHU Admin Form Config States
-  const [shuNetProfit, setShuNetProfit] = useState('100000000')
-  const [shuPctCadangan, setShuPctCadangan] = useState(25)
-  const [shuPctJasaModal, setShuPctJasaModal] = useState(20)
-  const [shuPctJasaUsaha, setShuPctJasaUsaha] = useState(30)
-  const [shuPctPengurus, setShuPctPengurus] = useState(10)
-  const [shuPctPengawas, setShuPctPengawas] = useState(5)
-  const [shuPctKaryawan, setShuPctKaryawan] = useState(5)
-  const [shuPctPendidikan, setShuPctPendidikan] = useState(2.5)
-  const [shuPctSosial, setShuPctSosial] = useState(2.5)
+  const [shuNetProfit, setShuNetProfit] = useState('0')
+  const [shuPctCadangan, setShuPctCadangan] = useState(0)
+  const [shuPctJasaModal, setShuPctJasaModal] = useState(0)
+  const [shuPctJasaUsaha, setShuPctJasaUsaha] = useState(0)
+  const [shuPctPengurus, setShuPctPengurus] = useState(0)
+  const [shuPctPengawas, setShuPctPengawas] = useState(0)
+  const [shuPctKaryawan, setShuPctKaryawan] = useState(0)
+  const [shuPctPendidikan, setShuPctPendidikan] = useState(0)
+  const [shuPctSosial, setShuPctSosial] = useState(0)
   const [isCalculatingShu, setIsCalculatingShu] = useState(false)
+  const [shuTab, setShuTab] = useState<'preview' | 'final'>('preview')
 
   // Multi-Tier Referral & KYC States
   const [refJoinFee, setRefJoinFee] = useState<number>(100000)
@@ -725,15 +726,16 @@ export default function CommunityDetailPage() {
         setCommunityShuData(shuDataRes)
         if (shuDataRes.config) {
           setShuConfig(shuDataRes.config)
-          setShuNetProfit(String(shuDataRes.config.totalNetProfit || 100000000))
-          setShuPctCadangan(shuDataRes.config.pctCadangan ?? 25)
-          setShuPctJasaModal(shuDataRes.config.pctJasaModal ?? 20)
-          setShuPctJasaUsaha(shuDataRes.config.pctJasaUsaha ?? 30)
-          setShuPctPengurus(shuDataRes.config.pctPengurus ?? 10)
-          setShuPctPengawas(shuDataRes.config.pctPengawas ?? 5)
-          setShuPctKaryawan(shuDataRes.config.pctKaryawan ?? 5)
-          setShuPctPendidikan(shuDataRes.config.pctPendidikan ?? 2.5)
-          setShuPctSosial(shuDataRes.config.pctSosial ?? 2.5)
+          setShuNetProfit(String(shuDataRes.config.totalNetProfit ?? 0))
+          setShuPctCadangan(0)
+          setShuPctJasaModal(shuDataRes.config.pctJasaModal ?? 0)
+          setShuPctJasaUsaha(shuDataRes.config.pctJasaUsaha ?? 0)
+          setShuPctPengurus(0)
+          setShuPctPengawas(0)
+          setShuPctKaryawan(0)
+          setShuPctPendidikan(0)
+          setShuPctSosial(0)
+          setShuTab('final')
         }
       }
 
@@ -822,6 +824,7 @@ export default function CommunityDetailPage() {
       } else {
         goeyToast.success('Kalkulasi & pembagian SHU anggota berhasil dihitung secara otomatis!')
         loadData()
+        setShuTab('final')
       }
     } catch (err: any) {
       goeyToast.error('Terjadi kesalahan saat menghitung SHU.')
@@ -3347,229 +3350,369 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
 
-                  {/* ADMIN CONFIGURATION PANEL — only Jasa Modal & Jasa Usaha */}
+                  {/* ADMIN VIEW TABS SWITCHER */}
                   {isCanManageCoop && (
-                    <form onSubmit={handleCalculateAndSaveShu} className="p-6 bg-gray-50/80 border border-gray-200/80 rounded-3xl space-y-5">
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-gray-200/60 pb-3">
-                        <div>
-                          <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
-                            <Sliders className="w-4 h-4 text-[#2DB24A]" /> Pengaturan Alokasi Persentase SHU (RAT)
-                          </h3>
-                          <p className="text-xs text-gray-500 font-medium mt-0.5">
-                            Atur total laba bersih, lalu persentase Jasa Modal &amp; Jasa Usaha. Bagian per anggota dihitung otomatis.
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className={`px-3 py-1 rounded text-xs font-bold font-mono ${
-                            (shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
-                            {(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
-                              ? `✓ Persentase Valid (0-100%)`
-                              : `⚠️ Nilai harus di antara 0% s/d 100%`
-                            }
-                          </div>
-                          <button
-                            type="submit"
-                            disabled={isCalculatingShu || !(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)}
-                            className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2 shrink-0 disabled:opacity-50"
-                          >
-                            {isCalculatingShu ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Hitung & Simpan SHU Otomatis'}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Laba Bersih Input */}
-                      <div className="max-w-md">
-                        <label className="block text-xs font-black text-gray-800 uppercase tracking-wider mb-1">
-                          Total Laba Bersih Koperasi (SHU Bersih Rp) *
-                        </label>
-                        <input
-                          type="number"
-                          required
-                          min="1000"
-                          value={shuNetProfit}
-                          onChange={e => setShuNetProfit(e.target.value)}
-                          className="w-full px-4 py-2.5 text-base font-mono font-black text-gray-900 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2DB24A] outline-none"
-                          placeholder="100000000"
-                        />
-                        <span className="text-[10px] text-gray-400 font-semibold mt-1 block">
-                          Nominal bersih: Rp {Number(shuNetProfit || 0).toLocaleString('id-ID')}
-                        </span>
-                      </div>
-
-                      {/* Percentages — hanya Jasa Modal & Jasa Usaha */}
-                      <div className="grid grid-cols-2 gap-4 pt-1">
-                        <div className="p-4 bg-white border border-amber-200 rounded-2xl space-y-1.5">
-                          <label className="block text-[10px] font-black text-amber-800 uppercase tracking-wider">
-                            % Jasa Modal
-                          </label>
-                          <input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max="100"
-                            value={shuPctJasaModal}
-                            onChange={e => setShuPctJasaModal(Number(e.target.value))}
-                            className="w-full px-3 py-2 text-sm font-bold border rounded-xl border-amber-200 focus:ring-2 focus:ring-amber-300 outline-none"
-                          />
-                          <span className="text-[9px] text-amber-700 font-black block">
-                            Pool: Rp {(Number(shuNetProfit || 0) * shuPctJasaModal / 100).toLocaleString('id-ID')}
-                          </span>
-                          <p className="text-[9px] text-gray-400 font-medium leading-tight">
-                            Dibagikan proporsional simpanan anggota
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-white border border-blue-200 rounded-2xl space-y-1.5">
-                          <label className="block text-[10px] font-black text-blue-800 uppercase tracking-wider">
-                            % Jasa Usaha
-                          </label>
-                          <input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            max="100"
-                            value={shuPctJasaUsaha}
-                            onChange={e => setShuPctJasaUsaha(Number(e.target.value))}
-                            className="w-full px-3 py-2 text-sm font-bold border rounded-xl border-blue-200 focus:ring-2 focus:ring-blue-300 outline-none"
-                          />
-                          <span className="text-[9px] text-blue-700 font-black block">
-                            Pool: Rp {(Number(shuNetProfit || 0) * shuPctJasaUsaha / 100).toLocaleString('id-ID')}
-                          </span>
-                          <p className="text-[9px] text-gray-400 font-medium leading-tight">
-                            Dibagikan proporsional keaktifan transaksi anggota
-                          </p>
-                        </div>
-                      </div>
-                    </form>
+                    <div className="flex gap-2 border-b border-gray-100 pb-1">
+                      <button
+                        type="button"
+                        onClick={() => setShuTab('preview')}
+                        className={`px-4 py-2 text-xs font-black font-sora rounded-t-2xl transition-all cursor-pointer border-b-2 outline-none ${
+                          shuTab === 'preview'
+                            ? 'border-[#2DB24A] text-[#2DB24A]'
+                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        📊 Simulasi &amp; Live Preview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShuTab('final')}
+                        className={`px-4 py-2 text-xs font-black font-sora rounded-t-2xl transition-all cursor-pointer border-b-2 outline-none ${
+                          shuTab === 'final'
+                            ? 'border-[#2DB24A] text-[#2DB24A]'
+                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        🔒 Hasil SHU Final Disimpan
+                      </button>
+                    </div>
                   )}
 
-                  {/* ── BARIS 1: SHU Bersih, Total Tabungan, Total Transaksi ── */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="p-5 bg-gradient-to-br from-emerald-800 to-emerald-950 text-white rounded-3xl space-y-2 shadow-md">
-                      <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">SHU Bersih Koperasi</span>
-                      <span className="text-xl font-black block font-sora">
-                        Rp {Number(shuNetProfit || 0).toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[10px] text-emerald-200/80 font-medium">Total laba bersih koperasi tahun berjalan</p>
-                    </div>
-
-                    <div className="p-5 bg-white border border-gray-200/80 rounded-3xl space-y-2 shadow-xs">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Tabungan Koperasi</span>
-                      <span className="text-xl font-black text-gray-900 block font-sora">
-                        Rp {Number(communitySavingsSummary?.totalSavingsCommunity || 0).toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[10px] text-gray-500 font-medium">Akumulasi simpanan seluruh anggota</p>
-                    </div>
-
-                    <div className="p-5 bg-white border border-gray-200/80 rounded-3xl space-y-2 shadow-xs">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Transaksi Koperasi</span>
-                      <span className="text-xl font-black text-gray-900 block font-sora">
-                        Rp {Number(communitySavingsSummary?.totalTransaksiCommunity || 0).toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[10px] text-gray-500 font-medium">Total transaksi belanja seluruh anggota</p>
-                    </div>
-                  </div>
-
-                  {/* ── BARIS 2: Jasa Modal, Jasa Usaha ── */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-3xl space-y-2 shadow-xs">
-                      <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Pool Jasa Modal ({shuPctJasaModal}%)</span>
-                      <span className="text-xl font-black text-gray-900 block font-sora">
-                        Rp {(Number(shuNetProfit || 0) * shuPctJasaModal / 100).toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[10px] text-gray-500 font-medium">
-                        Rumus: (Simpanan Anggota / Total Tabungan Koperasi) × Pool ini
-                      </p>
-                    </div>
-
-                    <div className="p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-3xl space-y-2 shadow-xs">
-                      <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Pool Jasa Usaha ({shuPctJasaUsaha}%)</span>
-                      <span className="text-xl font-black text-gray-900 block font-sora">
-                        Rp {(Number(shuNetProfit || 0) * shuPctJasaUsaha / 100).toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[10px] text-gray-500 font-medium">
-                        Rumus: (Transaksi Anggota / Total Transaksi Koperasi) × Pool ini
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Admin View: Full Member Distribution Table */}
-                  {isCanManageCoop && (
-                    <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
-                      <div className="border-b border-gray-100 pb-3">
-                        <h3 className="text-sm font-black text-gray-900 font-sora">Rincian Pembagian SHU Anggota (Otomatis)</h3>
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">
-                          Dihitung otomatis berdasarkan proporsi simpanan &amp; transaksi masing-masing anggota
-                        </p>
-                      </div>
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                              <th className="py-3 px-3">Nama Anggota</th>
-                              <th className="py-3 px-3">Total Simpanan (Rp)</th>
-                              <th className="py-3 px-3">SHU Jasa Modal</th>
-                              <th className="py-3 px-3">Total Transaksi (Rp)</th>
-                              <th className="py-3 px-3">SHU Jasa Usaha</th>
-                              <th className="py-3 px-3">Total SHU Diterima</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
-                            {(() => {
-                              const totSimp = communitySavingsSummary?.totalSavingsCommunity || 0
-                              const totTx = communitySavingsSummary?.totalTransaksiCommunity || 0
-                              const poolJasaModal = Number(shuNetProfit || 0) * shuPctJasaModal / 100
-                              const poolJasaUsaha = Number(shuNetProfit || 0) * shuPctJasaUsaha / 100
-
-                              if (!members || members.length === 0) {
-                                return (
-                                  <tr>
-                                    <td colSpan={6} className="py-8 text-center text-gray-400 font-bold">
-                                      Belum ada anggota terdaftar di komunitas ini
-                                    </td>
-                                  </tr>
-                                )
+                  {/* ADMIN VIEW: PREVIEW TAB */}
+                  {isCanManageCoop && shuTab === 'preview' && (
+                    <div className="space-y-6">
+                      {/* ADMIN CONFIGURATION PANEL — only Jasa Modal & Jasa Usaha */}
+                      <form onSubmit={handleCalculateAndSaveShu} className="p-6 bg-gray-50/80 border border-gray-200/80 rounded-3xl space-y-5">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-gray-200/60 pb-3">
+                          <div>
+                            <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
+                              <Sliders className="w-4 h-4 text-[#2DB24A]" /> Pengaturan Alokasi Persentase SHU (RAT)
+                            </h3>
+                            <p className="text-xs text-gray-500 font-medium mt-0.5">
+                              Atur total laba bersih, lalu persentase Jasa Modal &amp; Jasa Usaha. Bagian per anggota dihitung otomatis.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`px-3 py-1 rounded text-xs font-bold font-mono ${
+                              (shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
+                              {(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
+                                ? `✓ Persentase Valid (0-100%)`
+                                : `⚠️ Nilai harus di antara 0% s/d 100%`
                               }
+                            </div>
+                            <button
+                              type="submit"
+                              disabled={isCalculatingShu || !(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)}
+                              className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2 shrink-0 disabled:opacity-50"
+                            >
+                              {isCalculatingShu ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Hitung & Simpan SHU Otomatis'}
+                            </button>
+                          </div>
+                        </div>
 
-                              return members.map((m: any, i: number) => {
-                                const name = m.name || m.user?.name || m.email || `Anggota ${i + 1}`
-                                const userSimp = communitySavingsSummary?.memberBalances?.[m.userId]?.total || 0
-                                const userTx   = communitySavingsSummary?.memberTransaksi?.[m.userId] || 0
+                        {/* Laba Bersih Input */}
+                        <div className="max-w-md">
+                          <label className="block text-xs font-black text-gray-800 uppercase tracking-wider mb-1">
+                            Total Laba Bersih Koperasi (SHU Bersih Rp) *
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            value={shuNetProfit}
+                            onChange={e => setShuNetProfit(e.target.value)}
+                            className="w-full px-4 py-2.5 text-base font-mono font-black text-gray-900 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2DB24A] outline-none"
+                            placeholder="0"
+                          />
+                          <span className="text-[10px] text-gray-400 font-semibold mt-1 block">
+                            Nominal bersih: Rp {Number(shuNetProfit || 0).toLocaleString('id-ID')}
+                          </span>
+                        </div>
 
-                                // Proportional formulas: Jasa Modal & Jasa Usaha
-                                const jModal = totSimp > 0 ? (userSimp / totSimp) * poolJasaModal : 0
-                                const jUsaha = totTx   > 0 ? (userTx   / totTx)   * poolJasaUsaha : 0
-                                const totShu = jModal + jUsaha
+                        {/* Percentages — hanya Jasa Modal & Jasa Usaha */}
+                        <div className="grid grid-cols-2 gap-4 pt-1">
+                          <div className="p-4 bg-white border border-amber-200 rounded-2xl space-y-1.5">
+                            <label className="block text-[10px] font-black text-amber-800 uppercase tracking-wider">
+                              % Jasa Modal
+                            </label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="100"
+                              value={shuPctJasaModal}
+                              onChange={e => setShuPctJasaModal(Number(e.target.value))}
+                              className="w-full px-3 py-2 text-sm font-bold border rounded-xl border-amber-200 focus:ring-2 focus:ring-amber-300 outline-none"
+                            />
+                            <span className="text-[9px] text-amber-700 font-black block">
+                              Pool: Rp {(Number(shuNetProfit || 0) * shuPctJasaModal / 100).toLocaleString('id-ID')}
+                            </span>
+                            <p className="text-[9px] text-gray-400 font-medium leading-tight">
+                              Dibagikan proporsional simpanan anggota
+                            </p>
+                          </div>
 
-                                return (
-                                  <tr key={m.id || i} className="hover:bg-gray-50/50 transition-colors">
-                                    <td className="py-3 px-3 font-bold text-gray-900">{name}</td>
-                                    <td className="py-3 px-3 text-gray-600 font-semibold">
-                                      Rp {Number(userSimp).toLocaleString('id-ID')}
-                                    </td>
-                                    <td className="py-3 px-3 text-amber-700 font-bold">
-                                      Rp {Math.round(jModal).toLocaleString('id-ID')}
-                                    </td>
-                                    <td className="py-3 px-3 text-gray-600 font-semibold">
-                                      Rp {Number(userTx).toLocaleString('id-ID')}
-                                    </td>
-                                    <td className="py-3 px-3 text-blue-700 font-bold">
-                                      Rp {Math.round(jUsaha).toLocaleString('id-ID')}
-                                    </td>
-                                    <td className="py-3 px-3 font-black text-[#0F5132] text-sm">
-                                      Rp {Math.round(totShu).toLocaleString('id-ID')}
-                                    </td>
-                                  </tr>
-                                )
-                              })
-                            })()}
-                          </tbody>
-                        </table>
+                          <div className="p-4 bg-white border border-blue-200 rounded-2xl space-y-1.5">
+                            <label className="block text-[10px] font-black text-blue-800 uppercase tracking-wider">
+                              % Jasa Usaha
+                            </label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="100"
+                              value={shuPctJasaUsaha}
+                              onChange={e => setShuPctJasaUsaha(Number(e.target.value))}
+                              className="w-full px-3 py-2 text-sm font-bold border rounded-xl border-blue-200 focus:ring-2 focus:ring-blue-300 outline-none"
+                            />
+                            <span className="text-[9px] text-blue-700 font-black block">
+                              Pool: Rp {(Number(shuNetProfit || 0) * shuPctJasaUsaha / 100).toLocaleString('id-ID')}
+                            </span>
+                            <p className="text-[9px] text-gray-400 font-medium leading-tight">
+                              Dibagikan proporsional keaktifan transaksi anggota
+                            </p>
+                          </div>
+                        </div>
+                      </form>
+
+                      {/* ── BARIS 1: SHU Bersih, Total Tabungan, Total Transaksi ── */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="p-5 bg-gradient-to-br from-emerald-800 to-emerald-950 text-white rounded-3xl space-y-2 shadow-md">
+                          <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">SHU Bersih Koperasi (Preview)</span>
+                          <span className="text-xl font-black block font-sora">
+                            Rp {Number(shuNetProfit || 0).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-emerald-200/80 font-medium">Total laba bersih koperasi tahun berjalan</p>
+                        </div>
+
+                        <div className="p-5 bg-white border border-gray-200/80 rounded-3xl space-y-2 shadow-xs">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Tabungan Koperasi</span>
+                          <span className="text-xl font-black text-gray-900 block font-sora">
+                            Rp {Number(communitySavingsSummary?.totalSavingsCommunity || 0).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-gray-500 font-medium">Akumulasi simpanan seluruh anggota</p>
+                        </div>
+
+                        <div className="p-5 bg-white border border-gray-200/80 rounded-3xl space-y-2 shadow-xs">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Transaksi Koperasi</span>
+                          <span className="text-xl font-black text-gray-900 block font-sora">
+                            Rp {Number(communitySavingsSummary?.totalTransaksiCommunity || 0).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-gray-500 font-medium">Total transaksi belanja seluruh anggota</p>
+                        </div>
                       </div>
+
+                      {/* ── BARIS 2: Jasa Modal, Jasa Usaha ── */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-3xl space-y-2 shadow-xs">
+                          <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Pool Jasa Modal ({shuPctJasaModal}%)</span>
+                          <span className="text-xl font-black text-gray-900 block font-sora">
+                            Rp {(Number(shuNetProfit || 0) * shuPctJasaModal / 100).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-gray-500 font-medium">
+                            Rumus: (Simpanan Anggota / Total Tabungan Koperasi) × Pool ini
+                          </p>
+                        </div>
+
+                        <div className="p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-3xl space-y-2 shadow-xs">
+                          <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Pool Jasa Usaha ({shuPctJasaUsaha}%)</span>
+                          <span className="text-xl font-black text-gray-900 block font-sora">
+                            Rp {(Number(shuNetProfit || 0) * shuPctJasaUsaha / 100).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-gray-500 font-medium">
+                            Rumus: (Transaksi Anggota / Total Transaksi Koperasi) × Pool ini
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Admin View: Full Member Distribution Table */}
+                      <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
+                        <div className="border-b border-gray-100 pb-3">
+                          <h3 className="text-sm font-black text-gray-900 font-sora">Rincian Preview Pembagian SHU Anggota</h3>
+                          <p className="text-xs text-gray-500 font-medium mt-0.5">
+                            Menampilkan simulasi hasil realtime berdasarkan transaksi database terbaru. Belum disimpan/dibagikan secara resmi.
+                          </p>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                <th className="py-3 px-3">Nama Anggota</th>
+                                <th className="py-3 px-3">Total Simpanan (Rp)</th>
+                                <th className="py-3 px-3">SHU Jasa Modal</th>
+                                <th className="py-3 px-3">Total Transaksi (Rp)</th>
+                                <th className="py-3 px-3">SHU Jasa Usaha</th>
+                                <th className="py-3 px-3">Total SHU Diterima</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
+                              {(() => {
+                                const totSimp = communitySavingsSummary?.totalSavingsCommunity || 0
+                                const totTx = communitySavingsSummary?.totalTransaksiCommunity || 0
+                                const poolJasaModal = Number(shuNetProfit || 0) * shuPctJasaModal / 100
+                                const poolJasaUsaha = Number(shuNetProfit || 0) * shuPctJasaUsaha / 100
+
+                                if (!members || members.length === 0) {
+                                  return (
+                                    <tr>
+                                      <td colSpan={6} className="py-8 text-center text-gray-400 font-bold">
+                                        Belum ada anggota terdaftar di komunitas ini
+                                      </td>
+                                    </tr>
+                                  )
+                                }
+
+                                return members.map((m: any, i: number) => {
+                                  const name = m.name || m.user?.name || m.email || `Anggota ${i + 1}`
+                                  const userSimp = communitySavingsSummary?.memberBalances?.[m.userId]?.total || 0
+                                  const userTx   = communitySavingsSummary?.memberTransaksi?.[m.userId] || 0
+
+                                  // Proportional formulas: Jasa Modal & Jasa Usaha
+                                  const jModal = totSimp > 0 ? (userSimp / totSimp) * poolJasaModal : 0
+                                  const jUsaha = totTx   > 0 ? (userTx   / totTx)   * poolJasaUsaha : 0
+                                  const totShu = jModal + jUsaha
+
+                                  return (
+                                    <tr key={m.id || i} className="hover:bg-gray-50/50 transition-colors">
+                                      <td className="py-3 px-3 font-bold text-gray-900">{name}</td>
+                                      <td className="py-3 px-3 text-gray-600 font-semibold">
+                                        Rp {Number(userSimp).toLocaleString('id-ID')}
+                                      </td>
+                                      <td className="py-3 px-3 text-amber-700 font-bold">
+                                        Rp {Math.round(jModal).toLocaleString('id-ID')}
+                                      </td>
+                                      <td className="py-3 px-3 text-gray-600 font-semibold">
+                                        Rp {Number(userTx).toLocaleString('id-ID')}
+                                      </td>
+                                      <td className="py-3 px-3 text-blue-700 font-bold">
+                                        Rp {Math.round(jUsaha).toLocaleString('id-ID')}
+                                      </td>
+                                      <td className="py-3 px-3 font-black text-[#0F5132] text-sm">
+                                        Rp {Math.round(totShu).toLocaleString('id-ID')}
+                                      </td>
+                                    </tr>
+                                  )
+                                })
+                              })()}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ADMIN VIEW: FINAL SHU TAB */}
+                  {isCanManageCoop && shuTab === 'final' && (
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                      {communityShuData?.config ? (
+                        <>
+                          {/* Saved Config Overview Cards */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="p-5 bg-gradient-to-br from-emerald-950 to-emerald-900 text-white rounded-3xl space-y-2 shadow-md">
+                              <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">SHU Bersih Koperasi (Final)</span>
+                              <span className="text-xl font-black block font-sora">
+                                Rp {Number(communityShuData.config.totalNetProfit || 0).toLocaleString('id-ID')}
+                              </span>
+                              <p className="text-[10px] text-emerald-200/80 font-medium">Tahun buku RAT: {communityShuData.config.year}</p>
+                            </div>
+
+                            <div className="p-5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-3xl space-y-2 shadow-xs">
+                              <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Jasa Modal ({communityShuData.config.pctJasaModal}%)</span>
+                              <span className="text-xl font-black text-gray-900 block font-sora">
+                                Rp {(Number(communityShuData.config.totalNetProfit || 0) * communityShuData.config.pctJasaModal / 100).toLocaleString('id-ID')}
+                              </span>
+                              <p className="text-[10px] text-gray-500 font-medium">Alokasi pool Jasa Modal disimpan</p>
+                            </div>
+
+                            <div className="p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-3xl space-y-2 shadow-xs">
+                              <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Jasa Usaha ({communityShuData.config.pctJasaUsaha}%)</span>
+                              <span className="text-xl font-black text-gray-900 block font-sora">
+                                Rp {(Number(communityShuData.config.totalNetProfit || 0) * communityShuData.config.pctJasaUsaha / 100).toLocaleString('id-ID')}
+                              </span>
+                              <p className="text-[10px] text-gray-500 font-medium">Alokasi pool Jasa Usaha disimpan</p>
+                            </div>
+                          </div>
+
+                          {/* Final Snapshot Table */}
+                          <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
+                            <div className="border-b border-gray-100 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                              <div>
+                                <h3 className="text-sm font-black text-gray-900 font-sora">Daftar Pembagian SHU Anggota Terkunci</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                  Data resmi di bawah ini disimpan di database. Gunakan tombol &quot;Simulasi &amp; Live Preview&quot; untuk memperbarui porsi SHU jika terdapat transaksi baru.
+                                </p>
+                              </div>
+                              <span className="text-xs font-mono font-bold bg-[#eef8e9] text-[#006e24] px-3 py-1.5 rounded-full border border-[#2db24a]/20">
+                                🔒 LOCKED / FINAL
+                              </span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                    <th className="py-3 px-3">Nama Anggota</th>
+                                    <th className="py-3 px-3">Total Simpanan (Rp)</th>
+                                    <th className="py-3 px-3">SHU Jasa Modal</th>
+                                    <th className="py-3 px-3">Total Transaksi (Rp)</th>
+                                    <th className="py-3 px-3">SHU Jasa Usaha</th>
+                                    <th className="py-3 px-3">Total SHU Diterima</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
+                                  {communityShuData.config.distributions && communityShuData.config.distributions.length > 0 ? (
+                                    communityShuData.config.distributions.map((d: any, i: number) => (
+                                      <tr key={d.id || i} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="py-3 px-3 font-bold text-gray-900">
+                                          <div>{d.userName}</div>
+                                          <div className="text-[9px] text-gray-400 font-medium">{d.userEmail}</div>
+                                        </td>
+                                        <td className="py-3 px-3 text-gray-600 font-semibold">
+                                          Rp {Number(d.simpananMember || 0).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-3 text-amber-700 font-bold">
+                                          Rp {Number(d.shuJasaModalAmount || 0).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-3 text-gray-600 font-semibold">
+                                          Rp {Number(d.transaksiMember || 0).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-3 text-blue-700 font-bold">
+                                          Rp {Number(d.shuJasaUsahaAmount || 0).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-3 font-black text-[#0F5132] text-sm">
+                                          Rp {Number(d.totalShuAmount || 0).toLocaleString('id-ID')}
+                                        </td>
+                                      </tr>
+                                    ))
+                                  ) : (
+                                    <tr>
+                                      <td colSpan={6} className="py-8 text-center text-gray-400 font-bold">
+                                        Tidak ada rincian anggota tersimpan.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-8 bg-gray-50 border border-dashed border-gray-200 rounded-3xl text-center">
+                          <p className="text-sm text-gray-500 font-bold">Belum ada pembagian SHU yang disimpan untuk tahun buku ini.</p>
+                          <p className="text-xs text-gray-400 font-medium mt-1">Silakan atur persentase di tab &quot;Simulasi &amp; Live Preview&quot; terlebih dahulu kemudian simpan.</p>
+                          <button
+                            type="button"
+                            onClick={() => setShuTab('preview')}
+                            className="mt-4 px-4 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white text-xs font-bold rounded-xl cursor-pointer transition-colors border-none"
+                          >
+                            Buka Simulasi &amp; Live Preview
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 

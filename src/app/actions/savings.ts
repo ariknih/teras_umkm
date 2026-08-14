@@ -95,6 +95,13 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
 
     const totalSavingsCommunity = totalPokok + totalWajib + totalSukarela
 
+    // Fetch products to resolve which ones belong to merchants of this community
+    const allProducts: any[] = typeof (DataStore as any).getProducts === 'function' ? await (DataStore as any).getProducts() : []
+    const productMerchantMap = new Map<string, string | null>()
+    for (const p of allProducts) {
+      productMerchantMap.set(p.id, p.merchant?.indukCommunityId || p.merchantId || null)
+    }
+
     // Fetch and aggregate completed order transaction volumes for Jasa Usaha
     const orders: any[] = typeof (DataStore as any).getAllOrders === 'function' ? await (DataStore as any).getAllOrders() : []
     const currentYear = new Date().getFullYear()
@@ -103,7 +110,22 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
 
     const completedOrdersInYear = orders.filter((o: any) => {
       const d = new Date(o.createdAt || o.date)
-      return d >= yearStartDate && d <= yearEndDate && o.status === 'COMPLETED'
+      if (!(d >= yearStartDate && d <= yearEndDate && o.status === 'COMPLETED')) {
+        return false
+      }
+
+      // Must be connected to a member of this community as buyer
+      const isBuyerInCommunity = communityMembers.some((m: any) => m.id === o.buyerId)
+      if (!isBuyerInCommunity) return false
+
+      // Must contain at least one item from this community's merchants
+      if (!o.items || o.items.length === 0) return false
+      const hasCommunityProduct = o.items.some((item: any) => {
+        const merchantCommId = productMerchantMap.get(item.productId)
+        return merchantCommId === communityId
+      })
+
+      return hasCommunityProduct
     })
 
     let totalTransaksiCommunity = 0
@@ -111,7 +133,17 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
 
     for (const member of communityMembers) {
       const userOrders = completedOrdersInYear.filter((o: any) => o.buyerId === member.id)
-      const userTotalTx = userOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0)
+      const userTotalTx = userOrders.reduce((sum: number, o: any) => {
+        // Sum only items belonging to merchants of this community
+        const orderCommunityTotal = o.items.reduce((itemSum: number, item: any) => {
+          const merchantCommId = productMerchantMap.get(item.productId)
+          if (merchantCommId === communityId) {
+            return itemSum + (Number(item.price || 0) * Number(item.quantity || 0))
+          }
+          return itemSum
+        }, 0)
+        return sum + orderCommunityTotal
+      }, 0)
       memberTransaksi[member.id] = userTotalTx
       totalTransaksiCommunity += userTotalTx
     }
