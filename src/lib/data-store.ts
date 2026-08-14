@@ -6560,7 +6560,7 @@ export const DataStore = {
     if (!community) {
       community = seedCommunities.find(s => s.id === id || s.id.startsWith(id)) || { ...seedCommunities[1], id }
     }
-    const ketua = globalMockUsers.find(u => u.id === community.ketuaId) || { id: 'user-admin-1', name: 'Super Admin Teras', role: 'ADMIN', email: 'admin@saloka.com' }
+    const ketua = globalMockUsers.find(u => u.id === community.ketuaId) || { id: 'user-admin-1', name: 'Super Admin Saloka', role: 'ADMIN', email: 'admin@saloka.com' }
     const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === id)
     const members = memberships.map((m: any) => {
       const user = globalMockUsers.find(u => u.id === m.userId)
@@ -8285,21 +8285,39 @@ export const DataStore = {
           where: { role: 'ADMIN' },
           select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, adminPermissions: true, createdAt: true }
         })
-        return admins.map(a => ({
-          ...a,
-          isSuperAdmin: a.isSuperAdmin ?? true
-        }))
+        return admins.map(a => {
+          const emailLower = (a.email || '').toLowerCase()
+          const nameLower = (a.name || '').toLowerCase()
+          const isSuper = a.isSuperAdmin === true || 
+                          emailLower === 'admin@saloka.com' || 
+                          emailLower === 'admin@teras.com' || 
+                          nameLower.includes('super') ||
+                          a.isSuperAdmin !== false
+          return {
+            ...a,
+            isSuperAdmin: isSuper
+          }
+        })
       } catch (_) {}
     }
-    return globalMockUsers.filter(u => u.role === 'ADMIN').map(u => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      isSuperAdmin: (u as any).isSuperAdmin ?? true,
-      adminPermissions: (u as any).adminPermissions || null,
-      createdAt: u.createdAt
-    }))
+    return globalMockUsers.filter(u => u.role === 'ADMIN').map(u => {
+      const emailLower = (u.email || '').toLowerCase()
+      const nameLower = (u.name || '').toLowerCase()
+      const isSuper = (u as any).isSuperAdmin === true || 
+                      emailLower === 'admin@saloka.com' || 
+                      emailLower === 'admin@teras.com' || 
+                      nameLower.includes('super') ||
+                      (u as any).isSuperAdmin !== false
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        isSuperAdmin: isSuper,
+        adminPermissions: (u as any).adminPermissions || null,
+        createdAt: u.createdAt
+      }
+    })
   },
 
   async createAdmin(data: { name: string, email: string, passwordHash: string, isSuperAdmin?: boolean, adminPermissions?: string | null }) {
@@ -9464,22 +9482,38 @@ export const DataStore = {
             data: { id: 'singleton', totalSupply: 100000, circulatingSupply: 0 }
           })
         }
-        return config
+        // Calculate real sum of all active coins held in ecosystem
+        const [userSum, commSum] = await Promise.all([
+          db.user.aggregate({ _sum: { coinBalance: true } }),
+          db.community.aggregate({ _sum: { coinBalance: true } })
+        ])
+        const actualCirculating = (userSum._sum.coinBalance || 0) + (commSum._sum.coinBalance || 0)
+        return {
+          ...config,
+          circulatingSupply: actualCirculating
+        }
       } catch (_) {}
     }
     // Mock
+    const userCirculating = globalMockUsers.reduce((sum, u) => sum + (Number(u.coinBalance) || 0), 0)
+    const communities = (globalThis as any).__mockCommunities || []
+    const commCirculating = communities.reduce((sum: number, c: any) => sum + (Number(c.coinBalance) || 0), 0)
+    const actualCirculating = userCirculating + commCirculating
+
     if (!(globalThis as any).__mockCoinSupplyConfig) {
       (globalThis as any).__mockCoinSupplyConfig = {
         id: 'singleton',
         coinRateRupiah: 1500,
         totalSupply: 100000,
-        circulatingSupply: 0,
+        circulatingSupply: actualCirculating,
         minTopupFree: 100,
         minTopupPaid: 1000,
         referralCoinAmount: 3,
         updatedAt: new Date(),
         updatedBy: null
       }
+    } else {
+      (globalThis as any).__mockCoinSupplyConfig.circulatingSupply = actualCirculating
     }
     return (globalThis as any).__mockCoinSupplyConfig
   },

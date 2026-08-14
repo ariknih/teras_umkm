@@ -3638,34 +3638,43 @@ export default function AdminDashboardClient({
           {activeTab === 'coins' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {/* Supply Stat Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
-                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Coin Supply Platform</p>
-                  <p className="text-2xl font-sora font-extrabold text-[#0F5132] tracking-tight">
-                    {(coinSupplyConfig.totalSupply || 100000).toLocaleString('id-ID')} Coin
-                  </p>
-                  <p className="text-[10px] text-[#64748b] mt-1.5">Max Supply Platform Saloka</p>
-                </div>
-                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
-                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Supply Beredar (Circulating)</p>
-                  <p className="text-2xl font-sora font-extrabold text-blue-600 tracking-tight">
-                    {(coinSupplyConfig.circulatingSupply || 0).toLocaleString('id-ID')} Coin
-                  </p>
-                  <p className="text-[10px] text-[#64748b] mt-1.5">Coin terdistribusi ke pasar</p>
-                </div>
-                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
-                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Supply Tersedia (Available)</p>
-                  <p className="text-2xl font-sora font-extrabold text-amber-600 tracking-tight">
-                    {((coinSupplyConfig.totalSupply || 100000) - (coinSupplyConfig.circulatingSupply || 0)).toLocaleString('id-ID')} Coin
-                  </p>
-                  <p className="text-[10px] text-[#64748b] mt-1.5">Siap didistribusikan Admin</p>
-                </div>
-                <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm flex flex-col justify-between">
-                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Koin Kas & Rate</p>
-                  <p className="text-sm font-bold text-slate-800">1 Koin = Rp 1.500</p>
-                  <p className="text-[10px] text-[#64748b] mt-1.5">Top up khusus Koperasi</p>
-                </div>
-              </div>
+              {(() => {
+                const actualHoldersSum = coinHolders.reduce((acc: number, h: any) => acc + (Number(h.coinBalance) || 0), 0)
+                const currentCirculating = Math.max(coinSupplyConfig.circulatingSupply || 0, actualHoldersSum)
+                const currentTotal = coinSupplyConfig.totalSupply || 100000
+                const currentAvailable = Math.max(0, currentTotal - currentCirculating)
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
+                      <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Coin Supply Platform</p>
+                      <p className="text-2xl font-sora font-extrabold text-[#0F5132] tracking-tight">
+                        {currentTotal.toLocaleString('id-ID')} Coin
+                      </p>
+                      <p className="text-[10px] text-[#64748b] mt-1.5">Max Supply Platform Saloka</p>
+                    </div>
+                    <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
+                      <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Supply Beredar (Circulating)</p>
+                      <p className="text-2xl font-sora font-extrabold text-blue-600 tracking-tight">
+                        {currentCirculating.toLocaleString('id-ID')} Coin
+                      </p>
+                      <p className="text-[10px] text-[#64748b] mt-1.5">Coin terdistribusi ke pasar</p>
+                    </div>
+                    <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
+                      <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Supply Tersedia (Available)</p>
+                      <p className="text-2xl font-sora font-extrabold text-amber-600 tracking-tight">
+                        {currentAvailable.toLocaleString('id-ID')} Coin
+                      </p>
+                      <p className="text-[10px] text-[#64748b] mt-1.5">Siap didistribusikan Admin</p>
+                    </div>
+                    <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm flex flex-col justify-between">
+                      <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Koin Kas & Rate</p>
+                      <p className="text-sm font-bold text-slate-800">1 Koin = Rp 1.500</p>
+                      <p className="text-[10px] text-[#64748b] mt-1.5">Top up khusus Koperasi</p>
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Supply Control & Distribution Panel */}
               <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm space-y-6">
