@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUser } from '@/app/actions/auth'
-import { Share2, Check } from 'lucide-react'
+import { Share2, Check, ShoppingCart, Zap, Plus, Minus, MessageCircle, Copy } from 'lucide-react'
+import { goeyToast } from 'goey-toast'
 
 interface ProductActionsProps {
   product: {
@@ -23,10 +24,9 @@ export default function ProductActions({ product, affCode, userId, userRole }: P
   const [added, setAdded] = useState(false)
   const [activeUserId, setActiveUserId] = useState<string | undefined>(userId)
   const [activeUserRole, setActiveUserRole] = useState<string | undefined>(userRole)
-  const [affiliateLinkCopied, setAffiliateLinkCopied] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
   const router = useRouter()
 
-  // Sync userId with state, fallback to client-side session fetch
   useEffect(() => {
     if (userId) {
       setActiveUserId(userId)
@@ -73,6 +73,7 @@ export default function ProductActions({ product, affCode, userId, userRole }: P
   const saveCart = (cart: any[]) => {
     const cartKey = activeUserId ? `teras_cart_${activeUserId}` : 'teras_cart'
     localStorage.setItem(cartKey, JSON.stringify(cart))
+    window.dispatchEvent(new Event('cart-updated'))
   }
 
   const handleAddToCart = () => {
@@ -86,8 +87,8 @@ export default function ProductActions({ product, affCode, userId, userRole }: P
     }
     saveCart(cart)
     setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
-    router.refresh()
+    goeyToast.success(`Berhasil menambahkan ${qty}x ${product.title} ke keranjang!`)
+    setTimeout(() => setAdded(false), 2500)
   }
 
   const handleBuyNow = () => {
@@ -103,117 +104,129 @@ export default function ProductActions({ product, affCode, userId, userRole }: P
     router.push('/cart')
   }
 
-  const handleCopyAffiliateLink = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    const link = `${origin}/market/product/${product.id}?aff=${activeUserId}`
-    navigator.clipboard.writeText(link).then(() => {
-      setAffiliateLinkCopied(true)
-      setTimeout(() => setAffiliateLinkCopied(false), 2500)
-    })
+  const handleShareWhatsApp = () => {
+    if (typeof window === 'undefined') return
+    const currentUrl = window.location.href
+    const text = encodeURIComponent(`Beli ${product.title} seharga Rp ${product.price.toLocaleString('id-ID')} di Saloka.id: ${currentUrl}`)
+    window.open(`https://wa.me/?text=${text}`, '_blank')
+  }
+
+  const handleCopyLink = () => {
+    if (typeof window === 'undefined') return
+    navigator.clipboard.writeText(window.location.href)
+    setCopiedLink(true)
+    goeyToast.success('Link produk berhasil disalin ke clipboard!')
+    setTimeout(() => setCopiedLink(false), 3000)
   }
 
   return (
-    <div className="space-y-6">
-      {/* Quantity Selector */}
-      {product.stock > 0 && (
-        <div className="flex items-center gap-4">
-          <span className="text-xs font-geist font-bold text-text-secondary uppercase tracking-wider">
-            Jumlah:
-          </span>
-          <div className="flex items-center border border-border-subtle bg-surface-container rounded">
+    <div className="space-y-4">
+      {/* Quantity Selector & Subtotal preview */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50 border border-slate-200 p-4 rounded-2xl">
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-bold text-slate-700">Atur Jumlah:</span>
+          <div className="flex items-center border border-slate-300 rounded-xl bg-white overflow-hidden shadow-2xs">
             <button
-              id="dec-qty"
               onClick={() => handleQtyChange(qty - 1)}
-              className="px-3 py-1.5 hover:text-primary transition-colors text-sm font-bold"
+              disabled={qty <= 1 || product.stock <= 0}
+              className="p-2 text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer transition-colors"
+              title="Kurang"
             >
-              -
+              <Minus size={14} />
             </button>
-            <span id="qty-display" className="px-4 py-1.5 text-xs text-text-primary font-bold font-geist">
-              {qty}
-            </span>
+            <input
+              type="number"
+              value={qty}
+              onChange={(e) => handleQtyChange(parseInt(e.target.value) || 1)}
+              className="w-12 text-center text-xs font-black text-slate-900 border-none outline-none"
+            />
             <button
-              id="inc-qty"
               onClick={() => handleQtyChange(qty + 1)}
-              className="px-3 py-1.5 hover:text-primary transition-colors text-sm font-bold"
+              disabled={qty >= product.stock || product.stock <= 0}
+              className="p-2 text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer transition-colors"
+              title="Tambah"
             >
-              +
+              <Plus size={14} />
             </button>
           </div>
         </div>
-      )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        {product.stock > 0 ? (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== 'undefined' && product.merchantId) {
-                  window.dispatchEvent(new CustomEvent('openTerasChat', {
-                    detail: {
-                      sellerId: product.merchantId,
-                      productId: product.id
-                    }
-                  }))
-                }
-              }}
-              className="py-4 px-5 bg-surface-container hover:bg-surface-container-high border border-primary/25 hover:border-primary/50 text-primary font-geist font-bold text-xs uppercase tracking-wider rounded flex items-center justify-center gap-1.5 transition-all duration-300"
-              title="Chat dengan Penjual"
-            >
-              💬 Chat
-            </button>
-            <button
-              id="btn-add-to-cart"
-              onClick={handleAddToCart}
-              className={`flex-1 py-4 font-geist font-bold text-xs uppercase tracking-wider rounded border transition-all duration-300 ${
-                added
-                  ? 'bg-green-950 border-green-500/50 text-green-400'
-                  : 'bg-surface-container hover:bg-surface-container-high border-border-subtle hover:border-primary/40 text-text-primary'
-              }`}
-            >
-              {added ? '✓ Berhasil Ditambahkan' : 'Masukkan Keranjang'}
-            </button>
-            <button
-              id="btn-buy-now"
-              onClick={handleBuyNow}
-              className="btn-primary flex-1 text-xs shadow-lg"
-            >
-              Beli Sekarang
-            </button>
-          </>
-        ) : (
-          <button
-            id="btn-out-of-stock"
-            disabled
-            className="w-full py-4 bg-surface-container border border-border-subtle text-text-secondary font-geist font-bold text-xs uppercase tracking-wider rounded cursor-not-allowed opacity-50"
-          >
-            Stok Habis
-          </button>
-        )}
+        <div className="text-right">
+          <span className="text-[10px] text-slate-400 font-bold uppercase block">Subtotal Produk</span>
+          <span className="text-base font-black text-slate-900 font-mono">
+            Rp {(product.price * qty).toLocaleString('id-ID')}
+          </span>
+        </div>
       </div>
 
-      {/* Affiliate Share Button — hanya tampil untuk AFFILIATE */}
-      {activeUserRole === 'AFFILIATE' && activeUserId && (
-        <div className="pt-2 border-t border-border-subtle/40">
-          <p className="text-[10px] text-text-secondary font-geist mb-2">
-            Bagikan produk ini dengan link affiliate Anda dan dapatkan komisi.
-          </p>
+      {/* Main Action Buttons Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button
+          onClick={handleAddToCart}
+          disabled={product.stock <= 0}
+          className="w-full py-3.5 bg-white hover:bg-emerald-50 text-[#006E24] border-2 border-[#006E24] rounded-xl font-extrabold text-xs transition-all shadow-2xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          {added ? <Check size={16} strokeWidth={3} /> : <ShoppingCart size={16} />}
+          <span>{added ? 'Ditambahkan!' : '+ Keranjang'}</span>
+        </button>
+
+        <button
+          onClick={handleBuyNow}
+          disabled={product.stock <= 0}
+          className="w-full py-3.5 bg-[#006E24] hover:bg-[#084e1b] text-white rounded-xl font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          <Zap size={16} className="fill-amber-300 text-amber-300" />
+          <span>Beli Sekarang</span>
+        </button>
+      </div>
+
+      {/* Social Share & Copy Link */}
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+        <span className="text-slate-500 font-medium">Bagikan Produk:</span>
+        <div className="flex items-center gap-2">
           <button
-            id="btn-share-affiliate"
-            onClick={handleCopyAffiliateLink}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded border font-geist font-bold text-xs uppercase tracking-wider transition-all duration-300 ${
-              affiliateLinkCopied
-                ? 'bg-green-950 border-green-500/40 text-green-400'
-                : 'bg-surface-container hover:bg-surface-container-high border-primary/30 hover:border-primary text-primary'
-            }`}
+            onClick={handleShareWhatsApp}
+            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#006E24] font-bold rounded-xl border border-emerald-200 transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            {affiliateLinkCopied
-              ? <><Check className="w-3.5 h-3.5" /> Link Affiliate Tersalin!</>
-              : <><Share2 className="w-3.5 h-3.5" /> Bagikan Link Affiliate</>}
+            <MessageCircle size={13} />
+            <span>WhatsApp</span>
+          </button>
+          <button
+            onClick={handleCopyLink}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            {copiedLink ? <Check size={13} className="text-[#006E24]" /> : <Copy size={13} />}
+            <span>{copiedLink ? 'Tersalin' : 'Salin Link'}</span>
           </button>
         </div>
-      )}
+      </div>
+
+      {/* ── STICKY MOBILE BOTTOM ACTION BAR ── */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 p-3 shadow-2xl flex items-center gap-2">
+        <button
+          onClick={handleShareWhatsApp}
+          className="p-3 bg-emerald-50 text-[#006E24] border border-emerald-200 rounded-xl flex items-center justify-center shrink-0"
+          title="Chat WhatsApp"
+        >
+          <MessageCircle size={18} />
+        </button>
+        <button
+          onClick={handleAddToCart}
+          disabled={product.stock <= 0}
+          className="flex-1 py-3 bg-white text-[#006E24] border-2 border-[#006E24] font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5"
+        >
+          <ShoppingCart size={15} />
+          <span>+ Keranjang</span>
+        </button>
+        <button
+          onClick={handleBuyNow}
+          disabled={product.stock <= 0}
+          className="flex-1 py-3 bg-[#006E24] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md"
+        >
+          <Zap size={15} className="fill-amber-300 text-amber-300" />
+          <span>Beli Sekarang</span>
+        </button>
+      </div>
     </div>
   )
 }

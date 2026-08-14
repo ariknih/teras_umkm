@@ -17,6 +17,7 @@ import {
   TrendingUp,
   X
 } from 'lucide-react'
+import ShippingRateCalculatorWidget from './ShippingRateCalculatorWidget'
 
 interface Product {
   id: string
@@ -906,6 +907,9 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           )}
         </div>
       )}
+
+      {/* ── REAL-TIME SHIPPING RATE CALCULATOR WIDGET ── */}
+      <ShippingRateCalculatorWidget />
     </section>
   )
 }
