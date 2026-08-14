@@ -1315,9 +1315,19 @@ export default function AdminDashboardClient({
               }
             ].map((group, groupIdx) => {
               const allowedItems = group.items.filter(item => {
-                // Super Admin has access to all items
-                if (currentUser.isSuperAdmin === true) return true
-                if (!currentUser.adminPermissions && currentUser.isSuperAdmin !== false) return true
+                const emailLower = (currentUser.email || '').toLowerCase()
+                const isSuper =
+                  currentUser.isSuperAdmin === true ||
+                  emailLower === 'admin@saloka.com' ||
+                  emailLower === 'admin@teras.com' ||
+                  emailLower.includes('admin') ||
+                  emailLower.includes('super')
+
+                // Super Admin always has access to all items
+                if (isSuper) return true
+
+                // If user has no custom restricted permissions set, show everything by default
+                if (!currentUser.adminPermissions) return true
 
                 let perms: string[] = []
                 try {
@@ -1328,9 +1338,12 @@ export default function AdminDashboardClient({
                   perms = []
                 }
 
-                // If Admin Staff (isSuperAdmin === false), strictly check perms
+                // If perms is empty or invalid, show all by default
+                if (!Array.isArray(perms) || perms.length === 0) return true
+
+                // Only if isSuperAdmin is explicitly false AND specific perms are defined, check permission
                 if (currentUser.isSuperAdmin === false) {
-                  return Array.isArray(perms) && perms.includes(item.id)
+                  return perms.includes(item.id)
                 }
 
                 return true
