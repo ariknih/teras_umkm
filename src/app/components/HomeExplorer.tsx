@@ -11,11 +11,11 @@ import {
   GraduationCap,
   Wrench,
   ArrowUpDown,
-  Flame,
   Search,
   History,
   TrendingUp,
-  X
+  X,
+  ChevronRight
 } from 'lucide-react'
 import ShippingRateCalculatorWidget from './ShippingRateCalculatorWidget'
 
@@ -50,7 +50,7 @@ interface HomeExplorerProps {
 }
 
 const PRODUCT_CATEGORIES = [
-  { key: 'ALL', label: 'For You' },
+  { key: 'ALL', label: 'Untuk Anda' },
   { key: 'MAKANAN_MINUMAN', label: 'Kuliner & F&B' },
   { key: 'FASHION', label: 'Fashion' },
   { key: 'KERAJINAN', label: 'Kerajinan Tangan' },
@@ -73,12 +73,12 @@ const SERVICE_CATEGORIES = [
 ]
 
 const QUICK_ACTIONS = [
-  { label: 'Promo UMKM', icon: Tag, color: 'text-rose-600 bg-rose-50 border-rose-200', href: '/market' },
-  { label: 'Bebas Ongkir', icon: Truck, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', href: '/market' },
-  { label: 'Tukar Koin', icon: Coins, color: 'text-amber-600 bg-amber-50 border-amber-200', href: '/wallet/coin' },
-  { label: 'Flash Sale', icon: Zap, color: 'text-orange-600 bg-orange-50 border-orange-200', href: '/market' },
-  { label: 'Koperasi & Komunitas', icon: Building2, color: 'text-blue-700 bg-blue-50 border-blue-200', href: '/community' },
-  { label: 'Akademi UMKM', icon: GraduationCap, color: 'text-purple-700 bg-purple-50 border-purple-200', href: '/academy' }
+  { label: 'Promo UMKM', icon: Tag, color: 'text-rose-600 bg-rose-50', href: '/market' },
+  { label: 'Bebas Ongkir', icon: Truck, color: 'text-[#006E24] bg-emerald-50', href: '/market' },
+  { label: 'Tukar Koin', icon: Coins, color: 'text-amber-600 bg-amber-50', href: '/wallet/coin' },
+  { label: 'Flash Sale', icon: Zap, color: 'text-orange-500 bg-orange-50', href: '/market' },
+  { label: 'Koperasi & Komunitas', icon: Building2, color: 'text-blue-600 bg-blue-50', href: '/community' },
+  { label: 'Akademi UMKM', icon: GraduationCap, color: 'text-purple-600 bg-purple-50', href: '/academy' }
 ]
 
 const TRENDING_KEYWORDS = [
@@ -103,10 +103,9 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
   const searchBoxRef = useRef<HTMLDivElement>(null)
 
   // Flash Sale Countdown Timer (Ticking every second)
-  const [countdown, setCountdown] = useState({ hours: 4, minutes: 27, seconds: 18 })
+  const [countdown, setCountdown] = useState({ hours: 4, minutes: 26, seconds: 21 })
 
   useEffect(() => {
-    // Load recent searches from localStorage
     try {
       const stored = localStorage.getItem('saloka_recent_searches')
       if (stored) {
@@ -114,7 +113,6 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
       }
     } catch (_) {}
 
-    // Countdown interval
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev.seconds > 0) {
@@ -124,12 +122,11 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         } else if (prev.hours > 0) {
           return { hours: prev.hours - 1, minutes: 59, seconds: 59 }
         } else {
-          return { hours: 5, minutes: 59, seconds: 59 }
+          return { hours: 4, minutes: 59, seconds: 59 }
         }
       })
     }, 1000)
 
-    // Click outside to close search dropdown
     const handleClickOutside = (e: MouseEvent) => {
       if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
         setIsSearchFocused(false)
@@ -216,8 +213,9 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
   }, [products])
 
   return (
-    <section className="w-full max-w-[1240px] mx-auto px-3 sm:px-6 py-3 space-y-5">
-      {/* ── TOKOPEDIA-STYLE QUICK ACTIONS BAR ── */}
+    <section className="w-full max-w-[1240px] mx-auto px-3 sm:px-6 py-3 space-y-4">
+      
+      {/* ── TOKOPEDIA-STYLE QUICK ACTIONS BAR (CLEAN & LIGHT) ── */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
         {QUICK_ACTIONS.map((item) => {
           const Icon = item.icon
@@ -225,12 +223,12 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
             <Link
               key={item.label}
               href={item.href}
-              className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs transition-all duration-200 group text-center"
+              className="bg-white hover:bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs transition-all duration-200 group text-center"
             >
-              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border ${item.color} group-hover:scale-105 transition-transform duration-200`}>
-                <Icon size={18} strokeWidth={2.2} />
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center ${item.color} group-hover:scale-105 transition-transform duration-200`}>
+                <Icon size={17} strokeWidth={2.2} />
               </div>
-              <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 group-hover:text-[#006E24] transition-colors leading-tight">
+              <span className="text-[11px] font-semibold text-slate-700 group-hover:text-[#006E24] transition-colors leading-tight">
                 {item.label}
               </span>
             </Link>
@@ -238,27 +236,28 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         })}
       </div>
 
-      {/* ── ⚡ FLASH SALE UMKM WITH LIVE COUNTDOWN TIMER ── */}
+      {/* ── ⚡ FLASH SALE UMKM (CLEAN WHITE TOKOPEDIA KEJAR DISKON STYLE) ── */}
       {flashSaleProducts.length > 0 && activeTab === 'MARKETPLACE' && (
-        <div className="bg-gradient-to-r from-emerald-950 via-[#006E24] to-[#0A4D1A] rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white shadow-md space-y-3.5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-slate-950 font-black text-xs rounded-lg uppercase tracking-wider shadow-xs animate-pulse">
-                <Flame size={14} className="fill-slate-950" />
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="px-2.5 py-1 bg-[#FF424E] text-white text-[11px] font-extrabold rounded-md uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+                <Zap size={13} className="fill-white" />
                 <span>Flash Sale</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs font-semibold">
-                <span className="text-emerald-100 text-[11px]">Berakhir dalam:</span>
-                <div className="flex items-center gap-1 font-mono font-black text-xs text-white">
-                  <span className="bg-black/40 px-1.5 py-0.5 rounded border border-white/20">
+              </span>
+              
+              <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                <span className="text-[11px] font-medium text-slate-500">Berakhir dalam:</span>
+                <div className="flex items-center gap-1 font-bold text-xs text-white">
+                  <span className="bg-slate-900 px-1.5 py-0.5 rounded">
                     {String(countdown.hours).padStart(2, '0')}
                   </span>
-                  <span>:</span>
-                  <span className="bg-black/40 px-1.5 py-0.5 rounded border border-white/20">
+                  <span className="text-slate-700">:</span>
+                  <span className="bg-slate-900 px-1.5 py-0.5 rounded">
                     {String(countdown.minutes).padStart(2, '0')}
                   </span>
-                  <span>:</span>
-                  <span className="bg-black/40 px-1.5 py-0.5 rounded border border-white/20 text-amber-300">
+                  <span className="text-slate-700">:</span>
+                  <span className="bg-[#FF424E] px-1.5 py-0.5 rounded">
                     {String(countdown.seconds).padStart(2, '0')}
                   </span>
                 </div>
@@ -267,27 +266,28 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
 
             <Link
               href="/market"
-              className="text-xs font-bold text-emerald-100 hover:text-white flex items-center gap-1 transition-colors"
+              className="text-xs font-bold text-[#006E24] hover:underline flex items-center gap-0.5 shrink-0"
             >
-              <span>Lihat Semua Promo</span>
-              <span>&gt;</span>
+              <span>Lihat Semua</span>
+              <ChevronRight size={14} />
             </Link>
           </div>
 
           {/* Flash Sale Cards Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-3">
             {flashSaleProducts.map((p, idx) => {
-              const discountPct = 35 + (idx % 15)
-              const originalPrice = Math.round(p.price * 1.45)
-              const percentSold = 65 + (idx * 5) % 30
+              const discountPct = 20 + ((idx * 7) % 30)
+              const originalPrice = Math.round(p.price * (1 + discountPct / 100))
+              const percentSold = 60 + ((idx * 8) % 35)
 
               return (
                 <Link
                   key={p.id}
                   href={`/market/product/${p.id}`}
-                  className="bg-white rounded-xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-200 flex flex-col justify-between group p-2 text-slate-900"
+                  className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group p-2.5 text-slate-900"
                 >
-                  <div>
+                  <div className="space-y-2">
+                    {/* Thumbnail Image Container */}
                     <div className="w-full aspect-square bg-slate-50 relative rounded-lg overflow-hidden">
                       {p.imageUrl ? (
                         <img
@@ -297,37 +297,40 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold bg-slate-100">
                           Saloka
                         </div>
                       )}
-                      <span className="absolute top-1 left-1 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
-                        🔥 {discountPct}%
+
+                      {/* Clean Tokopedia-Style Discount Tag */}
+                      <span className="absolute top-1 left-1 bg-[#FFEAEF] text-[#FF424E] text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-2xs">
+                        {discountPct}%
                       </span>
                     </div>
 
-                    <div className="pt-2 space-y-1">
-                      <h4 className="text-[11px] font-medium text-slate-800 line-clamp-1 group-hover:text-[#006E24] transition-colors">
+                    {/* Content */}
+                    <div className="space-y-1">
+                      <h4 className="text-xs font-normal text-slate-800 line-clamp-1 group-hover:text-[#006E24] transition-colors leading-tight">
                         {p.title}
                       </h4>
-                      <p className="text-xs sm:text-sm font-extrabold text-[#006E24] font-mono leading-tight">
+                      <p className="text-sm font-bold text-slate-900 leading-tight">
                         Rp {p.price.toLocaleString('id-ID')}
                       </p>
-                      <p className="text-[9px] text-slate-400 line-through">
+                      <p className="text-[10px] text-slate-400 line-through leading-none">
                         Rp {originalPrice.toLocaleString('id-ID')}
                       </p>
                     </div>
                   </div>
 
                   {/* Stock Bar */}
-                  <div className="pt-2 space-y-0.5">
-                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                  <div className="pt-2 space-y-1">
+                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-amber-500 to-rose-600 h-full rounded-full transition-all"
+                        className="bg-[#FF424E] h-full rounded-full transition-all"
                         style={{ width: `${percentSold}%` }}
                       />
                     </div>
-                    <p className="text-[8px] font-extrabold text-slate-500 text-center tracking-tight">
+                    <p className="text-[9px] font-bold text-slate-500 text-left">
                       Terjual {percentSold}%
                     </p>
                   </div>
@@ -338,36 +341,30 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         </div>
       )}
 
-      {/* ── HEADER SWITCHER BAR ── */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* ── HEADER SWITCHER BAR (MARKETPLACE / JASA) ── */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="space-y-1 text-center md:text-left">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full text-[#006E24] text-[11px] font-bold tracking-wide">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-            </svg>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full text-[#006E24] text-[11px] font-bold">
             <span>Katalog Resmi Saloka UMKM</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
             Pilih Layanan Ekosistem
           </h2>
           <p className="text-xs text-slate-600 max-w-md">
-            Temukan ribuan produk lokal berkualitas atau booking layanan jasa & keahlian terpercaya.
+            Ribuan produk lokal berkualitas dan booking keahlian mitra terpercaya.
           </p>
         </div>
 
-        {/* Segmented Switcher Controls */}
-        <div className="bg-[#F1F5F9] p-1 rounded-xl sm:rounded-2xl flex items-center gap-1.5 shadow-inner shrink-0 w-full sm:w-auto">
+        {/* Segmented Controls */}
+        <div className="bg-[#F1F5F9] p-1 rounded-xl flex items-center gap-1.5 shadow-inner shrink-0 w-full sm:w-auto">
           <button
             onClick={() => { setActiveTab('MARKETPLACE'); setSearchQuery(''); setVisibleProductCount(30); }}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all duration-150 cursor-pointer ${
               activeTab === 'MARKETPLACE'
-                ? 'bg-[#006E24] text-white shadow-sm font-extrabold'
+                ? 'bg-[#006E24] text-white shadow-xs font-extrabold'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
-            </svg>
             <span>Marketplace Produk</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
               activeTab === 'MARKETPLACE' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
@@ -378,13 +375,13 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
 
           <button
             onClick={() => { setActiveTab('JASA'); setSearchQuery(''); setVisibleServiceCount(8); }}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 cursor-pointer ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all duration-150 cursor-pointer ${
               activeTab === 'JASA'
-                ? 'bg-[#006E24] text-white shadow-sm font-extrabold'
+                ? 'bg-[#006E24] text-white shadow-xs font-extrabold'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            <Wrench size={16} strokeWidth={2.2} />
+            <Wrench size={14} />
             <span>Booking Jasa</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
               activeTab === 'JASA' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
@@ -395,12 +392,12 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         </div>
       </div>
 
-      {/* ── SMART LIVE SEARCH & AUTOCOMPLETE DROPDOWN ── */}
+      {/* ── SEARCH & FILTER CATEGORIES ── */}
       <div className="space-y-3 bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-xs">
         {/* Search input with live clear button and dropdown */}
         <div ref={searchBoxRef} className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <Search size={16} strokeWidth={2.5} />
+            <Search size={16} strokeWidth={2.2} />
           </div>
           <input
             type="text"
@@ -422,7 +419,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 ? 'Cari produk fisik UMKM (misal: Keripik Tempe, Batik Tulis, Madu Hutan)...'
                 : 'Cari jasa & keahlian (misal: Desain Logo, Teknisi AC, Konsultan UMKM)...'
             }
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-9 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#006E24] focus:ring-2 focus:ring-[#006E24]/20 transition-all"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-9 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#006E24] focus:ring-1 focus:ring-[#006E24] transition-all"
           />
           {searchQuery && (
             <button
@@ -433,17 +430,16 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
               }}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              <X size={15} strokeWidth={2.5} />
+              <X size={15} />
             </button>
           )}
 
           {/* Autocomplete Dropdown */}
           {isSearchFocused && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-3 space-y-3 animate-in fade-in-50 duration-150">
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-3 space-y-3 animate-in fade-in-50 duration-150">
               {searchQuery.trim() ? (
-                /* Matching Products Preview */
                 <div className="space-y-2">
-                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     Hasil Produk yang Cocok:
                   </p>
                   {autocompleteMatches.length === 0 ? (
@@ -458,7 +454,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             saveSearchKeyword(m.title)
                             setIsSearchFocused(false)
                           }}
-                          className="py-2 flex items-center justify-between gap-3 hover:bg-slate-50 px-2 rounded-xl transition-colors group"
+                          className="py-2 flex items-center justify-between gap-3 hover:bg-slate-50 px-2 rounded-lg transition-colors group"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="w-8 h-8 rounded-lg bg-slate-100 overflow-hidden shrink-0">
@@ -468,11 +464,11 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                                 <div className="w-full h-full flex items-center justify-center text-[8px] text-slate-400">UMKM</div>
                               )}
                             </div>
-                            <span className="text-xs font-bold text-slate-800 truncate group-hover:text-[#006E24]">
+                            <span className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#006E24]">
                               {m.title}
                             </span>
                           </div>
-                          <span className="text-xs font-mono font-extrabold text-[#006E24] shrink-0">
+                          <span className="text-xs font-bold text-[#006E24] shrink-0">
                             Rp {m.price.toLocaleString('id-ID')}
                           </span>
                         </Link>
@@ -481,11 +477,10 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                   )}
                 </div>
               ) : (
-                /* Trending & Recent Searches */
                 <div className="space-y-3">
                   {recentSearches.length > 0 && (
                     <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                         <span className="flex items-center gap-1"><History size={12} /> Riwayat Terakhir</span>
                         <button
                           onClick={() => {
@@ -505,7 +500,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                               setSearchQuery(kw)
                               setIsSearchFocused(false)
                             }}
-                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-md transition-colors cursor-pointer"
                           >
                             {kw}
                           </button>
@@ -515,7 +510,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                   )}
 
                   <div className="space-y-1.5">
-                    <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                       <TrendingUp size={12} className="text-[#006E24]" /> Tren Pencarian UMKM
                     </p>
                     <div className="flex flex-wrap gap-1.5">
@@ -527,9 +522,9 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             saveSearchKeyword(kw)
                             setIsSearchFocused(false)
                           }}
-                          className="px-2.5 py-1 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                          className="px-2.5 py-1 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] text-xs font-semibold rounded-md transition-colors cursor-pointer"
                         >
-                          🔥 {kw}
+                          {kw}
                         </button>
                       ))}
                     </div>
@@ -553,10 +548,10 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                       setSelectedProductCategory(cat.key)
                       setVisibleProductCount(30)
                     }}
-                    className={`relative px-3.5 py-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
+                    className={`relative px-3 py-1.5 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
                       isSelected
-                        ? 'text-[#006E24] border-[#006E24] font-extrabold'
-                        : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300 font-medium'
+                        ? 'text-[#006E24] border-[#006E24] font-bold'
+                        : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300'
                     }`}
                   >
                     <span>{cat.label}</span>
@@ -573,10 +568,10 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                       setSelectedServiceCategory(cat.key)
                       setVisibleServiceCount(8)
                     }}
-                    className={`relative px-3.5 py-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
+                    className={`relative px-3 py-1.5 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
                       isSelected
-                        ? 'text-[#006E24] border-[#006E24] font-extrabold'
-                        : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300 font-medium'
+                        ? 'text-[#006E24] border-[#006E24] font-bold'
+                        : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300'
                     }`}
                   >
                     <span>{cat.label}</span>
@@ -589,12 +584,12 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           {/* Quick Sort Dropdown */}
           {activeTab === 'MARKETPLACE' && (
             <div className="flex items-center gap-1.5 shrink-0 pl-2">
-              <ArrowUpDown size={14} className="text-slate-400 hidden sm:block" />
+              <ArrowUpDown size={13} className="text-slate-400 hidden sm:block" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
                 aria-label="Urutkan Produk"
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-[#006E24] cursor-pointer"
+                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-[#006E24] cursor-pointer"
               >
                 <option value="RELEVANCE">Paling Sesuai</option>
                 <option value="PRICE_LOW">Harga Terendah</option>
@@ -612,28 +607,21 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           <div className="flex items-center justify-between">
             <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
               <span>Etalase Produk UMKM</span>
-              <span className="text-xs font-medium text-slate-500">
-                (Menampilkan {displayedProducts.length} dari {filteredProducts.length} produk)
+              <span className="text-xs font-normal text-slate-500">
+                ({displayedProducts.length} dari {filteredProducts.length} produk)
               </span>
             </h3>
             <Link
               href="/market"
-              className="text-xs font-bold text-[#006E24] hover:text-[#084e1b] hover:underline inline-flex items-center gap-1"
+              className="text-xs font-bold text-[#006E24] hover:underline inline-flex items-center gap-1"
             >
-              <span>Buka Marketplace Lengkap</span>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-              </svg>
+              <span>Lihat Semua Produk</span>
+              <ChevronRight size={13} />
             </Link>
           </div>
 
           {filteredProducts.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-8 space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto text-[#006E24]">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-                </svg>
-              </div>
               <h4 className="font-bold text-slate-900 text-sm">Produk tidak ditemukan</h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 Tidak ada produk yang sesuai dengan pencarian &quot;{searchQuery}&quot;.
@@ -657,7 +645,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                     <Link
                       key={product.id}
                       href={`/market/product/${product.id}`}
-                      className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group"
+                      className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group"
                     >
                       <div>
                         {/* Thumbnail Image Container */}
@@ -670,67 +658,50 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-medium">
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-semibold">
                               Saloka UMKM
                             </div>
                           )}
 
-                          {/* ── GREEN DISCOUNT BADGE ── */}
-                          <span className="absolute top-1.5 left-1.5 bg-[#006E24] text-white text-[9px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-xs z-10 tracking-tight">
-                            {discountPct}%
-                          </span>
-
                           {/* Category Tag */}
-                          <span className="absolute top-1.5 right-1.5 bg-white/95 text-slate-800 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider">
+                          <span className="absolute top-1.5 right-1.5 bg-white/95 text-slate-800 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-2xs uppercase tracking-wider">
                             {product.category}
                           </span>
                         </div>
 
-                        {/* Tokopedia Standard Content Layout */}
+                        {/* Content Layout */}
                         <div className="p-2.5 sm:p-3 space-y-1">
                           {/* Title */}
-                          <h4 className="text-xs font-medium text-slate-800 line-clamp-2 leading-snug group-hover:text-[#006E24] transition-colors min-h-[32px]">
+                          <h4 className="text-xs font-normal text-slate-800 line-clamp-2 leading-snug group-hover:text-[#006E24] transition-colors min-h-[32px]">
                             {product.title}
                           </h4>
 
                           {/* Price */}
-                          <p className="text-sm sm:text-[15px] font-extrabold text-slate-900 leading-tight pt-0.5 font-mono">
+                          <p className="text-sm font-extrabold text-slate-900 leading-tight pt-0.5">
                             Rp {product.price.toLocaleString('id-ID')}
                           </p>
 
-                          {/* Strikethrough & Green Discount Tag */}
+                          {/* Strikethrough & Tokopedia Pink Discount Tag */}
                           <div className="flex items-center gap-1 text-[10px]">
                             <span className="line-through text-slate-400">
                               Rp {originalPrice.toLocaleString('id-ID')}
                             </span>
-                            <span className="font-bold text-[#006E24] bg-emerald-50 px-1 py-0.2 rounded text-[9px] border border-emerald-200">
+                            <span className="font-bold text-[#FF424E] bg-[#FFEAEF] px-1 py-0.2 rounded text-[9px]">
                               {discountPct}%
                             </span>
                           </div>
 
-                          {/* Promo Pill Badge */}
-                          <div className="pt-0.5">
-                            <span className="text-[9px] sm:text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded inline-block">
-                              Hemat s.d 8% Pakai Koin
-                            </span>
-                          </div>
-
-                          {/* Rating & Stock / Terjual */}
-                          <div className="flex items-center gap-1 text-[10px] text-slate-500 pt-0.5">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1">
-                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                            </svg>
-                            <span className="font-bold text-slate-700">4.9</span>
+                          {/* Rating & Terjual */}
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500 pt-1">
+                            <span className="text-amber-500 font-bold">★ 4.9</span>
                             <span>•</span>
                             <span>Terjual {product.stock ? `${product.stock}+` : '50+'}</span>
                           </div>
 
                           {/* Location & Store Badge */}
                           <div className="flex items-center gap-1 text-[10px] text-slate-500 pt-0.5 truncate">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="#006E24" className="shrink-0">
-                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="truncate">Saloka UMKM Official</span>
+                            <span className="text-[#006E24] font-bold">✔</span>
+                            <span className="truncate">Saloka Official</span>
                           </div>
                         </div>
                       </div>
@@ -744,11 +715,8 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 <div className="flex flex-col items-center justify-center pt-6 pb-2 gap-2">
                   <button
                     onClick={() => setVisibleProductCount((prev) => prev + 18)}
-                    className="px-7 py-3 bg-white hover:bg-emerald-50 text-[#006E24] border-2 border-[#006E24] rounded-xl font-extrabold text-xs sm:text-sm transition-all shadow-xs hover:shadow-md flex items-center gap-2 cursor-pointer group"
+                    className="px-7 py-2.5 bg-white hover:bg-emerald-50 text-[#006E24] border-2 border-[#006E24] rounded-xl font-bold text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs flex items-center gap-2 cursor-pointer"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-y-0.5 transition-transform">
-                      <path d="M12 5v14M5 12l7 7 7-7"/>
-                    </svg>
                     <span>Muat Lebih Banyak Produk (+18)</span>
                   </button>
                   <p className="text-[11px] text-slate-500 font-medium">
@@ -765,28 +733,21 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           <div className="flex items-center justify-between">
             <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
               <span>Layanan Jasa & Keahlian Profesional</span>
-              <span className="text-xs font-medium text-slate-500">
-                (Menampilkan {displayedServices.length} dari {filteredServices.length} penyedia aktif)
+              <span className="text-xs font-normal text-slate-500">
+                ({displayedServices.length} dari {filteredServices.length} penyedia)
               </span>
             </h3>
             <Link
               href="/jasa"
-              className="text-xs font-bold text-[#006E24] hover:text-[#084e1b] hover:underline inline-flex items-center gap-1"
+              className="text-xs font-bold text-[#006E24] hover:underline inline-flex items-center gap-1"
             >
-              <span>Buka Katalog Jasa Lengkap</span>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-              </svg>
+              <span>Katalog Jasa Lengkap</span>
+              <ChevronRight size={13} />
             </Link>
           </div>
 
           {filteredServices.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-8 space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto text-[#006E24]">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-                </svg>
-              </div>
               <h4 className="font-bold text-slate-900 text-sm">Layanan belum tersedia</h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 Tidak ada layanan jasa yang sesuai dengan pencarian &quot;{searchQuery}&quot;.
@@ -810,7 +771,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                   return (
                     <div
                       key={svc.id}
-                      className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group"
+                      className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group"
                     >
                       <div>
                         {/* Image Container */}
@@ -821,15 +782,12 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             loading="lazy"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          <span className="absolute top-2 left-2 bg-[#006E24] text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-xs uppercase tracking-wider">
+                          <span className="absolute top-2 left-2 bg-[#006E24] text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs uppercase tracking-wider">
                             {svc.category}
                           </span>
                           {svc.location && (
-                            <span className="absolute bottom-2 left-2 bg-white/95 text-slate-800 text-[9px] font-semibold px-2 py-0.5 rounded shadow-xs flex items-center gap-1">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
-                              </svg>
-                              <span>{svc.location}</span>
+                            <span className="absolute bottom-2 left-2 bg-white/95 text-slate-800 text-[9px] font-semibold px-2 py-0.5 rounded shadow-2xs">
+                              📍 {svc.location}
                             </span>
                           )}
                         </div>
@@ -850,7 +808,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                                 <span className="text-[9px] font-bold text-[#006E24] uppercase">
                                   Per Sesi ({svc.sessionDurationMinutes || 60} mnt)
                                 </span>
-                                <span className="font-mono font-extrabold text-[#006E24]">
+                                <span className="font-bold text-[#006E24]">
                                   Rp {svc.pricePerSession.toLocaleString('id-ID')}
                                 </span>
                               </div>
@@ -861,7 +819,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                                 <span className="text-[9px] font-bold text-blue-800 uppercase">
                                   Harian (Max {svc.maxWorkHoursPerDay || 8} Jam)
                                 </span>
-                                <span className="font-mono font-extrabold text-blue-700">
+                                <span className="font-bold text-blue-700">
                                   Rp {svc.pricePerDay.toLocaleString('id-ID')}
                                 </span>
                               </div>
@@ -873,11 +831,8 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                       <div className="p-3.5 pt-0">
                         <Link
                           href={`/jasa/${svc.id}`}
-                          className="w-full py-2 bg-[#006E24] hover:bg-[#084e1b] text-white text-[11px] font-bold uppercase tracking-wider rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                          className="w-full py-2 bg-[#006E24] hover:bg-[#084e1b] text-white text-[11px] font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
                         >
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
-                          </svg>
                           <span>Cek Jadwal & Booking</span>
                         </Link>
                       </div>
@@ -891,11 +846,8 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 <div className="flex flex-col items-center justify-center pt-6 pb-2 gap-2">
                   <button
                     onClick={() => setVisibleServiceCount((prev) => prev + 8)}
-                    className="px-7 py-3 bg-white hover:bg-emerald-50 text-[#006E24] border-2 border-[#006E24] rounded-xl font-extrabold text-xs sm:text-sm transition-all shadow-xs hover:shadow-md flex items-center gap-2 cursor-pointer group"
+                    className="px-7 py-2.5 bg-white hover:bg-emerald-50 text-[#006E24] border-2 border-[#006E24] rounded-xl font-bold text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs flex items-center gap-2 cursor-pointer"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-y-0.5 transition-transform">
-                      <path d="M12 5v14M5 12l7 7 7-7"/>
-                    </svg>
                     <span>Muat Lebih Banyak Layanan (+8)</span>
                   </button>
                   <p className="text-[11px] text-slate-500 font-medium">
