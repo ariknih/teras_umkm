@@ -97,9 +97,12 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
 
     // Fetch products to resolve which ones belong to merchants of this community
     const allProducts: any[] = typeof (DataStore as any).getProducts === 'function' ? await (DataStore as any).getProducts() : []
+    const communityMemberIds = new Set(communityMembers.map((m: any) => m.id))
     const productMerchantMap = new Map<string, string | null>()
     for (const p of allProducts) {
-      productMerchantMap.set(p.id, p.merchant?.indukCommunityId || p.merchantId || null)
+      const isMerchantInComm = p.merchantId ? communityMemberIds.has(p.merchantId) : false
+      const belongsToComm = p.merchant?.indukCommunityId === communityId || isMerchantInComm
+      productMerchantMap.set(p.id, belongsToComm ? communityId : null)
     }
 
     // Fetch and aggregate completed order transaction volumes for Jasa Usaha
