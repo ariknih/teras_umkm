@@ -42,36 +42,39 @@ export default async function HomePage() {
       </section>
 
       {/* ── BANNER CAROUSEL ────────────────────────────────────────────── */}
-      {activeBanners && activeBanners.length > 0 && (
-        <BannerCarousel banners={activeBanners} />
-      )}
+      <BannerCarousel banners={activeBanners} />
 
       {/* ── KEUNGGULAN PLATFORM ──────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex flex-col items-center bg-surface">
         <ScrollReveal>
           <div className="w-full max-w-[1280px] py-8 px-6 bg-surface rounded-3xl border border-border shadow-sm flex flex-col items-center gap-8 overflow-hidden">
           <h2 className="text-center text-text-primary text-base font-semibold">Ekosistem Lengkap untuk UMKM Indonesia</h2>
-          <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="text-3xl md:text-4xl font-bold text-primary">🛒</span>
-              <span className="text-2xl font-bold text-text-primary">Marketplace</span>
-              <span className="text-xs text-text-secondary">Jual beli produk & jasa</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="text-3xl md:text-4xl font-bold text-primary">🎓</span>
-              <span className="text-2xl font-bold text-text-primary">Academy</span>
-              <span className="text-xs text-text-secondary">Kursus & pelatihan bisnis</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="text-3xl md:text-4xl font-bold text-primary">🤝</span>
-              <span className="text-2xl font-bold text-text-primary">Affiliate</span>
-              <span className="text-xs text-text-secondary">Program afiliasi & komisi</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 text-center">
-              <span className="text-3xl md:text-4xl font-bold text-primary">💬</span>
-              <span className="text-2xl font-bold text-text-primary">Komunitas</span>
-              <span className="text-xs text-text-secondary">Forum diskusi & networking</span>
-            </div>
+          <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6">
+            <Link href="/market" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
+              <span className="text-3xl md:text-4xl font-bold text-primary group-hover:scale-110 transition-transform">🛒</span>
+              <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">Marketplace</span>
+              <span className="text-xs text-text-secondary">Produk fisik UMKM</span>
+            </Link>
+            <Link href="/jasa" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
+              <span className="text-3xl md:text-4xl font-bold text-[#0F5132] group-hover:scale-110 transition-transform">🛠️</span>
+              <span className="text-xl font-bold text-text-primary group-hover:text-[#0F5132] transition-colors">Booking Jasa</span>
+              <span className="text-xs text-text-secondary">Layanan & keahlian</span>
+            </Link>
+            <Link href="/academy" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
+              <span className="text-3xl md:text-4xl font-bold text-primary group-hover:scale-110 transition-transform">🎓</span>
+              <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">Academy</span>
+              <span className="text-xs text-text-secondary">Kursus & pelatihan</span>
+            </Link>
+            <Link href="/affiliate" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
+              <span className="text-3xl md:text-4xl font-bold text-primary group-hover:scale-110 transition-transform">🤝</span>
+              <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">Affiliate</span>
+              <span className="text-xs text-text-secondary">Komisi multi-tier</span>
+            </Link>
+            <Link href="/community" className="flex flex-col items-center gap-2 text-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group">
+              <span className="text-3xl md:text-4xl font-bold text-primary group-hover:scale-110 transition-transform">💬</span>
+              <span className="text-xl font-bold text-text-primary group-hover:text-primary transition-colors">Komunitas</span>
+              <span className="text-xs text-text-secondary">Koperasi & forum</span>
+            </Link>
           </div>
         </div>
         </ScrollReveal>

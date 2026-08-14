@@ -96,7 +96,7 @@ export default function ClientLayoutWrapper({
             </h5>
             <nav className="flex flex-col gap-2">
               <Link href="/market" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Marketplace</Link>
-              <Link href="/market?category=JASA" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Katalog Jasa</Link>
+              <Link href="/jasa" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Booking Jasa & Keahlian</Link>
               <Link href="/academy" className="text-sm text-on-surface-variant hover:text-primary transition-colors">LMS Academy</Link>
               <Link href="/affiliate" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Affiliate Hub</Link>
               <Link href="/community" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Community Forum</Link>

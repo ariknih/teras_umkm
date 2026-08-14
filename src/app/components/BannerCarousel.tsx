@@ -9,23 +9,43 @@ interface Banner {
   linkUrl?: string
 }
 
-export default function BannerCarousel({ banners }: { banners: Banner[] }) {
+const DEFAULT_BANNERS: Banner[] = [
+  {
+    id: 'default-1',
+    title: 'Pesta Diskon UMKM Nusantara - Hemat Hingga 50%',
+    imageUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=1400&q=80',
+    linkUrl: '/market'
+  },
+  {
+    id: 'default-2',
+    title: 'Booking Jasa Profesional & Terpercaya di Saloka.id',
+    imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1400&q=80',
+    linkUrl: '/jasa'
+  },
+  {
+    id: 'default-3',
+    title: 'Program Afiliasi Saloka - Dapatkan Komisi Multi-Tier',
+    imageUrl: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1400&q=80',
+    linkUrl: '/affiliate'
+  }
+]
+
+export default function BannerCarousel({ banners }: { banners?: Banner[] }) {
+  const displayBanners = banners && banners.length > 0 ? banners : DEFAULT_BANNERS
   const [currentIndex, setCurrentIndex] = useState(0)
 
   useEffect(() => {
-    if (banners.length <= 1) return
+    if (displayBanners.length <= 1) return
     const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % banners.length)
-    }, 4000)
+      setCurrentIndex((prev) => (prev + 1) % displayBanners.length)
+    }, 4500)
     return () => clearInterval(timer)
-  }, [banners.length])
-
-  if (!banners || banners.length === 0) return null
+  }, [displayBanners.length])
 
   return (
     <div className="w-full max-w-[1280px] mx-auto px-6 md:px-20 pt-6">
       <div className="relative w-full h-[200px] sm:h-[300px] md:h-[380px] rounded-3xl overflow-hidden shadow-lg group bg-slate-900">
-        {banners.map((banner, idx) => {
+        {displayBanners.map((banner, idx) => {
           const isActive = idx === currentIndex
           const content = (
             <div
@@ -58,16 +78,16 @@ export default function BannerCarousel({ banners }: { banners: Banner[] }) {
         })}
 
         {/* Carousel Navigation Buttons */}
-        {banners.length > 1 && (
+        {displayBanners.length > 1 && (
           <>
             <button
-              onClick={() => setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length)}
+              onClick={() => setCurrentIndex((prev) => (prev - 1 + displayBanners.length) % displayBanners.length)}
               className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/70 transition-colors cursor-pointer border-none"
             >
               ❮
             </button>
             <button
-              onClick={() => setCurrentIndex((prev) => (prev + 1) % banners.length)}
+              onClick={() => setCurrentIndex((prev) => (prev + 1) % displayBanners.length)}
               className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/70 transition-colors cursor-pointer border-none"
             >
               ❯
@@ -75,7 +95,7 @@ export default function BannerCarousel({ banners }: { banners: Banner[] }) {
 
             {/* Indicators */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-              {banners.map((_, idx) => (
+              {displayBanners.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentIndex(idx)}

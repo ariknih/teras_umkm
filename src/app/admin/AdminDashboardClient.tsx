@@ -166,6 +166,7 @@ export default function AdminDashboardClient({
   const [bannerImageUrl, setBannerImageUrl] = useState('')
   const [bannerLinkUrl, setBannerLinkUrl] = useState('')
   const [bannerSortOrder, setBannerSortOrder] = useState('0')
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false)
 
   // User CRUD Modal State
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
@@ -1268,13 +1269,14 @@ export default function AdminDashboardClient({
                 title: 'Management',
                 items: [
                   { id: 'users', label: 'User Management', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14-2a4 4 0 0 1-3.87 3M16 3.13a4 4 0 0 1 0 7.75' },
-                  ...(currentUser.isSuperAdmin ? [{ id: 'admins', label: 'Admin RBAC', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-7 16a7 7 0 0 1 14 0H5z' }] : []),
+                  { id: 'admins', label: 'Admin RBAC', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm-7 16a7 7 0 0 1 14 0H5z' },
                   { id: 'approvals', label: 'Merchant Approval', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' }
                 ]
               },
               {
                 title: 'Operations',
                 items: [
+                  { id: 'landing_banners', label: 'Banner Landing Page', icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
                   { id: 'withdrawals', label: 'Withdrawal Dana', icon: 'M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
                   { id: 'products', label: 'Product Catalog', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
                   { id: 'academy', label: 'LMS Management', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.168.477 4 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4 1.253' },
@@ -1284,6 +1286,7 @@ export default function AdminDashboardClient({
               {
                 title: 'Insights',
                 items: [
+                  { id: 'audit_logs', label: 'Audit Log System', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
                   { id: 'community', label: 'Community & Members', icon: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' },
                   { id: 'transactions', label: 'Transaction Tracking', icon: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 9l2 2 4-4' },
                   { id: 'certificates', label: 'Certification', icon: 'M12 14l-4-4 1.41-1.41L12 11.17l2.59-2.58L16 10l-4 4zm-6 4h12V6H6v12zm12-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12z' },
@@ -1294,7 +1297,6 @@ export default function AdminDashboardClient({
             ].map((group, groupIdx) => {
               const allowedItems = group.items.filter(item => {
                 if (currentUser.isSuperAdmin) return true
-                if (item.id === 'admins') return false
                 let perms: string[] = []
                 try {
                   perms = currentUser.adminPermissions ? JSON.parse(currentUser.adminPermissions) : ALL_ADMIN_PERMISSIONS.map(p => p.key)
@@ -1393,6 +1395,8 @@ export default function AdminDashboardClient({
               { activeTab === 'affiliates' && 'Affiliate Monitoring' }
               { activeTab === 'coins' && 'Kelola Koin & Voucher' }
               { activeTab === 'payment_methods' && 'Kelola Metode Pembayaran' }
+              { activeTab === 'audit_logs' && 'Audit Log System' }
+              { activeTab === 'landing_banners' && 'Kelola Banner Landing Page' }
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -3406,8 +3410,8 @@ export default function AdminDashboardClient({
             </div>
           )}
 
-          {/* ─── TAB 8: KELOLA ADMIN (SUPERADMIN ONLY) ─────────────────────── */}
-          {activeTab === 'admins' && currentUser.isSuperAdmin && (
+          {/* ─── TAB 8: KELOLA ADMIN & RBAC ─────────────────────── */}
+          {activeTab === 'admins' && (
             <div className="space-y-6 animate-in fade-in duration-250">
               <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
                 <div className="flex justify-between items-center mb-6">
@@ -4038,15 +4042,56 @@ export default function AdminDashboardClient({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">URL Gambar Banner *</label>
-                    <input
-                      type="url"
-                      required
-                      value={bannerImageUrl}
-                      onChange={e => setBannerImageUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-800"
-                    />
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Gambar Banner *</label>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <label className={`px-3 py-2 rounded text-xs font-bold cursor-pointer transition-colors flex items-center gap-1.5 ${
+                          isUploadingBanner ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-[#0F5132] text-white hover:bg-[#0a3a24]'
+                        }`}>
+                          <span>{isUploadingBanner ? 'Mengunggah...' : '📁 Pilih & Unggah Gambar'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingBanner}
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0]
+                              if (!file) return
+                              setIsUploadingBanner(true)
+                              try {
+                                const fd = new FormData()
+                                fd.append('file', file)
+                                const res = await fetch('/api/upload', { method: 'POST', body: fd })
+                                const data = await res.json()
+                                if (data.url) {
+                                  setBannerImageUrl(data.url)
+                                } else {
+                                  alert('Gagal mengunggah gambar.')
+                                }
+                              } catch (err) {
+                                alert('Error saat mengunggah gambar.')
+                              } finally {
+                                setIsUploadingBanner(false)
+                              }
+                            }}
+                          />
+                        </label>
+                        <span className="text-[10px] text-slate-400">atau masukkan URL langsung</span>
+                      </div>
+                      <input
+                        type="url"
+                        required
+                        value={bannerImageUrl}
+                        onChange={e => setBannerImageUrl(e.target.value)}
+                        placeholder="https://... (atau klik tombol unggah di atas)"
+                        className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-800"
+                      />
+                      {bannerImageUrl && (
+                        <div className="h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 relative">
+                          <img src={bannerImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div>
@@ -4332,7 +4377,7 @@ export default function AdminDashboardClient({
               )}
 
           {/* ─── ADD ADMIN MODAL ────────────────────────────────────── */}
-          {isAdminModalOpen && currentUser.isSuperAdmin && (
+          {isAdminModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
               <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
                 <div className="flex justify-between items-center border-b border-slate-100 pb-3">

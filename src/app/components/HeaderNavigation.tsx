@@ -55,6 +55,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
           {/* Middle: Links */}
           <div className="hidden lg:flex flex-1 justify-center items-center gap-6">
             <Link href="/market" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Marketplace</Link>
+            <Link href="/jasa" className="text-sm font-bold text-[#0F5132] hover:text-[#0a3a24] transition-colors flex items-center gap-1">🛠️ Jasa & Layanan</Link>
             <Link href="/affiliate" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Affiliate Hub</Link>
             <Link href="/community" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Community</Link>
           </div>
@@ -218,6 +219,14 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
               className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
             >
               Marketplace
+            </Link>
+
+            <Link
+              href="/jasa"
+              onClick={() => setIsOpenMobile(false)}
+              className="text-lg font-bold text-[#0F5132] border-b border-border-subtle pb-3 hover:text-[#0a3a24] transition-colors flex items-center gap-1.5"
+            >
+              🛠️ Jasa & Layanan
             </Link>
 
             <Link
