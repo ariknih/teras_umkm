@@ -795,8 +795,8 @@ export default function CommunityDetailPage() {
   const handleCalculateAndSaveShu = async (e: React.FormEvent) => {
     e.preventDefault()
     const profitNum = Number(shuNetProfit)
-    if (profitNum <= 0) {
-      goeyToast.error('Nominal SHU Bersih / Laba Koperasi harus lebih dari 0.')
+    if (profitNum < 0) {
+      goeyToast.error('Nominal SHU Bersih / Laba Koperasi tidak boleh kurang dari 0.')
       return
     }
 
@@ -3361,18 +3361,18 @@ export default function CommunityDetailPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className={`px-3 py-1 rounded text-xs font-bold font-mono ${
-                            Math.abs(shuPctJasaModal + shuPctJasaUsaha - 100) < 0.01
+                            (shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
                               ? 'bg-green-100 text-green-800 border border-green-300'
                               : 'bg-red-100 text-red-800 border border-red-300'
                           }`}>
-                            {Math.abs(shuPctJasaModal + shuPctJasaUsaha - 100) < 0.01
-                              ? `✓ Total Jasa: 100% (Valid)`
-                              : `⚠️ Total Jasa: ${(shuPctJasaModal + shuPctJasaUsaha).toFixed(1)}% (Harus 100%)`
+                            {(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
+                              ? `✓ Persentase Valid (0-100%)`
+                              : `⚠️ Nilai harus di antara 0% s/d 100%`
                             }
                           </div>
                           <button
                             type="submit"
-                            disabled={isCalculatingShu || Math.abs(shuPctJasaModal + shuPctJasaUsaha - 100) >= 0.01}
+                            disabled={isCalculatingShu || !(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)}
                             className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2 shrink-0 disabled:opacity-50"
                           >
                             {isCalculatingShu ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Hitung & Simpan SHU Otomatis'}
@@ -3592,19 +3592,21 @@ export default function CommunityDetailPage() {
                         const hasConfig = !!communityShuData?.config;
                         const myDist = communityShuData?.config?.distributions?.find((d: any) => d.userId === user?.id);
                         
-                        const totSimp = communitySavingsSummary?.totalSavingsCommunity || 0;
-                        const totTx = communitySavingsSummary?.totalTransaksiCommunity || 0;
-                        const poolJasaModal = Number(shuNetProfit || 100000000) * shuPctJasaModal / 100;
-                        const poolJasaUsaha = Number(shuNetProfit || 100000000) * shuPctJasaUsaha / 100;
+                        const totSimp = myDist ? myDist.simpananTotalCommunity : (communitySavingsSummary?.totalSavingsCommunity || 0);
+                        const totTx = myDist ? myDist.transaksiTotalCommunity : (communitySavingsSummary?.totalTransaksiCommunity || 0);
                         
-                        const mySimp = communitySavingsSummary?.memberBalances?.[user?.id]?.total || 0;
-                        const myTx   = communitySavingsSummary?.memberTransaksi?.[user?.id] || 0;
+                        const poolJasaModal = communityShuData?.config 
+                          ? (communityShuData.config.totalNetProfit * communityShuData.config.pctJasaModal / 100) 
+                          : 0;
+                        const poolJasaUsaha = communityShuData?.config 
+                          ? (communityShuData.config.totalNetProfit * communityShuData.config.pctJasaUsaha / 100) 
+                          : 0;
                         
-                        const previewJasaModal = totSimp > 0 ? (mySimp / totSimp) * poolJasaModal : 0;
-                        const previewJasaUsaha = totTx > 0 ? (myTx / totTx) * poolJasaUsaha : 0;
+                        const mySimp = myDist ? myDist.simpananMember : (communitySavingsSummary?.memberBalances?.[user?.id]?.total || 0);
+                        const myTx   = myDist ? myDist.transaksiMember : (communitySavingsSummary?.memberTransaksi?.[user?.id] || 0);
                         
-                        const jModal = myDist ? myDist.shuJasaModalAmount : previewJasaModal;
-                        const jUsaha = myDist ? myDist.shuJasaUsahaAmount : previewJasaUsaha;
+                        const jModal = myDist ? myDist.shuJasaModalAmount : 0;
+                        const jUsaha = myDist ? myDist.shuJasaUsahaAmount : 0;
                         const totShu = jModal + jUsaha;
 
                         return (

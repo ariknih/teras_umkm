@@ -96,7 +96,7 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
     const totalSavingsCommunity = totalPokok + totalWajib + totalSukarela
 
     // Fetch and aggregate completed order transaction volumes for Jasa Usaha
-    const orders: any[] = typeof (DataStore as any).getOrders === 'function' ? await (DataStore as any).getOrders() : []
+    const orders: any[] = typeof (DataStore as any).getAllOrders === 'function' ? await (DataStore as any).getAllOrders() : []
     const currentYear = new Date().getFullYear()
     const yearStartDate = new Date(currentYear, 0, 1)
     const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59)
