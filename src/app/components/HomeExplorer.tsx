@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
   Tag,
@@ -10,8 +10,12 @@ import {
   Building2,
   GraduationCap,
   Wrench,
-  SlidersHorizontal,
-  ArrowUpDown
+  ArrowUpDown,
+  Flame,
+  Search,
+  History,
+  TrendingUp,
+  X
 } from 'lucide-react'
 
 interface Product {
@@ -76,6 +80,15 @@ const QUICK_ACTIONS = [
   { label: 'Akademi UMKM', icon: GraduationCap, color: 'text-purple-700 bg-purple-50 border-purple-200', href: '/academy' }
 ]
 
+const TRENDING_KEYWORDS = [
+  'Batik Tulis Solo',
+  'Keripik Tempe Renyah',
+  'Madu Hutan Asli',
+  'Kopi Robusta Lampung',
+  'Tas Rajut Etnik',
+  'Desain Logo UMKM'
+]
+
 export default function HomeExplorer({ products, services }: HomeExplorerProps) {
   const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'JASA'>('MARKETPLACE')
   const [searchQuery, setSearchQuery] = useState('')
@@ -83,9 +96,74 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
   const [selectedServiceCategory, setSelectedServiceCategory] = useState('ALL')
   const [sortBy, setSortBy] = useState<'RELEVANCE' | 'PRICE_LOW' | 'PRICE_HIGH' | 'RATING'>('RELEVANCE')
   
+  // Search dropdown state
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
+  const searchBoxRef = useRef<HTMLDivElement>(null)
+
+  // Flash Sale Countdown Timer (Ticking every second)
+  const [countdown, setCountdown] = useState({ hours: 4, minutes: 27, seconds: 18 })
+
+  useEffect(() => {
+    // Load recent searches from localStorage
+    try {
+      const stored = localStorage.getItem('saloka_recent_searches')
+      if (stored) {
+        setRecentSearches(JSON.parse(stored))
+      }
+    } catch (_) {}
+
+    // Countdown interval
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev.seconds > 0) {
+          return { ...prev, seconds: prev.seconds - 1 }
+        } else if (prev.minutes > 0) {
+          return { ...prev, minutes: prev.minutes - 1, seconds: 59 }
+        } else if (prev.hours > 0) {
+          return { hours: prev.hours - 1, minutes: 59, seconds: 59 }
+        } else {
+          return { hours: 5, minutes: 59, seconds: 59 }
+        }
+      })
+    }, 1000)
+
+    // Click outside to close search dropdown
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  const saveSearchKeyword = (keyword: string) => {
+    if (!keyword.trim()) return
+    const updated = [keyword, ...recentSearches.filter((k) => k !== keyword)].slice(0, 5)
+    setRecentSearches(updated)
+    try {
+      localStorage.setItem('saloka_recent_searches', JSON.stringify(updated))
+    } catch (_) {}
+  }
+
   // 5 baris produk awal (5 baris x 6 kolom desktop = 30 produk)
   const [visibleProductCount, setVisibleProductCount] = useState(30)
   const [visibleServiceCount, setVisibleServiceCount] = useState(8)
+
+  // Instant matching products for autocomplete dropdown
+  const autocompleteMatches = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    const q = searchQuery.toLowerCase().trim()
+    return products
+      .filter((p) => p.category !== 'KERJAAN' && p.category !== 'JASA')
+      .filter((p) => p.title?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q))
+      .slice(0, 5)
+  }, [products, searchQuery])
 
   // Filtered and sorted physical products
   const filteredProducts = useMemo(() => {
@@ -131,8 +209,13 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
     return filteredServices.slice(0, visibleServiceCount)
   }, [filteredServices, visibleServiceCount])
 
+  // Flash Sale products
+  const flashSaleProducts = useMemo(() => {
+    return products.filter((p) => p.category !== 'KERJAAN' && p.category !== 'JASA').slice(0, 6)
+  }, [products])
+
   return (
-    <section className="w-full max-w-[1240px] mx-auto px-3 sm:px-6 py-3 space-y-4">
+    <section className="w-full max-w-[1240px] mx-auto px-3 sm:px-6 py-3 space-y-5">
       {/* ── TOKOPEDIA-STYLE QUICK ACTIONS BAR ── */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
         {QUICK_ACTIONS.map((item) => {
@@ -153,6 +236,106 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           )
         })}
       </div>
+
+      {/* ── ⚡ FLASH SALE UMKM WITH LIVE COUNTDOWN TIMER ── */}
+      {flashSaleProducts.length > 0 && activeTab === 'MARKETPLACE' && (
+        <div className="bg-gradient-to-r from-emerald-950 via-[#006E24] to-[#0A4D1A] rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white shadow-md space-y-3.5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-slate-950 font-black text-xs rounded-lg uppercase tracking-wider shadow-xs animate-pulse">
+                <Flame size={14} className="fill-slate-950" />
+                <span>Flash Sale</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs font-semibold">
+                <span className="text-emerald-100 text-[11px]">Berakhir dalam:</span>
+                <div className="flex items-center gap-1 font-mono font-black text-xs text-white">
+                  <span className="bg-black/40 px-1.5 py-0.5 rounded border border-white/20">
+                    {String(countdown.hours).padStart(2, '0')}
+                  </span>
+                  <span>:</span>
+                  <span className="bg-black/40 px-1.5 py-0.5 rounded border border-white/20">
+                    {String(countdown.minutes).padStart(2, '0')}
+                  </span>
+                  <span>:</span>
+                  <span className="bg-black/40 px-1.5 py-0.5 rounded border border-white/20 text-amber-300">
+                    {String(countdown.seconds).padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <Link
+              href="/market"
+              className="text-xs font-bold text-emerald-100 hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <span>Lihat Semua Promo</span>
+              <span>&gt;</span>
+            </Link>
+          </div>
+
+          {/* Flash Sale Cards Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 sm:gap-3">
+            {flashSaleProducts.map((p, idx) => {
+              const discountPct = 35 + (idx % 15)
+              const originalPrice = Math.round(p.price * 1.45)
+              const percentSold = 65 + (idx * 5) % 30
+
+              return (
+                <Link
+                  key={p.id}
+                  href={`/market/product/${p.id}`}
+                  className="bg-white rounded-xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-200 flex flex-col justify-between group p-2 text-slate-900"
+                >
+                  <div>
+                    <div className="w-full aspect-square bg-slate-50 relative rounded-lg overflow-hidden">
+                      {p.imageUrl ? (
+                        <img
+                          src={p.imageUrl}
+                          alt={p.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400 text-[10px]">
+                          Saloka
+                        </div>
+                      )}
+                      <span className="absolute top-1 left-1 bg-rose-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                        🔥 {discountPct}%
+                      </span>
+                    </div>
+
+                    <div className="pt-2 space-y-1">
+                      <h4 className="text-[11px] font-medium text-slate-800 line-clamp-1 group-hover:text-[#006E24] transition-colors">
+                        {p.title}
+                      </h4>
+                      <p className="text-xs sm:text-sm font-extrabold text-[#006E24] font-mono leading-tight">
+                        Rp {p.price.toLocaleString('id-ID')}
+                      </p>
+                      <p className="text-[9px] text-slate-400 line-through">
+                        Rp {originalPrice.toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stock Bar */}
+                  <div className="pt-2 space-y-0.5">
+                    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+                      <div
+                        className="bg-gradient-to-r from-amber-500 to-rose-600 h-full rounded-full transition-all"
+                        style={{ width: `${percentSold}%` }}
+                      />
+                    </div>
+                    <p className="text-[8px] font-extrabold text-slate-500 text-center tracking-tight">
+                      Terjual {percentSold}%
+                    </p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── HEADER SWITCHER BAR ── */}
       <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
@@ -211,22 +394,27 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         </div>
       </div>
 
-      {/* ── SEARCH & TOKOPEDIA-STYLE CATEGORY NAV TABS ── */}
+      {/* ── SMART LIVE SEARCH & AUTOCOMPLETE DROPDOWN ── */}
       <div className="space-y-3 bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-xs">
-        {/* Search input with live clear button */}
-        <div className="relative">
+        {/* Search input with live clear button and dropdown */}
+        <div ref={searchBoxRef} className="relative">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-            </svg>
+            <Search size={16} strokeWidth={2.5} />
           </div>
           <input
             type="text"
             value={searchQuery}
+            onFocus={() => setIsSearchFocused(true)}
             onChange={(e) => {
               setSearchQuery(e.target.value)
               setVisibleProductCount(30)
               setVisibleServiceCount(8)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchQuery.trim()) {
+                saveSearchKeyword(searchQuery.trim())
+                setIsSearchFocused(false)
+              }
             }}
             placeholder={
               activeTab === 'MARKETPLACE'
@@ -244,10 +432,110 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
               }}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>
-              </svg>
+              <X size={15} strokeWidth={2.5} />
             </button>
+          )}
+
+          {/* Autocomplete Dropdown */}
+          {isSearchFocused && (
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-30 p-3 space-y-3 animate-in fade-in-50 duration-150">
+              {searchQuery.trim() ? (
+                /* Matching Products Preview */
+                <div className="space-y-2">
+                  <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                    Hasil Produk yang Cocok:
+                  </p>
+                  {autocompleteMatches.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-2">Tidak ada produk instan yang cocok dengan &quot;{searchQuery}&quot;.</p>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {autocompleteMatches.map((m) => (
+                        <Link
+                          key={m.id}
+                          href={`/market/product/${m.id}`}
+                          onClick={() => {
+                            saveSearchKeyword(m.title)
+                            setIsSearchFocused(false)
+                          }}
+                          className="py-2 flex items-center justify-between gap-3 hover:bg-slate-50 px-2 rounded-xl transition-colors group"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                              {m.imageUrl ? (
+                                <img src={m.imageUrl} alt={m.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[8px] text-slate-400">UMKM</div>
+                              )}
+                            </div>
+                            <span className="text-xs font-bold text-slate-800 truncate group-hover:text-[#006E24]">
+                              {m.title}
+                            </span>
+                          </div>
+                          <span className="text-xs font-mono font-extrabold text-[#006E24] shrink-0">
+                            Rp {m.price.toLocaleString('id-ID')}
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Trending & Recent Searches */
+                <div className="space-y-3">
+                  {recentSearches.length > 0 && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                        <span className="flex items-center gap-1"><History size={12} /> Riwayat Terakhir</span>
+                        <button
+                          onClick={() => {
+                            setRecentSearches([])
+                            localStorage.removeItem('saloka_recent_searches')
+                          }}
+                          className="text-[10px] text-rose-600 hover:underline capitalize"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {recentSearches.map((kw) => (
+                          <button
+                            key={kw}
+                            onClick={() => {
+                              setSearchQuery(kw)
+                              setIsSearchFocused(false)
+                            }}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          >
+                            {kw}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                      <TrendingUp size={12} className="text-[#006E24]" /> Tren Pencarian UMKM
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {TRENDING_KEYWORDS.map((kw) => (
+                        <button
+                          key={kw}
+                          onClick={() => {
+                            setSearchQuery(kw)
+                            saveSearchKeyword(kw)
+                            setIsSearchFocused(false)
+                          }}
+                          className="px-2.5 py-1 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                        >
+                          🔥 {kw}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
@@ -386,7 +674,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             </div>
                           )}
 
-                          {/* ── GREEN DISCOUNT BADGE (Warna Hijau) ── */}
+                          {/* ── GREEN DISCOUNT BADGE ── */}
                           <span className="absolute top-1.5 left-1.5 bg-[#006E24] text-white text-[9px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-xs z-10 tracking-tight">
                             {discountPct}%
                           </span>
@@ -494,7 +782,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           {filteredServices.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-8 space-y-3">
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto text-[#006E24]">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                 </svg>
               </div>

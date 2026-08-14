@@ -6,6 +6,7 @@ import Link from 'next/link'
 import HeaderNavigation from './HeaderNavigation'
 import MobileBottomNav from '@/components/MobileBottomNav'
 import FloatingChat from '@/components/FloatingChat'
+import PwaInstallPrompt from './PwaInstallPrompt'
 import { GsapScrollTrigger } from '@/components/GsapScrollTrigger'
 import OnboardingGuard from './OnboardingGuard'
 
@@ -158,6 +159,7 @@ export default function ClientLayoutWrapper({
 
       <MobileBottomNav isLoggedIn={!!user} />
       <FloatingChat />
+      <PwaInstallPrompt />
     </div>
   )
 }
