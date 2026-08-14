@@ -238,7 +238,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
               <div className={`w-9 h-9 rounded-full flex items-center justify-center ${item.color} group-hover:scale-105 transition-transform duration-200`}>
                 <Icon size={17} strokeWidth={2.2} />
               </div>
-              <span className="text-[11px] font-semibold text-slate-700 group-hover:text-[#006E24] transition-colors leading-tight">
+              <span className="text-[11px] font-semibold text-slate-700 group-hover:text-[#2DB24A] transition-colors leading-tight">
                 {item.label}
               </span>
             </Link>
@@ -251,7 +251,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5 relative overflow-hidden">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="px-2.5 py-1 bg-[#006E24] text-white text-[11px] font-extrabold rounded-md uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+              <span className="px-2.5 py-1 bg-[#2DB24A] text-white text-[11px] font-extrabold rounded-md uppercase tracking-wider flex items-center gap-1 shadow-2xs">
                 <Zap size={13} className="fill-white" />
                 <span>Flash Sale</span>
               </span>
@@ -267,7 +267,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                     {String(countdown.minutes).padStart(2, '0')}
                   </span>
                   <span className="text-slate-700">:</span>
-                  <span className="bg-[#006E24] px-1.5 py-0.5 rounded">
+                  <span className="bg-[#2DB24A] px-1.5 py-0.5 rounded">
                     {String(countdown.seconds).padStart(2, '0')}
                   </span>
                 </div>
@@ -281,7 +281,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                   type="button"
                   onClick={() => scrollFlashSale('left')}
                   aria-label="Scroll Flash Sale Kiri"
-                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#006E24] hover:text-white text-slate-600 flex items-center justify-center transition-colors cursor-pointer border-none"
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#2DB24A] hover:text-white text-slate-600 flex items-center justify-center transition-colors cursor-pointer border-none"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -289,7 +289,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                   type="button"
                   onClick={() => scrollFlashSale('right')}
                   aria-label="Scroll Flash Sale Kanan"
-                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#006E24] hover:text-white text-slate-600 flex items-center justify-center transition-colors cursor-pointer border-none"
+                  className="w-7 h-7 rounded-full bg-slate-100 hover:bg-[#2DB24A] hover:text-white text-slate-600 flex items-center justify-center transition-colors cursor-pointer border-none"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -297,7 +297,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
 
               <Link
                 href="/market"
-                className="text-xs font-bold text-[#006E24] hover:underline flex items-center gap-0.5 shrink-0 ml-1"
+                className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-0.5 shrink-0 ml-1"
               >
                 <span>Lihat Semua</span>
                 <ChevronRight size={14} />
@@ -319,7 +319,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 <Link
                   key={p.id}
                   href={`/market/product/${p.id}`}
-                  className="w-[145px] sm:w-[165px] md:w-[175px] shrink-0 snap-start bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group p-2.5 text-slate-900"
+                  className="w-[145px] sm:w-[165px] md:w-[175px] shrink-0 snap-start bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#2DB24A]/60 transition-all duration-200 flex flex-col justify-between group p-2.5 text-slate-900"
                 >
                   <div className="space-y-2">
                     {/* Thumbnail Image Container */}
@@ -338,14 +338,14 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                       )}
 
                       {/* Clean Saloka Green Discount Tag */}
-                      <span className="absolute top-1 left-1 bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9] text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-2xs">
+                      <span className="absolute top-1 left-1 bg-[#E8F5E9] text-[#2DB24A] border border-[#C8E6C9] text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-2xs">
                         {discountPct}%
                       </span>
                     </div>
 
                     {/* Content */}
                     <div className="space-y-1">
-                      <h4 className="text-xs font-normal text-slate-800 line-clamp-1 group-hover:text-[#006E24] transition-colors leading-tight">
+                      <h4 className="text-xs font-normal text-slate-800 line-clamp-1 group-hover:text-[#2DB24A] transition-colors leading-tight">
                         {p.title}
                       </h4>
                       <p className="text-sm font-bold text-slate-900 leading-tight">
@@ -361,11 +361,11 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                   <div className="pt-2 space-y-1">
                     <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-[#006E24] h-full rounded-full transition-all"
+                        className="bg-[#2DB24A] h-full rounded-full transition-all"
                         style={{ width: `${percentSold}%` }}
                       />
                     </div>
-                    <p className="text-[9px] font-bold text-[#006E24] text-left">
+                    <p className="text-[9px] font-bold text-[#2DB24A] text-left">
                       Terjual {percentSold}%
                     </p>
                   </div>
@@ -379,7 +379,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
       {/* ── HEADER SWITCHER BAR (MARKETPLACE / JASA) ── */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="space-y-1 text-center md:text-left">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full text-[#006E24] text-[11px] font-bold">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full text-[#2DB24A] text-[11px] font-bold">
             <span>Katalog Resmi Saloka UMKM</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
@@ -396,7 +396,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
             onClick={() => { setActiveTab('MARKETPLACE'); setSearchQuery(''); setVisibleProductCount(30); }}
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all duration-150 cursor-pointer ${
               activeTab === 'MARKETPLACE'
-                ? 'bg-[#006E24] text-white shadow-xs font-extrabold'
+                ? 'bg-[#2DB24A] text-white shadow-xs font-extrabold'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
@@ -412,7 +412,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
             onClick={() => { setActiveTab('JASA'); setSearchQuery(''); setVisibleServiceCount(8); }}
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all duration-150 cursor-pointer ${
               activeTab === 'JASA'
-                ? 'bg-[#006E24] text-white shadow-xs font-extrabold'
+                ? 'bg-[#2DB24A] text-white shadow-xs font-extrabold'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
@@ -454,7 +454,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 ? 'Cari produk fisik UMKM (misal: Keripik Tempe, Batik Tulis, Madu Hutan)...'
                 : 'Cari jasa & keahlian (misal: Desain Logo, Teknisi AC, Konsultan UMKM)...'
             }
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-9 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#006E24] focus:ring-1 focus:ring-[#006E24] transition-all"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-9 py-2 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A] transition-all"
           />
           {searchQuery && (
             <button
@@ -499,11 +499,11 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                                 <div className="w-full h-full flex items-center justify-center text-[8px] text-slate-400">UMKM</div>
                               )}
                             </div>
-                            <span className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#006E24]">
+                            <span className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#2DB24A]">
                               {m.title}
                             </span>
                           </div>
-                          <span className="text-xs font-bold text-[#006E24] shrink-0">
+                          <span className="text-xs font-bold text-[#2DB24A] shrink-0">
                             Rp {m.price.toLocaleString('id-ID')}
                           </span>
                         </Link>
@@ -546,7 +546,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
 
                   <div className="space-y-1.5">
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                      <TrendingUp size={12} className="text-[#006E24]" /> Tren Pencarian UMKM
+                      <TrendingUp size={12} className="text-[#2DB24A]" /> Tren Pencarian UMKM
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {TRENDING_KEYWORDS.map((kw) => (
@@ -557,7 +557,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             saveSearchKeyword(kw)
                             setIsSearchFocused(false)
                           }}
-                          className="px-2.5 py-1 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] text-xs font-semibold rounded-md transition-colors cursor-pointer"
+                          className="px-2.5 py-1 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#2DB24A] text-xs font-semibold rounded-md transition-colors cursor-pointer"
                         >
                           {kw}
                         </button>
@@ -585,7 +585,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                     }}
                     className={`relative px-3 py-1.5 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
                       isSelected
-                        ? 'text-[#006E24] border-[#006E24] font-bold'
+                        ? 'text-[#2DB24A] border-[#2DB24A] font-bold'
                         : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300'
                     }`}
                   >
@@ -605,7 +605,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                     }}
                     className={`relative px-3 py-1.5 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
                       isSelected
-                        ? 'text-[#006E24] border-[#006E24] font-bold'
+                        ? 'text-[#2DB24A] border-[#2DB24A] font-bold'
                         : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300'
                     }`}
                   >
@@ -624,7 +624,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
                 aria-label="Urutkan Produk"
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-[#006E24] cursor-pointer"
+                className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-[#2DB24A] cursor-pointer"
               >
                 <option value="RELEVANCE">Paling Sesuai</option>
                 <option value="PRICE_LOW">Harga Terendah</option>
@@ -648,7 +648,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
             </h3>
             <Link
               href="/market"
-              className="text-xs font-bold text-[#006E24] hover:underline inline-flex items-center gap-1"
+              className="text-xs font-bold text-[#2DB24A] hover:underline inline-flex items-center gap-1"
             >
               <span>Lihat Semua Produk</span>
               <ChevronRight size={13} />
@@ -663,7 +663,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
               </p>
               <button
                 onClick={() => { setSearchQuery(''); setSelectedProductCategory('ALL'); setVisibleProductCount(30); }}
-                className="px-4 py-2 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#2DB24A] text-xs font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Reset Filter Pencarian
               </button>
@@ -680,7 +680,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                     <Link
                       key={product.id}
                       href={`/market/product/${product.id}`}
-                      className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group"
+                      className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#2DB24A]/60 transition-all duration-200 flex flex-col justify-between group"
                     >
                       <div>
                         {/* Thumbnail Image Container */}
@@ -707,7 +707,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                         {/* Content Layout */}
                         <div className="p-2.5 sm:p-3 space-y-1">
                           {/* Title */}
-                          <h4 className="text-xs font-normal text-slate-800 line-clamp-2 leading-snug group-hover:text-[#006E24] transition-colors min-h-[32px]">
+                          <h4 className="text-xs font-normal text-slate-800 line-clamp-2 leading-snug group-hover:text-[#2DB24A] transition-colors min-h-[32px]">
                             {product.title}
                           </h4>
 
@@ -721,7 +721,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             <span className="line-through text-slate-400">
                               Rp {originalPrice.toLocaleString('id-ID')}
                             </span>
-                            <span className="font-bold text-[#006E24] bg-[#E8F5E9] border border-[#C8E6C9] px-1 py-0.2 rounded text-[9px]">
+                            <span className="font-bold text-[#2DB24A] bg-[#E8F5E9] border border-[#C8E6C9] px-1 py-0.2 rounded text-[9px]">
                               {discountPct}%
                             </span>
                           </div>
@@ -735,7 +735,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
 
                           {/* Location & Store Badge */}
                           <div className="flex items-center gap-1 text-[10px] text-slate-500 pt-0.5 truncate">
-                            <span className="text-[#006E24] font-bold">✔</span>
+                            <span className="text-[#2DB24A] font-bold">✔</span>
                             <span className="truncate">Saloka Official</span>
                           </div>
                         </div>
@@ -750,7 +750,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 <div className="flex flex-col items-center justify-center pt-6 pb-2 gap-2">
                   <button
                     onClick={() => setVisibleProductCount((prev) => prev + 18)}
-                    className="px-7 py-2.5 bg-white hover:bg-emerald-50 text-[#006E24] border-2 border-[#006E24] rounded-xl font-bold text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs flex items-center gap-2 cursor-pointer"
+                    className="px-7 py-2.5 bg-white hover:bg-emerald-50 text-[#2DB24A] border-2 border-[#2DB24A] rounded-xl font-bold text-xs sm:text-sm transition-all shadow-2xs hover:shadow-xs flex items-center gap-2 cursor-pointer"
                   >
                     <span>Muat Lebih Banyak Produk (+18)</span>
                   </button>
@@ -774,7 +774,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
             </h3>
             <Link
               href="/jasa"
-              className="text-xs font-bold text-[#006E24] hover:underline inline-flex items-center gap-1"
+              className="text-xs font-bold text-[#2DB24A] hover:underline inline-flex items-center gap-1"
             >
               <span>Katalog Jasa Lengkap</span>
               <ChevronRight size={13} />
@@ -789,7 +789,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
               </p>
               <button
                 onClick={() => { setSearchQuery(''); setSelectedServiceCategory('ALL'); setVisibleServiceCount(8); }}
-                className="px-4 py-2 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#2DB24A] text-xs font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Reset Filter Pencarian
               </button>
@@ -806,7 +806,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                   return (
                     <div
                       key={svc.id}
-                      className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all duration-200 flex flex-col justify-between group"
+                      className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#2DB24A]/60 transition-all duration-200 flex flex-col justify-between group"
                     >
                       <div>
                         {/* Image Container */}
@@ -817,7 +817,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             loading="lazy"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          <span className="absolute top-2 left-2 bg-[#006E24] text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs uppercase tracking-wider">
+                          <span className="absolute top-2 left-2 bg-[#2DB24A] text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs uppercase tracking-wider">
                             {formatCategoryName(svc.category)}
                           </span>
                           {svc.location && (
@@ -829,7 +829,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
 
                         {/* Content */}
                         <div className="p-3.5 space-y-2.5">
-                          <h4 className="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1 group-hover:text-[#006E24] transition-colors">
+                          <h4 className="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1 group-hover:text-[#2DB24A] transition-colors">
                             {svc.title}
                           </h4>
                           <p className="text-[11px] text-slate-600 line-clamp-2 leading-relaxed">
@@ -840,10 +840,10 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                           <div className="space-y-1 pt-1 border-t border-slate-100">
                             {svc.pricePerSession ? (
                               <div className="flex items-center justify-between text-[11px] bg-[#E8F5E9] px-2 py-1 rounded-lg border border-[#C8E6C9]">
-                                <span className="text-[9px] font-bold text-[#006E24] uppercase">
+                                <span className="text-[9px] font-bold text-[#2DB24A] uppercase">
                                   Per Sesi ({svc.sessionDurationMinutes || 60} mnt)
                                 </span>
-                                <span className="font-bold text-[#006E24]">
+                                <span className="font-bold text-[#2DB24A]">
                                   Rp {svc.pricePerSession.toLocaleString('id-ID')}
                                 </span>
                               </div>

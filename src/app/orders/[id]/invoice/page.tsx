@@ -80,7 +80,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
         <div className="flex justify-between items-center print:hidden">
           <Link
             href={`/orders/${order.id}`}
-            className="inline-flex items-center gap-1.5 text-slate-600 hover:text-[#006E24] transition-colors text-xs font-bold uppercase tracking-wider"
+            className="inline-flex items-center gap-1.5 text-slate-600 hover:text-[#2DB24A] transition-colors text-xs font-bold uppercase tracking-wider"
           >
             <ArrowLeft size={14} />
             Kembali ke Pesanan
@@ -88,7 +88,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
 
           <button
             onClick={handlePrint}
-            className="px-5 py-2.5 bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs cursor-pointer"
+            className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#005a1d] text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs cursor-pointer"
           >
             <Printer size={14} />
             Cetak / Simpan PDF
@@ -101,11 +101,11 @@ export default function OrderInvoicePage({ params }: PageProps) {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-slate-100">
             <div>
               <div className="flex items-center gap-2 mb-1.5">
-                <div className="w-8 h-8 rounded-lg bg-[#006E24] flex items-center justify-center text-white font-black text-sm">
+                <div className="w-8 h-8 rounded-lg bg-[#2DB24A] flex items-center justify-center text-white font-black text-sm">
                   S
                 </div>
                 <span className="text-lg font-extrabold text-slate-900 tracking-tight">
-                  Saloka<span className="text-[#006E24]">.id</span>
+                  Saloka<span className="text-[#2DB24A]">.id</span>
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 font-medium">
@@ -114,7 +114,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
             </div>
 
             <div className="text-left sm:text-right">
-              <span className="px-3 py-1 bg-[#E8F5E9] text-[#006E24] font-extrabold text-xs rounded-full border border-[#C8E6C9] inline-block mb-1">
+              <span className="px-3 py-1 bg-[#E8F5E9] text-[#2DB24A] font-extrabold text-xs rounded-full border border-[#C8E6C9] inline-block mb-1">
                 FAKTUR INVOICE RESMI
               </span>
               <p className="text-xs text-slate-500">
@@ -138,7 +138,7 @@ export default function OrderInvoicePage({ params }: PageProps) {
               <p className="text-slate-600">
                 Email: {merchant?.email || 'merchant@saloka.id'}
               </p>
-              <p className="text-[10px] text-[#006E24] font-bold">
+              <p className="text-[10px] text-[#2DB24A] font-bold">
                 ✔ Terdaftar Resmi di Saloka UMKM Hub
               </p>
             </div>
@@ -208,14 +208,14 @@ export default function OrderInvoicePage({ params }: PageProps) {
           <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 text-xs">
             {/* Lunas Verified Seal */}
             <div className="flex items-center gap-3 p-3 bg-[#E8F5E9] rounded-xl border border-[#C8E6C9] max-w-sm">
-              <div className="w-10 h-10 rounded-full bg-[#006E24] text-white flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[#2DB24A] text-white flex items-center justify-center shrink-0">
                 <ShieldCheck size={20} />
               </div>
               <div className="space-y-0.5">
-                <p className="font-extrabold text-[#006E24] text-xs uppercase tracking-wide">
+                <p className="font-extrabold text-[#2DB24A] text-xs uppercase tracking-wide">
                   LUNAS / TERVERIFIKASI
                 </p>
-                <p className="text-[10px] text-[#006E24]/80">
+                <p className="text-[10px] text-[#2DB24A]/80">
                   Pembayaran berhasil diverifikasi secara otomatis oleh sistem Saloka.id Gateway.
                 </p>
               </div>
@@ -242,14 +242,14 @@ export default function OrderInvoicePage({ params }: PageProps) {
                 </span>
               </div>
               {order.discountAmount > 0 && (
-                <div className="flex justify-between text-[#006E24] font-bold">
+                <div className="flex justify-between text-[#2DB24A] font-bold">
                   <span>Diskon Promo / Kupon</span>
                   <span>-Rp {order.discountAmount.toLocaleString('id-ID')}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-extrabold">
                 <span className="text-slate-900">Total Pembayaran</span>
-                <span className="text-[#006E24] text-base">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
+                <span className="text-[#2DB24A] text-base">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>

@@ -10,7 +10,7 @@ You must ALWAYS automatically apply the relevant installed skills from `.agents/
 
 1. **Frontend, UI/UX & Design Tasks (`ui-ux-pro-max`, `ui-styling`, `design`, `banner-design`, `design-system`)**:
    - Automatically trigger and apply modern, anti-AI-slop design principles.
-   - Maintain brand consistency: Saloka Indonesian UMKM Green (`#006E24` / `#2DB24A`), Pure White (`#FFFFFF`), Light Slate (`#F8FAFC`), and clean Tokopedia/modern marketplace layout standards.
+   - Maintain brand consistency: Saloka Fresh Green (`#2DB24A` / `#24943E`), Pure White (`#FFFFFF`), Light Slate (`#F8FAFC`), and clean Tokopedia/modern marketplace layout standards.
    - Clean typography, high contrast, responsive mobile/tablet/desktop aspect ratios.
    - No generic/murky dark themes unless explicitly requested.
 
