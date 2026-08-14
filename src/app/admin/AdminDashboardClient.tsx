@@ -4157,39 +4157,8 @@ export default function AdminDashboardClient({
                 </form>
               </div>
             </div>
-          )}v>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">No. Telepon</label>
-                    <input
-                      type="tel"
-                      value={newUserPhone}
-                      onChange={e => setNewUserPhone(e.target.value)}
-                      placeholder="08123456789"
-                      className="w-full border border-slate-300 rounded px-3 py-1.5 text-slate-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Peran (Role)</label>
-                    <select
-                      value={newUserRole}
-                      onChange={e => setNewUserRole(e.target.value)}
-                      className="w-full border border-slate-300 rounded px-3 py-1.5 text-slate-800"
-                    >
-                      <option value="CUSTOMER">CUSTOMER</option>
-                      <option value="MERCHANT">MERCHANT</option>
-                      <option value="AFFILIATE">AFFILIATE</option>
-                    </select>
-                  </div>
-                  <div className="pt-2 flex justify-end gap-2">
-                    <button type="button" onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 border border-slate-300 font-bold rounded">Batal</button>
-                    <button type="submit" disabled={isPending} className="px-4 py-2 bg-[#0F5132] text-white font-bold rounded">Buat User</button>
-                  </div>
-                </form>
-              </div>
-            </div>
           )}
 
-=======
->>>>>>> origin/master
           {/* Create Voucher Modal */}
           {isVoucherModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
