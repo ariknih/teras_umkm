@@ -2372,11 +2372,21 @@ export async function isDbConnected(): Promise<boolean> {
     const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 10000));
     cachedDbConnected = await Promise.race([connectionPromise, timeoutPromise]);
     if (!cachedDbConnected) {
-      console.warn("isDbConnected: database connection check timed out (>10s)");
+      try {
+        fs.appendFileSync(
+          path.join(process.cwd(), 'db_error_log.txt'),
+          `[${new Date().toISOString()}] isDbConnected warning: database connection check timed out (>10s)\n\n`
+        )
+      } catch (logErr) {}
     }
     return cachedDbConnected;
-  } catch (e) {
-    console.error("isDbConnected connection error:", e);
+  } catch (e: any) {
+    try {
+      fs.appendFileSync(
+        path.join(process.cwd(), 'db_error_log.txt'),
+        `[${new Date().toISOString()}] isDbConnected error: ${e.message}\n${e.stack}\n\n`
+      )
+    } catch (logErr) {}
     cachedDbConnected = false;
     return false;
   }
@@ -3890,7 +3900,14 @@ export const DataStore = {
 
           return order
         })
-      } catch (_) {}
+      } catch (err: any) {
+        try {
+          fs.appendFileSync(
+            path.join(process.cwd(), 'db_error_log.txt'),
+            `[${new Date().toISOString()}] createOrder DB transaction error: ${err.message}\n${err.stack}\n\n`
+          )
+        } catch (logErr) {}
+      }
     }
 
     // In-memory simulation
