@@ -36,40 +36,31 @@ export default async function CoursePage({ params }: PageProps) {
   const initialActiveLessonId = lessons[0]?.id || "";
 
   return (
-    <div className="relative min-h-screen bg-bg-dark pt-12 pb-24 px-6 md:px-10">
-      {/* Background Mesh Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.04)_0%,transparent_70%)] pointer-events-none z-0" />
-
-      <div className="relative z-10 max-w-[1200px] mx-auto">
+    <div className="relative min-h-screen bg-[#F8FAFC] pt-24 pb-24 px-4 sm:px-6 md:px-10 font-sans text-slate-900">
+      <div className="relative z-10 max-w-[1140px] mx-auto space-y-6">
         {/* Back Link */}
         <Link
           href="/academy"
-          className="inline-flex items-center gap-2 text-xs font-geist font-bold text-text-secondary hover:text-primary tracking-wider uppercase mb-8 transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-[#006E24] tracking-wider uppercase transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
           </svg>
-          Kembali ke Academy
+          Kembali ke Katalog Akademi
         </Link>
 
         {/* Header Title */}
-        <div className="mb-10 pb-6 border-b border-border-subtle flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="btn-primary text-[10px] text-primary tracking-[0.2em] bg-primary/10 border border-primary/20 inline-block">
-                {course.lessons?.length || 0} Materi
+              <span className="px-2.5 py-0.5 bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9] rounded-md text-[11px] font-bold">
+                {course.lessons?.length || 0} Modul Materi
               </span>
-              <span className={`text-[10px] font-geist font-bold tracking-[0.1em] uppercase border px-2 py-0.5 rounded inline-block ${
-                course.accessRequired === 'Diamond'
-                  ? 'bg-purple-500/10 border-purple-500/30 text-purple-400'
-                  : course.accessRequired === 'Platinum'
-                  ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                  : 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-              }`}>
+              <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-[11px] font-bold uppercase">
                 Akses {course.accessRequired || 'Gold'}
               </span>
             </div>
-            <h1 className="font-sora text-2xl md:text-4xl font-bold text-text-primary">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               {course.title}
             </h1>
           </div>

@@ -204,6 +204,11 @@ export default function AffiliatePage() {
   const [affSearchQuery, setAffSearchQuery] = useState('')
   const [affSelectedCategory, setAffSelectedCategory] = useState('ALL')
 
+  // Commission Simulator State
+  const [simSalesPerDay, setSimSalesPerDay] = useState(5)
+  const [simAvgPrice, setSimAvgPrice] = useState(100000)
+  const [simCommissionRate, setSimCommissionRate] = useState(10)
+
   // Upgrade State
   const [isUpgrading, startUpgrade] = useTransition()
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
@@ -571,6 +576,125 @@ export default function AffiliatePage() {
         {/* 1. DASHBOARD TAB */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8 animate-fadeIn">
+            {/* ── SIMULASI POTENSI KOMISI AFILIASI ── */}
+            {(() => {
+              const monthlyVolume = simSalesPerDay * simAvgPrice * 30
+              const totalPool = monthlyVolume * (simCommissionRate / 100)
+              const directTier1 = totalPool * 0.60
+              const networkTier2 = totalPool * 0.20
+              const bonusKomunitas = totalPool * 0.20
+              const totalEstimatedMonthly = directTier1 + networkTier2
+
+              return (
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm space-y-6 text-slate-900">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full text-[#006E24] text-[11px] font-bold mb-1">
+                        <span>💡 Kalkulator Simulasi Pendapatan</span>
+                      </div>
+                      <h3 className="text-base font-extrabold text-slate-900">
+                        Simulasi Potensi Komisi Afiliasi Bulanan
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Geser parameter di bawah untuk melihat estimasi penghasilan pasif dari promosi produk Saloka.
+                      </p>
+                    </div>
+
+                    <div className="bg-[#E8F5E9] border border-[#C8E6C9] px-4 py-2.5 rounded-xl text-right">
+                      <span className="text-[10px] font-bold text-[#006E24] uppercase tracking-wider block">
+                        Estimasi Komisi Bulanan Anda
+                      </span>
+                      <span className="text-xl font-black text-[#006E24]">
+                        Rp {Math.round(totalEstimatedMonthly).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Sliders Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-slate-700">Target Transaksi / Hari:</span>
+                        <span className="font-extrabold text-[#006E24] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                          {simSalesPerDay} produk
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={50}
+                        step={1}
+                        value={simSalesPerDay}
+                        onChange={(e) => setSimSalesPerDay(Number(e.target.value))}
+                        className="w-full accent-[#006E24] cursor-pointer"
+                      />
+                      <span className="text-[10px] text-slate-400 block">≈ {simSalesPerDay * 30} pesanan / bulan</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-slate-700">Rata-rata Harga Produk:</span>
+                        <span className="font-extrabold text-[#006E24] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                          Rp {simAvgPrice.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={25000}
+                        max={500000}
+                        step={25000}
+                        value={simAvgPrice}
+                        onChange={(e) => setSimAvgPrice(Number(e.target.value))}
+                        className="w-full accent-[#006E24] cursor-pointer"
+                      />
+                      <span className="text-[10px] text-slate-400 block">Omset Toko: Rp {monthlyVolume.toLocaleString('id-ID')}/bln</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-slate-700">Rata-rata Fee Komisi:</span>
+                        <span className="font-extrabold text-[#006E24] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                          {simCommissionRate}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={5}
+                        max={30}
+                        step={1}
+                        value={simCommissionRate}
+                        onChange={(e) => setSimCommissionRate(Number(e.target.value))}
+                        className="w-full accent-[#006E24] cursor-pointer"
+                      />
+                      <span className="text-[10px] text-slate-400 block">Standar UMKM Saloka: 10% - 20%</span>
+                    </div>
+                  </div>
+
+                  {/* Projected Breakdown */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Komisi Langsung (Tier 1 - 60%)</span>
+                      <p className="text-sm font-black text-slate-900">
+                        Rp {Math.round(directTier1).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Bonus Downline Jaringan (20%)</span>
+                      <p className="text-sm font-black text-slate-900">
+                        Rp {Math.round(networkTier2).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">Kontribusi Komunitas (20%)</span>
+                      <p className="text-sm font-black text-slate-900">
+                        Rp {Math.round(bonusKomunitas).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Reminders Row */}
             {reminders.length > 0 && (
               <div className="space-y-3">

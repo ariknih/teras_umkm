@@ -1779,6 +1779,21 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       <p><strong className="text-primary font-bold">Resi Pengiriman:</strong> <span className="bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">{selectedOrder.shippingLabel}</span></p>
                     )}
                     
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const orderNum = selectedOrder.id.replace('order-', '#')
+                          const resiText = selectedOrder.shippingLabel ? ` (No. Resi: ${selectedOrder.shippingLabel})` : ''
+                          const msg = encodeURIComponent(`Halo Kak, kami dari Toko Mitra Saloka.id menginfokan update pesanan Anda ${orderNum} status saat ini: ${selectedOrder.status}${resiText}. Terima kasih!`)
+                          window.open(`https://wa.me/?text=${msg}`, '_blank')
+                        }}
+                        className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-[#006E24] border border-emerald-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                      >
+                        <span>💬 Kirim Update Pesanan via WhatsApp</span>
+                      </button>
+                    </div>
+
                     <div className="border-t border-border-subtle/50 pt-4 mt-4">
                       <h4 className="font-bold text-text-primary mb-2">Item Pesanan:</h4>
                       {selectedOrder.items?.map((item: any, idx: number) => (

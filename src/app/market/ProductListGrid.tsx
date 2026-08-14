@@ -304,42 +304,42 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
 
             {/* ── Floating dropdown panel ── */}
             {filterOpen && (
-              <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[340px] bg-surface-dark border border-border-subtle rounded-xl shadow-2xl overflow-hidden">
+              <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[340px] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
                 {/* Dropdown header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle/60 bg-surface-container/40">
-                  <span className="text-xs font-bold text-text-primary font-sora uppercase tracking-wider">Filter &amp; Sortir</span>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Filter &amp; Sortir</span>
                   {activeFilterCount > 0 && (
                     <button
                       onClick={handleResetFilters}
-                      className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors"
+                      className="text-[10px] font-bold text-rose-600 hover:underline transition-colors cursor-pointer"
                     >
                       Reset semua ({activeFilterCount})
                     </button>
                   )}
                 </div>
 
-                <div className="p-4 space-y-5">
+                <div className="p-4 space-y-4">
 
                   {/* ── Sort By ── */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <ArrowUpDown className="w-3 h-3 text-text-secondary" />
-                      <label className="text-[10px] font-bold text-text-secondary font-sora tracking-wider uppercase">Urutkan</label>
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                      <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase">Urutkan</label>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {([
                         { val: 'default',      label: 'Relevansi' },
-                        { val: 'price-asc',    label: 'Harga ↑' },
-                        { val: 'price-desc',   label: 'Harga ↓' },
+                        { val: 'price-asc',    label: 'Harga Terendah' },
+                        { val: 'price-desc',   label: 'Harga Tertinggi' },
                         ...(coords ? [{ val: 'distance-asc', label: 'Terdekat' }] : []),
                       ] as { val: string; label: string }[]).map(opt => (
                         <button
                           key={opt.val}
                           onClick={() => setSortBy(opt.val as any)}
-                          className={`px-3 py-2 rounded-lg text-xs font-bold font-geist border transition-all text-left ${
+                          className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-left cursor-pointer ${
                             sortBy === opt.val
-                              ? 'bg-primary/10 border-primary text-primary'
-                              : 'bg-surface-container/40 border-border-subtle text-text-secondary hover:border-primary/30 hover:text-text-primary'
+                              ? 'bg-[#E8F5E9] border-[#006E24] text-[#006E24]'
+                              : 'bg-white border-slate-200 text-slate-700 hover:border-[#006E24]/30'
                           }`}
                         >
                           {opt.label}
@@ -352,13 +352,13 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <DollarSign className="w-3 h-3 text-text-secondary" />
-                        <label className="text-[10px] font-bold text-text-secondary font-sora tracking-wider uppercase">Rentang Harga</label>
+                        <DollarSign className="w-3.5 h-3.5 text-slate-500" />
+                        <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase">Rentang Harga</label>
                       </div>
                       {(minPrice !== '' || maxPrice !== '') && (
                         <button
                           onClick={() => { setMinPrice(''); setMaxPrice('') }}
-                          className="text-[10px] text-red-400 hover:text-red-300 font-bold transition-colors"
+                          className="text-[10px] text-rose-600 hover:underline font-bold transition-colors cursor-pointer"
                         >
                           Hapus
                         </button>
@@ -366,28 +366,28 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <span className="text-[9px] text-text-secondary font-geist">Min (Rp)</span>
+                        <span className="text-[10px] text-slate-500 font-medium">Min (Rp)</span>
                         <input
                           type="number"
                           placeholder="0"
                           value={minPrice}
                           onChange={(e) => setMinPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                          className="w-full px-3 py-2 bg-surface-container/60 border border-border-subtle rounded-lg text-xs text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-primary/50 transition-all font-geist"
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#006E24] transition-all font-semibold"
                         />
                       </div>
                       <div className="space-y-1">
-                        <span className="text-[9px] text-text-secondary font-geist">Max (Rp)</span>
+                        <span className="text-[10px] text-slate-500 font-medium">Max (Rp)</span>
                         <input
                           type="number"
                           placeholder="Tak terbatas"
                           value={maxPrice}
                           onChange={(e) => setMaxPrice(e.target.value === '' ? '' : Number(e.target.value))}
-                          className="w-full px-3 py-2 bg-surface-container/60 border border-border-subtle rounded-lg text-xs text-text-primary placeholder-text-secondary/40 focus:outline-none focus:border-primary/50 transition-all font-geist"
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#006E24] transition-all font-semibold"
                         />
                       </div>
                     </div>
                     {/* Quick preset ranges */}
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 pt-1">
                       {[
                         { label: '< 50rb',   min: '',       max: 50000 },
                         { label: '50–200rb', min: 50000,    max: 200000 },
@@ -399,10 +399,10 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                           <button
                             key={p.label}
                             onClick={() => { setMinPrice(p.min as any); setMaxPrice(p.max as any) }}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold font-geist border transition-all ${
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
                               active
-                                ? 'bg-primary/10 border-primary text-primary'
-                                : 'bg-surface-container/40 border-border-subtle text-text-secondary hover:border-primary/30'
+                                ? 'bg-[#E8F5E9] border-[#006E24] text-[#006E24]'
+                                : 'bg-white border-slate-200 text-slate-600 hover:border-[#006E24]/30'
                             }`}
                           >
                             {p.label}
@@ -415,29 +415,17 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                   {/* ── Ketersediaan ── */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <Package className="w-3 h-3 text-text-secondary" />
-                      <label className="text-[10px] font-bold text-text-secondary font-sora tracking-wider uppercase">Ketersediaan</label>
+                      <Package className="w-3.5 h-3.5 text-slate-500" />
+                      <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase">Ketersediaan</label>
                     </div>
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <div
-                        onClick={() => setInStockOnly(v => !v)}
-                        className={`relative w-9 h-5 rounded-full transition-colors border ${
-                          inStockOnly
-                            ? 'bg-primary/20 border-primary'
-                            : 'bg-surface-container border-border-subtle'
-                        }`}
-                      >
-                        <div className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${
-                          inStockOnly
-                            ? 'left-4 bg-primary'
-                            : 'left-0.5 bg-text-secondary/40'
-                        }`} />
-                      </div>
-                      <span className={`text-xs font-bold font-geist transition-colors ${
-                        inStockOnly ? 'text-primary' : 'text-text-secondary group-hover:text-text-primary'
-                      }`}>
-                        Hanya tampilkan produk tersedia
-                      </span>
+                    <label className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={inStockOnly}
+                        onChange={(e) => setInStockOnly(e.target.checked)}
+                        className="w-4 h-4 accent-[#006E24] cursor-pointer"
+                      />
+                      <span className="text-xs font-semibold text-slate-800">Hanya tampilkan produk ready stok</span>
                     </label>
                   </div>
 
@@ -447,7 +435,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                 <div className="px-4 pb-4">
                   <button
                     onClick={() => setFilterOpen(false)}
-                    className="btn-primary w-full text-xs"
+                    className="w-full py-2.5 bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
                   >
                     Terapkan Filter
                   </button>
@@ -560,57 +548,62 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     </div>
                   )}
                   {discount > 0 && (
-                    <div className="absolute top-1.5 left-1.5 bg-red-500 text-white font-extrabold text-[8px] px-1 py-0.5 rounded">{discount}%</div>
+                    <div className="absolute top-1.5 left-1.5 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1.5 py-0.5 rounded border border-[#C8E6C9]">
+                      {discount}%
+                    </div>
                   )}
                   {currentUser && product.merchantId === currentUser.id && (
-                    <div className="absolute top-1.5 left-1.5 bg-red-500/80 text-white text-[8px] font-bold px-1 py-0.5 rounded">Produk Anda</div>
+                    <div className="absolute top-1.5 right-1.5 bg-slate-900/80 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                      Produk Anda
+                    </div>
                   )}
                   {product.stock <= 0 && (
-                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-red-500 uppercase tracking-wider bg-white px-2 py-0.5 rounded">Habis</span>
+                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                      <span className="text-[10px] font-extrabold text-rose-600 uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-rose-200">
+                        Habis
+                      </span>
                     </div>
                   )}
                 </div>
 
-                {/* Content — compact like homepage */}
-                <div className="p-2.5 flex-1 flex flex-col justify-between">
+                {/* Content — clean like screenshot */}
+                <div className="p-3 flex-1 flex flex-col justify-between space-y-1.5">
                   <div>
-                    <h3 className="text-[11px] font-medium text-gray-800 line-clamp-2 h-[32px] leading-snug group-hover:text-[#2DB24A] transition-colors mb-0.5">
+                    <h3 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
                       {product.title}
                     </h3>
-                    <div className="mt-1">
-                      <span className="text-xs font-extrabold text-gray-900">
-                        {product.price === 0 ? 'Gratis' : `Rp${product.price.toLocaleString('id-ID')}`}
-                      </span>
-                      {discount > 0 && (
-                        <span className="text-[9px] text-gray-400 line-through ml-1">Rp{originalPrice.toLocaleString('id-ID')}</span>
-                      )}
-                    </div>
-                    <p className="text-[9px] font-bold text-[#FF5722] mt-1">
-                      {idNum % 2 === 0 ? `Hemat s.d ${5 + (idNum % 3) * 5}% Pakai Bonus` : 'Bisa COD'}
+                    
+                    <p className="text-sm font-extrabold text-slate-900 leading-tight pt-1">
+                      {product.price === 0 ? 'Gratis' : `Rp ${product.price.toLocaleString('id-ID')}`}
                     </p>
+
+                    {discount > 0 && (
+                      <div className="flex items-center gap-1.5 pt-0.5">
+                        <span className="text-[11px] text-slate-400 line-through">
+                          Rp {originalPrice.toLocaleString('id-ID')}
+                        </span>
+                        <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.2 rounded border border-[#C8E6C9]">
+                          {discount}%
+                        </span>
+                      </div>
+                    )}
+
                     {dist !== undefined && (
-                      <span className="inline-flex items-center gap-0.5 mt-1 text-[9px] font-semibold text-[#2DB24A] bg-[#2DB24A]/10 rounded px-1 py-0.5">
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"/></svg>
-                        {dist.toFixed(1)} km
+                      <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[#006E24] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
+                        📍 {dist.toFixed(1)} km
                       </span>
                     )}
                   </div>
-                  <div className="mt-2 pt-2">
-                    <div className="flex items-center gap-1 text-[9px] text-gray-400">
-                      <span className="text-[#FFC107]">★</span>
-                      <span className="font-bold text-gray-700">{rating}</span>
+
+                  <div className="pt-2 border-t border-slate-100/80 space-y-1">
+                    <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                      <span className="text-amber-500 font-bold">★ {rating}</span>
                       <span>•</span>
                       <span>{sold}+ terjual</span>
                     </div>
-                    <div className="mt-1 text-[9px] text-gray-400 flex flex-col gap-0.5">
-                      <div className="flex items-center gap-1 truncate">
-                        {isOfficial && (
-                          <span className="w-3 h-3 rounded bg-purple-600 text-white flex items-center justify-center text-[6px] font-black shrink-0">✔</span>
-                        )}
-                        <span className="truncate">{product.merchant?.name || storeName}</span>
-                      </div>
-                      <p className="truncate">{location}</p>
+                    <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
+                      <span className="text-[#006E24] font-bold">✔</span>
+                      <span className="truncate">{product.merchant?.name || storeName}</span>
                     </div>
                   </div>
                 </div>

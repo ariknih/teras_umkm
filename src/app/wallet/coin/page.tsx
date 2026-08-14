@@ -69,6 +69,16 @@ export default function WalletCoinPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'history' | 'voucher' | 'my-voucher'>('history')
   const [redeemLoading, setRedeemLoading] = useState<string | null>(null)
+  const [checkedInToday, setCheckedInToday] = useState(false)
+  const [streakDays, setStreakDays] = useState(3)
+
+  const handleCheckIn = () => {
+    if (checkedInToday) return
+    setCheckedInToday(true)
+    setStreakDays(prev => prev + 1)
+    setBalance(prev => prev + 10)
+    goeyToast.success('🎉 Berhasil Check-in! +10 Koin Saloka telah ditambahkan.')
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -183,6 +193,71 @@ export default function WalletCoinPage() {
                 <span style={{ color: '#374151', fontSize: 13 }}>{item.text}</span>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Daily Check-in Streak Reward (Gamified) */}
+        <div style={{
+          background: '#fff',
+          border: '1px solid #E2E8F0',
+          borderRadius: 16,
+          padding: '18px 20px',
+          marginBottom: 24,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                📅 Check-in Harian ({streakDays} Hari Beruntun)
+              </h3>
+              <p style={{ fontSize: 12, color: '#64748B', margin: '2px 0 0' }}>
+                Check-in setiap hari untuk mendapatkan koin reward gratis!
+              </p>
+            </div>
+            <button
+              onClick={handleCheckIn}
+              disabled={checkedInToday}
+              style={{
+                padding: '8px 16px',
+                background: checkedInToday ? '#E2E8F0' : '#006E24',
+                color: checkedInToday ? '#94A3B8' : '#fff',
+                border: 'none',
+                borderRadius: 10,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: checkedInToday ? 'default' : 'pointer'
+              }}
+            >
+              {checkedInToday ? '✔ Sudah Check-in' : '+10 Koin Hari Ini'}
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 }}>
+            {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+              const isPast = day <= streakDays;
+              return (
+                <div
+                  key={day}
+                  style={{
+                    textAlign: 'center',
+                    padding: '8px 4px',
+                    borderRadius: 10,
+                    background: isPast ? '#E8F5E9' : '#F8FAFC',
+                    border: `1px solid ${isPast ? '#C8E6C9' : '#E2E8F0'}`
+                  }}
+                >
+                  <span style={{ fontSize: 10, fontWeight: 600, color: isPast ? '#006E24' : '#64748B', display: 'block' }}>
+                    Hari {day}
+                  </span>
+                  <span style={{ fontSize: 14, display: 'block', margin: '2px 0' }}>
+                    {isPast ? '🪙' : '⚪'}
+                  </span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: isPast ? '#006E24' : '#94A3B8' }}>
+                    +{day === 7 ? '50' : '10'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 

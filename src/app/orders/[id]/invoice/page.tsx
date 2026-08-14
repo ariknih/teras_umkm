@@ -74,129 +74,128 @@ export default function OrderInvoicePage({ params }: PageProps) {
   const subtotal = (order.items || []).reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0)
 
   return (
-    <div className="relative min-h-screen bg-bg-dark pt-28 pb-24 px-6 md:px-10 print:pt-4 print:pb-4 print:px-4">
-      {/* Glow Effects (hidden in print) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[350px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.02)_0%,transparent_75%)] pointer-events-none z-0 print:hidden" />
-
-      <div className="relative z-10 max-w-[800px] mx-auto">
+    <div className="relative min-h-screen bg-[#F8FAFC] pt-24 pb-24 px-4 sm:px-6 md:px-10 print:pt-4 print:pb-4 print:px-4 font-sans text-slate-900">
+      <div className="max-w-[820px] mx-auto space-y-6">
         {/* Actions panel (hidden in print) */}
-        <div className="flex justify-between items-center mb-8 print:hidden">
+        <div className="flex justify-between items-center print:hidden">
           <Link
             href={`/orders/${order.id}`}
-            className="inline-flex items-center gap-1.5 text-text-secondary hover:text-primary transition-colors text-xs font-bold uppercase tracking-wider"
+            className="inline-flex items-center gap-1.5 text-slate-600 hover:text-[#006E24] transition-colors text-xs font-bold uppercase tracking-wider"
           >
             <ArrowLeft size={14} />
-            Pelacakan Pesanan
+            Kembali ke Pesanan
           </Link>
 
           <button
             onClick={handlePrint}
-            className="btn-primary inline-flex items-center gap-2 text-xs shadow-sm cursor-pointer"
+            className="px-5 py-2.5 bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-2 shadow-xs cursor-pointer"
           >
             <Printer size={14} />
             Cetak / Simpan PDF
           </button>
         </div>
 
-        {/* Invoice Body Card */}
-        <div className="bg-surface-dark border border-border-subtle p-8 md:p-10 rounded-xl shadow-lg print:border-none print:shadow-none print:bg-white print:text-black">
+        {/* Official Invoice Body Card (Clean White A4) */}
+        <div className="bg-white border border-slate-200/90 p-6 sm:p-10 rounded-2xl shadow-sm space-y-6 print:border-none print:shadow-none print:p-0">
           {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-8 border-b border-border-subtle/80">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-slate-100">
             <div>
-              {/* Brand Logo & Name */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center shadow-sm print:bg-black">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-white print:text-white">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-8 h-8 rounded-lg bg-[#006E24] flex items-center justify-center text-white font-black text-sm">
+                  S
                 </div>
-                <span className="font-sora text-base font-bold text-text-primary print:text-black">
-                  Saloka<span className="text-primary print:text-black">UMKM</span>
+                <span className="text-lg font-extrabold text-slate-900 tracking-tight">
+                  Saloka<span className="text-[#006E24]">.id</span>
                 </span>
               </div>
-              <p className="text-[10px] text-text-secondary print:text-gray-500 uppercase tracking-widest font-semibold">
-                Platform Digital UMKM Indonesia
+              <p className="text-[11px] text-slate-500 font-medium">
+                Pusat Marketplace &amp; Pemberdayaan UMKM Indonesia
               </p>
             </div>
 
-            <div className="text-left md:text-right">
-              <h1 className="font-sora text-xl font-extrabold text-primary uppercase tracking-wide print:text-black">
-                FAKTUR INVOICE
-              </h1>
-              <p className="text-xs text-text-secondary print:text-gray-500 mt-1">
-                No. Transaksi: <span className="font-mono font-bold text-text-primary print:text-black">{order.id}</span>
+            <div className="text-left sm:text-right">
+              <span className="px-3 py-1 bg-[#E8F5E9] text-[#006E24] font-extrabold text-xs rounded-full border border-[#C8E6C9] inline-block mb-1">
+                FAKTUR INVOICE RESMI
+              </span>
+              <p className="text-xs text-slate-500">
+                No. Transaksi: <span className="font-bold text-slate-900">{order.id}</span>
               </p>
-              <p className="text-[10px] text-text-secondary print:text-gray-500 mt-0.5">
-                Tanggal: <span className="font-semibold text-text-primary print:text-black">{dateStr}</span>
+              <p className="text-[11px] text-slate-400">
+                Waktu: {dateStr}
               </p>
             </div>
           </div>
 
-          {/* Billing Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8 border-b border-border-subtle/80 text-xs">
-            {/* Merchant Details */}
-            <div className="space-y-2">
-              <span className="text-[10px] font-bold text-text-secondary print:text-gray-500 uppercase tracking-wider block">
-                DITERBITKAN OLEH
+          {/* Diterbitkan Oleh & Dikirim Kepada Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+            <div className="space-y-1">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                Diterbitkan Oleh (Penjual)
               </span>
-              <div className="space-y-1">
-                <p className="font-sora font-bold text-text-primary print:text-black text-sm">
-                  {merchant ? merchant.name : 'Merchant Saloka.id'}
-                </p>
-                <p className="text-text-secondary print:text-gray-600">
-                  Email: {merchant ? merchant.email : '-'}
-                </p>
-                <p className="text-text-secondary print:text-gray-500 italic text-[10px]">
-                  Anggota Resmi Saloka.id Merchant Network
-                </p>
-              </div>
+              <p className="font-bold text-slate-900 text-sm">
+                {merchant ? merchant.name : 'Mitra UMKM Saloka.id'}
+              </p>
+              <p className="text-slate-600">
+                Email: {merchant?.email || 'merchant@saloka.id'}
+              </p>
+              <p className="text-[10px] text-[#006E24] font-bold">
+                ✔ Terdaftar Resmi di Saloka UMKM Hub
+              </p>
             </div>
 
-            {/* Buyer Details */}
-            <div className="space-y-2">
-              <span className="text-[10px] font-bold text-text-secondary print:text-gray-500 uppercase tracking-wider block">
-                DIKIRIM KEPADA
+            <div className="space-y-1">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                Dikirim Kepada (Pembeli)
               </span>
-              <div className="space-y-1">
-                <p className="font-sora font-bold text-text-primary print:text-black text-sm">
-                  {order.buyer ? order.buyer.name : 'Pelanggan Setia'}
-                </p>
-                <p className="text-text-secondary print:text-gray-600">
-                  Email: {order.buyer ? order.buyer.email : '-'}
-                </p>
-                <p className="text-text-secondary print:text-gray-600 font-medium leading-relaxed mt-1">
-                  Alamat: {order.shippingAddress || '-'}
-                </p>
-              </div>
+              <p className="font-bold text-slate-900 text-sm">
+                {order.buyer?.name || 'Pelanggan Saloka.id'}
+              </p>
+              <p className="text-slate-600">
+                Email: {order.buyer?.email || '-'}
+              </p>
+              <p className="text-slate-600 font-medium leading-relaxed">
+                Alamat: {order.shippingAddress || 'Ambil di Toko / Alamat Terdaftar'}
+              </p>
             </div>
           </div>
 
-          {/* Purchased Items Table */}
-          <div className="py-8">
-            <span className="text-[10px] font-bold text-text-secondary print:text-gray-500 uppercase tracking-wider block mb-4">
-              RINCIAN TRANSAKSI
+          {/* Rincian Produk Table */}
+          <div className="space-y-3">
+            <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider block">
+              Rincian Produk
             </span>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-border-subtle/80 text-[10px] font-bold text-text-secondary print:text-gray-500 uppercase tracking-wider">
-                    <th className="py-3 pr-4 w-8">No</th>
-                    <th className="py-3 px-4">Nama Produk</th>
-                    <th className="py-3 px-4 text-center w-24">Harga</th>
-                    <th className="py-3 px-4 text-center w-16">Jumlah</th>
-                    <th className="py-3 pl-4 text-right w-28">Total</th>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-extrabold text-slate-600 uppercase tracking-wider">
+                    <th className="py-2.5 px-3 rounded-l-lg w-10">No</th>
+                    <th className="py-2.5 px-3">Nama Barang</th>
+                    <th className="py-2.5 px-3 text-right">Harga Satuan</th>
+                    <th className="py-2.5 px-3 text-center w-16">Qty</th>
+                    <th className="py-2.5 px-3 rounded-r-lg text-right">Subtotal</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-subtle/50 print:divide-gray-200">
+                <tbody className="divide-y divide-slate-100">
                   {(order.items || []).map((item: any, idx: number) => {
-                    const productTitle = item.productTitle || item.product?.title || 'Produk Saloka'
+                    const productTitle = item.productTitle || item.product?.title || 'Produk UMKM'
                     return (
-                      <tr key={item.productId || idx} className="text-text-primary print:text-black">
-                        <td className="py-3 pr-4 font-mono">{idx + 1}</td>
-                        <td className="py-3 px-4 font-semibold">{productTitle}</td>
-                        <td className="py-3 px-4 text-center font-mono">Rp {item.price.toLocaleString('id-ID')}</td>
-                        <td className="py-3 px-4 text-center font-mono">{item.quantity}</td>
-                        <td className="py-3 pl-4 text-right font-bold font-mono">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</td>
+                      <tr key={item.productId || idx} className="hover:bg-slate-50/50">
+                        <td className="py-3 px-3 text-slate-500 font-semibold">{idx + 1}</td>
+                        <td className="py-3 px-3">
+                          <p className="font-semibold text-slate-900">{productTitle}</p>
+                          {item.note && (
+                            <p className="text-[10px] text-slate-500 italic mt-0.5">Catatan: &quot;{item.note}&quot;</p>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right text-slate-700 font-semibold">
+                          Rp {item.price.toLocaleString('id-ID')}
+                        </td>
+                        <td className="py-3 px-3 text-center font-bold text-slate-900">
+                          {item.quantity}
+                        </td>
+                        <td className="py-3 px-3 text-right font-extrabold text-slate-900">
+                          Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                        </td>
                       </tr>
                     )
                   })}
@@ -205,39 +204,59 @@ export default function OrderInvoicePage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Totals Summary */}
-          <div className="border-t border-border-subtle/80 pt-6 flex flex-col items-end gap-3 text-xs">
-            <div className="w-full sm:max-w-xs space-y-2.5">
-              <div className="flex justify-between text-text-secondary print:text-gray-600">
-                <span>Subtotal Barang</span>
-                <span className="font-mono font-semibold text-text-primary print:text-black">Rp {subtotal.toLocaleString('id-ID')}</span>
+          {/* Breakdown & Lunas Stamp Grid */}
+          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 text-xs">
+            {/* Lunas Verified Seal */}
+            <div className="flex items-center gap-3 p-3 bg-[#E8F5E9] rounded-xl border border-[#C8E6C9] max-w-sm">
+              <div className="w-10 h-10 rounded-full bg-[#006E24] text-white flex items-center justify-center shrink-0">
+                <ShieldCheck size={20} />
               </div>
-              <div className="flex justify-between text-text-secondary print:text-gray-600">
+              <div className="space-y-0.5">
+                <p className="font-extrabold text-[#006E24] text-xs uppercase tracking-wide">
+                  LUNAS / TERVERIFIKASI
+                </p>
+                <p className="text-[10px] text-[#006E24]/80">
+                  Pembayaran berhasil diverifikasi secara otomatis oleh sistem Saloka.id Gateway.
+                </p>
+              </div>
+            </div>
+
+            {/* Total Calculation Column */}
+            <div className="w-full sm:w-72 space-y-2">
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal Produk</span>
+                <span className="font-bold text-slate-900">Rp {subtotal.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
                 <span>Ongkos Kirim ({order.courier || 'Kurir'})</span>
-                <span className="font-mono font-semibold text-text-primary print:text-black">Rp {(order.shippingFee || 0).toLocaleString('id-ID')}</span>
+                <span className="font-bold text-slate-900">Rp {(order.shippingFee || 0).toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Biaya Layanan Aplikasi</span>
+                <span className="font-bold text-slate-900">Rp 1.000</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Biaya Penanganan Transaksi</span>
+                <span className="font-bold text-slate-900">
+                  {order.paymentMethod === 'WALLET' ? 'Rp 0' : 'Rp 1.000'}
+                </span>
               </div>
               {order.discountAmount > 0 && (
-                <div className="flex justify-between text-red-400 print:text-red-600">
-                  <span>Diskon Kupon</span>
-                  <span className="font-mono font-semibold">-Rp {order.discountAmount.toLocaleString('id-ID')}</span>
+                <div className="flex justify-between text-[#006E24] font-bold">
+                  <span>Diskon Promo / Kupon</span>
+                  <span>-Rp {order.discountAmount.toLocaleString('id-ID')}</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-border-subtle/85 pt-3 text-sm font-bold">
-                <span className="text-text-primary print:text-black">Total Pembayaran</span>
-                <span className="text-primary print:text-black font-black font-mono">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
+              <div className="flex justify-between border-t border-slate-200 pt-2 text-sm font-extrabold">
+                <span className="text-slate-900">Total Pembayaran</span>
+                <span className="text-[#006E24] text-base">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
 
-          {/* Footer Notes */}
-          <div className="mt-12 pt-8 border-t border-border-subtle/80 flex flex-col sm:flex-row justify-between items-center gap-4 text-[10px] text-text-secondary print:text-gray-500">
-            <div className="flex items-center gap-1.5 font-geist font-bold text-green-400 print:text-green-600 uppercase tracking-widest">
-              <ShieldCheck size={14} />
-              Pembayaran Terverifikasi Lunas
-            </div>
-            <div className="text-center sm:text-right leading-relaxed max-w-xs">
-              Terima kasih telah bertransaksi di Saloka.id. Simpan invoice digital ini sebagai bukti pembelian yang sah.
-            </div>
+          {/* Footer Note */}
+          <div className="pt-4 border-t border-slate-100 text-center text-[10px] text-slate-400">
+            Terima kasih telah mendukung produk UMKM lokal melalui Saloka.id. Dokumen ini adalah bukti transaksi digital resmi.
           </div>
         </div>
       </div>
