@@ -9530,10 +9530,45 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.landingBanner.findMany({
+        let banners = await db.landingBanner.findMany({
           where: { isActive: true },
           orderBy: { sortOrder: 'asc' }
         })
+        if (banners.length === 0) {
+          const totalCount = await db.landingBanner.count()
+          if (totalCount === 0) {
+            await db.landingBanner.createMany({
+              data: [
+                {
+                  title: 'Pesta Diskon UMKM Nusantara — Hemat Hingga 50%',
+                  imageUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=1600&q=85',
+                  linkUrl: '/market',
+                  sortOrder: 0,
+                  isActive: true
+                },
+                {
+                  title: 'Booking Jasa & Keahlian Profesional Terpercaya di Saloka',
+                  imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=85',
+                  linkUrl: '/jasa',
+                  sortOrder: 1,
+                  isActive: true
+                },
+                {
+                  title: 'Program Afiliasi Koperasi Saloka — Dapatkan Komisi Multi-Tier',
+                  imageUrl: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1600&q=85',
+                  linkUrl: '/affiliate',
+                  sortOrder: 2,
+                  isActive: true
+                }
+              ]
+            })
+            banners = await db.landingBanner.findMany({
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' }
+            })
+          }
+        }
+        return banners
       } catch (_) {}
     }
     return ((globalThis as any).__mockBanners || []).filter((b: any) => b.isActive).sort((a: any, b: any) => a.sortOrder - b.sortOrder)
@@ -9543,7 +9578,36 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.landingBanner.findMany({ orderBy: { sortOrder: 'asc' } })
+        let banners = await db.landingBanner.findMany({ orderBy: { sortOrder: 'asc' } })
+        if (banners.length === 0) {
+          await db.landingBanner.createMany({
+            data: [
+              {
+                title: 'Pesta Diskon UMKM Nusantara — Hemat Hingga 50%',
+                imageUrl: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=1600&q=85',
+                linkUrl: '/market',
+                sortOrder: 0,
+                isActive: true
+              },
+              {
+                title: 'Booking Jasa & Keahlian Profesional Terpercaya di Saloka',
+                imageUrl: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=85',
+                linkUrl: '/jasa',
+                sortOrder: 1,
+                isActive: true
+              },
+              {
+                title: 'Program Afiliasi Koperasi Saloka — Dapatkan Komisi Multi-Tier',
+                imageUrl: 'https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=1600&q=85',
+                linkUrl: '/affiliate',
+                sortOrder: 2,
+                isActive: true
+              }
+            ]
+          })
+          banners = await db.landingBanner.findMany({ orderBy: { sortOrder: 'asc' } })
+        }
+        return banners
       } catch (_) {}
     }
     return ((globalThis as any).__mockBanners || []).sort((a: any, b: any) => a.sortOrder - b.sortOrder)

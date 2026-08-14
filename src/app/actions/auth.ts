@@ -48,7 +48,14 @@ export async function login(formData: FormData) {
   }
   
   // Create Session JWT
-  const token = await new SignJWT({ id: user.id, email: user.email, role: user.role, name: user.name })
+  const token = await new SignJWT({
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    name: user.name,
+    isSuperAdmin: user.isSuperAdmin ?? (user.role === 'ADMIN'),
+    adminPermissions: user.adminPermissions ?? null
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
@@ -237,11 +244,30 @@ export async function getCurrentUser() {
   
   try {
     const { payload } = await jwtVerify(sessionToken, SECRET_KEY)
+    let isSuperAdmin = (payload as any).isSuperAdmin
+    let adminPermissions = (payload as any).adminPermissions
+
+    if (payload.role === 'ADMIN') {
+      try {
+        const dbUser = await DataStore.findUserById(payload.id as string)
+        if (dbUser) {
+          isSuperAdmin = dbUser.isSuperAdmin ?? true
+          adminPermissions = dbUser.adminPermissions ?? null
+        } else {
+          isSuperAdmin = true
+        }
+      } catch (_) {
+        isSuperAdmin = true
+      }
+    }
+
     return {
       id: payload.id as string,
       email: payload.email as string,
       role: payload.role as string,
-      name: payload.name as string
+      name: payload.name as string,
+      isSuperAdmin: isSuperAdmin ?? (payload.role === 'ADMIN'),
+      adminPermissions: adminPermissions ?? null
     }
   } catch (e) {
     return null
