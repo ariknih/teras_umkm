@@ -2936,6 +2936,7 @@ export const DataStore = {
 
   // PRODUCT OPERATIONS
   async getProducts(category?: string) {
+    syncMockDb()
     if (await isDbConnected()) {
       try {
         if (category) {
@@ -2960,6 +2961,7 @@ export const DataStore = {
   },
 
   async getProductById(id: string) {
+    syncMockDb()
     if (await isDbConnected()) {
       try {
         return await db.product.findUnique({
@@ -3443,6 +3445,7 @@ export const DataStore = {
       bumpSales?: string
     }
   ) {
+    syncMockDb()
     const getProductPriceWithWholesale = (basePrice: number, qty: number) => {
       if (qty >= 10) return basePrice * 0.80
       if (qty >= 5) return basePrice * 0.90
