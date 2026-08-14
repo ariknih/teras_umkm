@@ -109,6 +109,7 @@ interface LandingPageViewProps {
   onEdit?: () => void
   products?: any[]
   onAddProduct?: () => void
+  realStats?: any
 }
 
 export const LandingPageView: React.FC<LandingPageViewProps> = ({
@@ -120,7 +121,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   isMember = false,
   onEdit,
   products = [],
-  onAddProduct
+  onAddProduct,
+  realStats
 }) => {
   const isKoperasi = (community?.type || '').toLowerCase() === 'koperasi' || (community?.category || '').toLowerCase() === 'koperasi'
   const defaults = isKoperasi ? DEFAULT_KOPERASI_CONFIG : DEFAULT_PERKUMPULAN_CONFIG
@@ -160,14 +162,40 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     }
   ]
   
-  // Merge config with default values safely
-  const hero = { ...defaults.hero, ...config?.hero }
-  const vision = config?.vision || defaults.vision
+  // Merge config with default values safely, prioritizing community data from DB!
+  const hero = {
+    badge: config?.hero?.badge || (isKoperasi ? 'KOPERASI' : 'KOMUNITAS UMKM'),
+    title: config?.hero?.title || community?.name || (isKoperasi ? 'Kopjaswara' : 'Perahu Kita'),
+    subtitle: config?.hero?.subtitle || community?.slogan || (isKoperasi ? 'Koperasi Jasa dan Usaha Bersama' : 'Wadah Sinergi & Kolaborasi Pengusaha'),
+    description: config?.hero?.description || community?.description || (isKoperasi ? 'Wadah kolaborasi untuk UMKM, pengusaha, dan profesional untuk tumbuh bersama.' : 'Wadah bagi pelaku usaha, UMKM, dan masyarakat untuk saling berbagi pengalaman.'),
+    coverUrl: config?.hero?.coverUrl || community?.coverUrl || (isKoperasi ? 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80' : 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80'),
+    didirikan: config?.hero?.didirikan || (community?.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : (isKoperasi ? '12 Mei 2020' : '25 Juli 2026')),
+    ketua: config?.hero?.ketua || community?.ketua?.name || 'Pengurus',
+    lokasi: config?.hero?.lokasi || community?.domisili || (isKoperasi ? 'Sleman, DIY' : 'Kota Yogyakarta, DIY'),
+    anggotaCount: config?.hero?.anggotaCount || `${realStats?.activeMembersCount || 1} Anggota`,
+    quoteText: config?.hero?.quoteText || (isKoperasi ? 'Kolaborasi hari ini, kesempatan lebih besar untuk masa depan.' : 'Sinergi lokal, tumbuh bersama demi kemakmuran bersama.'),
+    quoteAuthor: config?.hero?.quoteAuthor || community?.name || (isKoperasi ? 'Kopjaswara' : 'Perahu Kita')
+  }
+
+  const vision = config?.vision || community?.description || defaults.vision
   const missions = config?.missions?.length === 3 ? config.missions : defaults.missions
   const benefits = config?.benefits?.length === 5 ? config.benefits : defaults.benefits
-  const stats = config?.stats?.length === 4 ? config.stats : defaults.stats
+  
+  const stats = config?.stats?.length === 4 ? config.stats : [
+    { value: `${realStats?.activeMembersCount || 1}+`, label: 'Anggota Aktif', desc: 'Bergabung bersama kami', icon: 'Users' },
+    { value: `${realStats?.activeMerchantsCount || 0}+`, label: 'UMKM Bergabung', desc: 'Bersama tumbuh dan berdaya', icon: 'Building2' },
+    { value: isKoperasi ? `Rp ${(realStats?.totalSavingsCollected || 0).toLocaleString('id-ID')}` : '24+', label: isKoperasi ? 'Simpanan Koperasi' : 'Event Bulanan', desc: isKoperasi ? 'Total tabungan terhimpun' : 'Bazar dan pelatihan langsung', icon: isKoperasi ? 'Coins' : 'Calendar' },
+    { value: isKoperasi ? `Rp ${(realStats?.shuCurrentYearProfit || 0).toLocaleString('id-ID')}` : '87+', label: isKoperasi ? 'Laba SHU Koperasi' : 'Galeri Kegiatan', desc: isKoperasi ? 'SHU tahun buku berjalan' : 'Dokumentasi sinergi anggota', icon: isKoperasi ? 'Coins' : 'Building2' }
+  ]
+
   const activities = config?.activities?.length === 3 ? config.activities : defaults.activities
-  const ctaBanner = { ...defaults.ctaBanner, ...config?.ctaBanner }
+  
+  const ctaBanner = {
+    text: config?.ctaBanner?.text || (isKoperasi 
+      ? `Bergabung sekarang dengan Koperasi ${community?.name || ''} dan jadilah bagian dari ekosistem bisnis yang saling mendukung.`
+      : `Sinergikan bisnismu sekarang dan tumbuh bersama ratusan UMKM berprestasi di ${community?.name || ''}!`),
+    buttonText: config?.ctaBanner?.buttonText || (isKoperasi ? 'Menjadi Anggota Sekarang' : 'Gabung Komunitas Sekarang')
+  }
 
   const renderIcon = (name: string, className = "w-6 h-6") => {
     const Component = IconMap[name] || HelpCircle

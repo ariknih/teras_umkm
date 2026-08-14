@@ -1005,3 +1005,40 @@ model ServiceBooking {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sistem Pengumuman Komunitas (Dikelola oleh Admin/Ketua)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Announcement {
+  id          String   @id @default(uuid())
+  communityId String
+  title       String
+  content     String
+  publishedAt DateTime @default(now())
+  isPinned    Boolean  @default(false)
+  status      String   @default("PUBLISHED") // "DRAFT" | "PUBLISHED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([communityId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sistem Laporan Koperasi (Dikelola oleh Admin/Ketua)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model CooperativeReport {
+  id          String   @id @default(uuid())
+  communityId String
+  title       String
+  type        String   // "Keuangan", "Neraca", "RAT", dll.
+  year        Int
+  fileUrl     String
+  publishedAt DateTime @default(now())
+  status      String   @default("PUBLISHED") // "DRAFT" | "PUBLISHED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([communityId])
+}

@@ -49,71 +49,82 @@ export async function calculateAndSaveShuDistribution(
     communityId,
     year,
     totalNetProfit,
-    pctCadangan,
     pctJasaModal,
-    pctJasaUsaha,
-    pctPengurus,
-    pctPengawas,
-    pctKaryawan,
-    pctPendidikan,
-    pctSosial,
-    pctPembangunanDaerah
+    pctJasaUsaha
   } = params
 
-  // 1. Validate total percentage equals 100
-  const totalPct =
-    pctCadangan +
-    pctJasaModal +
-    pctJasaUsaha +
-    pctPengurus +
-    pctPengawas +
-    pctKaryawan +
-    pctPendidikan +
-    pctSosial +
-    pctPembangunanDaerah
-
-  if (Math.abs(totalPct - 100) > 0.01) {
+  // 1. Validate percentages are within [0, 100] range
+  if (pctJasaModal < 0 || pctJasaModal > 100) {
     return {
       success: false,
-      error: `Total persentase komposisi SHU harus bernilai tepat 100%. Saat ini: ${totalPct.toFixed(2)}%`
+      error: 'Persen Jasa Modal harus berada di antara 0% dan 100%.'
     }
   }
 
-  if (totalNetProfit <= 0) {
+  if (pctJasaUsaha < 0 || pctJasaUsaha > 100) {
     return {
       success: false,
-      error: 'Nominal Laba Bersih Koperasi (SHU Kotor) harus lebih dari 0.'
+      error: 'Persen Jasa Usaha harus berada di antara 0% dan 100%.'
     }
   }
 
-  // 2. Compute nominal amounts for each component
+  if (totalNetProfit < 0) {
+    return {
+      success: false,
+      error: 'Nominal Laba Bersih Koperasi (SHU Bersih) tidak boleh kurang dari 0.'
+    }
+  }
+
+  // 2. Compute nominal amounts for each component (others are forced to 0 per user requirement)
   const allocations = {
-    cadangan: (totalNetProfit * pctCadangan) / 100,
+    cadangan: 0,
     jasaModal: (totalNetProfit * pctJasaModal) / 100,
     jasaUsaha: (totalNetProfit * pctJasaUsaha) / 100,
-    pengurus: (totalNetProfit * pctPengurus) / 100,
-    pengawas: (totalNetProfit * pctPengawas) / 100,
-    karyawan: (totalNetProfit * pctKaryawan) / 100,
-    pendidikan: (totalNetProfit * pctPendidikan) / 100,
-    sosial: (totalNetProfit * pctSosial) / 100,
-    pembangunanDaerah: (totalNetProfit * pctPembangunanDaerah) / 100
+    pengurus: 0,
+    pengawas: 0,
+    karyawan: 0,
+    pendidikan: 0,
+    sosial: 0,
+    pembangunanDaerah: 0
   }
 
   // 3. Fetch all users registered under this community (as primary or member)
-  const allUsers: any[] = typeof (DataStore as any).getUsers === 'function' ? await (DataStore as any).getUsers() : []
-  const communityMembers = allUsers.filter((u: any) => u.indukCommunityId === communityId)
+  const memberships = await DataStore.getIndukCommunityMembers(communityId)
+  const communityMembers = (memberships || []).map((m: any) => m.user).filter(Boolean)
 
-  // 4. Fetch orders in the year to compute transactions
+  // 4. Fetch products to resolve which ones belong to merchants of this community
+  const allProducts: any[] = typeof (DataStore as any).getProducts === 'function' ? await (DataStore as any).getProducts() : []
+  const productMerchantMap = new Map<string, string | null>()
+  for (const p of allProducts) {
+    productMerchantMap.set(p.id, p.merchant?.indukCommunityId || p.merchantId || null)
+  }
+
+  // 5. Fetch orders in the year to compute transactions
   const allOrders: any[] = typeof (DataStore as any).getAllOrders === 'function' ? await (DataStore as any).getAllOrders() : []
   const yearStartDate = new Date(year, 0, 1)
   const yearEndDate = new Date(year, 11, 31, 23, 59, 59)
 
   const completedOrdersInYear = allOrders.filter((o: any) => {
     const d = new Date(o.createdAt)
-    return d >= yearStartDate && d <= yearEndDate && o.status === 'COMPLETED'
+    if (!(d >= yearStartDate && d <= yearEndDate && o.status === 'COMPLETED')) {
+      return false
+    }
+
+    // Must be connected to a member of this community as buyer
+    const isBuyerInCommunity = communityMembers.some((m: any) => m.id === o.buyerId)
+    if (!isBuyerInCommunity) return false
+
+    // Must contain at least one item from this community's merchants
+    if (!o.items || o.items.length === 0) return false
+    const hasCommunityProduct = o.items.some((item: any) => {
+      const merchantCommId = productMerchantMap.get(item.productId)
+      return merchantCommId === communityId
+    })
+
+    return hasCommunityProduct
   })
 
-  // 5. Fetch savings transactions to calculate actual member savings balances
+  // 6. Fetch savings transactions to calculate actual member savings balances
   const savingsTxs: any[] = typeof (DataStore as any).getSavingsTransactions === 'function' 
     ? await (DataStore as any).getSavingsTransactions(communityId) 
     : []
@@ -133,17 +144,20 @@ export async function calculateAndSaveShuDistribution(
         return t.transactionType === 'SETOR' ? sum + val : sum - val
       }, 0)
       if (userSimpanan < 0) userSimpanan = 0
-    } else {
-      // Default baseline estimate if no explicit transactions recorded yet
-      const comms: any[] = typeof (DataStore as any).getCommunities === 'function' ? await (DataStore as any).getCommunities() : []
-      const comm = comms.find((c: any) => c.id === communityId)
-      const sPokok = comm?.simpananPokok || 100000
-      const sWajib = comm?.simpananWajib || 25000
-      userSimpanan = sPokok + sWajib * 12
     }
 
     const userOrders = completedOrdersInYear.filter((o: any) => o.buyerId === user.id)
-    const userTransaksi = userOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0)
+    const userTransaksi = userOrders.reduce((sum: number, o: any) => {
+      // Sum only items belonging to merchants of this community
+      const orderCommunityTotal = o.items.reduce((itemSum: number, item: any) => {
+        const merchantCommId = productMerchantMap.get(item.productId)
+        if (merchantCommId === communityId) {
+          return itemSum + (Number(item.price || 0) * Number(item.quantity || 0))
+        }
+        return itemSum
+      }, 0)
+      return sum + orderCommunityTotal
+    }, 0)
 
     memberDataMap[user.id] = {
       simpanan: userSimpanan,
@@ -154,7 +168,7 @@ export async function calculateAndSaveShuDistribution(
     transaksiTotalCommunity += userTransaksi
   }
 
-  // 6. Calculate member distribution breakdown
+  // 7. Calculate member distribution breakdown using custom proportional formula with zero division guard
   const memberDistributions = communityMembers.map((user: any) => {
     const data = memberDataMap[user.id] || { simpanan: 0, transaksi: 0 }
     
@@ -189,15 +203,15 @@ export async function calculateAndSaveShuDistribution(
     communityId,
     year,
     totalNetProfit,
-    pctCadangan,
+    pctCadangan: 0,
     pctJasaModal,
     pctJasaUsaha,
-    pctPengurus,
-    pctPengawas,
-    pctKaryawan,
-    pctPendidikan,
-    pctSosial,
-    pctPembangunanDaerah
+    pctPengurus: 0,
+    pctPengawas: 0,
+    pctKaryawan: 0,
+    pctPendidikan: 0,
+    pctSosial: 0,
+    pctPembangunanDaerah: 0
   })
 
   // 8. Save member distributions to database

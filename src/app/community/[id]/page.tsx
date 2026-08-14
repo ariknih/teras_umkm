@@ -27,6 +27,21 @@ import { getProducts } from '@/app/actions/products'
 import { getCommunityShuDataAction, getUserShuSummaryAction, calculateAndSaveShuAction } from '@/app/actions/shu'
 import { recordSavingsTransactionAction, getCommunitySavingsSummaryAction } from '@/app/actions/savings'
 import {
+  getAnnouncementsAction,
+  createAnnouncementAction,
+  updateAnnouncementAction,
+  deleteAnnouncementAction,
+  togglePublishAnnouncementAction,
+  togglePinAnnouncementAction
+} from '@/app/actions/announcements'
+import {
+  getCooperativeReportsAction,
+  createCooperativeReportAction,
+  updateCooperativeReportAction,
+  deleteCooperativeReportAction,
+  togglePublishReportAction
+} from '@/app/actions/reports'
+import {
   getCommunityReferralConfig,
   updateCommunityReferralConfig,
   getCommunityReferralHistory
@@ -117,6 +132,33 @@ export default function CommunityDetailPage() {
   const [membershipDetails, setMembershipDetails] = useState<any>(null)
   const [shuConfig, setShuConfig] = useState<any>(null)
   const [userShu, setUserShu] = useState<any>(null)
+
+  // State for Announcements
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(false)
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false)
+  const [editingAnnouncement, setEditingAnnouncement] = useState<any>(null)
+  const [annTitle, setAnnTitle] = useState('')
+  const [annContent, setAnnContent] = useState('')
+  const [annPublishDate, setAnnPublishDate] = useState('')
+  const [annStatus, setAnnStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED')
+  const [annIsPinned, setAnnIsPinned] = useState(false)
+  const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false)
+
+  // State for Reports
+  const [reports, setReports] = useState<any[]>([])
+  const [isLoadingReports, setIsLoadingReports] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [editingReport, setEditingReport] = useState<any>(null)
+  const [repTitle, setRepTitle] = useState('')
+  const [repType, setRepType] = useState('Keuangan')
+  const [repYear, setRepYear] = useState(new Date().getFullYear())
+  const [repPublishDate, setRepPublishDate] = useState('')
+  const [repStatus, setRepStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED')
+  const [repFileUrl, setRepFileUrl] = useState('')
+  const [repFileName, setRepFileName] = useState('')
+  const [isUploadingReportFile, setIsUploadingReportFile] = useState(false)
+  const [isSavingReport, setIsSavingReport] = useState(false)
 
   // Flag boolean untuk akses CRUD Admin / Superadmin / Ketua Koperasi
   const isCanManageCoop = Boolean(
@@ -269,16 +311,17 @@ export default function CommunityDetailPage() {
   const [userShuSummary, setUserShuSummary] = useState<any>(null)
 
   // SHU Admin Form Config States
-  const [shuNetProfit, setShuNetProfit] = useState('100000000')
-  const [shuPctCadangan, setShuPctCadangan] = useState(25)
-  const [shuPctJasaModal, setShuPctJasaModal] = useState(20)
-  const [shuPctJasaUsaha, setShuPctJasaUsaha] = useState(30)
-  const [shuPctPengurus, setShuPctPengurus] = useState(10)
-  const [shuPctPengawas, setShuPctPengawas] = useState(5)
-  const [shuPctKaryawan, setShuPctKaryawan] = useState(5)
-  const [shuPctPendidikan, setShuPctPendidikan] = useState(2.5)
-  const [shuPctSosial, setShuPctSosial] = useState(2.5)
+  const [shuNetProfit, setShuNetProfit] = useState('0')
+  const [shuPctCadangan, setShuPctCadangan] = useState(0)
+  const [shuPctJasaModal, setShuPctJasaModal] = useState(0)
+  const [shuPctJasaUsaha, setShuPctJasaUsaha] = useState(0)
+  const [shuPctPengurus, setShuPctPengurus] = useState(0)
+  const [shuPctPengawas, setShuPctPengawas] = useState(0)
+  const [shuPctKaryawan, setShuPctKaryawan] = useState(0)
+  const [shuPctPendidikan, setShuPctPendidikan] = useState(0)
+  const [shuPctSosial, setShuPctSosial] = useState(0)
   const [isCalculatingShu, setIsCalculatingShu] = useState(false)
+  const [shuTab, setShuTab] = useState<'preview' | 'final'>('preview')
 
   // Multi-Tier Referral & KYC States
   const [refJoinFee, setRefJoinFee] = useState<number>(100000)
@@ -465,48 +508,32 @@ export default function CommunityDetailPage() {
     }
 
     startTransition(async () => {
-      if (depositPaymentMethod === 'SALDO') {
-        setUserBalance(prev => prev - amt)
-      }
+      try {
+        const fd = new FormData()
+        fd.append('communityId', id)
+        fd.append('userId', user?.id || '')
+        fd.append('type', selectedSavingsProduct.type)
+        fd.append('transactionType', 'SETOR')
+        fd.append('amount', String(amt))
+        fd.append('date', new Date().toISOString())
+        fd.append('notes', `Setor mandiri via ${depositPaymentMethod === 'SALDO' ? 'Saldo Wallet' : depositPaymentMethod}`)
 
-      const now = new Date()
-      const timeStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-      const newTx = {
-        id: `tx-${Date.now()}`,
-        date: timeStr,
-        title: `Setor ${selectedSavingsProduct.name}`,
-        amount: amt,
-        status: 'Berhasil',
-        type: selectedSavingsProduct.type,
-        isIncome: true
-      }
-
-      setRecentTransactions(prev => [newTx, ...prev])
-      setRealStats(prev => ({
-        ...prev,
-        totalSavingsCollected: (prev.totalSavingsCollected || 0) + amt
-      }))
-
-      // Recalculate personal SHU Jasa Modal dynamically
-      setUserShu((prev: any) => {
-        const newSimpanan = (prev?.simpananMember || 0) + amt
-        const totalSavings = (realStats.totalSavingsCollected || 0) + amt
-        const netProfit = shuConfig?.totalNetProfit || 500000000
-        const poolJasaModal = (netProfit * (shuConfig?.pctJasaModal || 20)) / 100
-        const newJasaModal = totalSavings > 0 ? (newSimpanan / totalSavings) * poolJasaModal : 0
-        const jasaUsaha = prev?.shuJasaUsahaAmount || 420000
-
-        return {
-          ...prev,
-          simpananMember: newSimpanan,
-          shuJasaModalAmount: newJasaModal,
-          shuJasaUsahaAmount: jasaUsaha,
-          totalShuAmount: newJasaModal + jasaUsaha
+        const res = await recordSavingsTransactionAction(fd)
+        if (res.error) {
+          goeyToast.error(res.error)
+          return
         }
-      })
 
-      goeyToast.success(`Setor ${selectedSavingsProduct.name} sebesar Rp ${amt.toLocaleString('id-ID')} berhasil disetor!`)
-      setPaySavingsModalOpen(false)
+        if (depositPaymentMethod === 'SALDO') {
+          setUserBalance(prev => prev - amt)
+        }
+
+        goeyToast.success(`Setor ${selectedSavingsProduct.name} sebesar Rp ${amt.toLocaleString('id-ID')} berhasil disetor!`)
+        setPaySavingsModalOpen(false)
+        loadData()
+      } catch (err) {
+        goeyToast.error('Gagal mencatat transaksi simpanan ke database.')
+      }
     })
   }
 
@@ -741,15 +768,16 @@ export default function CommunityDetailPage() {
         setCommunityShuData(shuDataRes)
         if (shuDataRes.config) {
           setShuConfig(shuDataRes.config)
-          setShuNetProfit(String(shuDataRes.config.totalNetProfit || 100000000))
-          setShuPctCadangan(shuDataRes.config.pctCadangan ?? 25)
-          setShuPctJasaModal(shuDataRes.config.pctJasaModal ?? 20)
-          setShuPctJasaUsaha(shuDataRes.config.pctJasaUsaha ?? 30)
-          setShuPctPengurus(shuDataRes.config.pctPengurus ?? 10)
-          setShuPctPengawas(shuDataRes.config.pctPengawas ?? 5)
-          setShuPctKaryawan(shuDataRes.config.pctKaryawan ?? 5)
-          setShuPctPendidikan(shuDataRes.config.pctPendidikan ?? 2.5)
-          setShuPctSosial(shuDataRes.config.pctSosial ?? 2.5)
+          setShuNetProfit(String(shuDataRes.config.totalNetProfit ?? 0))
+          setShuPctCadangan(0)
+          setShuPctJasaModal(shuDataRes.config.pctJasaModal ?? 0)
+          setShuPctJasaUsaha(shuDataRes.config.pctJasaUsaha ?? 0)
+          setShuPctPengurus(0)
+          setShuPctPengawas(0)
+          setShuPctKaryawan(0)
+          setShuPctPendidikan(0)
+          setShuPctSosial(0)
+          setShuTab('final')
         }
       }
 
@@ -757,6 +785,21 @@ export default function CommunityDetailPage() {
       if (uShuSummaryRes.success) {
         setUserShuSummary(uShuSummaryRes.distributions)
       }
+
+      // Fetch announcements and reports
+      setIsLoadingAnnouncements(true)
+      setIsLoadingReports(true)
+      try {
+        const annList = await getAnnouncementsAction(id).catch(() => [])
+        setAnnouncements(annList || [])
+      } catch (_) {}
+      setIsLoadingAnnouncements(false)
+
+      try {
+        const repList = await getCooperativeReportsAction(id).catch(() => [])
+        setReports(repList || [])
+      } catch (_) {}
+      setIsLoadingReports(false)
 
     } catch (e) {
       console.error(e)
@@ -768,6 +811,251 @@ export default function CommunityDetailPage() {
   useEffect(() => {
     loadData()
   }, [id])
+
+  // ─── ANNOUNCEMENTS HANDLERS ───────────────────────────────────
+  const handleOpenAnnouncementModal = (ann: any = null) => {
+    if (ann) {
+      setEditingAnnouncement(ann)
+      setAnnTitle(ann.title)
+      setAnnContent(ann.content)
+      setAnnPublishDate(ann.publishedAt ? new Date(ann.publishedAt).toISOString().split('T')[0] : '')
+      setAnnStatus(ann.status || 'PUBLISHED')
+      setAnnIsPinned(ann.isPinned || false)
+    } else {
+      setEditingAnnouncement(null)
+      setAnnTitle('')
+      setAnnContent('')
+      setAnnPublishDate(new Date().toISOString().split('T')[0])
+      setAnnStatus('PUBLISHED')
+      setAnnIsPinned(false)
+    }
+    setIsAnnouncementModalOpen(true)
+  }
+
+  const handleSubmitAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!annTitle.trim() || !annContent.trim()) {
+      goeyToast.error('Judul dan isi pengumuman wajib diisi.')
+      return
+    }
+
+    setIsSavingAnnouncement(true)
+    const fd = new FormData()
+    fd.append('communityId', id)
+    fd.append('title', annTitle)
+    fd.append('content', annContent)
+    fd.append('publishedAt', annPublishDate)
+    fd.append('status', annStatus)
+    fd.append('isPinned', String(annIsPinned))
+
+    try {
+      let res: any
+      if (editingAnnouncement) {
+        res = await updateAnnouncementAction(editingAnnouncement.id, fd)
+      } else {
+        res = await createAnnouncementAction(fd)
+      }
+
+      if (res.success) {
+        goeyToast.success(editingAnnouncement ? 'Pengumuman diperbarui!' : 'Pengumuman diterbitkan!')
+        setIsAnnouncementModalOpen(false)
+        
+        // Refresh local list
+        const annList = await getAnnouncementsAction(id).catch(() => [])
+        setAnnouncements(annList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal menyimpan pengumuman.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    } finally {
+      setIsSavingAnnouncement(false)
+    }
+  }
+
+  const handleDeleteAnnouncement = async (annId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus pengumuman ini?')) return
+
+    try {
+      const res: any = await deleteAnnouncementAction(annId, id)
+      if (res.success) {
+        goeyToast.success('Pengumuman dihapus!')
+        setAnnouncements(prev => prev.filter(x => x.id !== annId))
+      } else {
+        goeyToast.error(res.error || 'Gagal menghapus pengumuman.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  const handleTogglePublishAnnouncement = async (ann: any) => {
+    try {
+      const res: any = await togglePublishAnnouncementAction(ann.id, ann.status, id)
+      if (res.success) {
+        goeyToast.success(ann.status === 'DRAFT' ? 'Pengumuman dipublikasikan!' : 'Pengumuman disimpan sebagai draft!')
+        
+        // Refresh local list
+        const annList = await getAnnouncementsAction(id).catch(() => [])
+        setAnnouncements(annList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal mengubah status publikasi.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  const handleTogglePinAnnouncement = async (ann: any) => {
+    try {
+      const res: any = await togglePinAnnouncementAction(ann.id, ann.isPinned, id)
+      if (res.success) {
+        goeyToast.success(ann.isPinned ? 'Pin dilepas!' : 'Pengumuman dipatok/terpaku di atas!')
+        
+        // Refresh local list
+        const annList = await getAnnouncementsAction(id).catch(() => [])
+        setAnnouncements(annList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal mengubah status pin.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  // ─── REPORTS HANDLERS ──────────────────────────────────────────
+  const handleOpenReportModal = (rep: any = null) => {
+    if (rep) {
+      setEditingReport(rep)
+      setRepTitle(rep.title)
+      setRepType(rep.type)
+      setRepYear(rep.year)
+      setRepPublishDate(rep.publishedAt ? new Date(rep.publishedAt).toISOString().split('T')[0] : '')
+      setRepStatus(rep.status || 'PUBLISHED')
+      setRepFileUrl(rep.fileUrl || '')
+      setRepFileName(rep.fileUrl ? rep.fileUrl.split('/').pop() || '' : '')
+    } else {
+      setEditingReport(null)
+      setRepTitle('')
+      setRepType('Keuangan')
+      setRepYear(new Date().getFullYear())
+      setRepPublishDate(new Date().toISOString().split('T')[0])
+      setRepStatus('PUBLISHED')
+      setRepFileUrl('')
+      setRepFileName('')
+    }
+    setIsReportModalOpen(true)
+  }
+
+  const handleReportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext !== 'pdf' && ext !== 'xlsx' && ext !== 'xls') {
+      goeyToast.error('Hanya diperbolehkan mengunggah file PDF atau Excel (.xlsx/.xls).')
+      return
+    }
+
+    setIsUploadingReportFile(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('folder', 'reports')
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd
+      })
+      const resData = await response.json()
+      if (response.ok && resData.url) {
+        setRepFileUrl(resData.url)
+        setRepFileName(file.name)
+        goeyToast.success('File laporan berhasil diunggah!')
+      } else {
+        goeyToast.error(resData.error || 'Gagal mengunggah file.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal mengunggah file.')
+    } finally {
+      setIsUploadingReportFile(false)
+    }
+  }
+
+  const handleSubmitReport = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!repTitle.trim() || !repType.trim() || !repFileUrl.trim()) {
+      goeyToast.error('Judul, jenis laporan, dan file wajib diisi.')
+      return
+    }
+
+    setIsSavingReport(true)
+    const fd = new FormData()
+    fd.append('communityId', id)
+    fd.append('title', repTitle)
+    fd.append('type', repType)
+    fd.append('year', String(repYear))
+    fd.append('fileUrl', repFileUrl)
+    fd.append('publishedAt', repPublishDate)
+    fd.append('status', repStatus)
+
+    try {
+      let res: any
+      if (editingReport) {
+        res = await updateCooperativeReportAction(editingReport.id, fd)
+      } else {
+        res = await createCooperativeReportAction(fd)
+      }
+
+      if (res.success) {
+        goeyToast.success(editingReport ? 'Laporan diperbarui!' : 'Laporan ditambahkan!')
+        setIsReportModalOpen(false)
+        
+        // Refresh local list
+        const repList = await getCooperativeReportsAction(id).catch(() => [])
+        setReports(repList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal menyimpan laporan.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    } finally {
+      setIsSavingReport(false)
+    }
+  }
+
+  const handleDeleteReport = async (repId: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus laporan ini?')) return
+
+    try {
+      const res: any = await deleteCooperativeReportAction(repId, id)
+      if (res.success) {
+        goeyToast.success('Laporan dihapus!')
+        setReports(prev => prev.filter(x => x.id !== repId))
+      } else {
+        goeyToast.error(res.error || 'Gagal menghapus laporan.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
+
+  const handleTogglePublishReport = async (rep: any) => {
+    try {
+      const res: any = await togglePublishReportAction(rep.id, rep.status, id)
+      if (res.success) {
+        goeyToast.success(rep.status === 'DRAFT' ? 'Laporan dipublikasikan!' : 'Laporan disimpan sebagai draft!')
+        
+        // Refresh local list
+        const repList = await getCooperativeReportsAction(id).catch(() => [])
+        setReports(repList || [])
+      } else {
+        goeyToast.error(res.error || 'Gagal mengubah status publikasi.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+    }
+  }
 
   const handleRecordSavingsTransaction = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -811,23 +1099,8 @@ export default function CommunityDetailPage() {
   const handleCalculateAndSaveShu = async (e: React.FormEvent) => {
     e.preventDefault()
     const profitNum = Number(shuNetProfit)
-    if (profitNum <= 0) {
-      goeyToast.error('Nominal SHU Bersih / Laba Koperasi harus lebih dari 0.')
-      return
-    }
-
-    const totalPct =
-      shuPctCadangan +
-      shuPctJasaModal +
-      shuPctJasaUsaha +
-      shuPctPengurus +
-      shuPctPengawas +
-      shuPctKaryawan +
-      shuPctPendidikan +
-      shuPctSosial
-
-    if (Math.abs(totalPct - 100) > 0.01) {
-      goeyToast.error(`Total persentase komposisi SHU harus bernilai tepat 100%. Saat ini: ${totalPct.toFixed(2)}%`)
+    if (profitNum < 0) {
+      goeyToast.error('Nominal SHU Bersih / Laba Koperasi tidak boleh kurang dari 0.')
       return
     }
 
@@ -837,14 +1110,15 @@ export default function CommunityDetailPage() {
       fd.append('communityId', id)
       fd.append('year', String(new Date().getFullYear()))
       fd.append('totalNetProfit', String(profitNum))
-      fd.append('pctCadangan', String(shuPctCadangan))
+      fd.append('pctCadangan', '0')
       fd.append('pctJasaModal', String(shuPctJasaModal))
       fd.append('pctJasaUsaha', String(shuPctJasaUsaha))
-      fd.append('pctPengurus', String(shuPctPengurus))
-      fd.append('pctPengawas', String(shuPctPengawas))
-      fd.append('pctKaryawan', String(shuPctKaryawan))
-      fd.append('pctPendidikan', String(shuPctPendidikan))
-      fd.append('pctSosial', String(shuPctSosial))
+      fd.append('pctPengurus', '0')
+      fd.append('pctPengawas', '0')
+      fd.append('pctKaryawan', '0')
+      fd.append('pctPendidikan', '0')
+      fd.append('pctSosial', '0')
+      fd.append('pctPembangunanDaerah', '0')
 
       const res = await calculateAndSaveShuAction(fd)
       if (res.error) {
@@ -852,6 +1126,7 @@ export default function CommunityDetailPage() {
       } else {
         goeyToast.success('Kalkulasi & pembagian SHU anggota berhasil dihitung secara otomatis!')
         loadData()
+        setShuTab('final')
       }
     } catch (err: any) {
       goeyToast.error('Terjadi kesalahan saat menghitung SHU.')
@@ -1308,24 +1583,34 @@ export default function CommunityDetailPage() {
 
   const bannerCta = isKoperasi ? 'Menjadi Anggota' : isKuliner ? 'Jelajahi Merchant' : isBusiness ? 'Ajukan Kolaborasi' : isEducation ? 'Daftar Kelas' : 'Gabung Komunitas'
 
+  const formatCompactRupiah = (val: number) => {
+    if (val >= 1000000000) {
+      return 'Rp ' + (val / 1000000000).toFixed(1).replace('.', ',').replace(',0', '') + ' M'
+    }
+    if (val >= 1000000) {
+      return 'Rp ' + (val / 1000000).toFixed(1).replace('.', ',').replace(',0', '') + ' Jt'
+    }
+    return 'Rp ' + val.toLocaleString('id-ID')
+  }
+
   const statCards = isKoperasi ? [
-    { label: 'Anggota', value: '788', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Total Simpanan', value: 'Rp 1,2 M', icon: Wallet, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'SHU Tahun Ini', value: 'Rp 185 Jt', icon: PieChart, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Unit Usaha', value: '12', icon: Building2, color: 'text-blue-600 bg-blue-50' },
+    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Total Simpanan', value: formatCompactRupiah(communitySavingsSummary?.totalSavingsCommunity || 0), icon: Wallet, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'SHU Tahun Ini', value: formatCompactRupiah(Number(shuNetProfit || 0)), icon: PieChart, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Unit Usaha', value: String(realStats?.activeMerchantsCount || 0), icon: Building2, color: 'text-blue-600 bg-blue-50' },
   ] : isBusiness ? [
-    { label: 'Anggota', value: '2.156', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Mitra', value: '128', icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Mitra', value: String(realStats?.activeMerchantsCount || 0), icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Pelatihan', value: '36', icon: GraduationCap, color: 'text-amber-600 bg-amber-50' },
     { label: 'Peluang Usaha', value: '54', icon: Rocket, color: 'text-blue-600 bg-blue-50' },
   ] : isEducation ? [
-    { label: 'Anggota', value: '1.532', icon: Users, color: 'text-purple-600 bg-purple-50' },
+    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-purple-600 bg-purple-50' },
     { label: 'Kelas', value: '32', icon: BookOpen, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Kompetisi', value: '18', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
     { label: 'Startup', value: '46', icon: Rocket, color: 'text-indigo-600 bg-indigo-50' },
   ] : isKuliner ? [
-    { label: 'Merchant', value: '245', icon: Store, color: 'text-orange-600 bg-orange-50' },
-    { label: 'Produk', value: '512', icon: ShoppingBag, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Merchant', value: String(realStats?.activeMerchantsCount || 0), icon: Store, color: 'text-orange-600 bg-orange-50' },
+    { label: 'Produk', value: String(products.length || 0), icon: ShoppingBag, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Supplier', value: '68', icon: Truck, color: 'text-amber-600 bg-amber-50' },
     { label: 'Event', value: '22', icon: Calendar, color: 'text-rose-600 bg-rose-50' },
   ] : [
@@ -1413,6 +1698,7 @@ export default function CommunityDetailPage() {
           setActiveSidebarNav('marketplace')
           setTimeout(() => handleOpenCreateProduct(false), 200)
         }}
+        realStats={realStats}
       />
     )
   }
@@ -2308,30 +2594,93 @@ export default function CommunityDetailPage() {
             {activeSidebarNav === 'pengumuman' && (
               <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Megaphone className="w-6 h-6 text-[#2DB24A]" /> Pengumuman Resmi Komunitas
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Informasi penting, edaran resmi pengurus, serta pengumuman program kerja {community.name}.</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Megaphone className="w-6 h-6 text-[#2DB24A]" /> Pengumuman Resmi Komunitas
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Informasi penting, edaran resmi pengurus, serta pengumuman program kerja {community.name}.</p>
+                    </div>
+                    {isCanManageCoop && (
+                      <button
+                        onClick={() => handleOpenAnnouncementModal()}
+                        className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-2xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        <Plus className="w-4 h-4" /> Tambah Pengumuman
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-4">
-                    {[
-                      { title: 'Jadwal Rapat Anggota & Evaluasi Program Semester II 2026', date: '24 Juli 2026', sender: 'Pengurus Komunitas', content: 'Diberitahukan kepada seluruh anggota Perahu Kita bahwa Rapat Evaluasi Program Semester II akan dilaksanakan pada hari Sabtu, 15 Agustus 2026. Kehadiran seluruh anggota sangat diharapkan.', isPinned: true },
-                      { title: 'Program Pendampingan Sertifikasi Halal Gratis Tahap 3', date: '18 Juli 2026', sender: 'Divisi Edukasi UMKM', content: 'Pendaftaran pendampingan pengajuan sertifikat Halal gratis (SEHATI) tahap 3 telah dibuka. Silakan mengisi formulir pendaftaran melalui sekretariat komunitas.', isPinned: false },
-                      { title: 'Pembukaan Pendaftaran Stand Bazaar UMKM Perahu Kita', date: '10 Juli 2026', sender: 'Divisi Acara & Bazaar', content: 'Bazaar produk anggota akan digelar pada tanggal 25 Agustus 2026 di Alun-Alun Kidul. Kuota stand terbatas untuk 30 merchant pertama.', isPinned: false },
-                    ].map((p, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-2.5">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            {p.isPinned && <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 font-extrabold text-[10px] rounded-md">📌 TERPAKU</span>}
-                            <span className="text-[10px] text-gray-400 font-semibold">{p.date} • Oleh {p.sender}</span>
-                          </div>
-                        </div>
-                        <h3 className="text-sm font-extrabold text-gray-900">{p.title}</h3>
-                        <p className="text-xs text-gray-600 leading-relaxed font-medium">{p.content}</p>
+                    {isLoadingAnnouncements ? (
+                      <div className="flex justify-center items-center py-10">
+                        <Loader2 className="w-8 h-8 text-[#2DB24A] animate-spin" />
                       </div>
-                    ))}
+                    ) : announcements.filter(p => isCanManageCoop || p.status === 'PUBLISHED').length === 0 ? (
+                      <div className="p-10 text-center bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-2">
+                        <Megaphone className="w-8 h-8 text-gray-400 mx-auto opacity-70" />
+                        <p className="text-sm font-bold text-gray-500">Belum ada pengumuman</p>
+                      </div>
+                    ) : (
+                      announcements
+                        .filter(p => isCanManageCoop || p.status === 'PUBLISHED')
+                        .map((p) => (
+                          <div key={p.id} className={`p-5 bg-gray-50/70 border ${p.isPinned ? 'border-amber-300 bg-amber-50/20' : 'border-gray-200/80'} rounded-2xl space-y-2.5 transition-all`}>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                {p.isPinned && (
+                                  <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 font-extrabold text-[10px] rounded-md flex items-center gap-1">
+                                    📌 TERPAKU
+                                  </span>
+                                )}
+                                {isCanManageCoop && (
+                                  <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-md ${p.status === 'DRAFT' ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-800'}`}>
+                                    {p.status === 'DRAFT' ? 'DRAFT' : 'PUBLIKASI'}
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-gray-400 font-semibold">
+                                  {p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+                                </span>
+                              </div>
+
+                              {isCanManageCoop && (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleTogglePinAnnouncement(p)}
+                                    title={p.isPinned ? 'Lepas Pin' : 'Patok ke Atas'}
+                                    className="p-1.5 text-gray-500 hover:text-amber-600 bg-white border border-gray-200 rounded-lg hover:border-amber-300 transition-all cursor-pointer"
+                                  >
+                                    <MapPin className={`w-3.5 h-3.5 ${p.isPinned ? 'fill-amber-600 text-amber-600' : ''}`} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleTogglePublishAnnouncement(p)}
+                                    title={p.status === 'DRAFT' ? 'Publikasikan' : 'Simpan sebagai Draft'}
+                                    className="p-1.5 text-gray-500 hover:text-green-600 bg-white border border-gray-200 rounded-lg hover:border-green-300 transition-all cursor-pointer"
+                                  >
+                                    {p.status === 'DRAFT' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                                  </button>
+                                  <button
+                                    onClick={() => handleOpenAnnouncementModal(p)}
+                                    title="Edit Pengumuman"
+                                    className="p-1.5 text-gray-500 hover:text-blue-600 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-all cursor-pointer"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteAnnouncement(p.id)}
+                                    title="Hapus Pengumuman"
+                                    className="p-1.5 text-gray-500 hover:text-red-600 bg-white border border-gray-200 rounded-lg hover:border-red-300 transition-all cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <h3 className="text-sm font-extrabold text-gray-900 font-sora">{p.title}</h3>
+                            <p className="text-xs text-gray-600 leading-relaxed font-medium whitespace-pre-wrap">{p.content}</p>
+                          </div>
+                        ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -2796,40 +3145,64 @@ export default function CommunityDetailPage() {
                   </div>
 
                   {/* Personal Savings Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                        <User className="w-4.5 h-4.5 text-[#2DB24A]" />
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Pokok</h4>
-                        <span className="text-lg font-black text-gray-950 block mt-1">Rp 100.000</span>
-                        <span className="px-2 py-0.5 bg-emerald-100 text-[#0F5132] text-[8px] font-black rounded uppercase tracking-wider mt-2 inline-block">✓ Sudah Lunas</span>
-                      </div>
-                    </div>
+                  {(() => {
+                    const mBalance = communitySavingsSummary?.memberBalances?.[user?.id] || { pokok: 0, wajib: 0, sukarela: 0, total: 0 };
+                    const reqPokok = community?.simpananPokok || 100000;
+                    const reqWajib = community?.simpananWajib || 25000;
+                    const isPokokLunas = mBalance.pokok >= reqPokok;
+                    const wajibMonths = reqWajib > 0 ? Math.floor(mBalance.wajib / reqWajib) : 0;
 
-                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                        <Calendar className="w-4.5 h-4.5 text-[#2DB24A]" />
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Wajib</h4>
-                        <span className="text-lg font-black text-gray-950 block mt-1">Rp 250.000</span>
-                        <span className="text-[9px] text-gray-500 font-semibold block mt-2">Terbayar 5 Bulan • Rp 50.000 / bln</span>
-                      </div>
-                    </div>
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <User className="w-4.5 h-4.5 text-[#2DB24A]" />
+                          </div>
+                          <div>
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Pokok</h4>
+                            <span className="text-lg font-black text-gray-950 block mt-1">
+                              Rp {mBalance.pokok.toLocaleString('id-ID')}
+                            </span>
+                            <span className={`px-2 py-0.5 text-[8px] font-black rounded uppercase tracking-wider mt-2 inline-block ${
+                              isPokokLunas ? 'bg-emerald-100 text-[#0F5132]' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {isPokokLunas ? '✓ Sudah Lunas' : 'Belum Lunas'}
+                            </span>
+                          </div>
+                        </div>
 
-                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                        <PiggyBank className="w-4.5 h-4.5 text-[#2DB24A]" />
+                        <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <Calendar className="w-4.5 h-4.5 text-[#2DB24A]" />
+                          </div>
+                          <div>
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Wajib</h4>
+                            <span className="text-lg font-black text-gray-950 block mt-1">
+                              Rp {mBalance.wajib.toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[9px] text-gray-500 font-semibold block mt-2">
+                              Terbayar {wajibMonths} Bulan • Rp {reqWajib.toLocaleString('id-ID')} / bln
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 rounded-2xl space-y-3 relative overflow-hidden shadow-xs">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                            <PiggyBank className="w-4.5 h-4.5 text-[#2DB24A]" />
+                          </div>
+                          <div>
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Sukarela</h4>
+                            <span className="text-lg font-black text-gray-950 block mt-1">
+                              Rp {mBalance.sukarela.toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[9px] text-gray-500 font-semibold block mt-2">
+                              Dapat ditarik atau disetor kapan saja
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Simpanan Sukarela</h4>
-                        <span className="text-lg font-black text-gray-950 block mt-1">Rp 50.000</span>
-                        <span className="text-[9px] text-gray-500 font-semibold block mt-2">Dapat ditarik atau disetor kapan saja</span>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* Jenis Simpanan Aktif Koperasi (untuk disetor) */}
                   <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
@@ -2872,30 +3245,39 @@ export default function CommunityDetailPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
-                          <tr className="hover:bg-gray-50/30 transition-colors">
-                            <td className="py-3 px-2 text-gray-500 font-semibold">2 Mei 2026, 10:30</td>
-                            <td className="py-3 px-2 text-gray-600 font-bold">Simpanan Wajib</td>
-                            <td className="py-3 px-2 font-black text-[#0F5132]">Rp 50.000</td>
-                            <td className="py-3 px-2">
-                              <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ Berhasil</span>
-                            </td>
-                          </tr>
-                          <tr className="hover:bg-gray-50/30 transition-colors">
-                            <td className="py-3 px-2 text-gray-500 font-semibold">1 Apr 2026, 09:15</td>
-                            <td className="py-3 px-2 text-gray-600 font-bold">Simpanan Wajib</td>
-                            <td className="py-3 px-2 font-black text-[#0F5132]">Rp 50.000</td>
-                            <td className="py-3 px-2">
-                              <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ Berhasil</span>
-                            </td>
-                          </tr>
-                          <tr className="hover:bg-gray-50/30 transition-colors">
-                            <td className="py-3 px-2 text-gray-500 font-semibold">1 Jan 2026, 08:00</td>
-                            <td className="py-3 px-2 text-gray-600 font-bold">Simpanan Pokok</td>
-                            <td className="py-3 px-2 font-black text-[#0F5132]">Rp 100.000</td>
-                            <td className="py-3 px-2">
-                              <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ Berhasil</span>
-                            </td>
-                          </tr>
+                          {communitySavingsSummary?.transactions && communitySavingsSummary.transactions.filter((t: any) => t.userId === user?.id).length > 0 ? (
+                            communitySavingsSummary.transactions
+                              .filter((t: any) => t.userId === user?.id)
+                              .map((tx: any, idx: number) => {
+                                const formattedDate = new Date(tx.date).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                }) + ', ' + new Date(tx.date).toLocaleTimeString('id-ID', {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                                const isSetor = tx.transactionType === 'SETOR'
+                                return (
+                                  <tr key={tx.id || idx} className="hover:bg-gray-50/30 transition-colors">
+                                    <td className="py-3 px-2 text-gray-500 font-semibold">{formattedDate}</td>
+                                    <td className="py-3 px-2 text-gray-600 font-bold">Simpanan {tx.type === 'POKOK' ? 'Pokok' : tx.type === 'WAJIB' ? 'Wajib' : 'Sukarela'}</td>
+                                    <td className={`py-3 px-2 font-black ${isSetor ? 'text-[#0F5132]' : 'text-red-600'}`}>
+                                      {isSetor ? '+' : '-'} Rp {tx.amount.toLocaleString('id-ID')}
+                                    </td>
+                                    <td className="py-3 px-2">
+                                      <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase font-mono">✓ Berhasil</span>
+                                    </td>
+                                  </tr>
+                                )
+                              })
+                          ) : (
+                            <tr>
+                              <td colSpan={4} className="py-8 text-center text-gray-400 font-medium">
+                                Belum ada riwayat transaksi simpanan.
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -3325,7 +3707,7 @@ export default function CommunityDetailPage() {
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
                     <div>
                       <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                        <PieChart className="w-6 h-6 text-[#2DB24A]" /> Kalkulator & Laporan Bagi Hasil SHU
+                        <PieChart className="w-6 h-6 text-[#2DB24A]" /> Kalkulator &amp; Laporan Bagi Hasil SHU
                       </h2>
                       <p className="text-xs text-gray-500 font-medium mt-1">
                         Perhitungan otomatis Sisa Hasil Usaha (SHU) Koperasi berdasarkan laba bersih, simpanan, dan keaktifan transaksi anggota.
@@ -3333,217 +3715,474 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
 
-                  {/* ADMIN CONFIGURATION & AUTOMATED CALCULATOR PANEL */}
+                  {/* ADMIN VIEW TABS SWITCHER */}
                   {isCanManageCoop && (
-                    <form onSubmit={handleCalculateAndSaveShu} className="p-6 bg-gray-50/80 border border-gray-200/80 rounded-3xl space-y-5">
-                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-gray-200/60 pb-3">
-                        <div>
-                          <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
-                            <Sliders className="w-4.5 h-4.5 text-[#2DB24A]" /> Pengaturan Alokasi Persentase SHU (RAT)
-                          </h3>
-                          <p className="text-xs text-gray-500 font-medium mt-0.5">
-                            Atur total laba bersih dan persentase alokasi. Hasil alokasi &amp; bagian anggota dihitung 100% otomatis.
-                          </p>
-                        </div>
-                        <button
-                          type="submit"
-                          disabled={isCalculatingShu}
-                          className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2 shrink-0"
-                        >
-                          {isCalculatingShu ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Hitung & Simpan SHU Otomatis'}
-                        </button>
-                      </div>
-
-                      {/* Laba Bersih Input */}
-                      <div className="max-w-md">
-                        <label className="block text-xs font-black text-gray-800 uppercase tracking-wider mb-1">
-                          Total Laba Bersih Koperasi (SHU Bersih Rp) *
-                        </label>
-                        <input
-                          type="number"
-                          required
-                          min="1000"
-                          value={shuNetProfit}
-                          onChange={e => setShuNetProfit(e.target.value)}
-                          className="w-full px-4 py-2.5 text-base font-mono font-black text-gray-900 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2DB24A] outline-none"
-                          placeholder="100000000"
-                        />
-                        <span className="text-[10px] text-gray-400 font-semibold mt-1 block">
-                          Nominal bersih: Rp {Number(shuNetProfit || 0).toLocaleString('id-ID')}
-                        </span>
-                      </div>
-
-                      {/* Percentages Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                        <div className="p-3 bg-white border border-gray-200 rounded-xl space-y-1">
-                          <label className="block text-[10px] font-black text-gray-700 uppercase">Dana Cadangan (%)</label>
-                          <input
-                            type="number"
-                            step="0.5"
-                            value={shuPctCadangan}
-                            onChange={e => setShuPctCadangan(Number(e.target.value))}
-                            className="w-full px-2.5 py-1 text-xs font-bold border rounded-lg border-gray-300"
-                          />
-                          <span className="text-[9px] text-[#0F5132] font-black block">
-                            Rp {(Number(shuNetProfit || 0) * shuPctCadangan / 100).toLocaleString('id-ID')}
-                          </span>
-                        </div>
-
-                        <div className="p-3 bg-white border border-gray-200 rounded-xl space-y-1">
-                          <label className="block text-[10px] font-black text-gray-700 uppercase">Jasa Modal (%)</label>
-                          <input
-                            type="number"
-                            step="0.5"
-                            value={shuPctJasaModal}
-                            onChange={e => setShuPctJasaModal(Number(e.target.value))}
-                            className="w-full px-2.5 py-1 text-xs font-bold border rounded-lg border-gray-300"
-                          />
-                          <span className="text-[9px] text-amber-700 font-black block">
-                            Rp {(Number(shuNetProfit || 0) * shuPctJasaModal / 100).toLocaleString('id-ID')}
-                          </span>
-                        </div>
-
-                        <div className="p-3 bg-white border border-gray-200 rounded-xl space-y-1">
-                          <label className="block text-[10px] font-black text-gray-700 uppercase">Jasa Usaha (%)</label>
-                          <input
-                            type="number"
-                            step="0.5"
-                            value={shuPctJasaUsaha}
-                            onChange={e => setShuPctJasaUsaha(Number(e.target.value))}
-                            className="w-full px-2.5 py-1 text-xs font-bold border rounded-lg border-gray-300"
-                          />
-                          <span className="text-[9px] text-blue-700 font-black block">
-                            Rp {(Number(shuNetProfit || 0) * shuPctJasaUsaha / 100).toLocaleString('id-ID')}
-                          </span>
-                        </div>
-
-                        <div className="p-3 bg-white border border-gray-200 rounded-xl space-y-1">
-                          <label className="block text-[10px] font-black text-gray-700 uppercase">Pengurus (%)</label>
-                          <input
-                            type="number"
-                            step="0.5"
-                            value={shuPctPengurus}
-                            onChange={e => setShuPctPengurus(Number(e.target.value))}
-                            className="w-full px-2.5 py-1 text-xs font-bold border rounded-lg border-gray-300"
-                          />
-                          <span className="text-[9px] text-purple-700 font-black block">
-                            Rp {(Number(shuNetProfit || 0) * shuPctPengurus / 100).toLocaleString('id-ID')}
-                          </span>
-                        </div>
-                      </div>
-                    </form>
+                    <div className="flex gap-2 border-b border-gray-100 pb-1">
+                      <button
+                        type="button"
+                        onClick={() => setShuTab('preview')}
+                        className={`px-4 py-2 text-xs font-black font-sora rounded-t-2xl transition-all cursor-pointer border-b-2 outline-none ${
+                          shuTab === 'preview'
+                            ? 'border-[#2DB24A] text-[#2DB24A]'
+                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        📊 Simulasi &amp; Live Preview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShuTab('final')}
+                        className={`px-4 py-2 text-xs font-black font-sora rounded-t-2xl transition-all cursor-pointer border-b-2 outline-none ${
+                          shuTab === 'final'
+                            ? 'border-[#2DB24A] text-[#2DB24A]'
+                            : 'border-transparent text-gray-400 hover:text-gray-600'
+                        }`}
+                      >
+                        🔒 Hasil SHU Final Disimpan
+                      </button>
+                    </div>
                   )}
 
-                  {/* Summary Metric Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 rounded-3xl space-y-2">
-                      <span className="text-[10px] font-black text-[#0F5132] uppercase">SHU Bersih Koperasi</span>
-                      <span className="text-xl font-black text-gray-900 block font-sora">
-                        Rp {Number(shuNetProfit || 100000000).toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[10px] text-gray-500 font-medium">Total laba bersih koperasi tahun berjalan</p>
-                    </div>
+                  {/* ADMIN VIEW: PREVIEW TAB */}
+                  {isCanManageCoop && shuTab === 'preview' && (
+                    <div className="space-y-6">
+                      {/* ADMIN CONFIGURATION PANEL — only Jasa Modal & Jasa Usaha */}
+                      <form onSubmit={handleCalculateAndSaveShu} className="p-6 bg-gray-50/80 border border-gray-200/80 rounded-3xl space-y-5">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-gray-200/60 pb-3">
+                          <div>
+                            <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
+                              <Sliders className="w-4 h-4 text-[#2DB24A]" /> Pengaturan Alokasi Persentase SHU (RAT)
+                            </h3>
+                            <p className="text-xs text-gray-500 font-medium mt-0.5">
+                              Atur total laba bersih, lalu persentase Jasa Modal &amp; Jasa Usaha. Bagian per anggota dihitung otomatis.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`px-3 py-1 rounded text-xs font-bold font-mono ${
+                              (shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
+                              {(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
+                                ? `✓ Persentase Valid (0-100%)`
+                                : `⚠️ Nilai harus di antara 0% s/d 100%`
+                              }
+                            </div>
+                            <button
+                              type="submit"
+                              disabled={isCalculatingShu || !(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)}
+                              className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2 shrink-0 disabled:opacity-50"
+                            >
+                              {isCalculatingShu ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Hitung & Simpan SHU Otomatis'}
+                            </button>
+                          </div>
+                        </div>
 
-                    <div className="p-5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-3xl space-y-2">
-                      <span className="text-[10px] font-black text-amber-800 uppercase">Jasa Modal ({(shuPctJasaModal)}%)</span>
-                      <span className="text-xl font-black text-gray-900 block font-sora">
-                        Rp {(Number(shuNetProfit || 100000000) * shuPctJasaModal / 100).toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[10px] text-gray-500 font-medium">Dibagikan proporsional saldo simpanan anggota</p>
-                    </div>
+                        {/* Laba Bersih Input */}
+                        <div className="max-w-md">
+                          <label className="block text-xs font-black text-gray-800 uppercase tracking-wider mb-1">
+                            Total Laba Bersih Koperasi (SHU Bersih Rp) *
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            value={shuNetProfit}
+                            onChange={e => setShuNetProfit(e.target.value)}
+                            className="w-full px-4 py-2.5 text-base font-mono font-black text-gray-900 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2DB24A] outline-none"
+                            placeholder="0"
+                          />
+                          <span className="text-[10px] text-gray-400 font-semibold mt-1 block">
+                            Nominal bersih: Rp {Number(shuNetProfit || 0).toLocaleString('id-ID')}
+                          </span>
+                        </div>
 
-                    <div className="p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-3xl space-y-2">
-                      <span className="text-[10px] font-black text-blue-800 uppercase">Jasa Usaha ({(shuPctJasaUsaha)}%)</span>
-                      <span className="text-xl font-black text-gray-900 block font-sora">
-                        Rp {(Number(shuNetProfit || 100000000) * shuPctJasaUsaha / 100).toLocaleString('id-ID')}
-                      </span>
-                      <p className="text-[10px] text-gray-500 font-medium">Dibagikan proporsional keaktifan belanja/transaksi</p>
-                    </div>
-                  </div>
+                        {/* Percentages — hanya Jasa Modal & Jasa Usaha */}
+                        <div className="grid grid-cols-2 gap-4 pt-1">
+                          <div className="p-4 bg-white border border-amber-200 rounded-2xl space-y-1.5">
+                            <label className="block text-[10px] font-black text-amber-800 uppercase tracking-wider">
+                              % Jasa Modal
+                            </label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="100"
+                              value={shuPctJasaModal}
+                              onChange={e => setShuPctJasaModal(Number(e.target.value))}
+                              className="w-full px-3 py-2 text-sm font-bold border rounded-xl border-amber-200 focus:ring-2 focus:ring-amber-300 outline-none"
+                            />
+                            <span className="text-[9px] text-amber-700 font-black block">
+                              Pool: Rp {(Number(shuNetProfit || 0) * shuPctJasaModal / 100).toLocaleString('id-ID')}
+                            </span>
+                            <p className="text-[9px] text-gray-400 font-medium leading-tight">
+                              Dibagikan proporsional simpanan anggota
+                            </p>
+                          </div>
 
-                  {/* Automated Member Distribution Table */}
-                  <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
-                    <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                      <div>
-                        <h3 className="text-sm font-black text-gray-900 font-sora">Rincian Pembagian SHU Anggota (Otomatis)</h3>
-                        <p className="text-xs text-gray-500 font-medium mt-0.5">
-                          Calculated automatically from simpanan &amp; total partisipasi belanja anggota
-                        </p>
+                          <div className="p-4 bg-white border border-blue-200 rounded-2xl space-y-1.5">
+                            <label className="block text-[10px] font-black text-blue-800 uppercase tracking-wider">
+                              % Jasa Usaha
+                            </label>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="100"
+                              value={shuPctJasaUsaha}
+                              onChange={e => setShuPctJasaUsaha(Number(e.target.value))}
+                              className="w-full px-3 py-2 text-sm font-bold border rounded-xl border-blue-200 focus:ring-2 focus:ring-blue-300 outline-none"
+                            />
+                            <span className="text-[9px] text-blue-700 font-black block">
+                              Pool: Rp {(Number(shuNetProfit || 0) * shuPctJasaUsaha / 100).toLocaleString('id-ID')}
+                            </span>
+                            <p className="text-[9px] text-gray-400 font-medium leading-tight">
+                              Dibagikan proporsional keaktifan transaksi anggota
+                            </p>
+                          </div>
+                        </div>
+                      </form>
+
+                      {/* ── BARIS 1: SHU Bersih, Total Tabungan, Total Transaksi ── */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="p-5 bg-gradient-to-br from-emerald-800 to-emerald-950 text-white rounded-3xl space-y-2 shadow-md">
+                          <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">SHU Bersih Koperasi (Preview)</span>
+                          <span className="text-xl font-black block font-sora">
+                            Rp {Number(shuNetProfit || 0).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-emerald-200/80 font-medium">Total laba bersih koperasi tahun berjalan</p>
+                        </div>
+
+                        <div className="p-5 bg-white border border-gray-200/80 rounded-3xl space-y-2 shadow-xs">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Tabungan Koperasi</span>
+                          <span className="text-xl font-black text-gray-900 block font-sora">
+                            Rp {Number(communitySavingsSummary?.totalSavingsCommunity || 0).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-gray-500 font-medium">Akumulasi simpanan seluruh anggota</p>
+                        </div>
+
+                        <div className="p-5 bg-white border border-gray-200/80 rounded-3xl space-y-2 shadow-xs">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Transaksi Koperasi</span>
+                          <span className="text-xl font-black text-gray-900 block font-sora">
+                            Rp {Number(communitySavingsSummary?.totalTransaksiCommunity || 0).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-gray-500 font-medium">Total transaksi belanja seluruh anggota</p>
+                        </div>
+                      </div>
+
+                      {/* ── BARIS 2: Jasa Modal, Jasa Usaha ── */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-3xl space-y-2 shadow-xs">
+                          <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Pool Jasa Modal ({shuPctJasaModal}%)</span>
+                          <span className="text-xl font-black text-gray-900 block font-sora">
+                            Rp {(Number(shuNetProfit || 0) * shuPctJasaModal / 100).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-gray-500 font-medium">
+                            Rumus: (Simpanan Anggota / Total Tabungan Koperasi) × Pool ini
+                          </p>
+                        </div>
+
+                        <div className="p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-3xl space-y-2 shadow-xs">
+                          <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Pool Jasa Usaha ({shuPctJasaUsaha}%)</span>
+                          <span className="text-xl font-black text-gray-900 block font-sora">
+                            Rp {(Number(shuNetProfit || 0) * shuPctJasaUsaha / 100).toLocaleString('id-ID')}
+                          </span>
+                          <p className="text-[10px] text-gray-500 font-medium">
+                            Rumus: (Transaksi Anggota / Total Transaksi Koperasi) × Pool ini
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Admin View: Full Member Distribution Table */}
+                      <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
+                        <div className="border-b border-gray-100 pb-3">
+                          <h3 className="text-sm font-black text-gray-900 font-sora">Rincian Preview Pembagian SHU Anggota</h3>
+                          <p className="text-xs text-gray-500 font-medium mt-0.5">
+                            Menampilkan simulasi hasil realtime berdasarkan transaksi database terbaru. Belum disimpan/dibagikan secara resmi.
+                          </p>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                <th className="py-3 px-3">Nama Anggota</th>
+                                <th className="py-3 px-3">Total Simpanan (Rp)</th>
+                                <th className="py-3 px-3">SHU Jasa Modal</th>
+                                <th className="py-3 px-3">Total Transaksi (Rp)</th>
+                                <th className="py-3 px-3">SHU Jasa Usaha</th>
+                                <th className="py-3 px-3">Total SHU Diterima</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
+                              {(() => {
+                                const totSimp = communitySavingsSummary?.totalSavingsCommunity || 0
+                                const totTx = communitySavingsSummary?.totalTransaksiCommunity || 0
+                                const poolJasaModal = Number(shuNetProfit || 0) * shuPctJasaModal / 100
+                                const poolJasaUsaha = Number(shuNetProfit || 0) * shuPctJasaUsaha / 100
+
+                                if (!members || members.length === 0) {
+                                  return (
+                                    <tr>
+                                      <td colSpan={6} className="py-8 text-center text-gray-400 font-bold">
+                                        Belum ada anggota terdaftar di komunitas ini
+                                      </td>
+                                    </tr>
+                                  )
+                                }
+
+                                return members.map((m: any, i: number) => {
+                                  const name = m.name || m.user?.name || m.email || `Anggota ${i + 1}`
+                                  const userSimp = communitySavingsSummary?.memberBalances?.[m.userId]?.total || 0
+                                  const userTx   = communitySavingsSummary?.memberTransaksi?.[m.userId] || 0
+
+                                  // Proportional formulas: Jasa Modal & Jasa Usaha
+                                  const jModal = totSimp > 0 ? (userSimp / totSimp) * poolJasaModal : 0
+                                  const jUsaha = totTx   > 0 ? (userTx   / totTx)   * poolJasaUsaha : 0
+                                  const totShu = jModal + jUsaha
+
+                                  return (
+                                    <tr key={m.id || i} className="hover:bg-gray-50/50 transition-colors">
+                                      <td className="py-3 px-3 font-bold text-gray-900">{name}</td>
+                                      <td className="py-3 px-3 text-gray-600 font-semibold">
+                                        Rp {Number(userSimp).toLocaleString('id-ID')}
+                                      </td>
+                                      <td className="py-3 px-3 text-amber-700 font-bold">
+                                        Rp {Math.round(jModal).toLocaleString('id-ID')}
+                                      </td>
+                                      <td className="py-3 px-3 text-gray-600 font-semibold">
+                                        Rp {Number(userTx).toLocaleString('id-ID')}
+                                      </td>
+                                      <td className="py-3 px-3 text-blue-700 font-bold">
+                                        Rp {Math.round(jUsaha).toLocaleString('id-ID')}
+                                      </td>
+                                      <td className="py-3 px-3 font-black text-[#0F5132] text-sm">
+                                        Rp {Math.round(totShu).toLocaleString('id-ID')}
+                                      </td>
+                                    </tr>
+                                  )
+                                })
+                              })()}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
+                  )}
 
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                            <th className="py-3 px-3">Nama Anggota</th>
-                            <th className="py-3 px-3">Total Simpanan (Rp)</th>
-                            <th className="py-3 px-3">SHU Jasa Modal</th>
-                            <th className="py-3 px-3">Total Transaksi (Rp)</th>
-                            <th className="py-3 px-3">SHU Jasa Usaha</th>
-                            <th className="py-3 px-3">Total SHU Diterima</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
-                          {communityShuData?.config?.distributions && communityShuData.config.distributions.length > 0 ? (
-                            communityShuData.config.distributions.map((d: any, i: number) => (
-                              <tr key={d.id || i} className="hover:bg-gray-50/50 transition-colors">
-                                <td className="py-3 px-3 font-bold text-gray-900">{d.userName || d.userEmail}</td>
-                                <td className="py-3 px-3 text-gray-600 font-semibold">
-                                  Rp {Number(d.simpananMember || 0).toLocaleString('id-ID')}
-                                </td>
-                                <td className="py-3 px-3 text-amber-700 font-bold">
-                                  Rp {Number(d.shuJasaModalAmount || 0).toLocaleString('id-ID')}
-                                </td>
-                                <td className="py-3 px-3 text-gray-600 font-semibold">
-                                  Rp {Number(d.transaksiMember || 0).toLocaleString('id-ID')}
-                                </td>
-                                <td className="py-3 px-3 text-blue-700 font-bold">
-                                  Rp {Number(d.shuJasaUsahaAmount || 0).toLocaleString('id-ID')}
-                                </td>
-                                <td className="py-3 px-3 font-black text-[#0F5132] text-sm">
-                                  Rp {Number(d.totalShuAmount || 0).toLocaleString('id-ID')}
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            members.map((m: any, i: number) => {
-                              const name = m.name || m.user?.name || m.email || `Anggota ${i + 1}`
-                              const userSimp = communitySavingsSummary?.memberBalances?.[m.userId]?.total || 100000
-                              const totSimp = communitySavingsSummary?.totalSavingsCommunity || (members.length * 100000)
-                              const poolJasaModal = (Number(shuNetProfit || 100000000) * shuPctJasaModal / 100)
-                              const poolJasaUsaha = (Number(shuNetProfit || 100000000) * shuPctJasaUsaha / 100)
-                              
-                              const jModal = totSimp > 0 ? (userSimp / totSimp) * poolJasaModal : 0
-                              const jUsaha = poolJasaUsaha / members.length
-                              const totShu = jModal + jUsaha
+                  {/* ADMIN VIEW: FINAL SHU TAB */}
+                  {isCanManageCoop && shuTab === 'final' && (
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                      {communityShuData?.config ? (
+                        <>
+                          {/* Saved Config Overview Cards */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="p-5 bg-gradient-to-br from-emerald-950 to-emerald-900 text-white rounded-3xl space-y-2 shadow-md">
+                              <span className="text-[10px] font-black text-emerald-300 uppercase tracking-wider">SHU Bersih Koperasi (Final)</span>
+                              <span className="text-xl font-black block font-sora">
+                                Rp {Number(communityShuData.config.totalNetProfit || 0).toLocaleString('id-ID')}
+                              </span>
+                              <p className="text-[10px] text-emerald-200/80 font-medium">Tahun buku RAT: {communityShuData.config.year}</p>
+                            </div>
 
-                              return (
-                                <tr key={m.id || i} className="hover:bg-gray-50/50 transition-colors">
-                                  <td className="py-3 px-3 font-bold text-gray-900">{name}</td>
-                                  <td className="py-3 px-3 text-gray-600 font-semibold">
-                                    Rp {Number(userSimp).toLocaleString('id-ID')}
-                                  </td>
-                                  <td className="py-3 px-3 text-amber-700 font-bold">
-                                    Rp {Math.round(jModal).toLocaleString('id-ID')}
-                                  </td>
-                                  <td className="py-3 px-3 text-gray-600 font-semibold">
-                                    Rp 0
-                                  </td>
-                                  <td className="py-3 px-3 text-blue-700 font-bold">
-                                    Rp {Math.round(jUsaha).toLocaleString('id-ID')}
-                                  </td>
-                                  <td className="py-3 px-3 font-black text-[#0F5132] text-sm">
-                                    Rp {Math.round(totShu).toLocaleString('id-ID')}
-                                  </td>
-                                </tr>
-                              )
-                            })
-                          )}
-                        </tbody>
-                      </table>
+                            <div className="p-5 bg-gradient-to-br from-amber-50 to-white border border-amber-200 rounded-3xl space-y-2 shadow-xs">
+                              <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Jasa Modal ({communityShuData.config.pctJasaModal}%)</span>
+                              <span className="text-xl font-black text-gray-900 block font-sora">
+                                Rp {(Number(communityShuData.config.totalNetProfit || 0) * communityShuData.config.pctJasaModal / 100).toLocaleString('id-ID')}
+                              </span>
+                              <p className="text-[10px] text-gray-500 font-medium">Alokasi pool Jasa Modal disimpan</p>
+                            </div>
+
+                            <div className="p-5 bg-gradient-to-br from-blue-50 to-white border border-blue-200 rounded-3xl space-y-2 shadow-xs">
+                              <span className="text-[10px] font-black text-blue-800 uppercase tracking-wider">Jasa Usaha ({communityShuData.config.pctJasaUsaha}%)</span>
+                              <span className="text-xl font-black text-gray-900 block font-sora">
+                                Rp {(Number(communityShuData.config.totalNetProfit || 0) * communityShuData.config.pctJasaUsaha / 100).toLocaleString('id-ID')}
+                              </span>
+                              <p className="text-[10px] text-gray-500 font-medium">Alokasi pool Jasa Usaha disimpan</p>
+                            </div>
+                          </div>
+
+                          {/* Final Snapshot Table */}
+                          <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-4 shadow-xs">
+                            <div className="border-b border-gray-100 pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                              <div>
+                                <h3 className="text-sm font-black text-gray-900 font-sora">Daftar Pembagian SHU Anggota Terkunci</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-0.5">
+                                  Data resmi di bawah ini disimpan di database. Gunakan tombol &quot;Simulasi &amp; Live Preview&quot; untuk memperbarui porsi SHU jika terdapat transaksi baru.
+                                </p>
+                              </div>
+                              <span className="text-xs font-mono font-bold bg-[#eef8e9] text-[#006e24] px-3 py-1.5 rounded-full border border-[#2db24a]/20">
+                                🔒 LOCKED / FINAL
+                              </span>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left border-collapse">
+                                <thead>
+                                  <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                    <th className="py-3 px-3">Nama Anggota</th>
+                                    <th className="py-3 px-3">Total Simpanan (Rp)</th>
+                                    <th className="py-3 px-3">SHU Jasa Modal</th>
+                                    <th className="py-3 px-3">Total Transaksi (Rp)</th>
+                                    <th className="py-3 px-3">SHU Jasa Usaha</th>
+                                    <th className="py-3 px-3">Total SHU Diterima</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
+                                  {communityShuData.config.distributions && communityShuData.config.distributions.length > 0 ? (
+                                    communityShuData.config.distributions.map((d: any, i: number) => (
+                                      <tr key={d.id || i} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="py-3 px-3 font-bold text-gray-900">
+                                          <div>{d.userName}</div>
+                                          <div className="text-[9px] text-gray-400 font-medium">{d.userEmail}</div>
+                                        </td>
+                                        <td className="py-3 px-3 text-gray-600 font-semibold">
+                                          Rp {Number(d.simpananMember || 0).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-3 text-amber-700 font-bold">
+                                          Rp {Number(d.shuJasaModalAmount || 0).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-3 text-gray-600 font-semibold">
+                                          Rp {Number(d.transaksiMember || 0).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-3 text-blue-700 font-bold">
+                                          Rp {Number(d.shuJasaUsahaAmount || 0).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-3 font-black text-[#0F5132] text-sm">
+                                          Rp {Number(d.totalShuAmount || 0).toLocaleString('id-ID')}
+                                        </td>
+                                      </tr>
+                                    ))
+                                  ) : (
+                                    <tr>
+                                      <td colSpan={6} className="py-8 text-center text-gray-400 font-bold">
+                                        Tidak ada rincian anggota tersimpan.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-8 bg-gray-50 border border-dashed border-gray-200 rounded-3xl text-center">
+                          <p className="text-sm text-gray-500 font-bold">Belum ada pembagian SHU yang disimpan untuk tahun buku ini.</p>
+                          <p className="text-xs text-gray-400 font-medium mt-1">Silakan atur persentase di tab &quot;Simulasi &amp; Live Preview&quot; terlebih dahulu kemudian simpan.</p>
+                          <button
+                            type="button"
+                            onClick={() => setShuTab('preview')}
+                            className="mt-4 px-4 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white text-xs font-bold rounded-xl cursor-pointer transition-colors border-none"
+                          >
+                            Buka Simulasi &amp; Live Preview
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
+
+                  {/* Member View: Personal SHU Card Grid */}
+                  {!isCanManageCoop && (
+                    <div className="space-y-6">
+                      {(() => {
+                        const hasConfig = !!communityShuData?.config;
+                        const myDist = communityShuData?.config?.distributions?.find((d: any) => d.userId === user?.id);
+                        
+                        const totSimp = myDist ? myDist.simpananTotalCommunity : (communitySavingsSummary?.totalSavingsCommunity || 0);
+                        const totTx = myDist ? myDist.transaksiTotalCommunity : (communitySavingsSummary?.totalTransaksiCommunity || 0);
+                        
+                        const poolJasaModal = communityShuData?.config 
+                          ? (communityShuData.config.totalNetProfit * communityShuData.config.pctJasaModal / 100) 
+                          : 0;
+                        const poolJasaUsaha = communityShuData?.config 
+                          ? (communityShuData.config.totalNetProfit * communityShuData.config.pctJasaUsaha / 100) 
+                          : 0;
+                        
+                        const mySimp = myDist ? myDist.simpananMember : (communitySavingsSummary?.memberBalances?.[user?.id]?.total || 0);
+                        const myTx   = myDist ? myDist.transaksiMember : (communitySavingsSummary?.memberTransaksi?.[user?.id] || 0);
+                        
+                        const jModal = myDist ? myDist.shuJasaModalAmount : 0;
+                        const jUsaha = myDist ? myDist.shuJasaUsahaAmount : 0;
+                        const totShu = jModal + jUsaha;
+
+                        return (
+                          <div className="space-y-6">
+                            <div className="p-6 bg-gradient-to-br from-[#E8F8EE] to-white border border-emerald-100 rounded-3xl space-y-4 shadow-sm">
+                              <h3 className="text-sm font-black text-emerald-950 uppercase tracking-wider font-sora">
+                                Laporan SHU Saya Tahun Buku {new Date().getFullYear()}
+                              </h3>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="p-5 bg-white border border-gray-100 rounded-2xl space-y-1 shadow-2xs">
+                                  <span className="text-[10px] text-gray-400 font-bold uppercase">SHU Jasa Modal Saya</span>
+                                  <span className="text-lg font-black text-gray-950 block">
+                                    Rp {Math.round(jModal).toLocaleString('id-ID')}
+                                  </span>
+                                  <span className="text-[9px] text-gray-400 block font-medium">
+                                    Proporsi Simpanan: {totSimp > 0 ? ((mySimp / totSimp) * 100).toFixed(2) : '0'}%
+                                  </span>
+                                </div>
+                                <div className="p-5 bg-white border border-gray-100 rounded-2xl space-y-1 shadow-2xs">
+                                  <span className="text-[10px] text-gray-400 font-bold uppercase">SHU Jasa Usaha Saya</span>
+                                  <span className="text-lg font-black text-gray-950 block">
+                                    Rp {Math.round(jUsaha).toLocaleString('id-ID')}
+                                  </span>
+                                  <span className="text-[9px] text-gray-400 block font-medium">
+                                    Proporsi Belanja: {totTx > 0 ? ((myTx / totTx) * 100).toFixed(2) : '0'}%
+                                  </span>
+                                </div>
+                                <div className="p-5 bg-[#2DB24A] text-white rounded-2xl space-y-1 shadow-2xs">
+                                  <span className="text-[10px] text-emerald-100 font-bold uppercase">Total SHU Diterima</span>
+                                  <span className="text-xl font-black block font-sora">
+                                    Rp {Math.round(totShu).toLocaleString('id-ID')}
+                                  </span>
+                                  <span className="text-[9px] text-emerald-100/90 block font-medium">
+                                    Transfer otomatis ke Saldo Dompet
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="bg-white border border-gray-200/80 rounded-3xl p-6 space-y-3 shadow-2xs">
+                              <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider font-sora">
+                                Transparansi Rumus & Perhitungan SHU Anda
+                              </h4>
+                              
+                              <div className="overflow-x-auto font-medium text-gray-700">
+                                <table className="w-full text-left text-xs border-collapse">
+                                  <thead>
+                                    <tr className="border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                      <th className="py-2.5 px-3">Kategori</th>
+                                      <th className="py-2.5 px-3 text-right">Data Anda</th>
+                                      <th className="py-2.5 px-3 text-right">Total Koperasi</th>
+                                      <th className="py-2.5 px-3 text-right font-semibold">Pool SHU ({hasConfig ? 'Terkunci' : 'Estimasi'})</th>
+                                      <th className="py-2.5 px-3 text-right font-black text-emerald-950">SHU Anda</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-50 text-gray-600">
+                                    <tr>
+                                      <td className="py-3 px-3 font-bold text-gray-900">Jasa Modal (Simpanan)</td>
+                                      <td className="py-3 px-3 text-right font-mono">Rp {mySimp.toLocaleString('id-ID')}</td>
+                                      <td className="py-3 px-3 text-right font-mono">Rp {totSimp.toLocaleString('id-ID')}</td>
+                                      <td className="py-3 px-3 text-right font-mono text-amber-700">Rp {Math.round(poolJasaModal).toLocaleString('id-ID')}</td>
+                                      <td className="py-3 px-3 text-right font-mono text-amber-700 font-bold">Rp {Math.round(jModal).toLocaleString('id-ID')}</td>
+                                    </tr>
+                                    <tr>
+                                      <td className="py-3 px-3 font-bold text-gray-900">Jasa Usaha (Belanja)</td>
+                                      <td className="py-3 px-3 text-right font-mono">Rp {myTx.toLocaleString('id-ID')}</td>
+                                      <td className="py-3 px-3 text-right font-mono">Rp {totTx.toLocaleString('id-ID')}</td>
+                                      <td className="py-3 px-3 text-right font-mono text-blue-700">Rp {Math.round(poolJasaUsaha).toLocaleString('id-ID')}</td>
+                                      <td className="py-3 px-3 text-right font-mono text-blue-700 font-bold">Rp {Math.round(jUsaha).toLocaleString('id-ID')}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -3552,32 +4191,101 @@ export default function CommunityDetailPage() {
             {activeSidebarNav === 'laporan' && (
               <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <FileText className="w-6 h-6 text-[#2DB24A]" /> Laporan Keuangan Audited & Dokumentasi RAT
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Unduh berkas laporan keuangan, neraca saldo, serta risalah Rapat Anggota Tahunan (RAT).</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                        <FileText className="w-6 h-6 text-[#2DB24A]" /> Laporan Keuangan Audited & Dokumentasi RAT
+                      </h2>
+                      <p className="text-xs text-gray-500 font-medium mt-1">Unduh berkas laporan keuangan, neraca saldo, serta risalah Rapat Anggota Tahunan (RAT).</p>
+                    </div>
+                    {isCanManageCoop && (
+                      <button
+                        onClick={() => handleOpenReportModal()}
+                        className="flex items-center justify-center gap-1.5 px-4 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-2xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        <Plus className="w-4 h-4" /> Tambah Laporan
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-3">
-                    {[
-                      { title: 'Laporan Keuangan Audited Koperasi Tahun 2025 (PDF)', date: 'Diunggah 01 Feb 2026', size: '2.4 MB' },
-                      { title: 'Neraca Saldo & Rugi Laba Triwulan I Tahun 2026 (PDF)', date: 'Diunggah 15 Apr 2026', size: '1.8 MB' },
-                      { title: 'Risalah Berita Acara RAT Koperasi Tahun Buku 2025 (PDF)', date: 'Diunggah 05 Feb 2026', size: '3.1 MB' },
-                    ].map((rep, idx) => (
-                      <div key={idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl flex justify-between items-center hover:border-[#2DB24A]/40 transition-all">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-6 h-6 text-[#2DB24A]" />
-                          <div>
-                            <h4 className="text-xs font-bold text-gray-900">{rep.title}</h4>
-                            <p className="text-[10px] text-gray-400 font-semibold">{rep.date} • {rep.size}</p>
-                          </div>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Mengunduh "${rep.title}"...`)} className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Unduh PDF
-                        </button>
+                    {isLoadingReports ? (
+                      <div className="flex justify-center items-center py-10">
+                        <Loader2 className="w-8 h-8 text-[#2DB24A] animate-spin" />
                       </div>
-                    ))}
+                    ) : reports.filter(r => isCanManageCoop || r.status === 'PUBLISHED').length === 0 ? (
+                      <div className="p-10 text-center bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-2">
+                        <FileText className="w-8 h-8 text-gray-400 mx-auto opacity-70" />
+                        <p className="text-sm font-bold text-gray-500">Belum ada laporan</p>
+                      </div>
+                    ) : (
+                      reports
+                        .filter(r => isCanManageCoop || r.status === 'PUBLISHED')
+                        .map((rep) => {
+                          const isExcel = rep.fileUrl?.toLowerCase().endsWith('.xlsx') || rep.fileUrl?.toLowerCase().endsWith('.xls')
+                          return (
+                            <div key={rep.id} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:border-[#2DB24A]/40 transition-all">
+                              <div className="flex items-start gap-3">
+                                <div className="p-2.5 bg-green-50 rounded-xl text-[#2DB24A] mt-0.5">
+                                  <FileText className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h4 className="text-xs font-black text-gray-900 font-sora">{rep.title}</h4>
+                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 font-bold text-[9px] rounded-md uppercase">
+                                      {rep.type}
+                                    </span>
+                                    {isCanManageCoop && (
+                                      <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-md ${rep.status === 'DRAFT' ? 'bg-gray-200 text-gray-700' : 'bg-green-100 text-green-800'}`}>
+                                        {rep.status === 'DRAFT' ? 'DRAFT' : 'PUBLIKASI'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                                    Tahun Buku {rep.year} • Diunggah {rep.publishedAt ? new Date(rep.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3 self-end sm:self-center">
+                                {isCanManageCoop && (
+                                  <div className="flex items-center gap-1.5 mr-2">
+                                    <button
+                                      onClick={() => handleTogglePublishReport(rep)}
+                                      title={rep.status === 'DRAFT' ? 'Publikasikan' : 'Simpan sebagai Draft'}
+                                      className="p-1.5 text-gray-500 hover:text-green-600 bg-white border border-gray-200 rounded-lg hover:border-green-300 transition-all cursor-pointer"
+                                    >
+                                      {rep.status === 'DRAFT' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                                    </button>
+                                    <button
+                                      onClick={() => handleOpenReportModal(rep)}
+                                      title="Edit Laporan"
+                                      className="p-1.5 text-gray-500 hover:text-blue-600 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-all cursor-pointer"
+                                    >
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteReport(rep.id)}
+                                      title="Hapus Laporan"
+                                      className="p-1.5 text-gray-500 hover:text-red-600 bg-white border border-gray-200 rounded-lg hover:border-red-300 transition-all cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
+                                <a
+                                  href={rep.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3.5 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                  {isExcel ? 'Unduh Excel' : 'Unduh PDF'}
+                                </a>
+                              </div>
+                            </div>
+                          )
+                        })
+                    )}
                   </div>
                 </div>
               </div>
@@ -5077,7 +5785,7 @@ export default function CommunityDetailPage() {
                   <h3 className="font-sora text-base font-extrabold text-gray-900">
                     Detail SHU {shuConfig?.year || new Date().getFullYear()}
                   </h3>
-                  <p className="text-xs text-gray-500 font-medium">q
+                  <p className="text-xs text-gray-500 font-medium">
                     Sisa Hasil Usaha Koperasi Anggota
                   </p>
                 </div>
@@ -5142,6 +5850,131 @@ export default function CommunityDetailPage() {
                   Tutup Detail SHU
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* MODAL AJUKAN PINJAMAN PERMODALAN (PENDANAAN) */}
+        {loanModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-gray-100 relative text-gray-800"
+            >
+              <button
+                type="button"
+                onClick={() => setLoanModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#2DB24A] flex items-center justify-center shrink-0">
+                  <Landmark className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-sora text-base font-extrabold text-gray-900">
+                    Ajukan Pinjaman Permodalan
+                  </h3>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Fasilitas modal kerja &amp; pengadaan alat produksi anggota Koperasi
+                  </p>
+                </div>
+              </div>
+
+              {/* Personal Savings Requirement Validation Banner */}
+              {(() => {
+                const userSavings = communitySavingsSummary?.memberBalances?.[user?.id]?.total || 0;
+                const hasSavings = userSavings > 0;
+                
+                return (
+                  <form onSubmit={handleLoanSubmit} className="space-y-4 text-xs">
+                    <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-1">
+                      <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase">
+                        <span>Saldo Simpanan Anda saat ini:</span>
+                        <span className={hasSavings ? 'text-[#0F5132]' : 'text-red-600'}>
+                          Rp {Number(userSavings).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      {!hasSavings && (
+                        <div className="p-2.5 bg-red-50 border border-red-200 text-red-800 rounded-lg text-[10px] font-medium leading-relaxed mt-2 flex items-start gap-2">
+                          <Info className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                          <span>Anda harus memiliki saldo simpanan aktif di koperasi ini sebelum dapat mengajukan pinjaman permodalan. Silakan setor simpanan terlebih dahulu.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Pilih Rencana Plafon Pinjaman *</label>
+                      <select
+                        required
+                        className="w-full border rounded-xl px-3 py-2.5 text-xs font-semibold text-gray-900 border-gray-300 focus:ring-2 focus:ring-[#2DB24A] outline-none"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setLoanAmount(val);
+                        }}
+                      >
+                        <option value="">-- Pilih Plafon / Jenis --</option>
+                        <option value="25000000">Pinjaman Modal Kerja Pembelian Bahan Baku (Maks. Rp 25.000.000)</option>
+                        <option value="50000000">Pinjaman Pengadaan Mesin &amp; Alat Produksi (Maks. Rp 50.000.000)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Nominal yang Diajukan (Rp) *</label>
+                      <input
+                        type="number"
+                        required
+                        min="100000"
+                        value={loanAmount}
+                        onChange={e => setLoanAmount(e.target.value)}
+                        className="w-full border rounded-xl px-3 py-2.5 text-sm font-mono font-black text-gray-900 border-gray-300 focus:ring-2 focus:ring-[#2DB24A] outline-none"
+                        placeholder="Contoh: 15000000"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-700 mb-1">Rencana Penggunaan &amp; Keperluan Pinjaman *</label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={loanPurpose}
+                        onChange={e => setLoanPurpose(e.target.value)}
+                        className="w-full border rounded-xl px-3 py-2.5 text-xs font-medium text-gray-900 border-gray-300 focus:ring-2 focus:ring-[#2DB24A] outline-none resize-none"
+                        placeholder="Tuliskan detail rencana penggunaan dana permodalan..."
+                      />
+                    </div>
+
+                    {loanError && (
+                      <p className="text-[10px] text-red-600 font-bold text-center">{loanError}</p>
+                    )}
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => setLoanModalOpen(false)}
+                        className="px-4 py-2.5 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={actionPending || !hasSavings}
+                        className={`px-5 py-2.5 font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-2 ${
+                          !hasSavings
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-[#2DB24A] hover:bg-[#0F5132] text-white cursor-pointer'
+                        }`}
+                      >
+                        {actionPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Kirim Pengajuan'}
+                      </button>
+                    </div>
+                  </form>
+                );
+              })()}
             </motion.div>
           </div>
         )}
@@ -5295,6 +6128,234 @@ export default function CommunityDetailPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* MODAL CRUD PENGUMUMAN */}
+      {isAnnouncementModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full mx-4 shadow-xl space-y-4 animate-scaleUp text-left">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+              <h3 className="text-base font-bold text-gray-800 font-sora">
+                {editingAnnouncement ? 'Edit Pengumuman' : 'Tambah Pengumuman Baru'}
+              </h3>
+              <button onClick={() => setIsAnnouncementModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitAnnouncement} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700">Judul Pengumuman</label>
+                <input
+                  type="text"
+                  value={annTitle}
+                  onChange={(e) => setAnnTitle(e.target.value)}
+                  placeholder="Masukkan judul pengumuman..."
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700">Isi Pengumuman</label>
+                <textarea
+                  value={annContent}
+                  onChange={(e) => setAnnContent(e.target.value)}
+                  placeholder="Tuliskan isi pengumuman secara rinci..."
+                  rows={5}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none resize-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Tanggal Publikasi</label>
+                  <input
+                    type="date"
+                    value={annPublishDate}
+                    onChange={(e) => setAnnPublishDate(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Status</label>
+                  <select
+                    value={annStatus}
+                    onChange={(e: any) => setAnnStatus(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none bg-white"
+                  >
+                    <option value="PUBLISHED">Publikasikan Langsung</option>
+                    <option value="DRAFT">Simpan Sebagai Draft</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="annIsPinned"
+                  checked={annIsPinned}
+                  onChange={(e) => setAnnIsPinned(e.target.checked)}
+                  className="w-4 h-4 text-[#2DB24A] border-gray-300 rounded focus:ring-[#2DB24A] cursor-pointer"
+                />
+                <label htmlFor="annIsPinned" className="text-xs font-bold text-gray-700 cursor-pointer select-none">
+                  Tandai sebagai Penting / Terpaku (Pinned di atas list)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAnnouncementModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingAnnouncement}
+                  className="px-5 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isSavingAnnouncement ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingAnnouncement ? 'Simpan Perubahan' : 'Terbitkan Pengumuman')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CRUD LAPORAN */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full mx-4 shadow-xl space-y-4 animate-scaleUp text-left">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+              <h3 className="text-base font-bold text-gray-800 font-sora">
+                {editingReport ? 'Edit Laporan' : 'Tambah Laporan Baru'}
+              </h3>
+              <button onClick={() => setIsReportModalOpen(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700">Judul Laporan</label>
+                <input
+                  type="text"
+                  value={repTitle}
+                  onChange={(e) => setRepTitle(e.target.value)}
+                  placeholder="Masukkan judul laporan (misal: Laporan Keuangan Audited 2025)..."
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Jenis Laporan</label>
+                  <select
+                    value={repType}
+                    onChange={(e) => setRepType(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none bg-white"
+                  >
+                    <option value="Keuangan">Laporan Keuangan</option>
+                    <option value="Neraca">Neraca Saldo / Rugi Laba</option>
+                    <option value="RAT">Risalah RAT</option>
+                    <option value="Lainnya">Lain-lain</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Tahun Buku</label>
+                  <input
+                    type="number"
+                    value={repYear}
+                    onChange={(e) => setRepYear(Number(e.target.value))}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Tanggal Publikasi</label>
+                  <input
+                    type="date"
+                    value={repPublishDate}
+                    onChange={(e) => setRepPublishDate(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-700">Status</label>
+                  <select
+                    value={repStatus}
+                    onChange={(e: any) => setRepStatus(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-xs focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] outline-none bg-white"
+                  >
+                    <option value="PUBLISHED">Publikasikan Langsung</option>
+                    <option value="DRAFT">Simpan Sebagai Draft</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-700">File Laporan (PDF atau Excel)</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={repFileName || repFileUrl}
+                    readOnly
+                    placeholder="Pilih file dokumen..."
+                    className="flex-1 px-4 py-2 border border-gray-200 bg-gray-50 rounded-xl text-xs outline-none"
+                  />
+                  <label className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1">
+                    <Upload className="w-3.5 h-3.5" />
+                    Unggah File
+                    <input
+                      type="file"
+                      accept=".pdf,.xlsx,.xls"
+                      onChange={handleReportFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {isUploadingReportFile && (
+                  <p className="text-[10px] text-green-600 font-bold flex items-center gap-1 mt-1 animate-pulse">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengunggah berkas ke storage...
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingReport || isUploadingReportFile || !repFileUrl}
+                  className={`px-5 py-2 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 ${
+                    isSavingReport || isUploadingReportFile || !repFileUrl
+                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                      : 'bg-[#2DB24A] hover:bg-[#0F5132] cursor-pointer'
+                  }`}
+                >
+                  {isSavingReport ? <Loader2 className="w-4 h-4 animate-spin" /> : (editingReport ? 'Simpan Laporan' : 'Tambahkan Laporan')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   )

@@ -6,12 +6,17 @@ import { revalidatePath } from 'next/cache'
 
 export async function recordSavingsTransactionAction(formData: FormData) {
   const currentUser = await getCurrentUser()
-  if (!currentUser || (currentUser.role !== 'ADMIN' && !(currentUser as any).isSuperAdmin)) {
-    return { error: 'Anda tidak memiliki hak akses untuk mencatat transaksi simpanan.' }
+  if (!currentUser) {
+    return { error: 'Anda harus masuk terlebih dahulu.' }
+  }
+
+  const userId = formData.get('userId') as string
+  const isAdmin = currentUser.role === 'ADMIN' || !!(currentUser as any).isSuperAdmin
+  if (!isAdmin && userId !== currentUser.id) {
+    return { error: 'Anda tidak memiliki hak akses untuk mencatat transaksi simpanan anggota lain.' }
   }
 
   const communityId = formData.get('communityId') as string
-  const userId = formData.get('userId') as string
   const type = (formData.get('type') as string) || 'WAJIB' // POKOK, WAJIB, SUKARELA
   const transactionType = (formData.get('transactionType') as string) || 'SETOR' // SETOR, TARIK
   const amount = Number(formData.get('amount') || 0)
@@ -52,8 +57,8 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
 
   try {
     const transactions = await DataStore.getSavingsTransactions(communityId)
-    const allUsers: any[] = typeof (DataStore as any).getUsers === 'function' ? await (DataStore as any).getUsers() : []
-    const communityMembers = allUsers.filter((u: any) => u.indukCommunityId === communityId)
+    const memberships = await DataStore.getIndukCommunityMembers(communityId)
+    const communityMembers = (memberships || []).map((m: any) => m.user).filter(Boolean)
 
     let totalPokok = 0
     let totalWajib = 0
@@ -90,6 +95,59 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
 
     const totalSavingsCommunity = totalPokok + totalWajib + totalSukarela
 
+    // Fetch products to resolve which ones belong to merchants of this community
+    const allProducts: any[] = typeof (DataStore as any).getProducts === 'function' ? await (DataStore as any).getProducts() : []
+    const productMerchantMap = new Map<string, string | null>()
+    for (const p of allProducts) {
+      productMerchantMap.set(p.id, p.merchant?.indukCommunityId || p.merchantId || null)
+    }
+
+    // Fetch and aggregate completed order transaction volumes for Jasa Usaha
+    const orders: any[] = typeof (DataStore as any).getAllOrders === 'function' ? await (DataStore as any).getAllOrders() : []
+    const currentYear = new Date().getFullYear()
+    const yearStartDate = new Date(currentYear, 0, 1)
+    const yearEndDate = new Date(currentYear, 11, 31, 23, 59, 59)
+
+    const completedOrdersInYear = orders.filter((o: any) => {
+      const d = new Date(o.createdAt || o.date)
+      if (!(d >= yearStartDate && d <= yearEndDate && o.status === 'COMPLETED')) {
+        return false
+      }
+
+      // Must be connected to a member of this community as buyer
+      const isBuyerInCommunity = communityMembers.some((m: any) => m.id === o.buyerId)
+      if (!isBuyerInCommunity) return false
+
+      // Must contain at least one item from this community's merchants
+      if (!o.items || o.items.length === 0) return false
+      const hasCommunityProduct = o.items.some((item: any) => {
+        const merchantCommId = productMerchantMap.get(item.productId)
+        return merchantCommId === communityId
+      })
+
+      return hasCommunityProduct
+    })
+
+    let totalTransaksiCommunity = 0
+    const memberTransaksi: Record<string, number> = {}
+
+    for (const member of communityMembers) {
+      const userOrders = completedOrdersInYear.filter((o: any) => o.buyerId === member.id)
+      const userTotalTx = userOrders.reduce((sum: number, o: any) => {
+        // Sum only items belonging to merchants of this community
+        const orderCommunityTotal = o.items.reduce((itemSum: number, item: any) => {
+          const merchantCommId = productMerchantMap.get(item.productId)
+          if (merchantCommId === communityId) {
+            return itemSum + (Number(item.price || 0) * Number(item.quantity || 0))
+          }
+          return itemSum
+        }, 0)
+        return sum + orderCommunityTotal
+      }, 0)
+      memberTransaksi[member.id] = userTotalTx
+      totalTransaksiCommunity += userTotalTx
+    }
+
     return {
       success: true,
       summary: {
@@ -98,7 +156,9 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
         totalWajib,
         totalSukarela,
         memberBalances,
-        transactions
+        transactions,
+        totalTransaksiCommunity,
+        memberTransaksi
       }
     }
   } catch (error: any) {
