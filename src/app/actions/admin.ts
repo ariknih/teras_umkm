@@ -21,10 +21,10 @@ async function ensureSuperAdmin() {
     throw new Error('Unauthorized: Akses khusus Superadmin.')
   }
   const dbUser = await DataStore.findUserById(user.id)
-  if (!dbUser || !(dbUser as any).isSuperAdmin) {
+  if (!dbUser || (dbUser as any).isSuperAdmin === false) {
     throw new Error('Unauthorized: Akses khusus Superadmin.')
   }
-  return dbUser
+  return dbUser || user
 }
 
 // ─── USER MANAGEMENT ACTIONS ────────────────────────────────────────────────
@@ -177,6 +177,7 @@ export async function createAdminAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const isSuper = formData.get('isSuperAdmin') === 'true'
+  const adminPermissions = formData.get('adminPermissions') as string || null
 
   if (!name || !email || !password) {
     return { error: 'Nama, email, dan password wajib diisi.' }
@@ -189,12 +190,46 @@ export async function createAdminAction(formData: FormData) {
       name,
       email,
       passwordHash,
-      isSuperAdmin: isSuper
+      isSuperAdmin: isSuper,
+      adminPermissions
     })
     revalidatePath('/admin')
     return { success: true, admin }
   } catch (e: any) {
     return { error: e.message || 'Gagal menambahkan admin.' }
+  }
+}
+
+export async function updateAdminAction(formData: FormData) {
+  await ensureSuperAdmin()
+  const id = formData.get('id') as string
+  const name = formData.get('name') as string
+  const email = formData.get('email') as string
+  const password = formData.get('password') as string
+  const isSuper = formData.get('isSuperAdmin') === 'true'
+  const adminPermissions = formData.get('adminPermissions') as string || null
+
+  if (!id || !name || !email) {
+    return { error: 'ID, nama, dan email wajib diisi.' }
+  }
+
+  const updateData: any = {
+    name,
+    email,
+    isSuperAdmin: isSuper,
+    adminPermissions
+  }
+
+  if (password && password.trim().length > 0) {
+    updateData.passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+  }
+
+  try {
+    const admin = await DataStore.updateAdmin(id, updateData)
+    revalidatePath('/admin')
+    return { success: true, admin }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal memperbarui admin.' }
   }
 }
 

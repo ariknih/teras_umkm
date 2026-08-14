@@ -299,9 +299,8 @@ export async function updateCoinSupplyAction(totalSupply: number) {
   if (!user || user.role !== 'ADMIN') {
     return { error: 'Unauthorized.' }
   }
-  // Check super admin
   const dbUser = await DataStore.findUserById(user.id)
-  if (!dbUser || !(dbUser as any).isSuperAdmin) {
+  if (!dbUser || (dbUser as any).isSuperAdmin === false) {
     return { error: 'Hanya Super Admin yang bisa mengubah total supply.' }
   }
   try {
@@ -319,7 +318,7 @@ export async function distributeCoinFromSupplyAction(formData: FormData) {
     return { error: 'Unauthorized.' }
   }
   const dbUser = await DataStore.findUserById(user.id)
-  if (!dbUser || !(dbUser as any).isSuperAdmin) {
+  if (!dbUser || (dbUser as any).isSuperAdmin === false) {
     return { error: 'Hanya Super Admin yang bisa mendistribusikan coin dari supply.' }
   }
 

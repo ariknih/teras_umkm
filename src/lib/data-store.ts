@@ -8225,10 +8225,14 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.user.findMany({
+        const admins = await db.user.findMany({
           where: { role: 'ADMIN' },
-          select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, createdAt: true }
+          select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, adminPermissions: true, createdAt: true }
         })
+        return admins.map(a => ({
+          ...a,
+          isSuperAdmin: a.isSuperAdmin ?? true
+        }))
       } catch (_) {}
     }
     return globalMockUsers.filter(u => u.role === 'ADMIN').map(u => ({
@@ -8236,12 +8240,13 @@ export const DataStore = {
       name: u.name,
       email: u.email,
       role: u.role,
-      isSuperAdmin: (u as any).isSuperAdmin || false,
+      isSuperAdmin: (u as any).isSuperAdmin ?? true,
+      adminPermissions: (u as any).adminPermissions || null,
       createdAt: u.createdAt
     }))
   },
 
-  async createAdmin(data: { name: string, email: string, passwordHash: string, isSuperAdmin?: boolean }) {
+  async createAdmin(data: { name: string, email: string, passwordHash: string, isSuperAdmin?: boolean, adminPermissions?: string | null }) {
     syncMockDb()
     if (await isDbConnected()) {
       try {
@@ -8251,7 +8256,8 @@ export const DataStore = {
             email: data.email,
             passwordHash: data.passwordHash,
             role: 'ADMIN',
-            isSuperAdmin: data.isSuperAdmin || false,
+            isSuperAdmin: data.isSuperAdmin ?? false,
+            adminPermissions: data.adminPermissions || null,
             membershipLevel: 'Staff',
             membershipAccess: 'Gold'
           }
@@ -8273,7 +8279,8 @@ export const DataStore = {
       name: data.name,
       passwordHash: data.passwordHash,
       role: 'ADMIN' as const,
-      isSuperAdmin: data.isSuperAdmin || false,
+      isSuperAdmin: data.isSuperAdmin ?? false,
+      adminPermissions: data.adminPermissions || null,
       level: 1, xp: 0,
       landingPageTemplate: null, landingPageConfig: null, landingPageSetup: false,
       parentAffiliateId: null,
@@ -8285,6 +8292,37 @@ export const DataStore = {
     globalMockUsers.push(newAdmin)
     saveMockDb()
     return newAdmin
+  },
+
+  async updateAdmin(id: string, data: { name?: string; email?: string; isSuperAdmin?: boolean; adminPermissions?: string | null; passwordHash?: string }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const updateData: any = {}
+        if (data.name !== undefined) updateData.name = data.name
+        if (data.email !== undefined) updateData.email = data.email
+        if (data.isSuperAdmin !== undefined) updateData.isSuperAdmin = data.isSuperAdmin
+        if (data.adminPermissions !== undefined) updateData.adminPermissions = data.adminPermissions
+        if (data.passwordHash) updateData.passwordHash = data.passwordHash
+
+        return await db.user.update({
+          where: { id },
+          data: updateData
+        })
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal memperbarui admin.')
+      }
+    }
+
+    const admin = globalMockUsers.find(u => u.id === id)
+    if (!admin) throw new Error('Admin tidak ditemukan.')
+    if (data.name !== undefined) admin.name = data.name
+    if (data.email !== undefined) admin.email = data.email
+    if (data.isSuperAdmin !== undefined) (admin as any).isSuperAdmin = data.isSuperAdmin
+    if (data.adminPermissions !== undefined) (admin as any).adminPermissions = data.adminPermissions
+    if (data.passwordHash) admin.passwordHash = data.passwordHash
+    saveMockDb()
+    return admin
   },
 
   async deleteAdmin(id: string) {

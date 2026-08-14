@@ -28,6 +28,7 @@ import {
   generateDummyAffiliatesAction,
   getAdminsAction,
   createAdminAction,
+  updateAdminAction,
   deleteAdminAction,
   getInvoiceMembershipsAction,
   verifyInvoiceMembershipAction,
@@ -67,20 +68,21 @@ import {
 import PaymentMethodsTab from './components/PaymentMethodsTab'
 
 const ALL_ADMIN_PERMISSIONS = [
-  { key: 'overview', label: 'Dashboard Overview' },
-  { key: 'users', label: 'Kelola User & Role' },
-  { key: 'community', label: 'Komunitas Induk & Member' },
-  { key: 'approvals', label: 'Persetujuan Merchant' },
-  { key: 'withdrawals', label: 'Pencairan Dana (Withdraw)' },
-  { key: 'products', label: 'Katalog Produk & Jasa' },
-  { key: 'academy', label: 'LMS Kelola Materi' },
-  { key: 'transactions', label: 'Lacak Transaksi' },
-  { key: 'certificates', label: 'Sertifikat Level Up' },
-  { key: 'affiliates', label: 'Monitor Affiliate' },
-  { key: 'coins', label: 'Kelola Koin & Voucher' },
-  { key: 'payment_methods', label: 'Kelola Metode Pembayaran' },
-  { key: 'audit_logs', label: 'Audit Log System' },
-  { key: 'landing_banners', label: 'CRUD Banner Landing Page' }
+  { key: 'overview', label: 'Dashboard Overview', desc: 'Ringkasan performa dan grafik bisnis platform' },
+  { key: 'users', label: 'Kelola User (User Management)', desc: 'Lihat daftar user, edit data, alamat IP, telepon' },
+  { key: 'admins', label: 'Admin Management & RBAC', desc: 'Kelola staf admin dan konfigurasi hak akses modul' },
+  { key: 'approvals', label: 'Merchant Approval', desc: 'Verifikasi & persetujuan merchant baru' },
+  { key: 'landing_banners', label: 'Kelola Banner Landing Page', desc: 'Upload, edit, dan atur banner promosi depan' },
+  { key: 'withdrawals', label: 'Withdrawal Dana', desc: 'Proses dan persetujuan pencairan saldo merchant' },
+  { key: 'products', label: 'Product Catalog', desc: 'Moderasi produk fisik & digital di marketplace' },
+  { key: 'academy', label: 'LMS Management', desc: 'Kelola materi kursus & edukasi UMKM' },
+  { key: 'payment_methods', label: 'Metode Pembayaran', desc: 'Atur payment gateway aktif' },
+  { key: 'audit_logs', label: 'Audit Log System', desc: 'Rekaman aktivitas admin dan member' },
+  { key: 'community', label: 'Community & Members', desc: 'Kelola komunitas dan anggota koperasi' },
+  { key: 'transactions', label: 'Transaction Tracking', desc: 'Lacak riwayat transaksi & order platform' },
+  { key: 'certificates', label: 'Certification', desc: 'Verifikasi sertifikat legalitas UMKM' },
+  { key: 'affiliates', label: 'Monitor Affiliate', desc: 'Pantau jaringan afiliasi & komisi multi-tier' },
+  { key: 'coins', label: 'Koin & Voucher', desc: 'Kelola supply coin, distribusi koin, voucher' }
 ]
 
 interface AdminDashboardClientProps {
@@ -256,6 +258,7 @@ export default function AdminDashboardClient({
   }
 
   // Admin CRUD & RBAC Permission Form State
+  const [editingAdmin, setEditingAdmin] = useState<any | null>(null)
   const [adminName, setAdminName] = useState('')
   const [adminEmail, setAdminEmail] = useState('')
   const [adminPassword, setAdminPassword] = useState('')
@@ -643,33 +646,49 @@ export default function AdminDashboardClient({
   }
 
   // ─── ADMIN & COIN & LEVELING HANDLERS ──────────────────────────────────────
-  const handleCreateAdminSubmit = async (e: React.FormEvent) => {
+  const handleCreateOrUpdateAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!adminName || !adminEmail || !adminPassword) {
-      alert('Semua kolom wajib diisi.')
+    if (!adminName || !adminEmail) {
+      alert('Nama dan email wajib diisi.')
+      return
+    }
+    if (!editingAdmin && !adminPassword) {
+      alert('Kata sandi wajib diisi untuk admin baru.')
       return
     }
     setActionError(null)
     setActionSuccess(null)
     const formData = new FormData()
+    if (editingAdmin) {
+      formData.append('id', editingAdmin.id)
+    }
     formData.append('name', adminName)
     formData.append('email', adminEmail)
-    formData.append('password', adminPassword)
+    if (adminPassword) {
+      formData.append('password', adminPassword)
+    }
     formData.append('isSuperAdmin', String(adminIsSuper))
+    formData.append('adminPermissions', JSON.stringify(selectedAdminPermissions))
 
     startTransition(async () => {
-      const res = await createAdminAction(formData)
+      const res = editingAdmin ? await updateAdminAction(formData) : await createAdminAction(formData)
       if (res.success) {
-        setActionSuccess('Admin baru berhasil ditambahkan.')
-        setAdmins(prev => [...prev, res.admin])
+        setActionSuccess(editingAdmin ? 'Data admin dan hak akses berhasil diperbarui.' : 'Admin baru berhasil ditambahkan.')
+        if (editingAdmin) {
+          setAdmins(prev => prev.map(a => a.id === editingAdmin.id ? { ...a, ...res.admin, isSuperAdmin: adminIsSuper, adminPermissions: JSON.stringify(selectedAdminPermissions) } : a))
+        } else {
+          setAdmins(prev => [...prev, res.admin])
+        }
         setIsAdminModalOpen(false)
+        setEditingAdmin(null)
         setAdminName('')
         setAdminEmail('')
         setAdminPassword('')
         setAdminIsSuper(false)
+        setSelectedAdminPermissions(ALL_ADMIN_PERMISSIONS.map(p => p.key))
         router.refresh()
       } else {
-        setActionError(res.error || 'Gagal menambahkan admin.')
+        setActionError(res.error || 'Gagal menyimpan data admin.')
       }
     })
   }
@@ -1296,15 +1315,25 @@ export default function AdminDashboardClient({
               }
             ].map((group, groupIdx) => {
               const allowedItems = group.items.filter(item => {
-                if (currentUser.isSuperAdmin || currentUser.role === 'ADMIN' || !currentUser.adminPermissions) return true
+                // Super Admin has access to all items
+                if (currentUser.isSuperAdmin === true) return true
+                if (!currentUser.adminPermissions && currentUser.isSuperAdmin !== false) return true
+
                 let perms: string[] = []
                 try {
-                  perms = JSON.parse(currentUser.adminPermissions)
-                  if (!Array.isArray(perms) || perms.length === 0) return true
+                  perms = typeof currentUser.adminPermissions === 'string'
+                    ? JSON.parse(currentUser.adminPermissions)
+                    : (currentUser.adminPermissions || [])
                 } catch (_) {
-                  return true
+                  perms = []
                 }
-                return perms.includes(item.id)
+
+                // If Admin Staff (isSuperAdmin === false), strictly check perms
+                if (currentUser.isSuperAdmin === false) {
+                  return Array.isArray(perms) && perms.includes(item.id)
+                }
+
+                return true
               })
 
               if (allowedItems.length === 0) return null
@@ -3415,17 +3444,19 @@ export default function AdminDashboardClient({
           {activeTab === 'admins' && (
             <div className="space-y-6 animate-in fade-in duration-250">
               <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                   <div>
-                    <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider">Kelola Akun Administrator biasa</h3>
-                    <p className="text-xs text-slate-500 mt-1">Daftar staf administrator pengelola sistem website Saloka.</p>
+                    <h3 className="font-sora text-sm font-bold text-slate-800 uppercase tracking-wider">Kelola Akun Administrator & Hak Akses (RBAC)</h3>
+                    <p className="text-xs text-slate-500 mt-1">Atur hak akses staf administrator. Menu sidebar hanya akan muncul jika staf memiliki izin pada modul terkait.</p>
                   </div>
                   <button
                     onClick={() => {
+                      setEditingAdmin(null)
                       setAdminName('')
                       setAdminEmail('')
                       setAdminPassword('')
                       setAdminIsSuper(false)
+                      setSelectedAdminPermissions(ALL_ADMIN_PERMISSIONS.map(p => p.key))
                       setIsAdminModalOpen(true)
                     }}
                     className="px-4 py-2 bg-[#0F5132] hover:bg-[#0a3a24] text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow flex items-center gap-1.5 cursor-pointer border-none outline-none"
@@ -3438,9 +3469,10 @@ export default function AdminDashboardClient({
                   <table className="w-full text-left text-xs whitespace-nowrap">
                     <thead>
                       <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
-                        <th className="px-4 py-3">Nama</th>
+                        <th className="px-4 py-3">Nama Admin</th>
                         <th className="px-4 py-3">Email</th>
                         <th className="px-4 py-3">Tipe Otoritas</th>
+                        <th className="px-4 py-3">Modul yang Dapat Diakses</th>
                         <th className="px-4 py-3">Tanggal Dibuat</th>
                         <th className="px-4 py-3 text-right">Aksi</th>
                       </tr>
@@ -3448,39 +3480,83 @@ export default function AdminDashboardClient({
                     <tbody className="divide-y divide-slate-100">
                       {admins.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-6 text-slate-400 italic">
-                            Belum ada administrator biasa terdaftar.
+                          <td colSpan={6} className="text-center py-6 text-slate-400 italic">
+                            Belum ada administrator terdaftar.
                           </td>
                         </tr>
                       ) : (
-                        admins.map((adm: any) => (
-                          <tr key={adm.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-4 py-3 font-bold text-slate-800">{adm.name}</td>
-                            <td className="px-4 py-3 font-mono text-slate-650">{adm.email}</td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
-                                adm.isSuperAdmin ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-slate-50 text-slate-700 border-slate-200'
-                              }`}>
-                                {adm.isSuperAdmin ? 'Superadmin' : 'Admin Staff'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-slate-500">
-                              {new Date(adm.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {adm.id === currentUser.id ? (
-                                <span className="text-[10px] text-slate-400 italic">Akun Anda</span>
-                              ) : (
-                                <button
-                                  onClick={() => handleDeleteAdmin(adm.id)}
-                                  className="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
-                                >
-                                  Hapus
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))
+                        admins.map((adm: any) => {
+                          let perms: string[] = []
+                          try {
+                            perms = adm.adminPermissions ? JSON.parse(adm.adminPermissions) : ALL_ADMIN_PERMISSIONS.map(p => p.key)
+                          } catch (_) {
+                            perms = ALL_ADMIN_PERMISSIONS.map(p => p.key)
+                          }
+                          const isSuper = !!adm.isSuperAdmin
+
+                          return (
+                            <tr key={adm.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-4 py-3 font-bold text-slate-800">{adm.name}</td>
+                              <td className="px-4 py-3 font-mono text-slate-600">{adm.email}</td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase border tracking-wider ${
+                                  isSuper ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                }`}>
+                                  {isSuper ? '⭐ Superadmin' : '👤 Admin Staff'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 max-w-xs">
+                                {isSuper ? (
+                                  <span className="text-[11px] font-semibold text-purple-700">Semua Fitur & Modul (Full Access)</span>
+                                ) : (
+                                  <span className="text-[11px] text-slate-600 truncate block">
+                                    {Array.isArray(perms) && perms.length > 0 
+                                      ? `${perms.length} Modul: ${perms.slice(0, 3).join(', ')}${perms.length > 3 ? ` +${perms.length - 3} lainnya` : ''}`
+                                      : 'Tidak ada izin modul'}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-slate-500">
+                                {new Date(adm.createdAt || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingAdmin(adm)
+                                      setAdminName(adm.name || '')
+                                      setAdminEmail(adm.email || '')
+                                      setAdminPassword('')
+                                      setAdminIsSuper(isSuper)
+                                      let curPerms: string[] = []
+                                      try {
+                                        curPerms = adm.adminPermissions ? JSON.parse(adm.adminPermissions) : ALL_ADMIN_PERMISSIONS.map(p => p.key)
+                                      } catch (_) {
+                                        curPerms = ALL_ADMIN_PERMISSIONS.map(p => p.key)
+                                      }
+                                      setSelectedAdminPermissions(Array.isArray(curPerms) && curPerms.length > 0 ? curPerms : ALL_ADMIN_PERMISSIONS.map(p => p.key))
+                                      setIsAdminModalOpen(true)
+                                    }}
+                                    className="px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] border border-[#A5D6A7] rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                                  >
+                                    ⚙️ Edit Hak Akses
+                                  </button>
+
+                                  {adm.id === currentUser.id ? (
+                                    <span className="text-[10px] text-slate-400 italic px-2">Akun Anda</span>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleDeleteAdmin(adm.id)}
+                                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                                    >
+                                      Hapus
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })
                       )}
                     </tbody>
                   </table>
@@ -4377,69 +4453,167 @@ export default function AdminDashboardClient({
                 </div>
               )}
 
-          {/* ─── ADD ADMIN MODAL ────────────────────────────────────── */}
+          {/* ─── ADD / EDIT ADMIN MODAL ────────────────────────────── */}
           {isAdminModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                  <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">Tambah Administrator Baru</h3>
-                  <button onClick={() => setIsAdminModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-2xl w-full p-6 sm:p-7 space-y-5 shadow-2xl animate-in zoom-in-95 duration-200 my-8 max-h-[90vh] flex flex-col">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3 shrink-0">
+                  <div>
+                    <h3 className="font-sora text-sm sm:text-base font-bold text-[#0F5132] uppercase tracking-wider">
+                      {editingAdmin ? '⚙️ Edit Akun & Hak Akses Admin' : '+ Tambah Administrator Baru'}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {editingAdmin ? `Mengatur hak akses dan kredensial untuk ${editingAdmin.name}` : 'Buat akun staf admin baru dan tentukan izin modulnya.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsAdminModalOpen(false)
+                      setEditingAdmin(null)
+                    }}
+                    className="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer p-1"
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                <form onSubmit={handleCreateAdminSubmit} className="space-y-4 text-xs">
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      required
-                      value={adminName}
-                      onChange={e => setAdminName(e.target.value)}
-                      placeholder="e.g. Budi Santoso"
-                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
-                    />
+                <form onSubmit={handleCreateOrUpdateAdminSubmit} className="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nama Lengkap</label>
+                      <input
+                        type="text"
+                        required
+                        value={adminName}
+                        onChange={e => setAdminName(e.target.value)}
+                        placeholder="e.g. Budi Santoso"
+                        className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Alamat Email</label>
+                      <input
+                        type="email"
+                        required
+                        value={adminEmail}
+                        onChange={e => setAdminEmail(e.target.value)}
+                        placeholder="e.g. budi.admin@saloka.id"
+                        className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Alamat Email</label>
-                    <input
-                      type="email"
-                      required
-                      value={adminEmail}
-                      onChange={e => setAdminEmail(e.target.value)}
-                      placeholder="e.g. budi.admin@saloka.id"
-                      className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Kata Sandi (Password)</label>
+                    <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">
+                      Kata Sandi (Password) {editingAdmin && <span className="text-slate-400 font-normal lowercase">(kosongkan jika tidak ingin mengubah)</span>}
+                    </label>
                     <input
                       type="password"
-                      required
+                      required={!editingAdmin}
                       value={adminPassword}
                       onChange={e => setAdminPassword(e.target.value)}
-                      placeholder="Minimal 6 karakter"
+                      placeholder={editingAdmin ? "Masukkan sandi baru jika ingin diubah" : "Minimal 6 karakter"}
                       className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none focus:border-[#0F5132]"
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 py-2">
-                    <input
-                      type="checkbox"
-                      id="isSuper"
-                      checked={adminIsSuper}
-                      onChange={e => setAdminIsSuper(e.target.checked)}
-                      className="rounded text-[#0F5132] focus:ring-[#0F5132] cursor-pointer"
-                    />
-                    <label htmlFor="isSuper" className="text-xs text-slate-700 font-semibold cursor-pointer">
-                      Jadikan Superadmin (Otoritas Penuh & Inject Koin)
-                    </label>
+                  {/* Super Admin Switcher */}
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="isSuperModal"
+                        checked={adminIsSuper}
+                        onChange={e => setAdminIsSuper(e.target.checked)}
+                        className="w-4 h-4 rounded text-[#0F5132] focus:ring-[#0F5132] cursor-pointer"
+                      />
+                      <label htmlFor="isSuperModal" className="text-xs text-slate-800 font-bold cursor-pointer flex items-center gap-1.5">
+                        <span>⭐ Jadikan Superadmin (Akses Penuh Semua Modul & Distribusi Koin)</span>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-500 pl-7">
+                      Superadmin otomatis memiliki akses ke semua 15 fitur dan dapat mengelola staf admin lainnya.
+                    </p>
                   </div>
 
-                  <div className="pt-4 flex gap-3">
+                  {/* Module Permission Checklist (RBAC) */}
+                  {!adminIsSuper ? (
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <label className="block text-xs font-extrabold text-slate-800">
+                            Hak Akses Modul Sidebar ({selectedAdminPermissions.length} dari {ALL_ADMIN_PERMISSIONS.length} modul aktif)
+                          </label>
+                          <p className="text-[10px] text-slate-500">
+                            Fitur yang tidak dicentang akan otomatis disembunyikan dari menu sidebar admin ini.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAdminPermissions(ALL_ADMIN_PERMISSIONS.map(p => p.key))}
+                            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-[#006E24] text-[10px] font-bold rounded cursor-pointer border border-emerald-200"
+                          >
+                            Pilih Semua
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAdminPermissions([])}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold rounded cursor-pointer border border-slate-200"
+                          >
+                            Hapus Semua
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-60 overflow-y-auto p-1 border border-slate-200 rounded-xl bg-slate-50/50">
+                        {ALL_ADMIN_PERMISSIONS.map((perm) => {
+                          const isChecked = selectedAdminPermissions.includes(perm.key)
+                          return (
+                            <label
+                              key={perm.key}
+                              className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                                isChecked
+                                  ? 'bg-emerald-50/70 border-emerald-300 text-slate-900 shadow-xs'
+                                  : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100/60'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedAdminPermissions(prev => [...prev, perm.key])
+                                  } else {
+                                    setSelectedAdminPermissions(prev => prev.filter(k => k !== perm.key))
+                                  }
+                                }}
+                                className="mt-0.5 w-4 h-4 rounded text-[#006E24] focus:ring-[#006E24] cursor-pointer"
+                              />
+                              <div className="space-y-0.5">
+                                <span className="text-[11px] font-bold block leading-snug">{perm.label}</span>
+                                <span className="text-[9px] text-slate-500 block leading-tight">{perm.desc}</span>
+                              </div>
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-emerald-800 text-xs">
+                      <span className="text-base">🛡️</span>
+                      <span className="font-semibold">Akun Superadmin memiliki akses otomatis ke seluruh 15 fitur dan modul sidebar tanpa batasan.</span>
+                    </div>
+                  )}
+
+                  <div className="pt-4 flex gap-3 shrink-0 border-t border-slate-100">
                     <button
                       type="button"
-                      onClick={() => setIsAdminModalOpen(false)}
+                      onClick={() => {
+                        setIsAdminModalOpen(false)
+                        setEditingAdmin(null)
+                      }}
                       className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       Batal
@@ -4447,9 +4621,9 @@ export default function AdminDashboardClient({
                     <button
                       type="submit"
                       disabled={isPending}
-                      className="flex-1 py-2.5 bg-[#0F5132] hover:bg-[#0a3a24] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                      className="flex-1 py-2.5 bg-[#006E24] hover:bg-[#084e1b] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
                     >
-                      {isPending ? 'Menyimpan...' : 'Tambah Staf'}
+                      {isPending ? 'Menyimpan...' : (editingAdmin ? 'Simpan Perubahan Hak Akses' : 'Tambah Administrator')}
                     </button>
                   </div>
                 </form>
