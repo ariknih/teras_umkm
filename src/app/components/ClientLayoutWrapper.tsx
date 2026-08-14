@@ -152,12 +152,6 @@ export default function ClientLayoutWrapper({
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
               SYSTEM STABLE
             </span>
-            <span className="flex items-center gap-1.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-              </svg>
-              Midtrans Secured
-            </span>
           </div>
         </div>
       </footer>
