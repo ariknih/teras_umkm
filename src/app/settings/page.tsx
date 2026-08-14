@@ -625,7 +625,7 @@ export default function SettingsPage() {
                 <div className="space-y-3">
                   {[
                     { icon: '👥', label: '+1 coin', desc: 'Setiap user baru yang daftar pakai link referral kamu' },
-                    { icon: '🤝', label: '+5 coin', desc: 'Setiap merchant yang berhasil kamu undang ke komunitas PERKUMPULAN' },
+                    { icon: '🤝', label: '+3 coin', desc: 'Setiap merchant yang berhasil kamu undang ke komunitas PERKUMPULAN' },
                     { icon: '💳', label: 'Saldo wallet', desc: 'Merchant koperasi mengundang merchant → dapat saldo wallet (bukan coin)' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-3">
