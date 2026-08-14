@@ -64,6 +64,11 @@ export async function topupCommunityCoin(formData: FormData) {
     return { error: 'Hanya Ketua Komunitas yang bisa top up coin.' }
   }
 
+  // Hanya koperasi yang bisa top up coin
+  if ((community as any).category !== 'KOPERASI') {
+    return { error: 'Hanya Koperasi yang bisa melakukan top up coin. Perkumpulan tidak dapat melakukan top up.' }
+  }
+
   const totalBiaya = jumlahCoin * 1500 // 1 coin = Rp 1.500
 
   try {
@@ -277,4 +282,74 @@ export async function getCoinAdminStats() {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') return null
   return await DataStore.getCoinAdminStats()
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Coin Supply Management (Super Admin only)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function getCoinSupplyConfigAction() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') return null
+  return await DataStore.getCoinSupplyConfig()
+}
+
+export async function updateCoinSupplyAction(totalSupply: number) {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    return { error: 'Unauthorized.' }
+  }
+  // Check super admin
+  const dbUser = await DataStore.findUserById(user.id)
+  if (!dbUser || !(dbUser as any).isSuperAdmin) {
+    return { error: 'Hanya Super Admin yang bisa mengubah total supply.' }
+  }
+  try {
+    await DataStore.updateCoinSupply(totalSupply, user.id)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengubah total supply.' }
+  }
+}
+
+export async function distributeCoinFromSupplyAction(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') {
+    return { error: 'Unauthorized.' }
+  }
+  const dbUser = await DataStore.findUserById(user.id)
+  if (!dbUser || !(dbUser as any).isSuperAdmin) {
+    return { error: 'Hanya Super Admin yang bisa mendistribusikan coin dari supply.' }
+  }
+
+  const targetId = formData.get('targetId') as string
+  const targetType = formData.get('targetType') as string
+  const amountStr = formData.get('amount') as string
+  const reason = formData.get('reason') as string
+
+  if (!targetId || !targetType || !amountStr || !reason) {
+    return { error: 'Semua kolom wajib diisi.' }
+  }
+
+  const amount = parseFloat(amountStr)
+  if (isNaN(amount) || amount <= 0) {
+    return { error: 'Jumlah coin tidak valid.' }
+  }
+
+  try {
+    await DataStore.distributeCoinFromSupply(targetId, targetType, amount, reason, user.id)
+    revalidatePath('/admin')
+    revalidatePath('/community')
+    revalidatePath('/wallet')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mendistribusikan coin.' }
+  }
+}
+
+export async function getCoinSupplyLogsAction() {
+  const user = await getCurrentUser()
+  if (!user || user.role !== 'ADMIN') return []
+  return await DataStore.getCoinSupplyLogs()
 }

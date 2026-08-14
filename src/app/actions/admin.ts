@@ -447,3 +447,54 @@ export async function updateAdminPermissionsAction(adminId: string, permissions:
     return { error: e.message || 'Gagal meng-update hak akses admin.' }
   }
 }
+
+// ─── ADMIN ACCOUNT UPDATE ───────────────────────────────────────────────────
+export async function updateAdminAccountAction(adminId: string, data: { name?: string; email?: string; password?: string }) {
+  await ensureSuperAdmin()
+  try {
+    const updateData: any = {}
+    if (data.name) updateData.name = data.name
+    if (data.email) updateData.email = data.email
+    if (data.password) updateData.passwordHash = crypto.createHash('sha256').update(data.password).digest('hex')
+    await DataStore.updateAdminAccount(adminId, updateData)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal update admin.' }
+  }
+}
+
+// ─── USER CRUD (Create / Delete) ──────────────────────────────────────────
+export async function createUserAction(formData: FormData) {
+  await ensureAdminPermission('users')
+  const name = formData.get('name') as string
+  const email = formData.get('email') as string
+  const password = formData.get('password') as string
+  const phone = formData.get('phone') as string || undefined
+  const role = formData.get('role') as string || 'CUSTOMER'
+
+  if (!name || !email || !password) {
+    return { error: 'Nama, email, dan password wajib diisi.' }
+  }
+
+  const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+
+  try {
+    const user = await DataStore.createUserAdmin({ name, email, passwordHash, phone, role })
+    revalidatePath('/admin')
+    return { success: true, user }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal membuat user.' }
+  }
+}
+
+export async function deleteUserAction(userId: string) {
+  await ensureAdminPermission('users')
+  try {
+    await DataStore.deleteUser(userId)
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menghapus user.' }
+  }
+}

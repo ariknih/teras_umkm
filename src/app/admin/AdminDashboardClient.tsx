@@ -42,14 +42,28 @@ import {
   updateUserIndukCommunityAction,
   updateAdminPermissionsAction,
   getGlobalKycSettingAction,
-  updateGlobalKycSettingAction
+  updateGlobalKycSettingAction,
+  updateAdminAccountAction,
+  createUserAction,
+  deleteUserAction
 } from '@/app/actions/admin'
 import { calculateAndSaveShuAction } from '@/app/actions/shu'
 import {
   createCoinVoucherAdmin,
   toggleCoinVoucherActive,
-  getCoinAdminStats
+  getCoinAdminStats,
+  getCoinSupplyConfigAction,
+  updateCoinSupplyAction,
+  distributeCoinFromSupplyAction,
+  getCoinSupplyLogsAction
 } from '@/app/actions/coin'
+import { getAuditLogsAction } from '@/app/actions/audit'
+import {
+  createBannerAction,
+  updateBannerAction,
+  deleteBannerAction,
+  toggleBannerActiveAction
+} from '@/app/actions/landing'
 import PaymentMethodsTab from './components/PaymentMethodsTab'
 
 const ALL_ADMIN_PERMISSIONS = [
@@ -65,7 +79,9 @@ const ALL_ADMIN_PERMISSIONS = [
   { key: 'affiliates', label: 'Monitor Affiliate' },
   { key: 'coins', label: 'Kelola Koin & Voucher' },
   { key: 'shu', label: 'Pengaturan SHU RAT Koperasi' },
-  { key: 'payment_methods', label: 'Kelola Metode Pembayaran' }
+  { key: 'payment_methods', label: 'Kelola Metode Pembayaran' },
+  { key: 'audit_logs', label: 'Audit Log System' },
+  { key: 'landing_banners', label: 'CRUD Banner Landing Page' }
 ]
 
 interface AdminDashboardClientProps {
@@ -83,9 +99,13 @@ interface AdminDashboardClientProps {
   initialCoinHolders: any[]
   initialLevelRequests: any[]
   initialCommunities?: any[]
+  initialCoinSupplyConfig?: any
+  initialCoinSupplyLogs?: any[]
+  initialAuditLogs?: any[]
+  initialLandingBanners?: any[]
 }
 
-type TabType = 'overview' | 'users' | 'admins' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins' | 'shu' | 'payment_methods'
+type TabType = 'overview' | 'users' | 'admins' | 'approvals' | 'withdrawals' | 'products' | 'academy' | 'community' | 'transactions' | 'certificates' | 'affiliates' | 'coins' | 'shu' | 'payment_methods' | 'audit_logs' | 'landing_banners'
 
 export default function AdminDashboardClient({
   currentUser,
@@ -101,7 +121,11 @@ export default function AdminDashboardClient({
   initialInvoices,
   initialCoinHolders,
   initialLevelRequests,
-  initialCommunities = []
+  initialCommunities = [],
+  initialCoinSupplyConfig,
+  initialCoinSupplyLogs = [],
+  initialAuditLogs = [],
+  initialLandingBanners = []
 }: AdminDashboardClientProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
@@ -120,6 +144,43 @@ export default function AdminDashboardClient({
 
   const [vouchers, setVouchers] = useState(initialVouchers || [])
   const [coinStats, setCoinStats] = useState(initialCoinStats || { totalTx: 0, totalRedemptions: 0, recentTx: [] })
+
+  // Coin Supply State
+  const [coinSupplyConfig, setCoinSupplyConfig] = useState(initialCoinSupplyConfig || { totalSupply: 100000, circulatingSupply: 0 })
+  const [coinSupplyLogs, setCoinSupplyLogs] = useState<any[]>(initialCoinSupplyLogs || [])
+  const [supplyAmountInput, setSupplyAmountInput] = useState('100000')
+  const [distributeTargetId, setDistributeTargetId] = useState('')
+  const [distributeTargetType, setDistributeTargetType] = useState<'KOPERASI' | 'KOMUNITAS' | 'USER'>('KOPERASI')
+  const [distributeAmount, setDistributeAmount] = useState('')
+  const [distributeReason, setDistributeReason] = useState('')
+
+  // Audit Logs State
+  const [auditLogs, setAuditLogs] = useState<any[]>(initialAuditLogs || [])
+  const [auditActorFilter, setAuditActorFilter] = useState<'ALL' | 'MEMBER' | 'ADMIN'>('ALL')
+  const [auditModuleFilter, setAuditModuleFilter] = useState('ALL')
+
+  // Landing Page Banners State
+  const [landingBanners, setLandingBanners] = useState<any[]>(initialLandingBanners || [])
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false)
+  const [editingBanner, setEditingBanner] = useState<any>(null)
+  const [bannerTitle, setBannerTitle] = useState('')
+  const [bannerImageUrl, setBannerImageUrl] = useState('')
+  const [bannerLinkUrl, setBannerLinkUrl] = useState('')
+  const [bannerSortOrder, setBannerSortOrder] = useState('0')
+
+  // User CRUD Modal State
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
+  const [newUserName, setNewUserName] = useState('')
+  const [newUserEmail, setNewUserEmail] = useState('')
+  const [newUserPassword, setNewUserPassword] = useState('')
+  const [newUserPhone, setNewUserPhone] = useState('')
+  const [newUserRole, setNewUserRole] = useState('CUSTOMER')
+
+  // Admin Account Edit State
+  const [editingAdminAcc, setEditingAdminAcc] = useState<any>(null)
+  const [editAdminAccName, setEditAdminAccName] = useState('')
+  const [editAdminAccEmail, setEditAdminAccEmail] = useState('')
+  const [editAdminAccPassword, setEditAdminAccPassword] = useState('')
 
   const [admins, setAdmins] = useState(initialAdmins || [])
   const [invoices, setInvoices] = useState(initialInvoices || [])
@@ -632,6 +693,212 @@ export default function AdminDashboardClient({
         router.refresh()
       } else {
         setActionError(res.error || 'Gagal menghapus admin.')
+      }
+    })
+  }
+
+  // User CRUD Handlers
+  const handleCreateUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newUserName || !newUserEmail || !newUserPassword) {
+      alert('Nama, email, dan password wajib diisi.')
+      return
+    }
+    setActionError(null)
+    setActionSuccess(null)
+    const formData = new FormData()
+    formData.append('name', newUserName)
+    formData.append('email', newUserEmail)
+    formData.append('password', newUserPassword)
+    formData.append('phone', newUserPhone)
+    formData.append('role', newUserRole)
+
+    startTransition(async () => {
+      const res = await createUserAction(formData)
+      if (res.success && res.user) {
+        setActionSuccess(`User "${newUserName}" berhasil dibuat.`)
+        setUsers(prev => [...prev, res.user])
+        setIsUserModalOpen(false)
+        setNewUserName('')
+        setNewUserEmail('')
+        setNewUserPassword('')
+        setNewUserPhone('')
+        setNewUserRole('CUSTOMER')
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal membuat user.')
+      }
+    })
+  }
+
+  const handleDeleteUserSubmit = async (userId: string, userName: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus user "${userName}"?`)) return
+    setActionError(null)
+    setActionSuccess(null)
+    startTransition(async () => {
+      const res = await deleteUserAction(userId)
+      if (res.success) {
+        setActionSuccess(`User "${userName}" berhasil dihapus.`)
+        setUsers(prev => prev.filter(u => u.id !== userId))
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menghapus user.')
+      }
+    })
+  }
+
+  // Admin Account Update Handler
+  const handleUpdateAdminAccountSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingAdminAcc) return
+    setActionError(null)
+    setActionSuccess(null)
+
+    startTransition(async () => {
+      const res = await updateAdminAccountAction(editingAdminAcc.id, {
+        name: editAdminAccName,
+        email: editAdminAccEmail,
+        password: editAdminAccPassword || undefined
+      })
+      if (res.success) {
+        setActionSuccess(`Akun Admin "${editAdminAccName}" berhasil diperbarui.`)
+        setAdmins(prev => prev.map(a => a.id === editingAdminAcc.id ? { ...a, name: editAdminAccName, email: editAdminAccEmail } : a))
+        setEditingAdminAcc(null)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal memperbarui akun admin.')
+      }
+    })
+  }
+
+  // Coin Supply Handlers
+  const handleUpdateCoinSupplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const amount = parseFloat(supplyAmountInput)
+    if (isNaN(amount) || amount <= 0) {
+      alert('Nominal supply tidak valid.')
+      return
+    }
+    setActionError(null)
+    setActionSuccess(null)
+    startTransition(async () => {
+      const res = await updateCoinSupplyAction(amount)
+      if (res.success) {
+        setActionSuccess(`Total Coin Supply platform berhasil diubah menjadi ${amount.toLocaleString('id-ID')} Coin.`)
+        const cfg = await getCoinSupplyConfigAction()
+        if (cfg) setCoinSupplyConfig(cfg)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal mengubah supply coin.')
+      }
+    })
+  }
+
+  const handleDistributeSupplySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!distributeTargetId || !distributeAmount || !distributeReason) {
+      alert('Target ID, jumlah, dan alasan wajib diisi.')
+      return
+    }
+    setActionError(null)
+    setActionSuccess(null)
+    const formData = new FormData()
+    formData.append('targetId', distributeTargetId)
+    formData.append('targetType', distributeTargetType)
+    formData.append('amount', distributeAmount)
+    formData.append('reason', distributeReason)
+
+    startTransition(async () => {
+      const res = await distributeCoinFromSupplyAction(formData)
+      if (res.success) {
+        setActionSuccess(`Berhasil mendistribusikan ${distributeAmount} coin dari supply platform.`)
+        setDistributeTargetId('')
+        setDistributeAmount('')
+        setDistributeReason('')
+        const cfg = await getCoinSupplyConfigAction()
+        if (cfg) setCoinSupplyConfig(cfg)
+        const logs = await getCoinSupplyLogsAction()
+        if (logs) setCoinSupplyLogs(logs)
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal mendistribusikan coin.')
+      }
+    })
+  }
+
+  // Banner CRUD Handlers
+  const handleBannerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!bannerImageUrl) {
+      alert('URL Gambar Banner wajib diisi.')
+      return
+    }
+    setActionError(null)
+    setActionSuccess(null)
+    const formData = new FormData()
+    formData.append('title', bannerTitle)
+    formData.append('imageUrl', bannerImageUrl)
+    formData.append('linkUrl', bannerLinkUrl)
+    formData.append('sortOrder', bannerSortOrder)
+
+    startTransition(async () => {
+      if (editingBanner) {
+        formData.append('isActive', String(editingBanner.isActive))
+        const res = await updateBannerAction(editingBanner.id, formData)
+        if (res.success && res.banner) {
+          setActionSuccess('Banner berhasil diperbarui.')
+          setLandingBanners(prev => prev.map(b => b.id === editingBanner.id ? res.banner : b))
+          setIsBannerModalOpen(false)
+          setEditingBanner(null)
+          router.refresh()
+        } else {
+          setActionError(res.error || 'Gagal mengedit banner.')
+        }
+      } else {
+        const res = await createBannerAction(formData)
+        if (res.success && res.banner) {
+          setActionSuccess('Banner baru berhasil ditambahkan.')
+          setLandingBanners(prev => [...prev, res.banner])
+          setIsBannerModalOpen(false)
+          setBannerTitle('')
+          setBannerImageUrl('')
+          setBannerLinkUrl('')
+          setBannerSortOrder('0')
+          router.refresh()
+        } else {
+          setActionError(res.error || 'Gagal membuat banner.')
+        }
+      }
+    })
+  }
+
+  const handleDeleteBanner = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus banner ini?')) return
+    setActionError(null)
+    setActionSuccess(null)
+    startTransition(async () => {
+      const res = await deleteBannerAction(id)
+      if (res.success) {
+        setActionSuccess('Banner berhasil dihapus.')
+        setLandingBanners(prev => prev.filter(b => b.id !== id))
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal menghapus banner.')
+      }
+    })
+  }
+
+  const handleToggleBanner = async (id: string, currentActive: boolean) => {
+    setActionError(null)
+    setActionSuccess(null)
+    startTransition(async () => {
+      const res = await toggleBannerActiveAction(id, !currentActive)
+      if (res.success) {
+        setActionSuccess(`Status banner berhasil diubah ke ${!currentActive ? 'Aktif' : 'Non-aktif'}.`)
+        setLandingBanners(prev => prev.map(b => b.id === id ? { ...b, isActive: !currentActive } : b))
+        router.refresh()
+      } else {
+        setActionError(res.error || 'Gagal mengubah status banner.')
       }
     })
   }
@@ -1336,48 +1603,60 @@ export default function AdminDashboardClient({
           {activeTab === 'users' && (
             <div className="space-y-6">
               {/* Filter controls */}
-              <div className="flex flex-col md:flex-row gap-4 bg-white border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)] shadow-sm">
-                <input
-                  type="text"
-                  placeholder="Cari user berdasarkan nama atau email..."
-                  value={userSearch}
-                  onChange={e => setUserSearch(e.target.value)}
-                  className="flex-grow bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
-                />
-                <select
-                  value={userRoleFilter}
-                  onChange={e => setUserRoleFilter(e.target.value)}
-                  className="bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
+              <div className="flex flex-col md:flex-row gap-4 bg-white border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)] shadow-sm justify-between items-center">
+                <div className="flex flex-col md:flex-row gap-4 flex-grow w-full">
+                  <input
+                    type="text"
+                    placeholder="Cari user berdasarkan nama atau email..."
+                    value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)}
+                    className="flex-grow bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
+                  />
+                  <select
+                    value={userRoleFilter}
+                    onChange={e => setUserRoleFilter(e.target.value)}
+                    className="bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
+                  >
+                    <option value="ALL">Semua Role</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="MERCHANT">MERCHANT</option>
+                    <option value="AFFILIATE">AFFILIATE</option>
+                    <option value="CUSTOMER">CUSTOMER</option>
+                    <option value="CUSTOMER_SERVICE">CUSTOMER_SERVICE</option>
+                  </select>
+                </div>
+                <button
+                  onClick={() => setIsUserModalOpen(true)}
+                  className="px-4 py-2.5 bg-[#0F5132] hover:bg-[#0a3822] text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow shrink-0 cursor-pointer"
                 >
-                  <option value="ALL">Semua Role</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="MERCHANT">MERCHANT</option>
-                  <option value="AFFILIATE">AFFILIATE</option>
-                  <option value="CUSTOMER">CUSTOMER</option>
-                  <option value="CUSTOMER_SERVICE">CUSTOMER_SERVICE</option>
-                </select>
+                  + Tambah User Baru
+                </button>
               </div>
 
               {/* Users table */}
               <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-x-auto shadow-sm">
-                <table className="w-full min-w-[800px] text-xs text-left">
+                <table className="w-full min-w-[900px] text-xs text-left">
                   <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-6 py-3.5">Nama & Email</th>
-                      <th className="px-6 py-3.5">Role</th>
-                      <th className="px-6 py-3.5 text-center">Level / XP</th>
-                      <th className="px-6 py-3.5">Membership</th>
-                      <th className="px-6 py-3.5 text-right">Aksi</th>
+                      <th className="px-4 py-3.5">Nama & Email</th>
+                      <th className="px-4 py-3.5">No. Telp</th>
+                      <th className="px-4 py-3.5">Role</th>
+                      <th className="px-4 py-3.5 text-center">Level / XP</th>
+                      <th className="px-4 py-3.5">IP & Lokasi Login</th>
+                      <th className="px-4 py-3.5 text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredUsers.map(u => (
                       <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4">
                           <p className="font-bold text-slate-800">{u.name}</p>
                           <p className="text-[10px] text-[#64748b] font-mono">{u.email}</p>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-4 font-mono text-slate-700">
+                          {u.phone || '-'}
+                        </td>
+                        <td className="px-4 py-4">
                           <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
                             u.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
                             u.role === 'CUSTOMER_SERVICE' ? 'bg-teal-50 text-teal-700 border-teal-200' :
@@ -1388,21 +1667,26 @@ export default function AdminDashboardClient({
                             {u.role}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-4 py-4 text-center">
                           <p className="font-bold text-slate-700">Level {u.level}</p>
                           <p className="text-[10px] text-[#64748b]">{u.xp} XP</p>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="px-2 py-0.5 rounded text-[9px] font-bold border border-[#0F5132]/20 bg-[#E8F5E9] text-[#0F5132] uppercase tracking-wider">
-                            {u.membershipLevel || 'Reseller'} / {u.membershipAccess || 'Gold'}
-                          </span>
+                        <td className="px-4 py-4 text-slate-600 font-mono text-[10px]">
+                          <p className="font-bold text-slate-800">{u.lastIp || '127.0.0.1'}</p>
+                          <p className="text-slate-500">{u.lastLocation || 'Jakarta, Indonesia'}</p>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-4 py-4 text-right space-x-2">
                           <button
                             onClick={() => setEditUser({ ...u })}
-                            className="px-3.5 py-1 bg-[#0F5132]/10 hover:bg-[#0F5132]/20 text-[#0F5132] border border-[#0F5132]/20 rounded text-[11px] font-bold uppercase tracking-wider cursor-pointer"
+                            className="px-3 py-1 bg-[#0F5132]/10 hover:bg-[#0F5132]/20 text-[#0F5132] border border-[#0F5132]/20 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
                           >
                             Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUserSubmit(u.id, u.name)}
+                            className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                          >
+                            Hapus
                           </button>
                         </td>
                       </tr>
@@ -3208,30 +3492,133 @@ export default function AdminDashboardClient({
 
           {activeTab === 'coins' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {/* Stat Cards Grid */}
+              {/* Supply Stat Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
-                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Peredaran Koin</p>
+                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Coin Supply Platform</p>
                   <p className="text-2xl font-sora font-extrabold text-[#0F5132] tracking-tight">
-                    {coinHolders.reduce((sum: number, h: any) => sum + (h.coinBalance || 0), 0)} Coin
+                    {(coinSupplyConfig.totalSupply || 100000).toLocaleString('id-ID')} Coin
                   </p>
-                  <p className="text-[10px] text-[#64748b] mt-1.5">Total suplai aktif ekosistem</p>
+                  <p className="text-[10px] text-[#64748b] mt-1.5">Max Supply Platform Saloka</p>
                 </div>
                 <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
-                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Transaksi Koin</p>
-                  <p className="text-2xl font-sora font-extrabold text-slate-800 tracking-tight">{coinStats.totalTx}</p>
-                  <p className="text-[10px] text-[#64748b] mt-1.5">Topup, reward, dan redeem koin</p>
+                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Supply Beredar (Circulating)</p>
+                  <p className="text-2xl font-sora font-extrabold text-blue-600 tracking-tight">
+                    {(coinSupplyConfig.circulatingSupply || 0).toLocaleString('id-ID')} Coin
+                  </p>
+                  <p className="text-[10px] text-[#64748b] mt-1.5">Coin terdistribusi ke pasar</p>
                 </div>
                 <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm">
-                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Total Penukaran Voucher</p>
-                  <p className="text-2xl font-sora font-extrabold text-blue-600 tracking-tight">{coinStats.totalRedemptions}</p>
-                  <p className="text-[10px] text-[#64748b] mt-1.5">Voucher internal & eksternal</p>
+                  <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Supply Tersedia (Available)</p>
+                  <p className="text-2xl font-sora font-extrabold text-amber-600 tracking-tight">
+                    {((coinSupplyConfig.totalSupply || 100000) - (coinSupplyConfig.circulatingSupply || 0)).toLocaleString('id-ID')} Coin
+                  </p>
+                  <p className="text-[10px] text-[#64748b] mt-1.5">Siap didistribusikan Admin</p>
                 </div>
                 <div className="p-6 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] shadow-sm flex flex-col justify-between">
                   <p className="text-[10px] font-bold text-[#64748b] uppercase tracking-widest mb-1">Koin Kas & Rate</p>
                   <p className="text-sm font-bold text-slate-800">1 Koin = Rp 1.500</p>
-                  <p className="text-[10px] text-[#64748b] mt-1.5">Rate konversi standar Saloka.id</p>
+                  <p className="text-[10px] text-[#64748b] mt-1.5">Top up khusus Koperasi</p>
                 </div>
+              </div>
+
+              {/* Supply Control & Distribution Panel */}
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm space-y-6">
+                <div className="flex justify-between items-center border-b border-[#e2e8f0] pb-4">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-widest">
+                      Distribusi Supply Coin (Super Admin)
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">Super Admin dapat mendistribusikan coin langsung dari supply platform ke Koperasi, Komunitas, atau User.</p>
+                  </div>
+                  {currentUser.isSuperAdmin && (
+                    <form onSubmit={handleUpdateCoinSupplySubmit} className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={supplyAmountInput}
+                        onChange={e => setSupplyAmountInput(e.target.value)}
+                        placeholder="Set Total Supply"
+                        className="w-32 px-3 py-1.5 border border-slate-300 rounded text-xs font-bold text-slate-800"
+                      />
+                      <button type="submit" className="px-3 py-1.5 bg-[#0F5132] text-white font-bold text-xs rounded hover:bg-[#0a3822]">
+                        Set Supply
+                      </button>
+                    </form>
+                  )}
+                </div>
+
+                {currentUser.isSuperAdmin && (
+                  <form onSubmit={handleDistributeSupplySubmit} className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-[#f8f9fa] p-4 rounded border border-slate-200">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Tipe Target</label>
+                      <select
+                        value={distributeTargetType}
+                        onChange={e => setDistributeTargetType(e.target.value as any)}
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800"
+                      >
+                        <option value="KOPERASI">Koperasi</option>
+                        <option value="KOMUNITAS">Komunitas / Perkumpulan</option>
+                        <option value="USER">User / Anggota</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Pilih Target ID / Nama</label>
+                      {distributeTargetType === 'USER' ? (
+                        <select
+                          value={distributeTargetId}
+                          onChange={e => setDistributeTargetId(e.target.value)}
+                          className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800"
+                        >
+                          <option value="">-- Pilih User --</option>
+                          {users.map(u => (
+                            <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select
+                          value={distributeTargetId}
+                          onChange={e => setDistributeTargetId(e.target.value)}
+                          className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800"
+                        >
+                          <option value="">-- Pilih Komunitas / Koperasi --</option>
+                          {communities.map(c => (
+                            <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Jumlah Coin</label>
+                      <input
+                        type="number"
+                        required
+                        value={distributeAmount}
+                        onChange={e => setDistributeAmount(e.target.value)}
+                        placeholder="Contoh: 500"
+                        className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs font-bold text-slate-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Alasan Distribusi</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          value={distributeReason}
+                          onChange={e => setDistributeReason(e.target.value)}
+                          placeholder="Alasan / Catatan..."
+                          className="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs text-slate-800"
+                        />
+                        <button type="submit" className="px-3 py-1.5 bg-[#0F5132] text-white font-bold text-xs rounded hover:bg-[#0a3a24] shrink-0">
+                          Kirim
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
               </div>
 
               {/* Coin Holder List Panel */}
@@ -3628,6 +4015,347 @@ export default function AdminDashboardClient({
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── TAB 13: AUDIT LOG SYSTEM ─────────────────────────────────── */}
+          {activeTab === 'audit_logs' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm space-y-6">
+                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 border-b border-[#e2e8f0] pb-4">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
+                      System Audit Log (Aktivitas Platform)
+                    </h3>
+                    <p className="text-xs text-[#64748b] mt-1">
+                      Pelacakan jejak audit lengkap aktivitas pengguna dengan 2 filter aktor: <strong>Member</strong> dan <strong>Admin</strong>.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-600">Aktor:</span>
+                    <button
+                      onClick={() => setAuditActorFilter('ALL')}
+                      className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                        auditActorFilter === 'ALL' ? 'bg-[#0F5132] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Semua
+                    </button>
+                    <button
+                      onClick={() => setAuditActorFilter('MEMBER')}
+                      className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                        auditActorFilter === 'MEMBER' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Member
+                    </button>
+                    <button
+                      onClick={() => setAuditActorFilter('ADMIN')}
+                      className={`px-3 py-1 rounded text-xs font-bold transition-colors ${
+                        auditActorFilter === 'ADMIN' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Admin
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs whitespace-nowrap">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-[#e2e8f0] text-slate-500 uppercase tracking-wider text-[10px] font-bold">
+                        <th className="px-4 py-3">Waktu</th>
+                        <th className="px-4 py-3">Aktor</th>
+                        <th className="px-4 py-3">Aksi</th>
+                        <th className="px-4 py-3">Modul</th>
+                        <th className="px-4 py-3">Detail</th>
+                        <th className="px-4 py-3">IP Address</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {auditLogs.filter(l => auditActorFilter === 'ALL' || l.actor === auditActorFilter).length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-8 text-slate-400 italic">
+                            Belum ada catatan audit log yang tercatat.
+                          </td>
+                        </tr>
+                      ) : (
+                        auditLogs
+                          .filter(l => auditActorFilter === 'ALL' || l.actor === auditActorFilter)
+                          .map((log: any) => (
+                            <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-4 py-3 text-slate-500 font-mono">
+                                {new Date(log.createdAt).toLocaleString('id-ID')}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${
+                                  log.actor === 'ADMIN' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'
+                                }`}>
+                                  {log.actor}
+                                </span>
+                                <span className="ml-2 font-semibold text-slate-800">{log.actorName || log.actorId}</span>
+                              </td>
+                              <td className="px-4 py-3 font-bold text-slate-800">{log.action}</td>
+                              <td className="px-4 py-3 font-mono text-slate-600">{log.module}</td>
+                              <td className="px-4 py-3 text-slate-600 max-w-xs truncate">{log.detail || log.targetId || '-'}</td>
+                              <td className="px-4 py-3 font-mono text-slate-500">{log.ipAddress || '127.0.0.1'}</td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── TAB 14: CRUD BANNER LANDING PAGE ─────────────────────────── */}
+          {activeTab === 'landing_banners' && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-[#e2e8f0] p-6 rounded-[var(--radius-brand)] shadow-sm space-y-6">
+                <div className="flex justify-between items-center border-b border-[#e2e8f0] pb-4">
+                  <div>
+                    <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
+                      Kelola Banner Carousel Landing Page
+                    </h3>
+                    <p className="text-xs text-[#64748b] mt-1">
+                      Tambah, edit, hapus, dan atur urutan banner interaktif di halaman depan (halaman utama website) seperti Shopee & Tokopedia.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditingBanner(null)
+                      setBannerTitle('')
+                      setBannerImageUrl('')
+                      setBannerLinkUrl('')
+                      setBannerSortOrder('0')
+                      setIsBannerModalOpen(true)
+                    }}
+                    className="px-4 py-2 bg-[#0F5132] hover:bg-[#0a3a24] text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>+ Tambah Banner Baru</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {landingBanners.length === 0 ? (
+                    <div className="col-span-3 text-center py-12 text-slate-400 italic bg-slate-50 rounded border border-dashed border-slate-200">
+                      Belum ada banner landing page terdaftar. Klik &quot;+ Tambah Banner Baru&quot; untuk membuat banner carousel pertama.
+                    </div>
+                  ) : (
+                    landingBanners.map((banner: any) => (
+                      <div key={banner.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between">
+                        <div>
+                          <div className="h-40 bg-slate-100 relative overflow-hidden">
+                            <img src={banner.imageUrl} alt={banner.title || 'Banner'} className="w-full h-full object-cover" />
+                            <span className={`absolute top-2 right-2 px-2 py-0.5 rounded text-[9px] font-bold uppercase ${
+                              banner.isActive ? 'bg-green-500 text-white' : 'bg-slate-500 text-white'
+                            }`}>
+                              {banner.isActive ? 'Aktif' : 'Draft'}
+                            </span>
+                            <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/60 text-white text-[9px] font-mono">
+                              Urutan #{banner.sortOrder || 0}
+                            </span>
+                          </div>
+                          <div className="p-4 space-y-2">
+                            <h4 className="font-bold text-slate-800 text-sm truncate">{banner.title || 'Tanpa Judul'}</h4>
+                            {banner.linkUrl ? (
+                              <a href={banner.linkUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline block truncate">
+                                🔗 {banner.linkUrl}
+                              </a>
+                            ) : (
+                              <p className="text-xs text-slate-400 italic">Tidak ada link klik</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => handleToggleBanner(banner.id, banner.isActive)}
+                            className={`px-3 py-1 rounded text-[10px] font-bold uppercase transition-colors ${
+                              banner.isActive ? 'bg-amber-100 text-amber-800 hover:bg-amber-200' : 'bg-green-100 text-green-800 hover:bg-green-200'
+                            }`}
+                          >
+                            {banner.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                          </button>
+
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingBanner(banner)
+                                setBannerTitle(banner.title || '')
+                                setBannerImageUrl(banner.imageUrl || '')
+                                setBannerLinkUrl(banner.linkUrl || '')
+                                setBannerSortOrder(String(banner.sortOrder || 0))
+                                setIsBannerModalOpen(true)
+                              }}
+                              className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBanner(banner.id)}
+                              className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-bold rounded"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Banner Modal */}
+          {isBannerModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
+                    {editingBanner ? 'Edit Banner Carousel' : 'Tambah Banner Carousel Baru'}
+                  </h3>
+                  <button onClick={() => setIsBannerModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+
+                <form onSubmit={handleBannerSubmit} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Judul Banner (Opsional)</label>
+                    <input
+                      type="text"
+                      value={bannerTitle}
+                      onChange={e => setBannerTitle(e.target.value)}
+                      placeholder="Contoh: Promo Merdeka UMKM"
+                      className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">URL Gambar Banner *</label>
+                    <input
+                      type="url"
+                      required
+                      value={bannerImageUrl}
+                      onChange={e => setBannerImageUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">URL Link Klik (Opsional)</label>
+                    <input
+                      type="url"
+                      value={bannerLinkUrl}
+                      onChange={e => setBannerLinkUrl(e.target.value)}
+                      placeholder="https://saloka.id/market atau https://..."
+                      className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs text-slate-800"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Urutan Tampil (Sort Order)</label>
+                    <input
+                      type="number"
+                      value={bannerSortOrder}
+                      onChange={e => setBannerSortOrder(e.target.value)}
+                      placeholder="0, 1, 2..."
+                      className="w-full bg-white border border-slate-300 rounded px-3 py-1.5 text-xs font-bold text-slate-800"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsBannerModalOpen(false)}
+                      className="px-4 py-2 border border-slate-300 text-slate-600 font-bold rounded"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="px-4 py-2 bg-[#0F5132] text-white font-bold rounded hover:bg-[#0a3822]"
+                    >
+                      {isPending ? 'Simpan...' : 'Simpan Banner'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* User Create Modal */}
+          {isUserModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className="bg-white border border-[#0F5132]/25 rounded-[var(--radius-brand)] max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">Tambah User Baru</h3>
+                  <button onClick={() => setIsUserModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+
+                <form onSubmit={handleCreateUserSubmit} className="space-y-3 text-xs">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Nama Lengkap *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newUserName}
+                      onChange={e => setNewUserName(e.target.value)}
+                      className="w-full border border-slate-300 rounded px-3 py-1.5 text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={newUserEmail}
+                      onChange={e => setNewUserEmail(e.target.value)}
+                      className="w-full border border-slate-300 rounded px-3 py-1.5 text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={newUserPassword}
+                      onChange={e => setNewUserPassword(e.target.value)}
+                      className="w-full border border-slate-300 rounded px-3 py-1.5 text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">No. Telepon</label>
+                    <input
+                      type="tel"
+                      value={newUserPhone}
+                      onChange={e => setNewUserPhone(e.target.value)}
+                      placeholder="08123456789"
+                      className="w-full border border-slate-300 rounded px-3 py-1.5 text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Peran (Role)</label>
+                    <select
+                      value={newUserRole}
+                      onChange={e => setNewUserRole(e.target.value)}
+                      className="w-full border border-slate-300 rounded px-3 py-1.5 text-slate-800"
+                    >
+                      <option value="CUSTOMER">CUSTOMER</option>
+                      <option value="MERCHANT">MERCHANT</option>
+                      <option value="AFFILIATE">AFFILIATE</option>
+                    </select>
+                  </div>
+                  <div className="pt-2 flex justify-end gap-2">
+                    <button type="button" onClick={() => setIsUserModalOpen(false)} className="px-4 py-2 border border-slate-300 font-bold rounded">Batal</button>
+                    <button type="submit" disabled={isPending} className="px-4 py-2 bg-[#0F5132] text-white font-bold rounded">Buat User</button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

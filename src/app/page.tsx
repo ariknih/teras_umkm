@@ -2,14 +2,17 @@ import Link from 'next/link'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
 import { getCourses } from '@/app/actions/lms'
+import { getActiveBanners } from '@/app/actions/landing'
 import InteractiveFeatures from '@/app/components/InteractiveFeatures'
 import HeroBackground from '@/app/components/HeroBackground'
 import ScrollReveal from '@/app/components/ScrollReveal'
+import BannerCarousel from '@/app/components/BannerCarousel'
 
 export default async function HomePage() {
   const user = await getCurrentUser()
   const allProducts = await getProducts()
   const courses = await getCourses()
+  const activeBanners = await getActiveBanners()
 
   // Filter & slice (if you still want to use real data for future sections)
   const featuredProducts = allProducts.filter(p => p.category !== 'KERJAAN' && p.category !== 'JASA').slice(0, 12)
@@ -37,6 +40,11 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* ── BANNER CAROUSEL ────────────────────────────────────────────── */}
+      {activeBanners && activeBanners.length > 0 && (
+        <BannerCarousel banners={activeBanners} />
+      )}
 
       {/* ── KEUNGGULAN PLATFORM ──────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex flex-col items-center bg-surface">

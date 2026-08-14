@@ -3427,7 +3427,8 @@ export const DataStore = {
           }
 
           const shippingFee = shippingDetails?.shippingFee || 0
-          const finalTotal = subtotal + shippingFee + bumpSalesTotal - computedDiscount
+          const adminFee = 2500 // Biaya admin per transaksi
+          const finalTotal = subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount
 
           // Wallet payment deduction
           if (paymentMethod === 'WALLET') {
@@ -3489,6 +3490,7 @@ export const DataStore = {
               couponCode: shippingDetails?.couponCode || null,
               discountAmount: computedDiscount,
               bumpSales: shippingDetails?.bumpSales || null,
+              adminFee: 2500,
               items: {
                 create: orderItemsData
               }
@@ -3835,7 +3837,8 @@ export const DataStore = {
     }
 
     const shippingFee = shippingDetails?.shippingFee || 0
-    const finalTotal = subtotal + shippingFee + bumpSalesTotal - computedDiscount
+    const adminFee = 2500 // Biaya admin per transaksi
+    const finalTotal = subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount
 
     // Wallet deduction
     if (paymentMethod === 'WALLET') {
@@ -4101,6 +4104,7 @@ export const DataStore = {
       id: orderId,
       buyerId,
       totalAmount: finalTotal,
+      adminFee: 2500,
       status: 'COMPLETED' as const,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -9246,6 +9250,535 @@ export const DataStore = {
 
     saveMockDb()
     return { success: true, processed: true, logs }
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COIN SUPPLY MANAGEMENT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getCoinSupplyConfig() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        let config = await db.coinSystemConfig.findUnique({ where: { id: 'singleton' } })
+        if (!config) {
+          config = await db.coinSystemConfig.create({
+            data: { id: 'singleton', totalSupply: 100000, circulatingSupply: 0 }
+          })
+        }
+        return config
+      } catch (_) {}
+    }
+    // Mock
+    if (!(globalThis as any).__mockCoinSupplyConfig) {
+      (globalThis as any).__mockCoinSupplyConfig = {
+        id: 'singleton',
+        coinRateRupiah: 1500,
+        totalSupply: 100000,
+        circulatingSupply: 0,
+        minTopupFree: 100,
+        minTopupPaid: 1000,
+        referralCoinAmount: 3,
+        updatedAt: new Date(),
+        updatedBy: null
+      }
+    }
+    return (globalThis as any).__mockCoinSupplyConfig
+  },
+
+  async updateCoinSupply(totalSupply: number, adminId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.coinSystemConfig.upsert({
+          where: { id: 'singleton' },
+          create: { id: 'singleton', totalSupply, updatedBy: adminId },
+          update: { totalSupply, updatedBy: adminId }
+        })
+      } catch (_) {}
+    }
+    const config = (globalThis as any).__mockCoinSupplyConfig || {}
+    config.totalSupply = totalSupply
+    config.updatedBy = adminId
+    config.updatedAt = new Date()
+    ;(globalThis as any).__mockCoinSupplyConfig = config
+    saveMockDb()
+    return config
+  },
+
+  async distributeCoinFromSupply(targetId: string, targetType: string, amount: number, reason: string, adminId: string) {
+    syncMockDb()
+    const config = await this.getCoinSupplyConfig()
+    const available = (config as any).totalSupply - (config as any).circulatingSupply
+    if (amount > available) {
+      throw new Error(`Supply tidak cukup. Tersedia: ${available} coin, diminta: ${amount} coin.`)
+    }
+
+    if (await isDbConnected()) {
+      try {
+        await db.$transaction(async (tx: any) => {
+          // Update circulating supply
+          await tx.coinSystemConfig.update({
+            where: { id: 'singleton' },
+            data: { circulatingSupply: { increment: amount } }
+          })
+          // Add coin to target
+          if (targetType === 'KOPERASI' || targetType === 'KOMUNITAS') {
+            await tx.community.update({
+              where: { id: targetId },
+              data: { coinBalance: { increment: amount } }
+            })
+            await tx.coinTransaction.create({
+              data: { type: 'SUPPLY_DISTRIBUTE', amount, description: `Supply distribusi: ${reason}`, userId: adminId, communityId: targetId }
+            })
+          } else {
+            await tx.user.update({
+              where: { id: targetId },
+              data: { coinBalance: { increment: amount } }
+            })
+            await tx.coinTransaction.create({
+              data: { type: 'SUPPLY_DISTRIBUTE', amount, description: `Supply distribusi: ${reason}`, userId: targetId }
+            })
+          }
+          // Log supply action
+          await tx.coinSupplyLog.create({
+            data: { action: 'DISTRIBUTE', amount, targetType, targetId, reason, adminId }
+          })
+        })
+        return { success: true }
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal mendistribusikan coin.')
+      }
+    }
+
+    // Mock
+    const mockConfig = (globalThis as any).__mockCoinSupplyConfig
+    if (mockConfig) {
+      mockConfig.circulatingSupply = (mockConfig.circulatingSupply || 0) + amount
+    }
+    if (targetType === 'KOPERASI' || targetType === 'KOMUNITAS') {
+      const communities = (globalThis as any).__mockCommunities || []
+      const c = communities.find((x: any) => x.id === targetId)
+      if (c) c.coinBalance = (c.coinBalance || 0) + amount
+    } else {
+      const u = globalMockUsers.find(x => x.id === targetId)
+      if (u) (u as any).coinBalance = ((u as any).coinBalance || 0) + amount
+    }
+    if (!(globalThis as any).__mockCoinSupplyLogs) (globalThis as any).__mockCoinSupplyLogs = []
+    ;(globalThis as any).__mockCoinSupplyLogs.push({
+      id: `csl-${Date.now()}`, action: 'DISTRIBUTE', amount, targetType, targetId, reason, adminId, createdAt: new Date()
+    })
+    if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+    ;(globalThis as any).__mockCoinTransactions.push({
+      id: `ctx-${Date.now()}`, type: 'SUPPLY_DISTRIBUTE', amount, description: `Supply distribusi: ${reason}`,
+      userId: targetType === 'USER' ? targetId : adminId,
+      communityId: (targetType !== 'USER') ? targetId : undefined,
+      createdAt: new Date()
+    })
+    saveMockDb()
+    return { success: true }
+  },
+
+  async getCoinSupplyLogs() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.coinSupplyLog.findMany({ orderBy: { createdAt: 'desc' }, take: 100 })
+      } catch (_) {}
+    }
+    return ((globalThis as any).__mockCoinSupplyLogs || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // AUDIT LOG
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async createAuditLog(data: {
+    actor: 'MEMBER' | 'ADMIN'
+    actorId: string
+    actorName?: string
+    action: string
+    module: string
+    targetId?: string
+    targetType?: string
+    detail?: string
+    ipAddress?: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.auditLog.create({ data })
+      } catch (_) {}
+    }
+    if (!(globalThis as any).__mockAuditLogs) (globalThis as any).__mockAuditLogs = []
+    const log = { id: `al-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`, ...data, createdAt: new Date() }
+    ;(globalThis as any).__mockAuditLogs.push(log)
+    saveMockDb()
+    return log
+  },
+
+  async getAuditLogs(filter?: { actor?: 'MEMBER' | 'ADMIN'; module?: string; limit?: number }) {
+    syncMockDb()
+    const limit = filter?.limit || 200
+    if (await isDbConnected()) {
+      try {
+        const where: any = {}
+        if (filter?.actor) where.actor = filter.actor
+        if (filter?.module) where.module = filter.module
+        return await db.auditLog.findMany({ where, orderBy: { createdAt: 'desc' }, take: limit })
+      } catch (_) {}
+    }
+    let logs = (globalThis as any).__mockAuditLogs || []
+    if (filter?.actor) logs = logs.filter((l: any) => l.actor === filter.actor)
+    if (filter?.module) logs = logs.filter((l: any) => l.module === filter.module)
+    return logs.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, limit)
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LANDING BANNER CRUD
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getActiveBanners() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.landingBanner.findMany({
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' }
+        })
+      } catch (_) {}
+    }
+    return ((globalThis as any).__mockBanners || []).filter((b: any) => b.isActive).sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+  },
+
+  async getAllBanners() {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.landingBanner.findMany({ orderBy: { sortOrder: 'asc' } })
+      } catch (_) {}
+    }
+    return ((globalThis as any).__mockBanners || []).sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+  },
+
+  async createBanner(data: { title?: string; imageUrl: string; linkUrl?: string; sortOrder?: number }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.landingBanner.create({ data })
+      } catch (_) {}
+    }
+    if (!(globalThis as any).__mockBanners) (globalThis as any).__mockBanners = []
+    const banner = {
+      id: `banner-${Date.now()}`, ...data, isActive: true, sortOrder: data.sortOrder || 0,
+      createdAt: new Date(), updatedAt: new Date()
+    }
+    ;(globalThis as any).__mockBanners.push(banner)
+    saveMockDb()
+    return banner
+  },
+
+  async updateBanner(id: string, data: { title?: string; imageUrl?: string; linkUrl?: string; isActive?: boolean; sortOrder?: number }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.landingBanner.update({ where: { id }, data })
+      } catch (_) {}
+    }
+    const banners = (globalThis as any).__mockBanners || []
+    const b = banners.find((x: any) => x.id === id)
+    if (b) {
+      Object.assign(b, data, { updatedAt: new Date() })
+      saveMockDb()
+    }
+    return b
+  },
+
+  async deleteBanner(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.landingBanner.delete({ where: { id } })
+      } catch (_) {}
+    }
+    const banners = (globalThis as any).__mockBanners || []
+    const idx = banners.findIndex((x: any) => x.id === id)
+    if (idx >= 0) banners.splice(idx, 1)
+    saveMockDb()
+    return { success: true }
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SERVICE / JASA CRUD
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getServices(filters?: { merchantId?: string; category?: string; isActive?: boolean }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const where: any = {}
+        if (filters?.merchantId) where.merchantId = filters.merchantId
+        if (filters?.category) where.category = filters.category
+        if (filters?.isActive !== undefined) where.isActive = filters.isActive
+        return await db.service.findMany({ where, orderBy: { createdAt: 'desc' } })
+      } catch (_) {}
+    }
+    let services = (globalThis as any).__mockServices || []
+    if (filters?.merchantId) services = services.filter((s: any) => s.merchantId === filters.merchantId)
+    if (filters?.category) services = services.filter((s: any) => s.category === filters.category)
+    if (filters?.isActive !== undefined) services = services.filter((s: any) => s.isActive === filters.isActive)
+    return services
+  },
+
+  async createService(data: any) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.service.create({ data })
+      } catch (_) {}
+    }
+    if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = []
+    const service = { id: `svc-${Date.now()}`, ...data, isActive: true, createdAt: new Date(), updatedAt: new Date() }
+    ;(globalThis as any).__mockServices.push(service)
+    saveMockDb()
+    return service
+  },
+
+  async updateService(id: string, data: any) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.service.update({ where: { id }, data })
+      } catch (_) {}
+    }
+    const services = (globalThis as any).__mockServices || []
+    const s = services.find((x: any) => x.id === id)
+    if (s) Object.assign(s, data, { updatedAt: new Date() })
+    saveMockDb()
+    return s
+  },
+
+  async deleteService(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.service.delete({ where: { id } })
+      } catch (_) {}
+    }
+    const services = (globalThis as any).__mockServices || []
+    const idx = services.findIndex((x: any) => x.id === id)
+    if (idx >= 0) services.splice(idx, 1)
+    saveMockDb()
+    return { success: true }
+  },
+
+  // Service Availability
+  async getServiceAvailability(serviceId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.serviceAvailability.findMany({
+          where: { serviceId, date: { gte: new Date() } },
+          orderBy: { date: 'asc' }
+        })
+      } catch (_) {}
+    }
+    return ((globalThis as any).__mockServiceAvailability || [])
+      .filter((a: any) => a.serviceId === serviceId && new Date(a.date) >= new Date())
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  },
+
+  async setServiceAvailability(serviceId: string, date: Date, isAvailable: boolean) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.serviceAvailability.upsert({
+          where: { serviceId_date: { serviceId, date } },
+          create: { serviceId, date, isAvailable },
+          update: { isAvailable }
+        })
+      } catch (_) {}
+    }
+    if (!(globalThis as any).__mockServiceAvailability) (globalThis as any).__mockServiceAvailability = []
+    const avails = (globalThis as any).__mockServiceAvailability
+    const existing = avails.find((a: any) => a.serviceId === serviceId && new Date(a.date).toDateString() === date.toDateString())
+    if (existing) {
+      existing.isAvailable = isAvailable
+    } else {
+      avails.push({ id: `sa-${Date.now()}`, serviceId, date, isAvailable, createdAt: new Date() })
+    }
+    saveMockDb()
+    return { success: true }
+  },
+
+  // Service Booking
+  async createServiceBooking(data: any) {
+    syncMockDb()
+    // Check availability
+    const avails = await this.getServiceAvailability(data.serviceId)
+    const dateBooking = new Date(data.bookingDate)
+    const avail = avails.find((a: any) => new Date(a.date).toDateString() === dateBooking.toDateString())
+    if (avail && !avail.isAvailable) {
+      throw new Error('Penyedia jasa tidak tersedia pada tanggal tersebut.')
+    }
+
+    if (await isDbConnected()) {
+      try {
+        const booking = await db.serviceBooking.create({ data: { ...data, adminFee: 2500 } })
+        // Mark date as unavailable
+        await this.setServiceAvailability(data.serviceId, dateBooking, false)
+        return booking
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal membuat booking.')
+      }
+    }
+
+    if (!(globalThis as any).__mockServiceBookings) (globalThis as any).__mockServiceBookings = []
+    const booking = { id: `sb-${Date.now()}`, ...data, adminFee: 2500, status: 'PENDING', createdAt: new Date(), updatedAt: new Date() }
+    ;(globalThis as any).__mockServiceBookings.push(booking)
+    await this.setServiceAvailability(data.serviceId, dateBooking, false)
+    saveMockDb()
+    return booking
+  },
+
+  async getServiceBookings(filters?: { merchantId?: string; customerId?: string; serviceId?: string }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const where: any = {}
+        if (filters?.merchantId) where.merchantId = filters.merchantId
+        if (filters?.customerId) where.customerId = filters.customerId
+        if (filters?.serviceId) where.serviceId = filters.serviceId
+        return await db.serviceBooking.findMany({ where, orderBy: { createdAt: 'desc' }, include: { service: true } })
+      } catch (_) {}
+    }
+    let bookings = (globalThis as any).__mockServiceBookings || []
+    if (filters?.merchantId) bookings = bookings.filter((b: any) => b.merchantId === filters.merchantId)
+    if (filters?.customerId) bookings = bookings.filter((b: any) => b.customerId === filters.customerId)
+    if (filters?.serviceId) bookings = bookings.filter((b: any) => b.serviceId === filters.serviceId)
+    return bookings
+  },
+
+  async updateServiceBookingStatus(id: string, status: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.serviceBooking.update({ where: { id }, data: { status } })
+      } catch (_) {}
+    }
+    const bookings = (globalThis as any).__mockServiceBookings || []
+    const b = bookings.find((x: any) => x.id === id)
+    if (b) { b.status = status; b.updatedAt = new Date() }
+    saveMockDb()
+    return b
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // USER MANAGEMENT (Enhanced with IP, Phone, Location)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async updateUserLoginInfo(userId: string, ipAddress?: string, location?: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({
+          where: { id: userId },
+          data: { lastIp: ipAddress || null, lastLocation: location || null, lastLoginAt: new Date() }
+        })
+      } catch (_) {}
+    }
+    const u = globalMockUsers.find(x => x.id === userId)
+    if (u) {
+      ;(u as any).lastIp = ipAddress || null
+      ;(u as any).lastLocation = location || null
+      ;(u as any).lastLoginAt = new Date()
+      saveMockDb()
+    }
+    return u
+  },
+
+  async createUserAdmin(data: { name: string; email: string; passwordHash: string; phone?: string; role?: string }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.create({
+          data: {
+            name: data.name,
+            email: data.email,
+            passwordHash: data.passwordHash,
+            phone: data.phone || null,
+            role: (data.role as any) || 'CUSTOMER'
+          }
+        })
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal membuat user.')
+      }
+    }
+    const newUser = {
+      id: `user-${Date.now()}`, name: data.name, email: data.email, passwordHash: data.passwordHash,
+      phone: data.phone || null, role: (data.role || 'CUSTOMER') as any, isSuperAdmin: false,
+      latitude: null, longitude: null, level: 1, xp: 0,
+      landingPageTemplate: null, landingPageConfig: null, landingPageSetup: false,
+      parentAffiliateId: null, membershipLevel: 'Reseller', membershipAccess: 'Gold',
+      createdAt: new Date(), updatedAt: new Date()
+    }
+    globalMockUsers.push(newUser as any)
+    saveMockDb()
+    return newUser
+  },
+
+  async deleteUser(userId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.delete({ where: { id: userId } })
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal menghapus user.')
+      }
+    }
+    const idx = globalMockUsers.findIndex(u => u.id === userId)
+    if (idx >= 0) globalMockUsers.splice(idx, 1)
+    saveMockDb()
+    return { success: true }
+  },
+
+  async updateUserPhone(userId: string, phone: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.user.update({ where: { id: userId }, data: { phone } })
+      } catch (_) {}
+    }
+    const u = globalMockUsers.find(x => x.id === userId)
+    if (u) { (u as any).phone = phone; saveMockDb() }
+    return u
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ADMIN MANAGEMENT (Update admin account details)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async updateAdminAccount(adminId: string, data: { name?: string; email?: string; passwordHash?: string }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const updateData: any = {}
+        if (data.name) updateData.name = data.name
+        if (data.email) updateData.email = data.email
+        if (data.passwordHash) updateData.passwordHash = data.passwordHash
+        return await db.user.update({ where: { id: adminId }, data: updateData })
+      } catch (e: any) {
+        throw new Error(e.message || 'Gagal update admin.')
+      }
+    }
+    const admin = globalMockUsers.find(u => u.id === adminId)
+    if (!admin) throw new Error('Admin tidak ditemukan.')
+    if (data.name) admin.name = data.name
+    if (data.email) admin.email = data.email
+    if (data.passwordHash) admin.passwordHash = data.passwordHash
+    admin.updatedAt = new Date()
+    saveMockDb()
+    return admin
   }
 }
 

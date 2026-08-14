@@ -71,6 +71,12 @@ enum CoinTxType {
   DISTRIBUTE          // Ketua distribusi ke member
   INJECTION           // Inject manual oleh Superadmin
   REFERRAL_COMMISSION // Komisi 3 koin cross-community ke referrer
+  SUPPLY_DISTRIBUTE   // Admin distribusi dari supply ke koperasi/komunitas
+}
+
+enum AuditLogActor {
+  MEMBER
+  ADMIN
 }
 
 enum VoucherType {
@@ -132,11 +138,15 @@ model User {
   name         String
   image        String?       // Profile picture URL
   passwordHash String
+  phone        String?       // Nomor telepon
   role         Role          @default(CUSTOMER)
   isSuperAdmin Boolean       @default(false)  // Superadmin flag — hanya 1 akun
   adminPermissions String?   // JSON array string of allowed admin module keys
   latitude     Float?
   longitude    Float?
+  lastIp       String?       // IP address terakhir login
+  lastLocation String?       // Lokasi terakhir (kota/negara)
+  lastLoginAt  DateTime?     // Waktu login terakhir
   level        Int           @default(1)
   xp           Int           @default(0)
   points       Float         @default(0.0)
@@ -243,6 +253,7 @@ model Product {
 model Order {
   id              String      @id @default(uuid())
   totalAmount     Float
+  adminFee        Float       @default(2500) // Biaya admin per transaksi Rp 2.500
   status          OrderStatus @default(PENDING)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -727,6 +738,8 @@ model MerchantInvite {
 model CoinSystemConfig {
   id                  String   @id @default("singleton")
   coinRateRupiah      Float    @default(1500.0) // Nilai 1 koin dalam Rupiah (dinamis)
+  totalSupply         Float    @default(100000.0) // Total coin supply platform
+  circulatingSupply   Float    @default(0.0)      // Coin yang sudah beredar
   minTopupFree        Int      @default(100)    // Min topup awal komunitas FREE
   minTopupPaid        Int      @default(1000)   // Min topup awal komunitas PAID/KOPERASI
   referralCoinAmount  Int      @default(3)      // Jumlah koin reward referral cross-community
@@ -887,6 +900,108 @@ model PaymentMethod {
   qrImageUrl    String?  // URL gambar QRIS statis
   qrRawString   String?  // String QRIS untuk di-inject nominal (Dinamis)
   isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Coin Supply Log (Tracking distribusi supply coin oleh Admin)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model CoinSupplyLog {
+  id          String   @id @default(uuid())
+  action      String   // "INJECT" | "DISTRIBUTE" | "BURN" | "SUPPLY_ADD"
+  amount      Float
+  targetType  String   // "KOPERASI" | "KOMUNITAS" | "USER"
+  targetId    String
+  targetName  String?
+  reason      String
+  adminId     String
+  adminName   String?
+  createdAt   DateTime @default(now())
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Audit Log (2 pilihan actor: MEMBER dan ADMIN)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id          String        @id @default(uuid())
+  actor       AuditLogActor
+  actorId     String
+  actorName   String?
+  action      String        // "CREATE_USER", "UPDATE_ROLE", "INJECT_COIN", etc.
+  module      String        // "users", "coins", "community", etc.
+  targetId    String?
+  targetType  String?       // "USER" | "COMMUNITY" | "ORDER" etc.
+  detail      String?       // JSON detail of change
+  ipAddress   String?
+  createdAt   DateTime      @default(now())
+
+  @@index([actorId])
+  @@index([module])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Landing Page Banner (CRUD untuk halaman utama — carousel seperti Shopee/Tokped)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model LandingBanner {
+  id          String   @id @default(uuid())
+  title       String?
+  imageUrl    String
+  linkUrl     String?       // URL tujuan saat diklik
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sistem Jasa / Service Booking (P2P via Saloka sebagai broker)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Service {
+  id              String   @id @default(uuid())
+  merchantId      String
+  title           String
+  description     String
+  pricePerSession Float         // Harga per sesi
+  pricePerDay     Float?        // Harga per hari (max 8 jam kerja)
+  category        String
+  imageUrl        String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  availability    ServiceAvailability[]
+  bookings        ServiceBooking[]
+}
+
+model ServiceAvailability {
+  id          String   @id @default(uuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  date        DateTime // Tanggal available
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([serviceId, date])
+}
+
+model ServiceBooking {
+  id            String   @id @default(uuid())
+  serviceId     String
+  service       Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  customerId    String
+  merchantId    String
+  bookingDate   DateTime
+  sessionType   String   @default("PER_SESI") // "PER_SESI" | "PER_HARI"
+  totalAmount   Float
+  adminFee      Float    @default(2500)
+  status        String   @default("PENDING") // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
+  notes         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

@@ -375,7 +375,16 @@ function ChatClient() {
                     type="text"
                     placeholder="Ketik pesan Anda di sini..."
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      const phoneRegex = /(\+?62|0)?8[1-9][0-9]{6,11}|(\d[\s.-]*){8,}/
+                      if (phoneRegex.test(val)) {
+                        setNewMessage('')
+                        goeyToast.error('⚠️ Dilarang mengirim nomor telepon! Saloka tidak bertanggung jawab atas kejadian / transaksi di luar Saloka.')
+                      } else {
+                        setNewMessage(val)
+                      }
+                    }}
                     className="flex-grow h-10 px-4 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2DB24A] bg-slate-50/50"
                   />
 

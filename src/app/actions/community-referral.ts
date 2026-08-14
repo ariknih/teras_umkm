@@ -43,8 +43,19 @@ export async function updateCommunityReferralConfig(data: {
   isKycRequired?: boolean
 }) {
   try {
-    if (data.maxTiers < 3 || data.maxTiers > 5) {
-      return { error: 'Jumlah tier harus antara 3 sampai 5.' }
+    // Enforce max 2 tier untuk KOPERASI
+    const community = await DataStore.getCommunityById(data.communityId)
+    if (community && (community as any).category === 'KOPERASI') {
+      if (data.maxTiers > 2) {
+        return { error: 'Koperasi hanya bisa memiliki maksimal 2 tier referral.' }
+      }
+      if (data.maxTiers < 1) {
+        return { error: 'Minimal 1 tier diperlukan.' }
+      }
+    } else {
+      if (data.maxTiers < 3 || data.maxTiers > 5) {
+        return { error: 'Jumlah tier harus antara 3 sampai 5.' }
+      }
     }
 
     const totalPct = data.tierPercentages.reduce((sum, p) => sum + p, 0)

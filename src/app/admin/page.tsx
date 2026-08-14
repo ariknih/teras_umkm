@@ -27,7 +27,11 @@ export default async function AdminDashboard() {
     allInvoices,
     allCoinHolders,
     allLevelRequests,
-    allCommunities
+    allCommunities,
+    coinSupplyConfig,
+    coinSupplyLogs,
+    auditLogs,
+    landingBanners
   ] = await Promise.all([
     DataStore.getAllUsers(),
     DataStore.getProducts(),
@@ -41,7 +45,11 @@ export default async function AdminDashboard() {
     DataStore.getInvoiceMemberships(),
     DataStore.getAllCoinHolders(),
     DataStore.getLevelRequests(),
-    DataStore.getCommunities()
+    DataStore.getCommunities(),
+    DataStore.getCoinSupplyConfig(),
+    DataStore.getCoinSupplyLogs(),
+    DataStore.getAuditLogs(),
+    DataStore.getAllBanners()
   ])
 
   return (
@@ -60,6 +68,11 @@ export default async function AdminDashboard() {
       initialCoinHolders={allCoinHolders}
       initialLevelRequests={allLevelRequests}
       initialCommunities={allCommunities}
+      initialCoinSupplyConfig={coinSupplyConfig}
+      initialCoinSupplyLogs={coinSupplyLogs}
+      initialAuditLogs={auditLogs}
+      initialLandingBanners={landingBanners}
     />
   )
 }
+

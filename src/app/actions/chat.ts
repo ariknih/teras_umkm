@@ -41,6 +41,12 @@ export async function sendChat(roomId: string, content: string, imageUrl?: strin
   if (!content.trim() && !imageUrl) {
     return { error: 'Pesan tidak boleh kosong.' }
   }
+
+  // Regex detector for phone numbers (Indonesian formats / 8+ digits)
+  const phoneRegex = /(\+?62|0)?8[1-9][0-9]{6,11}|(\d[\s.-]*){8,}/
+  if (phoneRegex.test(content)) {
+    return { error: '⚠️ Dilarang mengirim nomor telepon! Saloka tidak bertanggung jawab atas transaksi diluar platform Saloka.' }
+  }
   try {
     const msg = await DataStore.sendChatMessage(roomId, user.id, content, imageUrl)
     return { success: true, message: msg }
