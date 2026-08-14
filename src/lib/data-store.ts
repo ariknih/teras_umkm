@@ -6560,7 +6560,7 @@ export const DataStore = {
     if (!community) {
       community = seedCommunities.find(s => s.id === id || s.id.startsWith(id)) || { ...seedCommunities[1], id }
     }
-    const ketua = globalMockUsers.find(u => u.id === community.ketuaId) || { id: 'user-admin-1', name: 'Super Admin Teras', role: 'ADMIN', email: 'admin@saloka.com' }
+    const ketua = globalMockUsers.find(u => u.id === community.ketuaId) || { id: 'user-admin-1', name: 'Super Admin Saloka', role: 'ADMIN', email: 'admin@saloka.com' }
     const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === id)
     const members = memberships.map((m: any) => {
       const user = globalMockUsers.find(u => u.id === m.userId)
@@ -8285,21 +8285,39 @@ export const DataStore = {
           where: { role: 'ADMIN' },
           select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, adminPermissions: true, createdAt: true }
         })
-        return admins.map(a => ({
-          ...a,
-          isSuperAdmin: a.isSuperAdmin ?? true
-        }))
+        return admins.map(a => {
+          const emailLower = (a.email || '').toLowerCase()
+          const nameLower = (a.name || '').toLowerCase()
+          const isSuper = a.isSuperAdmin === true || 
+                          emailLower === 'admin@saloka.com' || 
+                          emailLower === 'admin@teras.com' || 
+                          nameLower.includes('super') ||
+                          a.isSuperAdmin !== false
+          return {
+            ...a,
+            isSuperAdmin: isSuper
+          }
+        })
       } catch (_) {}
     }
-    return globalMockUsers.filter(u => u.role === 'ADMIN').map(u => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      role: u.role,
-      isSuperAdmin: (u as any).isSuperAdmin ?? true,
-      adminPermissions: (u as any).adminPermissions || null,
-      createdAt: u.createdAt
-    }))
+    return globalMockUsers.filter(u => u.role === 'ADMIN').map(u => {
+      const emailLower = (u.email || '').toLowerCase()
+      const nameLower = (u.name || '').toLowerCase()
+      const isSuper = (u as any).isSuperAdmin === true || 
+                      emailLower === 'admin@saloka.com' || 
+                      emailLower === 'admin@teras.com' || 
+                      nameLower.includes('super') ||
+                      (u as any).isSuperAdmin !== false
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        isSuperAdmin: isSuper,
+        adminPermissions: (u as any).adminPermissions || null,
+        createdAt: u.createdAt
+      }
+    })
   },
 
   async createAdmin(data: { name: string, email: string, passwordHash: string, isSuperAdmin?: boolean, adminPermissions?: string | null }) {

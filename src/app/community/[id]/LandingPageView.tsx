@@ -60,7 +60,7 @@ export const DEFAULT_PERKUMPULAN_CONFIG = {
     quoteText: 'Sinergi lokal, tumbuh bersama demi kemakmuran bersama.',
     quoteAuthor: 'Perahu Kita',
     didirikan: '25 Juli 2026',
-    ketua: 'Super Admin Teras',
+    ketua: 'Super Admin Saloka',
     lokasi: 'Kota Yogyakarta, DIY',
     anggotaCount: '1.248+ Anggota'
   },

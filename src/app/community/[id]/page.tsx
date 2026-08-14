@@ -686,7 +686,7 @@ export default function CommunityDetailPage() {
           joinFee: 0,
           monthlyFee: 0,
           ketuaId: 'user-admin-1',
-          ketua: { name: 'Super Admin Teras' },
+          ketua: { name: 'Super Admin Saloka' },
           createdAt: new Date('2026-07-25')
         }
       }
@@ -1705,7 +1705,7 @@ export default function CommunityDetailPage() {
   const PromoIcon = promoWidget.icon
 
   const merchantAvatars = [
-    { name: 'Super Admin Teras', initial: 'SU', bg: 'bg-emerald-100 text-emerald-800' },
+    { name: 'Super Admin Saloka', initial: 'SU', bg: 'bg-emerald-100 text-emerald-800' },
     { name: 'rijal Merchant', initial: 'RI', bg: 'bg-[#E8F8EE] text-[#2DB24A]' },
     { name: 'saloka Merchant', initial: 'SA', bg: 'bg-[#E8F8EE] text-[#2DB24A]' },
   ]
@@ -1935,7 +1935,7 @@ export default function CommunityDetailPage() {
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1.5 font-semibold text-white">
                           <Shield className="w-4 h-4 text-emerald-300" />
-                          Ketua: {community.ketua?.name || 'Super Admin Teras'}
+                          Ketua: {community.ketua?.name || 'Super Admin Saloka'}
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1.5">
@@ -2388,7 +2388,7 @@ export default function CommunityDetailPage() {
                     {[
                       { title: 'Bagaimana cara meningkatkan omzet produk UMKM melalui Instagram & TikTok Ads?', author: 'Siti Rahmawati', role: 'Merchant Kuliner', date: '2 jam lalu', category: 'Pemasaran', likes: 34, comments: 19, views: 142 },
                       { title: 'Rekomendasi Supplier Kemasan Ramah Lingkungan (Biodegradable) Wilayah Jogja', author: 'Budi Santoso', role: 'Craft Merchant', date: '5 jam lalu', category: 'Tanya Jawab', likes: 28, comments: 24, views: 198 },
-                      { title: 'Panduan Lengkap Pendaftaran Sertifikat Halal Gratis (SEHATI) 2026', author: 'Super Admin Teras', role: 'Ketua Komunitas', date: '1 hari lalu', category: 'Edukasi & Bisnis', isPinned: true, likes: 89, comments: 45, views: 512 },
+                      { title: 'Panduan Lengkap Pendaftaran Sertifikat Halal Gratis (SEHATI) 2026', author: 'Super Admin Saloka', role: 'Ketua Komunitas', date: '1 hari lalu', category: 'Edukasi & Bisnis', isPinned: true, likes: 89, comments: 45, views: 512 },
                       { title: 'Sharing Pengalaman Mengikuti Bazaar & Pameran Produk UMKM Tingkat Nasional', author: 'Rina Wijaya', role: 'Coffee Merchant', date: '2 hari lalu', category: 'Pengalaman', likes: 42, comments: 15, views: 230 },
                     ].map((thread, idx) => (
                       <div key={idx} className="p-5 bg-gray-50/70 border border-gray-100 hover:border-[#2DB24A]/30 hover:bg-white rounded-2xl shadow-xs transition-all space-y-3">
@@ -2809,7 +2809,7 @@ export default function CommunityDetailPage() {
 
                   <div className="space-y-3.5">
                     {[
-                      { title: 'Kopdar Rutin Perahu Kita Juli 2026', time: 'Hari ini, 14:00 WIB', category: 'Kopdar', author: 'Super Admin Teras', desc: 'Pertemuan bulanan anggota membahas program pameran UMKM.' },
+                      { title: 'Kopdar Rutin Perahu Kita Juli 2026', time: 'Hari ini, 14:00 WIB', category: 'Kopdar', author: 'Super Admin Saloka', desc: 'Pertemuan bulanan anggota membahas program pameran UMKM.' },
                       { title: 'Peluncuran Fitur Marketplace Komunitas', time: 'Kemarin, 09:30 WIB', category: 'Sistem', author: 'Tim Perahu Kita', desc: 'Anggota kini dapat menampilkan katalog produk di tab Marketplace.' },
                       { title: 'Pendaftaran 15 Anggota Baru Minggu Ini', time: '2 hari lalu', category: 'Keanggotaan', author: 'Sekretariat', desc: 'Selamat bergabung bagi para pelaku usaha kuliner & kriya!' },
                     ].map((act, idx) => (
