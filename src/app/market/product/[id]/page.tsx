@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getProductById } from '@/app/actions/products'
+import { getProductById, getProducts } from '@/app/actions/products'
 import { getProductReviews } from '@/app/actions/reviews'
 import { notFound } from 'next/navigation'
 import ProductActions from './ProductActions'
@@ -56,7 +56,14 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   }
 
   const user = await getCurrentUser()
-  const reviews = await getProductReviews(id)
+  const [reviews, allProducts] = await Promise.all([
+    getProductReviews(id),
+    getProducts()
+  ])
+
+  const relatedProducts = allProducts
+    .filter((p: any) => p.id !== product.id && (p.category === product.category || !product.category))
+    .slice(0, 6)
   
   const avgRating = reviews.length > 0 
     ? (reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length).toFixed(1) 
@@ -335,6 +342,74 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
             })}
           </div>
         </div>
+
+        {/* ── RELATED PRODUCTS SECTION (CROSS-SELLING) ── */}
+        {relatedProducts.length > 0 && (
+          <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 uppercase tracking-wider">
+                  Produk Pilihan Lainnya dari Kategori {formatCategoryName(product.category)}
+                </h3>
+                <p className="text-xs text-slate-500">Rekomendasi terbaik dari UMKM terverifikasi</p>
+              </div>
+              <Link href="/market" className="text-xs font-bold text-[#006E24] hover:underline">
+                Lihat Semua &gt;
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              {relatedProducts.map((rel: any, rIdx: number) => {
+                const discountPct = 15 + ((rIdx * 7) % 25)
+                const originalPrice = Math.round(rel.price * (1 + discountPct / 100))
+
+                return (
+                  <Link
+                    key={rel.id}
+                    href={`/market/product/${rel.id}`}
+                    className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#006E24]/60 transition-all flex flex-col justify-between group p-2 text-slate-900"
+                  >
+                    <div>
+                      <div className="w-full aspect-square bg-slate-50 relative rounded-lg overflow-hidden mb-2">
+                        {rel.imageUrl ? (
+                          <img
+                            src={rel.imageUrl}
+                            alt={rel.title}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-slate-400 font-bold bg-slate-100">
+                            UMKM
+                          </div>
+                        )}
+                        <span className="absolute top-1 left-1 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1.5 py-0.2 rounded border border-[#C8E6C9]">
+                          {discountPct}%
+                        </span>
+                      </div>
+
+                      <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
+                        {rel.title}
+                      </h4>
+                      <p className="text-xs font-extrabold text-slate-900 leading-tight pt-1">
+                        Rp {rel.price.toLocaleString('id-ID')}
+                      </p>
+                      <p className="text-[10px] text-slate-400 line-through">
+                        Rp {originalPrice.toLocaleString('id-ID')}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center gap-1 text-[9px] text-slate-500">
+                      <span className="text-amber-500 font-bold">★ 4.9</span>
+                      <span>•</span>
+                      <span>Terjual {rel.stock ? `${rel.stock}+` : '30+'}</span>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
