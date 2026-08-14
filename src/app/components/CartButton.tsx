@@ -27,14 +27,18 @@ export default function CartButton({ userId, communityId }: { userId?: string; c
 
     updateCount()
 
-    // Listen to changes across tabs
+    // Listen to changes across tabs & local custom events
     window.addEventListener('storage', updateCount)
-    
-    // Poll to keep count in sync when doing same-tab routing
-    const interval = setInterval(updateCount, 1000)
+    window.addEventListener('cart-updated', updateCount)
+    window.addEventListener('focus', updateCount)
+
+    // Relaxed fallback sync every 15 seconds
+    const interval = setInterval(updateCount, 15000)
 
     return () => {
       window.removeEventListener('storage', updateCount)
+      window.removeEventListener('cart-updated', updateCount)
+      window.removeEventListener('focus', updateCount)
       clearInterval(interval)
     }
   }, [userId, communityId])

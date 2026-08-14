@@ -2363,13 +2363,13 @@ let cachedDbConnected = false;
 
 export async function isDbConnected(): Promise<boolean> {
   const now = Date.now();
-  if (now - lastDbCheckTime < 10000) {
+  if (now - lastDbCheckTime < 60000 && cachedDbConnected) {
     return cachedDbConnected;
   }
   lastDbCheckTime = now;
   try {
     const connectionPromise = db.$queryRaw`SELECT 1`.then(() => true);
-    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000));
+    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000));
     cachedDbConnected = await Promise.race([connectionPromise, timeoutPromise]);
     return cachedDbConnected;
   } catch (e) {
@@ -3518,8 +3518,10 @@ export const DataStore = {
           }
 
           const shippingFee = shippingDetails?.shippingFee || 0
-          const adminFee = 2500 // Biaya admin per transaksi
-          const finalTotal = subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount
+          const serviceFee = subtotal > 0 ? 1000 : 0 // Biaya Layanan Aplikasi
+          const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0) // Biaya Jasa Pembayaran
+          const adminFee = serviceFee + paymentFee
+          const finalTotal = Math.max(0, subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount)
 
           // Wallet payment deduction
           if (paymentMethod === 'WALLET') {
@@ -3928,8 +3930,10 @@ export const DataStore = {
     }
 
     const shippingFee = shippingDetails?.shippingFee || 0
-    const adminFee = 2500 // Biaya admin per transaksi
-    const finalTotal = subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount
+    const serviceFee = subtotal > 0 ? 1000 : 0 // Biaya Layanan Aplikasi
+    const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0) // Biaya Jasa Pembayaran
+    const adminFee = serviceFee + paymentFee
+    const finalTotal = Math.max(0, subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount)
 
     // Wallet deduction
     if (paymentMethod === 'WALLET') {

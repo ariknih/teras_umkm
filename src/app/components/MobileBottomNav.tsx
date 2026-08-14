@@ -5,15 +5,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, ShoppingBag, Wrench, Users, Wallet, User as UserIcon } from 'lucide-react'
 
-export default function MobileBottomNav({ isLoggedIn, user }: { isLoggedIn?: boolean; user?: any }) {
-  const pathname = usePathname() || ''
+export default function MobileBottomNav({ user }: { user?: any }) {
+  const pathname = usePathname()
 
-  // Hide on admin routes or chat view
-  if (pathname.startsWith('/admin') || pathname.startsWith('/chat') || pathname.startsWith('/merchant/builder')) {
+  // Hide on admin routes or chat view where full screen is preferred
+  if (pathname.startsWith('/admin') || pathname.startsWith('/chat')) {
     return null
   }
-
-  const isUserLogged = isLoggedIn || !!user
 
   const navItems = [
     {
@@ -41,9 +39,9 @@ export default function MobileBottomNav({ isLoggedIn, user }: { isLoggedIn?: boo
       isActive: pathname.startsWith('/community')
     },
     {
-      label: isUserLogged ? 'Dompet' : 'Masuk',
-      href: isUserLogged ? '/wallet' : '/auth',
-      icon: isUserLogged ? Wallet : UserIcon,
+      label: user ? 'Dompet' : 'Masuk',
+      href: user ? '/wallet' : '/auth',
+      icon: user ? Wallet : UserIcon,
       isActive: pathname.startsWith('/wallet') || pathname.startsWith('/auth')
     }
   ]

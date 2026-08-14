@@ -633,6 +633,11 @@ export default function CartPage() {
 
   // Checkout Execution
   const handleCheckout = async () => {
+    if (!currentUser) {
+      router.push('/auth?redirect=/cart')
+      return
+    }
+
     setError(null)
     setSuccessMessage(null)
     setIsPendingCheckout(true)
@@ -772,9 +777,11 @@ export default function CartPage() {
   const userCoins = currentUserProfile?.coinBalance || 0;
   const maxCoinsVal = userCoins * 1500;
   const coinRedemptionValue = useCoins ? Math.min(subtotal * 0.5, maxCoinsVal) : 0; // limit coin to max 50% subtotal
-  const coinsRedeemed = coinRedemptionValue / 1500;
+  // Service and Payment Admin Fees
+  const serviceFee = subtotal > 0 ? 1000 : 0; // Biaya Layanan Aplikasi
+  const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0); // Biaya Transaksi / Admin Pembayaran
 
-  const total = Math.max(0, subtotal + shippingFee - couponDiscount - coinRedemptionValue);
+  const total = Math.max(0, subtotal + shippingFee + serviceFee + paymentFee - couponDiscount - coinRedemptionValue);
 
   // Check if cart contains user's own products
   const hasOwnProduct = currentUser && cartDetails.some(item => item.merchantId === currentUser.id);
@@ -839,6 +846,21 @@ export default function CartPage() {
         {successMessage && (
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium flex items-center gap-2">
             ✓ <span>{successMessage}</span>
+          </div>
+        )}
+
+        {!currentUser && (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#E8F5E9] to-emerald-50 border border-[#C8E6C9] text-xs text-[#006E24] font-medium flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <span className="text-lg">🔒</span>
+              <span>Anda belum masuk. Silakan <strong>login</strong> agar transaksi dan status pengiriman tersimpan aman di akun Anda.</span>
+            </div>
+            <Link
+              href="/auth?redirect=/cart"
+              className="px-4 py-2 bg-[#006E24] hover:bg-[#084e1b] text-white font-extrabold rounded-xl text-xs shrink-0 transition-colors shadow-xs"
+            >
+              Masuk / Daftar Akun
+            </Link>
           </div>
         )}
 
@@ -1385,51 +1407,86 @@ export default function CartPage() {
 
                   <div className="space-y-2 text-xs text-slate-600 pt-1">
                     <div className="flex justify-between items-center">
-                      <span>Subtotal</span>
+                      <span>Subtotal Produk</span>
                       <span className="font-semibold text-slate-800">Rp {subtotal.toLocaleString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span>Pengiriman</span>
-                      <span className="font-semibold text-[#2DB24A] font-bold">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
+                      <span>Biaya Pengiriman</span>
+                      <span className="font-semibold text-[#006E24] font-bold">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-1">
+                        <span>Biaya Layanan Aplikasi</span>
+                        <span className="text-[10px] text-slate-400">ⓘ</span>
+                      </span>
+                      <span className="font-semibold text-slate-800">Rp {serviceFee.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-1">
+                        <span>Biaya Jasa Transaksi</span>
+                        <span className="text-[10px] text-slate-400">({paymentMethod === 'WALLET' ? 'Dompet' : 'Payment Gateway'})</span>
+                      </span>
+                      <span className={`font-semibold ${paymentFee === 0 ? 'text-[#006E24] font-bold' : 'text-slate-800'}`}>
+                        {paymentFee === 0 ? 'Rp 0 (Gratis via Dompet)' : `Rp ${paymentFee.toLocaleString('id-ID')}`}
+                      </span>
                     </div>
                     {couponDiscount > 0 && (
-                      <div className="flex justify-between items-center text-[#2DB24A] font-bold">
+                      <div className="flex justify-between items-center text-[#006E24] font-bold">
                         <span>Diskon Voucher</span>
                         <span>-Rp {couponDiscount.toLocaleString('id-ID')}</span>
+                      </div>
+                    )}
+                    {coinRedemptionValue > 0 && (
+                      <div className="flex justify-between items-center text-amber-700 font-bold">
+                        <span>Potongan Koin Saloka</span>
+                        <span>-Rp {coinRedemptionValue.toLocaleString('id-ID')}</span>
                       </div>
                     )}
 
                     <div className="border-t border-slate-100 pt-2.5 flex justify-between items-center">
                       <span className="font-bold text-xs text-slate-800">Total Tagihan</span>
-                      <span className="font-extrabold text-slate-900 text-lg">
+                      <span className="font-extrabold text-slate-900 text-lg font-mono">
                         Rp {total.toLocaleString('id-ID')}
                       </span>
                     </div>
                   </div>
 
-                  <button
-                    id="cart-checkout"
-                    onClick={handleCheckout}
-                    disabled={
-                      isPending ||
-                      isPendingCheckout ||
-                      isVerifying ||
-                      cart.length === 0 ||
-                      hasOwnProduct ||
-                      (paymentMethod === 'WALLET' && (walletBalance === null || walletBalance < total))
-                    }
-                    className="w-full py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed mt-1"
-                  >
-                    {isPendingCheckout 
-                      ? 'Memproses Transaksi...' 
-                      : isVerifying 
-                      ? 'Memverifikasi Pembayaran...' 
-                      : paymentMethod === 'WALLET' 
-                      ? (walletBalance === null || walletBalance < total) 
-                        ? 'Saldo Dompet Tidak Mencukupi' 
-                        : '⚡ Bayar Sekarang (Dompet)' 
-                      : 'Bayar Sekarang'}
-                  </button>
+                  {!currentUser ? (
+                    <button
+                      id="cart-checkout-login"
+                      onClick={() => router.push('/auth?redirect=/cart')}
+                      className="w-full py-3.5 bg-[#006E24] hover:bg-[#084e1b] text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer mt-1"
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      <span>Masuk Akun untuk Melanjutkan Pembayaran</span>
+                    </button>
+                  ) : (
+                    <button
+                      id="cart-checkout"
+                      onClick={handleCheckout}
+                      disabled={
+                        isPending ||
+                        isPendingCheckout ||
+                        isVerifying ||
+                        cart.length === 0 ||
+                        hasOwnProduct ||
+                        (paymentMethod === 'WALLET' && (walletBalance === null || walletBalance < total))
+                      }
+                      className="w-full py-3.5 bg-[#006E24] hover:bg-[#084e1b] text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                    >
+                      {isPendingCheckout 
+                        ? 'Memproses Transaksi...' 
+                        : isVerifying 
+                        ? 'Memverifikasi Pembayaran...' 
+                        : paymentMethod === 'WALLET' 
+                        ? (walletBalance === null || walletBalance < total) 
+                          ? 'Saldo Dompet Tidak Mencukupi' 
+                          : '⚡ Bayar Sekarang (Dompet)' 
+                        : 'Bayar Sekarang'}
+                    </button>
+                  )}
 
                   {hasOwnProduct && (
                     <p className="text-[10px] text-red-500 font-semibold text-center mt-1">
