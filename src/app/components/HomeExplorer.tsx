@@ -17,7 +17,6 @@ import {
   X,
   ChevronRight
 } from 'lucide-react'
-import ShippingRateCalculatorWidget from './ShippingRateCalculatorWidget'
 import { formatCategoryName } from '@/lib/utils'
 
 interface Product {
@@ -860,9 +859,6 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           )}
         </div>
       )}
-
-      {/* ── REAL-TIME SHIPPING RATE CALCULATOR WIDGET ── */}
-      <ShippingRateCalculatorWidget />
     </section>
   )
 }

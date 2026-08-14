@@ -7620,7 +7620,7 @@ export const DataStore = {
 
     // Reward: COIN untuk PERKUMPULAN, SALDO untuk KOPERASI
     const rewardType = isKoperasi ? 'SALDO' : 'COIN'
-    const rewardAmount = 5.0 // default 5 coin atau Rp 5.000 saldo
+    const rewardAmount = 3.0 // 3 coin (karena max 2 tier sekarang)
 
     if (await isDbConnected()) {
       try {
@@ -7643,6 +7643,12 @@ export const DataStore = {
             const kasBalance = (koperasi as any)?.coinBalance || 0
             if (kasBalance < rewardAmount) throw new Error('Kas koperasi tidak mencukupi untuk reward.')
 
+            // Otomatis kurangi saldo kas koin koperasi
+            await tx.community.update({
+              where: { id: data.communityId },
+              data: { coinBalance: { decrement: rewardAmount } }
+            })
+
             // Tambah saldo wallet pengundang
             await tx.wallet.update({
               where: { userId: data.inviterId },
@@ -7658,7 +7664,18 @@ export const DataStore = {
               }
             })
           } else {
-            // Reward coin untuk perkumpulan
+            // Kurangi alokasi koin komunitas perkumpulan
+            const perkumpulan = await tx.community.findUnique({ where: { id: data.communityId } })
+            const kasBalance = (perkumpulan as any)?.coinBalance || 0
+            if (kasBalance < rewardAmount) throw new Error('Alokasi koin komunitas tidak mencukupi untuk reward.')
+
+            // Otomatis kurangi koin komunitas setelah dialokasikan
+            await tx.community.update({
+              where: { id: data.communityId },
+              data: { coinBalance: { decrement: rewardAmount } }
+            })
+
+            // Reward coin untuk pengundang
             await tx.user.update({
               where: { id: data.inviterId },
               data: { coinBalance: { increment: rewardAmount } }
@@ -7703,8 +7720,13 @@ export const DataStore = {
     if (existing) return { rewarded: false, message: 'Sudah pernah mengundang merchant ini ke komunitas ini.' }
 
     const inviter = globalMockUsers.find(u => u.id === data.inviterId)
+    const targetCommunity = communities.find((c: any) => c.id === data.communityId)
 
     if (isKoperasi) {
+      // Otomatis kurangi saldo kas koin koperasi
+      if (targetCommunity) {
+        targetCommunity.coinBalance = Math.max(0, (targetCommunity.coinBalance || 0) - rewardAmount)
+      }
       // Tambah saldo wallet
       const inviterWallet = globalMockWallets.find(w => w.userId === data.inviterId)
       if (inviterWallet) inviterWallet.balance += rewardAmount * 1500
@@ -7717,7 +7739,11 @@ export const DataStore = {
         createdAt: new Date()
       })
     } else {
-      // Tambah coin
+      // Otomatis kurangi koin alokasi komunitas
+      if (targetCommunity) {
+        targetCommunity.coinBalance = Math.max(0, (targetCommunity.coinBalance || 0) - rewardAmount)
+      }
+      // Tambah coin ke inviter
       if (inviter) (inviter as any).coinBalance = ((inviter as any).coinBalance || 0) + rewardAmount
       ;(globalThis as any).__mockCoinTransactions.push({
         id: `coin-tx-${Date.now()}`,
