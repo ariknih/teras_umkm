@@ -8606,11 +8606,27 @@ export const DataStore = {
         await db.shuMemberDistribution.createMany({
           data: distributions.map(d => ({
             shuConfigId,
-            ...d
+            communityId: d.communityId,
+            userId: d.userId,
+            year: d.year,
+            simpananMember: d.simpananMember,
+            simpananTotalCommunity: d.simpananTotalCommunity,
+            shuJasaModalAmount: d.shuJasaModalAmount,
+            transaksiMember: d.transaksiMember,
+            transaksiTotalCommunity: d.transaksiTotalCommunity,
+            shuJasaUsahaAmount: d.shuJasaUsahaAmount,
+            totalShuAmount: d.totalShuAmount
           }))
         })
         return { success: true }
-      } catch (_) {}
+      } catch (err: any) {
+        try {
+          fs.appendFileSync(
+            path.join(process.cwd(), 'db_error_log.txt'),
+            `[${new Date().toISOString()}] saveShuMemberDistributions DB error: ${err.message}\n${err.stack}\n\n`
+          )
+        } catch (logErr) {}
+      }
     }
 
     const dists = (globalThis as any).__mockShuMemberDistributions || []
