@@ -1,11 +1,22 @@
 'use client'
 
-import React, { useState, useEffect, use, startTransition } from 'react'
+import React, { useState, useEffect, use } from 'react'
 import Link from 'next/link'
 import { getOrderDetail, updateOrderTracking } from '@/app/actions/orders'
 import { createReview } from '@/app/actions/reviews'
 import { getActivePaymentMethods } from '@/app/actions/wallet-affiliate'
-import { CheckCircle2, Package, Truck, Home, Star, AlertCircle, ArrowLeft } from 'lucide-react'
+import {
+  CheckCircle2,
+  Package,
+  Truck,
+  Home,
+  Star,
+  ArrowLeft,
+  Copy,
+  FileText,
+  MessageCircle,
+  ExternalLink
+} from 'lucide-react'
 import { goeyToast } from 'goey-toast'
 
 interface PageProps {
@@ -27,6 +38,7 @@ export default function OrderDetailPage({ params }: PageProps) {
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewedProductIds, setReviewedProductIds] = useState<Set<string>>(new Set())
   const [completing, setCompleting] = useState(false)
+  const [copiedResi, setCopiedResi] = useState(false)
 
   const handleCompleteOrder = async () => {
     if (!confirm('Apakah Anda yakin pesanan sudah diterima dengan baik?')) return
@@ -48,10 +60,6 @@ export default function OrderDetailPage({ params }: PageProps) {
 
   const fetchOrderDetail = async () => {
     try {
-      const data = await getOrderDetail(id)
-      setOrder(data)
-      
-      // If db connected, check which products user has already reviewed
       const res = await getOrderDetail(id)
       if (res.order) {
         setOrder(res.order)
@@ -67,6 +75,8 @@ export default function OrderDetailPage({ params }: PageProps) {
             setDynamicPayments(payments)
           } catch (e) {}
         }
+      } else if (res) {
+        setOrder(res)
       }
     } catch (e) {
       console.error(e)
@@ -92,7 +102,6 @@ export default function OrderDetailPage({ params }: PageProps) {
       } else {
         setReviewSuccess('Terima kasih! Ulasan Anda berhasil dikirim.')
         setComment('')
-        // Optimistically mark as reviewed
         setReviewedProductIds(prev => {
           const next = new Set(prev)
           next.add(productId)
@@ -106,27 +115,37 @@ export default function OrderDetailPage({ params }: PageProps) {
     }
   }
 
+  const copyTrackingResi = (resi: string) => {
+    navigator.clipboard.writeText(resi)
+    setCopiedResi(true)
+    goeyToast.success('Nomor resi berhasil disalin!')
+    setTimeout(() => setCopiedResi(false), 3000)
+  }
+
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark">
-        <span className="text-xs font-geist font-bold text-primary tracking-widest uppercase animate-pulse">
-          Memuat Lacak Pesanan...
-        </span>
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center pt-20">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-9 h-9 border-3 border-slate-200 border-t-[#006E24] rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-700">Memuat rincian pesanan...</p>
+        </div>
       </div>
     )
   }
 
   if (!order) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center bg-bg-dark p-6 text-center">
-        <AlertCircle size={40} className="text-red-400 mb-4" />
-        <h2 className="font-sora text-lg font-bold text-text-primary mb-2">Pesanan Tidak Ditemukan</h2>
-        <p className="text-xs text-text-secondary max-w-xs mb-6">
-          Maaf, data rincian pesanan dengan ID tersebut tidak ditemukan di sistem kami.
-        </p>
-        <Link href="/orders" className="btn-primary text-xs">
-          Kembali ke Pesanan Saya
-        </Link>
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center p-6 pt-24 text-center">
+        <div className="bg-white border border-slate-200 p-8 rounded-3xl max-w-md shadow-xs space-y-4">
+          <div className="w-14 h-14 rounded-full bg-red-50 text-rose-600 flex items-center justify-center mx-auto text-2xl font-bold">
+            !
+          </div>
+          <h2 className="font-extrabold text-base text-slate-900">Pesanan Tidak Ditemukan</h2>
+          <p className="text-xs text-slate-500">ID Pesanan #{id} tidak terdaftar di sistem atau telah dihapus.</p>
+          <Link href="/orders" className="px-6 py-2.5 bg-[#006E24] text-white text-xs font-bold rounded-xl inline-block">
+            Kembali ke Daftar Pesanan
+          </Link>
+        </div>
       </div>
     )
   }
@@ -152,169 +171,125 @@ export default function OrderDetailPage({ params }: PageProps) {
   const currentIdx = getStatusIndex(currentStatus)
 
   return (
-    <div className="relative min-h-screen bg-bg-dark pt-28 pb-24 px-6 md:px-10">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[350px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_75%)] pointer-events-none z-0" />
+    <div className="min-h-screen bg-[#F8F9FA] pt-24 pb-24 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-[840px] mx-auto space-y-5">
+        
+        {/* Navigation Breadcrumb */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/orders"
+            className="inline-flex items-center gap-1.5 text-slate-600 hover:text-[#006E24] transition-colors text-xs font-bold"
+          >
+            <ArrowLeft size={15} />
+            <span>Kembali ke Daftar Pesanan</span>
+          </Link>
 
-      <div className="relative z-10 max-w-[800px] mx-auto">
-        <Link href="/orders" className="inline-flex items-center gap-1.5 text-text-secondary hover:text-primary transition-colors text-xs font-bold uppercase tracking-wider mb-6">
-          <ArrowLeft size={14} />
-          Kembali
-        </Link>
-
-        <div className="mb-10 pb-6 border-b border-border-subtle flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="font-sora text-2xl font-bold text-text-primary mb-1">
-              Detail Pelacakan Pesanan.
-            </h1>
-            <p className="text-xs text-text-secondary">
-              ID Pesanan: <span className="text-primary font-bold">{order.id.replace('order-', '#')}</span>
-            </p>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/orders/${id}/invoice`}
+              target="_blank"
+              className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-all shadow-2xs"
+            >
+              <FileText size={13} className="text-[#006E24]" />
+              <span>Lihat Invoice</span>
+            </Link>
           </div>
         </div>
 
-        {/* Order Status Banner */}
-        <div className="bg-white p-4 rounded-xl border border-zinc-100 shadow-sm mb-8">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-3">
-              {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-                <button
-                  type="button"
-                  onClick={handleCompleteOrder}
-                  disabled={completing}
-                  className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {completing ? 'Memproses...' : '✓ Pesanan Diterima'}
-                </button>
-              )}
-              <span className={`px-2.5 py-1 rounded text-[9px] font-geist font-black uppercase tracking-widest border ${
+        {/* Order Header Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2">
+              <span className="text-xs font-extrabold text-slate-900 font-mono">
+                Order #{order.id.replace('order-', '')}
+              </span>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase border ${
                 order.status === 'COMPLETED'
-                  ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                  ? 'bg-[#E8F5E9] border-[#C8E6C9] text-[#006E24]'
                   : order.status === 'CANCELLED'
-                  ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                  : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 animate-pulse'
+                  ? 'bg-rose-50 border-rose-200 text-rose-600'
+                  : 'bg-amber-50 border-amber-200 text-amber-700'
               }`}>
-                <h2 className="font-bold text-zinc-900 text-sm">
-                  Status: {order.status === 'COMPLETED' ? 'Selesai' : order.status === 'CANCELLED' ? 'Batal' : 'Pending'}
-                </h2>
+                {order.status === 'COMPLETED' ? 'Selesai' : order.status === 'CANCELLED' ? 'Dibatalkan' : 'Diproses'}
               </span>
             </div>
+            <p className="text-xs text-slate-500">
+              Waktu Transaksi: {new Date(order.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+            </p>
           </div>
-          
-          {/* Manual Payment Box if applicable */}
-          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && order.bumpSales?.startsWith('MANUAL_') && (
-            <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <h3 className="text-sm font-bold text-amber-900 mb-2">Menunggu Pembayaran Manual</h3>
-              <p className="text-xs text-amber-800 mb-4">
-                Silakan lakukan pembayaran sebesar <strong>Rp{order.totalAmount.toLocaleString('id-ID')}</strong> ke metode berikut:
-              </p>
-              {(() => {
-                const methodId = order.bumpSales.replace('MANUAL_', '');
-                const method = dynamicPayments.find(p => p.id === methodId);
-                if (!method) return <p className="text-xs text-zinc-500">Memuat detail pembayaran...</p>;
-                
-                return (
-                  <div className="bg-white rounded-lg p-3 border border-amber-100 space-y-3">
-                    <div>
-                      <span className="text-[11px] font-bold text-zinc-500 uppercase">Penyedia</span>
-                      <p className="text-sm font-bold text-zinc-900">{method.providerName}</p>
-                    </div>
-                    {method.type === 'BANK' && (
-                      <div>
-                        <span className="text-[11px] font-bold text-zinc-500 uppercase">Rekening Transfer (a.n {method.accountName})</span>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="font-mono text-base font-bold text-[#2DB24A]">{method.accountNumber}</p>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(method.accountNumber)
-                              goeyToast.success('Nomor rekening disalin')
-                            }}
-                            className="text-xs font-bold text-[#2DB24A] px-3 py-1 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                          >
-                            Salin
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    {method.type === 'QRIS' && (
-                      <div className="space-y-3">
-                        {method.qrImageUrl && (
-                          <div className="flex flex-col items-center">
-                            <span className="text-[11px] font-bold text-zinc-500 uppercase mb-2">Scan QRIS</span>
-                            <img src={method.qrImageUrl} alt="QRIS" className="w-48 h-48 border border-zinc-200 rounded-lg p-2 bg-white" />
-                          </div>
-                        )}
-                        {method.qrRawString && (
-                          <div>
-                            <span className="text-[11px] font-bold text-zinc-500 uppercase">Atau Copy String QRIS Dinamis</span>
-                            <div className="flex items-center justify-between mt-1 bg-zinc-50 p-2 rounded-lg border border-zinc-200">
-                              <p className="font-mono text-[10px] text-zinc-600 truncate w-48">{method.qrRawString}</p>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(method.qrRawString)
-                                  goeyToast.success('String QRIS disalin')
-                                }}
-                                className="text-xs font-bold text-[#2DB24A] px-2 py-1 bg-green-50 rounded-lg hover:bg-green-100 shrink-0"
-                              >
-                                Salin
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
-              <p className="text-[10px] text-amber-700 mt-3 font-medium">
-                *Pesanan akan dikonfirmasi admin setelah bukti transfer/pembayaran divalidasi secara manual.
-              </p>
-            </div>
+
+          {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+            <button
+              type="button"
+              onClick={handleCompleteOrder}
+              disabled={completing}
+              className="px-5 py-2.5 bg-[#006E24] hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+            >
+              <CheckCircle2 size={14} strokeWidth={2.5} />
+              <span>{completing ? 'Memproses...' : 'Konfirmasi Pesanan Diterima'}</span>
+            </button>
           )}
         </div>
 
-        {/* TIMELINE STEPPER (Horizontal on desktop, vertical stack on mobile) */}
-        <div className="border border-border-subtle bg-surface-dark/40 backdrop-blur-md p-6 rounded-xl shadow-md mb-8">
-          <h3 className="font-sora text-xs font-bold text-text-primary mb-8 uppercase tracking-wider">Status Perjalanan Paket</h3>
-          
+        {/* ── INTERACTIVE TIMELINE STEPPER ── */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-xs space-y-6">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider">
+              Status Perjalanan Paket
+            </h3>
+            {order.shippingLabel && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">No. Resi:</span>
+                <button
+                  onClick={() => copyTrackingResi(order.shippingLabel)}
+                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-mono text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Salin Resi"
+                >
+                  <span>{order.shippingLabel}</span>
+                  <Copy size={11} className={copiedResi ? 'text-[#006E24]' : 'text-slate-400'} />
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
             {statuses.map((step, idx) => {
               const StepIcon = step.icon
               const isPast = idx <= currentIdx
               const isCurrent = idx === currentIdx
               
-              // Find matching date in tracking log
               const matchLog = trackingSteps.find((ts: any) => ts.status === step.key)
               const logDate = matchLog ? new Date(matchLog.createdAt).toLocaleDateString('id-ID', {
                 hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short'
               }) : null
 
               return (
-                <div key={step.key} className="flex md:flex-col items-start md:items-center text-left md:text-center relative gap-4 md:gap-2">
-                  {/* Connect Line */}
+                <div key={step.key} className="flex md:flex-col items-start md:items-center text-left md:text-center relative gap-3.5 md:gap-2">
+                  {/* Connect Line (Desktop) */}
                   {idx < statuses.length - 1 && (
-                    <div className="hidden md:block absolute top-4 left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5 bg-border-subtle z-0">
-                      <div className={`h-full bg-primary transition-all duration-500 ${idx < currentIdx ? 'w-full' : 'w-0'}`} />
+                    <div className="hidden md:block absolute top-4 left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5 bg-slate-200 z-0">
+                      <div className={`h-full bg-[#006E24] transition-all duration-500 ${idx < currentIdx ? 'w-full' : 'w-0'}`} />
                     </div>
                   )}
                   
                   {/* Circle Indicator */}
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center z-10 border transition-all duration-300 ${
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center z-10 border-2 transition-all duration-300 ${
                     isPast 
-                      ? 'bg-primary/10 border-primary text-primary' 
-                      : 'bg-surface-container border-border-subtle text-text-secondary'
-                  } ${isCurrent ? 'ring-4 ring-primary/20 shadow-md scale-105' : ''}`}>
-                    <StepIcon size={16} />
+                      ? 'bg-[#E8F5E9] border-[#006E24] text-[#006E24] font-bold' 
+                      : 'bg-slate-50 border-slate-200 text-slate-400'
+                  } ${isCurrent ? 'ring-4 ring-[#006E24]/20 scale-105 shadow-xs' : ''}`}>
+                    <StepIcon size={16} strokeWidth={isPast ? 2.5 : 2} />
                   </div>
 
                   <div className="flex-grow">
-                    <p className={`text-xs font-bold ${isPast ? 'text-text-primary' : 'text-text-secondary'}`}>
+                    <p className={`text-xs font-extrabold ${isPast ? 'text-slate-900' : 'text-slate-400'}`}>
                       {step.label}
                     </p>
-                    <p className="text-[9px] text-text-secondary mt-0.5 leading-tight">
+                    <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
                       {step.description}
                     </p>
                     {logDate && (
-                      <p className="text-[8px] font-geist font-bold text-primary mt-1">
+                      <p className="text-[10px] font-bold text-[#006E24] mt-1 font-mono">
                         {logDate}
                       </p>
                     )}
@@ -325,157 +300,124 @@ export default function OrderDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* LOG DETAIL (Tracking steps log) */}
-        <div className="border border-border-subtle bg-surface-dark/40 backdrop-blur-md p-6 rounded-xl shadow-md mb-8">
-          <h3 className="font-sora text-xs font-bold text-text-primary mb-6 uppercase tracking-wider">Riwayat Pengiriman</h3>
-          {trackingSteps.length === 0 ? (
-            <p className="text-xs text-text-secondary">Tidak ada log pelacakan yang tersedia.</p>
-          ) : (
-            <div className="space-y-6 relative border-l border-border-subtle pl-4 ml-2">
-              {trackingSteps.slice().reverse().map((step: any, idx: number) => {
-                const stepDate = new Date(step.createdAt).toLocaleString('id-ID', {
-                  day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                })
-                return (
-                  <div key={step.id || idx} className="relative">
-                    {/* Circle Dot indicator */}
-                    <div className="absolute -left-[21px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#2DB24A] border-2 border-surface-dark" />
-                    
-                    <div className="flex justify-between items-start gap-3 flex-wrap">
-                      <span className="text-xs font-bold text-text-primary">{step.status}</span>
-                      <span className="text-[8px] font-geist text-text-secondary">{stepDate}</span>
-                    </div>
-                    {step.note && (
-                      <p className="text-xs text-text-secondary mt-1">{step.note}</p>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* SHIPPING & DETAILS SUMMARY */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        {/* ── SHIPPING & PAYMENT SUMMARY ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           {/* Shipping Info */}
-          <div className="border border-border-subtle bg-surface-dark/40 backdrop-blur-md p-6 rounded-xl shadow-md">
-            <h3 className="font-sora text-xs font-bold text-text-primary mb-4 uppercase tracking-wider">Rincian Pengiriman</h3>
-            <div className="space-y-3 text-xs">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
+            <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
+              Rincian Pengiriman
+            </h4>
+            <div className="space-y-2.5 text-xs">
               <div>
-                <span className="text-text-secondary block mb-1">Kurir</span>
-                <span className="text-text-primary font-bold uppercase">{order.courier || 'Tidak Spesifik'}</span>
+                <span className="text-slate-400 text-[11px] block">Kurir Pengiriman</span>
+                <span className="text-slate-900 font-bold uppercase">{order.courier || 'Reguler Kurir UMKM'}</span>
               </div>
-              {order.shippingLabel && (
-                <div>
-                  <span className="text-text-secondary block mb-1">Resi Pengiriman</span>
-                  <span className="inline-block bg-primary/10 border border-primary/20 text-primary font-bold uppercase px-3 py-1 rounded font-mono tracking-widest">{order.shippingLabel}</span>
-                </div>
-              )}
               <div>
-                <span className="text-text-secondary block mb-1">Alamat Tujuan</span>
-                <p className="text-text-primary font-medium leading-relaxed">{order.shippingAddress || 'Tidak Spesifik'}</p>
+                <span className="text-slate-400 text-[11px] block">Alamat Tujuan</span>
+                <p className="text-slate-800 font-medium leading-relaxed">{order.shippingAddress || 'Alamat Customer Terdaftar'}</p>
               </div>
             </div>
           </div>
 
           {/* Payment Summary */}
-          <div className="border border-border-subtle bg-surface-dark/40 backdrop-blur-md p-6 rounded-xl shadow-md">
-            <h3 className="font-sora text-xs font-bold text-text-primary mb-4 uppercase tracking-wider">Ringkasan Pembayaran</h3>
-            <div className="space-y-3 text-xs">
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs space-y-3">
+            <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
+              Rincian Pembayaran
+            </h4>
+            <div className="space-y-2 text-xs text-slate-600">
               <div className="flex justify-between">
-                <span className="text-text-secondary">Subtotal Barang</span>
-                <span className="text-text-primary font-semibold">Rp {(order.totalAmount - (order.shippingFee || 0) + (order.discountAmount || 0)).toLocaleString('id-ID')}</span>
+                <span>Subtotal Barang</span>
+                <span className="font-semibold text-slate-800">
+                  Rp {(order.totalAmount - (order.shippingFee || 0) + (order.discountAmount || 0)).toLocaleString('id-ID')}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-text-secondary">Ongkos Kirim</span>
-                <span className="text-text-primary font-semibold">Rp {(order.shippingFee || 0).toLocaleString('id-ID')}</span>
+                <span>Biaya Pengiriman</span>
+                <span className="font-semibold text-[#006E24]">
+                  {order.shippingFee ? `Rp ${order.shippingFee.toLocaleString('id-ID')}` : 'Gratis'}
+                </span>
               </div>
               {order.discountAmount > 0 && (
-                <div className="flex justify-between text-red-400">
+                <div className="flex justify-between text-[#006E24] font-bold">
                   <span>Diskon Kupon</span>
                   <span>-Rp {order.discountAmount.toLocaleString('id-ID')}</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-border-subtle/50 pt-2.5 font-bold">
-                <span className="text-text-primary">Total Bayar</span>
-                <span className="text-primary font-black">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
+              <div className="flex justify-between border-t border-slate-100 pt-2.5 text-slate-900 font-extrabold text-sm">
+                <span>Total Bayar</span>
+                <span className="text-[#006E24] font-mono">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* PRODUCTS LIST & REVIEW FORM */}
-        <div className="border border-border-subtle bg-surface-dark/40 backdrop-blur-md p-6 rounded-xl shadow-md">
-          <h3 className="font-sora text-xs font-bold text-text-primary mb-6 uppercase tracking-wider">Produk Yang Dibeli</h3>
-          
-          <div className="space-y-6">
+        {/* ── PRODUCTS PURCHASED & REVIEW FORM ── */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+          <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
+            Daftar Produk yang Dibeli
+          </h3>
+
+          <div className="space-y-4 divide-y divide-slate-100">
             {(order.items || []).map((item: any) => {
               const product = item.product || { title: item.productTitle || 'Produk Saloka', price: item.price }
               const alreadyReviewed = reviewedProductIds.has(item.productId)
 
               return (
-                <div key={item.productId} className="border-b border-border-subtle/40 last:border-none pb-6 last:pb-0">
-                  <div className="flex justify-between gap-4 items-start mb-4">
-                    <div className="flex items-center gap-4">
-                      {product.imageUrl && (
-                        <div className="w-12 h-12 bg-surface-container rounded border border-border-subtle overflow-hidden shrink-0">
+                <div key={item.productId} className="pt-4 first:pt-0 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-14 h-14 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden shrink-0">
+                        {product.imageUrl ? (
                           <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div>
-                        <h4 className="font-sora text-xs font-bold text-text-primary line-clamp-1">{product.title}</h4>
-                        <p className="text-[10px] text-text-secondary mt-0.5">x{item.quantity} • Rp {item.price.toLocaleString('id-ID')}</p>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400">Saloka</div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-900 line-clamp-1">{product.title}</h4>
+                        <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          {item.quantity} x Rp {item.price.toLocaleString('id-ID')}
+                        </p>
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-primary font-geist">
+
+                    <span className="text-xs font-mono font-extrabold text-slate-900 shrink-0">
                       Rp {(item.price * item.quantity).toLocaleString('id-ID')}
                     </span>
                   </div>
 
-                  {/* Inline Review Form (Only show if completed and not reviewed yet) */}
+                  {/* Review form if completed */}
                   {order.status === 'COMPLETED' && !alreadyReviewed && (
-                    <div className="bg-surface-container/30 border border-border-subtle/55 rounded-xl p-4 mt-4">
-                      <h5 className="font-sora text-[10px] font-bold text-text-primary mb-3 uppercase tracking-wider">Berikan Ulasan Produk</h5>
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                      <h5 className="text-xs font-bold text-slate-800">Beri Ulasan untuk Produk Ini:</h5>
+                      {reviewSuccess && <p className="text-xs text-[#006E24] font-bold">✔ {reviewSuccess}</p>}
+                      {reviewError && <p className="text-xs text-rose-600 font-bold">⚠️ {reviewError}</p>}
                       
-                      {reviewSuccess && (
-                        <div className="p-3 mb-3 bg-green-500/10 border border-green-500/20 text-[10px] text-green-400 font-medium rounded-lg">
-                          {reviewSuccess}
-                        </div>
-                      )}
-                      {reviewError && (
-                        <div className="p-3 mb-3 bg-red-500/10 border border-red-500/20 text-[10px] text-red-400 font-medium rounded-lg">
-                          {reviewError}
-                        </div>
-                      )}
-
                       <form onSubmit={(e) => handleReviewSubmit(item.productId, e)} className="space-y-3">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] text-text-secondary mr-2">Bintang:</span>
                           {[1, 2, 3, 4, 5].map((star) => (
                             <button
                               key={star}
                               type="button"
                               onClick={() => setRating(star)}
-                              className="text-yellow-400 hover:scale-110 transition-transform cursor-pointer outline-none"
+                              className="text-amber-400 hover:scale-110 transition-transform cursor-pointer"
                             >
-                              <Star size={16} fill={star <= rating ? 'currentColor' : 'none'} />
+                              <Star size={18} fill={star <= rating ? 'currentColor' : 'none'} />
                             </button>
                           ))}
                         </div>
-
                         <textarea
-                          placeholder="Tulis ulasan Anda mengenai produk ini (minimal 3 karakter)..."
+                          placeholder="Ceritakan kepuasan Anda mengenai produk ini..."
                           value={comment}
                           onChange={(e) => setComment(e.target.value)}
-                          required
                           rows={2}
-                          className="w-full px-3 py-2 bg-surface-dark border border-border-subtle rounded-lg text-[10px] text-text-primary placeholder:text-text-secondary/70 focus:outline-none leading-relaxed resize-none"
+                          required
+                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#006E24]"
                         />
-
                         <button
                           type="submit"
                           disabled={submittingReview}
-                          className="btn-primary font-black text-[9px] shadow disabled:opacity-50 cursor-pointer"
+                          className="px-4 py-2 bg-[#006E24] hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer"
                         >
                           {submittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
                         </button>
@@ -484,9 +426,9 @@ export default function OrderDetailPage({ params }: PageProps) {
                   )}
 
                   {alreadyReviewed && (
-                    <div className="bg-green-500/5 border border-green-500/10 text-green-400 px-3.5 py-2.5 rounded-xl text-[9px] font-bold inline-flex items-center gap-1.5 mt-3">
-                      <CheckCircle2 size={12} />
-                      Ulasan telah diberikan
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-[#006E24] text-[11px] font-bold rounded-lg border border-emerald-200">
+                      <CheckCircle2 size={13} />
+                      <span>Ulasan telah dikirim</span>
                     </div>
                   )}
                 </div>
@@ -494,6 +436,7 @@ export default function OrderDetailPage({ params }: PageProps) {
             })}
           </div>
         </div>
+
       </div>
     </div>
   )
