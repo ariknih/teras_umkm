@@ -1128,34 +1128,38 @@ export default function AdminDashboardClient({
   }
 
   const handleShiftLessonOrder = (lesson: any, direction: 'up' | 'down', course: any) => {
-    const sortedLessons = [...(course.lessons || [])].sort((a: any, b: any) => a.orderIndex - b.orderIndex)
-    const currentIndex = sortedLessons.findIndex((l: any) => l.id === lesson.id)
-    if (currentIndex === -1) return
-    if (direction === 'up' && currentIndex === 0) return
-    if (direction === 'down' && currentIndex === sortedLessons.length - 1) return
+    setActionError(null)
+    setActionSuccess(null)
+    const lessons = [...(course.lessons || [])].sort((a: any, b: any) => a.orderIndex - b.orderIndex)
+    const idx = lessons.findIndex((l: any) => l.id === lesson.id)
+    if (idx === -1) return
+    const targetIdx = direction === 'up' ? idx - 1 : idx + 1
+    if (targetIdx < 0 || targetIdx >= lessons.length) return
 
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
-    const targetLesson = sortedLessons[targetIndex]
-
-    const idxA = targetLesson.orderIndex
-    const idxB = lesson.orderIndex
+    const otherLesson = lessons[targetIdx]
+    const tempIndex = lesson.orderIndex
+    lesson.orderIndex = otherLesson.orderIndex
+    otherLesson.orderIndex = tempIndex
 
     startTransition(async () => {
-      await updateLessonAction(lesson.id, course.id, lesson.title, lesson.content, lesson.videoUrl, lesson.duration, idxA)
-      await updateLessonAction(targetLesson.id, course.id, targetLesson.title, targetLesson.content, targetLesson.videoUrl, targetLesson.duration, idxB)
-
-      setCourses(prev => prev.map(c => {
-        if (c.id === course.id) {
-          const lessons = (c.lessons || []).map((l: any) => {
-            if (l.id === lesson.id) return { ...l, orderIndex: idxA }
-            if (l.id === targetLesson.id) return { ...l, orderIndex: idxB }
-            return l
-          }).sort((a: any, b: any) => a.orderIndex - b.orderIndex)
-          return { ...c, lessons }
-        }
-        return c
-      }))
-      goeyToast.success(`Urutan "${lesson.title}" berhasil diperbarui.`)
+      const res1 = await updateLessonAction(lesson.id, course.id, lesson.title, lesson.content, lesson.videoUrl, lesson.duration, lesson.orderIndex)
+      const res2 = await updateLessonAction(otherLesson.id, course.id, otherLesson.title, otherLesson.content, otherLesson.videoUrl, otherLesson.duration, otherLesson.orderIndex)
+      if (res1.success && res2.success) {
+        setCourses(prev => prev.map(c => {
+          if (c.id === course.id) {
+            const updated = (c.lessons || []).map((l: any) => {
+              if (l.id === lesson.id) return { ...l, orderIndex: lesson.orderIndex }
+              if (l.id === otherLesson.id) return { ...l, orderIndex: otherLesson.orderIndex }
+              return l
+            }).sort((a: any, b: any) => a.orderIndex - b.orderIndex)
+            return { ...c, lessons: updated }
+          }
+          return c
+        }))
+        setActionSuccess('Urutan materi pelajaran berhasil digeser.')
+      } else {
+        setActionError('Gagal menggeser urutan materi pelajaran.')
+      }
     })
   }
 
