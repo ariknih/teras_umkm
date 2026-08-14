@@ -3,46 +3,31 @@ import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
 import { getCourses } from '@/app/actions/lms'
 import { getActiveBanners } from '@/app/actions/landing'
+import { getServicesAction } from '@/app/actions/services'
 import InteractiveFeatures from '@/app/components/InteractiveFeatures'
-import HeroBackground from '@/app/components/HeroBackground'
 import ScrollReveal from '@/app/components/ScrollReveal'
 import BannerCarousel from '@/app/components/BannerCarousel'
+import HomeExplorer from '@/app/components/HomeExplorer'
 
 export default async function HomePage() {
   const user = await getCurrentUser()
-  const allProducts = await getProducts()
-  const courses = await getCourses()
-  const activeBanners = await getActiveBanners()
-
-  // Filter & slice (if you still want to use real data for future sections)
-  const featuredProducts = allProducts.filter(p => p.category !== 'KERJAAN' && p.category !== 'JASA').slice(0, 12)
-  const jasaProducts = allProducts.filter(p => p.category === 'JASA').slice(0, 6)
-  const lokerProducts = allProducts.filter(p => p.category === 'KERJAAN').slice(0, 4)
-  const featuredCourses = courses.slice(0, 3)
+  const [allProducts, services, activeBanners, courses] = await Promise.all([
+    getProducts(),
+    getServicesAction(),
+    getActiveBanners(),
+    getCourses()
+  ])
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-poppins overflow-hidden">
       
-      {/* ── HERO SECTION ────────────────────────────────────────────── */}
-      <section className="relative w-full max-w-[1440px] mx-auto min-h-[500px] md:h-[768px] flex items-center px-6 md:px-16 overflow-hidden">
-        <HeroBackground />
-        
-        <div className="relative z-10 max-w-[630px] flex flex-col gap-8 bg-white/40 md:bg-transparent p-6 rounded-2xl md:p-0 backdrop-blur-sm md:backdrop-blur-none">
-          <h1 className="text-text-primary text-4xl md:text-6xl font-bold leading-tight">
-            Berniaga mudah <br className="hidden md:block" />
-            hanya di <span className="text-text-primary">Saloka</span><span className="text-tertiary">.id</span>
-          </h1>
-          <p className="text-text-primary text-lg md:text-xl font-normal leading-relaxed">
-            Memperluas jangkauan toko, jasa, atau komunitas sekarang menjadi semakin mudah!
-          </p>
-          <Link href={user ? "/merchant/dashboard" : "/auth?tab=register"} className="w-fit btn-primary shadow-lg">
-            {user ? "Buka Dashboard Anda" : "Mulai Berdagang Sekarang!"}
-          </Link>
-        </div>
-      </section>
+      {/* ── TOP BANNER CAROUSEL ─────────────────────────────────────────── */}
+      <div className="w-full pt-4 pb-2">
+        <BannerCarousel banners={activeBanners} />
+      </div>
 
-      {/* ── BANNER CAROUSEL ────────────────────────────────────────────── */}
-      <BannerCarousel banners={activeBanners} />
+      {/* ── INTERACTIVE EXPLORER: MARKETPLACE & JASA TOGGLE ─────────────── */}
+      <HomeExplorer products={allProducts} services={services} />
 
       {/* ── KEUNGGULAN PLATFORM ──────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex flex-col items-center bg-surface">
@@ -103,46 +88,6 @@ export default async function HomePage() {
         </div>
         </ScrollReveal>
       </section>
-
-      {/* ── PRODUK UNGGULAN ───────────────────────────────────────────── */}
-      {featuredProducts.length > 0 && (
-      <section className="w-full px-6 md:px-20 py-16 flex justify-center bg-surface">
-        <ScrollReveal>
-          <div className="w-full max-w-[1280px] bg-background rounded-3xl border border-border p-8 md:p-12 flex flex-col gap-8 relative overflow-hidden shadow-sm">
-          <div className="absolute top-0 left-[-50px] w-64 h-64 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
-          <div className="absolute bottom-0 right-[100px] w-80 h-80 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-semibold text-text-primary leading-snug">Produk Unggulan di Saloka.id</h2>
-              <p className="text-text-secondary text-sm md:text-base leading-relaxed mt-2">
-                Temukan berbagai produk UMKM berkualitas dari seluruh Indonesia.
-              </p>
-            </div>
-            <Link href="/market" className="btn-secondary text-sm shrink-0">
-              Lihat Semua Produk →
-            </Link>
-          </div>
-
-          <div className="relative z-10 flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x">
-            {featuredProducts.slice(0, 6).map((product) => (
-              <Link key={product.id} href={`/market/product/${product.id}`} className="w-56 md:w-64 shrink-0 snap-center group">
-                <div className="w-full h-40 md:h-48 rounded-2xl overflow-hidden bg-surface-container shadow-md">
-                  {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.title} width={256} height={192} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-text-secondary text-sm">Tidak ada gambar</div>
-                  )}
-                </div>
-                <h3 className="mt-3 text-sm font-semibold text-text-primary line-clamp-1 group-hover:text-primary transition-colors">{product.title}</h3>
-                <p className="text-primary font-bold text-sm">Rp {product.price.toLocaleString('id-ID')}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-        </ScrollReveal>
-      </section>
-      )}
 
       {/* ── FAQ SECTION ─────────────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex justify-center bg-surface">
