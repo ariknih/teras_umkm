@@ -4143,21 +4143,21 @@ export default function CommunityDetailPage() {
                         const hasConfig = !!communityShuData?.config;
                         const myDist = communityShuData?.config?.distributions?.find((d: any) => d.userId === user?.id);
                         
+                        const configNetProfit = communityShuData?.config?.totalNetProfit ?? 3000000;
+                        const configPctJasaModal = communityShuData?.config?.pctJasaModal ?? 20;
+                        const configPctJasaUsaha = communityShuData?.config?.pctJasaUsaha ?? 25;
+
+                        const poolJasaModal = (configNetProfit * configPctJasaModal) / 100;
+                        const poolJasaUsaha = (configNetProfit * configPctJasaUsaha) / 100;
+
                         const totSimp = myDist ? myDist.simpananTotalCommunity : (communitySavingsSummary?.totalSavingsCommunity || 0);
                         const totTx = myDist ? myDist.transaksiTotalCommunity : (communitySavingsSummary?.totalTransaksiCommunity || 0);
-                        
-                        const poolJasaModal = communityShuData?.config 
-                          ? (communityShuData.config.totalNetProfit * communityShuData.config.pctJasaModal / 100) 
-                          : 0;
-                        const poolJasaUsaha = communityShuData?.config 
-                          ? (communityShuData.config.totalNetProfit * communityShuData.config.pctJasaUsaha / 100) 
-                          : 0;
                         
                         const mySimp = myDist ? myDist.simpananMember : (communitySavingsSummary?.memberBalances?.[user?.id]?.total || 0);
                         const myTx   = myDist ? myDist.transaksiMember : (communitySavingsSummary?.memberTransaksi?.[user?.id] || 0);
                         
-                        const jModal = myDist ? myDist.shuJasaModalAmount : 0;
-                        const jUsaha = myDist ? myDist.shuJasaUsahaAmount : 0;
+                        const jModal = myDist ? myDist.shuJasaModalAmount : (totSimp > 0 ? (mySimp / totSimp) * poolJasaModal : 0);
+                        const jUsaha = myDist ? myDist.shuJasaUsahaAmount : (totTx > 0 ? (myTx / totTx) * poolJasaUsaha : 0);
                         const totShu = jModal + jUsaha;
 
                         return (
