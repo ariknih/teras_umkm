@@ -2363,13 +2363,13 @@ let cachedDbConnected = false;
 
 export async function isDbConnected(): Promise<boolean> {
   const now = Date.now();
-  if (now - lastDbCheckTime < 10000) {
+  if (now - lastDbCheckTime < 60000 && cachedDbConnected) {
     return cachedDbConnected;
   }
   lastDbCheckTime = now;
   try {
     const connectionPromise = db.$queryRaw`SELECT 1`.then(() => true);
-    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000));
+    const timeoutPromise = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000));
     cachedDbConnected = await Promise.race([connectionPromise, timeoutPromise]);
     return cachedDbConnected;
   } catch (e) {

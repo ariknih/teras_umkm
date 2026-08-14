@@ -37,9 +37,12 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications()
-    // Poll every 15 seconds
-    const interval = setInterval(fetchNotifications, 15000)
-    return () => clearInterval(interval)
+    window.addEventListener('focus', fetchNotifications)
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => {
+      window.removeEventListener('focus', fetchNotifications)
+      clearInterval(interval)
+    }
   }, [])
 
   // Close dropdown on click outside

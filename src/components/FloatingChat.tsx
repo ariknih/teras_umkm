@@ -50,14 +50,17 @@ export default function FloatingChat() {
     if (!currentUser || currentUser.role === 'CUSTOMER_SERVICE') return
 
     const fetchConvs = async () => {
-      const list = await getMyConversations()
-      setConversations(list)
-      const unread = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
-      setUnreadTotal(unread)
+      try {
+        const list = await getMyConversations()
+        setConversations(list)
+        const unread = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+        setUnreadTotal(unread)
+      } catch (_) {}
     }
 
     fetchConvs()
-    const interval = setInterval(fetchConvs, 4000)
+    // If open, poll every 6s, otherwise relaxed 30s
+    const interval = setInterval(fetchConvs, isOpen ? 6000 : 30000)
     return () => clearInterval(interval)
   }, [currentUser, isOpen])
 
@@ -66,12 +69,14 @@ export default function FloatingChat() {
     if (!activeRoom || !isOpen) return
 
     const fetchMessages = async () => {
-      const history = await getChatHistory(activeRoom.id)
-      setMessages(history)
+      try {
+        const history = await getChatHistory(activeRoom.id)
+        setMessages(history)
+      } catch (_) {}
     }
 
     fetchMessages()
-    const interval = setInterval(fetchMessages, 2000)
+    const interval = setInterval(fetchMessages, 3500)
     return () => clearInterval(interval)
   }, [activeRoom, isOpen])
 

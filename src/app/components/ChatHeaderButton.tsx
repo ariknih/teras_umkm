@@ -23,10 +23,14 @@ export default function ChatHeaderButton({ userId }: { userId?: string }) {
 
     updateUnreadCount()
 
-    // Poll every 4 seconds to keep in sync
-    const interval = setInterval(updateUnreadCount, 4000)
+    // Sync on window focus and relaxed interval
+    window.addEventListener('focus', updateUnreadCount)
+    const interval = setInterval(updateUnreadCount, 20000)
 
-    return () => clearInterval(interval)
+    return () => {
+      window.removeEventListener('focus', updateUnreadCount)
+      clearInterval(interval)
+    }
   }, [userId])
 
   return (

@@ -2,6 +2,17 @@
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
+import {
+  Tag,
+  Truck,
+  Coins,
+  Zap,
+  Building2,
+  GraduationCap,
+  Wrench,
+  SlidersHorizontal,
+  ArrowUpDown
+} from 'lucide-react'
 
 interface Product {
   id: string
@@ -56,19 +67,29 @@ const SERVICE_CATEGORIES = [
   { key: 'Lainnya', label: 'Jasa Lainnya' }
 ]
 
+const QUICK_ACTIONS = [
+  { label: 'Promo UMKM', icon: Tag, color: 'text-rose-600 bg-rose-50 border-rose-200', href: '/market' },
+  { label: 'Bebas Ongkir', icon: Truck, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', href: '/market' },
+  { label: 'Tukar Koin', icon: Coins, color: 'text-amber-600 bg-amber-50 border-amber-200', href: '/wallet/coin' },
+  { label: 'Flash Sale', icon: Zap, color: 'text-orange-600 bg-orange-50 border-orange-200', href: '/market' },
+  { label: 'Koperasi & Komunitas', icon: Building2, color: 'text-blue-700 bg-blue-50 border-blue-200', href: '/community' },
+  { label: 'Akademi UMKM', icon: GraduationCap, color: 'text-purple-700 bg-purple-50 border-purple-200', href: '/academy' }
+]
+
 export default function HomeExplorer({ products, services }: HomeExplorerProps) {
   const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'JASA'>('MARKETPLACE')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedProductCategory, setSelectedProductCategory] = useState('ALL')
   const [selectedServiceCategory, setSelectedServiceCategory] = useState('ALL')
+  const [sortBy, setSortBy] = useState<'RELEVANCE' | 'PRICE_LOW' | 'PRICE_HIGH' | 'RATING'>('RELEVANCE')
   
   // 5 baris produk awal (5 baris x 6 kolom desktop = 30 produk)
   const [visibleProductCount, setVisibleProductCount] = useState(30)
   const [visibleServiceCount, setVisibleServiceCount] = useState(8)
 
-  // Filtered physical products
+  // Filtered and sorted physical products
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    let result = products.filter((p) => {
       const isPhysical = p.category !== 'KERJAAN' && p.category !== 'JASA'
       const matchCat = selectedProductCategory === 'ALL' || p.category === selectedProductCategory
       const q = searchQuery.toLowerCase().trim()
@@ -78,7 +99,15 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         p.description?.toLowerCase().includes(q)
       return isPhysical && matchCat && matchSearch
     })
-  }, [products, selectedProductCategory, searchQuery])
+
+    if (sortBy === 'PRICE_LOW') {
+      result.sort((a, b) => a.price - b.price)
+    } else if (sortBy === 'PRICE_HIGH') {
+      result.sort((a, b) => b.price - a.price)
+    }
+
+    return result
+  }, [products, selectedProductCategory, searchQuery, sortBy])
 
   // Filtered services
   const filteredServices = useMemo(() => {
@@ -103,9 +132,30 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
   }, [filteredServices, visibleServiceCount])
 
   return (
-    <section className="w-full max-w-[1240px] mx-auto px-3 sm:px-6 py-4 space-y-5">
+    <section className="w-full max-w-[1240px] mx-auto px-3 sm:px-6 py-3 space-y-4">
+      {/* ── TOKOPEDIA-STYLE QUICK ACTIONS BAR ── */}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+        {QUICK_ACTIONS.map((item) => {
+          const Icon = item.icon
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 flex flex-col items-center justify-center gap-1.5 shadow-2xs hover:shadow-xs transition-all duration-200 group text-center"
+            >
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border ${item.color} group-hover:scale-105 transition-transform duration-200`}>
+                <Icon size={18} strokeWidth={2.2} />
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-bold text-slate-800 group-hover:text-[#006E24] transition-colors leading-tight">
+                {item.label}
+              </span>
+            </Link>
+          )
+        })}
+      </div>
+
       {/* ── HEADER SWITCHER BAR ── */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+      <div className="bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="space-y-1 text-center md:text-left">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#E8F5E9] border border-[#C8E6C9] rounded-full text-[#006E24] text-[11px] font-bold tracking-wide">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -150,9 +200,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
-            </svg>
+            <Wrench size={16} strokeWidth={2.2} />
             <span>Booking Jasa</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
               activeTab === 'JASA' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
@@ -203,48 +251,67 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           )}
         </div>
 
-        {/* Tokopedia-Style Category Horizontal Navigation Bar */}
-        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto border-t border-slate-100 pt-2 hide-scrollbar">
-          {activeTab === 'MARKETPLACE' ? (
-            PRODUCT_CATEGORIES.map((cat) => {
-              const isSelected = selectedProductCategory === cat.key
-              return (
-                <button
-                  key={cat.key}
-                  onClick={() => {
-                    setSelectedProductCategory(cat.key)
-                    setVisibleProductCount(30)
-                  }}
-                  className={`relative px-3.5 py-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
-                    isSelected
-                      ? 'text-[#006E24] border-[#006E24] font-extrabold'
-                      : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300 font-medium'
-                  }`}
-                >
-                  <span>{cat.label}</span>
-                </button>
-              )
-            })
-          ) : (
-            SERVICE_CATEGORIES.map((cat) => {
-              const isSelected = selectedServiceCategory === cat.key
-              return (
-                <button
-                  key={cat.key}
-                  onClick={() => {
-                    setSelectedServiceCategory(cat.key)
-                    setVisibleServiceCount(8)
-                  }}
-                  className={`relative px-3.5 py-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
-                    isSelected
-                      ? 'text-[#006E24] border-[#006E24] font-extrabold'
-                      : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300 font-medium'
-                  }`}
-                >
-                  <span>{cat.label}</span>
-                </button>
-              )
-            })
+        {/* Tokopedia-Style Category Horizontal Navigation Bar & Quick Sort */}
+        <div className="flex items-center justify-between gap-2 overflow-x-auto border-t border-slate-100 pt-2 hide-scrollbar">
+          <div className="flex items-center gap-1 sm:gap-2">
+            {activeTab === 'MARKETPLACE' ? (
+              PRODUCT_CATEGORIES.map((cat) => {
+                const isSelected = selectedProductCategory === cat.key
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => {
+                      setSelectedProductCategory(cat.key)
+                      setVisibleProductCount(30)
+                    }}
+                    className={`relative px-3.5 py-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
+                      isSelected
+                        ? 'text-[#006E24] border-[#006E24] font-extrabold'
+                        : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300 font-medium'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                  </button>
+                )
+              })
+            ) : (
+              SERVICE_CATEGORIES.map((cat) => {
+                const isSelected = selectedServiceCategory === cat.key
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => {
+                      setSelectedServiceCategory(cat.key)
+                      setVisibleServiceCount(8)
+                    }}
+                    className={`relative px-3.5 py-2 font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-150 cursor-pointer border-b-2 ${
+                      isSelected
+                        ? 'text-[#006E24] border-[#006E24] font-extrabold'
+                        : 'text-slate-600 hover:text-slate-900 border-transparent hover:border-slate-300 font-medium'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                  </button>
+                )
+              })
+            )}
+          </div>
+
+          {/* Quick Sort Dropdown */}
+          {activeTab === 'MARKETPLACE' && (
+            <div className="flex items-center gap-1.5 shrink-0 pl-2">
+              <ArrowUpDown size={14} className="text-slate-400 hidden sm:block" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                aria-label="Urutkan Produk"
+                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-[#006E24] cursor-pointer"
+              >
+                <option value="RELEVANCE">Paling Sesuai</option>
+                <option value="PRICE_LOW">Harga Terendah</option>
+                <option value="PRICE_HIGH">Harga Tertinggi</option>
+              </select>
+            </div>
           )}
         </div>
       </div>
@@ -294,7 +361,6 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
               {/* Product Cards Grid: 5 Rows (30 items on 6-col desktop, 2-col on mobile) */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5">
                 {displayedProducts.map((product, pIdx) => {
-                  // Generate realistic discount and original price
                   const discountPct = 15 + ((pIdx * 7) % 25)
                   const originalPrice = Math.round(product.price * (1 + discountPct / 100))
 
@@ -320,7 +386,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
                             </div>
                           )}
 
-                          {/* ── GREEN DISCOUNT BADGE (Sesuai Permintaan: Warna Hijau) ── */}
+                          {/* ── GREEN DISCOUNT BADGE (Warna Hijau) ── */}
                           <span className="absolute top-1.5 left-1.5 bg-[#006E24] text-white text-[9px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-xs z-10 tracking-tight">
                             {discountPct}%
                           </span>
@@ -428,7 +494,7 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
           {filteredServices.length === 0 ? (
             <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300 p-8 space-y-3">
               <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto text-[#006E24]">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                 </svg>
               </div>

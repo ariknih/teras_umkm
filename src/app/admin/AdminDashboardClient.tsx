@@ -1228,6 +1228,50 @@ export default function AdminDashboardClient({
     return matchSearch && u.level >= 3
   })
 
+  const handleExportCSV = () => {
+    let rows: string[][] = []
+    let filename = `saloka_${activeTab}_${new Date().toISOString().slice(0, 10)}.csv`
+
+    if (activeTab === 'users') {
+      rows.push(['ID', 'Nama', 'Email', 'Role', 'Membership', 'Level', 'XP', 'Created At'])
+      users.forEach((u: any) => {
+        rows.push([u.id, u.name, u.email, u.role, u.membershipLevel || '-', String(u.level || 1), String(u.xp || 0), String(u.createdAt)])
+      })
+    } else if (activeTab === 'transactions') {
+      rows.push(['Order ID', 'Pembeli ID', 'Total Amount', 'Status', 'Tanggal'])
+      orders.forEach((o: any) => {
+        rows.push([o.id, o.buyerId || '-', String(o.totalAmount || 0), o.status, String(o.createdAt)])
+      })
+    } else if (activeTab === 'products') {
+      rows.push(['ID', 'Nama Produk', 'Kategori', 'Harga', 'Stok', 'Merchant ID'])
+      products.forEach((p: any) => {
+        rows.push([p.id, p.title || '-', p.category, String(p.price || 0), String(p.stock || 0), p.merchantId || '-'])
+      })
+    } else if (activeTab === 'withdrawals') {
+      rows.push(['ID', 'User ID', 'Jumlah (Rp)', 'Bank', 'No Rekening', 'Status', 'Tanggal'])
+      withdrawals.forEach((w: any) => {
+        rows.push([w.id, w.userId || '-', String(w.amount || 0), w.bankName || '-', w.accountNumber || '-', w.status, String(w.createdAt)])
+      })
+    } else if (activeTab === 'admins') {
+      rows.push(['ID', 'Nama', 'Email', 'Tipe Admin', 'Permissions'])
+      admins.forEach((a: any) => {
+        rows.push([a.id, a.name, a.email, a.isSuperAdmin ? 'Super Admin' : 'Admin Staff', String(a.adminPermissions || 'Semua')])
+      })
+    } else {
+      rows.push(['Tab', 'Waktu Export', 'Export Oleh'])
+      rows.push([activeTab, new Date().toISOString(), currentUser?.email || 'Admin'])
+    }
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement('a')
+    link.setAttribute('href', encodedUri)
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8f9fb] text-[#191c1e] font-sans antialiased relative">
       {/* Sidebar mobile overlay */}
@@ -1442,11 +1486,23 @@ export default function AdminDashboardClient({
               { activeTab === 'landing_banners' && 'Kelola Banner Landing Page' }
             </h2>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2 bg-[#eef8e9] px-3 py-1.5 rounded-full border border-[#2db24a]/20">
               <span className="w-2 h-2 rounded-full bg-[#006e24] animate-pulse" />
               <span className="text-[11px] font-semibold text-[#006e24] tracking-wider uppercase">System Status: Active</span>
             </div>
+
+            <button
+              onClick={handleExportCSV}
+              className="px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] text-xs font-bold rounded-lg transition-colors border border-[#C8E6C9] shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              title="Unduh data tabel aktif sebagai file CSV"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>
+              </svg>
+              <span>Export CSV</span>
+            </button>
+
             <Link href="/" className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-xs font-semibold text-[#6B7280] hover:text-[#111111] rounded-lg transition-colors border border-[#E5E7EB] shadow-xs">
               Return to Landing
             </Link>
