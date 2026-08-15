@@ -94,6 +94,141 @@ export const DEFAULT_PERKUMPULAN_CONFIG = {
   }
 }
 
+// Default Business config
+export const DEFAULT_BUSINESS_CONFIG = {
+  hero: {
+    badge: 'BISNIS & UMKM',
+    title: 'Kemitraan Bisnis',
+    subtitle: 'Kolaborasi • Inovasi • Sejahtera Bersama Komunitas Bisnis & UMKM',
+    description: 'Wadah kolaborasi pelaku usaha untuk tumbuh dan berkembang bersama melalui sinergi, inovasi digital, dan jejaring pasar nasional.',
+    coverUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80',
+    quoteText: 'Sinergi bisnis menciptakan peluang tanpa batas.',
+    quoteAuthor: 'Komunitas Bisnis',
+    didirikan: '1 Juni 2026',
+    ketua: 'Pengurus Bisnis',
+    lokasi: 'Jakarta, Indonesia',
+    anggotaCount: '500+ Mitra'
+  },
+  vision: 'Menjadi akselerator pertumbuhan bisnis UMKM Indonesia melalui sinergi, inovasi digital, dan jejaring pasar nasional.',
+  missions: [
+    'Menyediakan program business matching bulanan antar pelaku usaha.',
+    'Mentransformasikan proses bisnis tradisional anggota menuju era digital.',
+    'Membuka jalur kemitraan dengan instansi pemerintah maupun swasta.'
+  ],
+  benefits: [
+    { title: 'Business Matching', description: 'Temukan mitra bisnis strategis untuk ekspansi pasar.', icon: 'Users' },
+    { title: 'Digitalisasi UMKM', description: 'Pendampingan transformasi digital operasional usaha.', icon: 'Building2' },
+    { title: 'Akses Permodalan', description: 'Koneksi ke lembaga keuangan dan investor strategis.', icon: 'Wallet' },
+    { title: 'Sharing Session', description: 'Belajar langsung dari pakar industri dan mentor bisnis.', icon: 'GraduationCap' },
+    { title: 'Kemitraan Luas', description: 'Akses program kemitraan B2B skala nasional.', icon: 'Coins' }
+  ],
+  stats: [
+    { value: '500+', label: 'Mitra Aktif', desc: 'Saling bersinergi', icon: 'Users' },
+    { value: '120+', label: 'UMKM Go Digital', desc: 'Siap bersaing global', icon: 'Building2' },
+    { value: '12+', label: 'Business Matching', desc: 'Event temu bisnis tahunan', icon: 'Calendar' },
+    { value: '50+', label: 'Partner Strategis', desc: 'Instansi pendukung usaha', icon: 'Coins' }
+  ],
+  activities: [
+    { title: 'Business Matching & Networking Summit', category: 'EVENT', dateLocation: '20 September 2026 • Jakarta', imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=400&q=80' },
+    { title: 'Workshop Digital Marketing & SEO UMKM', category: 'PELATIHAN', dateLocation: '27 September 2026 • Online', imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80' },
+    { title: 'Sinergi B2B Expo & Investor Pitching', category: 'NETWORKING', dateLocation: '10 Oktober 2026 • Bandung', imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=400&q=80' }
+  ],
+  ctaBanner: {
+    text: 'Sinergikan bisnismu sekarang dan temukan peluang tanpa batas bersama ratusan UMKM berprestasi!',
+    buttonText: 'Ajukan Kolaborasi Sekarang'
+  }
+}
+
+// Default Education config
+export const DEFAULT_EDUCATION_CONFIG = {
+  hero: {
+    badge: 'PENDIDIKAN & AKADEMI',
+    title: 'Akademi Bisnis',
+    subtitle: 'Belajar Bisnis Sejak Dini, Wujudkan Ide Jadi Nyata',
+    description: 'Mencetak wirausahawan masa depan yang kompeten, beretika, dan berwawasan teknologi melalui pendidikan bisnis praktis.',
+    coverUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80',
+    quoteText: 'Ilmu adalah modal terbaik untuk membangun masa depan usaha.',
+    quoteAuthor: 'Akademi Bisnis',
+    didirikan: '15 April 2026',
+    ketua: 'Rektor Akademi',
+    lokasi: 'Yogyakarta, Indonesia',
+    anggotaCount: '3.000+ Siswa'
+  },
+  vision: 'Mencetak wirausahawan masa depan yang kompeten, beretika, dan berwawasan teknologi melalui pendidikan bisnis berkelanjutan.',
+  missions: [
+    'Menyelenggarakan kelas bisnis praktis dengan mentor berpengalaman.',
+    'Menyediakan perpustakaan digital dan studi kasus bisnis riil.',
+    'Membina inkubasi startup pelajar/mahasiswa hingga mandiri.'
+  ],
+  benefits: [
+    { title: 'Mentoring Ahli', description: 'Bimbingan 1-on-1 dengan pelaku industri sukses.', icon: 'Users' },
+    { title: 'Kurikulum Praktis', description: 'Materi belajar siap pakai tanpa teori rumit.', icon: 'GraduationCap' },
+    { title: 'Inkubator Bisnis', description: 'Fasilitas pendampingan rintisan usaha baru.', icon: 'Building2' },
+    { title: 'Jejaring Alumni', description: 'Relasi luas dengan alumni di berbagai bidang.', icon: 'Users' },
+    { title: 'Sertifikasi Resmi', description: 'Bukti kompetensi kelulusan berstandar industri.', icon: 'Shield' }
+  ],
+  stats: [
+    { value: '3.000+', label: 'Siswa & Alumni', desc: 'Belajar dan bertumbuh', icon: 'Users' },
+    { value: '45+', label: 'Mentor Ahli', desc: 'Praktisi bisnis berpengalaman', icon: 'Building2' },
+    { value: '80+', label: 'Kelas Berjalan', desc: 'Topik bisnis terlengkap', icon: 'Calendar' },
+    { value: '15+', label: 'Startup Terinkubasi', desc: 'Siap meluncur ke pasar', icon: 'Coins' }
+  ],
+  activities: [
+    { title: 'Pitching Day & Rintisan Usaha Baru', category: 'INKUBASI', dateLocation: '15 Oktober 2026 • Yogyakarta', imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=400&q=80' },
+    { title: 'Basic Entrepreneurship Bootcamp', category: 'KELAS', dateLocation: '22 Oktober 2026 • Online', imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80' },
+    { title: 'Alumni Gathering & Mentor Sharing Session', category: 'NETWORKING', dateLocation: '5 November 2026 • Jogja', imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=400&q=80' }
+  ],
+  ctaBanner: {
+    text: 'Tingkatkan skill dan wujudkan ide bisnismu sekarang bersama para mentor berpengalaman!',
+    buttonText: 'Daftar Kelas Sekarang'
+  }
+}
+
+// Default Culinary config
+export const DEFAULT_CULINARY_CONFIG = {
+  hero: {
+    badge: 'KULINER & KATERING',
+    title: 'Komunitas Kuliner',
+    subtitle: 'Bersama Memajukan Industri Kuliner Kreatif',
+    description: 'Membangun ekosistem kuliner kreatif yang mandiri, berdaya saing tinggi, dan menyajikan rasa Nusantara terbaik.',
+    coverUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
+    quoteText: 'Rasa terbaik lahir dari kolaborasi bahan pilihan dan sinergi pelaku usaha.',
+    quoteAuthor: 'Komunitas Kuliner',
+    didirikan: '10 Maret 2026',
+    ketua: 'Pengurus Kuliner',
+    lokasi: 'Bandung, Indonesia',
+    anggotaCount: '1.200+ Chef'
+  },
+  vision: 'Membangun ekosistem kuliner kreatif yang mandiri, berdaya saing tinggi, dan menyajikan rasa Nusantara terbaik.',
+  missions: [
+    'Menghubungkan pelaku UMKM kuliner dengan supplier bahan baku berkualitas.',
+    'Memfasilitasi pelatihan higienitas, standar penyajian, dan sertifikasi halal.',
+    'Mempromosikan produk kuliner anggota melalui festival makanan.'
+  ],
+  benefits: [
+    { title: 'Suplai Bahan Baku', description: 'Akses langsung ke supplier tangan pertama terjangkau.', icon: 'Wallet' },
+    { title: 'Pelatihan Dapur', description: 'Standar kebersihan, keamanan pangan, & manajemen dapur.', icon: 'GraduationCap' },
+    { title: 'Sertifikasi Halal', description: 'Pendampingan sertifikasi halal dan izin P-IRT.', icon: 'Shield' },
+    { title: 'Festival Kuliner', description: 'Ikut serta dalam pameran & expo kuliner eksklusif.', icon: 'Calendar' },
+    { title: 'Dapur Bersama', description: 'Fasilitas memasak higienis bersama sesama anggota.', icon: 'Building2' }
+  ],
+  stats: [
+    { value: '1.200+', label: 'Anggota Aktif', desc: 'Pelaku usaha kuliner', icon: 'Users' },
+    { value: '350+', label: 'Menu Kreatif', desc: 'Produk kuliner terdaftar', icon: 'Building2' },
+    { value: '18+', label: 'Festival Makanan', desc: 'Diselenggarakan tahunan', icon: 'Calendar' },
+    { value: '87+', label: 'Mitra Supplier', desc: 'Bahan baku berkualitas', icon: 'Coins' }
+  ],
+  activities: [
+    { title: 'Bandung Culinary Festival & Food Expo', category: 'EVENT', dateLocation: '12 November 2026 • Bandung', imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=400&q=80' },
+    { title: 'Pelatihan Sertifikasi Halal & Higienitas Dapur', category: 'PELATIHAN', dateLocation: '19 November 2026 • Online', imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80' },
+    { title: 'Temu Bisnis Supplier Bahan Baku Kuliner', category: 'NETWORKING', dateLocation: '3 Desember 2026 • Bandung', imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=400&q=80' }
+  ],
+  ctaBanner: {
+    text: 'Temukan kuliner terbaik Nusantara atau daftarkan produk kuliner Anda untuk tumbuh bersama!',
+    buttonText: 'Jelajahi Merchant Sekarang'
+  }
+}
+
 // Icon mapper helper
 const IconMap: { [key: string]: any } = {
   Users, Wallet, GraduationCap, Building2, Coins, Calendar, PieChart, MapPin, Shield
@@ -124,8 +259,30 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   onAddProduct,
   realStats
 }) => {
-  const isKoperasi = (community?.type || '').toLowerCase() === 'koperasi' || (community?.category || '').toLowerCase() === 'koperasi'
-  const defaults = isKoperasi ? DEFAULT_KOPERASI_CONFIG : DEFAULT_PERKUMPULAN_CONFIG
+  const nameLower = (community?.name || '').toLowerCase()
+  const catLower = (community?.category || '').toLowerCase()
+  const typeLower = (community?.type || '').toLowerCase()
+
+  // Strict templateType check with backward-compatible auto-detection for older communities
+  const templateType = community?.templateType || (
+    typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi') ? 'Koperasi' :
+    catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
+    catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
+    catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
+    'Community'
+  )
+
+  const isKoperasi = templateType === 'Koperasi'
+  const isKuliner = templateType === 'Culinary'
+  const isBusiness = templateType === 'Business'
+  const isEducation = templateType === 'Education'
+
+  const defaults = 
+    isKoperasi ? DEFAULT_KOPERASI_CONFIG :
+    isBusiness ? DEFAULT_BUSINESS_CONFIG :
+    isEducation ? DEFAULT_EDUCATION_CONFIG :
+    isKuliner ? DEFAULT_CULINARY_CONFIG :
+    DEFAULT_PERKUMPULAN_CONFIG
   
   const dummyProducts = [
     {

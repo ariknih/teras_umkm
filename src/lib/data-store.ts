@@ -6634,6 +6634,7 @@ export const DataStore = {
     isKycRequired?: boolean
     landingPageConfig?: string
     coinBalance?: number
+    templateType?: string
   }) {
     syncMockDb()
     if (await isDbConnected()) {
@@ -6656,7 +6657,8 @@ export const DataStore = {
             isKycRequired: Boolean(data.isKycRequired),
             landingPageConfig: data.landingPageConfig || null,
             coinBalance: data.coinBalance || 0,
-            ketuaId: data.ketuaId
+            ketuaId: data.ketuaId,
+            templateType: data.templateType || 'Community'
           } as any
         })
         // Auto-join ketua as member with isInduk & set active indukCommunityId
@@ -6698,6 +6700,7 @@ export const DataStore = {
       monthlyFee: data.monthlyFee || 0,
       isKycRequired: Boolean(data.isKycRequired),
       coinBalance: data.coinBalance || 0,
+      templateType: data.templateType || 'Community',
       isSuspended: false,
       isVerified: false,
       ketuaId: data.ketuaId,

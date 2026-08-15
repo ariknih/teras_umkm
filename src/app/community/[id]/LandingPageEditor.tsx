@@ -13,7 +13,19 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   config,
   onSave
 }) => {
-  const isKoperasi = (community?.type || '').toLowerCase() === 'koperasi' || (community?.category || '').toLowerCase() === 'koperasi'
+  const nameLower = (community?.name || '').toLowerCase()
+  const catLower = (community?.category || '').toLowerCase()
+  const typeLower = (community?.type || '').toLowerCase()
+
+  const templateType = community?.templateType || (
+    typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi') ? 'Koperasi' :
+    catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
+    catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
+    catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
+    'Community'
+  )
+
+  const isKoperasi = templateType === 'Koperasi'
   
   // Local form states
   const [heroBadge, setHeroBadge] = useState(config?.hero?.badge || (isKoperasi ? 'KOPERASI PRO' : 'KOMUNITAS UMKM'))

@@ -69,6 +69,7 @@ export default function CommunityDirectoryPage() {
   const [isKycRequired, setIsKycRequired] = useState(false)
   const [coopTier, setCoopTier] = useState<'BASIC' | 'PLUS' | 'PRO'>('BASIC')
   const [perkumpulanTier, setPerkumpulanTier] = useState<'REGULER' | 'PREMIUM'>('REGULER')
+  const [templateType, setTemplateType] = useState<'Community' | 'Business' | 'Education' | 'Culinary' | 'Koperasi'>('Community')
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -223,6 +224,7 @@ export default function CommunityDirectoryPage() {
       formData.append('isKycRequired', String(isKycRequired))
       formData.append('coopTier', coopTier)
       formData.append('perkumpulanTier', perkumpulanTier)
+      formData.append('templateType', templateType)
 
       const res = await createIndukCommunity(formData)
       if (res.error) {
@@ -253,6 +255,7 @@ export default function CommunityDirectoryPage() {
         setMonthlyFee('')
         setIsKycRequired(false)
         setCoopTier('BASIC')
+        setTemplateType('Community')
 
         loadData()
       }
@@ -663,6 +666,53 @@ export default function CommunityDirectoryPage() {
                           className="w-full px-3 py-2 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 resize-none transition-all"
                         />
                       </div>
+
+                      {/* BAGIAN 1B: TEMPLATE HALAMAN */}
+                      <div className="space-y-3 pt-1 border-t border-black/5">
+                        <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#006E24]"></span>
+                          <h4 className="text-[10px] font-extrabold text-[#006E24] uppercase tracking-wider font-sora">Template Halaman</h4>
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Pilih Template Halaman</label>
+                          <select
+                            value={templateType}
+                            onChange={(e) => setTemplateType(e.target.value as any)}
+                            className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs font-bold text-[#111111] focus:outline-none focus:border-primary/50 transition-all cursor-pointer"
+                          >
+                            <option value="Community">▼ Community</option>
+                            <option value="Business">▼ Business</option>
+                            <option value="Education">▼ Education</option>
+                            <option value="Culinary">▼ Culinary</option>
+                            <option value="Koperasi">▼ Koperasi</option>
+                          </select>
+                        </div>
+
+                        <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-center justify-between gap-3 mt-2">
+                          <div>
+                            <label className="text-[10px] font-black text-emerald-950 uppercase tracking-wider block">
+                              Modul Bawaan
+                            </label>
+                            <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-[9px] text-[#006E24] font-bold mt-1">
+                              <span>✓ Hero Banner</span>
+                              <span>✓ Aktivitas</span>
+                              <span>✓ Diskusi</span>
+                              <span>✓ Event</span>
+                              <span>✓ Produk Anggota</span>
+                              <span>✓ Galeri</span>
+                              <span>✓ Anggota</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="px-2.5 py-1.5 border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A]/5 text-[9px] font-extrabold rounded-lg flex items-center gap-1 transition-all cursor-pointer bg-white"
+                          >
+                            <span>⚙️</span> Sesuaikan Modul
+                          </button>
+                        </div>
+                      </div>
+
                     </div>
 
                     {/* BAGIAN 2: LEGALITAS */}

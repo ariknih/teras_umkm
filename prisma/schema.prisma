@@ -547,6 +547,7 @@ model Community {
   avatarUrl         String?
   landingPageConfig String?
   waGroupLink       String?
+  templateType      String            @default("Community")
 
   // Iuran (hanya untuk PAID/KOPERASI)
   joinFee           Float             @default(0)

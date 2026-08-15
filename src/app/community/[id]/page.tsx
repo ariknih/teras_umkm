@@ -1438,7 +1438,16 @@ export default function CommunityDetailPage() {
   const catLower = (community?.category || '').toLowerCase()
   const typeLower = (community?.type || '').toLowerCase()
 
-  const isKoperasi = typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi')
+  // Strict templateType check with backward-compatible auto-detection for older communities
+  const activeTemplate = community?.templateType || (
+    typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi') ? 'Koperasi' :
+    catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
+    catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
+    catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
+    'Community'
+  )
+
+  const isKoperasi = activeTemplate === 'Koperasi'
 
   let coopTier = 'BASIC'
   if (community?.landingPageConfig) {
@@ -1452,10 +1461,10 @@ export default function CommunityDetailPage() {
 
   const isKoperasiPremium = isKoperasi && coopTier !== 'BASIC'
   const isDefaultProduct = editingProduct && (editingProduct.type === 'POKOK' || editingProduct.type === 'WAJIB')
-  const isKuliner = !isKoperasi && (catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner'))
-  const isBusiness = !isKoperasi && !isKuliner && (catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm'))
-  const isEducation = !isKoperasi && !isKuliner && !isBusiness && (catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan'))
-  const isPerahu = !isKoperasi && !isKuliner && !isBusiness && !isEducation
+  const isKuliner = activeTemplate === 'Culinary'
+  const isBusiness = activeTemplate === 'Business'
+  const isEducation = activeTemplate === 'Education'
+  const isPerahu = activeTemplate === 'Community'
 
   const sidebarNavList = isKoperasi ? [
     { id: 'beranda', label: 'Beranda', icon: Home },
@@ -4162,10 +4171,23 @@ export default function CommunityDetailPage() {
 
                         return (
                           <div className="space-y-6">
+                            {!hasConfig && (
+                              <div className="p-4 bg-amber-50/80 border border-amber-200 text-amber-800 rounded-3xl text-xs font-semibold flex items-start gap-2 shadow-2xs">
+                                <span className="mt-0.5">⚠️</span>
+                                <span>Ini adalah <strong>Data Simulasi/Testing</strong>. Hasil perhitungan di bawah merupakan estimasi menggunakan nilai default sementara (SHU Bersih: Rp 3.000.000, Jasa Modal: 20%, Jasa Usaha: 25%) dan belum dicatat ke data produksi/saldo dompet Anda.</span>
+                              </div>
+                            )}
                             <div className="p-6 bg-gradient-to-br from-[#E8F8EE] to-white border border-emerald-100 rounded-3xl space-y-4 shadow-sm">
-                              <h3 className="text-sm font-black text-emerald-950 uppercase tracking-wider font-sora">
-                                Laporan SHU Saya Tahun Buku {new Date().getFullYear()}
-                              </h3>
+                              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                <h3 className="text-sm font-black text-emerald-950 uppercase tracking-wider font-sora">
+                                  Laporan SHU Saya Tahun Buku {new Date().getFullYear()}
+                                </h3>
+                                {!hasConfig && (
+                                  <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full border border-amber-200 uppercase tracking-wider">
+                                    Simulasi / Testing
+                                  </span>
+                                )}
+                              </div>
                               
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="p-5 bg-white border border-gray-100 rounded-2xl space-y-1 shadow-2xs">

@@ -257,6 +257,7 @@ export async function createIndukCommunity(formData: FormData) {
   const monthlyFee = parseFloat(formData.get('monthlyFee') as string) || 0
   const isKycRequired = formData.get('isKycRequired') === 'true' || formData.get('isKycRequired') === 'on'
   const coopTier = (formData.get('coopTier') as string) || 'BASIC'
+  const templateType = (formData.get('templateType') as string) || 'Community'
 
   if (!name || !description) {
     return { error: 'Nama dan deskripsi komunitas wajib diisi.' }
@@ -331,7 +332,8 @@ export async function createIndukCommunity(formData: FormData) {
       monthlyFee,
       isKycRequired,
       landingPageConfig,
-      coinBalance: initialCoins
+      coinBalance: initialCoins,
+      templateType
     })
     revalidatePath('/community')
     return { success: true, community }
