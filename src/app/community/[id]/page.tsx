@@ -1704,7 +1704,7 @@ export default function CommunityDetailPage() {
     return 'Rp ' + val.toLocaleString('id-ID')
   }
 
-  const activeMembersCount = members.filter(m => m.user?.role !== 'ADMIN').length
+  const activeMembersCount = members.length
 
   const statCards = isKoperasi ? [
     { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
@@ -2655,13 +2655,7 @@ export default function CommunityDetailPage() {
                               const isAuthorizedToKick = user?.role === 'ADMIN' || user?.id === community?.ketuaId
                               const canKickThisMember = isAuthorizedToKick && m.userId !== community?.ketuaId && m.userId !== user?.id
                               return (
-                                <div className="flex gap-2 mt-2">
-                                  <button
-                                    onClick={() => window.open(`https://wa.me/${(m.user?.phone || '6285223061670').replace(/[^0-9]/g, '')}`, '_blank')}
-                                    className="flex-1 py-1.5 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
-                                  >
-                                    💬 WhatsApp
-                                  </button>
+                                <div className="flex gap-2 mt-2 justify-end">
                                   {canKickThisMember && (
                                     <button
                                       disabled={isKicking === m.userId}

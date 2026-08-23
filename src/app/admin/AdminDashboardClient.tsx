@@ -234,7 +234,7 @@ export default function AdminDashboardClient({
   })
 
   const [memberModal, setMemberModal] = useState<{ open: boolean; community?: any }>({ open: false })
-  const [kickConfirmModal, setKickConfirmModal] = useState<{ open: boolean; userId: string; userName: string } | null>(null)
+  const [kickConfirmModal, setKickConfirmModal] = useState<{ open: boolean; userId: string; userName: string; communityId: string } | null>(null)
   const [selectedMemberUserId, setSelectedMemberUserId] = useState('')
   const [globalKycRequired, setGlobalKycRequired] = useState(true)
 
@@ -606,11 +606,12 @@ export default function AdminDashboardClient({
     setActionSuccess(null)
 
     startTransition(async () => {
-      const res = await updateUserIndukCommunityAction(userId, communityId)
+      const res = await updateUserIndukCommunityAction(userId, communityId.startsWith('KICK:') ? '' : communityId)
       if (res.success) {
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, indukCommunityId: communityId || null } : u))
+        const realCommunityId = communityId.startsWith('KICK:') ? null : (communityId || null)
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, indukCommunityId: realCommunityId } : u))
         
-        if (communityId) {
+        if (communityId && !communityId.startsWith('KICK:')) {
           // Remove from other community memberships in state (since a user can only belong to one active induk community)
           setInvoices(prev => prev.filter(inv => inv.userId !== userId))
           
@@ -641,9 +642,11 @@ export default function AdminDashboardClient({
           }
           setActionSuccess('Anggota berhasil didaftarkan ke Komunitas Induk ini.')
         } else {
-          // Kick: remove from invoices state
-          setInvoices(prev => prev.filter(inv => !(inv.userId === userId && inv.communityId === memberModal.community?.id)))
-          setActionSuccess('Anggota berhasil dikeluarkan dari Komunitas Induk ini.')
+          // Kick: remove from invoices state using the communityId passed to this function
+          // When kicking, communityId is 'KICK:{actualCommunityId}' — extract the real ID
+          const kickedCommunityId = communityId.startsWith('KICK:') ? communityId.replace('KICK:', '') : communityId
+          setInvoices(prev => prev.filter(inv => !(inv.userId === userId && inv.communityId === kickedCommunityId)))
+          setActionSuccess('Anggota berhasil dikeluarkan dari komunitas.')
         }
         
         setSelectedMemberUserId('')
@@ -5292,7 +5295,7 @@ export default function AdminDashboardClient({
                             <p className="text-[10px] text-slate-400">{mem.email} • Role: {mem.role}</p>
                           </div>
                           <button
-                            onClick={() => setKickConfirmModal({ open: true, userId: mem.id, userName: mem.name ?? mem.email })}
+                            onClick={() => setKickConfirmModal({ open: true, userId: mem.id, userName: mem.name ?? mem.email, communityId: memberModal.community?.id ?? '' })}
                             className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[9px] font-bold uppercase tracking-wider cursor-pointer"
                           >
                             Keluarkan
@@ -5337,7 +5340,7 @@ export default function AdminDashboardClient({
                     </button>
                     <button
                       onClick={() => {
-                        handleAddMemberToCommunity('', kickConfirmModal.userId)
+                        handleAddMemberToCommunity(`KICK:${kickConfirmModal.communityId}`, kickConfirmModal.userId)
                         setKickConfirmModal(null)
                       }}
                       disabled={isPending}
