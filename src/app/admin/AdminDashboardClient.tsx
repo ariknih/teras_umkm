@@ -2904,7 +2904,7 @@ export default function AdminDashboardClient({
                           })
                           .map(comm => {
                             const ketuaUser = users.find(u => u.id === comm.ketuaId)
-                            const memberCount = users.filter(u => u.indukCommunityId === comm.id).length
+                            const memberCount = users.filter(u => u.indukCommunityId === comm.id && u.role !== 'ADMIN').length
                             return (
                               <tr key={comm.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="px-4 py-3.5">
@@ -5231,10 +5231,10 @@ export default function AdminDashboardClient({
 
                 {/* Current Members List */}
                 <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded">
-                  {users.filter(u => u.indukCommunityId === memberModal.community.id).length === 0 ? (
+                  {users.filter(u => u.indukCommunityId === memberModal.community.id && u.role !== 'ADMIN').length === 0 ? (
                     <p className="p-4 text-center text-xs text-slate-400 italic">Belum ada anggota terdaftar di komunitas ini.</p>
                   ) : (
-                    users.filter(u => u.indukCommunityId === memberModal.community.id).map(mem => (
+                    users.filter(u => u.indukCommunityId === memberModal.community.id && u.role !== 'ADMIN').map(mem => (
                       <div key={mem.id} className="p-3 flex justify-between items-center hover:bg-slate-50">
                         <div>
                           <p className="text-xs font-bold text-slate-800">{mem.name}</p>

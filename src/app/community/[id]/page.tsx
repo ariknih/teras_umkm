@@ -11,7 +11,6 @@ import {
   getCooperativeLoansAction,
   approveCooperativeLoanAction,
   rejectCooperativeLoanAction,
-  updateIndukCommunity,
   getCommunityRealStatsAction,
   getCooperativeProductsAction,
   createCooperativeProductAction,
@@ -20,7 +19,9 @@ import {
   getMerchantFundingProjectsAction,
   createMerchantFundingProjectAction,
   deleteMerchantFundingProjectAction,
-  upgradeCommunityTierAction
+  upgradeCommunityTierAction,
+  kickCommunityMemberAction,
+  updateIndukCommunity
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
@@ -726,8 +727,19 @@ export default function CommunityDetailPage() {
           if (mem) {
             setIsIndukMember(mem.isInduk)
             setMembershipDetails(mem)
+          } else {
+            setIsIndukMember(false)
+            setMembershipDetails(null)
           }
+        } else {
+          setIsMember(false)
+          setIsIndukMember(false)
+          setMembershipDetails(null)
         }
+      } else {
+        setIsMember(false)
+        setIsIndukMember(false)
+        setMembershipDetails(null)
       }
 
       // Fetch products from members of this community or marketplace
@@ -1256,6 +1268,29 @@ export default function CommunityDetailPage() {
         setIsVerifying(false)
       }
     }, 2000)
+  }
+
+  const [isKicking, setIsKicking] = useState<string | null>(null)
+
+  const handleKickMember = async (targetUserId: string, name: string) => {
+    if (!confirm(`Apakah Anda yakin ingin mengeluarkan "${name}" dari komunitas ini?`)) return
+    setIsKicking(targetUserId)
+    try {
+      const res = await kickCommunityMemberAction(id, targetUserId)
+      if (res.error) {
+        goeyToast.error(res.error)
+      } else {
+        goeyToast.success(`"${name}" berhasil dikeluarkan dari komunitas.`)
+        if (targetUserId === user?.id) {
+          setIsMember(false)
+        }
+        loadData()
+      }
+    } catch (e: any) {
+      goeyToast.error(e.message || 'Gagal mengeluarkan anggota.')
+    } finally {
+      setIsKicking(null)
+    }
   }
 
   const handleToggleModule = (moduleId: string) => {
@@ -2616,9 +2651,30 @@ export default function CommunityDetailPage() {
                           </div>
                           <div className="pt-2 border-t border-gray-200/60 text-xs">
                             <p className="text-[11px] font-bold text-[#0F5132]">Usaha: {m.user?.storeName || m.biz || 'Merchant UMKM'}</p>
-                            <button onClick={() => window.open(`https://wa.me/${(m.user?.phone || '6285223061670').replace(/[^0-9]/g, '')}`, '_blank')} className="w-full mt-2 py-1.5 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer">
-                              💬 Hubungi WhatsApp
-                            </button>
+                            {(() => {
+                              const isAuthorizedToKick = user?.role === 'ADMIN' || user?.id === community?.ketuaId
+                              const canKickThisMember = isAuthorizedToKick && m.userId !== community?.ketuaId && m.userId !== user?.id
+                              return (
+                                <div className="flex gap-2 mt-2">
+                                  <button
+                                    onClick={() => window.open(`https://wa.me/${(m.user?.phone || '6285223061670').replace(/[^0-9]/g, '')}`, '_blank')}
+                                    className="flex-1 py-1.5 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                  >
+                                    💬 WhatsApp
+                                  </button>
+                                  {canKickThisMember && (
+                                    <button
+                                      disabled={isKicking === m.userId}
+                                      onClick={() => handleKickMember(m.userId, m.user?.name || m.name)}
+                                      className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400 text-red-600 border border-red-200 font-extrabold text-[9px] rounded-xl transition-all flex items-center justify-center gap-0.5 cursor-pointer shrink-0 uppercase tracking-wider"
+                                      title="Keluarkan Anggota"
+                                    >
+                                      {isKicking === m.userId ? '...' : '❌ Kick'}
+                                    </button>
+                                  )}
+                                </div>
+                              )
+                            })()}
                           </div>
                         </div>
                       ))

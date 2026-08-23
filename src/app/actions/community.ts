@@ -375,6 +375,33 @@ export async function getIndukCommunityMembersAction(communityId: string) {
   return await DataStore.getIndukCommunityMembers(communityId)
 }
 
+export async function kickCommunityMemberAction(communityId: string, targetUserId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  try {
+    const community = await DataStore.getCommunityById(communityId)
+    if (!community) return { error: 'Komunitas tidak ditemukan.' }
+
+    const isSuperAdmin = user.role === 'ADMIN'
+    const isKetua = community.ketuaId === user.id
+
+    if (!isSuperAdmin && !isKetua) {
+      return { error: 'Anda tidak memiliki akses untuk mengeluarkan anggota dari komunitas ini.' }
+    }
+
+    if (targetUserId === community.ketuaId) {
+      return { error: 'Ketua komunitas tidak dapat dikeluarkan.' }
+    }
+
+    await DataStore.setIndukCommunity(targetUserId, null)
+    revalidatePath(`/community/${communityId}`)
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengeluarkan anggota.' }
+  }
+}
+
 export async function submitKycAction(formData: FormData) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
