@@ -234,6 +234,7 @@ export default function AdminDashboardClient({
   })
 
   const [memberModal, setMemberModal] = useState<{ open: boolean; community?: any }>({ open: false })
+  const [kickConfirmModal, setKickConfirmModal] = useState<{ open: boolean; userId: string; userName: string } | null>(null)
   const [selectedMemberUserId, setSelectedMemberUserId] = useState('')
   const [globalKycRequired, setGlobalKycRequired] = useState(true)
 
@@ -2940,7 +2941,7 @@ export default function AdminDashboardClient({
                           })
                           .map(comm => {
                             const ketuaUser = users.find(u => u.id === comm.ketuaId)
-                            const memberCount = invoices.filter(inv => inv.communityId === comm.id && inv.user?.role !== 'ADMIN').length
+                            const memberCount = invoices.filter(inv => inv.communityId === comm.id).length
                             return (
                               <tr key={comm.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="px-4 py-3.5">
@@ -5236,7 +5237,7 @@ export default function AdminDashboardClient({
                     <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
                       Anggota Komunitas: {memberModal.community.name}
                     </h3>
-                    <p className="text-[10px] text-slate-400">Total {invoices.filter(inv => inv.communityId === memberModal.community.id && inv.user?.role !== 'ADMIN').length} Anggota terdaftar</p>
+                    <p className="text-[10px] text-slate-400">Total {invoices.filter(inv => inv.communityId === memberModal.community.id).length} Anggota terdaftar</p>
                   </div>
                   <button onClick={() => setMemberModal({ open: false })} className="text-slate-400 hover:text-slate-600">✕</button>
                 </div>
@@ -5277,7 +5278,7 @@ export default function AdminDashboardClient({
                 {/* Current Members List */}
                 <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded">
                   {(() => {
-                    const communityInvoices = invoices.filter(inv => inv.communityId === memberModal.community.id && inv.user?.role !== 'ADMIN')
+                    const communityInvoices = invoices.filter(inv => inv.communityId === memberModal.community.id)
                     if (communityInvoices.length === 0) {
                       return <p className="p-4 text-center text-xs text-slate-400 italic">Belum ada anggota terdaftar di komunitas ini.</p>
                     }
@@ -5291,7 +5292,7 @@ export default function AdminDashboardClient({
                             <p className="text-[10px] text-slate-400">{mem.email} • Role: {mem.role}</p>
                           </div>
                           <button
-                            onClick={() => handleAddMemberToCommunity('', mem.id)}
+                            onClick={() => setKickConfirmModal({ open: true, userId: mem.id, userName: mem.name ?? mem.email })}
                             className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[9px] font-bold uppercase tracking-wider cursor-pointer"
                           >
                             Keluarkan
@@ -5304,7 +5305,52 @@ export default function AdminDashboardClient({
               </div>
             </div>
           )}
-          
+
+          {/* ─── KICK MEMBER CONFIRMATION MODAL ─────────────────────────────── */}
+          {kickConfirmModal?.open && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="flex flex-col items-center text-center gap-4">
+                  {/* Warning Icon */}
+                  <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                  </div>
+
+                  <div>
+                    <h3 className="font-sora text-base font-bold text-slate-800">Keluarkan anggota?</h3>
+                    <p className="text-sm text-slate-500 mt-1">
+                      Anda akan mengeluarkan anggota{' '}
+                      <span className="font-semibold text-slate-700">{kickConfirmModal.userName}</span>
+                      {' '}dari komunitas ini.
+                    </p>
+                    <p className="text-xs text-slate-400 mt-2">Tindakan ini tidak dapat dibatalkan. Anggota dapat bergabung kembali jika diperlukan.</p>
+                  </div>
+
+                  <div className="flex gap-3 w-full mt-2">
+                    <button
+                      onClick={() => setKickConfirmModal(null)}
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleAddMemberToCommunity('', kickConfirmModal.userId)
+                        setKickConfirmModal(null)
+                      }}
+                      disabled={isPending}
+                      className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {isPending ? 'Memproses...' : 'Keluarkan'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ─── REJECT LEVEL UP REASON MODAL ─────────────────────────────── */}
           {isRejectModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
