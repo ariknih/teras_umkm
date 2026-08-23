@@ -587,6 +587,8 @@ export default function CommunityDetailPage() {
   const [editWaGroupLink, setEditWaGroupLink] = useState('')
   const [editAvatarUrl, setEditAvatarUrl] = useState('')
   const [editCoverUrl, setEditCoverUrl] = useState('')
+  const [settingsAvatarUrl, setSettingsAvatarUrl] = useState('')
+  const [settingsCoverUrl, setSettingsCoverUrl] = useState('')
   const [editJoinFee, setEditJoinFee] = useState('')
   const [editMonthlyFee, setEditMonthlyFee] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
@@ -594,10 +596,16 @@ export default function CommunityDetailPage() {
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [uploadingSettingsAvatar, setUploadingSettingsAvatar] = useState(false)
+  const [uploadingSettingsCover, setUploadingSettingsCover] = useState(false)
 
-  const handleFileUpload = async (file: File, type: 'avatar' | 'cover') => {
-    const setUploading = type === 'avatar' ? setUploadingAvatar : setUploadingCover
-    const setUrl = type === 'avatar' ? setEditAvatarUrl : setEditCoverUrl
+  const handleFileUpload = async (file: File, type: 'avatar' | 'cover', dest: 'edit' | 'settings' = 'edit') => {
+    const setUploading = type === 'avatar'
+      ? (dest === 'settings' ? setUploadingSettingsAvatar : setUploadingAvatar)
+      : (dest === 'settings' ? setUploadingSettingsCover : setUploadingCover)
+    const setUrl = type === 'avatar'
+      ? (dest === 'settings' ? setSettingsAvatarUrl : setEditAvatarUrl)
+      : (dest === 'settings' ? setSettingsCoverUrl : setEditCoverUrl)
 
     setUploading(true)
     try {
@@ -701,6 +709,8 @@ export default function CommunityDetailPage() {
       setEditWaGroupLink(commDetail.waGroupLink || '')
       setEditAvatarUrl(commDetail.avatarUrl || '')
       setEditCoverUrl(commDetail.coverUrl || '')
+      setSettingsAvatarUrl(commDetail.avatarUrl || '')
+      setSettingsCoverUrl(commDetail.coverUrl || '')
       setEditJoinFee(commDetail.joinFee ? String(commDetail.joinFee) : '')
       setEditMonthlyFee(commDetail.monthlyFee ? String(commDetail.monthlyFee) : '')
 
@@ -1300,8 +1310,8 @@ export default function CommunityDetailPage() {
       if (community.nomorNpwp) formData.append('nomorNpwp', community.nomorNpwp)
       if (community.domisili) formData.append('domisili', community.domisili)
       if (community.kontakPj) formData.append('kontakPj', community.kontakPj)
-      if (community.avatarUrl) formData.append('avatarUrl', community.avatarUrl)
-      if (community.coverUrl) formData.append('coverUrl', community.coverUrl)
+      formData.append('avatarUrl', settingsAvatarUrl)
+      formData.append('coverUrl', settingsCoverUrl)
       if (community.waGroupLink) formData.append('waGroupLink', community.waGroupLink)
       formData.append('joinFee', String(community.joinFee || 0))
       formData.append('monthlyFee', String(community.monthlyFee || 0))
@@ -1322,6 +1332,8 @@ export default function CommunityDetailPage() {
         setSavedDisabledModules(disabledModules)
         if (res.community) {
           setCommunity(res.community)
+          setSettingsAvatarUrl(res.community.avatarUrl || '')
+          setSettingsCoverUrl(res.community.coverUrl || '')
         }
       } else {
         goeyToast.error(res.error || 'Gagal menyimpan pengaturan.')
@@ -1925,8 +1937,12 @@ export default function CommunityDetailPage() {
                         {bannerBadge}
                       </span>
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shrink-0">
-                          <PromoIcon className="w-6 h-6" />
+                        <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shrink-0 overflow-hidden">
+                          {community.avatarUrl ? (
+                            <img src={community.avatarUrl} alt="Logo" className="w-full h-full object-cover" />
+                          ) : (
+                            <PromoIcon className="w-6 h-6" />
+                          )}
                         </div>
                         <h1 className="text-2xl md:text-3xl font-black font-sora tracking-tight drop-shadow-sm">
                           {community.name}
@@ -4418,6 +4434,96 @@ export default function CommunityDetailPage() {
                           </div>
                         )
                       })}
+                    </div>
+                  </div>
+
+                  {/* SECTION: IDENTITAS VISUAL DASHBOARD */}
+                  <div className="pt-6 border-t border-gray-100 space-y-4">
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4 text-[#2DB24A]" /> Identitas Visual & Tampilan Dashboard
+                      </h3>
+                      <p className="text-[10px] text-gray-500 font-medium mt-0.5">
+                        Unggah logo dan foto sampul banner baru untuk mempercantik tampilan dashboard komunitas Anda.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Logo Upload */}
+                      <div className="p-4 bg-gray-50/60 border border-gray-200/80 rounded-2xl space-y-3">
+                        <span className="text-[10px] font-black text-gray-800 uppercase tracking-wider block">Logo Komunitas (Avatar)</span>
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                            {settingsAvatarUrl ? (
+                              <img src={settingsAvatarUrl} alt="Logo" className="w-full h-full object-cover" />
+                            ) : (
+                              <Users className="w-8 h-8 text-gray-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <label className="inline-flex px-3 py-1.5 bg-white border border-gray-300 hover:border-[#2DB24A] hover:text-[#2DB24A] text-gray-700 font-extrabold text-[11px] rounded-lg shadow-2xs transition-all cursor-pointer items-center gap-1.5">
+                              {uploadingSettingsAvatar ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengunggah...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-3.5 h-3.5" /> Pilih Logo Baru
+                                </>
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingSettingsAvatar}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) handleFileUpload(file, 'avatar', 'settings')
+                                }}
+                              />
+                            </label>
+                            <p className="text-[9px] text-gray-400 font-medium">Rekomendasi rasio 1:1 format PNG/JPG maks 2MB.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Banner Upload */}
+                      <div className="p-4 bg-gray-55/40 border border-gray-200/80 rounded-2xl space-y-3">
+                        <span className="text-[10px] font-black text-gray-800 uppercase tracking-wider block">Foto Sampul (Banner Cover)</span>
+                        <div className="flex items-center gap-4">
+                          <div className="w-24 h-16 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                            {settingsCoverUrl ? (
+                              <img src={settingsCoverUrl} alt="Banner" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="text-[9px] text-gray-400 font-bold">No Banner</div>
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <label className="inline-flex px-3 py-1.5 bg-white border border-gray-300 hover:border-[#2DB24A] hover:text-[#2DB24A] text-gray-700 font-extrabold text-[11px] rounded-lg shadow-2xs transition-all cursor-pointer items-center gap-1.5">
+                              {uploadingSettingsCover ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Mengunggah...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-3.5 h-3.5" /> Pilih Sampul Baru
+                                </>
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingSettingsCover}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) handleFileUpload(file, 'cover', 'settings')
+                                }}
+                              />
+                            </label>
+                            <p className="text-[9px] text-gray-400 font-medium">Rekomendasi rasio lanskap format PNG/JPG maks 4MB.</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
