@@ -1669,18 +1669,20 @@ export default function CommunityDetailPage() {
     return 'Rp ' + val.toLocaleString('id-ID')
   }
 
+  const activeMembersCount = members.filter(m => m.user?.role !== 'ADMIN').length
+
   const statCards = isKoperasi ? [
-    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
     { label: 'Total Simpanan', value: formatCompactRupiah(communitySavingsSummary?.totalSavingsCommunity || 0), icon: Wallet, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'SHU Tahun Ini', value: formatCompactRupiah(Number(shuNetProfit || 0)), icon: PieChart, color: 'text-amber-600 bg-amber-50' },
     { label: 'Unit Usaha', value: String(realStats?.activeMerchantsCount || 0), icon: Building2, color: 'text-blue-600 bg-blue-50' },
   ] : isBusiness ? [
-    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
     { label: 'Mitra', value: String(realStats?.activeMerchantsCount || 0), icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Pelatihan', value: '36', icon: GraduationCap, color: 'text-amber-600 bg-amber-50' },
     { label: 'Peluang Usaha', value: '54', icon: Rocket, color: 'text-blue-600 bg-blue-50' },
   ] : isEducation ? [
-    { label: 'Anggota', value: String(members.length), icon: Users, color: 'text-purple-600 bg-purple-50' },
+    { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-purple-600 bg-purple-50' },
     { label: 'Kelas', value: '32', icon: BookOpen, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Kompetisi', value: '18', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
     { label: 'Startup', value: '46', icon: Rocket, color: 'text-indigo-600 bg-indigo-50' },
@@ -1690,7 +1692,7 @@ export default function CommunityDetailPage() {
     { label: 'Supplier', value: '68', icon: Truck, color: 'text-amber-600 bg-amber-50' },
     { label: 'Event', value: '22', icon: Calendar, color: 'text-rose-600 bg-rose-50' },
   ] : [
-    { label: 'Anggota', value: '1.248', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+    { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
     { label: 'Diskusi', value: '156', icon: MessageSquare, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
     { label: 'Event', value: '24', icon: Calendar, color: 'text-amber-600 bg-amber-50' },
     { label: 'Galeri', value: '87', icon: ImageIcon, color: 'text-indigo-600 bg-indigo-50' },
