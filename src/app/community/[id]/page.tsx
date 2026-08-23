@@ -751,11 +751,11 @@ export default function CommunityDetailPage() {
         setMembershipDetails(null)
       }
 
-      // Fetch products from members of this community or marketplace
+      // Fetch products strictly from members of this community
       const memberIds = memberList.map((m: any) => m.userId)
       const allProducts = allProductsRes || []
       const communityProducts = allProducts.filter((p: any) => memberIds.includes(p.merchantId))
-      setProducts(communityProducts.length > 0 ? communityProducts : (allProducts.length > 0 ? allProducts.slice(0, 4) : []))
+      setProducts(communityProducts)
 
       // Set cooperative loans
       setLoans(loanListRes || [])
@@ -1714,6 +1714,9 @@ export default function CommunityDetailPage() {
   }
 
   const activeMembersCount = members.length
+  const discussionsCount = (announcements || []).filter((a: any) => a.type !== 'EVENT' && a.status === 'PUBLISHED').length
+  const eventsCount = (announcements || []).filter((a: any) => a.type === 'EVENT' || a.title?.toLowerCase().includes('event') || a.title?.toLowerCase().includes('workshop') || a.title?.toLowerCase().includes('kopdar')).length
+  const galleryCount = 0
 
   const statCards = isKoperasi ? [
     { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
@@ -1723,23 +1726,23 @@ export default function CommunityDetailPage() {
   ] : isBusiness ? [
     { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
     { label: 'Mitra', value: String(realStats?.activeMerchantsCount || 0), icon: Handshake, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'Pelatihan', value: '36', icon: GraduationCap, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Peluang Usaha', value: '54', icon: Rocket, color: 'text-blue-600 bg-blue-50' },
+    { label: 'Pelatihan', value: '0', icon: GraduationCap, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Peluang Usaha', value: String(fundingProjects?.length || 0), icon: Rocket, color: 'text-blue-600 bg-blue-50' },
   ] : isEducation ? [
     { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-purple-600 bg-purple-50' },
-    { label: 'Kelas', value: '32', icon: BookOpen, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'Kompetisi', value: '18', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Startup', value: '46', icon: Rocket, color: 'text-indigo-600 bg-indigo-50' },
+    { label: 'Kelas', value: '0', icon: BookOpen, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Kompetisi', value: '0', icon: Trophy, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Startup', value: String(realStats?.activeMerchantsCount || 0), icon: Rocket, color: 'text-indigo-600 bg-indigo-50' },
   ] : isKuliner ? [
     { label: 'Merchant', value: String(realStats?.activeMerchantsCount || 0), icon: Store, color: 'text-orange-600 bg-orange-50' },
     { label: 'Produk', value: String(products.length || 0), icon: ShoppingBag, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'Supplier', value: '68', icon: Truck, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Event', value: '22', icon: Calendar, color: 'text-rose-600 bg-rose-50' },
+    { label: 'Supplier', value: '0', icon: Truck, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Event', value: String(eventsCount), icon: Calendar, color: 'text-rose-600 bg-rose-50' },
   ] : [
     { label: 'Anggota', value: String(activeMembersCount), icon: Users, color: 'text-emerald-600 bg-emerald-50' },
-    { label: 'Diskusi', value: '156', icon: MessageSquare, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
-    { label: 'Event', value: '24', icon: Calendar, color: 'text-amber-600 bg-amber-50' },
-    { label: 'Galeri', value: '87', icon: ImageIcon, color: 'text-indigo-600 bg-indigo-50' },
+    { label: 'Diskusi', value: String(discussionsCount), icon: MessageSquare, color: 'text-[#2DB24A] bg-[#E8F8EE]' },
+    { label: 'Event', value: String(eventsCount), icon: Calendar, color: 'text-amber-600 bg-amber-50' },
+    { label: 'Galeri', value: String(galleryCount), icon: ImageIcon, color: 'text-indigo-600 bg-indigo-50' },
   ]
 
   const promoWidget = isKoperasi ? {
@@ -2370,25 +2373,37 @@ export default function CommunityDetailPage() {
                         <button onClick={() => setActiveSidebarNav('event')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Semua</button>
                       </div>
                       <div className="space-y-2.5">
-                        {[
-                          { day: '30', month: 'JUL', title: 'Workshop Digital Marketing', desc: 'Online (Zoom)' },
-                          { day: '12', month: 'AGS', title: 'Kopdar Perahu Kita', desc: 'Yogyakarta' },
-                          { day: '25', month: 'AGS', title: 'Bazaar Produk Anggota', desc: 'Alun-Alun Kidul' },
-                        ].map((ev, idx) => (
-                          <div key={idx} className="flex items-center gap-2.5 p-2 bg-gray-50 rounded-xl">
-                            <div className="w-11 h-11 rounded-xl bg-white border border-gray-200 text-center flex flex-col justify-center shrink-0">
-                              <span className="text-xs font-black text-gray-900 leading-none">{ev.day}</span>
-                              <span className="text-[9px] font-bold text-[#2DB24A] leading-none mt-0.5">{ev.month}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-[11px] font-bold text-gray-900 line-clamp-1">{ev.title}</h4>
-                              <p className="text-[9px] text-gray-500 font-medium line-clamp-1">{ev.desc}</p>
-                            </div>
-                            <button onClick={() => setActiveSidebarNav('event')} className="px-2 py-1 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-lg transition-colors cursor-pointer shrink-0">
-                              Daftar
-                            </button>
-                          </div>
-                        ))}
+                        {(() => {
+                          const realEvents = (announcements || []).filter((a: any) => a.type === 'EVENT' || a.title?.toLowerCase().includes('event') || a.title?.toLowerCase().includes('workshop') || a.title?.toLowerCase().includes('kopdar'))
+                          if (realEvents.length === 0) {
+                            return (
+                              <div className="p-4 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl space-y-1">
+                                <Calendar className="w-5 h-5 text-gray-300 mx-auto" />
+                                <p className="text-[11px] font-bold text-gray-500">Belum Ada Event Mendatang</p>
+                              </div>
+                            )
+                          }
+                          return realEvents.slice(0, 3).map((ev: any, idx: number) => {
+                            const dateObj = ev.publishedAt ? new Date(ev.publishedAt) : new Date()
+                            const day = String(dateObj.getDate())
+                            const month = dateObj.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase()
+                            return (
+                              <div key={ev.id || idx} className="flex items-center gap-2.5 p-2 bg-gray-50 rounded-xl">
+                                <div className="w-11 h-11 rounded-xl bg-white border border-gray-200 text-center flex flex-col justify-center shrink-0">
+                                  <span className="text-xs font-black text-gray-900 leading-none">{day}</span>
+                                  <span className="text-[9px] font-bold text-[#2DB24A] leading-none mt-0.5">{month}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-[11px] font-bold text-gray-900 line-clamp-1">{ev.title}</h4>
+                                  <p className="text-[9px] text-gray-500 font-medium line-clamp-1">{ev.content || 'Event Komunitas'}</p>
+                                </div>
+                                <button onClick={() => setActiveSidebarNav('event')} className="px-2 py-1 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-lg transition-colors cursor-pointer shrink-0">
+                                  Lihat
+                                </button>
+                              </div>
+                            )
+                          })
+                        })()}
                       </div>
                     </div>
 
@@ -2397,14 +2412,9 @@ export default function CommunityDetailPage() {
                         <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Galeri Kegiatan</h3>
                         <button onClick={() => setActiveSidebarNav('galeri')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Semua</button>
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&h=200&fit=crop&q=80',
-                          'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=200&h=200&fit=crop&q=80',
-                          'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=200&h=200&fit=crop&q=80',
-                        ].map((imgUrl, idx) => (
-                          <img key={idx} src={imgUrl} alt="" onClick={() => setActiveSidebarNav('galeri')} className="w-full h-16 rounded-xl object-cover border border-gray-100 hover:opacity-90 transition-opacity cursor-pointer" />
-                        ))}
+                      <div className="p-4 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl space-y-1">
+                        <ImageIcon className="w-5 h-5 text-gray-300 mx-auto" />
+                        <p className="text-[11px] font-bold text-gray-500">Belum Ada Foto Galeri</p>
                       </div>
                     </div>
                   </div>
@@ -2429,37 +2439,43 @@ export default function CommunityDetailPage() {
                   </div>
 
                   <div className="space-y-3.5">
-                    {[
-                      { title: 'Bagaimana cara meningkatkan omzet produk UMKM melalui Instagram & TikTok Ads?', author: 'Siti Rahmawati', role: 'Merchant Kuliner', date: '2 jam lalu', category: 'Pemasaran', likes: 34, comments: 19, views: 142 },
-                      { title: 'Rekomendasi Supplier Kemasan Ramah Lingkungan (Biodegradable) Wilayah Jogja', author: 'Budi Santoso', role: 'Craft Merchant', date: '5 jam lalu', category: 'Tanya Jawab', likes: 28, comments: 24, views: 198 },
-                      { title: 'Panduan Lengkap Pendaftaran Sertifikat Halal Gratis (SEHATI) 2026', author: 'Super Admin Saloka', role: 'Ketua Komunitas', date: '1 hari lalu', category: 'Edukasi & Bisnis', isPinned: true, likes: 89, comments: 45, views: 512 },
-                      { title: 'Sharing Pengalaman Mengikuti Bazaar & Pameran Produk UMKM Tingkat Nasional', author: 'Rina Wijaya', role: 'Coffee Merchant', date: '2 hari lalu', category: 'Pengalaman', likes: 42, comments: 15, views: 230 },
-                    ].map((thread, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-100 hover:border-[#2DB24A]/30 hover:bg-white rounded-2xl shadow-xs transition-all space-y-3">
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            {thread.isPinned && <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md">📌 TERPAKU</span>}
-                            <span className="px-2.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[10px] rounded-md">{thread.category}</span>
+                    {(() => {
+                      const discussions = (announcements || []).filter((a: any) => a.type !== 'EVENT' && a.status === 'PUBLISHED')
+                      if (discussions.length === 0) {
+                        return (
+                          <div className="p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                            <MessageSquare className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
+                            <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Topik Diskusi</h4>
+                            <p className="text-xs text-gray-500 max-w-md mx-auto">Komunitas ini belum memiliki topik diskusi terdaftar. Anggota atau pengurus dapat membuat pengumuman atau diskusi baru.</p>
                           </div>
-                          <span className="text-[10px] text-gray-400 font-semibold">{thread.date}</span>
-                        </div>
-                        <h3 className="text-sm font-extrabold text-gray-900 hover:text-[#2DB24A] transition-colors cursor-pointer">{thread.title}</h3>
-                        <div className="flex flex-wrap justify-between items-center pt-2 border-t border-gray-200/60 text-xs text-gray-500 font-medium">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-[#2DB24A] text-white font-bold text-[10px] flex items-center justify-center">
-                              {thread.author.charAt(0)}
+                        )
+                      }
+                      return discussions.map((thread: any, idx: number) => {
+                        const authorName = thread.author?.name || 'Pengurus Komunitas'
+                        const dateStr = thread.publishedAt ? new Date(thread.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Baru saja'
+                        return (
+                          <div key={thread.id || idx} className="p-5 bg-gray-50/70 border border-gray-100 hover:border-[#2DB24A]/30 hover:bg-white rounded-2xl shadow-xs transition-all space-y-3">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                {thread.isPinned && <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md">📌 TERPAKU</span>}
+                                <span className="px-2.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[10px] rounded-md">Diskusi</span>
+                              </div>
+                              <span className="text-[10px] text-gray-400 font-semibold">{dateStr}</span>
                             </div>
-                            <span className="font-bold text-gray-800 text-[11px]">{thread.author}</span>
-                            <span className="text-[10px] text-gray-400">({thread.role})</span>
+                            <h3 className="text-sm font-extrabold text-gray-900 hover:text-[#2DB24A] transition-colors cursor-pointer">{thread.title}</h3>
+                            <p className="text-xs text-gray-600 leading-relaxed font-medium line-clamp-3">{thread.content}</p>
+                            <div className="flex flex-wrap justify-between items-center pt-2 border-t border-gray-200/60 text-xs text-gray-500 font-medium">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-[#2DB24A] text-white font-bold text-[10px] flex items-center justify-center">
+                                  {authorName.charAt(0)}
+                                </div>
+                                <span className="font-bold text-gray-800 text-[11px]">{authorName}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-4 text-xs font-semibold">
-                            <span className="hover:text-gray-900 cursor-pointer">👍 {thread.likes}</span>
-                            <span className="hover:text-gray-900 cursor-pointer">💬 {thread.comments} Komentar</span>
-                            <span className="text-gray-400 text-[11px]">👁️ {thread.views}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        )
+                      })
+                    })()}
                   </div>
                 </div>
               </div>
@@ -2477,37 +2493,49 @@ export default function CommunityDetailPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { day: '30', month: 'JUL', year: '2026', title: 'Workshop Digital Marketing & Branding UMKM 2026', time: '10:00 - 12:00 WIB', location: 'Online via Zoom', speaker: 'Dr. Irvan Prasetya (Pakar Digital)', slots: '45/100 Terisi', status: 'Mendatang' },
-                      { day: '12', month: 'AGS', year: '2026', title: 'Kopdar Rutin & Temu Jejaring Anggota Perahu Kita', time: '14:00 - 17:00 WIB', location: 'Kopi Teras Jogja, Jl. Kaliurang KM 7', speaker: 'Pengurus Perahu Kita', slots: '28/50 Terisi', status: 'Mendatang' },
-                      { day: '25', month: 'AGS', year: '2026', title: 'Bazaar Kuliner & Produk Anggota UMKM Perahu Kita', time: '08:00 - 17:00 WIB', location: 'Alun-Alun Kidul, Yogyakarta', speaker: 'Terbuka Untuk Umum', slots: '15 Stand Tersisa', status: 'Mendatang' },
-                      { day: '15', month: 'JUL', year: '2026', title: 'Pelatihan Pengemasan & Foto Produk Profesional', time: '09:00 - 15:00 WIB', location: 'Gedung PLUT KUMKM DIY', speaker: 'Tim Fotografi Teras', slots: 'Selesai (85 Peserta)', status: 'Selesai' },
-                    ].map((ev, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-4 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-start">
-                            <div className="w-14 h-14 rounded-2xl bg-white border border-gray-200 text-center flex flex-col justify-center shadow-xs shrink-0">
-                              <span className="text-base font-black text-gray-900 leading-none">{ev.day}</span>
-                              <span className="text-[10px] font-bold text-[#2DB24A] leading-none mt-1 uppercase">{ev.month} {ev.year}</span>
+                    {(() => {
+                      const realEvents = (announcements || []).filter((a: any) => a.type === 'EVENT' || a.title?.toLowerCase().includes('event') || a.title?.toLowerCase().includes('workshop') || a.title?.toLowerCase().includes('kopdar'))
+                      if (realEvents.length === 0) {
+                        return (
+                          <div className="col-span-full p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                            <Calendar className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
+                            <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Agenda Event</h4>
+                            <p className="text-xs text-gray-500 max-w-md mx-auto">Komunitas ini belum memiliki agenda workshop, kopdar, atau pameran mendatang.</p>
+                          </div>
+                        )
+                      }
+                      return realEvents.map((ev: any, idx: number) => {
+                        const dateObj = ev.publishedAt ? new Date(ev.publishedAt) : new Date()
+                        const day = String(dateObj.getDate())
+                        const month = dateObj.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase()
+                        const year = String(dateObj.getFullYear())
+                        return (
+                          <div key={ev.id || idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-4 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-start">
+                                <div className="w-14 h-14 rounded-2xl bg-white border border-gray-200 text-center flex flex-col justify-center shadow-xs shrink-0">
+                                  <span className="text-base font-black text-gray-900 leading-none">{day}</span>
+                                  <span className="text-[10px] font-bold text-[#2DB24A] leading-none mt-1 uppercase">{month} {year}</span>
+                                </div>
+                                <span className="px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider bg-[#E8F8EE] text-[#0F5132]">
+                                  Mendatang
+                                </span>
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-extrabold text-gray-900 leading-snug">{ev.title}</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-1">{ev.content}</p>
+                              </div>
                             </div>
-                            <span className={`px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider ${ev.status === 'Mendatang' ? 'bg-[#E8F8EE] text-[#0F5132]' : 'bg-gray-200 text-gray-600'}`}>
-                              {ev.status}
-                            </span>
+                            <div className="flex justify-between items-center pt-3 border-t border-gray-200/60">
+                              <span className="text-[11px] font-semibold text-gray-500">Terbuka untuk Anggota</span>
+                              <button onClick={() => goeyToast.success(`Pendaftaran event "${ev.title}" berhasil!`)} className="px-4 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
+                                Lihat Detail
+                              </button>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="text-sm font-extrabold text-gray-900 leading-snug">{ev.title}</h3>
-                            <p className="text-xs text-gray-500 font-medium mt-1">📍 {ev.location}</p>
-                            <p className="text-xs text-gray-500 font-medium">🕒 {ev.time} • 👤 {ev.speaker}</p>
-                          </div>
-                        </div>
-                        <div className="flex justify-between items-center pt-3 border-t border-gray-200/60">
-                          <span className="text-[11px] font-semibold text-gray-500">{ev.slots}</span>
-                          <button onClick={() => goeyToast.success(`Pendaftaran event "${ev.title}" berhasil dicatat!`)} className="px-4 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                            {ev.status === 'Mendatang' ? 'Daftar Event' : 'Lihat Dokumentasi'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                        )
+                      })
+                    })()}
                   </div>
                 </div>
               </div>
@@ -2718,25 +2746,10 @@ export default function CommunityDetailPage() {
                     <p className="text-xs text-gray-500 font-medium mt-1">Dokumentasi momen kebersamaan, workshop, pelatihan, bazaar, dan kopdar anggota.</p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {[
-                      { title: 'Workshop Digital Marketing 2026', category: 'Workshop', img: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=500&h=300&fit=crop&q=80' },
-                      { title: 'Kopdar Rutin Kaliurang', category: 'Kopdar', img: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=500&h=300&fit=crop&q=80' },
-                      { title: 'Bazaar UMKM Alun-Alun Kidul', category: 'Bazaar', img: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=500&h=300&fit=crop&q=80' },
-                      { title: 'Pelatihan Sertifikasi Halal Gratis', category: 'Workshop', img: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=500&h=300&fit=crop&q=80' },
-                      { title: 'Penyerahan Sertifikat Komunitas', category: 'Kopdar', img: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=500&h=300&fit=crop&q=80' },
-                      { title: 'Kunjungan Sentra Kerajinan Jogja', category: 'Kunjungan', img: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&h=300&fit=crop&q=80' },
-                    ].map((item, idx) => (
-                      <div key={idx} className="group relative rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 shadow-xs cursor-pointer">
-                        <img src={item.img} alt={item.title} className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end text-white">
-                          <span className="px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider w-max mb-1">
-                            {item.category}
-                          </span>
-                          <h4 className="text-xs font-bold leading-tight">{item.title}</h4>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                    <ImageIcon className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
+                    <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Galeri Foto Kegiatan</h4>
+                    <p className="text-xs text-gray-500 max-w-md mx-auto">Dokumentasi foto kegiatan komunitas belum diunggah.</p>
                   </div>
                 </div>
               </div>
@@ -2864,27 +2877,35 @@ export default function CommunityDetailPage() {
                     </div>
 
                     <div className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3">
-                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Informasi Legalitas Hukum</h3>
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Informasi & Legalitas Hukum</h3>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
                           <span className="text-gray-500">Bentuk Organisasi:</span>
-                          <span className="font-bold text-gray-800">Perkumpulan Resmi (Non-Koperasi)</span>
+                          <span className="font-bold text-gray-800">{isKoperasi ? 'Koperasi Resmi' : 'Perkumpulan UMKM'}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
+                          <span className="text-gray-500">Ketua / Penanggung Jawab:</span>
+                          <span className="font-bold text-gray-800">{community.ketua?.name || members.find((m: any) => m.role === 'KETUA' || m.role === 'ADMIN' || m.userId === community.ketuaId)?.user?.name || community.ketuaName || '-'}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
+                          <span className="text-gray-500">Tanggal Dibentuk:</span>
+                          <span className="font-bold text-gray-800">{community.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</span>
                         </div>
                         <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
                           <span className="text-gray-500">Akta Notaris:</span>
-                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.aktaNotaris || 'Akta Notaris No. 25 Tgl 25 Juli 2026'}</span>
+                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.aktaNotaris || '-'}</span>
                         </div>
                         <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
                           <span className="text-gray-500">Nomor AHU Kemenkumham:</span>
-                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.nomorAhu || 'AHU-00250726.AH.01.07'}</span>
+                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.nomorAhu || '-'}</span>
                         </div>
                         <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
                           <span className="text-gray-500">Nomor NPWP Organisasi:</span>
-                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.nomorNpwp || '98.765.432.1-012.000'}</span>
+                          <span className="font-bold text-gray-800 font-mono text-[11px]">{community.nomorNpwp || '-'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-500">Domisili Sekretariat:</span>
-                          <span className="font-bold text-gray-800">{community.domisili || 'Kota Yogyakarta, DIY'}</span>
+                          <span className="font-bold text-gray-800">{community.domisili || '-'}</span>
                         </div>
                       </div>
                     </div>
