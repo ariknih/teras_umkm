@@ -2286,33 +2286,6 @@ export default function CommunityDetailPage() {
                         ))}
                       </div>
                     </div>
-
-                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Anggota Aktif</h3>
-                        <button onClick={() => setActiveSidebarNav('anggota')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Semua</button>
-                      </div>
-                      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                        {[
-                          { name: 'Andi', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&q=80' },
-                          { name: 'Siti', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&q=80' },
-                          { name: 'Budi', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&q=80' },
-                          { name: 'Rina', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&q=80' },
-                          { name: 'Dewi', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop&q=80' },
-                        ].map((m, idx) => (
-                          <div key={idx} className="flex flex-col items-center gap-1 shrink-0">
-                            <img src={m.img} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-xs" />
-                            <span className="text-[10px] font-medium text-gray-700">{m.name}</span>
-                          </div>
-                        ))}
-                        <div className="flex flex-col items-center justify-center shrink-0">
-                          <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 font-extrabold text-xs flex items-center justify-center border-2 border-white shadow-xs">
-                            +123
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                     <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl space-y-2 text-center shadow-xs">
                       <div className="flex justify-center text-[#2DB24A]"><Users className="w-7 h-7" /></div>
                       <h4 className="font-extrabold text-xs text-[#0F5132]">Ajak Teman Bergabung</h4>
