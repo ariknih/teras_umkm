@@ -7022,16 +7022,101 @@ export const DataStore = {
   async setIndukCommunity(userId: string, communityId: string | null) {
     syncMockDb()
     const targetCommunityId = communityId || null
+
     if (await isDbConnected()) {
       try {
+        const existingUser = await db.user.findUnique({
+          where: { id: userId },
+          select: { indukCommunityId: true }
+        })
+
+        const oldCommunityId = existingUser?.indukCommunityId
+
+        if (oldCommunityId !== targetCommunityId) {
+          // Delete old membership
+          if (oldCommunityId) {
+            try {
+              await db.communityMembership.deleteMany({
+                where: {
+                  userId,
+                  communityId: oldCommunityId
+                }
+              })
+            } catch (err) {
+              console.error('Failed to delete old community membership:', err)
+            }
+          }
+
+          // Create new membership
+          if (targetCommunityId) {
+            const membershipExists = await db.communityMembership.findUnique({
+              where: {
+                communityId_userId: {
+                  communityId: targetCommunityId,
+                  userId
+                }
+              }
+            })
+
+            if (!membershipExists) {
+              await db.communityMembership.create({
+                data: {
+                  communityId: targetCommunityId,
+                  userId,
+                  isInduk: false,
+                  isPaid: true,
+                  invoiceStatus: 'VERIFIED'
+                }
+              })
+            }
+          }
+        }
+
         return await db.user.update({
           where: { id: userId },
           data: { indukCommunityId: targetCommunityId }
         })
-      } catch (_) {}
+      } catch (err) {
+        console.error('setIndukCommunity DB error:', err)
+      }
     }
+
+    // Mock DB logic
     const user = globalMockUsers.find(u => u.id === userId)
     if (user) {
+      const oldCommunityId = (user as any).indukCommunityId
+
+      if (oldCommunityId !== targetCommunityId) {
+        // Delete old
+        if (oldCommunityId && (globalThis as any).__mockCommunityMemberships) {
+          (globalThis as any).__mockCommunityMemberships = (globalThis as any).__mockCommunityMemberships.filter(
+            (m: any) => !(m.userId === userId && m.communityId === oldCommunityId)
+          )
+        }
+
+        // Add new
+        if (targetCommunityId) {
+          if (!(globalThis as any).__mockCommunityMemberships) {
+            (globalThis as any).__mockCommunityMemberships = []
+          }
+          const exists = (globalThis as any).__mockCommunityMemberships.some(
+            (m: any) => m.userId === userId && m.communityId === targetCommunityId
+          )
+          if (!exists) {
+            (globalThis as any).__mockCommunityMemberships.push({
+              id: `membership-${Date.now()}-${Math.random()}`,
+              communityId: targetCommunityId,
+              userId,
+              isInduk: false,
+              isPaid: true,
+              invoiceStatus: 'VERIFIED',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            })
+          }
+        }
+      }
+
       (user as any).indukCommunityId = targetCommunityId
       user.updatedAt = new Date()
       saveMockDb()
