@@ -607,12 +607,48 @@ export default function AdminDashboardClient({
     startTransition(async () => {
       const res = await updateUserIndukCommunityAction(userId, communityId)
       if (res.success) {
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, indukCommunityId: communityId } : u))
-        setActionSuccess('Anggota berhasil didaftarkan ke Komunitas Induk ini.')
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, indukCommunityId: communityId || null } : u))
+        
+        if (communityId) {
+          // Remove from other community memberships in state (since a user can only belong to one active induk community)
+          setInvoices(prev => prev.filter(inv => inv.userId !== userId))
+          
+          const targetUser = users.find(u => u.id === userId)
+          const targetComm = communities.find(c => c.id === communityId)
+          if (targetUser && targetComm) {
+            const newMembership = {
+              id: `membership-${Date.now()}`,
+              communityId: communityId,
+              userId: userId,
+              isInduk: false,
+              isPaid: true,
+              invoiceStatus: 'VERIFIED',
+              joinedAt: new Date(),
+              user: {
+                id: targetUser.id,
+                name: targetUser.name,
+                email: targetUser.email,
+                role: targetUser.role
+              },
+              community: {
+                id: targetComm.id,
+                name: targetComm.name,
+                type: targetComm.type
+              }
+            }
+            setInvoices(prev => [newMembership, ...prev])
+          }
+          setActionSuccess('Anggota berhasil didaftarkan ke Komunitas Induk ini.')
+        } else {
+          // Kick: remove from invoices state
+          setInvoices(prev => prev.filter(inv => !(inv.userId === userId && inv.communityId === memberModal.community?.id)))
+          setActionSuccess('Anggota berhasil dikeluarkan dari Komunitas Induk ini.')
+        }
+        
         setSelectedMemberUserId('')
         router.refresh()
       } else {
-        setActionError(res.error || 'Gagal menambahkan anggota.')
+        setActionError(res.error || 'Gagal memproses keanggotaan.')
       }
     })
   }
@@ -2904,7 +2940,7 @@ export default function AdminDashboardClient({
                           })
                           .map(comm => {
                             const ketuaUser = users.find(u => u.id === comm.ketuaId)
-                            const memberCount = users.filter(u => u.indukCommunityId === comm.id && u.role !== 'ADMIN').length
+                            const memberCount = invoices.filter(inv => inv.communityId === comm.id && inv.user?.role !== 'ADMIN').length
                             return (
                               <tr key={comm.id} className="hover:bg-slate-50 transition-colors">
                                 <td className="px-4 py-3.5">
@@ -5200,7 +5236,7 @@ export default function AdminDashboardClient({
                     <h3 className="font-sora text-sm font-bold text-[#0F5132] uppercase tracking-wider">
                       Anggota Komunitas: {memberModal.community.name}
                     </h3>
-                    <p className="text-[10px] text-slate-400">Total {users.filter(u => u.indukCommunityId === memberModal.community.id).length} Anggota terdaftar</p>
+                    <p className="text-[10px] text-slate-400">Total {invoices.filter(inv => inv.communityId === memberModal.community.id && inv.user?.role !== 'ADMIN').length} Anggota terdaftar</p>
                   </div>
                   <button onClick={() => setMemberModal({ open: false })} className="text-slate-400 hover:text-slate-600">✕</button>
                 </div>
@@ -5215,9 +5251,18 @@ export default function AdminDashboardClient({
                       className="flex-grow bg-white border border-[#cbd5e1] rounded px-3 py-2 text-xs text-slate-800"
                     >
                       <option value="">-- Pilih User / Merchant --</option>
-                      {users.map(u => (
-                        <option key={u.id} value={u.id}>{u.name} ({u.role} - {u.email})</option>
-                      ))}
+                      {(() => {
+                        const existingMemberIds = new Set(
+                          invoices
+                            .filter(inv => inv.communityId === memberModal.community.id)
+                            .map(inv => inv.userId)
+                        )
+                        return users
+                          .filter(u => !existingMemberIds.has(u.id) && u.role !== 'ADMIN')
+                          .map(u => (
+                            <option key={u.id} value={u.id}>{u.name} ({u.role} - {u.email})</option>
+                          ))
+                      })()}
                     </select>
                     <button
                       onClick={() => handleAddMemberToCommunity(memberModal.community.id, selectedMemberUserId)}
@@ -5231,24 +5276,30 @@ export default function AdminDashboardClient({
 
                 {/* Current Members List */}
                 <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded">
-                  {users.filter(u => u.indukCommunityId === memberModal.community.id && u.role !== 'ADMIN').length === 0 ? (
-                    <p className="p-4 text-center text-xs text-slate-400 italic">Belum ada anggota terdaftar di komunitas ini.</p>
-                  ) : (
-                    users.filter(u => u.indukCommunityId === memberModal.community.id && u.role !== 'ADMIN').map(mem => (
-                      <div key={mem.id} className="p-3 flex justify-between items-center hover:bg-slate-50">
-                        <div>
-                          <p className="text-xs font-bold text-slate-800">{mem.name}</p>
-                          <p className="text-[10px] text-slate-400">{mem.email} • Role: {mem.role}</p>
+                  {(() => {
+                    const communityInvoices = invoices.filter(inv => inv.communityId === memberModal.community.id && inv.user?.role !== 'ADMIN')
+                    if (communityInvoices.length === 0) {
+                      return <p className="p-4 text-center text-xs text-slate-400 italic">Belum ada anggota terdaftar di komunitas ini.</p>
+                    }
+                    return communityInvoices.map(inv => {
+                      const mem = inv.user
+                      if (!mem) return null
+                      return (
+                        <div key={inv.id} className="p-3 flex justify-between items-center hover:bg-slate-50">
+                          <div>
+                            <p className="text-xs font-bold text-slate-800">{mem.name}</p>
+                            <p className="text-[10px] text-slate-400">{mem.email} • Role: {mem.role}</p>
+                          </div>
+                          <button
+                            onClick={() => handleAddMemberToCommunity('', mem.id)}
+                            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[9px] font-bold uppercase tracking-wider cursor-pointer"
+                          >
+                            Keluarkan
+                          </button>
                         </div>
-                        <button
-                          onClick={() => handleAddMemberToCommunity('', mem.id)}
-                          className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[9px] font-bold uppercase tracking-wider cursor-pointer"
-                        >
-                          Keluarkan
-                        </button>
-                      </div>
-                    ))
-                  )}
+                      )
+                    })
+                  })()}
                 </div>
               </div>
             </div>
