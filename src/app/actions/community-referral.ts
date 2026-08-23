@@ -25,7 +25,8 @@ export async function getCommunityReferralConfig(communityId: string) {
         communityProfitShare: community.communityProfitShare ?? 60000,
         maxTiers: community.maxTiers ?? 3,
         tierPercentages,
-        isKycRequired: Boolean(community.isKycRequired)
+        isKycRequired: Boolean(community.isKycRequired),
+        commissionMethod: (community as any).commissionMethod || 'PERCENTAGE'
       }
     }
   } catch (e: any) {
@@ -41,6 +42,7 @@ export async function updateCommunityReferralConfig(data: {
   maxTiers: number
   tierPercentages: number[]
   isKycRequired?: boolean
+  commissionMethod?: 'PERCENTAGE' | 'NOMINAL'
 }) {
   try {
     // Enforce max 2 tier untuk KOPERASI
@@ -58,9 +60,12 @@ export async function updateCommunityReferralConfig(data: {
       }
     }
 
-    const totalPct = data.tierPercentages.reduce((sum, p) => sum + p, 0)
-    if (Math.abs(totalPct - 100) > 0.1) {
-      return { error: 'Total persentase persentase tier harus 100%.' }
+    // Only enforce 100% for PERCENTAGE mode
+    if (!data.commissionMethod || data.commissionMethod === 'PERCENTAGE') {
+      const totalPct = data.tierPercentages.reduce((sum, p) => sum + p, 0)
+      if (Math.abs(totalPct - 100) > 0.1) {
+        return { error: 'Total persentase persentase tier harus 100%.' }
+      }
     }
 
     if (data.referralBudget + data.communityProfitShare > data.joinFee) {
@@ -76,10 +81,11 @@ export async function updateCommunityReferralConfig(data: {
       tierPercentages: JSON.stringify(data.tierPercentages)
     })
 
-    if (data.isKycRequired !== undefined) {
+    if (data.isKycRequired !== undefined || data.commissionMethod !== undefined) {
       await DataStore.updateCommunity(data.communityId, {
         name: updated.name,
-        isKycRequired: data.isKycRequired
+        ...(data.isKycRequired !== undefined ? { isKycRequired: data.isKycRequired } : {}),
+        ...((data.commissionMethod !== undefined) ? { commissionMethod: data.commissionMethod } as any : {})
       })
     }
 

@@ -332,6 +332,7 @@ export default function CommunityDetailPage() {
   const [refMaxTiers, setRefMaxTiers] = useState<number>(3)
   const [refTierPercentages, setRefTierPercentages] = useState<number[]>([50, 30, 20])
   const [refIsKycRequired, setRefIsKycRequired] = useState<boolean>(false)
+  const [refCommissionMethod, setRefCommissionMethod] = useState<'PERCENTAGE' | 'NOMINAL'>('PERCENTAGE')
   const [refLogs, setRefLogs] = useState<any[]>([])
   const [isSavingRefSettings, setIsSavingRefSettings] = useState(false)
   const [kycWarningModalOpen, setKycWarningModalOpen] = useState(false)
@@ -362,6 +363,9 @@ export default function CommunityDetailPage() {
           if (res.config.isKycRequired !== undefined) {
             setRefIsKycRequired(res.config.isKycRequired)
           }
+          if (res.config.commissionMethod) {
+            setRefCommissionMethod(res.config.commissionMethod as 'PERCENTAGE' | 'NOMINAL')
+          }
         }
       })
       getCommunityReferralHistory(id).then(res => {
@@ -373,10 +377,13 @@ export default function CommunityDetailPage() {
   }, [id])
 
   const handleSaveReferralSettings = async () => {
-    const totalPct = refTierPercentages.slice(0, refMaxTiers).reduce((a, b) => a + Number(b || 0), 0)
-    if (Math.abs(totalPct - 100) > 0.1) {
-      goeyToast.error('Total persentase tier harus 100%!')
-      return
+    // Validate: only enforce 100% total for PERCENTAGE mode
+    if (refCommissionMethod === 'PERCENTAGE') {
+      const totalPct = refTierPercentages.slice(0, refMaxTiers).reduce((a, b) => a + Number(b || 0), 0)
+      if (Math.abs(totalPct - 100) > 0.1) {
+        goeyToast.error('Total persentase tier harus 100%!')
+        return
+      }
     }
     setIsSavingRefSettings(true)
     const res = await updateCommunityReferralConfig({
@@ -386,7 +393,8 @@ export default function CommunityDetailPage() {
       communityProfitShare: refCommunityProfitShare,
       maxTiers: refMaxTiers,
       tierPercentages: refTierPercentages.slice(0, refMaxTiers),
-      isKycRequired: refIsKycRequired
+      isKycRequired: refIsKycRequired,
+      commissionMethod: refCommissionMethod
     })
     setIsSavingRefSettings(false)
     if (res.success) {
@@ -4657,6 +4665,50 @@ export default function CommunityDetailPage() {
                       </button>
                     </div>
 
+                    {/* Commission Method Selector */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-gray-800">Metode Komisi Referral:</label>
+                      <div className="flex gap-2">
+                        {(['PERCENTAGE', 'NOMINAL'] as const).map(method => (
+                          <button
+                            key={method}
+                            type="button"
+                            onClick={() => {
+                              setRefCommissionMethod(method)
+                              // Reset tier values to sensible defaults for each mode
+                              if (method === 'PERCENTAGE') {
+                                if (refMaxTiers === 3) setRefTierPercentages([50, 30, 20])
+                                else if (refMaxTiers === 4) setRefTierPercentages([40, 30, 20, 10])
+                                else setRefTierPercentages([40, 30, 15, 10, 5])
+                              } else {
+                                // Nominal: default based on referral budget split
+                                const share = Math.round(refReferralBudget / refMaxTiers)
+                                setRefTierPercentages(Array(refMaxTiers).fill(share))
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border-2 transition-all cursor-pointer ${
+                              refCommissionMethod === method
+                                ? method === 'PERCENTAGE'
+                                  ? 'bg-[#2DB24A] border-[#2DB24A] text-white shadow-sm'
+                                  : 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            {method === 'PERCENTAGE' ? (
+                              <><span className="text-base leading-none">%</span> Persentase</>
+                            ) : (
+                              <><span className="text-base leading-none font-mono">Rp</span> Nominal</>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-500 font-medium">
+                        {refCommissionMethod === 'PERCENTAGE'
+                          ? 'Komisi dihitung sebagai persentase (%) dari total alokasi dana referral. Total semua tier harus 100%.'
+                          : 'Komisi ditentukan sebagai nominal Rupiah (Rp) tetap per tier. Tidak ada validasi total.'}
+                      </p>
+                    </div>
+
                     {/* Tier Selector (3, 4, 5) */}
                     <div className="space-y-2">
                       <label className="block text-xs font-bold text-gray-800">Jumlah Tier Referral (Min 3, Max 5 Tier):</label>
@@ -4667,9 +4719,14 @@ export default function CommunityDetailPage() {
                             type="button"
                             onClick={() => {
                               setRefMaxTiers(tCount)
-                              if (tCount === 3) setRefTierPercentages([50, 30, 20])
-                              else if (tCount === 4) setRefTierPercentages([40, 30, 20, 10])
-                              else if (tCount === 5) setRefTierPercentages([40, 30, 15, 10, 5])
+                              if (refCommissionMethod === 'PERCENTAGE') {
+                                if (tCount === 3) setRefTierPercentages([50, 30, 20])
+                                else if (tCount === 4) setRefTierPercentages([40, 30, 20, 10])
+                                else setRefTierPercentages([40, 30, 15, 10, 5])
+                              } else {
+                                const share = Math.round(refReferralBudget / tCount)
+                                setRefTierPercentages(Array(tCount).fill(share))
+                              }
                             }}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                               refMaxTiers === tCount
@@ -4683,45 +4740,71 @@ export default function CommunityDetailPage() {
                       </div>
                     </div>
 
-                    {/* Percentage inputs per tier */}
+                    {/* Commission inputs per tier */}
                     <div className="space-y-2">
-                      <label className="block text-xs font-bold text-gray-800">Persentase Komisi per Tier (Total Harus 100% dari Dana Referral):</label>
+                      <label className="block text-xs font-bold text-gray-800">
+                        {refCommissionMethod === 'PERCENTAGE'
+                          ? 'Persentase Komisi per Tier (Total Harus 100%):'
+                          : 'Nominal Komisi per Tier (Rp):'}
+                      </label>
                       <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
                         {Array.from({ length: refMaxTiers }).map((_, idx) => {
-                          const pct = refTierPercentages[idx] ?? 0
-                          const calcAmount = Math.round((refReferralBudget * pct) / 100)
+                          const val = refTierPercentages[idx] ?? 0
+                          const calcAmount = refCommissionMethod === 'PERCENTAGE'
+                            ? Math.round((refReferralBudget * val) / 100)
+                            : val
                           return (
-                            <div key={idx} className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1">
+                            <div key={idx} className={`p-3 border rounded-xl space-y-1 ${
+                              refCommissionMethod === 'PERCENTAGE' ? 'bg-emerald-50/60 border-emerald-100' : 'bg-blue-50/60 border-blue-100'
+                            }`}>
                               <span className="block text-[10px] font-bold text-gray-600 uppercase">Tier {idx + 1}</span>
                               <div className="flex items-center gap-1">
+                                {refCommissionMethod === 'NOMINAL' && (
+                                  <span className="text-[10px] font-bold text-blue-600 shrink-0">Rp</span>
+                                )}
                                 <input
                                   type="number"
-                                  value={pct}
+                                  value={val}
                                   onChange={e => {
-                                    const val = Number(e.target.value)
+                                    const v = Number(e.target.value)
                                     setRefTierPercentages(prev => {
                                       const newArr = [...prev]
-                                      newArr[idx] = val
+                                      newArr[idx] = v
                                       return newArr
                                     })
                                   }}
-                                  className="w-full border rounded-lg px-2 py-1 text-xs font-bold font-mono"
+                                  className="w-full border rounded-lg px-2 py-1 text-xs font-bold font-mono focus:outline-none focus:border-[#2DB24A]"
                                 />
-                                <span className="text-xs font-bold text-gray-500">%</span>
+                                {refCommissionMethod === 'PERCENTAGE' && (
+                                  <span className="text-xs font-bold text-gray-500 shrink-0">%</span>
+                                )}
                               </div>
                               <span className="block text-[9px] font-bold text-[#0F5132] font-mono">
-                                Rp {calcAmount.toLocaleString('id-ID')}
+                                {refCommissionMethod === 'PERCENTAGE'
+                                  ? `≈ Rp ${calcAmount.toLocaleString('id-ID')}`
+                                  : `Rp ${calcAmount.toLocaleString('id-ID')}`}
                               </span>
                             </div>
                           )
                         })}
                       </div>
-                      {(() => {
+
+                      {/* Validation summary */}
+                      {refCommissionMethod === 'PERCENTAGE' ? (() => {
                         const total = refTierPercentages.slice(0, refMaxTiers).reduce((a, b) => a + Number(b || 0), 0)
                         const isValid = Math.abs(total - 100) <= 0.1
                         return (
                           <p className={`text-[11px] font-bold ${isValid ? 'text-emerald-700' : 'text-red-600'}`}>
                             Total Persentase Tier: {total}% {isValid ? '✓ (Valid)' : '⚠️ Total harus persis 100%'}
+                          </p>
+                        )
+                      })() : (() => {
+                        const totalNominal = refTierPercentages.slice(0, refMaxTiers).reduce((a, b) => a + Number(b || 0), 0)
+                        const overBudget = totalNominal > refReferralBudget
+                        return (
+                          <p className={`text-[11px] font-bold ${overBudget ? 'text-amber-600' : 'text-blue-700'}`}>
+                            Total Nominal: Rp {totalNominal.toLocaleString('id-ID')}
+                            {overBudget ? ' ⚠️ Melebihi alokasi dana referral' : ' ✓'}
                           </p>
                         )
                       })()}
