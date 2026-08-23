@@ -7334,7 +7334,7 @@ export const DataStore = {
       try {
         return await db.communityMembership.findMany({
           where: { communityId },
-          include: { user: { select: { id: true, name: true, role: true, email: true, level: true, xp: true } } }
+          include: { user: { select: { id: true, name: true, role: true, email: true, level: true, xp: true, image: true } } }
         })
       } catch (_) {}
     }
@@ -7343,7 +7343,7 @@ export const DataStore = {
       const user = globalMockUsers.find(u => u.id === m.userId)
       return {
         ...m,
-        user: user ? { id: user.id, name: user.name, role: user.role, email: user.email, level: user.level, xp: user.xp } : null
+        user: user ? { id: user.id, name: user.name, role: user.role, email: user.email, level: user.level, xp: user.xp, image: (user as any).image || (user as any).avatarUrl } : null
       }
     })
   },

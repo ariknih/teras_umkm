@@ -92,6 +92,7 @@ import {
   Trash2,
   QrCode,
   Megaphone,
+  MoreVertical,
   Image as ImageIcon,
   Utensils,
   ChefHat,
@@ -342,9 +343,9 @@ export default function CommunityDetailPage() {
   const [communityMemberFee, setCommunityMemberFee] = useState<number>(50000)
   const [communityMemberFeePeriod, setCommunityMemberFeePeriod] = useState<'MONTHLY' | 'YEARLY' | 'ONETIME'>('MONTHLY')
 
-  // Require Member Guard Modal State
   const [requireMemberModalOpen, setRequireMemberModalOpen] = useState(false)
   const [requireMemberFeature, setRequireMemberFeature] = useState('Fitur Internal')
+  const [openMemberMenuId, setOpenMemberMenuId] = useState<string | null>(null)
 
   const triggerMemberRequired = (featureName: string) => {
     setRequireMemberFeature(featureName)
@@ -2618,41 +2619,79 @@ export default function CommunityDetailPage() {
                         </div>
                       </div>
                     ) : members && members.length > 0 ? (
-                      members.map((m: any, idx: number) => (
-                        <div key={m.id || idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all">
-                          <div className="flex items-center gap-3">
-                            <img src={m.user?.avatarUrl || m.img || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&q=80'} alt="" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs shrink-0" />
-                            <div>
-                              <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded-md uppercase tracking-wider ${m.role === 'ADMIN' || m.role === 'KETUA' ? 'bg-amber-100 text-amber-800' : 'bg-[#E8F8EE] text-[#0F5132]'}`}>
-                                {m.role || 'Anggota'}
-                              </span>
-                              <h4 className="text-xs font-black text-gray-900 mt-0.5">{m.user?.name || m.name || 'Anggota Saloka'}</h4>
-                              <p className="text-[10px] text-gray-500 font-semibold">{m.user?.locationName || m.loc || 'DIY Yogyakarta'}</p>
+                      members.map((m: any, idx: number) => {
+                        const memberId = m.userId || m.id || `m-${idx}`
+                        const memberName = m.user?.name || m.name || 'Anggota Saloka'
+                        const userAvatar = m.user?.image || m.user?.avatarUrl || m.avatarUrl || m.img
+                        const avatarSrc = userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(memberName)}&background=2DB24A&color=ffffff&bold=true`
+
+                        const isAuthorizedToKick = user?.role === 'ADMIN' || user?.id === community?.ketuaId
+                        const canKickThisMember = isAuthorizedToKick && m.userId !== community?.ketuaId && m.userId !== user?.id
+                        const isMenuOpen = openMemberMenuId === memberId
+
+                        return (
+                          <div
+                            key={memberId}
+                            className="relative p-4 bg-white border border-gray-200/80 rounded-2xl flex items-center justify-between shadow-xs hover:border-[#2DB24A]/40 transition-all"
+                          >
+                            {/* Left: User Avatar & Details */}
+                            <div className="flex items-center gap-3.5">
+                              <img
+                                src={avatarSrc}
+                                alt={memberName}
+                                className="w-12 h-12 rounded-full object-cover shrink-0 border border-gray-100 shadow-xs"
+                              />
+                              <div>
+                                <span className={`inline-block px-2.5 py-0.5 font-bold text-[10px] rounded-md capitalize tracking-wide ${m.role === 'ADMIN' || m.role === 'KETUA' ? 'bg-amber-100 text-amber-800' : 'bg-[#E8F8EE] text-[#0F5132]'}`}>
+                                  {m.role?.toLowerCase() || 'anggota'}
+                                </span>
+                                <h4 className="text-sm font-extrabold text-gray-900 leading-tight mt-0.5 font-sora">
+                                  {memberName}
+                                </h4>
+                                <p className="text-xs text-gray-400 font-medium mt-0.5">
+                                  {m.user?.locationName || m.loc || 'DIY, Yogyakarta'}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="pt-2 border-t border-gray-200/60 text-xs">
-                            <p className="text-[11px] font-bold text-[#0F5132]">Usaha: {m.user?.storeName || m.biz || 'Merchant UMKM'}</p>
-                            {(() => {
-                              const isAuthorizedToKick = user?.role === 'ADMIN' || user?.id === community?.ketuaId
-                              const canKickThisMember = isAuthorizedToKick && m.userId !== community?.ketuaId && m.userId !== user?.id
-                              return (
-                                <div className="flex gap-2 mt-2 justify-end">
-                                  {canKickThisMember && (
+
+                            {/* Right: Three-Dots Action Menu Button & Popover */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setOpenMemberMenuId(isMenuOpen ? null : memberId)}
+                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                                title="Opsi Anggota"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+
+                              {/* Floating Dropdown Popover (Frame 2) */}
+                              {isMenuOpen && (
+                                <div className="absolute right-0 top-9 z-30 bg-white border border-gray-100 rounded-2xl shadow-xl p-1.5 min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
+                                  {canKickThisMember ? (
                                     <button
+                                      type="button"
                                       disabled={isKicking === m.userId}
-                                      onClick={() => handleKickMember(m.userId, m.user?.name || m.name)}
-                                      className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400 text-red-600 border border-red-200 font-extrabold text-[9px] rounded-xl transition-all flex items-center justify-center gap-0.5 cursor-pointer shrink-0 uppercase tracking-wider"
-                                      title="Keluarkan Anggota"
+                                      onClick={() => {
+                                        setOpenMemberMenuId(null)
+                                        handleKickMember(m.userId, memberName)
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
                                     >
-                                      {isKicking === m.userId ? '...' : '❌ Kick'}
+                                      <X className="w-3.5 h-3.5" />
+                                      {isKicking === m.userId ? '...' : 'Keluarkan'}
                                     </button>
+                                  ) : (
+                                    <div className="px-3 py-1.5 text-[11px] font-medium text-gray-400 text-center">
+                                      Tidak ada aksi
+                                    </div>
                                   )}
                                 </div>
-                              )
-                            })()}
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        )
+                      })
                     ) : (
                       <div className="col-span-full p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
                         <Users className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
@@ -4553,7 +4592,7 @@ export default function CommunityDetailPage() {
                                 }}
                               />
                             </label>
-                            <p className="text-[9px] text-gray-400 font-medium">Rekomendasi rasio lanskap format PNG/JPG maks 4MB.</p>
+                            <p className="text-[9px] text-gray-400 font-medium">rekomendasi rasio 3:1 format PNG/JPG maks 2MB.</p>
                           </div>
                         </div>
                       </div>
