@@ -479,6 +479,22 @@ export async function updateUserIndukCommunityAction(userId: string, communityId
   }
 }
 
+// ─── KICK MEMBER FROM COMMUNITY (ADMIN) ─────────────────────────────────────
+// Directly removes the CommunityMembership record for (userId, communityId)
+// without relying on indukCommunityId matching. Fixes the refresh-persistence bug.
+export async function kickMemberFromCommunityAdminAction(userId: string, communityId: string) {
+  await ensureAdminPermission('users')
+  if (!userId || !communityId) return { error: 'userId dan communityId wajib diisi.' }
+  try {
+    await DataStore.removeCommunityMembership(userId, communityId)
+    revalidatePath('/admin')
+    revalidatePath(`/community/${communityId}`)
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengeluarkan anggota dari komunitas.' }
+  }
+}
+
 export async function updateAdminPermissionsAction(adminId: string, permissions: string[], isSuperAdmin: boolean) {
   await ensureSuperAdmin()
   try {

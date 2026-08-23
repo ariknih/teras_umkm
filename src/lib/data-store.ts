@@ -7019,7 +7019,54 @@ export const DataStore = {
     return communities.find((c: any) => c.id === indukId) || null
   },
 
+  // ─── REMOVE SPECIFIC COMMUNITY MEMBERSHIP ───────────────────────────────────
+  // Directly deletes a membership record by (userId, communityId).
+  // Also clears user.indukCommunityId if it matches the kicked community.
+  async removeCommunityMembership(userId: string, communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        // Delete the specific membership record
+        await db.communityMembership.deleteMany({
+          where: { userId, communityId }
+        })
+        // Clear indukCommunityId if it matches
+        const existingUser = await db.user.findUnique({
+          where: { id: userId },
+          select: { indukCommunityId: true }
+        })
+        if (existingUser?.indukCommunityId === communityId) {
+          await db.user.update({
+            where: { id: userId },
+            data: { indukCommunityId: null }
+          })
+        }
+        return { success: true }
+      } catch (err) {
+        console.error('removeCommunityMembership DB error:', err)
+        throw err
+      }
+    }
+
+    // Mock DB fallback
+    if ((globalThis as any).__mockCommunityMemberships) {
+      ;(globalThis as any).__mockCommunityMemberships = (
+        globalThis as any
+      ).__mockCommunityMemberships.filter(
+        (m: any) => !(m.userId === userId && m.communityId === communityId)
+      )
+    }
+    const user = globalMockUsers.find(u => u.id === userId)
+    if (user && (user as any).indukCommunityId === communityId) {
+      ;(user as any).indukCommunityId = null
+      user.updatedAt = new Date()
+    }
+    saveMockDb()
+    return { success: true }
+  },
+
   async setIndukCommunity(userId: string, communityId: string | null) {
+
     syncMockDb()
     const targetCommunityId = communityId || null
 

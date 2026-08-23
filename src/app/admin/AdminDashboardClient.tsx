@@ -47,7 +47,8 @@ import {
   updateGlobalKycSettingAction,
   updateAdminAccountAction,
   createUserAction,
-  deleteUserAction
+  deleteUserAction,
+  kickMemberFromCommunityAdminAction
 } from '@/app/actions/admin'
 import { calculateAndSaveShuAction } from '@/app/actions/shu'
 import {
@@ -606,12 +607,12 @@ export default function AdminDashboardClient({
     setActionSuccess(null)
 
     startTransition(async () => {
-      const res = await updateUserIndukCommunityAction(userId, communityId.startsWith('KICK:') ? '' : communityId)
+      const res = await updateUserIndukCommunityAction(userId, communityId || null)
       if (res.success) {
-        const realCommunityId = communityId.startsWith('KICK:') ? null : (communityId || null)
+        const realCommunityId = communityId || null
         setUsers(prev => prev.map(u => u.id === userId ? { ...u, indukCommunityId: realCommunityId } : u))
         
-        if (communityId && !communityId.startsWith('KICK:')) {
+        if (communityId) {
           // Remove from other community memberships in state (since a user can only belong to one active induk community)
           setInvoices(prev => prev.filter(inv => inv.userId !== userId))
           
@@ -642,8 +643,7 @@ export default function AdminDashboardClient({
           }
           setActionSuccess('Anggota berhasil didaftarkan ke Komunitas Induk ini.')
         } else {
-          // Kick: remove from invoices state using the communityId passed to this function
-          // When kicking, communityId is 'KICK:{actualCommunityId}' — extract the real ID
+          // Kick: remove from invoices state using the kickedCommunityId
           const kickedCommunityId = communityId.startsWith('KICK:') ? communityId.replace('KICK:', '') : communityId
           setInvoices(prev => prev.filter(inv => !(inv.userId === userId && inv.communityId === kickedCommunityId)))
           setActionSuccess('Anggota berhasil dikeluarkan dari komunitas.')
@@ -5339,8 +5339,15 @@ export default function AdminDashboardClient({
                       Batal
                     </button>
                     <button
-                      onClick={() => {
-                        handleAddMemberToCommunity(`KICK:${kickConfirmModal.communityId}`, kickConfirmModal.userId)
+                      onClick={async () => {
+                        const res = await kickMemberFromCommunityAdminAction(kickConfirmModal.userId, kickConfirmModal.communityId)
+                        if (res.success) {
+                          setInvoices(prev => prev.filter(inv => !(inv.userId === kickConfirmModal.userId && inv.communityId === kickConfirmModal.communityId)))
+                          setUsers(prev => prev.map(u => u.id === kickConfirmModal.userId ? { ...u, indukCommunityId: null } : u))
+                          setActionSuccess('Anggota berhasil dikeluarkan dari komunitas.')
+                        } else {
+                          setActionError(res.error || 'Gagal mengeluarkan anggota.')
+                        }
                         setKickConfirmModal(null)
                       }}
                       disabled={isPending}

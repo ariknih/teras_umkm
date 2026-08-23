@@ -394,8 +394,9 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
       return { error: 'Ketua komunitas tidak dapat dikeluarkan.' }
     }
 
-    await DataStore.setIndukCommunity(targetUserId, null)
+    await DataStore.removeCommunityMembership(targetUserId, communityId)
     revalidatePath(`/community/${communityId}`)
+    revalidatePath('/admin')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal mengeluarkan anggota.' }
