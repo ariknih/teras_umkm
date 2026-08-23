@@ -93,6 +93,7 @@ import {
   QrCode,
   Megaphone,
   MoreVertical,
+  AlertTriangle,
   Image as ImageIcon,
   Utensils,
   ChefHat,
@@ -346,6 +347,35 @@ export default function CommunityDetailPage() {
   const [requireMemberModalOpen, setRequireMemberModalOpen] = useState(false)
   const [requireMemberFeature, setRequireMemberFeature] = useState('Fitur Internal')
   const [openMemberMenuId, setOpenMemberMenuId] = useState<string | null>(null)
+  const [kickTargetMember, setKickTargetMember] = useState<{ userId: string; name: string } | null>(null)
+  const [isKicking, setIsKicking] = useState<string | null>(null)
+
+  const handleKickMember = (userId: string, name: string) => {
+    setKickTargetMember({ userId, name })
+  }
+
+  const handleConfirmKick = () => {
+    if (!kickTargetMember) return
+    const target = kickTargetMember
+    setIsKicking(target.userId)
+
+    startTransition(async () => {
+      try {
+        const res = await kickCommunityMemberAction(target.userId, id)
+        if (res?.error) {
+          goeyToast.error(res.error)
+        } else {
+          goeyToast.success(`Anggota "${target.name}" telah dikeluarkan.`)
+          setMembers(prev => prev.filter((m: any) => m.userId !== target.userId))
+        }
+      } catch (e: any) {
+        goeyToast.error('Gagal mengeluarkan anggota.')
+      } finally {
+        setIsKicking(null)
+        setKickTargetMember(null)
+      }
+    })
+  }
 
   const triggerMemberRequired = (featureName: string) => {
     setRequireMemberFeature(featureName)
@@ -1279,28 +1309,7 @@ export default function CommunityDetailPage() {
     }, 2000)
   }
 
-  const [isKicking, setIsKicking] = useState<string | null>(null)
 
-  const handleKickMember = async (targetUserId: string, name: string) => {
-    if (!confirm(`Apakah Anda yakin ingin mengeluarkan "${name}" dari komunitas ini?`)) return
-    setIsKicking(targetUserId)
-    try {
-      const res = await kickCommunityMemberAction(id, targetUserId)
-      if (res.error) {
-        goeyToast.error(res.error)
-      } else {
-        goeyToast.success(`"${name}" berhasil dikeluarkan dari komunitas.`)
-        if (targetUserId === user?.id) {
-          setIsMember(false)
-        }
-        loadData()
-      }
-    } catch (e: any) {
-      goeyToast.error(e.message || 'Gagal mengeluarkan anggota.')
-    } finally {
-      setIsKicking(null)
-    }
-  }
 
   const handleToggleModule = (moduleId: string) => {
     setDisabledModules((prev) =>
@@ -6704,6 +6713,47 @@ export default function CommunityDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* KICK MEMBER CONFIRMATION MODAL (Matching Image 1 Design) */}
+      {kickTargetMember && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-xs w-full p-6 text-center shadow-2xl space-y-4 animate-in zoom-in-95 duration-150 border border-gray-100">
+            <div className="w-12 h-12 rounded-full bg-red-50 text-red-500 border border-red-100 flex items-center justify-center mx-auto shadow-xs">
+              <AlertTriangle className="w-6 h-6 text-red-500" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-gray-900 font-sora">
+                Keluarkan anggota?
+              </h3>
+              <p className="text-xs text-gray-400 font-medium">
+                Anda akan mengeluarkan anggota
+              </p>
+              <p className="text-xs font-bold text-gray-800 font-sora">
+                {kickTargetMember.name}
+              </p>
+            </div>
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setKickTargetMember(null)}
+                className="flex-1 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isKicking === kickTargetMember.userId}
+                onClick={handleConfirmKick}
+                className="flex-1 py-2.5 bg-[#E54D4D] hover:bg-red-600 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                {isKicking === kickTargetMember.userId ? '...' : 'Keluarkan'}
+              </button>
+            </div>
           </div>
         </div>
       )}
