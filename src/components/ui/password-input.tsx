@@ -29,10 +29,11 @@ export function PasswordInput({
 
   const checkStrength = (pass: string) => {
     const requirements = [
-      { regex: /.{8,}/, text: "Minimal 8 karakter" },
-      { regex: /[0-9]/, text: "Minimal 1 angka" },
-      { regex: /[a-z]/, text: "Minimal 1 huruf kecil" },
-      { regex: /[A-Z]/, text: "Minimal 1 huruf besar" },
+      { regex: /.{8,}/, text: "8 character" },
+      { regex: /[A-Z]/, text: "uppercase" },
+      { regex: /[a-z]/, text: "lowercase" },
+      { regex: /[0-9]/, text: "number" },
+      { regex: /[!@#$%^&*(),.?":{}|<>_+\-=\[\]\\\/]/, text: "symbol" },
     ];
 
     return requirements.map((req) => ({
@@ -48,18 +49,8 @@ export function PasswordInput({
   }, [strength]);
 
   const getStrengthColor = (score: number) => {
-    if (score === 0) return "bg-outline-variant";
-    if (score <= 1) return "bg-red-500";
-    if (score <= 2) return "bg-orange-500";
-    if (score === 3) return "bg-amber-500";
-    return "bg-emerald-500";
-  };
-
-  const getStrengthText = (score: number) => {
-    if (score === 0) return "Masukkan kata sandi";
-    if (score <= 2) return "Kata sandi lemah";
-    if (score === 3) return "Kata sandi sedang";
-    return "Kata sandi kuat";
+    if (score === 0) return "bg-slate-200";
+    return "bg-[#2DB24A]";
   };
 
   return (
@@ -77,13 +68,12 @@ export function PasswordInput({
           type={isVisible ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          aria-invalid={showStrength && strengthScore < 4}
-          aria-describedby={showStrength ? `${id}-description` : undefined}
+          aria-invalid={showStrength && strengthScore < 5}
           required={required}
           {...props}
         />
         <button
-          className="absolute inset-y-0 end-0 flex h-full w-10 items-center justify-center rounded-e-xl text-slate-400 hover:text-slate-600 focus:z-10 transition-colors border-none bg-transparent outline-none cursor-pointer"
+          className="absolute inset-y-0 end-0 flex h-full w-10 items-center justify-center rounded-e-xl text-slate-400 hover:text-slate-600 transition-colors border-none bg-transparent outline-none cursor-pointer"
           type="button"
           onClick={toggleVisibility}
           aria-label={isVisible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
@@ -98,36 +88,37 @@ export function PasswordInput({
       </div>
 
       {showStrength && (
-        <div className="animate-in fade-in duration-300 pt-1">
-          {/* Strength Bar */}
+        <div className="animate-in fade-in duration-300 pt-1.5">
+          {/* Green Top Strength Bar */}
           <div
-            className="mb-1.5 mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-200/50"
+            className="mb-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-200/50"
             role="progressbar"
-            aria-valuenow={strengthScore}
-            aria-valuemin={0}
-            aria-valuemax={4}
-            aria-label="Kekuatan kata sandi"
           >
             <div
-              className={`h-full ${getStrengthColor(strengthScore)} transition-all duration-500 ease-out`}
-              style={{ width: `${(strengthScore / 4) * 100}%` }}
+              className={`h-full ${getStrengthColor(strengthScore)} transition-all duration-300 ease-out`}
+              style={{ width: `${(strengthScore / 5) * 100}%` }}
             ></div>
           </div>
 
-          <ul className="grid grid-cols-2 gap-1 mt-2" aria-label="Persyaratan kata sandi">
+          {/* Figma Criteria Grid (Exact screenshot 1 layout) */}
+          <div className="grid grid-cols-3 gap-y-2 gap-x-2 text-xs">
             {strength.map((req, index) => (
-              <li key={index} className="flex items-center gap-1.5">
+              <div key={index} className="flex items-center gap-1.5 whitespace-nowrap">
                 {req.met ? (
-                  <Check size={13} className="text-[#2DB24A] shrink-0" aria-hidden="true" />
+                  <span className="w-4 h-4 rounded-full bg-[#2DB24A] text-white flex items-center justify-center shrink-0">
+                    <Check size={10} strokeWidth={3} />
+                  </span>
                 ) : (
-                  <X size={13} className="text-slate-300 shrink-0" aria-hidden="true" />
+                  <span className="w-4 h-4 rounded-full bg-slate-300 text-white flex items-center justify-center shrink-0">
+                    <X size={10} strokeWidth={3} />
+                  </span>
                 )}
-                <span className={`text-[10px] ${req.met ? "text-[#2DB24A] font-bold" : "text-slate-400"}`}>
+                <span className={`text-[11px] ${req.met ? "text-slate-600 font-medium" : "text-slate-400 font-medium"}`}>
                   {req.text}
                 </span>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>

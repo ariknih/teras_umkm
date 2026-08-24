@@ -118,6 +118,13 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
     e.preventDefault();
     setError(null);
 
+    // Strict email regex validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email || !emailRegex.test(email.trim())) {
+      setError("Masukkan email yang valid (contoh: nama@domain.com)");
+      return;
+    }
+
     if (tab === "register") {
       if (!name || !username || !email || !password) {
         setError("Semua kolom wajib diisi.");
@@ -401,8 +408,8 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
         >
           <img 
             alt="Google" 
-            className="w-4 h-4 object-contain" 
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDhgk8NQmx9teiIkIspzlrtOLpf2ToJxlCpoLbMAa45Iiicm45_R5_6-baHXNZyiGuY6wuMsaS6XQOk-zml0Arr1u4fiZKp_fWiO18d_v1qB9FVOH6XUn8-hu4y8GNp7UROHGJVve5vbMHVkiqRPhTQlx1TVabzZosxPRM4h1bUGvnUPlElVwd8Om_F-Jp7orpNLvHWbeBkNB9nF3R2EHsOn5TrmhXUB-ypirvAenFrH7DlgN6SMi5ZmEToIxA5W97NK0IMxv7s1i3"
+            className="w-4 h-4 object-contain shrink-0" 
+            src="/images/google icon.svg"
           />
           <span>Gunakan akun Google</span>
         </button>

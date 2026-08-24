@@ -84,7 +84,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
           {/* Search Bar Input (Figma Pill Search) */}
           <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-[180px] sm:max-w-[220px] md:max-w-[260px] lg:max-w-[280px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#2DB24A]" />
+            <img src="/images/search icon header.svg" alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 object-contain" />
             <input
               type="text"
               value={searchQuery}
@@ -94,22 +94,22 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             />
           </form>
 
-          {/* Middle: Links with Icons (Figma style) */}
+          {/* Middle: Links with Icons (User custom SVGs) */}
           <div className="hidden lg:flex items-center gap-4 xl:gap-5">
             <Link href="/market" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
-              <Store size={14} className="text-[#2DB24A]" />
+              <img src="/images/marketplace icon.svg" alt="Market" className="w-4 h-4 object-contain" />
               <span>Market</span>
             </Link>
             <Link href="/jasa" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
-              <Briefcase size={14} className="text-[#2DB24A]" />
+              <img src="/images/jasa icon.svg" alt="Jasa" className="w-4 h-4 object-contain" />
               <span>Jasa</span>
             </Link>
             <Link href="/affiliate" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
-              <Tag size={14} className="text-[#2DB24A]" />
+              <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-4 h-4 object-contain" />
               <span>Affiliate</span>
             </Link>
             <Link href="/community" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
-              <Users size={14} className="text-[#2DB24A]" />
+              <img src="/images/comunity icon.svg" alt="Community" className="w-4 h-4 object-contain" />
               <span>Community</span>
             </Link>
           </div>
