@@ -22,7 +22,7 @@ export default async function HomePage() {
     <div className="min-h-screen bg-background flex flex-col font-poppins overflow-hidden">
       
       {/* ── TOP BANNER CAROUSEL ─────────────────────────────────────────── */}
-      <div className="w-full pt-24 sm:pt-28 pb-2">
+      <div className="w-full pt-16 sm:pt-20 pb-2">
         <BannerCarousel banners={activeBanners} />
       </div>
 

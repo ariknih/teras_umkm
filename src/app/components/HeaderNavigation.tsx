@@ -101,55 +101,55 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
           <div ref={mobileSearchRef} className="flex-1 md:hidden flex items-center justify-center min-w-0">
             {isSearchExpandedMobile ? (
               /* Screenshot 2: Expanded Search Input on Mobile */
-              <form onSubmit={handleSearchSubmit} className="w-full flex items-center gap-2 border border-[#2DB24A] rounded-xl px-3 py-1.5 bg-white shadow-xs animate-in fade-in duration-200">
-                <img src="/images/search icon header.svg" alt="Search" className="w-3.5 h-3.5 object-contain shrink-0" />
+              <form onSubmit={handleSearchSubmit} className="w-full flex items-center gap-2 border border-[#2DB24A] rounded-full px-3.5 py-1.5 bg-white shadow-xs animate-in fade-in duration-200">
+                <img src="/images/search icon header.svg" alt="Search" className="w-4 h-4 object-contain shrink-0" />
                 <input
                   ref={mobileSearchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Cari semuanya di Saloka!"
-                  className="w-full text-xs text-slate-800 placeholder:text-slate-300 outline-none font-medium bg-transparent"
+                  className="w-full text-xs text-slate-800 placeholder:text-slate-400 outline-none font-medium bg-transparent"
                 />
                 <button
                   type="button"
                   onClick={() => setIsSearchExpandedMobile(false)}
-                  className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer border-none bg-transparent"
+                  className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer border-none bg-transparent shrink-0"
                 >
-                  <X size={14} />
+                  <X size={16} />
                 </button>
               </form>
             ) : (
               /* Screenshot 1: Default Mobile State (Search Icon + 4 Link Icons) */
-              <div className="flex items-center justify-center gap-3 sm:gap-4 px-1">
+              <div className="flex items-center justify-center gap-0.5 sm:gap-2 px-0.5">
                 {/* Clickable Search Icon */}
                 <button
                   type="button"
                   onClick={handleExpandMobileSearch}
                   aria-label="Cari produk di Saloka"
-                  className="p-1 hover:opacity-80 transition-opacity cursor-pointer border-none bg-transparent flex items-center justify-center"
+                  className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all cursor-pointer border-none bg-transparent flex items-center justify-center shrink-0"
                 >
-                  <img src="/images/search icon header.svg" alt="Search" className="w-4 h-4 object-contain" />
+                  <img src="/images/search icon header.svg" alt="Search" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
                 </button>
 
                 {/* Market Icon */}
-                <Link href="/market" className="p-1 hover:opacity-80 transition-opacity flex items-center justify-center">
-                  <img src="/images/marketplace icon.svg" alt="Market" className="w-4 h-4 object-contain" />
+                <Link href="/market" aria-label="Market" className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all flex items-center justify-center shrink-0">
+                  <img src="/images/marketplace icon.svg" alt="Market" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
                 </Link>
 
                 {/* Jasa Icon */}
-                <Link href="/jasa" className="p-1 hover:opacity-80 transition-opacity flex items-center justify-center">
-                  <img src="/images/jasa icon.svg" alt="Jasa" className="w-4 h-4 object-contain" />
+                <Link href="/jasa" aria-label="Jasa" className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all flex items-center justify-center shrink-0">
+                  <img src="/images/jasa icon.svg" alt="Jasa" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
                 </Link>
 
                 {/* Affiliate Icon */}
-                <Link href="/affiliate" className="p-1 hover:opacity-80 transition-opacity flex items-center justify-center">
-                  <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-4 h-4 object-contain" />
+                <Link href="/affiliate" aria-label="Affiliate" className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all flex items-center justify-center shrink-0">
+                  <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
                 </Link>
 
                 {/* Community Icon */}
-                <Link href="/community" className="p-1 hover:opacity-80 transition-opacity flex items-center justify-center">
-                  <img src="/images/comunity icon.svg" alt="Community" className="w-4 h-4 object-contain" />
+                <Link href="/community" aria-label="Community" className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all flex items-center justify-center shrink-0">
+                  <img src="/images/comunity icon.svg" alt="Community" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
                 </Link>
               </div>
             )}
