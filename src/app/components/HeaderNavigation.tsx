@@ -237,7 +237,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <AuthDialog
                   defaultTab="register"
                   trigger={
-                    <button className="hidden xs:block px-3.5 sm:px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] font-bold hover:bg-[#2DB24A]/10 rounded-full transition-all text-xs cursor-pointer outline-none whitespace-nowrap">
+                    <button className="px-3 sm:px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] font-bold hover:bg-[#2DB24A]/10 rounded-full transition-all text-xs cursor-pointer outline-none whitespace-nowrap">
                       Daftar
                     </button>
                   }
@@ -245,7 +245,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <AuthDialog
                   defaultTab="login"
                   trigger={
-                    <button className="px-3.5 sm:px-5 py-1.5 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold rounded-full transition-colors text-xs shadow-sm cursor-pointer outline-none whitespace-nowrap">
+                    <button className="px-3 sm:px-5 py-1.5 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold rounded-full transition-colors text-xs shadow-sm cursor-pointer outline-none whitespace-nowrap">
                       Masuk
                     </button>
                   }
