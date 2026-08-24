@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import CartButton from './CartButton'
 import NotificationBell from './NotificationBell'
 import ChatHeaderButton from './ChatHeaderButton'
-import { Menu, X, LogOut, Settings, Shield, User as UserIcon, LayoutDashboard, Wallet, Search, MapPin, MessageSquare } from 'lucide-react'
+import { Menu, X, LogOut, Settings, Shield, User as UserIcon, LayoutDashboard, Wallet, Search, MapPin, MessageSquare, Store, Briefcase, Tag, Users } from 'lucide-react'
 import { AuthDialog } from '@/components/AuthDialog'
 import { Logo } from '@/components/Logo'
 
@@ -24,6 +24,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
   const [isOpenMobile, setIsOpenMobile] = useState(false)
   const [isOpenProfile, setIsOpenProfile] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [isPending, startTransition] = useTransition()
   const profileRef = useRef<HTMLDivElement>(null)
 
@@ -38,6 +39,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/market?q=${encodeURIComponent(searchQuery.trim())}`)
+    }
+  }
+
   const handleLogout = () => {
     startTransition(async () => {
       await logoutAction()
@@ -49,42 +57,81 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
   return (
     <>
-      <header className="fixed top-4 left-0 right-0 z-50 w-full flex justify-center px-4 md:px-10 print:hidden pointer-events-none">
-        <div className="w-full max-w-[1280px] bg-surface/95 backdrop-blur-md rounded-[9999px] shadow-sm border border-border-subtle px-4 md:px-6 py-2.5 md:py-3 flex items-center justify-between pointer-events-auto">
+      <header className="fixed top-4 left-0 right-0 z-50 w-full flex justify-center px-2 sm:px-4 md:px-8 print:hidden pointer-events-none">
+        <div className="w-full max-w-[1280px] bg-white/95 backdrop-blur-md rounded-full shadow-md border border-[#2DB24A]/20 px-3 sm:px-4 md:px-5 py-2 flex items-center justify-between pointer-events-auto gap-2 md:gap-4">
+          
           {/* Left: Brand logo */}
           <Link href="/" className="flex items-center shrink-0">
-            <img src="/images/Variant=Full.webp" alt="Saloka.id" width={160} height={40} fetchPriority="high" className="h-9 md:h-10 w-auto object-contain shrink-0" />
+            {/* Desktop & Tablet: Full Logo */}
+            <img 
+              src="/images/Variant=Full.webp" 
+              alt="Saloka.id" 
+              width={160} 
+              height={40} 
+              fetchPriority="high" 
+              className="h-7 sm:h-8 md:h-9 w-auto object-contain shrink-0 hidden sm:block" 
+            />
+            {/* Mobile (<640px): Icon Logo */}
+            <img 
+              src="/images/Variant=Icon.webp" 
+              alt="Saloka.id" 
+              width={32} 
+              height={32} 
+              fetchPriority="high" 
+              className="h-7 w-7 object-contain shrink-0 sm:hidden" 
+            />
           </Link>
 
-          {/* Middle: Links */}
-          <div className="hidden lg:flex flex-1 justify-center items-center gap-6">
-            <Link href="/market" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Marketplace</Link>
-            <Link href="/jasa" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Jasa & Layanan</Link>
-            <Link href="/affiliate" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Affiliate Hub</Link>
-            <Link href="/community" className="text-sm font-medium text-text-primary hover:text-primary transition-colors">Community</Link>
+          {/* Search Bar Input (Figma Pill Search) */}
+          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-[180px] sm:max-w-[220px] md:max-w-[260px] lg:max-w-[280px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#2DB24A]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari semuanya di Saloka!"
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-[#2DB24A]/40 focus:border-[#2DB24A] rounded-full text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#2DB24A]/30 transition-all font-medium"
+            />
+          </form>
+
+          {/* Middle: Links with Icons (Figma style) */}
+          <div className="hidden lg:flex items-center gap-4 xl:gap-5">
+            <Link href="/market" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+              <Store size={14} className="text-[#2DB24A]" />
+              <span>Market</span>
+            </Link>
+            <Link href="/jasa" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+              <Briefcase size={14} className="text-[#2DB24A]" />
+              <span>Jasa</span>
+            </Link>
+            <Link href="/affiliate" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+              <Tag size={14} className="text-[#2DB24A]" />
+              <span>Affiliate</span>
+            </Link>
+            <Link href="/community" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+              <Users size={14} className="text-[#2DB24A]" />
+              <span>Community</span>
+            </Link>
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {user && <CartButton userId={user.id} communityId={activeCommunityId || undefined} />}
             {user && <NotificationBell />}
             {user && <ChatHeaderButton userId={user.id} />}
 
-            {user && <div className="w-[1px] h-5 bg-border/80 mx-1 hidden sm:block" />}
-
             {user ? (
-              <div className="flex items-center gap-3">
-                <Link href="/wallet" className="hidden sm:flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors whitespace-nowrap shrink-0">
-                  <Wallet size={12} className="text-primary shrink-0" />
-                  <span className="text-xs font-bold text-primary">
-                    Rp {(wallet?.balance ?? 0).toLocaleString("id-ID")}
-                  </span>
-                </Link>
-
-                <Link href="/wallet/coin" className="hidden sm:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full hover:bg-amber-500/20 transition-colors whitespace-nowrap shrink-0 cursor-pointer">
-                  <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                    🪙 {(user?.coinBalance ?? 0).toLocaleString("id-ID")} Koin
-                  </span>
+              <div className="flex items-center gap-2.5">
+                {/* Stacked Wallet & Coin Info (Figma spec!) */}
+                <Link href="/wallet" className="hidden sm:flex flex-col items-end text-[10px] font-bold leading-snug px-2.5 py-1 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-[#2DB24A]/40 transition-colors shrink-0">
+                  <div className="flex items-center gap-1 text-[#2DB24A]">
+                    <span className="text-[11px]">💵</span>
+                    <span>Rp {(wallet?.balance ?? 0).toLocaleString("id-ID")}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-500">
+                    <span className="text-[11px]">🪙</span>
+                    <span>{(user?.coinBalance ?? 0).toLocaleString("id-ID")} Koin</span>
+                  </div>
                 </Link>
 
                 <div className="relative" ref={profileRef}>
@@ -92,7 +139,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     id="profile-dropdown-btn"
                     aria-label="Menu Profil"
                     onClick={() => setIsOpenProfile(!isOpenProfile)}
-                    className="flex relative w-8 h-8 rounded-full overflow-hidden border border-primary/40 hover:border-primary transition-colors items-center justify-center bg-gradient-to-br from-primary to-primary-container shadow shadow-primary/5 shrink-0 outline-none cursor-pointer"
+                    className="flex relative w-8 h-8 rounded-full overflow-hidden border border-[#2DB24A]/40 hover:border-[#2DB24A] transition-colors items-center justify-center bg-gradient-to-br from-[#2DB24A] to-[#24943E] shadow-sm shrink-0 outline-none cursor-pointer"
                   >
                     {user.image ? (
                       <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
@@ -190,7 +237,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <AuthDialog
                   defaultTab="register"
                   trigger={
-                    <button className="hidden sm:block px-5 py-2 bg-transparent border border-outline-variant hover:border-primary text-text-primary hover:text-primary font-medium rounded-full transition-all text-sm cursor-pointer outline-none">
+                    <button className="hidden sm:block px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] font-bold hover:bg-[#2DB24A]/10 rounded-full transition-all text-xs cursor-pointer outline-none">
                       Daftar
                     </button>
                   }
@@ -198,8 +245,8 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <AuthDialog
                   defaultTab="login"
                   trigger={
-                    <button className="px-5 py-2 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-medium rounded-full transition-colors text-sm shadow-sm cursor-pointer outline-none">
-                      Login
+                    <button className="px-5 py-1.5 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold rounded-full transition-colors text-xs shadow-sm cursor-pointer outline-none">
+                      Masuk
                     </button>
                   }
                 />

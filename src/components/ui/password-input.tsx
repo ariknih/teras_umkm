@@ -63,16 +63,16 @@ export function PasswordInput({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <div className="flex justify-between items-center">
-        <Label htmlFor={id} className="text-xs font-semibold text-text-secondary">
+        <Label htmlFor={id} className="text-xs font-bold text-slate-700">
           {label}
         </Label>
       </div>
       <div className="relative">
         <Input
           id={id}
-          className="pe-10 pl-4 py-3"
+          className="pe-10 pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#2DB24A] text-xs text-slate-800 placeholder:text-slate-400"
           placeholder="••••••••"
           type={isVisible ? "text" : "password"}
           value={value}
@@ -83,25 +83,25 @@ export function PasswordInput({
           {...props}
         />
         <button
-          className="absolute inset-y-0 end-0 flex h-full w-10 items-center justify-center rounded-e-lg text-text-secondary hover:text-text-primary focus:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary transition-colors disabled:pointer-events-none disabled:opacity-50"
+          className="absolute inset-y-0 end-0 flex h-full w-10 items-center justify-center rounded-e-xl text-slate-400 hover:text-slate-600 focus:z-10 transition-colors border-none bg-transparent outline-none cursor-pointer"
           type="button"
           onClick={toggleVisibility}
           aria-label={isVisible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
           aria-pressed={isVisible}
         >
           {isVisible ? (
-            <EyeOff size={16} strokeWidth={2} aria-hidden="true" />
+            <EyeOff size={15} strokeWidth={2} aria-hidden="true" />
           ) : (
-            <Eye size={16} strokeWidth={2} aria-hidden="true" />
+            <Eye size={15} strokeWidth={2} aria-hidden="true" />
           )}
         </button>
       </div>
 
       {showStrength && (
-        <div className="animate-in fade-in duration-300">
+        <div className="animate-in fade-in duration-300 pt-1">
           {/* Strength Bar */}
           <div
-            className="mb-2 mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-container border border-outline-variant/40"
+            className="mb-1.5 mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-200/50"
             role="progressbar"
             aria-valuenow={strengthScore}
             aria-valuemin={0}
@@ -114,19 +114,15 @@ export function PasswordInput({
             ></div>
           </div>
 
-          <p id={`${id}-description`} className="mb-2 text-xs font-medium text-text-primary">
-            {getStrengthText(strengthScore)}. Wajib mengandung:
-          </p>
-
-          <ul className="space-y-1.5" aria-label="Persyaratan kata sandi">
+          <ul className="grid grid-cols-2 gap-1 mt-2" aria-label="Persyaratan kata sandi">
             {strength.map((req, index) => (
-              <li key={index} className="flex items-center gap-2">
+              <li key={index} className="flex items-center gap-1.5">
                 {req.met ? (
-                  <Check size={14} className="text-emerald-500" aria-hidden="true" />
+                  <Check size={13} className="text-[#2DB24A] shrink-0" aria-hidden="true" />
                 ) : (
-                  <X size={14} className="text-text-secondary/60" aria-hidden="true" />
+                  <X size={13} className="text-slate-300 shrink-0" aria-hidden="true" />
                 )}
-                <span className={`text-[11px] ${req.met ? "text-emerald-500 font-medium" : "text-text-secondary"}`}>
+                <span className={`text-[10px] ${req.met ? "text-[#2DB24A] font-bold" : "text-slate-400"}`}>
                   {req.text}
                 </span>
               </li>

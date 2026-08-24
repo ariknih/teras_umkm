@@ -186,40 +186,38 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[420px]">
+      <DialogContent className="sm:max-w-[420px] bg-white rounded-3xl p-6 sm:p-7 border-none shadow-2xl">
         
-        {/* Brand Header */}
-        <div className="flex flex-col items-center gap-2 mt-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center shadow-md">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-white">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+        {/* Brand Header (Figma spec) */}
+        <div className="flex flex-col items-center gap-1 mt-1">
+          <img 
+            src="/images/Variant=Icon.webp" 
+            alt="Saloka Icon" 
+            className="w-12 h-12 object-contain mb-1" 
+          />
           <DialogHeader className="text-center sm:text-center">
-            <DialogTitle className="sm:text-center text-xl font-extrabold tracking-tight">
+            <DialogTitle className="sm:text-center text-xl font-black tracking-tight text-slate-900">
               {tab === "login" ? (
-                <>Masuk ke <span className="text-[#111111] dark:text-[#e3f2e8]">Saloka</span><span className="text-tertiary">.id</span></>
+                <>Masuk ke <span className="text-slate-900">Saloka</span><span className="text-[#2DB24A]">.id</span></>
               ) : (
-                <>Gabung <span className="text-[#111111] dark:text-[#e3f2e8]">Saloka</span><span className="text-tertiary">.id</span></>
+                <>Daftar ke <span className="text-slate-900">Saloka</span><span className="text-[#2DB24A]">.id</span></>
               )}
             </DialogTitle>
-            <DialogDescription className="sm:text-center text-xs text-text-secondary mt-1">
-              {tab === "login" 
-                ? "Silakan masuk ke akun Anda untuk bertransaksi atau mengelola toko." 
-                : "Daftar sekarang untuk mendigitalisasi usaha atau menjadi afiliasi."}
+            <DialogDescription className="sm:text-center text-xs text-slate-500 mt-1 font-medium leading-relaxed">
+              Gunakan akunmu untuk mulai bertransaksi dan bergabung dengan komunitas!
             </DialogDescription>
           </DialogHeader>
         </div>
 
-        {/* Tab Toggle */}
-        <div className="flex p-1 bg-surface-container-low rounded-lg relative my-2 border border-outline-variant/20">
+        {/* Tab Toggle (Figma Green Active Tab) */}
+        <div className="flex p-1 bg-slate-100 rounded-xl relative my-3 border border-slate-200/60">
           <button 
             type="button"
             onClick={() => handleTabChange("login")}
-            className={`flex-1 py-1.5 text-center text-xs font-bold tracking-wide rounded-md transition-all ${
+            className={`flex-1 py-2 text-center text-xs font-bold tracking-wide rounded-lg transition-all ${
               tab === "login" 
-                ? "bg-surface-dark text-primary shadow" 
-                : "text-text-secondary hover:text-text-primary"
+                ? "bg-[#2DB24A] text-white shadow-sm" 
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             Masuk
@@ -227,10 +225,10 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
           <button 
             type="button"
             onClick={() => handleTabChange("register")}
-            className={`flex-1 py-1.5 text-center text-xs font-bold tracking-wide rounded-md transition-all ${
+            className={`flex-1 py-2 text-center text-xs font-bold tracking-wide rounded-lg transition-all ${
               tab === "register" 
-                ? "bg-surface-dark text-primary shadow" 
-                : "text-text-secondary hover:text-text-primary"
+                ? "bg-[#2DB24A] text-white shadow-sm" 
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             Daftar
@@ -238,33 +236,33 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
         </div>
 
         {error && (
-          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-[11px] text-red-400 font-medium animate-in fade-in duration-300">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-medium animate-in fade-in duration-300">
             {error}
           </div>
         )}
 
         {/* Auth Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+        <form onSubmit={handleSubmit} className="space-y-3.5 mt-1">
           {tab === "register" && (
             <>
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Label htmlFor="dialog-name" className="text-xs font-semibold text-text-secondary">Nama Lengkap</Label>
+              <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Label htmlFor="dialog-name" className="text-xs font-bold text-slate-700">Nama Lengkap</Label>
                 <Input
                   id="dialog-name"
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Budi Santoso"
-                  className="pl-4 py-3"
+                  placeholder="Nama Anda"
+                  className="pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A]/20 text-xs"
                 />
               </div>
 
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex justify-between items-center">
-                  <Label htmlFor="dialog-username" className="text-xs font-semibold text-text-secondary">Username</Label>
+                  <Label htmlFor="dialog-username" className="text-xs font-bold text-slate-700">Username</Label>
                   {username && (
-                    <span className={`text-[10px] font-medium ${isUsernameAvailable ? 'text-green-500' : 'text-red-500'}`}>
+                    <span className={`text-[10px] font-semibold ${isUsernameAvailable ? 'text-[#2DB24A]' : 'text-red-500'}`}>
                       {usernameMsg}
                     </span>
                   )}
@@ -275,40 +273,40 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                   required
                   value={username}
                   onChange={handleUsernameChange}
-                  placeholder="username_anda"
-                  className={`pl-4 py-3 ${username ? (isUsernameAvailable ? 'border-green-500 focus:border-green-500 focus:ring-green-500/20' : 'border-red-500 focus:border-red-500 focus:ring-red-500/20') : ''}`}
+                  placeholder="budi_santoso22"
+                  className={`pl-4 py-2.5 rounded-xl text-xs border ${username ? (isUsernameAvailable ? 'border-[#2DB24A] focus:border-[#2DB24A]' : 'border-red-500 focus:border-red-500') : 'border-slate-200 focus:border-[#2DB24A]'}`}
                 />
-                <p className="text-[10px] text-text-secondary/70">
-                  Hanya boleh huruf kecil, angka, titik, underscore, atau dash (3-30 karakter). Ini akan menjadi kode referral Anda.
+                <p className="text-[10px] text-slate-400">
+                  Gunakan huruf kecil, angka, 106, underscore, dan dash. Contoh: user.number23.
                 </p>
               </div>
             </>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="dialog-email" className="text-xs font-semibold text-text-secondary">Email Bisnis</Label>
+          <div className="space-y-1">
+            <Label htmlFor="dialog-email" className="text-xs font-bold text-slate-700">Email</Label>
             <Input
               id="dialog-email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nama@tokoanda.id"
-              className="pl-4 py-3"
+              placeholder="penya-user.id@gmail.com"
+              className="pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A]/20 text-xs"
             />
           </div>
 
-          <div className="relative">
+          <div className="relative space-y-1">
             <PasswordInput
               id="dialog-password"
               value={password}
               onChange={setPassword}
-              label={tab === "login" ? "Kata Sandi" : "Kata Sandi Baru"}
+              label={tab === "login" ? "Kata Sandi" : "Kata Sandi"}
               showStrength={tab === "register"}
               required
             />
             {tab === "login" && (
-              <a href="#" className="absolute right-0 top-0 text-[10px] text-primary hover:underline font-semibold">
+              <a href="#" className="absolute right-0 top-0 text-[10px] text-[#2DB24A] hover:underline font-semibold">
                 Lupa sandi?
               </a>
             )}
@@ -316,13 +314,13 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
 
           {tab === "register" && (
             <>
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Label htmlFor="dialog-role" className="text-xs font-semibold text-text-secondary">Tipe Keanggotaan</Label>
+              <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Label htmlFor="dialog-role" className="text-xs font-bold text-slate-700">Tipe Akun</Label>
                 <select
                   id="dialog-role"
                   value={role}
                   onChange={(e) => setRole(e.target.value as any)}
-                  className="w-full px-4 py-2.5 bg-surface-dark border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none text-text-primary text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] transition-all outline-none text-slate-800 text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
                 >
                   <option value="CUSTOMER">Customer</option>
                   <option value="MERCHANT">Merchant</option>
@@ -330,17 +328,17 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
               </div>
 
               {role === "MERCHANT" && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <Label htmlFor="dialog-community" className="text-xs font-semibold text-text-secondary">Pilih Komunitas Induk</Label>
+                <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <Label htmlFor="dialog-community" className="text-xs font-bold text-slate-700">Komunitas Induk</Label>
                   {communities.length === 0 ? (
-                    <div className="w-full h-9.5 bg-surface-container-low border border-outline-variant/30 rounded-lg animate-pulse" />
+                    <div className="w-full h-9.5 bg-slate-100 border border-slate-200 rounded-xl animate-pulse" />
                   ) : (
                     <select
                       id="dialog-community"
                       value={selectedCommunityId}
                       onChange={(e) => setSelectedCommunityId(e.target.value)}
                       required
-                      className="w-full px-4 py-2.5 bg-surface-dark border border-outline-variant rounded-lg focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none text-text-primary text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] transition-all outline-none text-slate-800 text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
                     >
                       {communities.map((comm) => (
                         <option key={comm.id} value={comm.id}>
@@ -349,30 +347,23 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                       ))}
                     </select>
                   )}
-                  <p className="text-[10px] text-text-secondary/80">
-                    *Merchant wajib terasosiasi dengan salah satu komunitas induk saat pendaftaran.
+                  <p className="text-[10px] text-slate-400">
+                    *Merchant wajib berada di bawah komunitas induk.
                   </p>
                 </div>
               )}
 
               {/* Referral Code Block */}
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Label htmlFor="dialog-referral" className="text-xs font-semibold text-text-secondary">Kode Referral (Opsional)</Label>
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary/60">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-12h9c.621 0 1.125.504 1.125 1.125V17c0 .621-.504 1.125-1.125 1.125h-9A1.125 1.125 0 0 1 3.5 17V7.125C3.5 6.504 4.004 6 4.625 6Z" />
-                    </svg>
-                  </div>
-                  <Input
-                    id="dialog-referral"
-                    type="text"
-                    value={referralCode}
-                    onChange={(e) => setReferralCode(e.target.value)}
-                    placeholder="Masukkan kode referral / email"
-                    className="pl-10 py-3"
-                  />
-                </div>
+              <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                <Label htmlFor="dialog-referral" className="text-xs font-bold text-slate-700">Kode Referral (Opsional)</Label>
+                <Input
+                  id="dialog-referral"
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  placeholder="Masukkan kode referral"
+                  className="pl-4 py-2.5 rounded-xl border border-slate-200 text-xs"
+                />
               </div>
             </>
           )}
@@ -380,7 +371,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full py-3 mt-2 bg-primary hover:bg-primary/95 text-white font-bold text-xs uppercase tracking-wider rounded-lg transition-colors shadow flex items-center justify-center gap-2"
+            className="w-full py-3 mt-2 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-none outline-none"
           >
             {isPending ? (
               <>
@@ -389,7 +380,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
               </>
             ) : (
               tab === "login" 
-                ? "Masuk Sekarang" 
+                ? "Masuk" 
                 : "Daftar Akun Baru"
             )}
           </button>
@@ -397,27 +388,27 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
 
         {/* Divider */}
         <div className="flex items-center my-3">
-          <div className="flex-grow border-t border-outline-variant/15"></div>
-          <span className="px-3 text-[10px] text-text-secondary/60 uppercase tracking-widest font-semibold">Atau</span>
-          <div className="flex-grow border-t border-outline-variant/15"></div>
+          <div className="flex-grow border-t border-slate-200"></div>
+          <span className="px-3 text-[10px] text-slate-400 uppercase tracking-widest font-bold">Atau</span>
+          <div className="flex-grow border-t border-slate-200"></div>
         </div>
 
-        {/* Google Login */}
+        {/* Google Login (Figma matching style) */}
         <button 
           type="button"
           onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 py-2.5 border border-outline-variant rounded-lg bg-surface-dark hover:bg-surface-container transition-colors text-xs font-bold text-text-primary group"
+          className="w-full flex items-center justify-center gap-2.5 py-2.5 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 transition-colors text-xs font-bold text-slate-700 shadow-sm cursor-pointer"
         >
           <img 
             alt="Google" 
-            className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" 
+            className="w-4 h-4 object-contain" 
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDhgk8NQmx9teiIkIspzlrtOLpf2ToJxlCpoLbMAa45Iiicm45_R5_6-baHXNZyiGuY6wuMsaS6XQOk-zml0Arr1u4fiZKp_fWiO18d_v1qB9FVOH6XUn8-hu4y8GNp7UROHGJVve5vbMHVkiqRPhTQlx1TVabzZosxPRM4h1bUGvnUPlElVwd8Om_F-Jp7orpNLvHWbeBkNB9nF3R2EHsOn5TrmhXUB-ypirvAenFrH7DlgN6SMi5ZmEToIxA5W97NK0IMxv7s1i3"
           />
-          <span>Lanjutkan dengan Google</span>
+          <span>Gunakan akun Google</span>
         </button>
 
-        <p className="text-center text-[10px] text-text-secondary mt-2">
-          Dengan mendaftar, Anda menyetujui <a className="underline hover:no-underline text-primary" href="#">Syarat Layanan</a> dan <a className="underline hover:no-underline text-primary" href="#">Kebijakan Privasi</a> kami.
+        <p className="text-center text-[10px] text-slate-400 mt-3 leading-tight">
+          Dengan mendaftar, Anda menyetujui <a className="underline text-[#2DB24A] font-semibold" href="#">Syarat Layanan</a> dan <a className="underline text-[#2DB24A] font-semibold" href="#">Kebijakan Privasi</a> kami.
         </p>
       </DialogContent>
     </Dialog>
