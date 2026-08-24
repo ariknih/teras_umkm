@@ -57,33 +57,33 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
   return (
     <>
-      <header className="fixed top-4 left-0 right-0 z-50 w-full flex justify-center px-2 sm:px-4 md:px-8 print:hidden pointer-events-none">
+      <header className="fixed top-3 sm:top-4 left-0 right-0 z-50 w-full flex justify-center px-2 sm:px-4 md:px-8 print:hidden pointer-events-none">
         <div className="w-full max-w-[1280px] bg-white/95 backdrop-blur-md rounded-full shadow-md border border-[#2DB24A]/20 px-3 sm:px-4 md:px-5 py-2 flex items-center justify-between pointer-events-auto gap-2 md:gap-4">
           
-          {/* Left: Brand logo */}
+          {/* Left: Brand logo (Figma device layout) */}
           <Link href="/" className="flex items-center shrink-0">
-            {/* Desktop & Tablet: Full Logo */}
+            {/* Desktop & Tablet (>=768px): Full Logo */}
             <img 
               src="/images/Variant=Full.webp" 
               alt="Saloka.id" 
               width={160} 
               height={40} 
               fetchPriority="high" 
-              className="h-7 sm:h-8 md:h-9 w-auto object-contain shrink-0 hidden sm:block" 
+              className="h-7 sm:h-8 md:h-9 w-auto object-contain shrink-0 hidden md:block" 
             />
-            {/* Mobile (<640px): Icon Logo */}
+            {/* Mobile (<768px): Icon Logo */}
             <img 
               src="/images/Variant=Icon.webp" 
               alt="Saloka.id" 
               width={32} 
               height={32} 
               fetchPriority="high" 
-              className="h-7 w-7 object-contain shrink-0 sm:hidden" 
+              className="h-7 w-7 object-contain shrink-0 md:hidden" 
             />
           </Link>
 
-          {/* Search Bar Input (Figma Pill Search) */}
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-[180px] sm:max-w-[220px] md:max-w-[260px] lg:max-w-[280px]">
+          {/* Search Bar Input (Responsive width and placeholder) */}
+          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-[150px] xs:max-w-[180px] sm:max-w-[220px] md:max-w-[260px] lg:max-w-[300px]">
             <img src="/images/search icon header.svg" alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 object-contain" />
             <input
               type="text"
@@ -94,35 +94,35 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             />
           </form>
 
-          {/* Middle: Links with Icons (User custom SVGs) */}
-          <div className="hidden lg:flex items-center gap-4 xl:gap-5">
+          {/* Middle: Links with Icons (Tablet & Desktop: md:flex & lg:flex) */}
+          <div className="hidden md:flex items-center gap-3 lg:gap-5">
             <Link href="/market" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/marketplace icon.svg" alt="Market" className="w-4 h-4 object-contain" />
-              <span>Market</span>
+              <span className="hidden lg:inline">Market</span>
             </Link>
             <Link href="/jasa" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/jasa icon.svg" alt="Jasa" className="w-4 h-4 object-contain" />
-              <span>Jasa</span>
+              <span className="hidden lg:inline">Jasa</span>
             </Link>
             <Link href="/affiliate" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-4 h-4 object-contain" />
-              <span>Affiliate</span>
+              <span className="hidden lg:inline">Affiliate</span>
             </Link>
             <Link href="/community" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/comunity icon.svg" alt="Community" className="w-4 h-4 object-contain" />
-              <span>Community</span>
+              <span className="hidden lg:inline">Community</span>
             </Link>
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             {user && <CartButton userId={user.id} communityId={activeCommunityId || undefined} />}
             {user && <NotificationBell />}
             {user && <ChatHeaderButton userId={user.id} />}
 
             {user ? (
-              <div className="flex items-center gap-2.5">
-                {/* Stacked Wallet & Coin Info (Figma spec!) */}
+              <div className="flex items-center gap-2">
+                {/* Stacked Wallet & Coin Info (Tablet & Desktop) */}
                 <Link href="/wallet" className="hidden sm:flex flex-col items-end text-[10px] font-bold leading-snug px-2.5 py-1 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-[#2DB24A]/40 transition-colors shrink-0">
                   <div className="flex items-center gap-1 text-[#2DB24A]">
                     <span className="text-[11px]">💵</span>
@@ -233,11 +233,11 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <AuthDialog
                   defaultTab="register"
                   trigger={
-                    <button className="hidden sm:block px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] font-bold hover:bg-[#2DB24A]/10 rounded-full transition-all text-xs cursor-pointer outline-none">
+                    <button className="hidden xs:block px-3.5 sm:px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] font-bold hover:bg-[#2DB24A]/10 rounded-full transition-all text-xs cursor-pointer outline-none whitespace-nowrap">
                       Daftar
                     </button>
                   }
@@ -245,7 +245,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <AuthDialog
                   defaultTab="login"
                   trigger={
-                    <button className="px-5 py-1.5 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold rounded-full transition-colors text-xs shadow-sm cursor-pointer outline-none">
+                    <button className="px-3.5 sm:px-5 py-1.5 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold rounded-full transition-colors text-xs shadow-sm cursor-pointer outline-none whitespace-nowrap">
                       Masuk
                     </button>
                   }
@@ -253,7 +253,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
               </div>
             )}
 
-            <button aria-label="Menu Navigasi Mobile" onClick={() => setIsOpenMobile(!isOpenMobile)} className="hidden w-8 h-8 rounded-full border border-outline-variant/15 bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-[#2DB24A] transition-all cursor-pointer">
+            <button aria-label="Menu Navigasi Mobile" onClick={() => setIsOpenMobile(!isOpenMobile)} className="md:hidden w-8 h-8 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-700 hover:text-[#2DB24A] transition-all cursor-pointer">
               {isOpenMobile ? <X size={16} /> : <Menu size={16} />}
             </button>
           </div>
