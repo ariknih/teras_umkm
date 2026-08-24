@@ -24,15 +24,22 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
   const [isOpenMobile, setIsOpenMobile] = useState(false)
   const [isOpenProfile, setIsOpenProfile] = useState(false)
+  const [isSearchExpandedMobile, setIsSearchExpandedMobile] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isPending, startTransition] = useTransition()
+  
   const profileRef = useRef<HTMLDivElement>(null)
+  const mobileSearchRef = useRef<HTMLDivElement>(null)
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null)
 
-  // Close dropdown on click outside
+  // Close dropdown or mobile search on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsOpenProfile(false)
+      }
+      if (mobileSearchRef.current && !mobileSearchRef.current.contains(event.target as Node)) {
+        setIsSearchExpandedMobile(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -43,7 +50,15 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
     e.preventDefault()
     if (searchQuery.trim()) {
       router.push(`/market?q=${encodeURIComponent(searchQuery.trim())}`)
+      setIsSearchExpandedMobile(false)
     }
+  }
+
+  const handleExpandMobileSearch = () => {
+    setIsSearchExpandedMobile(true)
+    setTimeout(() => {
+      mobileSearchInputRef.current?.focus()
+    }, 50)
   }
 
   const handleLogout = () => {
@@ -58,9 +73,9 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
   return (
     <>
       <header className="fixed top-3 sm:top-4 left-0 right-0 z-50 w-full flex justify-center px-2 sm:px-4 md:px-8 print:hidden pointer-events-none">
-        <div className="w-full max-w-[1280px] bg-white/95 backdrop-blur-md rounded-full shadow-md border border-[#2DB24A]/20 px-3 sm:px-4 md:px-5 py-2 flex items-center justify-between pointer-events-auto gap-2 md:gap-4">
+        <div className="w-full max-w-[1280px] bg-white/95 backdrop-blur-md rounded-full shadow-md border border-[#2DB24A]/20 px-3 sm:px-4 md:px-5 py-2 flex items-center justify-between pointer-events-auto gap-2 md:gap-4 transition-all">
           
-          {/* Left: Brand logo (Figma device layout) */}
+          {/* Left: Brand logo */}
           <Link href="/" className="flex items-center shrink-0">
             {/* Desktop & Tablet (>=768px): Full Logo */}
             <img 
@@ -82,8 +97,66 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             />
           </Link>
 
-          {/* Search Bar Input (Responsive width and placeholder) */}
-          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-[150px] xs:max-w-[180px] sm:max-w-[220px] md:max-w-[260px] lg:max-w-[300px]">
+          {/* ── MOBILE HEADER CENTER LAYOUT (Figma Screenshot 1 & 2) ── */}
+          <div ref={mobileSearchRef} className="flex-1 md:hidden flex items-center justify-center min-w-0">
+            {isSearchExpandedMobile ? (
+              /* Screenshot 2: Expanded Search Input on Mobile */
+              <form onSubmit={handleSearchSubmit} className="w-full flex items-center gap-2 border border-[#2DB24A] rounded-xl px-3 py-1.5 bg-white shadow-xs animate-in fade-in duration-200">
+                <img src="/images/search icon header.svg" alt="Search" className="w-3.5 h-3.5 object-contain shrink-0" />
+                <input
+                  ref={mobileSearchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari semuanya di Saloka!"
+                  className="w-full text-xs text-slate-800 placeholder:text-slate-300 outline-none font-medium bg-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsSearchExpandedMobile(false)}
+                  className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer border-none bg-transparent"
+                >
+                  <X size={14} />
+                </button>
+              </form>
+            ) : (
+              /* Screenshot 1: Default Mobile State (Search Icon + 4 Link Icons) */
+              <div className="flex items-center justify-center gap-3 sm:gap-4 px-1">
+                {/* Clickable Search Icon */}
+                <button
+                  type="button"
+                  onClick={handleExpandMobileSearch}
+                  aria-label="Cari produk di Saloka"
+                  className="p-1 hover:opacity-80 transition-opacity cursor-pointer border-none bg-transparent flex items-center justify-center"
+                >
+                  <img src="/images/search icon header.svg" alt="Search" className="w-4 h-4 object-contain" />
+                </button>
+
+                {/* Market Icon */}
+                <Link href="/market" className="p-1 hover:opacity-80 transition-opacity flex items-center justify-center">
+                  <img src="/images/marketplace icon.svg" alt="Market" className="w-4 h-4 object-contain" />
+                </Link>
+
+                {/* Jasa Icon */}
+                <Link href="/jasa" className="p-1 hover:opacity-80 transition-opacity flex items-center justify-center">
+                  <img src="/images/jasa icon.svg" alt="Jasa" className="w-4 h-4 object-contain" />
+                </Link>
+
+                {/* Affiliate Icon */}
+                <Link href="/affiliate" className="p-1 hover:opacity-80 transition-opacity flex items-center justify-center">
+                  <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-4 h-4 object-contain" />
+                </Link>
+
+                {/* Community Icon */}
+                <Link href="/community" className="p-1 hover:opacity-80 transition-opacity flex items-center justify-center">
+                  <img src="/images/comunity icon.svg" alt="Community" className="w-4 h-4 object-contain" />
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* ── DESKTOP & TABLET HEADER CENTER LAYOUT ── */}
+          <form onSubmit={handleSearchSubmit} className="hidden md:block relative flex-1 max-w-[220px] md:max-w-[260px] lg:max-w-[300px]">
             <img src="/images/search icon header.svg" alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 object-contain" />
             <input
               type="text"
@@ -94,23 +167,23 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             />
           </form>
 
-          {/* Middle: Links with Icons (Tablet & Desktop: md:flex & lg:flex) */}
-          <div className="hidden md:flex items-center gap-3 lg:gap-5">
+          {/* Middle: Links with Icons (Desktop) */}
+          <div className="hidden lg:flex items-center gap-4 xl:gap-5">
             <Link href="/market" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/marketplace icon.svg" alt="Market" className="w-4 h-4 object-contain" />
-              <span className="hidden lg:inline">Market</span>
+              <span>Market</span>
             </Link>
             <Link href="/jasa" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/jasa icon.svg" alt="Jasa" className="w-4 h-4 object-contain" />
-              <span className="hidden lg:inline">Jasa</span>
+              <span>Jasa</span>
             </Link>
             <Link href="/affiliate" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-4 h-4 object-contain" />
-              <span className="hidden lg:inline">Affiliate</span>
+              <span>Affiliate</span>
             </Link>
             <Link href="/community" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/comunity icon.svg" alt="Community" className="w-4 h-4 object-contain" />
-              <span className="hidden lg:inline">Community</span>
+              <span>Community</span>
             </Link>
           </div>
 

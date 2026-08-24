@@ -88,7 +88,11 @@ export default function NotificationBell() {
         onClick={() => setIsOpen(!isOpen)}
         className="relative w-8 h-8 rounded-full border border-outline-variant/15 hover:border-primary bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-text-secondary hover:text-primary transition-all duration-300 cursor-pointer shadow-sm outline-none"
       >
-        <Bell size={15} />
+        <img
+          src="/images/Notifications.svg"
+          alt="Notifikasi"
+          className="w-4 h-4 object-contain transition-transform duration-300"
+        />
         {unreadCount > 0 && (
           <span 
             id="notification-badge"
