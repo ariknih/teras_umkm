@@ -11,14 +11,14 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#006E24',
     icons: [
       {
-        src: '/images/saloka_logo.png',
+        src: '/images/Variant=Icon.webp',
         sizes: '192x192',
-        type: 'image/png',
+        type: 'image/webp',
       },
       {
-        src: '/images/saloka_logo.png',
+        src: '/images/Variant=Icon.webp',
         sizes: '512x512',
-        type: 'image/png',
+        type: 'image/webp',
       },
     ],
   }

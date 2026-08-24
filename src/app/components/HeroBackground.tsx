@@ -17,20 +17,10 @@ export default function HeroBackground() {
   const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.45])
 
   return (
-    <div ref={containerRef} className="absolute inset-0 z-0 overflow-hidden">
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.75)_0%,transparent_40%)] z-10 pointer-events-none" />
-      {/* Parallax background image */}
-      <motion.img 
-        src="/images/lamanawal.jpg" 
-        alt="Saloka Market"
-        width={1440}
-        height={768}
-        fetchPriority="high"
-        loading="eager"
-        style={{ y, opacity }}
-        className="w-full h-full object-cover scale-110 origin-top"
-      />
+    <div ref={containerRef} className="absolute inset-0 z-0 overflow-hidden bg-gradient-to-b from-emerald-50/60 via-slate-50 to-white">
+      {/* Ambient gradient overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,178,74,0.08)_0%,transparent_50%)] z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,184,0,0.06)_0%,transparent_50%)] z-10 pointer-events-none" />
     </div>
   )
 }

@@ -62,7 +62,7 @@ export default function ClientLayoutWrapper({
           {/* Brand */}
           <div className="md:col-span-1" suppressHydrationWarning>
             <div className="flex items-center mb-4" suppressHydrationWarning>
-              <img src="/images/logo+nama_saloka.svg" alt="Saloka.id" width={160} height={40} loading="lazy" className="h-9 md:h-10 w-auto object-contain shrink-0" />
+              <img src="/images/Variant=Full.webp" alt="Saloka.id" width={160} height={40} loading="lazy" className="h-9 md:h-10 w-auto object-contain shrink-0" />
             </div>
             <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">
               Platform ekosistem digital terlengkap untuk pelaku UMKM Indonesia yang ingin berkembang.

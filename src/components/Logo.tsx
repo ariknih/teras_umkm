@@ -11,12 +11,12 @@ export function Logo({ className = '', size, variant = 'icon', alt = 'Saloka.id'
   const getSrc = () => {
     switch (variant) {
       case 'full':
-        return '/images/saloka-logo-full.png';
+        return '/images/Variant=Full.webp';
       case 'text':
-        return '/images/saloka-logo-text.png';
+        return '/images/Variant=Text.webp';
       case 'icon':
       default:
-        return '/images/saloka-logo-icon.png';
+        return '/images/Variant=Icon.webp';
     }
   };
 

@@ -43,11 +43,11 @@ export const metadata: Metadata = {
   keywords: "UMKM, marketplace, toko online, jasa, affiliate, kursus bisnis, Indonesia",
   icons: {
     icon: [
-      { url: "/images/logo-1x1.webp", type: "image/webp" },
+      { url: "/images/Variant=Icon.webp", type: "image/webp" },
       { url: "/favicon.ico" }
     ],
-    shortcut: "/images/logo-1x1.webp",
-    apple: "/images/logo-1x1.webp",
+    shortcut: "/images/Variant=Icon.webp",
+    apple: "/images/Variant=Icon.webp",
   },
   openGraph: {
     title: "Saloka.id | Platform Digital UMKM Premium",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     siteName: "Saloka.id",
     images: [
       {
-        url: "/images/logo+nama_saloka.svg",
+        url: "/images/Variant=Full.webp",
         width: 1200,
         height: 630,
         alt: "Saloka.id - Platform Digital UMKM Premium Indonesia",
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Saloka.id | Platform Digital UMKM Premium",
     description: "Marketplace, LMS Academy, Affiliate & Community untuk UMKM Indonesia.",
-    images: ["/images/logo+nama_saloka.svg"],
+    images: ["/images/Variant=Full.webp"],
   },
 };
 
@@ -101,11 +101,10 @@ export default async function RootLayout({
       <head suppressHydrationWarning>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" href="/images/logo-1x1.webp" type="image/webp" />
-        <link rel="shortcut icon" href="/images/logo-1x1.webp" type="image/webp" />
-        <link rel="apple-touch-icon" href="/images/logo-1x1.webp" />
-        <link rel="preload" href="/images/logo+nama_saloka.svg" as="image" type="image/svg+xml" fetchPriority="high" />
-        <link rel="preload" href="/images/lamanawal.jpg" as="image" type="image/jpeg" fetchPriority="high" />
+        <link rel="icon" href="/images/Variant=Icon.webp" type="image/webp" />
+        <link rel="shortcut icon" href="/images/Variant=Icon.webp" type="image/webp" />
+        <link rel="apple-touch-icon" href="/images/Variant=Icon.webp" />
+        <link rel="preload" href="/images/Variant=Full.webp" as="image" type="image/webp" fetchPriority="high" />
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
