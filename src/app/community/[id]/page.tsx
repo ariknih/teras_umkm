@@ -52,6 +52,7 @@ import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LandingPageView } from './LandingPageView'
 import { LandingPageEditor } from './LandingPageEditor'
+import DiscussionForum from '@/components/community/DiscussionForum'
 import {
   Shield,
   Users,
@@ -1533,6 +1534,7 @@ export default function CommunityDetailPage() {
 
   const sidebarNavList = isKoperasi ? [
     { id: 'beranda', label: 'Beranda', icon: Home },
+    { id: 'diskusi', label: 'Diskusi', icon: MessageSquare },
     { id: 'simpanan', label: 'Simpanan', icon: Wallet },
     { id: 'pendanaan', label: 'Pendanaan', icon: Landmark, badge: 'PRO' },
     { id: 'shu', label: 'SHU', icon: PieChart },
@@ -1543,6 +1545,7 @@ export default function CommunityDetailPage() {
     { id: 'tentang', label: 'Tentang', icon: Info },
   ] : isBusiness ? [
     { id: 'beranda', label: 'Beranda', icon: Home },
+    { id: 'diskusi', label: 'Diskusi', icon: MessageSquare },
     { id: 'business_matching', label: 'Business Matching', icon: Handshake },
     { id: 'pelatihan', label: 'Pelatihan', icon: GraduationCap },
     { id: 'mentor', label: 'Mentor', icon: Award },
@@ -1564,6 +1567,7 @@ export default function CommunityDetailPage() {
     { id: 'tentang', label: 'Tentang', icon: Info },
   ] : isKuliner ? [
     { id: 'beranda', label: 'Beranda', icon: Home },
+    { id: 'diskusi', label: 'Diskusi', icon: MessageSquare },
     { id: 'merchant', label: 'Merchant', icon: Store },
     { id: 'marketplace', label: 'Produk', icon: ShoppingBag },
     { id: 'supplier', label: 'Supplier', icon: Truck },
@@ -2433,61 +2437,15 @@ export default function CommunityDetailPage() {
 
             {/* TAB 2: DISKUSI ─────────────────────────────────────────────────── */}
             {activeSidebarNav === 'diskusi' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-4">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
-                    <div>
-                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                        <MessageSquare className="w-6 h-6 text-[#2DB24A]" /> Forum Diskusi {community.name}
-                      </h2>
-                      <p className="text-xs text-gray-500 font-medium mt-1">Ruang bertukar pikiran, bertanya, berbagi pengalaman usaha, dan kolaborasi antar anggota.</p>
-                    </div>
-                    <button onClick={() => goeyToast.info('Tuliskan ide atau pertanyaan diskusi Anda.')} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
-                      <Plus className="w-4 h-4" /> Buat Topik Diskusi
-                    </button>
-                  </div>
-
-                  <div className="space-y-3.5">
-                    {(() => {
-                      const discussions = (announcements || []).filter((a: any) => a.type !== 'EVENT' && a.status === 'PUBLISHED')
-                      if (discussions.length === 0) {
-                        return (
-                          <div className="p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
-                            <MessageSquare className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
-                            <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Topik Diskusi</h4>
-                            <p className="text-xs text-gray-500 max-w-md mx-auto">Komunitas ini belum memiliki topik diskusi terdaftar. Anggota atau pengurus dapat membuat pengumuman atau diskusi baru.</p>
-                          </div>
-                        )
-                      }
-                      return discussions.map((thread: any, idx: number) => {
-                        const authorName = thread.author?.name || 'Pengurus Komunitas'
-                        const dateStr = thread.publishedAt ? new Date(thread.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Baru saja'
-                        return (
-                          <div key={thread.id || idx} className="p-5 bg-gray-50/70 border border-gray-100 hover:border-[#2DB24A]/30 hover:bg-white rounded-2xl shadow-xs transition-all space-y-3">
-                            <div className="flex justify-between items-center">
-                              <div className="flex items-center gap-2">
-                                {thread.isPinned && <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md">📌 TERPAKU</span>}
-                                <span className="px-2.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[10px] rounded-md">Diskusi</span>
-                              </div>
-                              <span className="text-[10px] text-gray-400 font-semibold">{dateStr}</span>
-                            </div>
-                            <h3 className="text-sm font-extrabold text-gray-900 hover:text-[#2DB24A] transition-colors cursor-pointer">{thread.title}</h3>
-                            <p className="text-xs text-gray-600 leading-relaxed font-medium line-clamp-3">{thread.content}</p>
-                            <div className="flex flex-wrap justify-between items-center pt-2 border-t border-gray-200/60 text-xs text-gray-500 font-medium">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 rounded-full bg-[#2DB24A] text-white font-bold text-[10px] flex items-center justify-center">
-                                  {authorName.charAt(0)}
-                                </div>
-                                <span className="font-bold text-gray-800 text-[11px]">{authorName}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })
-                    })()}
-                  </div>
-                </div>
-              </div>
+              <DiscussionForum
+                communityId={community.id}
+                communityName={community.name}
+                communityLogo={community.avatarUrl}
+                communityMembersCount={realStats.activeMembersCount || (members || []).length}
+                currentUser={user}
+                isCanManageCoop={isCanManageCoop}
+                isMember={isMember}
+              />
             )}
 
             {/* TAB 3: EVENT ────────────────────────────────────────────────────── */}

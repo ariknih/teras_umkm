@@ -222,6 +222,8 @@ model User {
   merchantInvitesSent    MerchantInvite[] @relation("InviterMerchant")
   merchantInvitesReceived MerchantInvite[] @relation("InviteeMerchant")
   levelRequests          MerchantLevelRequest[] @relation("MerchantLevelRequests")
+  discussions            Discussion[]            @relation("UserDiscussions")
+  discussionReplies      DiscussionReply[]       @relation("UserDiscussionReplies")
 }
 
 model Product {
@@ -1042,4 +1044,42 @@ model CooperativeReport {
   updatedAt   DateTime @updatedAt
 
   @@index([communityId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Forum Diskusi Komunitas (Dapat digunakan oleh semua komunitas)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Discussion {
+  id           String             @id @default(uuid())
+  communityId  String
+  title        String
+  content      String
+  category     String             // "Tanya Jawab" | "Tips & Pengalaman" | "Kolaborasi" | "Diskusi Umum"
+  tags         String             // Comma-separated tags
+  authorId     String
+  author       User               @relation("UserDiscussions", fields: [authorId], references: [id], onDelete: Cascade)
+  isPinned     Boolean            @default(false)
+  isClosed     Boolean            @default(false)
+  bestReplyId  String?            // Nullable, set when owner chooses best answer
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  replies      DiscussionReply[]
+
+  @@index([communityId])
+}
+
+model DiscussionReply {
+  id           String      @id @default(uuid())
+  discussionId String
+  discussion   Discussion  @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  authorId     String
+  author       User        @relation("UserDiscussionReplies", fields: [authorId], references: [id], onDelete: Cascade)
+  content      String
+  helpfulCount Int         @default(0)
+  helpfulVotes String      @default("[]") // JSON array string of User IDs who marked helpful
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([discussionId])
 }

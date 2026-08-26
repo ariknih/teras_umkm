@@ -1949,6 +1949,8 @@ function loadMockDb(): {
   merchantFundingProjects?: any[];
   announcements?: any[];
   cooperativeReports?: any[];
+  discussions?: any[];
+  discussionReplies?: any[];
 } {
   try {
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2082,7 +2084,9 @@ function saveMockDb() {
       shuMemberDistributions: (globalThis as any).__mockShuMemberDistributions,
       merchantFundingProjects: (globalThis as any).__mockFundingProjects,
       announcements: (globalThis as any).__mockAnnouncements,
-      cooperativeReports: (globalThis as any).__mockCooperativeReports
+      cooperativeReports: (globalThis as any).__mockCooperativeReports,
+      discussions: (globalThis as any).__mockDiscussions,
+      discussionReplies: (globalThis as any).__mockDiscussionReplies
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -2240,6 +2244,20 @@ function syncMockDb() {
           updatedAt: new Date(r.updatedAt)
         }))
       }
+      if (parsed.discussions) {
+        (globalThis as any).__mockDiscussions = parsed.discussions.map((d: any) => ({
+          ...d,
+          createdAt: new Date(d.createdAt),
+          updatedAt: new Date(d.updatedAt)
+        }))
+      }
+      if (parsed.discussionReplies) {
+        (globalThis as any).__mockDiscussionReplies = parsed.discussionReplies.map((r: any) => ({
+          ...r,
+          createdAt: new Date(r.createdAt),
+          updatedAt: new Date(r.updatedAt)
+        }))
+      }
       if (parsed.globalKycRequired !== undefined) {
         (globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
       }
@@ -2263,6 +2281,8 @@ const _persistedDb = loadMockDb()
 ;(globalThis as any).__mockFundingProjects = _persistedDb.merchantFundingProjects || []
 ;(globalThis as any).__mockAnnouncements = _persistedDb.announcements || []
 ;(globalThis as any).__mockCooperativeReports = _persistedDb.cooperativeReports || []
+;(globalThis as any).__mockDiscussions = _persistedDb.discussions || []
+;(globalThis as any).__mockDiscussionReplies = _persistedDb.discussionReplies || []
 
 // Global state in-memory database helpers for local updates in sandbox mode
 let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products).map((p: any) => ({
@@ -10436,6 +10456,436 @@ export const DataStore = {
       saveMockDb()
     }
     return { success: true }
+  },
+
+  // ─── DISCUSSION FORUM CRUD ────────────────────────────────────────
+  async getDiscussions(communityId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.discussion.findMany({
+          where: { communityId },
+          include: {
+            author: {
+              select: { id: true, name: true, image: true }
+            },
+            replies: {
+              include: {
+                author: {
+                  select: { id: true, name: true, image: true }
+                }
+              }
+            }
+          },
+          orderBy: [
+            { isPinned: 'desc' },
+            { createdAt: 'desc' }
+          ]
+        })
+      } catch (_) {}
+    }
+    
+    // Seed initial dummy discussions if empty
+    if (!(globalThis as any).__mockDiscussions || (globalThis as any).__mockDiscussions.length === 0) {
+      (globalThis as any).__mockDiscussions = [
+        {
+          id: 'disc-dummy-1',
+          communityId: 'comm-dummy-1',
+          title: 'Bagaimana cara mendaftarkan sertifikasi halal untuk produk jamu?',
+          category: 'Tanya Jawab',
+          content: 'Teman-teman pengrajin jamu, apakah ada yang tahu alur pendaftaran sertifikasi halal gratis (Sehati) tahun ini? Kebetulan produk saya belum memiliki sertifikat halal.',
+          tags: 'sertifikasi, halal, jamu, izin',
+          authorId: 'user-merchant-4',
+          isPinned: false,
+          isClosed: false,
+          bestReplyId: 'reply-dummy-1',
+          createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000),
+          updatedAt: new Date(Date.now() - 2 * 24 * 3600 * 1000)
+        },
+        {
+          id: 'disc-dummy-2',
+          communityId: 'comm-dummy-1',
+          title: 'Tips menghemat biaya logistik pengiriman ke luar pulau Jawa',
+          category: 'Tips & Pengalaman',
+          content: 'Halo semua, saya ingin membagikan sedikit tips menghemat biaya pengiriman barang cargo. Selama ini kami menggunakan jasa ekspedisi darat-laut dengan sistem LCL (Less Container Load) daripada udara. Hematnya bisa sampai 50%! Ada yang punya rekomendasi kargo terpercaya?',
+          tags: 'logistik, cargo, tips, pengiriman',
+          authorId: 'user-merchant-7',
+          isPinned: true,
+          isClosed: false,
+          bestReplyId: null,
+          createdAt: new Date(Date.now() - 5 * 24 * 3600 * 1000),
+          updatedAt: new Date(Date.now() - 5 * 24 * 3600 * 1000)
+        },
+        {
+          id: 'disc-dummy-3',
+          communityId: 'comm-dummy-2',
+          title: 'Kolaborasi pengadaan bahan baku kemasan kertas karton tebal',
+          category: 'Kolaborasi',
+          content: 'Rekan-rekan anggota koperasi, ada yang butuh suplai kemasan dus/box karton dalam jumlah besar? Jika kita order gabungan (group buy) ke pabrik di Solo, kita bisa dapat potongan harga sampai 20% untuk minimum pemesanan 5.000 pcs. Yang berminat silakan respon di bawah.',
+          tags: 'kolaborasi, kemasan, karton, groupbuy',
+          authorId: 'user-merchant-10',
+          isPinned: false,
+          isClosed: false,
+          bestReplyId: null,
+          createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000),
+          updatedAt: new Date(Date.now() - 1 * 24 * 3600 * 1000)
+        }
+      ]
+      ;(globalThis as any).__mockDiscussionReplies = [
+        {
+          id: 'reply-dummy-1',
+          discussionId: 'disc-dummy-1',
+          authorId: 'user-merchant-1',
+          content: 'Untuk program Sehati (Sertifikasi Halal Gratis), alurnya bisa dilakukan lewat web SIHALAL BPJPH. Syarat utamanya adalah harus sudah memiliki NIB berbasis risiko dan masuk kategori usaha mikro/kecil dengan produk tidak berisiko tinggi. Kemarin saya daftar lewat pendamping halal setempat, prosesnya sekitar 3-4 minggu.',
+          helpfulCount: 3,
+          helpfulVotes: JSON.stringify(['user-merchant-6', 'user-merchant-7', 'user-merchant-8']),
+          createdAt: new Date(Date.now() - 2.5 * 24 * 3600 * 1000),
+          updatedAt: new Date(Date.now() - 2.5 * 24 * 3600 * 1000)
+        },
+        {
+          id: 'reply-dummy-2',
+          discussionId: 'disc-dummy-2',
+          authorId: 'user-merchant-6',
+          content: 'Sangat setuju! Untuk cargo laut, kami biasa menggunakan DAKOTA atau Indah Cargo untuk barang berat. Kalau untuk e-commerce eceran ke Kalimantan/Sulawesi, JTR (JNE Trucking) lumayan bersahabat tarifnya.',
+          helpfulCount: 2,
+          helpfulVotes: JSON.stringify(['user-merchant-1', 'user-merchant-9']),
+          createdAt: new Date(Date.now() - 4.5 * 24 * 3600 * 1000),
+          updatedAt: new Date(Date.now() - 4.5 * 24 * 3600 * 1000)
+        }
+      ]
+      saveMockDb()
+    }
+
+    const discs = (globalThis as any).__mockDiscussions || []
+    const replies = (globalThis as any).__mockDiscussionReplies || []
+
+    const enrichUser = (uid: string) => {
+      const u = globalMockUsers.find(x => x.id === uid)
+      return {
+        id: uid,
+        name: u ? u.name : 'Anggota Komunitas',
+        image: u ? u.image : null
+      }
+    }
+
+    return discs
+      .filter((d: any) => d.communityId === communityId)
+      .map((d: any) => {
+        const discReplies = replies
+          .filter((r: any) => r.discussionId === d.id)
+          .map((r: any) => ({
+            ...r,
+            author: enrichUser(r.authorId)
+          }))
+        return {
+          ...d,
+          author: enrichUser(d.authorId),
+          replies: discReplies
+        }
+      })
+      .sort((a: any, b: any) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      })
+  },
+
+  async createDiscussion(authorId: string, data: {
+    communityId: string
+    title: string
+    category: string
+    content: string
+    tags: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.discussion.create({
+          data: {
+            communityId: data.communityId,
+            title: data.title,
+            category: data.category,
+            content: data.content,
+            tags: data.tags,
+            authorId
+          },
+          include: {
+            author: { select: { id: true, name: true, image: true } }
+          }
+        })
+      } catch (_) {}
+    }
+
+    const newDisc = {
+      id: `disc-${Date.now()}`,
+      communityId: data.communityId,
+      title: data.title,
+      category: data.category,
+      content: data.content,
+      tags: data.tags,
+      authorId,
+      isPinned: false,
+      isClosed: false,
+      bestReplyId: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    if (!(globalThis as any).__mockDiscussions) {
+      (globalThis as any).__mockDiscussions = []
+    }
+    ;(globalThis as any).__mockDiscussions.push(newDisc)
+    saveMockDb()
+    
+    // Enrich author for return object
+    const u = globalMockUsers.find(x => x.id === authorId)
+    return {
+      ...newDisc,
+      author: {
+        id: authorId,
+        name: u ? u.name : 'Anggota Komunitas',
+        image: u ? u.image : null
+      },
+      replies: []
+    }
+  },
+
+  async updateDiscussion(id: string, authorId: string, data: {
+    title: string
+    category: string
+    content: string
+    tags: string
+  }) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.discussion.update({
+          where: { id },
+          data: {
+            title: data.title,
+            category: data.category,
+            content: data.content,
+            tags: data.tags
+          },
+          include: {
+            author: { select: { id: true, name: true, image: true } }
+          }
+        })
+      } catch (_) {}
+    }
+
+    const list = (globalThis as any).__mockDiscussions || []
+    const d = list.find((x: any) => x.id === id)
+    if (d) {
+      if (d.authorId !== authorId) throw new Error('Bukan pemilik diskusi')
+      Object.assign(d, data, { updatedAt: new Date() })
+      saveMockDb()
+      const u = globalMockUsers.find(x => x.id === authorId)
+      return {
+        ...d,
+        author: {
+          id: authorId,
+          name: u ? u.name : 'Anggota Komunitas',
+          image: u ? u.image : null
+        }
+      }
+    }
+    return null
+  },
+
+  async deleteDiscussion(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        await db.discussion.delete({ where: { id } })
+        return { success: true }
+      } catch (_) {}
+    }
+
+    if ((globalThis as any).__mockDiscussions) {
+      ;(globalThis as any).__mockDiscussions = (globalThis as any).__mockDiscussions.filter((x: any) => x.id !== id)
+    }
+    if ((globalThis as any).__mockDiscussionReplies) {
+      ;(globalThis as any).__mockDiscussionReplies = (globalThis as any).__mockDiscussionReplies.filter((x: any) => x.discussionId !== id)
+    }
+    saveMockDb()
+    return { success: true }
+  },
+
+  async togglePinDiscussion(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const current = await db.discussion.findUnique({ where: { id } })
+        return await db.discussion.update({
+          where: { id },
+          data: { isPinned: !current?.isPinned }
+        })
+      } catch (_) {}
+    }
+
+    const list = (globalThis as any).__mockDiscussions || []
+    const d = list.find((x: any) => x.id === id)
+    if (d) {
+      d.isPinned = !d.isPinned
+      d.updatedAt = new Date()
+      saveMockDb()
+      return d
+    }
+    return null
+  },
+
+  async toggleCloseDiscussion(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const current = await db.discussion.findUnique({ where: { id } })
+        return await db.discussion.update({
+          where: { id },
+          data: { isClosed: !current?.isClosed }
+        })
+      } catch (_) {}
+    }
+
+    const list = (globalThis as any).__mockDiscussions || []
+    const d = list.find((x: any) => x.id === id)
+    if (d) {
+      d.isClosed = !d.isClosed
+      d.updatedAt = new Date()
+      saveMockDb()
+      return d
+    }
+    return null
+  },
+
+  async createDiscussionReply(authorId: string, discussionId: string, content: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        return await db.discussionReply.create({
+          data: {
+            discussionId,
+            authorId,
+            content
+          },
+          include: {
+            author: { select: { id: true, name: true, image: true } }
+          }
+        })
+      } catch (_) {}
+    }
+
+    const newReply = {
+      id: `reply-${Date.now()}`,
+      discussionId,
+      authorId,
+      content,
+      helpfulCount: 0,
+      helpfulVotes: '[]',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    if (!(globalThis as any).__mockDiscussionReplies) {
+      (globalThis as any).__mockDiscussionReplies = []
+    }
+    ;(globalThis as any).__mockDiscussionReplies.push(newReply)
+    saveMockDb()
+
+    const u = globalMockUsers.find(x => x.id === authorId)
+    return {
+      ...newReply,
+      author: {
+        id: authorId,
+        name: u ? u.name : 'Anggota Komunitas',
+        image: u ? u.image : null
+      }
+    }
+  },
+
+  async deleteDiscussionReply(id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        await db.discussionReply.delete({ where: { id } })
+        return { success: true }
+      } catch (_) {}
+    }
+
+    if ((globalThis as any).__mockDiscussionReplies) {
+      ;(globalThis as any).__mockDiscussionReplies = (globalThis as any).__mockDiscussionReplies.filter((x: any) => x.id !== id)
+      saveMockDb()
+    }
+    return { success: true }
+  },
+
+  async toggleHelpfulReply(userId: string, id: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        const reply = await db.discussionReply.findUnique({ where: { id } })
+        if (reply) {
+          let votes: string[] = []
+          try {
+            votes = JSON.parse(reply.helpfulVotes)
+          } catch (_) {}
+          
+          if (votes.includes(userId)) {
+            votes = votes.filter(x => x !== userId)
+          } else {
+            votes.push(userId)
+          }
+          return await db.discussionReply.update({
+            where: { id },
+            data: {
+              helpfulCount: votes.length,
+              helpfulVotes: JSON.stringify(votes)
+            }
+          })
+        }
+      } catch (_) {}
+    }
+
+    const list = (globalThis as any).__mockDiscussionReplies || []
+    const r = list.find((x: any) => x.id === id)
+    if (r) {
+      let votes: string[] = []
+      try {
+        votes = typeof r.helpfulVotes === 'string' ? JSON.parse(r.helpfulVotes) : (r.helpfulVotes || [])
+      } catch (_) {}
+      
+      if (votes.includes(userId)) {
+        votes = votes.filter(x => x !== userId)
+      } else {
+        votes.push(userId)
+      }
+      r.helpfulVotes = JSON.stringify(votes)
+      r.helpfulCount = votes.length
+      r.updatedAt = new Date()
+      saveMockDb()
+      return r
+    }
+    return null
+  },
+
+  async selectBestReply(discussionId: string, replyId: string) {
+    syncMockDb()
+    if (await isDbConnected()) {
+      try {
+        // Update bestReplyId in Discussion
+        return await db.discussion.update({
+          where: { id: discussionId },
+          data: { bestReplyId: replyId }
+        })
+      } catch (_) {}
+    }
+
+    const list = (globalThis as any).__mockDiscussions || []
+    const d = list.find((x: any) => x.id === discussionId)
+    if (d) {
+      d.bestReplyId = d.bestReplyId === replyId ? null : replyId
+      d.updatedAt = new Date()
+      saveMockDb()
+      return d
+    }
+    return null
   }
 }
 
