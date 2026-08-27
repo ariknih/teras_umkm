@@ -10597,9 +10597,11 @@ export const DataStore = {
     tags: string
   }) {
     syncMockDb()
+    let createdDisc: any = null
+
     if (await isDbConnected()) {
       try {
-        return await db.discussion.create({
+        createdDisc = await db.discussion.create({
           data: {
             communityId: data.communityId,
             title: data.title,
@@ -10615,37 +10617,63 @@ export const DataStore = {
       } catch (_) {}
     }
 
-    const newDisc = {
-      id: `disc-${Date.now()}`,
-      communityId: data.communityId,
-      title: data.title,
-      category: data.category,
-      content: data.content,
-      tags: data.tags,
-      authorId,
-      isPinned: false,
-      isClosed: false,
-      bestReplyId: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
+    if (!createdDisc) {
+      const newDisc = {
+        id: `disc-${Date.now()}`,
+        communityId: data.communityId,
+        title: data.title,
+        category: data.category,
+        content: data.content,
+        tags: data.tags,
+        authorId,
+        isPinned: false,
+        isClosed: false,
+        bestReplyId: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      if (!(globalThis as any).__mockDiscussions) {
+        (globalThis as any).__mockDiscussions = []
+      }
+      ;(globalThis as any).__mockDiscussions.push(newDisc)
+      saveMockDb()
+      
+      const u = globalMockUsers.find(x => x.id === authorId)
+      createdDisc = {
+        ...newDisc,
+        author: {
+          id: authorId,
+          name: u ? u.name : 'Anggota Komunitas',
+          image: u ? u.image : null
+        },
+        replies: []
+      }
     }
-    if (!(globalThis as any).__mockDiscussions) {
-      (globalThis as any).__mockDiscussions = []
+
+    // Trigger Notification Dispatch to all community members
+    try {
+      const authorUser = await DataStore.findUserById(authorId)
+      const authorName = authorUser ? authorUser.name : 'Seorang anggota'
+      const community = await DataStore.getCommunityById(data.communityId)
+      const communityName = community ? community.name : 'Komunitas'
+      const membersList = await DataStore.getIndukCommunityMembers(data.communityId)
+
+      for (const m of membersList) {
+        if (m.userId && m.userId !== authorId) {
+          await DataStore.createNotification(
+            m.userId,
+            'NEW_DISCUSSION',
+            `Diskusi Baru di ${communityName}`,
+            `${authorName} memulai diskusi baru: "${data.title}"`,
+            `/community/${data.communityId}?tab=diskusi&topic=${createdDisc.id}`
+          )
+        }
+      }
+    } catch (err) {
+      console.error("Error creating new discussion notification:", err)
     }
-    ;(globalThis as any).__mockDiscussions.push(newDisc)
-    saveMockDb()
-    
-    // Enrich author for return object
-    const u = globalMockUsers.find(x => x.id === authorId)
-    return {
-      ...newDisc,
-      author: {
-        id: authorId,
-        name: u ? u.name : 'Anggota Komunitas',
-        image: u ? u.image : null
-      },
-      replies: []
-    }
+
+    return createdDisc
   },
 
   async updateDiscussion(id: string, authorId: string, data: {
@@ -10758,9 +10786,11 @@ export const DataStore = {
 
   async createDiscussionReply(authorId: string, discussionId: string, content: string) {
     syncMockDb()
+    let createdReply: any = null
+
     if (await isDbConnected()) {
       try {
-        return await db.discussionReply.create({
+        createdReply = await db.discussionReply.create({
           data: {
             discussionId,
             authorId,
@@ -10773,31 +10803,66 @@ export const DataStore = {
       } catch (_) {}
     }
 
-    const newReply = {
-      id: `reply-${Date.now()}`,
-      discussionId,
-      authorId,
-      content,
-      helpfulCount: 0,
-      helpfulVotes: '[]',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-    if (!(globalThis as any).__mockDiscussionReplies) {
-      (globalThis as any).__mockDiscussionReplies = []
-    }
-    ;(globalThis as any).__mockDiscussionReplies.push(newReply)
-    saveMockDb()
+    if (!createdReply) {
+      const newReply = {
+        id: `reply-${Date.now()}`,
+        discussionId,
+        authorId,
+        content,
+        helpfulCount: 0,
+        helpfulVotes: '[]',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+      if (!(globalThis as any).__mockDiscussionReplies) {
+        (globalThis as any).__mockDiscussionReplies = []
+      }
+      ;(globalThis as any).__mockDiscussionReplies.push(newReply)
+      saveMockDb()
 
-    const u = globalMockUsers.find(x => x.id === authorId)
-    return {
-      ...newReply,
-      author: {
-        id: authorId,
-        name: u ? u.name : 'Anggota Komunitas',
-        image: u ? u.image : null
+      const u = globalMockUsers.find(x => x.id === authorId)
+      createdReply = {
+        ...newReply,
+        author: {
+          id: authorId,
+          name: u ? u.name : 'Anggota Komunitas',
+          image: u ? u.image : null
+        }
       }
     }
+
+    // Trigger Notification Dispatch to discussion owner
+    try {
+      let discussion: any = null
+      if (await isDbConnected()) {
+        try {
+          discussion = await db.discussion.findUnique({
+            where: { id: discussionId }
+          })
+        } catch (_) {}
+      }
+      if (!discussion) {
+        const list = (globalThis as any).__mockDiscussions || []
+        discussion = list.find((x: any) => x.id === discussionId)
+      }
+
+      if (discussion && discussion.authorId !== authorId) {
+        const replier = await DataStore.findUserById(authorId)
+        const replierName = replier ? replier.name : 'Seseorang'
+        
+        await DataStore.createNotification(
+          discussion.authorId,
+          'DISCUSSION_REPLY',
+          'Balasan Baru pada Diskusi Anda',
+          `${replierName} menanggapi diskusi Anda: "${discussion.title}"`,
+          `/community/${discussion.communityId}?tab=diskusi&topic=${discussionId}`
+        )
+      }
+    } catch (err) {
+      console.error("Error creating discussion reply notification:", err)
+    }
+
+    return createdReply
   },
 
   async deleteDiscussionReply(id: string) {
@@ -10867,25 +10932,67 @@ export const DataStore = {
 
   async selectBestReply(discussionId: string, replyId: string) {
     syncMockDb()
+    let updatedDisc: any = null
+
+    // Find reply & discussion details first for notification context
+    let reply: any = null
+    let discussion: any = null
+    try {
+      if (await isDbConnected()) {
+        try {
+          reply = await db.discussionReply.findUnique({ where: { id: replyId } })
+          discussion = await db.discussion.findUnique({ where: { id: discussionId } })
+        } catch (_) {}
+      }
+      if (!reply) {
+        const list = (globalThis as any).__mockDiscussionReplies || []
+        reply = list.find((x: any) => x.id === replyId)
+      }
+      if (!discussion) {
+        const list = (globalThis as any).__mockDiscussions || []
+        discussion = list.find((x: any) => x.id === discussionId)
+      }
+    } catch (_) {}
+
     if (await isDbConnected()) {
       try {
-        // Update bestReplyId in Discussion
-        return await db.discussion.update({
+        updatedDisc = await db.discussion.update({
           where: { id: discussionId },
           data: { bestReplyId: replyId }
         })
       } catch (_) {}
     }
 
-    const list = (globalThis as any).__mockDiscussions || []
-    const d = list.find((x: any) => x.id === discussionId)
-    if (d) {
-      d.bestReplyId = d.bestReplyId === replyId ? null : replyId
-      d.updatedAt = new Date()
-      saveMockDb()
-      return d
+    if (!updatedDisc) {
+      const list = (globalThis as any).__mockDiscussions || []
+      const d = list.find((x: any) => x.id === discussionId)
+      if (d) {
+        d.bestReplyId = d.bestReplyId === replyId ? null : replyId
+        d.updatedAt = new Date()
+        saveMockDb()
+        updatedDisc = d
+      }
     }
-    return null
+
+    // Trigger Notification if best reply is selected (not removed)
+    try {
+      if (reply && discussion && reply.authorId !== discussion.authorId) {
+        const isCurrentlyBest = discussion.bestReplyId === replyId
+        if (!isCurrentlyBest) {
+          await DataStore.createNotification(
+            reply.authorId,
+            'BEST_REPLY_SELECTED',
+            'Jawaban Terbaik Terpilih! 🌟',
+            `Selamat! Jawaban Anda terpilih sebagai Jawaban Terbaik di diskusi: "${discussion.title}"`,
+            `/community/${discussion.communityId}?tab=diskusi&topic=${discussionId}`
+          )
+        }
+      }
+    } catch (err) {
+      console.error("Error creating best reply notification:", err)
+    }
+
+    return updatedDisc
   }
 }
 
