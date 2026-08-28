@@ -9192,93 +9192,6 @@ export const DataStore = {
   // ─── DISCUSSION FORUM CRUD ────────────────────────────────────────
   async getDiscussions(communityId: string) {
     syncMockDb()
-    const seedForCommunity = (cId: string) => [
-      {
-        id: `disc-1-${cId}`,
-        communityId: cId,
-        title: 'Selamat datang! Kenalan dulu yuk sebelum mulai diskusi 👋',
-        category: 'Diskusi Umum',
-        content: 'Ceritain background usaha kamu, produk yang dijual, dan target belajar di komunitas ini.',
-        tags: 'perkenalan, sambutan, anggota, networking',
-        authorId: 'user-rina-amalia',
-        authorName: 'Rina Amalia',
-        isPinned: true,
-        isClosed: false,
-        bestReplyId: null,
-        likesCount: 112,
-        repliesCount: 48,
-        createdAt: new Date(Date.now() - 2 * 3600 * 1000),
-        updatedAt: new Date(Date.now() - 2 * 3600 * 1000)
-      },
-      {
-        id: `disc-2-${cId}`,
-        communityId: cId,
-        title: 'Gimana cara nentuin harga jual produk snack rumahan biar tetap untung?',
-        category: 'Tanya Jawab',
-        content: 'Aku baru mulai jualan snack, bingung hitung margin yang pas antara modal dan harga pasar.',
-        tags: 'snack, harga, margin, hpp, kuliner',
-        authorId: 'user-dimas-prasetyo',
-        authorName: 'Dimas Prasetyo',
-        isPinned: false,
-        isClosed: false,
-        bestReplyId: null,
-        likesCount: 40,
-        repliesCount: 23,
-        createdAt: new Date(Date.now() - 5 * 3600 * 1000),
-        updatedAt: new Date(Date.now() - 5 * 3600 * 1000)
-      },
-      {
-        id: `disc-3-${cId}`,
-        communityId: cId,
-        title: '3 kesalahan saya waktu pertama kali jualan online, biar kalian gak ngulangin',
-        category: 'Tips & Pengalaman',
-        content: 'Dari salah packing sampai lupa hitung ongkir — ini pelajaran mahal dari 6 bulan pertama.',
-        tags: 'tips, online, ekspedisi, packing, pengalaman',
-        authorId: 'user-sinta-nuraini',
-        authorName: 'Sinta Nuraini',
-        isPinned: false,
-        isClosed: false,
-        bestReplyId: null,
-        likesCount: 205,
-        repliesCount: 61,
-        createdAt: new Date(Date.now() - 24 * 3600 * 1000),
-        updatedAt: new Date(Date.now() - 24 * 3600 * 1000)
-      },
-      {
-        id: `disc-4-${cId}`,
-        communityId: cId,
-        title: 'Cari partner buat bundling produk skincare + totebag lokal',
-        category: 'Kolaborasi',
-        content: 'Aku produksi totebag kanvas, cari brand skincare lokal buat kolaborasi paket hampers.',
-        tags: 'kolaborasi, bundling, hampers, skincare, totebag',
-        authorId: 'user-fahri-hidayat',
-        authorName: 'Fahri Hidayat',
-        isPinned: false,
-        isClosed: false,
-        bestReplyId: null,
-        likesCount: 15,
-        repliesCount: 9,
-        createdAt: new Date(Date.now() - 26 * 3600 * 1000),
-        updatedAt: new Date(Date.now() - 26 * 3600 * 1000)
-      },
-      {
-        id: `disc-5-${cId}`,
-        communityId: cId,
-        title: 'Ada yang pernah pakai fitur Affiliate Saloka? Worth it gak buat produk kecil?',
-        category: 'Tanya Jawab',
-        content: 'Mau coba buka komisi affiliate untuk reseller, ada yang sudah jalan dan punya pengalaman?',
-        tags: 'affiliate, komisi, reseller, promosi',
-        authorId: 'user-muhammad-wahyu',
-        authorName: 'Muhammad Wahyu',
-        isPinned: false,
-        isClosed: false,
-        bestReplyId: null,
-        likesCount: 32,
-        repliesCount: 14,
-        createdAt: new Date(Date.now() - 36 * 3600 * 1000),
-        updatedAt: new Date(Date.now() - 36 * 3600 * 1000)
-      }
-    ]
 
     return withFallback(
       async () => {
@@ -9308,13 +9221,10 @@ export const DataStore = {
         if (!(globalThis as any).__mockDiscussions) {
           (globalThis as any).__mockDiscussions = []
         }
-        let listForComm = (globalThis as any).__mockDiscussions.filter((d: any) => d.communityId === communityId)
-        if (listForComm.length === 0) {
-          const seeded = seedForCommunity(communityId)
-          ;(globalThis as any).__mockDiscussions.push(...seeded)
-          saveMockDb()
-          listForComm = seeded
-        }
+        // Only return discussions actually created for this community
+        const listForComm = (globalThis as any).__mockDiscussions.filter(
+          (d: any) => d.communityId === communityId && !d.id?.startsWith('disc-dummy-') && !d.id?.startsWith('disc-1-') && !d.id?.startsWith('disc-2-') && !d.id?.startsWith('disc-3-') && !d.id?.startsWith('disc-4-') && !d.id?.startsWith('disc-5-')
+        )
 
         const enrichUser = (uid: string, fallbackName?: string) => {
           const u = globalMockUsers.find(x => x.id === uid)
@@ -9349,13 +9259,10 @@ export const DataStore = {
         if (!(globalThis as any).__mockDiscussions) {
           (globalThis as any).__mockDiscussions = []
         }
-        let listForComm = (globalThis as any).__mockDiscussions.filter((d: any) => d.communityId === communityId)
-        if (listForComm.length === 0) {
-          const seeded = seedForCommunity(communityId)
-          ;(globalThis as any).__mockDiscussions.push(...seeded)
-          saveMockDb()
-          listForComm = seeded
-        }
+        // Only return discussions actually created for this community
+        const listForComm = (globalThis as any).__mockDiscussions.filter(
+          (d: any) => d.communityId === communityId && !d.id?.startsWith('disc-dummy-') && !d.id?.startsWith('disc-1-') && !d.id?.startsWith('disc-2-') && !d.id?.startsWith('disc-3-') && !d.id?.startsWith('disc-4-') && !d.id?.startsWith('disc-5-')
+        )
 
         const enrichUser = (uid: string, fallbackName?: string) => {
           const u = globalMockUsers.find(x => x.id === uid)
