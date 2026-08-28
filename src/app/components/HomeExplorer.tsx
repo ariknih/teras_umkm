@@ -142,10 +142,10 @@ export default function HomeExplorer({ products, services, communities = [] }: H
   }, [communities])
 
   return (
-    <section className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 md:px-8 py-4 space-y-6 sm:space-y-7">
+    <section className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-4 space-y-6 sm:space-y-7">
       
-      {/* ── SECTION 1: SALOKA TERDEKAT & SEKITARMU (FIGMA SPEC 1 & 2) ── */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xs space-y-4">
+      {/* ── SNACKBOX ─────────────────────────────────────────────────────── */}
+      <div id="snackbox" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -241,8 +241,8 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         </div>
       </div>
 
-      {/* ── SECTION 2: KOMUNITAS POPULER (FIGMA SPEC 2) ── */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xs space-y-4">
+      {/* ── KOMUNITAS POPULER ────────────────────────────────────────────── */}
+      <div id="komunitas-populer" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
             Komunitas Populer
@@ -288,10 +288,10 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         </div>
       </div>
 
-      {/* ── SECTION 3: SALOKA ACADEMY & AFFILIATE HUB (2 COLUMNS SIDE BY SIDE) ── */}
+      {/* ── SALOKA ACADEMY & AFFILIATE HUB (2 COLUMNS SIDE BY SIDE) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Left Column: Saloka Academy */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-3.5">
+        {/* ── SALOKA ACADEMY ── */}
+        <div id="saloka-academy" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-3.5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h3 className="text-base font-extrabold text-slate-900">Saloka Academy</h3>
             <Link href="/academy" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
@@ -323,8 +323,8 @@ export default function HomeExplorer({ products, services, communities = [] }: H
           </Link>
         </div>
 
-        {/* Right Column: Affiliate Hub */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-3.5">
+        {/* ── AFFILIATE HUB ── */}
+        <div id="affiliate-hub" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xs space-y-3.5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h3 className="text-base font-extrabold text-slate-900">Affiliate Hub</h3>
             <Link href="/affiliate" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
@@ -357,8 +357,8 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         </div>
       </div>
 
-      {/* ── SECTION 4: MODE PENCARIAN & KATALOG PRODUK (FIGMA SPEC 3) ── */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xs space-y-5">
+      {/* ── MODE PENCARIAN ───────────────────────────────────────────────── */}
+      <div id="mode-pencarian" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xs space-y-5">
         
         {/* Section Header with Product Marketplace / Booking Jasa Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">

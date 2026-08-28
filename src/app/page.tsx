@@ -23,8 +23,8 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen bg-background flex flex-col font-poppins overflow-hidden">
       
-      {/* ── TOP BANNER CAROUSEL ─────────────────────────────────────────── */}
-      <div className="w-full pt-6 pb-2">
+      {/* ── SLIDE BANNER ─────────────────────────────────────────────────── */}
+      <div id="slide-banner" className="w-full pt-6 pb-2">
         <BannerCarousel banners={activeBanners} />
       </div>
 
