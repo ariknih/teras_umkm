@@ -2459,18 +2459,21 @@ export default function CommunityDetailPage() {
         community={community}
         config={parsedCommunityConfig}
         onJoin={handleJoin}
-        onViewDashboard={() => setViewMode('dashboard')}
+        onViewDashboard={() => {
+          setViewMode('dashboard')
+          setActiveSidebarNav('produk_komunitas')
+        }}
         isCanManage={isCanManageCoop}
         isMember={isMember}
         onEdit={() => {
           setViewMode('dashboard')
           setActiveSidebarNav('desain_landing')
         }}
-        products={products}
+        products={communityOfficialProducts}
         onAddProduct={() => {
           setViewMode('dashboard')
-          setActiveSidebarNav('marketplace')
-          setTimeout(() => handleOpenCreateProduct(false), 200)
+          setActiveSidebarNav('produk_komunitas')
+          setTimeout(() => handleOpenCreateOfficialProduct(), 200)
         }}
         realStats={realStats}
       />

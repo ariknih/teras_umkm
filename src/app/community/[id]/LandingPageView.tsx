@@ -287,35 +287,39 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   const dummyProducts = [
     {
       id: '',
-      name: 'Kopi Arabika Java Preanger',
-      price: 75000,
-      category: 'MAKANAN & MINUMAN',
-      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400',
-      merchantName: 'Kopi Saloka'
+      name: `Kaos Resmi & Seragam ${community?.name || 'Komunitas'}`,
+      price: 95000,
+      category: 'Merchandise & Seragam',
+      imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
+      description: 'Seragam resmi berbahan Cotton Combed 24s premium dengan bordir logo resmi komunitas.',
+      merchantName: `Resmi ${community?.name || 'Komunitas'}`
     },
     {
       id: '',
-      name: 'Tas Kulit Garut Premium',
+      name: 'Paket Bahan Baku Produksi Bersama',
+      price: 150000,
+      category: 'Bahan Baku',
+      imageUrl: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=500&auto=format&fit=crop&q=80',
+      description: 'Bahan baku berkualitas pilihan hasil pengadaan kolektif komunitas untuk efisiensi modal usaha.',
+      merchantName: `Resmi ${community?.name || 'Komunitas'}`
+    },
+    {
+      id: '',
+      name: 'Paket Usaha Kemitraan & Banner Promosi',
       price: 350000,
-      category: 'FASHION & AKSESORIS',
-      imageUrl: 'https://images.unsplash.com/photo-1547949003-9792a18a2601?w=400',
-      merchantName: 'Garut Leather'
+      category: 'Paket Usaha',
+      imageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=500&auto=format&fit=crop&q=80',
+      description: 'Starter kit lengkap media promosi, SOP operasional, dan materi branding resmi komunitas.',
+      merchantName: `Resmi ${community?.name || 'Komunitas'}`
     },
     {
       id: '',
-      name: 'Madu Murni Hutan Sumbawa',
-      price: 120000,
-      category: 'KESEHATAN',
-      imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400',
-      merchantName: 'CV Madu Alami'
-    },
-    {
-      id: '',
-      name: 'Sepatu Kulit Formal Pria',
-      price: 450000,
-      category: 'FASHION & AKSESORIS',
-      imageUrl: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=400',
-      merchantName: 'Footwear Induk'
+      name: 'Topi & Tumbler Eksklusif Komunitas',
+      price: 65000,
+      category: 'Merchandise & Seragam',
+      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=500&auto=format&fit=crop&q=80',
+      description: 'Aksesoris resmi edisi terbatas untuk menunjang kegiatan kopdar dan event komunitas.',
+      merchantName: `Resmi ${community?.name || 'Komunitas'}`
     }
   ]
   
@@ -640,18 +644,20 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </section>
 
-      {/* 5.5. Produk Unggulan Kami Section */}
+      {/* 5.5. Produk Resmi Komunitas Section */}
       <section className="py-20 md:py-24 bg-white border-t border-gray-100 relative z-10">
         <div className="max-w-[1280px] mx-auto px-4 md:px-8 space-y-12">
           <div className="flex justify-between items-end">
             <div className="space-y-1">
               <span className="text-[9px] bg-emerald-50 text-emerald-800 font-black px-3 py-1 rounded-full uppercase tracking-wider font-sora">
-                Galeri Usaha Anggota
+                Katalog Resmi Komunitas
               </span>
               <h2 className="text-2xl md:text-3xl font-black font-sora text-slate-900 tracking-tight mt-2">
-                Produk Unggulan Kami
+                Produk Resmi {community?.name || 'Komunitas'}
               </h2>
-              <p className="text-xs text-gray-500 font-medium">Karya terbaik dan produk berkualitas dari pelaku UMKM anggota kami</p>
+              <p className="text-xs text-gray-500 font-medium">
+                Koleksi produk resmi, merchandise, seragam, bahan baku, dan paket usaha terpercaya yang dikelola komunitas
+              </p>
             </div>
             <div className="flex items-center gap-3">
               {isCanManage && (
@@ -659,14 +665,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   onClick={onAddProduct}
                   className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 hover:scale-[1.02] text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer font-sora transition-all duration-200"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Tambah Produk
+                  <Plus className="w-3.5 h-3.5" /> Tambah Produk Komunitas
                 </button>
               )}
               <button 
                 onClick={onViewDashboard}
                 className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer font-sora font-semibold"
               >
-                Buka Marketplace <ChevronRight className="w-3.5 h-3.5" />
+                Buka Katalog Komunitas <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -677,23 +683,23 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <div className="space-y-3">
                   <div className="relative rounded-2xl overflow-hidden h-44 bg-gray-100">
                     <img 
-                      src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=200&fit=crop&q=80'} 
+                      src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'} 
                       alt={p.name || p.title} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                     />
                     <span className="absolute top-3 left-3 px-2 py-0.5 bg-emerald-700 text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-sm font-sora">
-                      {p.category || 'PRODUK'}
+                      {p.category || 'OFFICIAL'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider block">
-                      {p.merchant?.name || p.merchantName || p.merchant || 'Merchant Saloka'}
+                    <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider block">
+                      Resmi {community?.name || 'Komunitas'}
                     </span>
                     <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-relaxed mt-0.5">
                       {p.name || p.title}
                     </h4>
-                    <p className="text-[9px] text-amber-600 font-bold mt-1 flex items-center gap-0.5">
-                      ⭐ 5.0 <span className="text-gray-400 font-medium">(Produk Terverifikasi)</span>
+                    <p className="text-[10px] text-gray-500 font-medium line-clamp-2 mt-1 leading-relaxed">
+                      {p.description || 'Produk resmi berkualitas pilihan dari pengurus komunitas.'}
                     </p>
                   </div>
                 </div>
@@ -701,18 +707,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                   <span className="text-sm font-black text-emerald-850">
                     Rp {Number(p.price || 0).toLocaleString('id-ID')}
                   </span>
-                  <a 
-                    href={p.id ? `/market/product/${p.id}` : '#'}
-                    onClick={(e) => {
-                      if (!p.id) {
-                        e.preventDefault();
-                        onJoin();
-                      }
-                    }}
+                  <button 
+                    onClick={onViewDashboard}
                     className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 hover:scale-[1.03] text-white font-extrabold text-[10px] rounded-xl shadow-xs transition-all cursor-pointer font-sora duration-200"
                   >
                     Detail Produk
-                  </a>
+                  </button>
                 </div>
               </div>
             ))}
