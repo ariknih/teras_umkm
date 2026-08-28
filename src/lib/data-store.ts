@@ -9191,130 +9191,107 @@ export const DataStore = {
 
   // ─── DISCUSSION FORUM CRUD ────────────────────────────────────────
   async getDiscussions(communityId: string) {
-    return withMutationFallback(
+    syncMockDb()
+
+    return withFallback(
       async () => {
-        return await (db as any).discussion.findMany({
-                  where: { communityId },
-                  include: {
-                    author: {
-                      select: { id: true, name: true, image: true }
-                    },
-                    replies: {
-                      include: {
-                        author: {
-                          select: { id: true, name: true, image: true }
-                        }
-                      }
-                    }
-                  },
-                  orderBy: [
-                    { isPinned: 'desc' },
-                    { createdAt: 'desc' }
-                  ]
-                })
+        try {
+          const list = await (db as any).discussion.findMany({
+            where: { communityId },
+            include: {
+              author: {
+                select: { id: true, name: true, image: true }
+              },
+              replies: {
+                include: {
+                  author: {
+                    select: { id: true, name: true, image: true }
+                  }
+                }
+              }
+            },
+            orderBy: [
+              { isPinned: 'desc' },
+              { createdAt: 'desc' }
+            ]
+          })
+          if (list && list.length > 0) return list
+        } catch (_) {}
+
+        if (!(globalThis as any).__mockDiscussions) {
+          (globalThis as any).__mockDiscussions = []
+        }
+        // Only return discussions actually created for this community
+        const listForComm = (globalThis as any).__mockDiscussions.filter(
+          (d: any) => d.communityId === communityId && !d.id?.startsWith('disc-dummy-') && !d.id?.startsWith('disc-1-') && !d.id?.startsWith('disc-2-') && !d.id?.startsWith('disc-3-') && !d.id?.startsWith('disc-4-') && !d.id?.startsWith('disc-5-')
+        )
+
+        const enrichUser = (uid: string, fallbackName?: string) => {
+          const u = globalMockUsers.find(x => x.id === uid)
+          return {
+            id: uid,
+            name: u ? u.name : (fallbackName || 'Anggota Komunitas'),
+            image: u ? u.image : null
+          }
+        }
+
+        const replies = (globalThis as any).__mockDiscussionReplies || []
+        return listForComm.map((d: any) => {
+          const discReplies = replies
+            .filter((r: any) => r.discussionId === d.id)
+            .map((r: any) => ({
+              ...r,
+              author: enrichUser(r.authorId, r.authorName)
+            }))
+          return {
+            ...d,
+            author: enrichUser(d.authorId, d.authorName),
+            replies: discReplies,
+            repliesCount: d.repliesCount || discReplies.length,
+            likesCount: d.likesCount || 0
+          }
+        }).sort((a: any, b: any) => {
+          if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
       },
       async () => {
-        // Seed initial dummy discussions if empty
-            if (!(globalThis as any).__mockDiscussions || (globalThis as any).__mockDiscussions.length === 0) {
-              (globalThis as any).__mockDiscussions = [
-                {
-                  id: 'disc-dummy-1',
-                  communityId: 'comm-dummy-1',
-                  title: 'Bagaimana cara mendaftarkan sertifikasi halal untuk produk jamu?',
-                  category: 'Tanya Jawab',
-                  content: 'Teman-teman pengrajin jamu, apakah ada yang tahu alur pendaftaran sertifikasi halal gratis (Sehati) tahun ini? Kebetulan produk saya belum memiliki sertifikat halal.',
-                  tags: 'sertifikasi, halal, jamu, izin',
-                  authorId: 'user-merchant-4',
-                  isPinned: false,
-                  isClosed: false,
-                  bestReplyId: 'reply-dummy-1',
-                  createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000),
-                  updatedAt: new Date(Date.now() - 2 * 24 * 3600 * 1000)
-                },
-                {
-                  id: 'disc-dummy-2',
-                  communityId: 'comm-dummy-1',
-                  title: 'Tips menghemat biaya logistik pengiriman ke luar pulau Jawa',
-                  category: 'Tips & Pengalaman',
-                  content: 'Halo semua, saya ingin membagikan sedikit tips menghemat biaya pengiriman barang cargo. Selama ini kami menggunakan jasa ekspedisi darat-laut dengan sistem LCL (Less Container Load) daripada udara. Hematnya bisa sampai 50%! Ada yang punya rekomendasi kargo terpercaya?',
-                  tags: 'logistik, cargo, tips, pengiriman',
-                  authorId: 'user-merchant-7',
-                  isPinned: true,
-                  isClosed: false,
-                  bestReplyId: null,
-                  createdAt: new Date(Date.now() - 5 * 24 * 3600 * 1000),
-                  updatedAt: new Date(Date.now() - 5 * 24 * 3600 * 1000)
-                },
-                {
-                  id: 'disc-dummy-3',
-                  communityId: 'comm-dummy-2',
-                  title: 'Kolaborasi pengadaan bahan baku kemasan kertas karton tebal',
-                  category: 'Kolaborasi',
-                  content: 'Rekan-rekan anggota koperasi, ada yang butuh suplai kemasan dus/box karton dalam jumlah besar? Jika kita order gabungan (group buy) ke pabrik di Solo, kita bisa dapat potongan harga sampai 20% untuk minimum pemesanan 5.000 pcs. Yang berminat silakan respon di bawah.',
-                  tags: 'kolaborasi, kemasan, karton, groupbuy',
-                  authorId: 'user-merchant-10',
-                  isPinned: false,
-                  isClosed: false,
-                  bestReplyId: null,
-                  createdAt: new Date(Date.now() - 1 * 24 * 3600 * 1000),
-                  updatedAt: new Date(Date.now() - 1 * 24 * 3600 * 1000)
-                }
-              ]
-              ;(globalThis as any).__mockDiscussionReplies = [
-                {
-                  id: 'reply-dummy-1',
-                  discussionId: 'disc-dummy-1',
-                  authorId: 'user-merchant-1',
-                  content: 'Untuk program Sehati (Sertifikasi Halal Gratis), alurnya bisa dilakukan lewat web SIHALAL BPJPH. Syarat utamanya adalah harus sudah memiliki NIB berbasis risiko dan masuk kategori usaha mikro/kecil dengan produk tidak berisiko tinggi. Kemarin saya daftar lewat pendamping halal setempat, prosesnya sekitar 3-4 minggu.',
-                  helpfulCount: 3,
-                  helpfulVotes: JSON.stringify(['user-merchant-6', 'user-merchant-7', 'user-merchant-8']),
-                  createdAt: new Date(Date.now() - 2.5 * 24 * 3600 * 1000),
-                  updatedAt: new Date(Date.now() - 2.5 * 24 * 3600 * 1000)
-                },
-                {
-                  id: 'reply-dummy-2',
-                  discussionId: 'disc-dummy-2',
-                  authorId: 'user-merchant-6',
-                  content: 'Sangat setuju! Untuk cargo laut, kami biasa menggunakan DAKOTA atau Indah Cargo untuk barang berat. Kalau untuk e-commerce eceran ke Kalimantan/Sulawesi, JTR (JNE Trucking) lumayan bersahabat tarifnya.',
-                  helpfulCount: 2,
-                  helpfulVotes: JSON.stringify(['user-merchant-1', 'user-merchant-9']),
-                  createdAt: new Date(Date.now() - 4.5 * 24 * 3600 * 1000),
-                  updatedAt: new Date(Date.now() - 4.5 * 24 * 3600 * 1000)
-                }
-              ]
-              }
-        
-            const discs = (globalThis as any).__mockDiscussions || []
-            const replies = (globalThis as any).__mockDiscussionReplies || []
-        
-            const enrichUser = (uid: string) => {
-              const u = globalMockUsers.find(x => x.id === uid)
-              return {
-                id: uid,
-                name: u ? u.name : 'Anggota Komunitas',
-                image: u ? u.image : null
-              }
-            }
-        
-            return discs
-              .filter((d: any) => d.communityId === communityId)
-              .map((d: any) => {
-                const discReplies = replies
-                  .filter((r: any) => r.discussionId === d.id)
-                  .map((r: any) => ({
-                    ...r,
-                    author: enrichUser(r.authorId)
-                  }))
-                return {
-                  ...d,
-                  author: enrichUser(d.authorId),
-                  replies: discReplies
-                }
-              })
-              .sort((a: any, b: any) => {
-                if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-              })
+        if (!(globalThis as any).__mockDiscussions) {
+          (globalThis as any).__mockDiscussions = []
+        }
+        // Only return discussions actually created for this community
+        const listForComm = (globalThis as any).__mockDiscussions.filter(
+          (d: any) => d.communityId === communityId && !d.id?.startsWith('disc-dummy-') && !d.id?.startsWith('disc-1-') && !d.id?.startsWith('disc-2-') && !d.id?.startsWith('disc-3-') && !d.id?.startsWith('disc-4-') && !d.id?.startsWith('disc-5-')
+        )
+
+        const enrichUser = (uid: string, fallbackName?: string) => {
+          const u = globalMockUsers.find(x => x.id === uid)
+          return {
+            id: uid,
+            name: u ? u.name : (fallbackName || 'Anggota Komunitas'),
+            image: u ? u.image : null
+          }
+        }
+
+        const replies = (globalThis as any).__mockDiscussionReplies || []
+        return listForComm.map((d: any) => {
+          const discReplies = replies
+            .filter((r: any) => r.discussionId === d.id)
+            .map((r: any) => ({
+              ...r,
+              author: enrichUser(r.authorId, r.authorName)
+            }))
+          return {
+            ...d,
+            author: enrichUser(d.authorId, d.authorName),
+            replies: discReplies,
+            repliesCount: d.repliesCount || discReplies.length,
+            likesCount: d.likesCount || 0
+          }
+        }).sort((a: any, b: any) => {
+          if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
       }
     )
   },
@@ -9326,183 +9303,310 @@ export const DataStore = {
     content: string
     tags: string
   }) {
+    syncMockDb()
     let createdDisc: any = null
+    const authorUser = await DataStore.findUserById(authorId)
+    const authorName = authorUser ? authorUser.name : 'Anggota Komunitas'
+
     return withMutationFallback(
       async () => {
-        createdDisc = await (db as any).discussion.create({
-                  data: {
-                    communityId: data.communityId,
-                    title: data.title,
-                    category: data.category,
-                    content: data.content,
-                    tags: data.tags,
-                    authorId
-                  },
-                  include: {
-                    author: { select: { id: true, name: true, image: true } }
-                  }
-                })
+        try {
+          createdDisc = await (db as any).discussion.create({
+            data: {
+              communityId: data.communityId,
+              title: data.title,
+              category: data.category,
+              content: data.content,
+              tags: data.tags,
+              authorId
+            },
+            include: {
+              author: { select: { id: true, name: true, image: true } }
+            }
+          })
+        } catch (_) {}
+
+        if (!createdDisc) {
+          const newDisc = {
+            id: `disc-${Date.now()}`,
+            communityId: data.communityId,
+            title: data.title,
+            category: data.category,
+            content: data.content,
+            tags: data.tags,
+            authorId,
+            authorName,
+            isPinned: false,
+            isClosed: false,
+            bestReplyId: null,
+            likesCount: 0,
+            repliesCount: 0,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+          if (!(globalThis as any).__mockDiscussions) {
+            (globalThis as any).__mockDiscussions = []
+          }
+          ;(globalThis as any).__mockDiscussions.unshift(newDisc)
+          saveMockDb()
+
+          createdDisc = {
+            ...newDisc,
+            author: {
+              id: authorId,
+              name: authorName,
+              image: authorUser?.image || null
+            },
+            replies: []
+          }
+        }
+        return createdDisc
       },
       async () => {
-        if (!createdDisc) {
-              const newDisc = {
-                id: `disc-${Date.now()}`,
-                communityId: data.communityId,
-                title: data.title,
-                category: data.category,
-                content: data.content,
-                tags: data.tags,
-                authorId,
-                isPinned: false,
-                isClosed: false,
-                bestReplyId: null,
-                createdAt: new Date(),
-                updatedAt: new Date()
-              }
-              if (!(globalThis as any).__mockDiscussions) {
-                (globalThis as any).__mockDiscussions = []
-              }
-              ;(globalThis as any).__mockDiscussions.push(newDisc)
-              const u = globalMockUsers.find(x => x.id === authorId)
-              createdDisc = {
-                ...newDisc,
-                author: {
-                  id: authorId,
-                  name: u ? u.name : 'Anggota Komunitas',
-                  image: u ? u.image : null
-                },
-                replies: []
-              }
+        const newDisc = {
+          id: `disc-${Date.now()}`,
+          communityId: data.communityId,
+          title: data.title,
+          category: data.category,
+          content: data.content,
+          tags: data.tags,
+          authorId,
+          authorName,
+          isPinned: false,
+          isClosed: false,
+          bestReplyId: null,
+          likesCount: 0,
+          repliesCount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        if (!(globalThis as any).__mockDiscussions) {
+          (globalThis as any).__mockDiscussions = []
+        }
+        ;(globalThis as any).__mockDiscussions.unshift(newDisc)
+        saveMockDb()
+
+        return {
+          ...newDisc,
+          author: {
+            id: authorId,
+            name: authorName,
+            image: authorUser?.image || null
+          },
+          replies: []
+        }
+      }
+    )
+  },
+
+  async toggleLikeDiscussion(userId: string, discussionId: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          const d = await (db as any).discussion.findUnique({ where: { id: discussionId } })
+          if (d) {
+            let currentLikes: string[] = []
+            if (d.tags && d.tags.includes('__LIKES__:')) {
+              try { currentLikes = JSON.parse(d.tags.split('__LIKES__:')[1] || '[]') } catch(_) {}
             }
-        
-            // Trigger Notification Dispatch to all community members
-            try {
-              const authorUser = await DataStore.findUserById(authorId)
-              const authorName = authorUser ? authorUser.name : 'Seorang anggota'
-              const community = await DataStore.getCommunityById(data.communityId)
-              const communityName = community ? community.name : 'Komunitas'
-              const membersList = await DataStore.getIndukCommunityMembers(data.communityId)
-        
-              for (const m of membersList) {
-                if (m.userId && m.userId !== authorId) {
-                  await DataStore.createNotification(
-                    m.userId,
-                    'NEW_DISCUSSION',
-                    `Diskusi Baru di ${communityName}`,
-                    `${authorName} memulai diskusi baru: "${data.title}"`,
-                    `/community/${data.communityId}?tab=diskusi&topic=${createdDisc.id}`
-                  )
-                }
-              }
-            } catch (err) {
-              console.error("Error creating new discussion notification:", err)
+            const exists = currentLikes.includes(userId)
+            const updatedLikes = exists ? currentLikes.filter((x: string) => x !== userId) : [...currentLikes, userId]
+            const cleanTags = (d.tags || '').split('__LIKES__:')[0].trim()
+            const newTags = `${cleanTags} __LIKES__:${JSON.stringify(updatedLikes)}`
+
+            const updated = await (db as any).discussion.update({
+              where: { id: discussionId },
+              data: { tags: newTags },
+              include: { author: { select: { id: true, name: true, image: true } }, replies: true }
+            })
+            return {
+              ...updated,
+              likes: updatedLikes,
+              likesCount: updatedLikes.length
             }
-        
-            return createdDisc
+          }
+        } catch (_) {}
+
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          if (!Array.isArray(disc.likes)) disc.likes = []
+          const idx = disc.likes.indexOf(userId)
+          if (idx !== -1) {
+            disc.likes.splice(idx, 1)
+          } else {
+            disc.likes.push(userId)
+          }
+          disc.likesCount = disc.likes.length
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
+      },
+      async () => {
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          if (!Array.isArray(disc.likes)) disc.likes = []
+          const idx = disc.likes.indexOf(userId)
+          if (idx !== -1) {
+            disc.likes.splice(idx, 1)
+          } else {
+            disc.likes.push(userId)
+          }
+          disc.likesCount = disc.likes.length
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
       }
     )
   },
 
   async updateDiscussion(id: string, authorId: string, data: {
-    title: string
-    category: string
-    content: string
-    tags: string
+    title?: string
+    category?: string
+    content?: string
+    tags?: string
   }) {
+    syncMockDb()
     return withMutationFallback(
       async () => {
-        return await (db as any).discussion.update({
-                  where: { id },
-                  data: {
-                    title: data.title,
-                    category: data.category,
-                    content: data.content,
-                    tags: data.tags
-                  },
-                  include: {
-                    author: { select: { id: true, name: true, image: true } }
-                  }
-                })
+        try {
+          return await (db as any).discussion.update({
+            where: { id },
+            data: {
+              ...(data.title ? { title: data.title } : {}),
+              ...(data.category ? { category: data.category } : {}),
+              ...(data.content ? { content: data.content } : {}),
+              ...(data.tags !== undefined ? { tags: data.tags } : {})
+            },
+            include: {
+              author: { select: { id: true, name: true, image: true } }
+            }
+          })
+        } catch (_) {}
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          Object.assign(disc, data, { updatedAt: new Date() })
+          saveMockDb()
+          return disc
+        }
+        return null
       },
       async () => {
         const list = (globalThis as any).__mockDiscussions || []
-            const d = list.find((x: any) => x.id === id)
-            if (d) {
-              if (d.authorId !== authorId) throw new Error('Bukan pemilik diskusi')
-              Object.assign(d, data, { updatedAt: new Date() })
-              const u = globalMockUsers.find(x => x.id === authorId)
-              return {
-                ...d,
-                author: {
-                  id: authorId,
-                  name: u ? u.name : 'Anggota Komunitas',
-                  image: u ? u.image : null
-                }
-              }
-            }
-            return null
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          Object.assign(disc, data, { updatedAt: new Date() })
+          saveMockDb()
+          return disc
+        }
+        return null
       }
     )
   },
 
   async deleteDiscussion(id: string) {
+    syncMockDb()
     return withMutationFallback(
       async () => {
-        await (db as any).discussion.delete({ where: { id } })
-                return { success: true }
+        try {
+          await (db as any).discussion.delete({ where: { id } })
+          return { success: true }
+        } catch (_) {}
+        if ((globalThis as any).__mockDiscussions) {
+          (globalThis as any).__mockDiscussions = (globalThis as any).__mockDiscussions.filter((x: any) => x.id !== id)
+          saveMockDb()
+        }
+        return { success: true }
       },
       async () => {
         if ((globalThis as any).__mockDiscussions) {
-              ;(globalThis as any).__mockDiscussions = (globalThis as any).__mockDiscussions.filter((x: any) => x.id !== id)
-            }
-            if ((globalThis as any).__mockDiscussionReplies) {
-              ;(globalThis as any).__mockDiscussionReplies = (globalThis as any).__mockDiscussionReplies.filter((x: any) => x.discussionId !== id)
-            }
-            return { success: true }
+          (globalThis as any).__mockDiscussions = (globalThis as any).__mockDiscussions.filter((x: any) => x.id !== id)
+          saveMockDb()
+        }
+        return { success: true }
       }
     )
   },
 
   async togglePinDiscussion(id: string) {
+    syncMockDb()
     return withMutationFallback(
       async () => {
-        const current = await (db as any).discussion.findUnique({ where: { id } })
-                return await (db as any).discussion.update({
-                  where: { id },
-                  data: { isPinned: !current?.isPinned }
-                })
+        try {
+          const d = await (db as any).discussion.findUnique({ where: { id } })
+          if (d) {
+            return await (db as any).discussion.update({
+              where: { id },
+              data: { isPinned: !d.isPinned },
+              include: { author: { select: { id: true, name: true, image: true } } }
+            })
+          }
+        } catch (_) {}
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          disc.isPinned = !disc.isPinned
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
       },
       async () => {
         const list = (globalThis as any).__mockDiscussions || []
-            const d = list.find((x: any) => x.id === id)
-            if (d) {
-              d.isPinned = !d.isPinned
-              d.updatedAt = new Date()
-              return d
-            }
-            return null
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          disc.isPinned = !disc.isPinned
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
       }
     )
   },
 
   async toggleCloseDiscussion(id: string) {
+    syncMockDb()
     return withMutationFallback(
       async () => {
-        const current = await (db as any).discussion.findUnique({ where: { id } })
-                return await (db as any).discussion.update({
-                  where: { id },
-                  data: { isClosed: !current?.isClosed }
-                })
+        try {
+          const d = await (db as any).discussion.findUnique({ where: { id } })
+          if (d) {
+            return await (db as any).discussion.update({
+              where: { id },
+              data: { isClosed: !d.isClosed },
+              include: { author: { select: { id: true, name: true, image: true } } }
+            })
+          }
+        } catch (_) {}
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          disc.isClosed = !disc.isClosed
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
       },
       async () => {
         const list = (globalThis as any).__mockDiscussions || []
-            const d = list.find((x: any) => x.id === id)
-            if (d) {
-              d.isClosed = !d.isClosed
-              d.updatedAt = new Date()
-              return d
-            }
-            return null
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          disc.isClosed = !disc.isClosed
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
       }
     )
   },

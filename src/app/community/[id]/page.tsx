@@ -891,6 +891,21 @@ export default function CommunityDetailPage() {
   const [previewMode, setPreviewMode] = useState<'AUTO' | 'FREE' | 'PREMIUM'>('AUTO')
   const [viewMode, setViewMode] = useState<'landing' | 'dashboard'>('landing')
 
+  // URL Tab & View Persistence on Refresh / Navigation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const tabParam = urlParams.get('tab')
+      const viewParam = urlParams.get('view')
+      if (tabParam) {
+        setActiveSidebarNav(tabParam as any)
+        setViewMode('dashboard')
+      } else if (viewParam === 'dashboard') {
+        setViewMode('dashboard')
+      }
+    }
+  }, [])
+
   // Keuangan Koperasi / Loan States
   const [loans, setLoans] = useState<any[]>([])
   const [loanModalOpen, setLoanModalOpen] = useState(false)
@@ -1961,6 +1976,12 @@ export default function CommunityDetailPage() {
   const handleSidebarClick = (targetId: string) => {
     if (targetId === 'landing_view') {
       setViewMode('landing')
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.delete('tab')
+        url.searchParams.delete('view')
+        window.history.replaceState(null, '', url.toString())
+      }
       return
     }
     if (activeSidebarNav === 'pengaturan' && targetId !== 'pengaturan' && !arraysEqual(disabledModules, savedDisabledModules)) {
@@ -1969,6 +1990,13 @@ export default function CommunityDetailPage() {
       return
     }
     setActiveSidebarNav(targetId as any)
+    setViewMode('dashboard')
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('view', 'dashboard')
+      url.searchParams.set('tab', targetId)
+      window.history.replaceState(null, '', url.toString())
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -2461,19 +2489,53 @@ export default function CommunityDetailPage() {
         onJoin={handleJoin}
         onViewDashboard={() => {
           setViewMode('dashboard')
-          setActiveSidebarNav('produk_komunitas')
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            url.searchParams.set('view', 'dashboard')
+            window.history.replaceState(null, '', url.toString())
+          }
         }}
         isCanManage={isCanManageCoop}
         isMember={isMember}
         onEdit={() => {
           setViewMode('dashboard')
           setActiveSidebarNav('desain_landing')
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            url.searchParams.set('view', 'dashboard')
+            url.searchParams.set('tab', 'desain_landing')
+            window.history.replaceState(null, '', url.toString())
+          }
         }}
-        products={communityOfficialProducts}
-        onAddProduct={() => {
+        officialProducts={communityOfficialProducts}
+        memberProducts={products}
+        products={parsedCommunityConfig?.productShowcase?.sourceType === 'member' ? products : communityOfficialProducts}
+        onNavigateToProducts={(target) => {
+          const targetTab = target === 'member' ? 'marketplace' : 'produk_komunitas'
           setViewMode('dashboard')
-          setActiveSidebarNav('produk_komunitas')
-          setTimeout(() => handleOpenCreateOfficialProduct(), 200)
+          setActiveSidebarNav(targetTab)
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            url.searchParams.set('view', 'dashboard')
+            url.searchParams.set('tab', targetTab)
+            window.history.replaceState(null, '', url.toString())
+          }
+        }}
+        onAddProduct={(target) => {
+          const targetTab = target === 'member' ? 'marketplace' : 'produk_komunitas'
+          setViewMode('dashboard')
+          setActiveSidebarNav(targetTab)
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            url.searchParams.set('view', 'dashboard')
+            url.searchParams.set('tab', targetTab)
+            window.history.replaceState(null, '', url.toString())
+          }
+          if (target === 'member') {
+            setTimeout(() => handleOpenCreateProduct(false), 200)
+          } else {
+            setTimeout(() => handleOpenCreateOfficialProduct(), 200)
+          }
         }}
         realStats={realStats}
       />
