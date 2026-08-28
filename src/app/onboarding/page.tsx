@@ -70,7 +70,7 @@ const lightThemeStyles = {
   '--text-secondary': '#6B7280',
   '--border-subtle': '#E5E7EB',
   '--outline-variant': '#E5E7EB',
-  '--glow-gold': 'rgba(45, 178, 74, 0.05)',
+  '--glow-primary': 'rgba(45, 178, 74, 0.05)',
 } as React.CSSProperties;
 
 export default function OnboardingPage() {
