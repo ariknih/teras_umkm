@@ -374,8 +374,8 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   
   const isMemberSource = productSourceType === 'member'
   const targetProducts = isMemberSource 
-    ? (memberProducts && memberProducts.length > 0 ? memberProducts : (products && products.length > 0 ? products : dummyMemberProducts))
-    : (officialProducts && officialProducts.length > 0 ? officialProducts : (products && products.length > 0 ? products : dummyCommunityProducts))
+    ? (memberProducts && memberProducts.length > 0 ? memberProducts : dummyMemberProducts)
+    : (officialProducts && officialProducts.length > 0 ? officialProducts : dummyCommunityProducts)
 
   
   // Merge config with default values safely, prioritizing community data from DB!
