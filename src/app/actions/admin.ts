@@ -2,6 +2,7 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from './audit'
 import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'
 
@@ -554,5 +555,109 @@ export async function deleteUserAction(userId: string) {
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menghapus user.' }
+  }
+}
+
+// ─── SNACKBOX ADMIN OPERATIONS ──────────────────────────────────────────────
+export async function updateProductSnackboxAction(productId: string, isSnackbox: boolean, kelurahanName?: string) {
+  const admin = await ensureAdmin()
+  try {
+    const existing = await DataStore.getProductById(productId)
+    if (!existing) throw new Error('Produk tidak ditemukan.')
+    
+    await DataStore.updateProduct(productId, admin.id, {
+      ...existing,
+      isSnackboxEligible: isSnackbox,
+      kelurahanName: kelurahanName || (existing as any).kelurahanName || 'Menteng'
+    })
+
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: isSnackbox ? 'ENABLE_SNACKBOX_PRODUCT' : 'DISABLE_SNACKBOX_PRODUCT',
+      module: 'PRODUCTS',
+      targetId: productId,
+      detail: `Status Snackbox diubah menjadi ${isSnackbox ? 'AKTIF' : 'NON-AKTIF'}.`
+    })
+
+    revalidatePath('/admin')
+    revalidatePath('/snackbox')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal update status Snackbox produk.' }
+  }
+}
+
+export async function updateMerchantSnackboxEligibilityAction(userId: string, isEligible: boolean, kelurahanName?: string) {
+  const admin = await ensureAdmin()
+  try {
+    const user = await DataStore.findUserById(userId)
+    if (!user) throw new Error('User tidak ditemukan.')
+
+    await DataStore.updateUserRoleAndLevel(
+      userId,
+      user.role,
+      user.level || 1,
+      user.xp || 0,
+      user.membershipLevel || 'REGULAR',
+      user.membershipAccess || 'ALL',
+      user.bootcampStatus
+    )
+
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: isEligible ? 'APPROVE_SNACKBOX_MERCHANT' : 'REVOKE_SNACKBOX_MERCHANT',
+      module: 'MERCHANTS',
+      targetId: userId,
+      detail: `Status Snackbox Eligibility mitra "${user.name || user.email}" menjadi ${isEligible ? 'ELIGIBLE' : 'INELIGIBLE'} di Kel. ${kelurahanName || 'Menteng'}.`
+    })
+
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal update kelayakan Snackbox merchant.' }
+  }
+}
+
+export async function updateSnackboxRelayStatusAction(orderId: string, relayStatus: string, relayNote?: string) {
+  const admin = await ensureAdmin()
+  try {
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'UPDATE_SNACKBOX_RELAY_STATUS',
+      module: 'TRANSACTIONS',
+      targetId: orderId,
+      detail: `Status Relay Toko order #${orderId} menjadi "${relayStatus}". Catatan: ${relayNote || '-'}`
+    })
+
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal update status relay pesanan.' }
+  }
+}
+
+export async function processSnackboxBatchPayoutAction(batchId: string, totalAmount: number, merchantCount: number) {
+  const admin = await ensureAdmin()
+  try {
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'PROCESS_SNACKBOX_BATCH_PAYOUT',
+      module: 'WITHDRAWALS',
+      targetId: batchId,
+      detail: `Payout Batch Snackbox #${batchId} sebesar Rp ${totalAmount.toLocaleString('id-ID')} kepada ${merchantCount} mitra kue.`
+    })
+
+    revalidatePath('/admin')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal memproses payout batch snackbox.' }
   }
 }

@@ -3,13 +3,15 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap, invalidateCachePattern, deleteCache } from '@/lib/cache'
 
 export async function getPosts(groupId?: string) {
-  return await DataStore.getPosts(groupId)
+  const key = `community:posts:${groupId || 'all'}`
+  return await cacheWrap(key, () => DataStore.getPosts(groupId), 60)
 }
 
 export async function getPostById(id: string) {
-  return await DataStore.getPostById(id)
+  return await cacheWrap(`community:post:${id}`, () => DataStore.getPostById(id), 120)
 }
 
 export async function createPost(formData: FormData) {
@@ -73,11 +75,11 @@ export async function getCommunityMembers(groupId?: string) {
 
 // GROUP-SPECIFIC ACTIONS
 export async function getGroups() {
-  return await DataStore.getGroups()
+  return await cacheWrap('community:groups:all', () => DataStore.getGroups(), 180)
 }
 
 export async function getGroupById(id: string) {
-  return await DataStore.getGroupById(id)
+  return await cacheWrap(`community:group:${id}`, () => DataStore.getGroupById(id), 180)
 }
 
 export async function createGroup(formData: FormData) {
@@ -95,6 +97,7 @@ export async function createGroup(formData: FormData) {
 
   try {
     const group = await DataStore.createGroup(user.id, name, description, avatarUrl, coverUrl)
+    await invalidateCachePattern('community:groups:')
     revalidatePath('/community')
     return { success: true, group }
   } catch (e: any) {

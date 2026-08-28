@@ -19,6 +19,7 @@ import SnackboxCategoryTabs from '@/components/snackbox/SnackboxCategoryTabs'
 import SnackboxMerchantCTA from '@/components/snackbox/SnackboxMerchantCTA'
 import KelurahanSwitcherModal from '@/components/snackbox/KelurahanSwitcherModal'
 import SnackboxCartDrawer from '@/components/snackbox/SnackboxCartDrawer'
+import { ProductCardSkeleton } from '@/components/ui/GhostSkeleton'
 
 const CATEGORIES: SnackboxCategory[] = [
   'Semua',
@@ -37,6 +38,8 @@ export default function SnackboxPage() {
   const { kelurahan, setIsKelurahanModalOpen } = useSnackbox()
   const [activeCategory, setActiveCategory] = useState<SnackboxCategory>('Semua')
   const [searchQuery, setSearchQuery] = useState('')
+  const [visibleExploreCount, setVisibleExploreCount] = useState(10)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   // 1. Products in user's active Kelurahan
   const localProducts = useMemo(() => {
@@ -217,10 +220,42 @@ export default function SnackboxPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {exploreFilteredProducts.map(product => (
-                <SnackboxProductCard key={product.id} product={product} />
-              ))}
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                {exploreFilteredProducts.slice(0, visibleExploreCount).map(product => (
+                  <SnackboxProductCard key={product.id} product={product} />
+                ))}
+
+                {isLoadingMore && (
+                  <>
+                    <ProductCardSkeleton />
+                    <ProductCardSkeleton />
+                    <ProductCardSkeleton />
+                    <ProductCardSkeleton />
+                    <ProductCardSkeleton />
+                  </>
+                )}
+              </div>
+
+              {exploreFilteredProducts.length > visibleExploreCount && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    disabled={isLoadingMore}
+                    onClick={() => {
+                      setIsLoadingMore(true)
+                      setTimeout(() => {
+                        setVisibleExploreCount(prev => prev + 10)
+                        setIsLoadingMore(false)
+                      }, 300)
+                    }}
+                    className="px-6 py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-200 shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>{isLoadingMore ? 'Memuat Menu...' : 'Muat Lebih Banyak Menu'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">({Math.min(visibleExploreCount, exploreFilteredProducts.length)} / {exploreFilteredProducts.length})</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>

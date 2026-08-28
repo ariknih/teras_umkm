@@ -13,6 +13,7 @@ import {
   createDiscussionReplyAction, deleteDiscussionReplyAction, toggleHelpfulReplyAction, 
   selectBestReplyAction 
 } from '@/app/actions/discussion'
+import { ForumPostSkeleton } from '@/components/ui/GhostSkeleton'
 
 interface DiscussionForumProps {
   communityId: string
@@ -36,6 +37,8 @@ export default function DiscussionForum({
   const [isPending, startTransition] = useTransition()
   const [discussions, setDiscussions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [visibleCount, setVisibleCount] = useState(6)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
 
   // Navigation states
   const [view, setView] = useState<'list' | 'create' | 'edit' | 'detail'>('list')
@@ -385,9 +388,10 @@ export default function DiscussionForum({
 
           {/* DISCUSSIONS LISTING */}
           {isLoading ? (
-            <div className="p-20 text-center bg-white border border-gray-100 rounded-3xl space-y-3 flex flex-col items-center justify-center">
-              <Loader2 className="w-8 h-8 text-[#2DB24A] animate-spin" />
-              <p className="text-xs text-gray-500 font-bold">Memuat topik diskusi...</p>
+            <div className="space-y-4">
+              <ForumPostSkeleton />
+              <ForumPostSkeleton />
+              <ForumPostSkeleton />
             </div>
           ) : filteredDiscussions.length === 0 ? (
             /* EMPTY STATE */
@@ -415,196 +419,230 @@ export default function DiscussionForum({
               )}
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredDiscussions.map((disc: any) => {
-                const authorName = disc.author?.name || 'Anggota Komunitas'
-                const authorImage = disc.author?.image
-                const repliesCount = disc.replies?.length || 0
-                const isAnswered = !!disc.bestReplyId
-                const totalHelpful = disc.replies?.reduce((acc: number, r: any) => acc + (r.helpfulCount || 0), 0) || 0
-                const dateStr = disc.createdAt ? new Date(disc.createdAt).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric'
-                }) : 'Baru saja'
-                
-                return (
-                  <div 
-                    key={disc.id} 
-                    className="p-5 bg-white border border-gray-200/70 hover:border-[#2DB24A]/40 rounded-2xl shadow-xs transition-all duration-200 space-y-3 relative group"
-                  >
-                    {/* Badge header & Date */}
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        {disc.isPinned && (
-                          <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md border border-amber-100 flex items-center gap-1">
-                            📌 Terpaku
-                          </span>
-                        )}
-                        <span className="px-2.5 py-0.5 bg-gray-50 text-gray-500 font-extrabold text-[10px] rounded-md border border-gray-100">
-                          {disc.category}
-                        </span>
-                        {isAnswered && (
-                          <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] rounded-md border border-emerald-100 flex items-center gap-1">
-                            ✓ Terjawab
-                          </span>
-                        )}
-                        {disc.isClosed && (
-                          <span className="px-2.5 py-0.5 bg-rose-50 text-rose-700 font-extrabold text-[10px] rounded-md border border-rose-100 flex items-center gap-1">
-                            🔒 Ditutup
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-gray-400 font-semibold">{dateStr}</span>
-                    </div>
-
-                    {/* Title and Content snippet */}
+            <div className="space-y-4">
+              <div className="space-y-3">
+                {filteredDiscussions.slice(0, visibleCount).map((disc: any) => {
+                  const authorName = disc.author?.name || 'Anggota Komunitas'
+                  const authorImage = disc.author?.image
+                  const repliesCount = disc.replies?.length || 0
+                  const isAnswered = !!disc.bestReplyId
+                  const totalHelpful = disc.replies?.reduce((acc: number, r: any) => acc + (r.helpfulCount || 0), 0) || 0
+                  const dateStr = disc.createdAt ? new Date(disc.createdAt).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  }) : 'Baru saja'
+                  
+                  return (
                     <div 
-                      onClick={() => {
-                        setSelectedDiscussion(disc)
-                        setView('detail')
-                      }}
-                      className="cursor-pointer space-y-1.5"
+                      key={disc.id} 
+                      className="p-5 bg-white border border-gray-200/70 hover:border-[#2DB24A]/40 rounded-2xl shadow-xs transition-all duration-200 space-y-3 relative group"
                     >
-                      <h3 className="text-sm font-black text-gray-900 group-hover:text-[#2DB24A] transition-colors leading-snug">
-                        {disc.title}
-                      </h3>
-                      <p className="text-xs text-gray-500 leading-relaxed font-medium line-clamp-2">
-                        {disc.content}
-                      </p>
-                    </div>
-
-                    {/* Tags */}
-                    {disc.tags && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {disc.tags.split(',').map((tag: string, i: number) => (
-                          <span key={i} className="text-[9px] font-bold text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded flex items-center gap-0.5">
-                            <Tag className="w-2.5 h-2.5" /> {tag.trim()}
+                      {/* Badge header & Date */}
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          {disc.isPinned && (
+                            <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md border border-amber-100 flex items-center gap-1">
+                              📌 Terpaku
+                            </span>
+                          )}
+                          <span className="px-2.5 py-0.5 bg-gray-50 text-gray-500 font-extrabold text-[10px] rounded-md border border-gray-100">
+                            {disc.category}
                           </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Bottom Metadata & Actions */}
-                    <div className="flex flex-wrap justify-between items-center pt-3 border-t border-gray-100 text-[11px] text-gray-400 font-semibold gap-3">
-                      {/* Author */}
-                      <div className="flex items-center gap-2">
-                        {authorImage ? (
-                          <img
-                            src={authorImage}
-                            alt={authorName}
-                            className="w-5 h-5 rounded-full object-cover border border-gray-100"
-                          />
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-[#2DB24A]/10 text-[#2DB24A] font-bold text-[9px] flex items-center justify-center border border-[#2DB24A]/20">
-                            {authorName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <span className="font-bold text-gray-700">{authorName}</span>
-                      </div>
-
-                      {/* Stats & Actions */}
-                      <div className="flex items-center gap-4">
-                        {/* Replies count */}
-                        <div className="flex items-center gap-1 font-bold text-gray-500">
-                          <MessageCircle className="w-3.5 h-3.5 text-gray-400" />
-                          <span>{repliesCount} Balasan</span>
+                          {isAnswered && (
+                            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] rounded-md border border-emerald-100 flex items-center gap-1">
+                              ✓ Terjawab
+                            </span>
+                          )}
+                          {disc.isClosed && (
+                            <span className="px-2.5 py-0.5 bg-rose-50 text-rose-700 font-extrabold text-[10px] rounded-md border border-rose-100 flex items-center gap-1">
+                              🔒 Ditutup
+                            </span>
+                          )}
                         </div>
+                        <span className="text-[11px] text-gray-400 font-medium">{dateStr}</span>
+                      </div>
 
-                        {/* Helpful count */}
-                        {totalHelpful > 0 && (
-                          <div className="flex items-center gap-1 font-bold text-gray-500">
-                            <ThumbsUp className="w-3.5 h-3.5 text-gray-400" />
-                            <span>{totalHelpful} Membantu</span>
-                          </div>
-                        )}
+                      {/* Title & snippet */}
+                      <div 
+                        onClick={() => {
+                          setSelectedDiscussion(disc)
+                          setView('detail')
+                        }}
+                        className="cursor-pointer space-y-1.5"
+                      >
+                        <h4 className="text-sm sm:text-base font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors leading-snug">
+                          {disc.title}
+                        </h4>
+                        <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed font-normal">
+                          {disc.content}
+                        </p>
+                      </div>
 
-                        {/* Share */}
-                        <button
-                          onClick={() => handleShare(disc.id)}
-                          className="hover:text-[#2DB24A] transition-colors flex items-center gap-1 cursor-pointer font-extrabold"
-                          title="Bagikan Tautan"
-                        >
-                          <Share2 className="w-3.5 h-3.5" /> Bagikan
-                        </button>
+                      {/* Tags */}
+                      {disc.tags && disc.tags.split(',').filter(Boolean).length > 0 && (
+                        <div className="flex flex-wrap gap-1 pt-0.5">
+                          {disc.tags.split(',').map((tag: string, idx: number) => (
+                            <span key={idx} className="px-2 py-0.5 bg-gray-50 text-gray-500 text-[10px] font-semibold rounded-md flex items-center gap-0.5">
+                              <Tag className="w-2.5 h-2.5 text-gray-400" /> {tag.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
-                        {/* Admin / Owner action menu dot */}
-                        {(isCanManageCoop || (currentUser && currentUser.id === disc.authorId)) && (
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setActiveMenuId(activeMenuId === disc.id ? null : disc.id)
-                              }}
-                              className="p-1 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-gray-400 hover:text-gray-600"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-
-                            {activeMenuId === disc.id && (
-                              <>
-                                <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)} />
-                                <div className="absolute right-0 bottom-full mb-1 bg-white border border-gray-150 rounded-xl shadow-md z-20 py-1.5 w-40 text-left">
-                                  {currentUser && currentUser.id === disc.authorId && !disc.isClosed && (
-                                    <button
-                                      onClick={() => {
-                                        setEditingId(disc.id)
-                                        setTitle(disc.title)
-                                        setCategory(disc.category)
-                                        setContent(disc.content)
-                                        setTags(disc.tags)
-                                        setView('edit')
-                                        setActiveMenuId(null)
-                                      }}
-                                      className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-gray-700 flex items-center gap-2 cursor-pointer"
-                                    >
-                                      <Edit3 className="w-3.5 h-3.5" /> Edit Diskusi
-                                    </button>
-                                  )}
-                                  {isCanManageCoop && (
-                                    <>
-                                      <button
-                                        onClick={() => {
-                                          handleTogglePin(disc.id)
-                                          setActiveMenuId(null)
-                                        }}
-                                        className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-gray-700 flex items-center gap-2 cursor-pointer"
-                                      >
-                                        <Pin className="w-3.5 h-3.5" /> {disc.isPinned ? 'Lepas Sematkan' : 'Sematkan'}
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          handleToggleClose(disc.id)
-                                          setActiveMenuId(null)
-                                        }}
-                                        className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-gray-700 flex items-center gap-2 cursor-pointer"
-                                      >
-                                        {disc.isClosed ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                                        {disc.isClosed ? 'Buka Diskusi' : 'Tutup Diskusi'}
-                                      </button>
-                                    </>
-                                  )}
-                                  {(isCanManageCoop || (currentUser && currentUser.id === disc.authorId)) && (
-                                    <button
-                                      onClick={() => {
-                                        handleDelete(disc.id)
-                                        setActiveMenuId(null)
-                                      }}
-                                      className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-rose-600 flex items-center gap-2 cursor-pointer"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" /> Hapus Diskusi
-                                    </button>
-                                  )}
-                                </div>
-                              </>
+                      {/* Author & Footer stats */}
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                        {/* Author info */}
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-[#E8F8EE] text-[#2DB24A] font-extrabold flex items-center justify-center text-[10px] overflow-hidden border border-[#2DB24A]/20 shrink-0">
+                            {authorImage ? (
+                              <img src={authorImage} alt={authorName} className="w-full h-full object-cover" />
+                            ) : (
+                              authorName.charAt(0).toUpperCase()
                             )}
                           </div>
-                        )}
+                          <span className="font-bold text-gray-700 text-[11px] truncate max-w-[140px] sm:max-w-[200px]">
+                            {authorName}
+                          </span>
+                        </div>
+
+                        {/* Stats / Action bar */}
+                        <div className="flex items-center gap-3">
+                          {/* Replies count */}
+                          <div 
+                            onClick={() => {
+                              setSelectedDiscussion(disc)
+                              setView('detail')
+                            }}
+                            className="flex items-center gap-1 font-extrabold hover:text-[#2DB24A] cursor-pointer transition-colors"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>{repliesCount}</span>
+                          </div>
+
+                          {/* Helpful count */}
+                          {totalHelpful > 0 && (
+                            <div className="flex items-center gap-1 font-bold text-emerald-600">
+                              <ThumbsUp className="w-3.5 h-3.5" />
+                              <span>{totalHelpful}</span>
+                            </div>
+                          )}
+
+                          {/* Share */}
+                          <button
+                            onClick={() => handleShare(disc.id)}
+                            className="hover:text-[#2DB24A] transition-colors flex items-center gap-1 cursor-pointer font-extrabold"
+                            title="Bagikan Tautan"
+                          >
+                            <Share2 className="w-3.5 h-3.5" /> Bagikan
+                          </button>
+
+                          {/* Admin / Owner action menu dot */}
+                          {(isCanManageCoop || (currentUser && currentUser.id === disc.authorId)) && (
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setActiveMenuId(activeMenuId === disc.id ? null : disc.id)
+                                }}
+                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer text-gray-400 hover:text-gray-600"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+
+                              {activeMenuId === disc.id && (
+                                <>
+                                  <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)} />
+                                  <div className="absolute right-0 bottom-full mb-1 bg-white border border-gray-150 rounded-xl shadow-md z-20 py-1.5 w-40 text-left">
+                                    {currentUser && currentUser.id === disc.authorId && !disc.isClosed && (
+                                      <button
+                                        onClick={() => {
+                                          setEditingId(disc.id)
+                                          setTitle(disc.title)
+                                          setCategory(disc.category)
+                                          setContent(disc.content)
+                                          setTags(disc.tags)
+                                          setView('edit')
+                                          setActiveMenuId(null)
+                                        }}
+                                        className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-gray-700 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5" /> Edit Diskusi
+                                      </button>
+                                    )}
+                                    {isCanManageCoop && (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            handleTogglePin(disc.id)
+                                            setActiveMenuId(null)
+                                          }}
+                                          className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-gray-700 flex items-center gap-2 cursor-pointer"
+                                        >
+                                          <Pin className="w-3.5 h-3.5" />
+                                          {disc.isPinned ? 'Lepas Pin' : 'Pin Diskusi'}
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            handleToggleClose(disc.id)
+                                            setActiveMenuId(null)
+                                          }}
+                                          className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-gray-700 flex items-center gap-2 cursor-pointer"
+                                        >
+                                          {disc.isClosed ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                                          {disc.isClosed ? 'Buka Diskusi' : 'Tutup Diskusi'}
+                                        </button>
+                                      </>
+                                    )}
+                                    {(isCanManageCoop || (currentUser && currentUser.id === disc.authorId)) && (
+                                      <button
+                                        onClick={() => {
+                                          handleDelete(disc.id)
+                                          setActiveMenuId(null)
+                                        }}
+                                        className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-rose-600 flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" /> Hapus Diskusi
+                                      </button>
+                                    )}
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
+                  )
+                })}
+
+                {isLoadingMore && (
+                  <div className="space-y-3 pt-2">
+                    <ForumPostSkeleton />
+                    <ForumPostSkeleton />
                   </div>
-                )
-              })}
+                )}
+              </div>
+
+              {filteredDiscussions.length > visibleCount && (
+                <div className="flex justify-center pt-3">
+                  <button
+                    type="button"
+                    disabled={isLoadingMore}
+                    onClick={() => {
+                      setIsLoadingMore(true)
+                      setTimeout(() => {
+                        setVisibleCount(prev => prev + 6)
+                        setIsLoadingMore(false)
+                      }, 350)
+                    }}
+                    className="px-6 py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-200 shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>{isLoadingMore ? 'Memuat Topik...' : 'Muat Lebih Banyak Topik'}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">({Math.min(visibleCount, filteredDiscussions.length)} / {filteredDiscussions.length})</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -65,7 +65,16 @@ function loadMockDb(): {
         parsed.products = parsed.products.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
       }
       if (parsed.users) {
-        parsed.users = parsed.users.map((u: any) => ({ ...u, createdAt: new Date(u.createdAt), updatedAt: new Date(u.updatedAt) }))
+        parsed.users = parsed.users.map((u: any) => {
+          const seedUser = mockUsers.find(mu => mu.id === u.id)
+          return {
+            ...u,
+            lastIp: (u.lastIp && u.lastIp !== '127.0.0.1') ? u.lastIp : (seedUser?.lastIp || '180.252.164.22'),
+            lastLocation: (u.lastLocation && u.lastLocation !== 'Jakarta, Indonesia') ? u.lastLocation : (seedUser?.lastLocation || 'Jakarta Selatan, Indonesia'),
+            createdAt: new Date(u.createdAt),
+            updatedAt: new Date(u.updatedAt)
+          }
+        })
       }
       if (parsed.wallets) {
         parsed.wallets = parsed.wallets.map((w: any) => ({ ...w, createdAt: new Date(w.createdAt), updatedAt: new Date(w.updatedAt) }))

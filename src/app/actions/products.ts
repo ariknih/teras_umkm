@@ -3,9 +3,11 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap, invalidateCachePattern, deleteCache } from '@/lib/cache'
 
 export async function getProducts(category?: string) {
-  return await DataStore.getProducts(category)
+  const cacheKey = `products:${category || 'all'}`
+  return await cacheWrap(cacheKey, () => DataStore.getProducts(category), 120)
 }
 
 export async function getProductsByMerchantIdsAction(merchantIds: string[]) {
@@ -14,7 +16,7 @@ export async function getProductsByMerchantIdsAction(merchantIds: string[]) {
 }
 
 export async function getProductById(id: string) {
-  return await DataStore.getProductById(id)
+  return await cacheWrap(`product:${id}`, () => DataStore.getProductById(id), 180)
 }
 
 export async function createProduct(formData: FormData) {
@@ -120,6 +122,8 @@ export async function updateProduct(id: string, formData: FormData) {
   
   try {
     const product = await DataStore.updateProduct(id, user.id, data)
+    await invalidateCachePattern('products:')
+    await deleteCache(`product:${id}`)
     revalidatePath('/market')
     revalidatePath(`/market/product/${id}`)
     revalidatePath('/merchant/dashboard')
@@ -141,6 +145,7 @@ export async function updateAllProductsAffiliateSettingsAction(
   
   try {
     await DataStore.updateAllProductsAffiliateSettings(user.id, isAffiliateEnabled, commissionType, commissionValue)
+    await invalidateCachePattern('products:')
     revalidatePath('/merchant/dashboard')
     revalidatePath('/market')
     return { success: true }
@@ -157,6 +162,8 @@ export async function deleteProduct(id: string) {
   
   try {
     await DataStore.deleteProduct(id, user.id)
+    await invalidateCachePattern('products:')
+    await deleteCache(`product:${id}`)
     revalidatePath('/market')
     revalidatePath('/merchant/dashboard')
     return { success: true }
