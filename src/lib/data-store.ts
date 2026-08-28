@@ -5,7 +5,8 @@ import crypto from 'crypto'
 import { ProductCategory } from '@prisma/client'
 import fs from 'fs'
 import path from 'path'
-import {
+
+import {
   mockUsers,
   mockProducts,
   mockCourses,
@@ -1124,10 +1125,30 @@ export const DataStore = {
       },
       async () => {
         const list = category ? globalMockProducts.filter(p => p.category === category) : globalMockProducts
-            return list.map(p => ({
-              ...p,
-              merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
-            })).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())
+        return list.map(p => ({
+          ...p,
+          merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
+        })).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())
+      }
+    )
+  },
+
+  async getProductsByMerchantIds(merchantIds: string[]) {
+    if (!merchantIds || merchantIds.length === 0) return []
+    return withFallback(
+      async () => {
+        return await db.product.findMany({
+          where: { merchantId: { in: merchantIds } },
+          include: { merchant: { select: { id: true, name: true, image: true, role: true } } },
+          orderBy: { createdAt: 'desc' }
+        })
+      },
+      async () => {
+        const list = globalMockProducts.filter(p => merchantIds.includes(p.merchantId))
+        return list.map(p => ({
+          ...p,
+          merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
+        })).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())
       }
     )
   },
@@ -1136,17 +1157,17 @@ export const DataStore = {
     return withFallback(
       async () => {
         return await db.product.findUnique({
-                  where: { id },
-                  include: { merchant: true }
-                })
+          where: { id },
+          include: { merchant: true }
+        })
       },
       async () => {
         const p = globalMockProducts.find(prod => prod.id === id) || null
-            if (!p) return null
-            return {
-              ...p,
-              merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
-            }
+        if (!p) return null
+        return {
+          ...p,
+          merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
+        }
       }
     )
   },
@@ -1173,9 +1194,9 @@ export const DataStore = {
       },
       async () => {
         const newProd = {
-              id: `prod-${Date.now()}`,
-              title: data.title,
-              description: data.description,
+          id: `prod-${Date.now()}`,
+          title: data.title,
+          description: data.description,
               price: data.price,
               category: data.category,
               stock: data.stock,
@@ -4351,79 +4372,17 @@ export const DataStore = {
             isVerified: true,
             createdAt: new Date('2026-02-15'),
             updatedAt: new Date('2026-02-15')
-          },
-          {
-            id: 'comm-dummy-3',
-            name: 'Asosiasi Kuliner Kreatif Jogja',
-            type: 'PERKUMPULAN' as const,
-            description: 'Wadah kolaborasi dan diskusi antar pemilik usaha kuliner kreatif di wilayah Yogyakarta. Kami fokus pada peningkatan mutu produk, sertifikasi halal, dan pemasaran digital bersama.',
-            slogan: 'Sinergi Usaha Kuliner, Inovasi Menu & Pemasaran Bersama',
-            aktaNotaris: 'Akta Notaris Perkumpulan Kuliner No. 14 Tgl 10 Maret 2026',
-            nomorAhu: 'AHU-00100326.AH.01.07',
-            nomorNpwp: '77.888.999.1-012.000',
-            domisili: 'Kota Yogyakarta, DIY',
-            kontakPj: '081399887766',
-            waGroupLink: 'https://chat.whatsapp.com/KulinerJogjaGroup',
-            avatarUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&h=150&fit=crop&q=80',
-            coverUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&h=400&fit=crop&q=80',
-            joinFee: 0,
-            monthlyFee: 0,
-            ketuaId: 'user-merchant-1',
-            isSuspended: false,
-            isVerified: true,
-            createdAt: new Date('2026-03-10'),
-            updatedAt: new Date('2026-03-10')
           }
         ];
     return withMutationFallback(
       async () => {
-        const count = await db.community.count();
-                if (count === 0) {
-                  for (const seed of seedCommunities) {
-                    const ketuaExists = await db.user.findUnique({ where: { id: seed.ketuaId } });
-                    const finalKetuaId = ketuaExists ? seed.ketuaId : (await db.user.findFirst())?.id;
-                    if (finalKetuaId) {
-                      await db.community.create({
-                        data: {
-                          id: seed.id,
-                          name: seed.name,
-                          type: seed.type,
-                          description: seed.description,
-                          aktaNotaris: seed.aktaNotaris,
-                          nomorAhu: seed.nomorAhu,
-                          nomorNpwp: seed.nomorNpwp,
-                          domisili: seed.domisili,
-                          kontakPj: seed.kontakPj,
-                          waGroupLink: seed.waGroupLink,
-                          avatarUrl: seed.avatarUrl,
-                          coverUrl: seed.coverUrl,
-                          joinFee: seed.joinFee,
-                          monthlyFee: seed.monthlyFee,
-                          ketuaId: finalKetuaId,
-                          isVerified: seed.isVerified,
-                          createdAt: seed.createdAt,
-                          updatedAt: seed.updatedAt
-                        }
-                      });
-                      // Auto join ketua as member
-                      await db.communityMembership.create({
-                        data: {
-                          communityId: seed.id,
-                          userId: finalKetuaId,
-                          isInduk: true,
-                          isPaid: true
-                        }
-                      });
-                    }
-                  }
-                }
-                return await db.community.findMany({
-                  include: {
-                    ketua: { select: { id: true, name: true, role: true } },
-                    _count: { select: { members: true } }
-                  },
-                  orderBy: { createdAt: 'desc' }
-                })
+        return await db.community.findMany({
+          include: {
+            ketua: { select: { id: true, name: true, role: true } },
+            _count: { select: { members: true } }
+          },
+          orderBy: { createdAt: 'desc' }
+        })
       },
       async () => {
         if (!(globalThis as any).__mockCommunities || (globalThis as any).__mockCommunities.length === 0) {
@@ -4569,57 +4528,17 @@ export const DataStore = {
         ];
     return withFallback(
       async () => {
-        const count = await db.community.count();
-                if (count === 0) {
-                  for (const seed of seedCommunities) {
-                    const ketuaExists = await db.user.findUnique({ where: { id: seed.ketuaId } });
-                    const finalKetuaId = ketuaExists ? seed.ketuaId : (await db.user.findFirst())?.id;
-                    if (finalKetuaId) {
-                      await db.community.create({
-                        data: {
-                          id: seed.id,
-                          name: seed.name,
-                          type: seed.type,
-                          description: seed.description,
-                          aktaNotaris: seed.aktaNotaris,
-                          nomorAhu: seed.nomorAhu,
-                          nomorNpwp: seed.nomorNpwp,
-                          domisili: seed.domisili,
-                          kontakPj: seed.kontakPj,
-                          waGroupLink: seed.waGroupLink,
-                          avatarUrl: seed.avatarUrl,
-                          coverUrl: seed.coverUrl,
-                          joinFee: seed.joinFee,
-                          monthlyFee: seed.monthlyFee,
-                          ketuaId: finalKetuaId,
-                          isVerified: seed.isVerified,
-                          createdAt: seed.createdAt,
-                          updatedAt: seed.updatedAt
-                        }
-                      });
-                      // Auto join ketua as member
-                      await db.communityMembership.create({
-                        data: {
-                          communityId: seed.id,
-                          userId: finalKetuaId,
-                          isInduk: true,
-                          isPaid: true
-                        }
-                      });
-                    }
-                  }
-                }
-        
-                let community = await db.community.findUnique({
-                  where: { id },
-                  include: {
-                    ketua: { select: { id: true, name: true, role: true, email: true } },
-                    members: {
-                      include: { user: { select: { id: true, name: true, role: true, email: true } } }
-                    },
-                    _count: { select: { members: true } }
-                  }
-                });
+        let community = await db.community.findUnique({
+          where: { id },
+          include: {
+            ketua: { select: { id: true, name: true, role: true, email: true } },
+            members: {
+              include: { user: { select: { id: true, name: true, role: true, email: true } } }
+            },
+            _count: { select: { members: true } }
+          }
+        });
+        if (community) return community;
         
                 if (!community) {
                   // Fallback lookup by prefix or name slug

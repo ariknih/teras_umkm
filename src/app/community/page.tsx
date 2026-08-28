@@ -124,22 +124,25 @@ export default function CommunityDirectoryPage() {
 
   async function loadData() {
     try {
-      const currentUser = await getCurrentUser()
+      const [currentUser, comms, kycRes] = await Promise.all([
+        getCurrentUser().catch(() => null),
+        getIndukCommunities().catch(() => []),
+        getGlobalKycSettingAction().catch(() => null)
+      ])
+
       setUser(currentUser)
 
-      if (currentUser?.id) {
-        const myComms = await getUserCommunitiesWithRolesAction(currentUser.id)
-        setMyCommunities(myComms || [])
-      }
-
-      const comms = await getIndukCommunities()
       // Exclude pending and suspended communities from public directory
       const verifiedComms = (comms || []).filter((c: any) => c.isVerified && !c.isSuspended)
       setCommunities(verifiedComms)
 
-      const kycRes = await getGlobalKycSettingAction()
       if (kycRes && kycRes.required !== undefined) {
         setGlobalKycRequired(kycRes.required)
+      }
+
+      if (currentUser?.id) {
+        const myComms = await getUserCommunitiesWithRolesAction(currentUser.id).catch(() => [])
+        setMyCommunities(myComms || [])
       }
     } catch (e) {
       console.error(e)

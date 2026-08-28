@@ -24,7 +24,7 @@ import {
   updateIndukCommunity
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
-import { getProducts } from '@/app/actions/products'
+import { getProducts, getProductsByMerchantIdsAction } from '@/app/actions/products'
 import { createUserNotificationAction } from '@/app/actions/orders'
 import { getCommunityShuDataAction, getUserShuSummaryAction, calculateAndSaveShuAction } from '@/app/actions/shu'
 import { recordSavingsTransactionAction, getCommunitySavingsSummaryAction } from '@/app/actions/savings'
@@ -681,24 +681,28 @@ export default function CommunityDetailPage() {
         currentUser,
         commDetailRes,
         memberListRes,
-        allProductsRes,
         statsRes,
         cProductsRes,
         fProjectsRes,
         loanListRes,
         shuRes,
-        userShuRes
+        userShuRes,
+        savingsRes,
+        annListRes,
+        repListRes
       ] = await Promise.all([
         getCurrentUser().catch(() => null),
         getIndukCommunityDetail(id).catch(() => null),
         getIndukCommunityMembersAction(id).catch(() => []),
-        getProducts().catch(() => []),
         getCommunityRealStatsAction(id).catch(() => null),
         getCooperativeProductsAction(id).catch(() => []),
         getMerchantFundingProjectsAction(id).catch(() => []),
         getCooperativeLoansAction(id).catch(() => []),
         getCommunityShuDataAction(id).catch(() => null),
-        getUserShuSummaryAction(id).catch(() => null)
+        getUserShuSummaryAction(id).catch(() => null),
+        getCommunitySavingsSummaryAction(id).catch(() => ({ success: false, summary: null })),
+        getAnnouncementsAction(id).catch(() => []),
+        getCooperativeReportsAction(id).catch(() => [])
       ])
 
       setUser(currentUser)
@@ -782,11 +786,15 @@ export default function CommunityDetailPage() {
         setMembershipDetails(null)
       }
 
-      // Fetch products strictly from members of this community
+      // Fetch products targeted strictly to members of this community
       const memberIds = memberList.map((m: any) => m.userId)
-      const allProducts = allProductsRes || []
-      const communityProducts = allProducts.filter((p: any) => memberIds.includes(p.merchantId))
-      setProducts(communityProducts)
+      if (memberIds.length > 0) {
+        getProductsByMerchantIdsAction(memberIds)
+          .then((communityProducts) => setProducts(communityProducts || []))
+          .catch(() => setProducts([]))
+      } else {
+        setProducts([])
+      }
 
       // Set cooperative loans
       setLoans(loanListRes || [])
@@ -820,21 +828,19 @@ export default function CommunityDetailPage() {
         setSavedDisabledModules([])
       }
 
-      // Fetch automated savings summary & SHU data
-      const savingsRes = await getCommunitySavingsSummaryAction(id)
-      if (savingsRes.success) {
+      // Apply automated savings summary & SHU data from parallel fetch
+      if (savingsRes?.success && savingsRes.summary) {
         setCommunitySavingsSummary(savingsRes.summary)
       }
 
-      const shuDataRes = await getCommunityShuDataAction(id)
-      if (shuDataRes.success) {
-        setCommunityShuData(shuDataRes)
-        if (shuDataRes.config) {
-          setShuConfig(shuDataRes.config)
-          setShuNetProfit(String(shuDataRes.config.totalNetProfit ?? 0))
+      if (shuRes?.success) {
+        setCommunityShuData(shuRes)
+        if (shuRes.config) {
+          setShuConfig(shuRes.config)
+          setShuNetProfit(String(shuRes.config.totalNetProfit ?? 0))
           setShuPctCadangan(0)
-          setShuPctJasaModal(shuDataRes.config.pctJasaModal ?? 0)
-          setShuPctJasaUsaha(shuDataRes.config.pctJasaUsaha ?? 0)
+          setShuPctJasaModal(shuRes.config.pctJasaModal ?? 0)
+          setShuPctJasaUsaha(shuRes.config.pctJasaUsaha ?? 0)
           setShuPctPengurus(0)
           setShuPctPengawas(0)
           setShuPctKaryawan(0)
@@ -844,24 +850,14 @@ export default function CommunityDetailPage() {
         }
       }
 
-      const uShuSummaryRes = await getUserShuSummaryAction(id)
-      if (uShuSummaryRes.success) {
-        setUserShuSummary(uShuSummaryRes.distributions)
+      if (userShuRes?.success && userShuRes.distributions) {
+        setUserShuSummary(userShuRes.distributions)
       }
 
-      // Fetch announcements and reports
-      setIsLoadingAnnouncements(true)
-      setIsLoadingReports(true)
-      try {
-        const annList = await getAnnouncementsAction(id).catch(() => [])
-        setAnnouncements(annList || [])
-      } catch (_) {}
+      // Set announcements and reports directly from parallel fetch
+      setAnnouncements(annListRes || [])
+      setReports(repListRes || [])
       setIsLoadingAnnouncements(false)
-
-      try {
-        const repList = await getCooperativeReportsAction(id).catch(() => [])
-        setReports(repList || [])
-      } catch (_) {}
       setIsLoadingReports(false)
 
     } catch (e) {

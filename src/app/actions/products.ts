@@ -8,6 +8,11 @@ export async function getProducts(category?: string) {
   return await DataStore.getProducts(category)
 }
 
+export async function getProductsByMerchantIdsAction(merchantIds: string[]) {
+  if (!merchantIds || merchantIds.length === 0) return []
+  return await DataStore.getProductsByMerchantIds(merchantIds)
+}
+
 export async function getProductById(id: string) {
   return await DataStore.getProductById(id)
 }
