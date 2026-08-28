@@ -69,7 +69,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <div id="Body Container" className="relative min-h-screen bg-[#F5F7FA] pb-0">
+    <div id="Body Container" className="relative min-h-screen bg-[#F5F7FA] pb-0 flex flex-col items-center">
       {/* Structured JSON-LD Schema for Marketplace */}
       <Script
         id="json-ld-market"

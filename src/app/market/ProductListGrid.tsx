@@ -631,7 +631,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
           </div>
 
           {filteredProducts.length > visibleCount && (
-            <div id="More Button" className="flex justify-center mt-6">
+            <div id="More Button" className="flex justify-center mt-6 mb-6">
               <button
                 type="button"
                 disabled={isLoadingMore}
