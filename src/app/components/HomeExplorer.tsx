@@ -142,7 +142,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
   }, [communities])
 
   return (
-    <section className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 py-4 space-y-6 sm:space-y-7">
+    <section className="w-full max-w-[1200px] mx-auto px-0 py-4 space-y-6 sm:space-y-7">
       
       {/* ── SNACKBOX ─────────────────────────────────────────────────────── */}
       <div id="snackbox" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xs space-y-4">

@@ -50,7 +50,7 @@ export default function BannerCarousel({ banners }: { banners?: Banner[] }) {
   }, [displayBanners.length, isHovered])
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6">
+    <div className="w-full max-w-[1200px] mx-auto px-0">
       {/* ── TOKOPEDIA-STYLE SLEEK HERO BANNER CONTAINER ── */}
       <div
         onMouseEnter={() => setIsHovered(true)}
