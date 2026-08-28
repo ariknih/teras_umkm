@@ -948,14 +948,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" />
             </svg>
           </div>
-          <h2 className="font-sora desktop-heading-h6-bold text-text-primary mb-3">Akses Dibatasi</h2>
-          <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed mb-8">
+          <h2 className="font-sora text-2xl font-bold text-text-primary mb-3">Akses Dibatasi</h2>
+          <p className="text-xs text-text-secondary leading-relaxed mb-8">
             Silakan masuk dengan akun Merchant Anda untuk mengoperasikan inventory, statistik toko, dan saldo modal.
           </p>
           <Link
             id="merchant-login-btn"
             href="/auth"
-            className="btn-primary w-full desktop-caption-large-medium inline-block"
+            className="btn-primary w-full text-xs inline-block"
           >
             Masuk Ke Terminal
           </Link>
@@ -973,21 +973,21 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
           </div>
-          <h2 className="font-sora desktop-heading-h6-bold text-text-primary mb-3">Role Anda Bukan Merchant</h2>
-          <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed mb-8">
+          <h2 className="font-sora text-xl font-bold text-text-primary mb-3">Role Anda Bukan Merchant</h2>
+          <p className="text-xs text-text-secondary leading-relaxed mb-8">
             Terminal Merchant Dashboard ini dikhususkan bagi mitra dengan keanggotaan <span className="text-primary font-bold">MERCHANT</span>. Akun Anda saat ini bertipe <span className="text-primary font-bold">{user.role}</span>.
           </p>
           <div className="flex flex-col gap-3">
             <Link
               id="merchant-switch-account"
               href="/auth"
-              className="btn-primary desktop-caption-large-medium"
+              className="btn-primary text-xs"
             >
               Masuk dengan Akun Merchant
             </Link>
             <Link
               href="/"
-              className="py-3.5 bg-surface-container border border-border-subtle text-text-primary font-geist desktop-caption-large-medium uppercase tracking-wider rounded transition-colors"
+              className="py-3.5 bg-surface-container border border-border-subtle text-text-primary font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors"
             >
               Kembali ke Beranda
             </Link>
@@ -1005,14 +1005,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-500 mb-2">
             <Info className="w-8 h-8" />
           </div>
-          <h2 className="font-sora desktop-heading-h6-bold text-text-primary">Komunitas Induk Diperlukan</h2>
-          <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed">
+          <h2 className="font-sora text-xl font-bold text-text-primary">Komunitas Induk Diperlukan</h2>
+          <p className="text-xs text-text-secondary leading-relaxed">
             Untuk mengaktifkan dan membuka Dashboard Merchant, Anda wajib bergabung ke salah satu <strong>Komunitas Induk</strong> (Perkumpulan atau Koperasi) terlebih dahulu.
           </p>
           <div className="pt-2">
             <Link
               href="/community"
-              className="btn-primary w-full desktop-caption-large-medium inline-block text-center py-3 bg-primary text-black uppercase tracking-wider rounded-xl shadow-lg"
+              className="btn-primary w-full text-xs inline-block text-center py-3 bg-primary text-black font-bold uppercase tracking-wider rounded-xl shadow-lg"
             >
               Pilih Komunitas Induk Sekarang
             </Link>
@@ -1074,26 +1074,26 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
         {/* Title Header */}
         <div className="mb-10 pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
-            <h1 className="font-poppins desktop-heading-h6-bold text-[#0F5132] mb-1">
+            <h1 className="font-poppins text-2xl font-bold text-[#0F5132] mb-1">
               Merchant <span className="text-primary">Center</span>
             </h1>
-            <p className="desktop-paragraph-small-regular text-text-secondary">
+            <p className="text-xs text-text-secondary">
               Kelola katalog produk, edit rincian stok barang, dan periksa buku penjualan Anda.
             </p>
           </div>
-          <span className="btn-primary bg-primary/10 border border-primary/20 desktop-caption-medium-medium text-[#0F5132] shadow-sm">
+          <span className="btn-primary bg-primary/10 border border-primary/20 text-[10px] text-[#0F5132] shadow-sm">
             Merchant: {user.name}
           </span>
         </div>
 
         {/* Global Notifications */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 desktop-paragraph-small-regular text-red-600">
+          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-xs text-red-600 font-medium">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-100 desktop-paragraph-small-regular text-primary">
+          <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-100 text-xs text-primary font-medium">
             {success}
           </div>
         )}
@@ -1114,9 +1114,9 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               key={tab.id}
               id={`tab-merchant-${tab.id}`}
               onClick={() => { setActiveTab(tab.id as any); setEditingProduct(null); setEditingPage(null); }}
-              className={`pb-3 px-5 desktop-caption-large-medium transition-all relative shrink-0 cursor-pointer ${
+              className={`pb-3 px-5 text-xs font-bold transition-all relative shrink-0 cursor-pointer ${
                 activeTab === tab.id
-                  ? 'text-primary border-b-2 border-primary'
+                  ? 'text-primary font-extrabold border-b-2 border-primary'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -1131,15 +1131,15 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             {/* Quick Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
-                <span className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-3">
+                <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Saldo Penjualan Merchant
                 </span>
-                <h2 className="font-sora desktop-heading-h6-bold text-primary mb-4">
+                <h2 className="font-sora text-2xl font-black text-primary mb-4">
                   Rp {(wallet?.balance ?? 0).toLocaleString('id-ID')}
                 </h2>
                 <Link
                   href="/wallet"
-                  className="desktop-caption-medium-medium text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors"
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors"
                 >
                   Buka Ledger Penarikan
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
@@ -1149,43 +1149,43 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               </div>
 
               <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
-                <span className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-3">
+                <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Jumlah Produk Aktif
                 </span>
-                <h2 className="font-sora desktop-heading-h6-bold text-text-primary mb-4">
+                <h2 className="font-sora text-2xl font-black text-text-primary mb-4">
                   {totalItems} Item
                 </h2>
                 <button
                   onClick={() => setActiveTab('catalog')}
-                  className="desktop-caption-medium-medium text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   Lihat Semua Produk
                 </button>
               </div>
 
               <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-amber-100/70">
-                <span className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-3">
+                <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Pesanan Baru / Diproses
                 </span>
-                <h2 className={`font-sora desktop-heading-h6-bold mb-4 ${pendingOrdersCount > 0 ? 'text-amber-600 animate-pulse' : 'text-text-primary'}`}>
+                <h2 className={`font-sora text-2xl font-black mb-4 ${pendingOrdersCount > 0 ? 'text-amber-600 animate-pulse' : 'text-text-primary'}`}>
                   {pendingOrdersCount} Pesanan
                 </h2>
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className="desktop-caption-medium-medium text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   Proses Pesanan Sekarang
                 </button>
               </div>
 
               <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
-                <span className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-3">
+                <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Stok Menipis / Habis
                 </span>
-                <h2 className={`font-sora desktop-heading-h6-bold mb-4 ${outOfStockItems > 0 ? 'text-red-500 animate-pulse' : 'text-text-primary'}`}>
+                <h2 className={`font-sora text-2xl font-black mb-4 ${outOfStockItems > 0 ? 'text-red-500 animate-pulse' : 'text-text-primary'}`}>
                   {outOfStockItems} Item
                 </h2>
-                <span className="desktop-paragraph-small-regular text-text-secondary">
+                <span className="text-[10px] text-text-secondary">
                   Lakukan pembaruan inventaris secara berkala.
                 </span>
               </div>
@@ -1196,8 +1196,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               {/* Showcase Quick Banner */}
               <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
                 <div>
-                  <h3 className="font-sora desktop-paragraph-small-semibold text-[#0F5132] mb-2">Pecinta Brand Visual Identity</h3>
-                  <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed">
+                  <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Pecinta Brand Visual Identity</h3>
+                  <p className="text-xs text-text-secondary leading-relaxed">
                     Setiap merchant di Saloka.id Premium memiliki visual storefront storefront eksklusif. Pelajari tips mendesain brand premium Anda di modul LMS Academy kami untuk menarik lebih banyak pembeli high-end.
                   </p>
                 </div>
@@ -1207,12 +1207,12 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100/80 flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-sora desktop-paragraph-small-semibold text-[#0F5132]">Saloka Bootcamp Mentoring</h3>
-                    <span className="px-2 py-0.5 rounded desktop-caption-medium-medium bg-[#E8F5E9] text-[#0F5132] uppercase tracking-wider">
+                    <h3 className="font-sora text-sm font-bold text-[#0F5132]">Saloka Bootcamp Mentoring</h3>
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[#E8F5E9] text-[#0F5132] uppercase tracking-wider">
                       Oleh Saloka.id
                     </span>
                   </div>
-                  <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed mb-4">
+                  <p className="text-xs text-text-secondary leading-relaxed mb-4">
                     Program inkubasi eksklusif UMKM Saloka untuk meningkatkan penjualan, legalitas bisnis, dan kesiapan modal kerja.
                   </p>
                 </div>
@@ -1221,65 +1221,65 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   {/* Status & Action */}
                   {user?.level < 2 ? (
                     <div className="space-y-2">
-                      <div className="desktop-caption-large-medium text-red-600 flex items-center gap-1.5">
+                      <div className="text-[11px] font-semibold text-red-600 flex items-center gap-1.5">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
                         </svg>
                         Kualifikasi Belum Terpenuhi
                       </div>
-                      <p className="desktop-paragraph-small-regular text-text-secondary leading-normal">
+                      <p className="text-[10px] text-text-secondary leading-normal">
                         Raih minimal <strong>Level 2</strong> untuk membuka akses pendaftaran Bootcamp. (Tingkat saat ini: Level {user?.level}).
                       </p>
-                      <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 desktop-caption-large-medium uppercase tracking-wider rounded-xl cursor-not-allowed">
+                      <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider rounded-xl cursor-not-allowed">
                         Gabung Bootcamp
                       </button>
                     </div>
                   ) : !user?.bootcampStatus || user?.bootcampStatus === 'NONE' ? (
                     <div className="space-y-2">
-                      <div className="desktop-caption-large-medium text-amber-600 flex items-center gap-1.5 animate-pulse">
+                      <div className="text-[11px] font-semibold text-amber-600 flex items-center gap-1.5 animate-pulse">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Menunggu Aktivasi dari Admin
                       </div>
-                      <p className="desktop-paragraph-small-regular text-text-secondary leading-normal">
+                      <p className="text-[10px] text-text-secondary leading-normal">
                         Anda telah mencapai Level {user?.level}. Silakan tunggu admin memverifikasi kualifikasi Anda untuk mengaktifkan tombol pendaftaran.
                       </p>
-                      <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 desktop-caption-large-medium uppercase tracking-wider rounded-xl cursor-not-allowed">
+                      <button disabled className="w-full py-2.5 bg-slate-100 text-slate-400 text-xs font-bold uppercase tracking-wider rounded-xl cursor-not-allowed">
                         Gabung Bootcamp
                       </button>
                     </div>
                   ) : user?.bootcampStatus === 'QUALIFIED' ? (
                     <div className="space-y-2">
-                      <div className="desktop-caption-large-medium text-green-600 flex items-center gap-1.5">
+                      <div className="text-[11px] font-semibold text-green-600 flex items-center gap-1.5">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Lolos Kualifikasi - Akses Terbuka!
                       </div>
-                      <p className="desktop-paragraph-small-regular text-text-secondary leading-normal">
+                      <p className="text-[10px] text-text-secondary leading-normal">
                         Anda memenuhi kualifikasi dari Admin. Klik tombol di bawah untuk bergabung ke Bootcamp Saloka.
                       </p>
                       <button
                         onClick={handleJoinBootcamp}
                         disabled={isPending}
-                        className="w-full py-2.5 bg-[#0F5132] hover:bg-[#0c4028] text-white font-geist desktop-caption-large-medium uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-[0.98] cursor-pointer"
+                        className="w-full py-2.5 bg-[#0F5132] hover:bg-[#0c4028] text-white font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-[0.98] cursor-pointer"
                       >
                         {isPending ? 'Memproses...' : '🚀 Gabung Bootcamp'}
                       </button>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="desktop-caption-large-medium text-primary flex items-center gap-1.5">
+                      <div className="text-[11px] font-bold text-primary flex items-center gap-1.5">
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Sudah Terdaftar di Bootcamp
                       </div>
-                      <p className="desktop-paragraph-small-regular text-text-secondary leading-normal">
+                      <p className="text-[10px] text-text-secondary leading-normal">
                         Selamat! Anda telah terdaftar sebagai peserta Bootcamp Saloka. Mentor kami akan segera menghubungi Anda untuk jadwal mentoring.
                       </p>
-                      <button disabled className="w-full py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 desktop-caption-large-medium uppercase tracking-wider rounded-xl cursor-default">
+                      <button disabled className="w-full py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold uppercase tracking-wider rounded-xl cursor-default">
                         ✓ Terdaftar
                       </button>
                     </div>
@@ -1296,12 +1296,12 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             {editingProduct && (
               <div className="border border-primary/30 bg-surface-container/50 p-6 rounded-lg mb-8">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-sora desktop-paragraph-small-semibold text-text-primary">
+                  <h3 className="font-sora text-sm font-bold text-text-primary">
                     Edit Detail Produk: {editingProduct.title}
                   </h3>
                   <button
                     onClick={() => setEditingProduct(null)}
-                    className="desktop-caption-large-medium text-text-secondary hover:text-text-primary"
+                    className="text-xs font-semibold text-text-secondary hover:text-text-primary"
                   >
                     Batal Edit
                   </button>
@@ -1310,26 +1310,26 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 <form onSubmit={handleUpdate} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label htmlFor="edit-title" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Nama Produk</label>
-                      <input id="edit-title" type="text" name="title" defaultValue={editingProduct.title} required className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none" />
+                      <label htmlFor="edit-title" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Produk</label>
+                      <input id="edit-title" type="text" name="title" defaultValue={editingProduct.title} required className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                     </div>
                     <div>
-                      <label htmlFor="edit-price" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Harga (Rp)</label>
-                      <input id="edit-price" type="number" name="price" defaultValue={editingProduct.price} required className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none" />
+                      <label htmlFor="edit-price" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Harga (Rp)</label>
+                      <input id="edit-price" type="number" name="price" defaultValue={editingProduct.price} required className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                     </div>
                     <div>
-                      <label htmlFor="edit-stock" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Stok</label>
-                      <input id="edit-stock" type="number" name="stock" defaultValue={editingProduct.stock} required className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none" />
+                      <label htmlFor="edit-stock" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Stok</label>
+                      <input id="edit-stock" type="number" name="stock" defaultValue={editingProduct.stock} required className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label htmlFor="edit-category" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider">
+                        <label htmlFor="edit-category" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">
                           Kategori Bisnis
                         </label>
-                        <span className="desktop-caption-medium-medium font-mono text-primary">
+                        <span className="text-[10px] font-mono text-primary font-bold">
                           {formatCategoryName(editCategory || editingProduct.category)}
                         </span>
                       </div>
@@ -1342,13 +1342,13 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             value={editCategorySearch}
                             onChange={(e) => setEditCategorySearch(e.target.value)}
                             placeholder="🔍 Cari kategori..."
-                            className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none focus:border-primary placeholder:text-text-secondary/60"
+                            className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary placeholder:text-text-secondary/60"
                           />
                           {editCategorySearch && (
                             <button
                               type="button"
                               onClick={() => setEditCategorySearch('')}
-                              className="absolute right-2.5 top-2 desktop-paragraph-small-regular text-text-secondary hover:text-text-primary"
+                              className="absolute right-2.5 top-2 text-xs text-text-secondary hover:text-text-primary"
                             >
                               ✕
                             </button>
@@ -1366,7 +1366,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               setEditIsSnackbox(true)
                             }
                           }}
-                          className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none focus:border-primary"
+                          className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
                         >
                           {PRODUCT_CATEGORIES
                             .filter(c => !editCategorySearch || c.label.toLowerCase().includes(editCategorySearch.toLowerCase()) || c.value.toLowerCase().includes(editCategorySearch.toLowerCase()))
@@ -1375,7 +1375,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       </div>
                     </div>
                     <div>
-                      <label className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Gambar Produk (Format: JPG, JPEG, PNG)</label>
+                      <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Gambar Produk (Format: JPG, JPEG, PNG)</label>
                       <div className="flex-grow">
                         <input
                           type="file"
@@ -1396,14 +1396,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-300">
                               <label
                                 htmlFor="product-edit-upload"
-                                className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-black rounded desktop-caption-medium-medium font-geist transition-all cursor-pointer shadow-md uppercase tracking-wider"
+                                className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-black rounded text-[10px] font-bold font-geist transition-all cursor-pointer shadow-md uppercase tracking-wider"
                               >
                                 Ganti Gambar
                               </label>
                               <button
                                 type="button"
                                 onClick={() => setEditImageUrl('')}
-                                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded desktop-caption-medium-medium font-geist transition-all cursor-pointer shadow-md uppercase tracking-wider"
+                                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-bold font-geist transition-all cursor-pointer shadow-md uppercase tracking-wider"
                               >
                                 Hapus
                               </button>
@@ -1423,10 +1423,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                 </svg>
                               </div>
                               <div className="text-center">
-                                <p className="desktop-caption-medium-medium text-text-primary group-hover:text-primary transition-colors">
+                                <p className="text-[10px] font-bold text-text-primary group-hover:text-primary transition-colors">
                                   Pilih atau Tarik File Gambar
                                 </p>
-                                <p className="desktop-paragraph-small-regular text-text-secondary mt-0.5">
+                                <p className="text-[8px] text-text-secondary mt-0.5">
                                   PNG, JPG, JPEG (Maks. 5MB)
                                 </p>
                               </div>
@@ -1451,15 +1451,15 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             onChange={(e) => setEditIsSnackbox(e.target.checked)}
                             className="w-4 h-4 text-[#006E24] focus:ring-[#006E24] rounded cursor-pointer accent-[#2DB24A]"
                           />
-                          <label htmlFor="edit-isSnackboxEnabled" className="desktop-caption-large-medium text-text-primary cursor-pointer flex items-center gap-1.5">
+                          <label htmlFor="edit-isSnackboxEnabled" className="text-xs font-bold text-text-primary cursor-pointer flex items-center gap-1.5">
                             <span>🍱 Tampilkan di Layanan Snackbox Saloka</span>
-                            <span className="desktop-caption-medium-medium px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
                               Rekomendasi Kuliner
                             </span>
                           </label>
                         </div>
                       </div>
-                      <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed">
+                      <p className="text-[11px] text-text-secondary leading-relaxed">
                         Produk kue / snack Anda akan otomatis masuk ke katalog resmi kurasi <strong>Snackbox Saloka</strong> per kelurahan untuk pesanan acara kantor, rapat, dan hajatan.
                       </p>
 
@@ -1467,10 +1467,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         <div className="space-y-4 pt-3 border-t border-border-subtle">
                           <div>
                             <div className="flex justify-between items-center mb-1.5">
-                              <label className="desktop-caption-large-medium text-text-primary">
-                                Bagi Hasil dengan Saloka: <span className="text-primary font-mono desktop-paragraph-small-semibold">{editSnackboxShare}%</span>
+                              <label className="text-[11px] font-bold text-text-primary">
+                                Bagi Hasil dengan Saloka: <span className="text-primary font-mono text-sm font-extrabold">{editSnackboxShare}%</span>
                               </label>
-                              <span className="desktop-paragraph-small-regular text-text-secondary font-mono">Rentang Pilihan: 15% – 20%</span>
+                              <span className="text-[10px] text-text-secondary font-mono">Rentang Pilihan: 15% – 20%</span>
                             </div>
                             <input
                               type="range"
@@ -1486,7 +1486,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                              <label className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-1.5">
+                              <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1.5">
                                 Perkiraan Berat / Porsi
                               </label>
                               <input
@@ -1495,25 +1495,25 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                 value={editPortionWeight}
                                 onChange={(e) => setEditPortionWeight(e.target.value)}
                                 placeholder="cth: 75g atau 1 potong"
-                                className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none focus:border-primary"
+                                className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
                               />
                             </div>
 
                             {/* Live Revenue Calculation Breakdown */}
-                            <div className="bg-surface-container p-3 rounded-lg border border-border-subtle space-y-1 desktop-paragraph-small-regular">
+                            <div className="bg-surface-container p-3 rounded-lg border border-border-subtle space-y-1 text-xs">
                               <div className="flex justify-between text-text-secondary">
                                 <span>Bagi Hasil Saloka ({editSnackboxShare}%):</span>
-                                <span className="desktop-paragraph-small-semibold text-amber-400">
+                                <span className="font-bold text-amber-400">
                                   Rp {Math.round((editingProduct.price || 0) * (editSnackboxShare / 100)).toLocaleString('id-ID')}
                                 </span>
                               </div>
-                              <div className="flex justify-between text-primary desktop-paragraph-small-semibold">
+                              <div className="flex justify-between text-primary font-bold">
                                 <span>Merchant Terima Bersih ({100 - editSnackboxShare}%):</span>
-                                <span>
+                                <span className="font-extrabold">
                                   Rp {Math.round((editingProduct.price || 0) * ((100 - editSnackboxShare) / 100)).toLocaleString('id-ID')}
                                 </span>
                               </div>
-                              <p className="desktop-paragraph-small-regular text-text-secondary/70 pt-0.5">
+                              <p className="text-[9px] text-text-secondary/70 pt-0.5">
                                 *Termasuk kemasan box resmi Saloka & pengantaran terpadu kurir.
                               </p>
                             </div>
@@ -1525,7 +1525,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label htmlFor="edit-description" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider">Deskripsi Produk</label>
+                      <label htmlFor="edit-description" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">Deskripsi Produk</label>
                       <button
                         type="button"
                         onClick={() => {
@@ -1534,18 +1534,18 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           setAiKeywords(editingProduct?.title || '')
                           setShowAiModal(true)
                         }}
-                        className="btn-primary bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 desktop-caption-medium-medium flex items-center gap-1 cursor-pointer"
+                        className="btn-primary bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] flex items-center gap-1 cursor-pointer"
                       >
                         <Sparkles size={11} className="animate-pulse" />
                         Generate dengan AI
                       </button>
                     </div>
-                    <textarea id="edit-description" name="description" defaultValue={editingProduct.description} required rows={4} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none" />
+                    <textarea id="edit-description" name="description" defaultValue={editingProduct.description} required rows={4} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                   </div>
 
                   {/* Affiliate Settings */}
                   <div className="border border-border-subtle bg-surface-container/30 p-4 rounded-lg space-y-4">
-                    <h4 className="desktop-caption-large-medium text-primary font-sora">Pengaturan Program Affiliate</h4>
+                    <h4 className="text-xs font-bold text-primary font-sora">Pengaturan Program Affiliate</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                       <div className="flex items-center gap-2 h-11">
                         <input
@@ -1555,29 +1555,29 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           defaultChecked={editingProduct.isAffiliateEnabled || false}
                           className="w-4 h-4 text-primary focus:ring-primary border-border-subtle rounded cursor-pointer"
                         />
-                        <label htmlFor="edit-isAffiliateEnabled" className="desktop-caption-large-medium text-text-primary cursor-pointer">Aktifkan Affiliate</label>
+                        <label htmlFor="edit-isAffiliateEnabled" className="text-xs font-bold text-text-primary cursor-pointer">Aktifkan Affiliate</label>
                       </div>
                       <div>
-                        <label htmlFor="edit-affiliateCommissionType" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Tipe Komisi</label>
+                        <label htmlFor="edit-affiliateCommissionType" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Tipe Komisi</label>
                         <select
                           id="edit-affiliateCommissionType"
                           name="affiliateCommissionType"
                           defaultValue={editingProduct.affiliateCommissionType || 'PERCENT'}
-                          className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                          className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                         >
                           <option value="PERCENT">Persentase (%)</option>
                           <option value="FIXED">Fix Komisi (Rupiah)</option>
                         </select>
                       </div>
                       <div>
-                        <label htmlFor="edit-affiliateCommissionValue" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Nilai Komisi</label>
+                        <label htmlFor="edit-affiliateCommissionValue" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Nilai Komisi</label>
                         <input
                           id="edit-affiliateCommissionValue"
                           type="number"
                           step="any"
                           name="affiliateCommissionValue"
                           defaultValue={editingProduct.affiliateCommissionValue || 0}
-                          className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                          className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                         />
                       </div>
                     </div>
@@ -1587,7 +1587,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     id="edit-submit"
                     type="submit"
                     disabled={isPending}
-                    className="btn-primary desktop-caption-large-medium shadow-lg disabled:opacity-50"
+                    className="btn-primary text-xs shadow-lg disabled:opacity-50"
                   >
                     {isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
                   </button>
@@ -1599,11 +1599,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg mb-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
                 <div>
-                  <h3 className="font-sora desktop-paragraph-small-semibold text-text-primary flex items-center gap-2">
+                  <h3 className="font-sora text-sm font-bold text-text-primary flex items-center gap-2">
                     <Award size={16} className="text-primary" />
                     Pengaturan Affiliate Global
                   </h3>
-                  <p className="desktop-paragraph-small-regular text-text-secondary">
+                  <p className="text-[11px] text-text-secondary">
                     Terapkan pengaturan affiliate ke seluruh produk katalog Anda sekaligus.
                   </p>
                 </div>
@@ -1619,20 +1619,20 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       onChange={(e) => setGlobalAffEnabled(e.target.checked)}
                       className="w-4 h-4 text-primary focus:ring-primary border-border-subtle rounded cursor-pointer"
                     />
-                    <label htmlFor="global-aff-enabled" className="desktop-caption-large-medium text-text-primary cursor-pointer">
+                    <label htmlFor="global-aff-enabled" className="text-xs font-bold text-text-primary cursor-pointer">
                       Aktifkan Affiliate Global
                     </label>
                   </div>
 
                   <div>
-                    <label htmlFor="global-aff-type" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">
+                    <label htmlFor="global-aff-type" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Tipe Komisi
                     </label>
                     <select
                       id="global-aff-type"
                       value={globalCommType}
                       onChange={(e) => setGlobalCommType(e.target.value)}
-                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                     >
                       <option value="PERCENT">Persentase (%)</option>
                       <option value="FIXED">Fix Komisi (Rupiah)</option>
@@ -1640,7 +1640,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   </div>
 
                   <div>
-                    <label htmlFor="global-aff-value" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">
+                    <label htmlFor="global-aff-value" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
                       Nilai Komisi
                     </label>
                     <input
@@ -1649,7 +1649,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       step="any"
                       value={globalCommValue}
                       onChange={(e) => setGlobalCommValue(Number(e.target.value))}
-                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                     />
                   </div>
 
@@ -1657,7 +1657,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <button
                       type="submit"
                       disabled={isApplyingGlobal}
-                      className="w-full h-11 bg-primary hover:bg-primary-container text-surface-dark font-geist desktop-caption-large-medium uppercase tracking-wider rounded transition-colors shadow-lg disabled:opacity-50"
+                      className="w-full h-11 bg-primary hover:bg-primary-container text-surface-dark font-geist font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-lg disabled:opacity-50"
                     >
                       {isApplyingGlobal ? 'Menerapkan...' : 'Terapkan Masal'}
                     </button>
@@ -1665,7 +1665,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </div>
 
                 {globalStatus && (
-                  <p className={`desktop-caption-large-medium ${globalStatus.startsWith('Berhasil') ? 'text-green-400' : 'text-red-400'}`}>
+                  <p className={`text-[11px] font-semibold ${globalStatus.startsWith('Berhasil') ? 'text-green-400' : 'text-red-400'}`}>
                     {globalStatus}
                   </p>
                 )}
@@ -1675,13 +1675,13 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             {/* Catalog Grid list */}
             {products.length === 0 ? (
               <div className="text-center py-20 border border-border-subtle rounded bg-surface-dark">
-                <h3 className="font-sora desktop-paragraph-small-semibold text-text-primary mb-2">Katalog Anda Kosong</h3>
-                <p className="desktop-paragraph-small-regular text-text-secondary max-w-xs mx-auto mb-6">
+                <h3 className="font-sora text-sm font-bold text-text-primary mb-2">Katalog Anda Kosong</h3>
+                <p className="text-xs text-text-secondary max-w-xs mx-auto mb-6">
                   Anda belum menerbitkan produk apapun. Mulai tambahkan barang jualan Anda.
                 </p>
                 <button
                   onClick={() => setActiveTab('add')}
-                  className="btn-primary desktop-caption-large-medium"
+                  className="btn-primary text-xs"
                 >
                   Tambah Produk Baru
                 </button>
@@ -1699,22 +1699,22 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         {p.imageUrl ? (
                           <img src={p.imageUrl} alt={p.title} className="object-cover w-full h-full" />
                         ) : (
-                          <span className="desktop-caption-medium-medium text-primary/40 uppercase">{formatCategoryName(p.category)}</span>
+                          <span className="text-[8px] font-bold text-primary/40 uppercase">{formatCategoryName(p.category)}</span>
                         )}
                       </div>
                       <div>
-                        <h4 className="font-sora desktop-caption-large-medium text-text-primary mb-1 line-clamp-1">
+                        <h4 className="font-sora text-xs font-bold text-text-primary mb-1 line-clamp-1">
                           {p.title}
                         </h4>
                         <div className="flex gap-2 items-center mb-1">
-                          <span className="btn-primary bg-primary/10 border border-primary/25 desktop-caption-medium-medium text-primary">
+                          <span className="btn-primary bg-primary/10 border border-primary/25 text-[8px] text-primary">
                             {formatCategoryName(p.category)}
                           </span>
-                          <span className={`desktop-caption-medium-medium ${p.stock <= 0 ? 'text-red-400' : 'text-text-secondary'}`}>
+                          <span className={`text-[10px] font-semibold ${p.stock <= 0 ? 'text-red-400' : 'text-text-secondary'}`}>
                             Stok: {p.stock}
                           </span>
                         </div>
-                        <div className="desktop-caption-large-medium text-primary font-geist">
+                        <div className="text-xs font-bold text-primary font-geist">
                           Rp {p.price.toLocaleString('id-ID')}
                         </div>
                       </div>
@@ -1736,14 +1736,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           setError(null)
                           setSuccess(null)
                         }}
-                        className="px-3 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/45 rounded desktop-caption-medium-medium font-geist uppercase tracking-wider text-text-primary transition-all duration-300"
+                        className="px-3 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/45 rounded text-[10px] font-geist font-bold uppercase tracking-wider text-text-primary transition-all duration-300"
                       >
                         Edit
                       </button>
                       <button
                         id={`btn-delete-prod-${p.id}`}
                         onClick={() => handleDelete(p.id)}
-                        className="px-3 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-red-500/40 rounded desktop-caption-medium-medium font-geist uppercase tracking-wider text-red-400 transition-all duration-300"
+                        className="px-3 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-red-500/40 rounded text-[10px] font-geist font-bold uppercase tracking-wider text-red-400 transition-all duration-300"
                       >
                         Hapus
                       </button>
@@ -1757,36 +1757,36 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
         {activeTab === 'add' && (
           <div className="border border-border-subtle bg-surface-dark p-6 md:p-8 rounded-lg">
-            <h3 className="font-sora desktop-heading-h6-bold text-text-primary mb-2">
+            <h3 className="font-sora text-base font-bold text-text-primary mb-2">
               Tambah Produk Ke Katalog
             </h3>
-            <p className="desktop-paragraph-small-regular text-text-secondary mb-8">
+            <p className="text-xs text-text-secondary mb-8">
               Masukkan detail produk dengan lengkap. Produk akan segera didistribusikan ke Saloka Marketplace.
             </p>
 
             <form onSubmit={handleCreate} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label htmlFor="create-title" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Nama Produk</label>
-                  <input id="create-title" type="text" name="title" required placeholder="cth: Artisan Linen Shirt" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none" />
+                  <label htmlFor="create-title" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Produk</label>
+                  <input id="create-title" type="text" name="title" required placeholder="cth: Artisan Linen Shirt" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                 </div>
                 <div>
-                  <label htmlFor="create-price" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Harga (Rp)</label>
-                  <input id="create-price" type="number" name="price" required placeholder="cth: 350000" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none" />
+                  <label htmlFor="create-price" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Harga (Rp)</label>
+                  <input id="create-price" type="number" name="price" required placeholder="cth: 350000" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                 </div>
                 <div>
-                  <label htmlFor="create-stock" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Stok Barang</label>
-                  <input id="create-stock" type="number" name="stock" required placeholder="cth: 50" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none" />
+                  <label htmlFor="create-stock" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Stok Barang</label>
+                  <input id="create-stock" type="number" name="stock" required placeholder="cth: 50" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label htmlFor="create-category" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider">
+                    <label htmlFor="create-category" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">
                       Kategori Bisnis
                     </label>
-                    <span className="desktop-caption-medium-medium font-mono text-primary">
+                    <span className="text-[10px] font-mono text-primary font-bold">
                       {formatCategoryName(createCategory)}
                     </span>
                   </div>
@@ -1799,13 +1799,13 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         value={createCategorySearch}
                         onChange={(e) => setCreateCategorySearch(e.target.value)}
                         placeholder="🔍 Cari kategori (cth: Kue, Snack, Kafe, Fashion...)"
-                        className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none focus:border-primary placeholder:text-text-secondary/60"
+                        className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary placeholder:text-text-secondary/60"
                       />
                       {createCategorySearch && (
                         <button
                           type="button"
                           onClick={() => setCreateCategorySearch('')}
-                          className="absolute right-2.5 top-2 desktop-paragraph-small-regular text-text-secondary hover:text-text-primary"
+                          className="absolute right-2.5 top-2 text-xs text-text-secondary hover:text-text-primary"
                         >
                           ✕
                         </button>
@@ -1823,7 +1823,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           setCreateIsSnackbox(true)
                         }
                       }}
-                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none focus:border-primary"
+                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
                     >
                       {PRODUCT_CATEGORIES
                         .filter(c => !createCategorySearch || c.label.toLowerCase().includes(createCategorySearch.toLowerCase()) || c.value.toLowerCase().includes(createCategorySearch.toLowerCase()))
@@ -1833,7 +1833,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </div>
 
                 <div>
-                  <label className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Gambar Produk (Format: JPG, JPEG, PNG)</label>
+                  <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Gambar Produk (Format: JPG, JPEG, PNG)</label>
                   <div className="flex-grow">
                     <input
                       type="file"
@@ -1854,14 +1854,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-300">
                           <label
                             htmlFor="product-create-upload"
-                            className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-black rounded desktop-caption-medium-medium font-geist transition-all cursor-pointer shadow-md uppercase tracking-wider"
+                            className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-black rounded text-[10px] font-bold font-geist transition-all cursor-pointer shadow-md uppercase tracking-wider"
                           >
                             Ganti Gambar
                           </label>
                           <button
                             type="button"
                             onClick={() => setCreateImageUrl('')}
-                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded desktop-caption-medium-medium font-geist transition-all cursor-pointer shadow-md uppercase tracking-wider"
+                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded text-[10px] font-bold font-geist transition-all cursor-pointer shadow-md uppercase tracking-wider"
                           >
                             Hapus
                           </button>
@@ -1881,10 +1881,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             </svg>
                           </div>
                           <div className="text-center">
-                            <p className="desktop-caption-medium-medium text-text-primary group-hover:text-primary transition-colors">
+                            <p className="text-[10px] font-bold text-text-primary group-hover:text-primary transition-colors">
                               Pilih atau Tarik File Gambar
                             </p>
-                            <p className="desktop-paragraph-small-regular text-text-secondary mt-0.5">
+                            <p className="text-[8px] text-text-secondary mt-0.5">
                               PNG, JPG, JPEG (Maks. 5MB)
                             </p>
                           </div>
@@ -1909,15 +1909,15 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         onChange={(e) => setCreateIsSnackbox(e.target.checked)}
                         className="w-4 h-4 text-[#006E24] focus:ring-[#006E24] rounded cursor-pointer accent-[#2DB24A]"
                       />
-                      <label htmlFor="create-isSnackboxEnabled" className="desktop-caption-large-medium text-text-primary cursor-pointer flex items-center gap-1.5">
+                      <label htmlFor="create-isSnackboxEnabled" className="text-xs font-bold text-text-primary cursor-pointer flex items-center gap-1.5">
                         <span>🍱 Tampilkan di Layanan Snackbox Saloka</span>
-                        <span className="desktop-caption-medium-medium px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
                           Rekomendasi Kuliner
                         </span>
                       </label>
                     </div>
                   </div>
-                  <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed">
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
                     Produk kue / snack Anda akan otomatis masuk ke katalog resmi kurasi <strong>Snackbox Saloka</strong> per kelurahan untuk pesanan acara kantor, rapat, dan hajatan.
                   </p>
 
@@ -1925,10 +1925,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <div className="space-y-4 pt-3 border-t border-border-subtle">
                       <div>
                         <div className="flex justify-between items-center mb-1.5">
-                          <label className="desktop-caption-large-medium text-text-primary">
-                            Bagi Hasil dengan Saloka: <span className="text-primary font-mono desktop-paragraph-small-semibold">{createSnackboxShare}%</span>
+                          <label className="text-[11px] font-bold text-text-primary">
+                            Bagi Hasil dengan Saloka: <span className="text-primary font-mono text-sm font-extrabold">{createSnackboxShare}%</span>
                           </label>
-                          <span className="desktop-paragraph-small-regular text-text-secondary font-mono">Rentang Pilihan: 15% – 20%</span>
+                          <span className="text-[10px] text-text-secondary font-mono">Rentang Pilihan: 15% – 20%</span>
                         </div>
                         <input
                           type="range"
@@ -1944,7 +1944,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-1.5">
+                          <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1.5">
                             Perkiraan Berat / Porsi
                           </label>
                           <input
@@ -1953,25 +1953,25 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             value={createPortionWeight}
                             onChange={(e) => setCreatePortionWeight(e.target.value)}
                             placeholder="cth: 75g atau 1 potong"
-                            className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none focus:border-primary"
+                            className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
                           />
                         </div>
 
                         {/* Live Revenue Calculation Breakdown */}
-                        <div className="bg-surface-container p-3 rounded-lg border border-border-subtle space-y-1 desktop-paragraph-small-regular">
+                        <div className="bg-surface-container p-3 rounded-lg border border-border-subtle space-y-1 text-xs">
                           <div className="flex justify-between text-text-secondary">
                             <span>Bagi Hasil Saloka ({createSnackboxShare}%):</span>
-                            <span className="desktop-paragraph-small-semibold text-amber-400">
+                            <span className="font-bold text-amber-400">
                               Rp {Math.round(createPriceValue * (createSnackboxShare / 100)).toLocaleString('id-ID')}
                             </span>
                           </div>
-                          <div className="flex justify-between text-primary desktop-paragraph-small-semibold">
+                          <div className="flex justify-between text-primary font-bold">
                             <span>Merchant Terima Bersih ({100 - createSnackboxShare}%):</span>
-                            <span>
+                            <span className="font-extrabold">
                               Rp {Math.round(createPriceValue * ((100 - createSnackboxShare) / 100)).toLocaleString('id-ID')}
                             </span>
                           </div>
-                          <p className="desktop-paragraph-small-regular text-text-secondary/70 pt-0.5">
+                          <p className="text-[9px] text-text-secondary/70 pt-0.5">
                             *Termasuk kemasan box resmi Saloka & pengantaran terpadu kurir.
                           </p>
                         </div>
@@ -1983,7 +1983,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="create-description" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider">Deskripsi Produk</label>
+                  <label htmlFor="create-description" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">Deskripsi Produk</label>
                   <button
                     type="button"
                     onClick={() => {
@@ -1992,18 +1992,18 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       setAiKeywords((document.getElementById('create-title') as HTMLInputElement)?.value || '')
                       setShowAiModal(true)
                     }}
-                    className="btn-primary bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 desktop-caption-medium-medium flex items-center gap-1 cursor-pointer"
+                    className="btn-primary bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles size={11} className="animate-pulse" />
                     Generate dengan AI
                   </button>
                 </div>
-                <textarea id="create-description" name="description" required placeholder="Jelaskan spesifikasi, material, dan kelebihan premium produk Anda..." rows={5} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none" />
+                <textarea id="create-description" name="description" required placeholder="Jelaskan spesifikasi, material, dan kelebihan premium produk Anda..." rows={5} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
               </div>
 
               {/* Affiliate Settings */}
               <div className="border border-border-subtle bg-surface-container/30 p-4 rounded-lg space-y-4">
-                <h4 className="desktop-caption-large-medium text-primary font-sora">Pengaturan Program Affiliate</h4>
+                <h4 className="text-xs font-bold text-primary font-sora">Pengaturan Program Affiliate</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                   <div className="flex items-center gap-2 h-11">
                     <input
@@ -2012,29 +2012,29 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       name="isAffiliateEnabled"
                       className="w-4 h-4 text-primary focus:ring-primary border-border-subtle rounded cursor-pointer"
                     />
-                    <label htmlFor="create-isAffiliateEnabled" className="desktop-caption-large-medium text-text-primary cursor-pointer">Aktifkan Affiliate</label>
+                    <label htmlFor="create-isAffiliateEnabled" className="text-xs font-bold text-text-primary cursor-pointer">Aktifkan Affiliate</label>
                   </div>
                   <div>
-                    <label htmlFor="create-affiliateCommissionType" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Tipe Komisi</label>
+                    <label htmlFor="create-affiliateCommissionType" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Tipe Komisi</label>
                     <select
                       id="create-affiliateCommissionType"
                       name="affiliateCommissionType"
                       defaultValue="PERCENT"
-                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                     >
                       <option value="PERCENT">Persentase (%)</option>
                       <option value="FIXED">Fix Komisi (Rupiah)</option>
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="create-affiliateCommissionValue" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Nilai Komisi</label>
+                    <label htmlFor="create-affiliateCommissionValue" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Nilai Komisi</label>
                     <input
                       id="create-affiliateCommissionValue"
                       type="number"
                       step="any"
                       name="affiliateCommissionValue"
                       defaultValue={0}
-                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                      className="w-full h-11 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                     />
                   </div>
                 </div>
@@ -2044,7 +2044,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 id="create-submit"
                 type="submit"
                 disabled={isPending}
-                className="btn-primary w-full mt-2 desktop-caption-large-medium shadow-lg disabled:opacity-50"
+                className="btn-primary w-full mt-2 text-xs shadow-lg disabled:opacity-50"
               >
                 {isPending ? 'Menerbitkan...' : 'Terbitkan Produk Sekarang'}
               </button>
@@ -2058,19 +2058,19 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             {selectedOrder ? (
               <div className="border border-primary/30 bg-surface-container/50 p-6 rounded-lg">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-sora desktop-paragraph-small-semibold text-text-primary">
+                  <h3 className="font-sora text-sm font-bold text-text-primary">
                     Update Status Pesanan: {selectedOrder.id.replace('order-', '#')}
                   </h3>
                   <button
                     onClick={() => { setSelectedOrder(null); setStatusNotes(''); }}
-                    className="desktop-caption-large-medium text-text-secondary hover:text-text-primary cursor-pointer"
+                    className="text-xs font-semibold text-text-secondary hover:text-text-primary cursor-pointer"
                   >
                     Kembali ke Daftar
                   </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
-                  <div className="space-y-4 desktop-paragraph-small-regular text-text-secondary">
+                  <div className="space-y-4 text-xs text-text-secondary">
                     <p><strong className="text-text-primary">Pembeli:</strong> {selectedOrder.buyer?.name || 'Customer'}</p>
                     <p><strong className="text-text-primary">Alamat Kirim:</strong> {selectedOrder.shippingAddress || 'Tidak Ada'}</p>
                     <p><strong className="text-text-primary">Kurir:</strong> {selectedOrder.courier || 'Tidak Ada'}</p>
@@ -2089,25 +2089,25 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           const msg = encodeURIComponent(`Halo Kak, kami dari Toko Mitra Saloka.id menginfokan update pesanan Anda ${orderNum} status saat ini: ${selectedOrder.status}${resiText}. Terima kasih!`)
                           window.open(`https://wa.me/?text=${msg}`, '_blank')
                         }}
-                        className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-[#006E24] border border-emerald-300 rounded-lg desktop-caption-large-medium transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                        className="w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-[#006E24] border border-emerald-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
                       >
                         <span>💬 Kirim Update Pesanan via WhatsApp</span>
                       </button>
                     </div>
 
                     <div className="border-t border-border-subtle/50 pt-4 mt-4">
-                      <h4 className="desktop-paragraph-small-semibold text-text-primary mb-2">Item Pesanan:</h4>
+                      <h4 className="font-bold text-text-primary mb-2">Item Pesanan:</h4>
                       {selectedOrder.items?.map((item: any, idx: number) => (
                         <div key={item.id || idx} className="flex justify-between mb-1.5">
                           <span>{item.product?.title || item.productTitle} x{item.quantity}</span>
-                          <span className="desktop-paragraph-small-semibold">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                          <span className="font-bold">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="font-sora desktop-caption-large-medium text-text-primary mb-4 uppercase tracking-wider">Pilih Status Baru</h4>
+                    <h4 className="font-sora text-xs font-bold text-text-primary mb-4 uppercase tracking-wider">Pilih Status Baru</h4>
                     <div className="space-y-3">
                       {(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const).map((status) => {
                         const labels = {
@@ -2139,7 +2139,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               }
                               setUpdatingStatus(false)
                             }}
-                            className={`w-full py-3 px-4 border rounded-lg desktop-caption-large-medium uppercase tracking-wider transition-all text-left flex items-center justify-between cursor-pointer ${
+                            className={`w-full py-3 px-4 border rounded-lg text-xs font-bold uppercase tracking-wider transition-all text-left flex items-center justify-between cursor-pointer ${
                               isCurrent
                                 ? 'bg-primary/5 border-primary text-primary opacity-60 cursor-not-allowed'
                                 : (status === 'SHIPPED' && !selectedOrder.shippingLabel)
@@ -2150,12 +2150,12 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             <span>
                               {labels[status]}
                               {status === 'SHIPPED' && !selectedOrder.shippingLabel && (
-                                <span className="ml-2 desktop-paragraph-small-regular text-amber-600 lowercase italic">
+                                <span className="ml-2 text-[9px] text-amber-600 font-normal lowercase italic">
                                   (Wajib input resi di bawah)
                                 </span>
                               )}
                             </span>
-                            {isCurrent && <span className="desktop-caption-medium-medium">SELESAI</span>}
+                            {isCurrent && <span className="text-[9px] font-bold">SELESAI</span>}
                           </button>
                         )
                       })}
@@ -2163,7 +2163,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                     {!selectedOrder.shippingLabel && selectedOrder.tracking?.some((t: any) => t.status === 'PROCESSING') && (
                       <div className="mt-6 p-4 border border-primary/30 bg-primary/5 rounded-lg mb-6">
-                        <label className="block desktop-caption-medium-medium font-geist text-primary uppercase tracking-wider mb-2">
+                        <label className="block text-[10px] font-geist font-bold text-primary uppercase tracking-wider mb-2">
                           Input Resi Kurir (Live Tracking)
                         </label>
                         <div className="flex gap-2">
@@ -2172,7 +2172,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             value={shippingLabelInput}
                             onChange={(e) => setShippingLabelInput(e.target.value)}
                             placeholder="JNE123456789"
-                            className="flex-1 px-4 py-2 bg-surface-container border border-primary/30 rounded desktop-paragraph-small-regular text-text-primary focus:outline-none focus:border-primary"
+                            className="flex-1 px-4 py-2 bg-surface-container border border-primary/30 rounded text-xs text-text-primary focus:outline-none focus:border-primary"
                           />
                           <button
                             disabled={updatingStatus || !shippingLabelInput}
@@ -2193,17 +2193,17 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               }
                               setUpdatingStatus(false)
                             }}
-                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-on-surface rounded desktop-caption-large-medium disabled:opacity-50 transition-colors"
+                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-on-surface rounded text-xs font-bold disabled:opacity-50 transition-colors"
                           >
                             Simpan Resi
                           </button>
                         </div>
-                        <p className="desktop-paragraph-small-regular text-text-secondary mt-2">Menyimpan resi akan otomatis memperbarui status menjadi <strong className="text-text-primary uppercase">SHIPPED</strong>.</p>
+                        <p className="text-[9px] text-text-secondary mt-2">Menyimpan resi akan otomatis memperbarui status menjadi <strong className="text-text-primary uppercase">SHIPPED</strong>.</p>
                       </div>
                     )}
 
                     <div className="mt-6">
-                      <label htmlFor="status-note" className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">
+                      <label htmlFor="status-note" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">
                         Catatan Update Status (Opsional)
                       </label>
                       <textarea
@@ -2212,7 +2212,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         onChange={(e) => setStatusNotes(e.target.value)}
                         placeholder="Pesanan sedang dipacking / Nomor Resi: JNE123456789"
                         rows={2}
-                        className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                        className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                       />
                     </div>
                   </div>
@@ -2220,14 +2220,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               </div>
             ) : (
               <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg">
-                <h3 className="font-sora desktop-heading-h6-bold text-text-primary mb-6 uppercase tracking-wider">Pesanan Masuk</h3>
+                <h3 className="font-sora text-sm font-bold text-text-primary mb-6 uppercase tracking-wider">Pesanan Masuk</h3>
                 {orders.length === 0 ? (
-                  <p className="desktop-paragraph-small-regular text-text-secondary py-8 text-center">Belum ada pesanan masuk untuk produk Anda.</p>
+                  <p className="text-xs text-text-secondary py-8 text-center">Belum ada pesanan masuk untuk produk Anda.</p>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full desktop-paragraph-small-regular text-left text-text-secondary border-collapse">
+                    <table className="w-full text-xs text-left text-text-secondary border-collapse">
                       <thead>
-                        <tr className="border-b border-border-subtle desktop-paragraph-small-semibold uppercase tracking-wider">
+                        <tr className="border-b border-border-subtle text-[10px] uppercase tracking-wider font-bold">
                           <th className="py-3 px-4">ID Pesanan</th>
                           <th className="py-3 px-4">Tanggal</th>
                           <th className="py-3 px-4">Pembeli</th>
@@ -2245,12 +2245,12 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           
                           return (
                             <tr key={o.id} className="border-b border-border-subtle/50 hover:bg-surface-container-low transition-colors">
-                              <td className="py-3 px-4 desktop-paragraph-small-semibold text-text-primary">{o.id.replace('order-', '#')}</td>
+                              <td className="py-3 px-4 font-bold text-text-primary">{o.id.replace('order-', '#')}</td>
                               <td className="py-3 px-4">{dateStr}</td>
                               <td className="py-3 px-4">{o.buyer?.name || 'Customer'}</td>
-                              <td className="py-3 px-4 desktop-paragraph-small-semibold text-primary">Rp {o.totalAmount.toLocaleString('id-ID')}</td>
+                              <td className="py-3 px-4 font-bold text-primary">Rp {o.totalAmount.toLocaleString('id-ID')}</td>
                               <td className="py-3 px-4">
-                                <span className={`px-2 py-0.5 rounded desktop-caption-medium-medium uppercase tracking-wider border ${
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${
                                   lastTracking === 'DELIVERED'
                                     ? 'bg-green-500/10 border-green-500/20 text-green-400'
                                     : lastTracking === 'CANCELLED'
@@ -2264,7 +2264,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                 <button
                                   id={`btn-manage-order-${o.id}`}
                                   onClick={() => setSelectedOrder(o)}
-                                  className="px-3 py-1.5 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/45 rounded desktop-caption-medium-medium font-geist uppercase tracking-wider text-text-primary transition-all duration-300 cursor-pointer"
+                                  className="px-3 py-1.5 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/45 rounded text-[10px] font-geist font-bold uppercase tracking-wider text-text-primary transition-all duration-300 cursor-pointer"
                                 >
                                   Kelola Status
                                 </button>
@@ -2288,8 +2288,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md flex items-center justify-between">
                 <div>
-                  <span className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-widest mb-1.5">Revenue Hari Ini</span>
-                  <h2 className="font-sora desktop-heading-h6-bold text-primary">Rp {(analytics?.revenueToday ?? 0).toLocaleString('id-ID')}</h2>
+                  <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">Revenue Hari Ini</span>
+                  <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenueToday ?? 0).toLocaleString('id-ID')}</h2>
                 </div>
                 <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <DollarSign size={18} />
@@ -2298,8 +2298,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md flex items-center justify-between">
                 <div>
-                  <span className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-widest mb-1.5">7 Hari Terakhir</span>
-                  <h2 className="font-sora desktop-heading-h6-bold text-primary">Rp {(analytics?.revenue7Days ?? 0).toLocaleString('id-ID')}</h2>
+                  <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">7 Hari Terakhir</span>
+                  <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenue7Days ?? 0).toLocaleString('id-ID')}</h2>
                 </div>
                 <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <TrendingUp size={18} />
@@ -2308,8 +2308,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md flex items-center justify-between">
                 <div>
-                  <span className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-widest mb-1.5">30 Hari Terakhir</span>
-                  <h2 className="font-sora desktop-heading-h6-bold text-primary">Rp {(analytics?.revenue30Days ?? 0).toLocaleString('id-ID')}</h2>
+                  <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">30 Hari Terakhir</span>
+                  <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.revenue30Days ?? 0).toLocaleString('id-ID')}</h2>
                 </div>
                 <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <Calendar size={18} />
@@ -2318,8 +2318,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md flex items-center justify-between">
                 <div>
-                  <span className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-widest mb-1.5">Total Penjualan</span>
-                  <h2 className="font-sora desktop-heading-h6-bold text-primary">Rp {(analytics?.totalRevenue ?? 0).toLocaleString('id-ID')}</h2>
+                  <span className="block text-[8px] font-geist font-bold text-text-secondary uppercase tracking-widest mb-1.5">Total Penjualan</span>
+                  <h2 className="font-sora text-xl font-extrabold text-primary">Rp {(analytics?.totalRevenue ?? 0).toLocaleString('id-ID')}</h2>
                 </div>
                 <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <Award size={18} />
@@ -2331,7 +2331,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Native SVG Chart */}
               <div className="lg:col-span-2 border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md">
-                <h3 className="font-sora desktop-caption-large-medium text-text-primary mb-6 uppercase tracking-wider">Tren Pendapatan (7 Hari Terakhir)</h3>
+                <h3 className="font-sora text-xs font-bold text-text-primary mb-6 uppercase tracking-wider">Tren Pendapatan (7 Hari Terakhir)</h3>
                 
                 {analytics?.dailyRevenue && (
                   <div className="h-64 flex flex-col justify-end">
@@ -2343,7 +2343,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         
                         return (
                           <div key={idx} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end relative">
-                            <span className="absolute -top-7 scale-0 group-hover:scale-100 bg-surface-container border border-border-subtle desktop-caption-medium-medium px-2 py-1 rounded text-primary transition-transform shadow z-25 whitespace-nowrap">
+                            <span className="absolute -top-7 scale-0 group-hover:scale-100 bg-surface-container border border-border-subtle text-[9px] px-2 py-1 rounded text-primary font-bold transition-transform shadow z-25 whitespace-nowrap">
                               Rp {d.amount.toLocaleString('id-ID')}
                             </span>
                             
@@ -2352,7 +2352,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               className="w-full bg-gradient-to-t from-primary to-primary-container rounded-t-md group-hover:opacity-95 transition-all duration-300 shadow shadow-primary/20"
                             />
                             
-                            <span className="desktop-paragraph-small-regular text-text-secondary font-geist uppercase whitespace-nowrap">{d.label}</span>
+                            <span className="text-[8px] text-text-secondary font-geist uppercase whitespace-nowrap">{d.label}</span>
                           </div>
                         )
                       })}
@@ -2363,19 +2363,19 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               {/* Top Selling Products */}
               <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md">
-                <h3 className="font-sora desktop-caption-large-medium text-text-primary mb-6 uppercase tracking-wider">5 Produk Terlaris</h3>
+                <h3 className="font-sora text-xs font-bold text-text-primary mb-6 uppercase tracking-wider">5 Produk Terlaris</h3>
                 
                 {(!analytics?.topProducts || analytics.topProducts.length === 0) ? (
-                  <p className="desktop-paragraph-small-regular text-text-secondary py-8 text-center">Belum ada data produk terjual.</p>
+                  <p className="text-xs text-text-secondary py-8 text-center">Belum ada data produk terjual.</p>
                 ) : (
                   <div className="space-y-4">
                     {analytics.topProducts.map((p: any, idx: number) => (
                       <div key={p.id || idx} className="flex items-center justify-between border-b border-border-subtle/40 last:border-none pb-3 last:pb-0">
                         <div className="min-w-0">
-                          <p className="desktop-caption-large-medium text-text-primary truncate">{p.title}</p>
-                          <p className="desktop-paragraph-small-regular text-text-secondary font-geist mt-0.5">{p.quantity} Item Terjual</p>
+                          <p className="text-xs font-bold text-text-primary truncate">{p.title}</p>
+                          <p className="text-[9px] text-text-secondary font-geist mt-0.5">{p.quantity} Item Terjual</p>
                         </div>
-                        <span className="desktop-caption-large-medium text-primary whitespace-nowrap pl-2">
+                        <span className="text-xs font-bold text-primary whitespace-nowrap pl-2">
                           Rp {p.revenue.toLocaleString('id-ID')}
                         </span>
                       </div>
@@ -2387,19 +2387,19 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
             {/* Inventory Status */}
             <div className="border border-border-subtle bg-surface-dark p-6 rounded-xl shadow-md">
-              <h3 className="font-sora desktop-caption-large-medium text-text-primary mb-4 uppercase tracking-wider">Status Inventaris Produk</h3>
-              <div className="grid grid-cols-3 gap-6 text-center desktop-paragraph-small-regular">
+              <h3 className="font-sora text-xs font-bold text-text-primary mb-4 uppercase tracking-wider">Status Inventaris Produk</h3>
+              <div className="grid grid-cols-3 gap-6 text-center text-xs">
                 <div className="bg-surface-container-low p-4 border border-border-subtle rounded-lg">
                   <span className="text-text-secondary block mb-1">Total Produk</span>
-                  <span className="desktop-heading-h6-bold text-text-primary">{analytics?.productStats?.total ?? 0}</span>
+                  <span className="text-lg font-black text-text-primary">{analytics?.productStats?.total ?? 0}</span>
                 </div>
                 <div className="bg-green-500/5 p-4 border border-green-500/10 rounded-lg">
                   <span className="text-green-400 block mb-1">Aktif (Tersedia)</span>
-                  <span className="desktop-heading-h6-bold text-green-400">{analytics?.productStats?.active ?? 0}</span>
+                  <span className="text-lg font-black text-green-400">{analytics?.productStats?.active ?? 0}</span>
                 </div>
                 <div className="bg-red-500/5 p-4 border border-red-500/10 rounded-lg">
                   <span className="text-red-400 block mb-1">Stok Habis</span>
-                  <span className="desktop-heading-h6-bold text-red-400">{analytics?.productStats?.soldOut ?? 0}</span>
+                  <span className="text-lg font-black text-red-400">{analytics?.productStats?.soldOut ?? 0}</span>
                 </div>
               </div>
             </div>
@@ -2411,8 +2411,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             {/* Customization Sidebar */}
             <div className="w-full lg:w-80 bg-surface-container-lowest border-r border-border-subtle flex flex-col p-6 space-y-6 shrink-0">
               <div>
-                <h3 className="font-sora desktop-heading-h6-bold text-text-primary">Storefront Editor</h3>
-                <p className="desktop-paragraph-small-regular text-text-secondary">Sesuaikan tampilan toko online Anda</p>
+                <h3 className="font-sora text-sm font-bold text-text-primary">Storefront Editor</h3>
+                <p className="text-[11px] text-text-secondary">Sesuaikan tampilan toko online Anda</p>
               </div>
 
               {/* Template Picker */}
@@ -2427,8 +2427,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L12 7.5l4.179 2.25m-11.142 4.5L12 16.5l4.179-2.25m1.142-2.25 4.179 2.25-4.179 2.25" />
                     </svg>
                     <div className="text-left">
-                      <p className="desktop-caption-large-medium text-text-primary">Pilih Template</p>
-                      <p className="desktop-paragraph-small-regular text-text-secondary uppercase">
+                      <p className="text-[11px] font-bold text-text-primary">Pilih Template</p>
+                      <p className="text-[9px] text-text-secondary uppercase">
                         {storefrontTemplate === 'gold' && 'Modern Gold Aktif'}
                         {storefrontTemplate === 'noir' && 'Minimal Noir Aktif'}
                         {storefrontTemplate === 'clean' && 'Clean Professional Aktif'}
@@ -2448,7 +2448,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               {/* Layout Options */}
               <div className="space-y-3">
-                <label className="desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider flex items-center gap-2">
+                <label className="text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-text-secondary">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6ZM9 3.75v16.5M9 12h11.25" />
                   </svg> Layout
@@ -2466,7 +2466,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <div className="w-full h-10 bg-surface-container rounded flex items-center justify-center">
                       <div className="w-6 h-6 bg-surface-container-lowest rounded-sm shadow-sm"></div>
                     </div>
-                    <span className="desktop-caption-medium-medium">Standard</span>
+                    <span className="text-[10px] font-bold">Standard</span>
                   </button>
                   <button
                     type="button"
@@ -2483,14 +2483,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         <div className="flex-1 bg-surface-container-lowest rounded-sm"></div>
                       </div>
                     </div>
-                    <span className="desktop-caption-medium-medium">Split View</span>
+                    <span className="text-[10px] font-bold">Split View</span>
                   </button>
                 </div>
               </div>
 
               {/* Theme Selector */}
               <div className="space-y-3">
-                <label className="desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider flex items-center gap-2">
+                <label className="text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-text-secondary">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1-1.622-3.395m3.42-3.42a15.995 15.995 0 0 0 3.394-1.622m4.73-4.73a.75.75 0 0 0-1.06 0L4.836 12.016a3 3 0 0 0-.642 1.063l-.707 2.121a.75.75 0 0 0 .949.949l2.121-.707a3 3 0 0 0 1.063-.642L18.664 4.836Zm0 0a.75.75 0 0 1 1.06 0l1.414 1.414a.75.75 0 0 1 0 1.061L18.664 4.836Z" />
                   </svg> Tema Tampilan
@@ -2499,7 +2499,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   <button
                     type="button"
                     onClick={() => setStorefrontTheme('light')}
-                    className={`flex-1 py-1.5 rounded desktop-caption-medium-medium flex items-center justify-center gap-1.5 transition-all ${
+                    className={`flex-1 py-1.5 rounded text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all ${
                       storefrontTheme === 'light'
                         ? 'bg-surface-container-lowest text-primary shadow-sm'
                         : 'text-text-secondary hover:text-text-primary'
@@ -2512,7 +2512,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   <button
                     type="button"
                     onClick={() => setStorefrontTheme('dark')}
-                    className={`flex-1 py-1.5 rounded desktop-caption-medium-medium flex items-center justify-center gap-1.5 transition-all ${
+                    className={`flex-1 py-1.5 rounded text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all ${
                       storefrontTheme === 'dark'
                         ? 'bg-surface-container-lowest text-primary shadow-sm'
                         : 'text-text-secondary hover:text-text-primary'
@@ -2527,7 +2527,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               {/* Banner Image Input */}
               <div className="space-y-3">
-                <label className="desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider flex items-center gap-2">
+                <label className="text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-text-secondary">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
                   </svg> Gambar Banner
@@ -2537,7 +2537,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   value={storefrontBanner}
                   onChange={(e) => setStorefrontBanner(e.target.value)}
                   placeholder="https://..."
-                  className="w-full h-9 px-3 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                  className="w-full h-9 px-3 bg-surface-container border border-border-subtle rounded text-[11px] text-text-primary focus:outline-none"
                 />
                 <div className="relative group aspect-video rounded-lg overflow-hidden border border-dashed border-outline-variant hover:border-primary transition-all">
                   <img src={storefrontBanner} alt="Banner Preview" className="w-full h-full object-cover" />
@@ -2546,14 +2546,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               {/* Sections Selector */}
               <div className="space-y-3">
-                <label className="desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider flex items-center gap-2">
+                <label className="text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-text-secondary">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L12 7.5l4.179 2.25m-11.142 4.5L12 16.5l4.179-2.25m1.142-2.25 4.179 2.25-4.179 2.25" />
                   </svg> Bagian Halaman
                 </label>
                 <div className="space-y-2">
                   <label className="flex items-center justify-between p-2.5 bg-surface-container-low rounded-lg cursor-pointer">
-                    <span className="desktop-caption-large-medium text-text-primary">Hero Section</span>
+                    <span className="text-[11px] font-bold text-text-primary">Hero Section</span>
                     <input
                       type="checkbox"
                       checked={showHero}
@@ -2562,7 +2562,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     />
                   </label>
                   <label className="flex items-center justify-between p-2.5 bg-surface-container-low rounded-lg cursor-pointer">
-                    <span className="desktop-caption-large-medium text-text-primary">Katalog Produk</span>
+                    <span className="text-[11px] font-bold text-text-primary">Katalog Produk</span>
                     <input
                       type="checkbox"
                       checked={showProducts}
@@ -2571,7 +2571,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     />
                   </label>
                   <label className="flex items-center justify-between p-2.5 bg-surface-container-low rounded-lg cursor-pointer">
-                    <span className="desktop-caption-large-medium text-text-primary">Testimoni</span>
+                    <span className="text-[11px] font-bold text-text-primary">Testimoni</span>
                     <input
                       type="checkbox"
                       checked={showTestimonials}
@@ -2586,7 +2586,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               <button
                 type="button"
                 onClick={handleSaveStorefront}
-                className="btn-primary w-full desktop-caption-large-medium active:scale-95 shadow-md"
+                className="btn-primary w-full text-xs active:scale-95 shadow-md"
               >
                 Simpan Perubahan
               </button>
@@ -2785,7 +2785,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   </svg>
                 </button>
                 <div className="w-px h-5 bg-outline-variant/50"></div>
-                <div className="flex items-center gap-2 desktop-paragraph-small-regular">
+                <div className="flex items-center gap-2 text-xs">
                   <span className="font-bold text-text-secondary">{Math.round(previewScale * 100)}%</span>
                   <button
                     type="button"
@@ -2818,13 +2818,13 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 const config = JSON.parse(profile?.landingPageConfig || '{}')
                 if (config.customDomain) {
                   return (
-                    <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5 flex items-center justify-between desktop-paragraph-small-regular">
+                    <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-3">
                         <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                           <Globe size={18} />
                         </div>
                         <div>
-                          <p className="desktop-paragraph-small-semibold text-text-primary">Custom Domain Terhubung</p>
+                          <p className="font-bold text-text-primary">Custom Domain Terhubung</p>
                           <p className="text-text-secondary mt-0.5">
                             Domain kustom Anda <strong className="text-primary">{config.customDomain}</strong> berhasil dipetakan ke storefront.
                           </p>
@@ -2858,10 +2858,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <ArrowLeft size={16} />
                   </button>
                   <div>
-                    <h3 className="font-sora desktop-paragraph-small-semibold text-text-primary">
+                    <h3 className="font-sora text-sm font-bold text-text-primary">
                       Edit Pengaturan Halaman: {editingPage.name}
                     </h3>
-                    <p className="desktop-paragraph-small-regular text-text-secondary">Konfigurasi data identitas halaman, custom scripts header/footer, dan SEO indexing</p>
+                    <p className="text-[11px] text-text-secondary">Konfigurasi data identitas halaman, custom scripts header/footer, dan SEO indexing</p>
                   </div>
                 </div>
 
@@ -2890,21 +2890,21 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     {/* Left Column: General & SEO */}
                     <div className="space-y-6">
                       <div className="space-y-4">
-                        <h4 className="font-sora desktop-caption-large-medium text-[#0F5132] uppercase tracking-wider">Informasi Halaman</h4>
+                        <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Informasi Halaman</h4>
                         <div>
-                          <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Nama Halaman</label>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Halaman</label>
                           <input
                             type="text"
                             name="pageName"
                             defaultValue={editingPage.name}
                             required
-                            className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                            className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
                         <div>
-                          <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Slug URL Halaman</label>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Slug URL Halaman</label>
                           <div className="flex items-center">
-                            <span className="h-11 px-3 bg-slate-100 border border-r-0 border-slate-100 rounded-l-xl desktop-paragraph-small-regular text-text-secondary flex items-center">
+                            <span className="h-11 px-3 bg-slate-100 border border-r-0 border-slate-100 rounded-l-xl text-xs text-text-secondary flex items-center">
                               {parsedSubdomain ? `${parsedSubdomain}.saloka.id/` : 'saloka.id/'}
                             </span>
                             <input
@@ -2913,19 +2913,19 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               defaultValue={editingPage.slug}
                               disabled={editingPage.id === 'page-main'}
                               placeholder={editingPage.id === 'page-main' ? '(Halaman Utama Storefront)' : 'slug-path-halaman'}
-                              className="flex-grow h-11 px-4 bg-slate-50 border border-slate-100 rounded-r-xl desktop-paragraph-small-regular text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-60 disabled:cursor-not-allowed font-mono"
+                              className="flex-grow h-11 px-4 bg-slate-50 border border-slate-100 rounded-r-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all disabled:opacity-60 disabled:cursor-not-allowed font-mono text-[11px]"
                             />
                           </div>
                           {editingPage.id === 'page-main' && (
-                            <p className="desktop-paragraph-small-regular text-text-secondary mt-1.5">Halaman utama (Main Storefront) tidak menggunakan slug URL tambahan.</p>
+                            <p className="text-[10px] text-text-secondary mt-1.5">Halaman utama (Main Storefront) tidak menggunakan slug URL tambahan.</p>
                           )}
                         </div>
                         <div>
-                          <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Status Publikasi Halaman</label>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Status Publikasi Halaman</label>
                           <select
                             name="pageStatus"
                             defaultValue={editingPage.status}
-                            className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                            className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           >
                             <option value="PUBLISHED">Aktif & Publikasikan (PUBLISHED)</option>
                             <option value="DRAFT">Simpan sebagai Draft (DRAFT)</option>
@@ -2936,7 +2936,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                       {/* Thumbnail Preview */}
                       <div className="space-y-4 pt-2">
-                        <h4 className="font-sora desktop-caption-large-medium text-[#0F5132] uppercase tracking-wider">Gambar Thumbnail / Cover Halaman</h4>
+                        <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Gambar Thumbnail / Cover Halaman</h4>
                         <div className="flex-grow">
                           <input
                             type="file"
@@ -2957,14 +2957,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-3 transition-opacity duration-300">
                                 <label
                                   htmlFor="page-edit-thumb-upload"
-                                  className="px-3.5 py-1.5 bg-white hover:bg-neutral-100 text-black rounded-xl desktop-caption-medium-medium transition-all cursor-pointer shadow-md uppercase tracking-wider"
+                                  className="px-3.5 py-1.5 bg-white hover:bg-neutral-100 text-black rounded-xl text-[10px] font-bold transition-all cursor-pointer shadow-md uppercase tracking-wider"
                                 >
                                   Ganti Gambar
                                 </label>
                                 <button
                                   type="button"
                                   onClick={() => setPageThumbUrl('')}
-                                  className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl desktop-caption-medium-medium transition-all cursor-pointer shadow-md uppercase tracking-wider"
+                                  className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-bold transition-all cursor-pointer shadow-md uppercase tracking-wider"
                                 >
                                   Hapus
                                 </button>
@@ -2982,10 +2982,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                   </svg>
                                 </div>
                                 <div className="text-center">
-                                  <p className="desktop-caption-medium-medium text-text-primary group-hover:text-primary transition-colors">
+                                  <p className="text-[10px] font-bold text-text-primary group-hover:text-primary transition-colors">
                                     Pilih atau Tarik File Gambar Cover
                                   </p>
-                                  <p className="desktop-paragraph-small-regular text-text-secondary mt-0.5">PNG, JPG, JPEG (Maks. 5MB)</p>
+                                  <p className="text-[9px] text-text-secondary mt-0.5">PNG, JPG, JPEG (Maks. 5MB)</p>
                                 </div>
                               </div>
                             </label>
@@ -2995,12 +2995,12 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                       {/* SEO Settings Option Block */}
                       <div className="space-y-4 pt-2">
-                        <h4 className="font-sora desktop-caption-large-medium text-[#0F5132] uppercase tracking-wider">SEO Settings</h4>
+                        <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">SEO Settings</h4>
                         <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4">
                           <div>
-                            <p className="desktop-caption-large-medium text-text-primary mb-2.5">Allow search engines to display this post in search results?</p>
+                            <p className="text-xs font-semibold text-text-primary mb-2.5">Allow search engines to display this post in search results?</p>
                             <div className="flex gap-4">
-                              <label className="flex items-center gap-2 cursor-pointer desktop-paragraph-small-regular">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
                                 <input
                                   type="radio"
                                   name="allowSearch"
@@ -3010,7 +3010,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                 />
                                 <span>Yes</span>
                               </label>
-                              <label className="flex items-center gap-2 cursor-pointer desktop-paragraph-small-regular">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
                                 <input
                                   type="radio"
                                   name="allowSearch"
@@ -3023,9 +3023,9 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             </div>
                           </div>
                           <div className="border-t border-slate-100 pt-3">
-                            <p className="desktop-caption-large-medium text-text-primary mb-2.5">Should search engines follow the links in this post?</p>
+                            <p className="text-xs font-semibold text-text-primary mb-2.5">Should search engines follow the links in this post?</p>
                             <div className="flex gap-4">
-                              <label className="flex items-center gap-2 cursor-pointer desktop-paragraph-small-regular">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
                                 <input
                                   type="radio"
                                   name="followLinks"
@@ -3035,7 +3035,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                 />
                                 <span>Yes</span>
                               </label>
-                              <label className="flex items-center gap-2 cursor-pointer desktop-paragraph-small-regular">
+                              <label className="flex items-center gap-2 cursor-pointer text-xs">
                                 <input
                                   type="radio"
                                   name="followLinks"
@@ -3053,56 +3053,56 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                     {/* Right Column: Custom scripts header/footers */}
                     <div className="space-y-6">
-                      <h4 className="font-sora desktop-caption-large-medium text-[#0F5132] uppercase tracking-wider">Custom Head & Footer Scripts</h4>
+                      <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Custom Head & Footer Scripts</h4>
                       <div className="space-y-4">
                         <div>
-                          <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Header Script - Desktop (Facebook Pixel, GTM, CSS Kustom)</label>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Header Script - Desktop (Facebook Pixel, GTM, CSS Kustom)</label>
                           <textarea
                             name="headDesktop"
                             defaultValue={editingPage.headDesktop}
                             rows={3}
                             placeholder="<script>...</script> atau <style>...</style>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
                         <div>
-                          <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Header Script - Mobile Only</label>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Header Script - Mobile Only</label>
                           <textarea
                             name="headMobile"
                             defaultValue={editingPage.headMobile}
                             rows={3}
                             placeholder="<script>...</script>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
                         <div>
-                          <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Footer Script - All Devices (Chat Widget, Analytics)</label>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer Script - All Devices (Chat Widget, Analytics)</label>
                           <textarea
                             name="footerAny"
                             defaultValue={editingPage.footerAny}
                             rows={3}
                             placeholder="<script>...</script>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
                         <div>
-                          <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Footer Script - Desktop Only</label>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer Script - Desktop Only</label>
                           <textarea
                             name="footerDesktop"
                             defaultValue={editingPage.footerDesktop}
                             rows={3}
                             placeholder="<script>...</script>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
                         <div>
-                          <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Footer - Mobile Only</label>
+                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer - Mobile Only</label>
                           <textarea
                             name="footerMobile"
                             defaultValue={editingPage.footerMobile}
                             rows={3}
                             placeholder="<script>...</script>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                           />
                         </div>
                       </div>
@@ -3113,14 +3113,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <button
                       type="button"
                       onClick={() => setEditingPage(null)}
-                      className="px-5 py-2.5 text-text-secondary hover:text-text-primary desktop-caption-large-medium uppercase tracking-wider transition-colors cursor-pointer"
+                      className="px-5 py-2.5 text-text-secondary hover:text-text-primary font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
                       disabled={isPending}
-                      className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl desktop-caption-large-medium transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                      className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
                     >
                       {isPending ? 'Menyimpan...' : 'Simpan Pengaturan Halaman'}
                     </button>
@@ -3133,24 +3133,24 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 {/* Stats cards grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-                    <span className="desktop-caption-medium-medium text-text-secondary uppercase tracking-wider">Total Halaman</span>
-                    <h3 className="font-sora desktop-heading-h6-bold text-text-primary mt-2">{pagesList.length}</h3>
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Total Halaman</span>
+                    <h3 className="font-sora text-2xl font-black text-text-primary mt-2">{pagesList.length}</h3>
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-                    <span className="desktop-caption-medium-medium text-text-secondary uppercase tracking-wider">Halaman Terbit</span>
-                    <h3 className="font-sora desktop-heading-h6-bold text-primary mt-2">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Halaman Terbit</span>
+                    <h3 className="font-sora text-2xl font-black text-primary mt-2">
                       {pagesList.filter((p: any) => p.status === 'PUBLISHED').length}
                     </h3>
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-                    <span className="desktop-caption-medium-medium text-text-secondary uppercase tracking-wider">Draft</span>
-                    <h3 className="font-sora desktop-heading-h6-bold text-amber-500 mt-2">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Draft</span>
+                    <h3 className="font-sora text-2xl font-black text-amber-500 mt-2">
                       {pagesList.filter((p: any) => p.status === 'DRAFT').length}
                     </h3>
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
-                    <span className="desktop-caption-medium-medium text-text-secondary uppercase tracking-wider">Diarsipkan</span>
-                    <h3 className="font-sora desktop-heading-h6-bold text-text-secondary mt-2">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Diarsipkan</span>
+                    <h3 className="font-sora text-2xl font-black text-text-secondary mt-2">
                       {pagesList.filter((p: any) => p.status === 'ARCHIVED').length}
                     </h3>
                   </div>
@@ -3165,14 +3165,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         placeholder="Cari nama atau slug halaman..."
                         value={searchPageQuery}
                         onChange={(e) => setSearchPageQuery(e.target.value)}
-                        className="w-full h-10 pl-10 pr-4 bg-white border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                        className="w-full h-10 pl-10 pr-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                       />
                       <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
                     </div>
                     <select
                       value={filterStatus}
                       onChange={(e) => setFilterStatus(e.target.value)}
-                      className="h-10 px-4 bg-white border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer"
+                      className="h-10 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer"
                     >
                       <option value="all">Semua Status</option>
                       <option value="PUBLISHED">Diterbitkan</option>
@@ -3189,7 +3189,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         } catch (e) {}
                         setShowDomainModal(true)
                       }}
-                      className="btn-primary border border-primary text-primary hover:bg-primary/5 desktop-caption-large-medium flex items-center gap-1.5 cursor-pointer outline-none"
+                      className="btn-primary border border-primary text-primary hover:bg-primary/5 text-xs flex items-center gap-1.5 cursor-pointer outline-none"
                     >
                       <Globe size={14} />
                       Hubungkan Domain
@@ -3200,7 +3200,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         setCreatePageTemplate('template1')
                         setShowCreateModal(true)
                       }}
-                      className="btn-primary desktop-caption-large-medium flex items-center gap-1.5 cursor-pointer outline-none shadow-sm"
+                      className="btn-primary text-xs flex items-center gap-1.5 cursor-pointer outline-none shadow-sm"
                     >
                       <Plus size={14} />
                       Buat Halaman Baru
@@ -3211,9 +3211,9 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 {/* Page list table */}
                 <div className="bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full desktop-paragraph-small-regular text-left text-text-secondary border-collapse">
+                    <table className="w-full text-xs text-left text-text-secondary border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-100 desktop-paragraph-small-semibold uppercase tracking-wider text-text-secondary bg-slate-50/50">
+                        <tr className="border-b border-slate-100 text-[10px] uppercase tracking-wider font-bold text-text-secondary bg-slate-50/50">
                           <th className="py-4 px-5">Halaman</th>
                           <th className="py-4 px-5">URL / Alamat Web</th>
                           <th className="py-4 px-5">Status</th>
@@ -3265,32 +3265,32 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                       )}
                                     </div>
                                     <div>
-                                      <p className="desktop-paragraph-small-semibold text-text-primary">{page.name}</p>
+                                      <p className="font-bold text-text-primary">{page.name}</p>
                                       
                                       {/* Action links under page name */}
-                                      <div className="flex items-center gap-1.5 desktop-paragraph-small-regular text-text-secondary mt-1">
-                                        <button onClick={() => setEditingPage(page)} className="hover:text-primary cursor-pointer">Edit</button>
+                                      <div className="flex items-center gap-1.5 text-[10px] text-text-secondary mt-1">
+                                        <button onClick={() => setEditingPage(page)} className="hover:text-primary cursor-pointer font-medium">Edit</button>
                                         <span>|</span>
-                                        <button onClick={() => router.push(`/merchant/builder/${page.id}`)} className="hover:text-primary cursor-pointer">Edit with Builder</button>
+                                        <button onClick={() => router.push(`/merchant/builder/${page.id}`)} className="hover:text-primary cursor-pointer font-medium">Edit with Builder</button>
                                         <span>|</span>
-                                        <button onClick={() => handleDuplicatePage(page)} className="hover:text-primary cursor-pointer">Duplicate</button>
+                                        <button onClick={() => handleDuplicatePage(page)} className="hover:text-primary cursor-pointer font-medium">Duplicate</button>
                                         <span>|</span>
-                                        <a href={finalHref} target="_blank" rel="noreferrer" className="hover:text-primary text-text-secondary">Visit Page</a>
+                                        <a href={finalHref} target="_blank" rel="noreferrer" className="hover:text-primary font-medium text-text-secondary">Visit Page</a>
                                       </div>
 
                                       {page.id === 'page-main' && (
-                                        <span className="btn-primary desktop-caption-medium-medium bg-primary/10 border border-primary/20 text-primary mt-2 inline-block">Halaman Utama</span>
+                                        <span className="btn-primary text-[8px] bg-primary/10 border border-primary/20 text-primary font-black mt-2 inline-block">Halaman Utama</span>
                                       )}
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-4 px-5 font-mono desktop-paragraph-small-regular text-primary hover:underline">
+                                <td className="py-4 px-5 font-mono text-[11px] text-primary hover:underline">
                                   <a href={finalHref} target="_blank" rel="noreferrer">
                                     {displayUrl}
                                   </a>
                                 </td>
                                 <td className="py-4 px-5">
-                                  <span className={`px-2 py-0.5 rounded-full desktop-caption-medium-medium uppercase tracking-wider border ${
+                                  <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border ${
                                     page.status === 'PUBLISHED'
                                       ? 'bg-green-500/10 border-green-500/25 text-primary'
                                       : page.status === 'DRAFT'
@@ -3305,21 +3305,21 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                   <div className="flex justify-end gap-2">
                                     <button
                                       onClick={() => setEditingPage(page)}
-                                      className="px-2.5 py-1.5 hover:bg-slate-50 border border-slate-100 rounded-xl desktop-caption-medium-medium uppercase tracking-wider text-text-primary transition-all cursor-pointer"
+                                      className="px-2.5 py-1.5 hover:bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-wider text-text-primary transition-all cursor-pointer"
                                       title="Edit Info & SEO"
                                     >
                                       Edit
                                     </button>
                                     <button
                                       onClick={() => router.push(`/merchant/builder/${page.id}`)}
-                                      className="btn-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 desktop-caption-medium-medium text-primary cursor-pointer"
+                                      className="btn-primary bg-primary/5 hover:bg-primary/10 border border-primary/20 text-[10px] text-primary cursor-pointer"
                                       title="Buka Builder Visual"
                                     >
                                       Builder
                                     </button>
                                     <button
                                       onClick={() => handleDuplicatePage(page)}
-                                      className="px-2.5 py-1.5 hover:bg-slate-50 border border-slate-100 rounded-xl desktop-caption-medium-medium uppercase tracking-wider text-text-secondary transition-all cursor-pointer"
+                                      className="px-2.5 py-1.5 hover:bg-slate-50 border border-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-wider text-text-secondary transition-all cursor-pointer"
                                       title="Duplikat Halaman"
                                     >
                                       Duplicate
@@ -3327,7 +3327,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                     <button
                                       onClick={() => handleDeletePage(page.id)}
                                       disabled={page.id === 'page-main'}
-                                      className="px-2.5 py-1.5 hover:bg-red-500/5 border border-slate-100 hover:border-red-500/20 rounded-xl desktop-caption-medium-medium uppercase tracking-wider text-red-500 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-slate-100 cursor-pointer"
+                                      className="px-2.5 py-1.5 hover:bg-red-500/5 border border-slate-100 hover:border-red-500/20 rounded-xl text-[10px] font-bold uppercase tracking-wider text-red-500 transition-all disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-slate-100 cursor-pointer"
                                       title="Hapus Halaman"
                                     >
                                       Hapus
@@ -3350,8 +3350,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
         {activeTab === 'academy' && (
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] mb-6">
-              <h3 className="font-sora desktop-heading-h6-bold text-[#0F5132] mb-2">Saloka Premium LMS Academy</h3>
-              <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed max-w-2xl">
+              <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Saloka Premium LMS Academy</h3>
+              <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
                 Tingkatkan omset bisnis Anda dengan mempelajari modul branding, pemasaran media sosial, sains fermentasi, dan manajemen finansial dari para mentor top.
               </p>
             </div>
@@ -3383,25 +3383,25 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         ) : (
                           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-60" />
                         )}
-                        <span className="absolute top-4 left-4 px-2.5 py-1 bg-white/95 rounded-lg desktop-caption-medium-medium text-primary uppercase tracking-wider shadow-sm">
+                        <span className="absolute top-4 left-4 px-2.5 py-1 bg-white/95 rounded-lg text-[9px] font-bold text-primary uppercase tracking-wider shadow-sm">
                           {course.accessRequired || 'Gold'} Module
                         </span>
                       </div>
 
                       {/* Course Info */}
                       <div className="p-6">
-                        <h3 className="font-sora desktop-paragraph-small-semibold text-text-primary mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+                        <h3 className="font-sora text-base font-bold text-text-primary mb-2 line-clamp-1 group-hover:text-primary transition-colors">
                           {course.title}
                         </h3>
-                        <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed mb-6">
+                        <p className="text-xs text-text-secondary leading-relaxed mb-6">
                           {course.description}
                         </p>
 
                         {/* Progress Bar */}
                         <div className="space-y-2">
-                          <div className="flex justify-between items-center desktop-caption-medium-medium text-text-secondary uppercase">
+                          <div className="flex justify-between items-center text-[10px] font-bold text-text-secondary uppercase">
                             <span>Progress Belajar</span>
-                            <span className="text-primary">{percent}% Selesai</span>
+                            <span className="text-primary font-bold">{percent}% Selesai</span>
                           </div>
                           <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                             <div
@@ -3409,7 +3409,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               style={{ width: `${percent}%` }}
                             />
                           </div>
-                          <div className="desktop-paragraph-small-regular text-text-secondary pt-1">
+                          <div className="text-[10px] text-text-secondary pt-1">
                             {completedCount} dari {totalLessons} pelajaran selesai dipelajari.
                           </div>
                         </div>
@@ -3421,7 +3421,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       <Link
                         id={`btn-course-${course.id}`}
                         href={`/academy/course/${course.id}`}
-                        className="w-full py-3 bg-primary hover:bg-primary/95 text-black font-geist desktop-caption-large-medium uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all text-center"
+                        className="w-full py-3 bg-primary hover:bg-primary/95 text-black font-geist font-bold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all text-center"
                       >
                         Mulai Belajar
                         <svg
@@ -3449,8 +3449,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden text-text-primary">
               <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
                 <div>
-                  <h3 className="font-sora desktop-heading-h6-bold text-text-primary">Buat Halaman Baru</h3>
-                  <p className="desktop-paragraph-small-regular text-text-secondary">Pilih template awal dan tentukan nama halaman Anda</p>
+                  <h3 className="font-sora text-base font-bold text-text-primary">Buat Halaman Baru</h3>
+                  <p className="text-[11px] text-text-secondary">Pilih template awal dan tentukan nama halaman Anda</p>
                 </div>
                 <button
                   onClick={() => setShowCreateModal(false)}
@@ -3464,18 +3464,18 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 {/* Left side settings */}
                 <div className="flex-grow space-y-5">
                   <div>
-                    <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Nama Halaman</label>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Halaman</label>
                     <input
                       type="text"
                       placeholder="Landing Page Promo Domestik"
                       value={createPageName}
                       onChange={(e) => setCreatePageName(e.target.value)}
-                      className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                      className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-3">Pilih Template Awal</label>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">Pilih Template Awal</label>
                     <div className="grid grid-cols-2 gap-3">
                       {[
                         { id: 'template1', title: 'Blank Template', desc: 'Mulai dari halaman kosong' },
@@ -3492,8 +3492,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                               : 'border-slate-100 bg-white hover:border-slate-200'
                           }`}
                         >
-                          <p className="desktop-caption-large-medium text-text-primary">{tpl.title}</p>
-                          <p className="desktop-paragraph-small-regular text-text-secondary mt-1">{tpl.desc}</p>
+                          <p className="font-bold text-xs text-text-primary">{tpl.title}</p>
+                          <p className="text-[10px] text-text-secondary mt-1">{tpl.desc}</p>
                         </div>
                       ))}
                     </div>
@@ -3503,8 +3503,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 {/* Right side preview block */}
                 <div className="w-full md:w-80 shrink-0 flex flex-col">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="desktop-caption-medium-medium text-text-secondary uppercase tracking-wider">Preview Layout</span>
-                    <div className="flex bg-white rounded-lg p-0.5 border border-slate-100 desktop-caption-medium-medium">
+                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Preview Layout</span>
+                    <div className="flex bg-white rounded-lg p-0.5 border border-slate-100 text-[9px] font-bold">
                       <button
                         onClick={() => setCreatePagePreview('mobile')}
                         className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'mobile' ? 'bg-primary text-white' : 'text-text-secondary'}`}
@@ -3537,14 +3537,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         {createPageTemplate === 'template1' && (
                           <div className="text-center space-y-2 my-auto flex flex-col items-center justify-center h-full">
                             <Layers className="mx-auto text-slate-300 animate-pulse" size={24} />
-                            <p className="desktop-caption-medium-medium">Blank Template</p>
-                            <p className="desktop-paragraph-small-regular text-text-secondary max-w-[120px]">Halaman kosong tanpa bagian default.</p>
+                            <p className="font-bold text-[10px]">Blank Template</p>
+                            <p className="text-[8px] text-text-secondary max-w-[120px]">Halaman kosong tanpa bagian default.</p>
                           </div>
                         )}
                         {createPageTemplate === 'template2' && (
                           <div className="w-full h-full flex flex-col justify-between py-1 space-y-1.5">
                             <div className="h-3 bg-slate-100 rounded-sm w-1/3"></div>
-                            <div className="h-10 bg-slate-50 border border-dashed border-slate-200 rounded flex items-center justify-center desktop-paragraph-small-regular text-text-secondary">Hero Banner</div>
+                            <div className="h-10 bg-slate-50 border border-dashed border-slate-200 rounded flex items-center justify-center text-[7px] text-text-secondary">Hero Banner</div>
                             <div className="grid grid-cols-2 gap-1">
                               <div className="h-8 bg-slate-50 rounded"></div>
                               <div className="h-8 bg-slate-50 rounded"></div>
@@ -3562,7 +3562,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                 <div className="btn-primary bg-primary/20"></div>
                               </div>
                             </div>
-                            <div className="h-6 bg-slate-50 rounded flex items-center justify-center desktop-paragraph-small-regular text-text-secondary">Testimonial</div>
+                            <div className="h-6 bg-slate-50 rounded flex items-center justify-center text-[7px] text-text-secondary">Testimonial</div>
                           </div>
                         )}
                         {createPageTemplate === 'template4' && (
@@ -3585,7 +3585,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-white">
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="px-5 py-2.5 text-text-secondary hover:text-text-primary desktop-caption-large-medium uppercase tracking-wider transition-colors cursor-pointer"
+                  className="px-5 py-2.5 text-text-secondary hover:text-text-primary font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
@@ -3598,7 +3598,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     handleCreatePage(createPageName, createPageTemplate)
                   }}
                   disabled={isPending}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl desktop-caption-large-medium transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                  className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   {isPending ? 'Memproses...' : 'Buat Halaman'}
                 </button>
@@ -3613,8 +3613,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden text-text-primary">
               <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
                 <div>
-                  <h3 className="font-sora desktop-heading-h6-bold text-text-primary">Hubungkan Custom Domain</h3>
-                  <p className="desktop-paragraph-small-regular text-text-secondary">Gunakan domain Anda sendiri untuk landing page Anda</p>
+                  <h3 className="font-sora text-base font-bold text-text-primary">Hubungkan Custom Domain</h3>
+                  <p className="text-[11px] text-text-secondary">Gunakan domain Anda sendiri untuk landing page Anda</p>
                 </div>
                 <button
                   onClick={() => setShowDomainModal(false)}
@@ -3626,37 +3626,37 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-slate-50/50">
                 <div>
-                  <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Nama Domain</label>
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Domain</label>
                   <input
                     type="text"
                     placeholder="www.tokosaya.com atau katalog.bisnis.id"
                     value={customDomainInput}
                     onChange={(e) => setCustomDomainInput(e.target.value)}
-                    className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                    className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                   />
-                  <p className="desktop-paragraph-small-regular text-text-secondary mt-1.5">Masukkan nama domain Anda tanpa protokol https://</p>
+                  <p className="text-[9px] text-text-secondary mt-1.5">Masukkan nama domain Anda tanpa protokol https://</p>
                 </div>
 
                 <div className="bg-white border border-slate-100 rounded-2xl p-5 space-y-4">
-                  <h4 className="font-sora desktop-caption-large-medium text-[#0F5132] flex items-center gap-1.5">
+                  <h4 className="font-sora text-xs font-bold text-[#0F5132] flex items-center gap-1.5">
                     <Globe size={14} className="text-primary" />
                     Panduan Konfigurasi DNS
                   </h4>
-                  <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed">
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
                     Masuk ke panel domain provider Anda (Niagahoster, Rumahweb, Domainesia, dsb) lalu tambahkan record berikut pada pengaturan DNS Anda:
                   </p>
 
-                  <div className="border border-slate-100 rounded-xl overflow-hidden desktop-paragraph-small-regular font-geist">
-                    <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 grid grid-cols-3 text-text-secondary uppercase tracking-wider desktop-caption-medium-medium">
+                  <div className="border border-slate-100 rounded-xl overflow-hidden text-[11px] font-geist">
+                    <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 grid grid-cols-3 font-bold text-text-secondary uppercase tracking-wider text-[9px]">
                       <span>Tipe (Type)</span>
                       <span>Nama (Host)</span>
                       <span>Target (Value)</span>
                     </div>
                     <div className="px-4 py-3 grid grid-cols-3 items-center border-b border-slate-50">
-                      <span className="desktop-paragraph-small-semibold text-text-primary">CNAME</span>
+                      <span className="font-bold text-text-primary">CNAME</span>
                       <span className="font-mono text-text-secondary">www</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-primary desktop-paragraph-small-semibold">cname.saloka.id</span>
+                        <span className="font-mono text-primary font-bold">cname.saloka.id</span>
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText('cname.saloka.id')
@@ -3670,10 +3670,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       </div>
                     </div>
                     <div className="px-4 py-3 grid grid-cols-3 items-center">
-                      <span className="desktop-paragraph-small-semibold text-text-primary">CNAME</span>
+                      <span className="font-bold text-text-primary">CNAME</span>
                       <span className="font-mono text-text-secondary">@</span>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-mono text-primary desktop-paragraph-small-semibold">cname.saloka.id</span>
+                        <span className="font-mono text-primary font-bold">cname.saloka.id</span>
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText('cname.saloka.id')
@@ -3688,7 +3688,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     </div>
                   </div>
 
-                  <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl desktop-paragraph-small-regular text-amber-700 leading-relaxed">
+                  <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl text-[10px] text-amber-700 leading-relaxed">
                     <strong>Catatan:</strong> Proses propagasi DNS CNAME biasanya memerlukan waktu 5 menit hingga maksimal 24 jam tergantung penyedia domain Anda.
                   </div>
                 </div>
@@ -3707,7 +3707,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                             }
                           }}
                           disabled={isPending}
-                          className="px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-xl desktop-caption-large-medium transition-colors cursor-pointer disabled:opacity-50"
+                          className="px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 font-bold rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-50"
                         >
                           Hapus Domain
                         </button>
@@ -3719,7 +3719,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 <div className="flex gap-3 ml-auto">
                   <button
                     onClick={() => setShowDomainModal(false)}
-                    className="px-5 py-2.5 text-text-secondary hover:text-text-primary desktop-caption-large-medium uppercase tracking-wider transition-colors cursor-pointer"
+                    className="px-5 py-2.5 text-text-secondary hover:text-text-primary font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
                   >
                     Batal
                   </button>
@@ -3732,7 +3732,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       handleSaveCustomDomain(customDomainInput)
                     }}
                     disabled={isPending}
-                    className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl desktop-caption-large-medium transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                    className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
                   >
                     {isPending ? 'Menyimpan...' : 'Hubungkan Domain'}
                   </button>
@@ -3745,8 +3745,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
         {activeTab === 'leveling' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100">
-              <h3 className="font-sora desktop-heading-h6-bold text-[#0F5132] mb-2">Pengajuan Kenaikan Level Area Merchant (L1 - L4)</h3>
-              <p className="desktop-paragraph-small-regular text-text-secondary leading-relaxed mb-6">
+              <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Pengajuan Kenaikan Level Area Merchant (L1 - L4)</h3>
+              <p className="text-xs text-text-secondary leading-relaxed mb-6">
                 Untuk menaikkan radius jangkauan area bisnis Anda, Anda harus memenuhi syarat legalitas, sertifikasi, desain premium, dan omset minimal Rp 10 Juta per bulan.
               </p>
 
@@ -3758,8 +3758,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   { title: 'Level 4 (Nasional)', desc: 'Jangkauan area seluruh Indonesia. Syarat: Sertifikasi & Desain Premium.' }
                 ].map((item, idx) => (
                   <div key={idx} className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                    <h4 className="desktop-caption-large-medium text-slate-800 mb-1">{item.title}</h4>
-                    <p className="desktop-paragraph-small-regular text-slate-500 leading-relaxed">{item.desc}</p>
+                    <h4 className="font-bold text-xs text-slate-800 mb-1">{item.title}</h4>
+                    <p className="text-[10px] text-slate-500 leading-relaxed">{item.desc}</p>
                   </div>
                 ))}
               </div>
@@ -3785,14 +3785,14 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     }
                   })
                 }}
-                className="space-y-4 desktop-paragraph-small-regular max-w-xl"
+                className="space-y-4 text-xs max-w-xl"
               >
                 <div>
-                  <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Target Tingkatan Level</label>
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Target Tingkatan Level</label>
                   <select
                     name="targetLevel"
                     required
-                    className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none"
                   >
                     <option value="2">Level 2 (Jangkauan 10 KM - Kecamatan)</option>
                     <option value="3">Level 3 (Jangkauan 35 KM - Kabupaten)</option>
@@ -3802,37 +3802,37 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Estimasi Jangkauan Radius (KM)</label>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Estimasi Jangkauan Radius (KM)</label>
                     <input
                       name="radiusKm"
                       type="number"
                       required
                       placeholder="e.g. 10"
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Rata-rata Omset Bulanan (Rupiah)</label>
+                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Rata-rata Omset Bulanan (Rupiah)</label>
                     <input
                       name="omsetBulan"
                       type="number"
                       required
                       placeholder="e.g. 12000000"
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2.5 py-3 border-y border-slate-100">
-                  <span className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Checklist Persyaratan</span>
+                  <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Checklist Persyaratan</span>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       name="hasLegalitas"
                       type="checkbox"
                       className="rounded text-primary focus:ring-primary cursor-pointer"
                     />
-                    <span className="desktop-paragraph-small-regular text-slate-700">Saya memiliki Dokumen Legalitas lengkap (Akta Notaris, AHU, NPWP)</span>
+                    <span className="text-xs text-slate-700">Saya memiliki Dokumen Legalitas lengkap (Akta Notaris, AHU, NPWP)</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -3840,7 +3840,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       type="checkbox"
                       className="rounded text-primary focus:ring-primary cursor-pointer"
                     />
-                    <span className="desktop-paragraph-small-regular text-slate-700">Saya telah memperbarui desain halaman display produk dengan standard Premium/Exclusive</span>
+                    <span className="text-xs text-slate-700">Saya telah memperbarui desain halaman display produk dengan standard Premium/Exclusive</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -3848,23 +3848,23 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       type="checkbox"
                       className="rounded text-primary focus:ring-primary cursor-pointer"
                     />
-                    <span className="desktop-paragraph-small-regular text-slate-700">Saya memiliki Sertifikasi Produk (P-IRT, Halal, atau BPOM) jika relevan</span>
+                    <span className="text-xs text-slate-700">Saya memiliki Sertifikasi Produk (P-IRT, Halal, atau BPOM) jika relevan</span>
                   </label>
                 </div>
 
                 <div>
-                  <label className="block desktop-caption-medium-medium text-text-secondary uppercase tracking-wider mb-2">Catatan Tambahan (Opsional)</label>
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Catatan Tambahan (Opsional)</label>
                   <textarea
                     name="catatan"
                     placeholder="Sebutkan jenis usaha Anda dan detail dokumen legalitas jika ada..."
-                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl desktop-paragraph-small-regular text-text-primary focus:outline-none h-20"
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none h-20"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="px-6 py-3 bg-primary hover:bg-[#259a3f] text-white rounded-xl desktop-caption-large-medium uppercase tracking-wider transition-colors cursor-pointer border-none shadow-sm disabled:opacity-50"
+                  className="px-6 py-3 bg-primary hover:bg-[#259a3f] text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer border-none shadow-sm disabled:opacity-50"
                 >
                   {isPending ? 'Mengirim Pengajuan...' : 'Kirim Pengajuan Level Up'}
                 </button>
@@ -3880,8 +3880,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
           <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden text-on-surface">
             <div className="p-6 border-b border-border-subtle flex justify-between items-center">
               <div>
-                <h3 className="font-sora desktop-heading-h6-bold">Pilih Template Landing Page</h3>
-                <p className="desktop-paragraph-small-regular text-text-secondary">Template siap pakai untuk meningkatkan konversi jualan Anda</p>
+                <h3 className="font-sora text-xl font-bold">Pilih Template Landing Page</h3>
+                <p className="text-xs text-text-secondary">Template siap pakai untuk meningkatkan konversi jualan Anda</p>
               </div>
               <button
                 type="button"
@@ -3905,11 +3905,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-gray-900 flex flex-col justify-end p-6 text-white relative">
                     {storefrontTemplate === 'noir' && (
-                      <span className="btn-primary absolute top-4 right-4 desktop-caption-medium-medium">Aktif</span>
+                      <span className="btn-primary absolute top-4 right-4 text-[8px]">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
-                      <h4 className="desktop-paragraph-small-semibold">Minimal Noir</h4>
-                      <p className="desktop-paragraph-small-regular text-white/70">Elegan, berani, dan fokus pada satu produk utama.</p>
+                      <h4 className="font-bold text-sm">Minimal Noir</h4>
+                      <p className="text-[10px] text-white/70">Elegan, berani, dan fokus pada satu produk utama.</p>
                     </div>
                   </div>
                 </div>
@@ -3923,11 +3923,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-surface-container flex flex-col justify-end p-6 text-text-primary relative">
                     {storefrontTemplate === 'clean' && (
-                      <span className="btn-primary absolute top-4 right-4 desktop-caption-medium-medium">Aktif</span>
+                      <span className="btn-primary absolute top-4 right-4 text-[8px]">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
-                      <h4 className="desktop-paragraph-small-semibold">Clean Professional</h4>
-                      <p className="desktop-paragraph-small-regular text-text-secondary">Terorganisir, rapi, dan cocok untuk korporasi lokal.</p>
+                      <h4 className="font-bold text-sm">Clean Professional</h4>
+                      <p className="text-[10px] text-text-secondary">Terorganisir, rapi, dan cocok untuk korporasi lokal.</p>
                     </div>
                   </div>
                 </div>
@@ -3941,11 +3941,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-white flex flex-col justify-end p-6 text-text-primary relative">
                     {storefrontTemplate === 'gold' && (
-                      <span className="btn-primary absolute top-4 right-4 desktop-caption-medium-medium">Aktif</span>
+                      <span className="btn-primary absolute top-4 right-4 text-[8px]">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
-                      <h4 className="desktop-paragraph-small-semibold">Modern Gold</h4>
-                      <p className="desktop-paragraph-small-regular text-text-secondary">Mewah, hangat, dan sangat mudah digunakan.</p>
+                      <h4 className="font-bold text-sm">Modern Gold</h4>
+                      <p className="text-[10px] text-text-secondary">Mewah, hangat, dan sangat mudah digunakan.</p>
                     </div>
                   </div>
                 </div>
@@ -3959,11 +3959,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-zinc-800 flex flex-col justify-end p-6 text-white relative">
                     {storefrontTemplate === 'studio' && (
-                      <span className="btn-primary absolute top-4 right-4 desktop-caption-medium-medium">Aktif</span>
+                      <span className="btn-primary absolute top-4 right-4 text-[8px]">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
-                      <h4 className="desktop-paragraph-small-semibold">Studio Design</h4>
-                      <p className="desktop-paragraph-small-regular text-white/70">Aesthetic creative agency layout, clean typography.</p>
+                      <h4 className="font-bold text-sm">Studio Design</h4>
+                      <p className="text-[10px] text-white/70">Aesthetic creative agency layout, clean typography.</p>
                     </div>
                   </div>
                 </div>
@@ -3977,11 +3977,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-yellow-400 flex flex-col justify-end p-6 text-black relative">
                     {storefrontTemplate === 'brutalist' && (
-                      <span className="absolute top-4 right-4 bg-black text-white desktop-caption-medium-medium px-2 py-0.5 rounded-full uppercase tracking-wider border border-black">Aktif</span>
+                      <span className="absolute top-4 right-4 bg-black text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-black">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
-                      <h4 className="desktop-paragraph-small-semibold text-black">Neo Brutalism</h4>
-                      <p className="desktop-caption-medium-medium text-black/85">Tebal, eksentrik, berani dengan kontras tinggi.</p>
+                      <h4 className="font-bold text-sm text-black">Neo Brutalism</h4>
+                      <p className="text-[10px] text-black/85 font-bold">Tebal, eksentrik, berani dengan kontras tinggi.</p>
                     </div>
                   </div>
                 </div>
@@ -3995,11 +3995,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-[#F5F1E8] flex flex-col justify-end p-6 text-black relative">
                     {storefrontTemplate === 'swiss' && (
-                      <span className="absolute top-4 right-4 bg-black text-white desktop-caption-medium-medium px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
+                      <span className="absolute top-4 right-4 bg-black text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
-                      <h4 className="desktop-paragraph-small-semibold">Swiss Minimalist</h4>
-                      <p className="desktop-paragraph-small-regular text-black/75">Design1.md - Grid rapi & border tajam tanpa radius.</p>
+                      <h4 className="font-bold text-sm">Swiss Minimalist</h4>
+                      <p className="text-[10px] text-black/75">Design1.md - Grid rapi & border tajam tanpa radius.</p>
                     </div>
                   </div>
                 </div>
@@ -4013,11 +4013,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-white flex flex-col justify-end p-6 text-black relative border-l-8 border-l-red-500">
                     {storefrontTemplate === 'destijl' && (
-                      <span className="absolute top-4 right-4 bg-[#0000FF] text-white desktop-caption-medium-medium px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
+                      <span className="absolute top-4 right-4 bg-[#0000FF] text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
-                      <h4 className="desktop-paragraph-small-semibold">De Stijl Abstract</h4>
-                      <p className="desktop-paragraph-small-regular text-black/75">Design2.md - Blok warna primer & garis asimetris.</p>
+                      <h4 className="font-bold text-sm">De Stijl Abstract</h4>
+                      <p className="text-[10px] text-black/75">Design2.md - Blok warna primer & garis asimetris.</p>
                     </div>
                   </div>
                 </div>
@@ -4031,11 +4031,11 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 >
                   <div className="aspect-[4/5] bg-[#000] flex flex-col justify-end p-6 text-white relative border-l-4 border-l-[#ED1C24]">
                     {storefrontTemplate === 'hpc' && (
-                      <span className="absolute top-4 right-4 bg-[#ED1C24] text-white desktop-caption-medium-medium px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
+                      <span className="absolute top-4 right-4 bg-[#ED1C24] text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Aktif</span>
                     )}
                     <div className="space-y-1 z-10">
-                      <h4 className="desktop-paragraph-small-semibold">HPC Performance</h4>
-                      <p className="desktop-paragraph-small-regular text-white/70">Design3.md - Glow server center, performa tinggi.</p>
+                      <h4 className="font-bold text-sm">HPC Performance</h4>
+                      <p className="text-[10px] text-white/70">Design3.md - Glow server center, performa tinggi.</p>
                     </div>
                   </div>
                 </div>
@@ -4045,7 +4045,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             <div className="p-6 border-t border-border-subtle flex justify-end gap-4 bg-surface-container-low">
               <button
                 type="button"
-                className="px-6 py-2.5 text-text-secondary desktop-caption-large-medium uppercase tracking-wider hover:text-text-primary transition-colors"
+                className="px-6 py-2.5 text-text-secondary font-bold text-xs uppercase tracking-wider hover:text-text-primary transition-colors"
                 onClick={() => setIsGalleryOpen(false)}
               >
                 Batal
@@ -4060,31 +4060,31 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-surface-dark border border-border-subtle rounded-lg max-w-md w-full p-6 space-y-6 shadow-2xl text-text-primary">
             <div className="flex justify-between items-center border-b border-border-subtle pb-3">
-              <h3 className="font-sora desktop-heading-h6-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <h3 className="font-sora text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
                 <Sparkles size={16} className="animate-pulse text-primary" />
                 AI Description Assistant
               </h3>
               <button onClick={() => setShowAiModal(false)} className="text-text-secondary hover:text-text-primary">✕</button>
             </div>
 
-            <div className="space-y-4 desktop-paragraph-small-regular">
+            <div className="space-y-4 text-xs">
               <div>
-                <label className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Nama Produk / Topik</label>
+                <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Produk / Topik</label>
                 <input
                   type="text"
                   value={aiKeywords}
                   onChange={(e) => setAiKeywords(e.target.value)}
                   placeholder="Masukkan kata kunci/nama produk..."
-                  className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                  className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block desktop-caption-medium-medium font-geist text-text-secondary uppercase tracking-wider mb-2">Kategori Bisnis</label>
+                <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Kategori Bisnis</label>
                 <select
                   value={aiCategory}
                   onChange={(e) => setAiCategory(e.target.value)}
-                  className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded desktop-paragraph-small-regular text-text-primary focus:outline-none"
+                  className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
                 >
                   {PRODUCT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
@@ -4094,7 +4094,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 <button
                   type="button"
                   onClick={() => setShowAiModal(false)}
-                  className="flex-1 py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-text-primary desktop-caption-large-medium rounded uppercase tracking-wider transition-colors cursor-pointer"
+                  className="flex-1 py-3 bg-surface-container hover:bg-surface-container-high border border-border-subtle text-text-primary font-bold rounded uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Batal
                 </button>

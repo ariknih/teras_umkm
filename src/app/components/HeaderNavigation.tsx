@@ -136,7 +136,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
       <div className="p-3 sm:p-4 space-y-3.5 text-slate-800">
         {/* Quick Filter Tabs (When searching) */}
         {hasQuery && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-100 desktop-caption-large-medium">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-100 text-[11px] font-bold">
             <button
               type="button"
               onClick={() => setSearchTab('ALL')}
@@ -180,7 +180,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
         {/* Loading Indicator */}
         {isSearching && (
-          <div className="flex items-center justify-center py-6 gap-2 text-slate-500 desktop-caption-large-medium">
+          <div className="flex items-center justify-center py-6 gap-2 text-xs text-slate-500 font-medium">
             <Loader2 className="w-4 h-4 text-[#2DB24A] animate-spin" />
             <span>Mencari di Saloka...</span>
           </div>
@@ -192,14 +192,14 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             {/* Products Section */}
             {(searchTab === 'ALL' || searchTab === 'PRODUK') && products.length > 0 && (
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between desktop-caption-medium-bold text-slate-500 uppercase tracking-wider px-1">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-500 uppercase tracking-wider px-1">
                   <span className="flex items-center gap-1 text-[#2DB24A]">
                     <ShoppingBag size={13} /> Produk Terkait ({products.length})
                   </span>
                   <Link
                     href={`/market?q=${encodeURIComponent(searchQuery)}`}
                     onClick={handleCloseSearch}
-                    className="desktop-caption-medium-bold text-[#2DB24A] hover:underline"
+                    className="text-[10px] text-[#2DB24A] hover:underline font-bold"
                   >
                     Lihat Semua
                   </Link>
@@ -219,19 +219,19 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="px-1.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] desktop-caption-medium-bold rounded uppercase">
+                          <span className="px-1.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-bold text-[9px] rounded uppercase">
                             {p.category || 'PRODUK'}
                           </span>
                           {p.merchant?.name && (
-                            <span className="desktop-caption-medium-bold text-slate-400">
+                            <span className="text-[10px] text-slate-400 truncate">
                               • {p.merchant.name}
                             </span>
                           )}
                         </div>
-                        <h5 className="desktop-caption-large-medium text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
                           {p.title}
                         </h5>
-                        <p className="desktop-caption-large-medium text-slate-900 mt-0.5">
+                        <p className="text-xs font-extrabold text-slate-900 mt-0.5">
                           Rp {Number(p.price || 0).toLocaleString('id-ID')}
                         </p>
                       </div>
@@ -245,14 +245,14 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             {/* Services Section */}
             {(searchTab === 'ALL' || searchTab === 'JASA') && services.length > 0 && (
               <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between desktop-caption-medium-bold text-slate-500 uppercase tracking-wider px-1">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-500 uppercase tracking-wider px-1">
                   <span className="flex items-center gap-1 text-blue-600">
                     <Briefcase size={13} /> Jasa & Layanan ({services.length})
                   </span>
                   <Link
                     href={`/jasa?search=${encodeURIComponent(searchQuery)}`}
                     onClick={handleCloseSearch}
-                    className="desktop-caption-medium-bold text-blue-600 hover:underline"
+                    className="text-[10px] text-blue-600 hover:underline font-bold"
                   >
                     Lihat Semua
                   </Link>
@@ -272,19 +272,19 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 desktop-caption-medium-bold rounded uppercase">
+                          <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-bold text-[9px] rounded uppercase">
                             {s.category || 'JASA'}
                           </span>
                           {s.location && (
-                            <span className="desktop-caption-medium-bold text-slate-400 flex items-center gap-0.5">
+                            <span className="text-[10px] text-slate-400 truncate flex items-center gap-0.5">
                               <MapPin size={9} /> {s.location}
                             </span>
                           )}
                         </div>
-                        <h5 className="desktop-caption-large-medium text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
                           {s.title}
                         </h5>
-                        <p className="desktop-caption-large-medium text-slate-900 mt-0.5">
+                        <p className="text-xs font-extrabold text-slate-900 mt-0.5">
                           {s.pricePerSession ? `Rp ${Number(s.pricePerSession).toLocaleString('id-ID')} / sesi` : (s.pricePerDay ? `Rp ${Number(s.pricePerDay).toLocaleString('id-ID')} / hari` : 'Hubungi Penyedia')}
                         </p>
                       </div>
@@ -298,14 +298,14 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             {/* Communities Section */}
             {(searchTab === 'ALL' || searchTab === 'KOMUNITAS') && communities.length > 0 && (
               <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between desktop-caption-medium-bold text-slate-500 uppercase tracking-wider px-1">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-500 uppercase tracking-wider px-1">
                   <span className="flex items-center gap-1 text-amber-700">
                     <Users size={13} /> Komunitas ({communities.length})
                   </span>
                   <Link
                     href="/community"
                     onClick={handleCloseSearch}
-                    className="desktop-caption-medium-bold text-amber-700 hover:underline"
+                    className="text-[10px] text-amber-700 hover:underline font-bold"
                   >
                     Lihat Semua
                   </Link>
@@ -324,13 +324,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                         className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
                       />
                       <div className="flex-1 min-w-0">
-                        <span className="px-1.5 py-0.5 bg-amber-50 text-amber-800 desktop-caption-medium-bold rounded uppercase">
+                        <span className="px-1.5 py-0.5 bg-amber-50 text-amber-800 font-bold text-[9px] rounded uppercase">
                           {c.type === 'KOPERASI' ? 'KOPERASI RESMI' : 'PERKUMPULAN UMKM'}
                         </span>
-                        <h5 className="desktop-caption-large-medium text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
                           {c.name}
                         </h5>
-                        <p className="desktop-caption-medium-bold text-slate-400">
+                        <p className="text-[10px] text-slate-400 truncate">
                           {c._count?.members || 1} Anggota • {c.domisili || 'Indonesia'}
                         </p>
                       </div>
@@ -348,17 +348,17 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
           <div className="space-y-3">
             {/* Friendly Notification */}
             <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-center space-y-1">
-              <p className="desktop-caption-large-medium text-amber-900">
+              <p className="text-xs font-bold text-amber-900">
                 Produk atau jasa "{searchQuery}" tidak ditemukan
               </p>
-              <p className="desktop-caption-large-medium text-amber-700">
+              <p className="text-[11px] text-amber-700 font-medium">
                 Jangan khawatir! Berikut rekomendasi produk & jasa pilihan untuk Anda:
               </p>
             </div>
 
             {/* Recommendations Section */}
             <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
-              <div className="flex items-center gap-1.5 desktop-caption-large-medium text-slate-800 px-1">
+              <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 px-1">
                 <Sparkles size={14} className="text-[#2DB24A]" />
                 <span>Rekomendasi Produk & Jasa</span>
               </div>
@@ -376,13 +376,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                       className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
                     />
                     <div className="flex-1 min-w-0">
-                      <span className="px-1.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] desktop-caption-medium-bold rounded uppercase">
+                      <span className="px-1.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-bold text-[9px] rounded uppercase">
                         {p.category || 'PRODUK'}
                       </span>
-                      <h5 className="desktop-caption-large-medium text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                      <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
                         {p.title}
                       </h5>
-                      <p className="desktop-caption-large-medium text-slate-900 mt-0.5">
+                      <p className="text-xs font-extrabold text-slate-900 mt-0.5">
                         Rp {Number(p.price || 0).toLocaleString('id-ID')}
                       </p>
                     </div>
@@ -403,13 +403,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                       className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
                     />
                     <div className="flex-1 min-w-0">
-                      <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 desktop-caption-medium-bold rounded uppercase">
+                      <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-bold text-[9px] rounded uppercase">
                         {s.category || 'JASA'}
                       </span>
-                      <h5 className="desktop-caption-large-medium text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                      <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
                         {s.title}
                       </h5>
-                      <p className="desktop-caption-large-medium text-slate-900 mt-0.5">
+                      <p className="text-xs font-extrabold text-slate-900 mt-0.5">
                         {s.pricePerSession ? `Rp ${Number(s.pricePerSession).toLocaleString('id-ID')} / sesi` : (s.pricePerDay ? `Rp ${Number(s.pricePerDay).toLocaleString('id-ID')} / hari` : 'Hubungi Penyedia')}
                       </p>
                     </div>
@@ -426,7 +426,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
           <div className="space-y-3">
             {/* Quick Keyword Chips */}
             <div className="space-y-1.5">
-              <span className="desktop-caption-medium-bold text-slate-400 uppercase tracking-wider px-1">
+              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider px-1">
                 Pencarian Populer
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -437,7 +437,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     onClick={() => {
                       setSearchQuery(term)
                     }}
-                    className="px-2.5 py-1 bg-slate-100 hover:bg-[#E8F8EE] hover:text-[#0F5132] text-slate-600 desktop-caption-large-medium rounded-lg transition-all cursor-pointer border-none"
+                    className="px-2.5 py-1 bg-slate-100 hover:bg-[#E8F8EE] hover:text-[#0F5132] text-slate-600 text-xs font-semibold rounded-lg transition-all cursor-pointer border-none"
                   >
                     {term}
                   </button>
@@ -448,7 +448,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             {/* Recommended Items Preview */}
             {recommendedProducts.length > 0 && (
               <div className="space-y-1.5 pt-1 border-t border-slate-100">
-                <span className="desktop-caption-medium-bold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-1">
+                <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-1">
                   <Sparkles size={11} className="text-[#2DB24A]" /> Rekomendasi Produk Pilihan
                 </span>
                 <div className="grid grid-cols-1 gap-1.5">
@@ -465,10 +465,10 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                         className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-100"
                       />
                       <div className="flex-1 min-w-0">
-                        <h5 className="desktop-caption-large-medium text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors">
+                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors">
                           {p.title}
                         </h5>
-                        <p className="desktop-caption-medium-bold text-slate-800">
+                        <p className="text-[11px] font-extrabold text-slate-800">
                           Rp {Number(p.price || 0).toLocaleString('id-ID')}
                         </p>
                       </div>
@@ -482,7 +482,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
         )}
 
         {/* Footer Actions */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between desktop-caption-medium-bold">
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold">
           <Link
             href={hasQuery ? `/market?q=${encodeURIComponent(searchQuery)}` : '/market'}
             onClick={handleCloseSearch}
@@ -601,26 +601,26 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
           {/* Middle: Links with Icons (Desktop) */}
           <div className="hidden lg:flex items-center gap-3.5 xl:gap-4.5">
-            <Link href="/market" className="flex items-center gap-1.5 desktop-paragraph-small-medium text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+            <Link href="/market" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/marketplace icon.svg" alt="Market" className="w-4 h-4 object-contain" />
               <span>Market</span>
             </Link>
-            <Link href="/snackbox" className="flex items-center gap-1.5 desktop-paragraph-small-medium text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap relative group">
+            <Link href="/snackbox" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap relative group">
               <Package className="w-4 h-4 text-[#2DB24A]" />
               <span>Snackbox</span>
-              <span className="desktop-caption-medium-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-[#2DB24A] animate-pulse">
+              <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-100 text-[#2DB24A] animate-pulse">
                 Baru
               </span>
             </Link>
-            <Link href="/jasa" className="flex items-center gap-1.5 desktop-paragraph-small-medium text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+            <Link href="/jasa" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/jasa icon.svg" alt="Jasa" className="w-4 h-4 object-contain" />
               <span>Jasa</span>
             </Link>
-            <Link href="/affiliate" className="flex items-center gap-1.5 desktop-paragraph-small-medium text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+            <Link href="/affiliate" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-4 h-4 object-contain" />
               <span>Affiliate</span>
             </Link>
-            <Link href="/community" className="flex items-center gap-1.5 desktop-paragraph-small-medium text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+            <Link href="/community" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/comunity icon.svg" alt="Community" className="w-4 h-4 object-contain" />
               <span>Community</span>
             </Link>
@@ -635,13 +635,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             {user ? (
               <div className="flex items-center gap-2">
                 {/* Stacked Wallet & Coin Info (Tablet & Desktop) */}
-                <Link href="/wallet" className="hidden sm:flex flex-col items-end desktop-caption-medium-bold leading-snug px-2.5 py-1 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-[#2DB24A]/40 transition-colors shrink-0">
+                <Link href="/wallet" className="hidden sm:flex flex-col items-end text-[10px] font-bold leading-snug px-2.5 py-1 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-[#2DB24A]/40 transition-colors shrink-0">
                   <div className="flex items-center gap-1 text-[#2DB24A]">
-                    <span className="desktop-caption-medium-bold">💵</span>
+                    <span className="text-[11px]">💵</span>
                     <span>Rp {(wallet?.balance ?? 0).toLocaleString("id-ID")}</span>
                   </div>
                   <div className="flex items-center gap-1 text-amber-500">
-                    <span className="desktop-caption-medium-bold">🪙</span>
+                    <span className="text-[11px]">🪙</span>
                     <span>{(user?.coinBalance ?? 0).toLocaleString("id-ID")} Koin</span>
                   </div>
                 </Link>
@@ -656,7 +656,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     {user.image ? (
                       <img src={user.image} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="desktop-caption-medium-bold text-white">
+                      <span className="font-sora font-extrabold text-xs text-white">
                         {user.name?.charAt(0).toUpperCase() || 'U'}
                       </span>
                     )}
@@ -668,13 +668,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                       className="fixed right-3.5 left-auto top-18 sm:absolute sm:right-0 sm:top-full sm:mt-3.5 w-64 max-w-[calc(100vw-28px)] bg-white border border-slate-200/90 rounded-2xl shadow-2xl py-3 z-[100] animate-in fade-in slide-in-from-top-2 duration-200 text-slate-900"
                     >
                       <div className="px-4 pb-3 border-b border-slate-100">
-                        <p className="desktop-caption-large-medium text-slate-900 truncate">{user.name}</p>
-                        <p className="desktop-caption-medium-bold text-slate-500 truncate mt-0.5">{user.email}</p>
+                        <p className="text-xs font-extrabold text-slate-900 truncate">{user.name}</p>
+                        <p className="text-[10px] text-slate-500 truncate mt-0.5">{user.email}</p>
                         <div className="mt-2 flex items-center justify-between">
-                          <span className="btn-primary bg-primary/10 border border-primary/25 desktop-caption-medium-bold text-primary">
+                          <span className="btn-primary bg-primary/10 border border-primary/25 text-[8px] font-black text-primary">
                             {user.role}
                           </span>
-                          <span className="desktop-caption-medium-bold text-text-secondary">
+                          <span className="text-[9px] font-bold text-text-secondary font-geist">
                             Lv. {user.level || 1}
                           </span>
                         </div>
@@ -682,60 +682,60 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
                       <div className="py-1">
                         {user.role === 'MERCHANT' && (
-                          <Link href="/merchant/dashboard" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-text-primary hover:bg-surface-container-low transition-colors">
+                          <Link href="/merchant/dashboard" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                             <LayoutDashboard size={14} className="text-primary" />
                             <span>Merchant Dashboard</span>
                           </Link>
                         )}
 
                         {user.role === 'ADMIN' && (
-                          <Link href="/admin" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-text-primary hover:bg-surface-container-low transition-colors">
+                          <Link href="/admin" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                             <Shield size={14} className="text-red-500" />
                             <span>Admin Panel</span>
                           </Link>
                         )}
 
                         {user.role === 'CUSTOMER_SERVICE' && (
-                          <Link href="/cs" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-text-primary hover:bg-surface-container-low transition-colors">
+                          <Link href="/cs" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                             <LayoutDashboard size={14} className="text-primary" />
                             <span>CS Dashboard</span>
                           </Link>
                         )}
 
                         {user.role !== 'ADMIN' && (
-                          <Link href={`/profile/${user.id}`} onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-text-primary hover:bg-surface-container-low transition-colors">
+                          <Link href={`/profile/${user.id}`} onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                             <UserIcon size={14} className="text-text-secondary" />
                             <span>Profil Saya</span>
                           </Link>
                         )}
 
                         {(user.role === 'CUSTOMER' || user.role === 'AFFILIATE') && (
-                          <Link href="/affiliate" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-text-primary hover:bg-surface-container-low transition-colors">
+                          <Link href="/affiliate" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                             <Wallet size={14} className="text-primary" />
                             <span>Dashboard Affiliate</span>
                           </Link>
                         )}
 
-                        <Link href="/wallet/coin" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-text-primary hover:bg-surface-container-low transition-colors">
+                        <Link href="/wallet/coin" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 text-amber-500">
                             <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM9 7.5A.75.75 0 0 0 9 9h1.5v2.25H9a.75.75 0 0 0 0 1.5h1.5V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-3V9H15a.75.75 0 0 0 0-1.5H9Z" clipRule="evenodd" />
                           </svg>
                           <span>Dompet Koin</span>
                         </Link>
 
-                        <Link href="/chat" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-text-primary hover:bg-surface-container-low transition-colors">
+                        <Link href="/chat" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                           <MessageSquare size={14} className="text-primary" />
                           <span>Chat Obrolan</span>
                         </Link>
 
-                        <Link href="/settings" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-text-primary hover:bg-surface-container-low transition-colors">
+                        <Link href="/settings" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                           <Settings size={14} className="text-text-secondary" />
                           <span>Pengaturan</span>
                         </Link>
                       </div>
 
                       <div className="pt-2 border-t border-border-subtle">
-                        <button onClick={handleLogout} disabled={isPending} className="w-full flex items-center gap-3 px-4 py-2.5 desktop-caption-large-medium text-red-500 hover:bg-red-50 transition-colors cursor-pointer bg-transparent border-none text-left">
+                        <button onClick={handleLogout} disabled={isPending} className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-red-500 hover:bg-red-50 transition-colors cursor-pointer bg-transparent border-none text-left">
                           <LogOut size={14} />
                           <span>{isPending ? 'Keluar...' : 'Keluar'}</span>
                         </button>
@@ -749,7 +749,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <AuthDialog
                   defaultTab="register"
                   trigger={
-                    <button className="px-3 sm:px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A]/10 rounded-full transition-all desktop-caption-large-medium cursor-pointer outline-none whitespace-nowrap">
+                    <button className="px-3 sm:px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] font-bold hover:bg-[#2DB24A]/10 rounded-full transition-all text-xs cursor-pointer outline-none whitespace-nowrap">
                       Daftar
                     </button>
                   }
@@ -757,7 +757,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <AuthDialog
                   defaultTab="login"
                   trigger={
-                    <button className="px-3 sm:px-5 py-1.5 bg-[#2DB24A] hover:bg-[#24943E] text-white rounded-full transition-colors desktop-caption-large-medium shadow-sm cursor-pointer outline-none whitespace-nowrap">
+                    <button className="px-3 sm:px-5 py-1.5 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold rounded-full transition-colors text-xs shadow-sm cursor-pointer outline-none whitespace-nowrap">
                       Masuk
                     </button>
                   }
@@ -779,7 +779,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             <Link
               href="/market"
               onClick={() => setIsOpenMobile(false)}
-              className="desktop-paragraph-small-medium text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
+              className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
             >
               Marketplace
             </Link>
@@ -787,10 +787,10 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             <Link
               href="/snackbox"
               onClick={() => setIsOpenMobile(false)}
-              className="desktop-paragraph-small-medium text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors flex items-center justify-between"
+              className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors flex items-center justify-between"
             >
               <span>Snackbox Kelurahan</span>
-              <span className="desktop-caption-medium-bold px-2 py-0.5 rounded-full bg-emerald-100 text-[#2DB24A]">
+              <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-[#2DB24A]">
                 Baru
               </span>
             </Link>
@@ -798,7 +798,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             <Link
               href="/jasa"
               onClick={() => setIsOpenMobile(false)}
-              className="desktop-paragraph-small-medium text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
+              className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
             >
               Jasa & Layanan
             </Link>
@@ -806,14 +806,14 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             <Link
               href="/affiliate"
               onClick={() => setIsOpenMobile(false)}
-              className="desktop-paragraph-small-medium text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
+              className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
             >
               Affiliate Hub
             </Link>
             <Link
               href="/community"
               onClick={() => setIsOpenMobile(false)}
-              className="desktop-paragraph-small-medium text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
+              className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
             >
               Community
             </Link>
@@ -821,8 +821,8 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             {user ? (
               <div className="flex flex-col gap-4 mt-4">
                 <div className="p-4 bg-surface border border-border-subtle rounded-xl flex items-center justify-between">
-                  <span className="desktop-caption-large-medium text-text-secondary uppercase tracking-wider">Saldo Dompet</span>
-                  <span className="desktop-caption-medium-bold text-primary">
+                  <span className="text-xs text-text-secondary font-geist uppercase tracking-wider">Saldo Dompet</span>
+                  <span className="text-sm font-black text-primary">
                     Rp {(wallet?.balance ?? 0).toLocaleString("id-ID")}
                   </span>
                 </div>
@@ -832,8 +832,8 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   onClick={() => setIsOpenMobile(false)}
                   className="p-4 bg-surface border border-border-subtle rounded-xl flex items-center justify-between hover:bg-surface-container-low transition-all cursor-pointer"
                 >
-                  <span className="desktop-caption-large-medium text-text-secondary uppercase tracking-wider">Saldo Koin</span>
-                  <span className="desktop-caption-medium-bold text-amber-600 flex items-center gap-1">
+                  <span className="text-xs text-text-secondary font-geist uppercase tracking-wider">Saldo Koin</span>
+                  <span className="text-sm font-black text-amber-600 flex items-center gap-1">
                     🪙 {(user?.coinBalance ?? 0).toLocaleString("id-ID")} Koin
                   </span>
                 </Link>
@@ -843,7 +843,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     <Link
                       href="/merchant/dashboard"
                       onClick={() => setIsOpenMobile(false)}
-                      className="btn-primary w-full text-center desktop-caption-large-medium"
+                      className="btn-primary w-full text-center text-xs"
                     >
                       Merchant Dashboard
                     </Link>
@@ -852,7 +852,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     <Link
                       href="/admin"
                       onClick={() => setIsOpenMobile(false)}
-                      className="w-full py-2.5 px-4 bg-red-600 text-white text-center desktop-caption-large-medium uppercase tracking-wider rounded-xl transition-all"
+                      className="w-full py-2.5 px-4 bg-red-600 text-white text-center font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
                     >
                       Admin Panel
                     </Link>
@@ -861,7 +861,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     <Link
                       href="/cs"
                       onClick={() => setIsOpenMobile(false)}
-                      className="btn-primary w-full text-center desktop-caption-large-medium"
+                      className="btn-primary w-full text-center text-xs"
                     >
                       CS Dashboard
                     </Link>
@@ -869,7 +869,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   <Link
                     href="/orders"
                     onClick={() => setIsOpenMobile(false)}
-                    className="w-full py-2.5 px-4 bg-surface border border-border-subtle text-text-primary text-center desktop-caption-large-medium uppercase tracking-wider rounded-xl hover:bg-surface-container-low transition-colors"
+                    className="w-full py-2.5 px-4 bg-surface border border-border-subtle text-text-primary text-center font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-surface-container-low transition-colors"
                   >
                     Lacak Pesanan
                   </Link>
@@ -877,7 +877,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                     <Link
                       href={`/profile/${user.id}`}
                       onClick={() => setIsOpenMobile(false)}
-                      className="w-full py-2.5 px-4 bg-surface border border-border-subtle text-text-primary text-center desktop-caption-large-medium uppercase tracking-wider rounded-xl hover:bg-surface-container-low transition-colors"
+                      className="w-full py-2.5 px-4 bg-surface border border-border-subtle text-text-primary text-center font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-surface-container-low transition-colors"
                     >
                       Profil Saya
                     </Link>
@@ -885,7 +885,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   <Link
                     href="/merchant/dashboard"
                     onClick={() => setIsOpenMobile(false)}
-                    className="w-full py-2.5 px-4 bg-surface border border-border-subtle text-text-primary text-center desktop-caption-large-medium uppercase tracking-wider rounded-xl hover:bg-surface-container-low transition-colors"
+                    className="w-full py-2.5 px-4 bg-surface border border-border-subtle text-text-primary text-center font-geist font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-surface-container-low transition-colors"
                   >
                     Dashboard Merchant
                   </Link>
@@ -894,7 +894,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 <button
                   onClick={handleLogout}
                   disabled={isPending}
-                  className="w-full py-3.5 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-500 desktop-caption-large-medium uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                  className="w-full py-3.5 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-500 font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
                 >
                   {isPending ? 'Keluar...' : 'Keluar'}
                 </button>
@@ -906,7 +906,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   trigger={
                     <button
                       onClick={() => setIsOpenMobile(false)}
-                      className="w-full py-3 text-center bg-[#2DB24A] text-white rounded-xl desktop-caption-large-medium uppercase tracking-wider cursor-pointer outline-none shadow-sm"
+                      className="w-full py-3 text-center bg-[#2DB24A] text-white font-extrabold rounded-xl text-xs uppercase tracking-wider cursor-pointer outline-none shadow-sm"
                     >
                       Masuk
                     </button>
@@ -917,7 +917,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   trigger={
                     <button
                       onClick={() => setIsOpenMobile(false)}
-                      className="w-full py-3 text-center border border-outline-variant text-text-primary rounded-xl desktop-caption-large-medium uppercase tracking-wider cursor-pointer bg-transparent outline-none"
+                      className="w-full py-3 text-center border border-outline-variant text-text-primary font-bold rounded-xl text-xs uppercase tracking-wider cursor-pointer bg-transparent outline-none"
                     >
                       Daftar
                     </button>

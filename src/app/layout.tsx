@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Poppins, Geist } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser, logout } from "@/app/actions/auth";
 import { getWalletDetails } from "@/app/actions/wallet-affiliate";
@@ -10,7 +10,20 @@ import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
 
 
 const inter = Inter({
-  variable: "--font-manrope-base",
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
   display: "swap",
 });
@@ -74,7 +87,7 @@ export default async function RootLayout({
   return (
     <html
       lang="id"
-      className={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} ${poppins.variable} ${geist.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head suppressHydrationWarning>
