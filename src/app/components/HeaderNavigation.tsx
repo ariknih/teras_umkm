@@ -23,8 +23,7 @@ import {
   ShoppingBag,
   Sparkles,
   ChevronRight,
-  Loader2,
-  Package
+  Loader2
 } from 'lucide-react'
 import { AuthDialog } from '@/components/AuthDialog'
 import { searchGlobalAction, GlobalSearchResult } from '@/app/actions/search'
@@ -605,13 +604,6 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
               <img src="/images/marketplace icon.svg" alt="Market" className="w-4 h-4 object-contain" />
               <span>Market</span>
             </Link>
-            <Link href="/snackbox" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap relative group">
-              <Package className="w-4 h-4 text-[#2DB24A]" />
-              <span>Snackbox</span>
-              <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-100 text-[#2DB24A] animate-pulse">
-                Baru
-              </span>
-            </Link>
             <Link href="/jasa" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/jasa icon.svg" alt="Jasa" className="w-4 h-4 object-contain" />
               <span>Jasa</span>
@@ -782,17 +774,6 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
               className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
             >
               Marketplace
-            </Link>
-
-            <Link
-              href="/snackbox"
-              onClick={() => setIsOpenMobile(false)}
-              className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors flex items-center justify-between"
-            >
-              <span>Snackbox Kelurahan</span>
-              <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-[#2DB24A]">
-                Baru
-              </span>
             </Link>
 
             <Link

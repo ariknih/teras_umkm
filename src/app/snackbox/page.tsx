@@ -86,10 +86,10 @@ export default function SnackboxPage() {
       {/* ── 1. HEADER BAR: LOKASI KELURAHAN & KERANJANG BOX ── */}
       <SnackboxHeader />
 
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-5 space-y-6">
-        
+      <div className="max-w-[1200px] mx-auto px-4 md:px-6 pt-5 space-y-6">
+
         {/* ── COMPACT PAGE TITLE (Marketplace style) ── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-1 border-b border-slate-200/60">
+        <div id="page-title" className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-1 border-b border-slate-200/60">
           <div>
             <h1 className="text-base sm:text-lg font-bold text-gray-800 mb-0.5 flex items-center gap-2">
               <span>Snackbox Kelurahan</span>
@@ -126,7 +126,7 @@ export default function SnackboxPage() {
         </div>
 
         {/* ── 2. SECTION: SNACK DI SEKITAR KELURAHAN AKTIF ── */}
-        <section className="space-y-3">
+        <section id="nearby-snacks" className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-[#006E24]" />
@@ -167,7 +167,7 @@ export default function SnackboxPage() {
 
         {/* ── 3. SECTION: TRENDING DI KELURAHAN LAIN ── */}
         {trendingOtherProducts.length > 0 && (
-          <section className="space-y-3 pt-3 border-t border-slate-200/80">
+          <section id="trending-other-kelurahan" className="space-y-3 pt-3 border-t border-slate-200/80">
             <div className="flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-amber-600" />
               <h2 className="text-sm font-bold text-slate-900">
@@ -184,7 +184,7 @@ export default function SnackboxPage() {
         )}
 
         {/* ── 4. SECTION: JELAJAH DI KELURAHAN LAIN (KATEGORI & KATALOG) ── */}
-        <section className="space-y-3 pt-3 border-t border-slate-200/80">
+        <section id="explore-catalog" className="space-y-3 pt-3 border-t border-slate-200/80">
           <div className="flex items-center gap-1.5">
             <Compass className="w-4 h-4 text-[#006E24]" />
             <h2 className="text-sm font-bold text-slate-900">
@@ -262,7 +262,7 @@ export default function SnackboxPage() {
         </section>
 
         {/* ── 5. SECTION: BANNER ONBOARDING MERCHANT KUE ── */}
-        <section className="pt-2">
+        <section id="merchant-cta" className="pt-2">
           <SnackboxMerchantCTA />
         </section>
       </div>
