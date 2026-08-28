@@ -2459,21 +2459,29 @@ export default function CommunityDetailPage() {
         community={community}
         config={parsedCommunityConfig}
         onJoin={handleJoin}
-        onViewDashboard={() => {
-          setViewMode('dashboard')
-          setActiveSidebarNav('produk_komunitas')
-        }}
+        onViewDashboard={() => setViewMode('dashboard')}
         isCanManage={isCanManageCoop}
         isMember={isMember}
         onEdit={() => {
           setViewMode('dashboard')
           setActiveSidebarNav('desain_landing')
         }}
-        products={communityOfficialProducts}
-        onAddProduct={() => {
+        officialProducts={communityOfficialProducts}
+        memberProducts={products}
+        products={parsedCommunityConfig?.productShowcase?.sourceType === 'member' ? products : communityOfficialProducts}
+        onNavigateToProducts={(target) => {
           setViewMode('dashboard')
-          setActiveSidebarNav('produk_komunitas')
-          setTimeout(() => handleOpenCreateOfficialProduct(), 200)
+          setActiveSidebarNav(target === 'member' ? 'marketplace' : 'produk_komunitas')
+        }}
+        onAddProduct={(target) => {
+          setViewMode('dashboard')
+          if (target === 'member') {
+            setActiveSidebarNav('marketplace')
+            setTimeout(() => handleOpenCreateProduct(false), 200)
+          } else {
+            setActiveSidebarNav('produk_komunitas')
+            setTimeout(() => handleOpenCreateOfficialProduct(), 200)
+          }
         }}
         realStats={realStats}
       />

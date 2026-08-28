@@ -243,7 +243,10 @@ interface LandingPageViewProps {
   isMember?: boolean
   onEdit?: () => void
   products?: any[]
-  onAddProduct?: () => void
+  officialProducts?: any[]
+  memberProducts?: any[]
+  onAddProduct?: (target?: 'community' | 'member') => void
+  onNavigateToProducts?: (target?: 'community' | 'member') => void
   realStats?: any
 }
 
@@ -256,7 +259,10 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   isMember = false,
   onEdit,
   products = [],
+  officialProducts = [],
+  memberProducts = [],
   onAddProduct,
+  onNavigateToProducts,
   realStats
 }) => {
   const nameLower = (community?.name || '').toLowerCase()
@@ -284,7 +290,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
     isKuliner ? DEFAULT_CULINARY_CONFIG :
     DEFAULT_PERKUMPULAN_CONFIG
   
-  const dummyProducts = [
+  const dummyCommunityProducts = [
     {
       id: '',
       name: `Kaos Resmi & Seragam ${community?.name || 'Komunitas'}`,
@@ -322,6 +328,55 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       merchantName: `Resmi ${community?.name || 'Komunitas'}`
     }
   ]
+
+  const dummyMemberProducts = [
+    {
+      id: '',
+      name: 'Kopi Arabika Java Preanger Premium',
+      price: 75000,
+      category: 'MAKANAN & MINUMAN',
+      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400',
+      description: 'Kopi biji sangrai pilihan dari perkebunan Jawa Barat dengan cita rasa fruity & herbal.',
+      merchantName: 'Kopi Saloka'
+    },
+    {
+      id: '',
+      name: 'Tas Kulit Asli Garut Handmade',
+      price: 350000,
+      category: 'FASHION & AKSESORIS',
+      imageUrl: 'https://images.unsplash.com/photo-1547949003-9792a18a2601?w=400',
+      description: 'Tas kulit sapi asli pull-up dengan jahitan tangan kuat dan desain elegan vintage.',
+      merchantName: 'Garut Leather'
+    },
+    {
+      id: '',
+      name: 'Madu Murni Hutan Sumbawa Alami',
+      price: 120000,
+      category: 'KESEHATAN',
+      imageUrl: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400',
+      description: 'Madu mentah tanpa pasteurisasi dari nektar bunga hutan liar Sumbawa kaya enzim alami.',
+      merchantName: 'CV Madu Alami'
+    },
+    {
+      id: '',
+      name: 'Sepatu Kulit Formal Pria Oxford',
+      price: 450000,
+      category: 'FASHION & AKSESORIS',
+      imageUrl: 'https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=400',
+      description: 'Sepatu formal premium sol karet nyaman untuk kerja dan acara resmi.',
+      merchantName: 'Footwear Induk'
+    }
+  ]
+  
+  // Showcase config options
+  const isProductShowcaseEnabled = config?.productShowcase?.enabled !== false
+  const productSourceType: 'community' | 'member' = config?.productShowcase?.sourceType || 'community'
+  
+  const isMemberSource = productSourceType === 'member'
+  const targetProducts = isMemberSource 
+    ? (memberProducts && memberProducts.length > 0 ? memberProducts : (products && products.length > 0 ? products : dummyMemberProducts))
+    : (officialProducts && officialProducts.length > 0 ? officialProducts : (products && products.length > 0 ? products : dummyCommunityProducts))
+
   
   // Merge config with default values safely, prioritizing community data from DB!
   const hero = {
@@ -644,81 +699,83 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         </div>
       </section>
 
-      {/* 5.5. Produk Resmi Komunitas Section */}
-      <section className="py-20 md:py-24 bg-white border-t border-gray-100 relative z-10">
-        <div className="max-w-[1280px] mx-auto px-4 md:px-8 space-y-12">
-          <div className="flex justify-between items-end">
-            <div className="space-y-1">
-              <span className="text-[9px] bg-emerald-50 text-emerald-800 font-black px-3 py-1 rounded-full uppercase tracking-wider font-sora">
-                Katalog Resmi Komunitas
-              </span>
-              <h2 className="text-2xl md:text-3xl font-black font-sora text-slate-900 tracking-tight mt-2">
-                Produk Resmi {community?.name || 'Komunitas'}
-              </h2>
-              <p className="text-xs text-gray-500 font-medium">
-                Koleksi produk resmi, merchandise, seragam, bahan baku, dan paket usaha terpercaya yang dikelola komunitas
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              {isCanManage && (
-                <button 
-                  onClick={onAddProduct}
-                  className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 hover:scale-[1.02] text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer font-sora transition-all duration-200"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Tambah Produk Komunitas
-                </button>
-              )}
-              <button 
-                onClick={onViewDashboard}
-                className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer font-sora font-semibold"
-              >
-                Buka Katalog Komunitas <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {(products && products.length > 0 ? products.slice(0, 4) : dummyProducts).map((p: any, idx: number) => (
-              <div key={p.id || idx} className="p-4 bg-slate-50/60 border border-gray-150 rounded-3xl hover:border-emerald-500/30 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-                <div className="space-y-3">
-                  <div className="relative rounded-2xl overflow-hidden h-44 bg-gray-100">
-                    <img 
-                      src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'} 
-                      alt={p.name || p.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                    />
-                    <span className="absolute top-3 left-3 px-2 py-0.5 bg-emerald-700 text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-sm font-sora">
-                      {p.category || 'OFFICIAL'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider block">
-                      Resmi {community?.name || 'Komunitas'}
-                    </span>
-                    <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-relaxed mt-0.5">
-                      {p.name || p.title}
-                    </h4>
-                    <p className="text-[10px] text-gray-500 font-medium line-clamp-2 mt-1 leading-relaxed">
-                      {p.description || 'Produk resmi berkualitas pilihan dari pengurus komunitas.'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-150/60">
-                  <span className="text-sm font-black text-emerald-850">
-                    Rp {Number(p.price || 0).toLocaleString('id-ID')}
-                  </span>
-                  <button 
-                    onClick={onViewDashboard}
-                    className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 hover:scale-[1.03] text-white font-extrabold text-[10px] rounded-xl shadow-xs transition-all cursor-pointer font-sora duration-200"
-                  >
-                    Detail Produk
-                  </button>
-                </div>
+      {/* 5.5. Produk Showcase Section (Bisa Komunitas atau Anggota sesuai Pengaturan Landing) */}
+      {isProductShowcaseEnabled && (
+        <section className="py-20 md:py-24 bg-white border-t border-gray-100 relative z-10">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-8 space-y-12">
+            <div className="flex justify-between items-end flex-wrap gap-4">
+              <div className="space-y-1">
+                <span className="text-[9px] bg-emerald-50 text-emerald-800 font-black px-3 py-1 rounded-full uppercase tracking-wider font-sora">
+                  {isMemberSource ? 'Galeri Usaha Anggota' : 'Katalog Resmi Komunitas'}
+                </span>
+                <h2 className="text-2xl md:text-3xl font-black font-sora text-slate-900 tracking-tight mt-2">
+                  {config?.productShowcase?.title || (isMemberSource ? `Produk Unggulan Anggota ${community?.name || ''}` : `Produk Resmi ${community?.name || 'Komunitas'}`)}
+                </h2>
+                <p className="text-xs text-gray-500 font-medium max-w-2xl">
+                  {config?.productShowcase?.subtitle || (isMemberSource ? 'Karya terbaik dan produk berkualitas dari para pelaku UMKM anggota kami' : 'Koleksi produk resmi, merchandise, seragam, bahan baku, dan paket usaha terpercaya yang dikelola komunitas')}
+                </p>
               </div>
-            ))}
+              <div className="flex items-center gap-3">
+                {isCanManage && (
+                  <button 
+                    onClick={() => onAddProduct ? onAddProduct(productSourceType) : onViewDashboard()}
+                    className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 hover:scale-[1.02] text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer font-sora transition-all duration-200"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> {isMemberSource ? 'Tambah Produk Anggota' : 'Tambah Produk Komunitas'}
+                  </button>
+                )}
+                <button 
+                  onClick={() => onNavigateToProducts ? onNavigateToProducts(productSourceType) : onViewDashboard()}
+                  className="text-xs font-extrabold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer font-sora font-semibold"
+                >
+                  {isMemberSource ? 'Buka Marketplace Anggota' : 'Buka Katalog Komunitas'} <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {targetProducts.slice(0, 4).map((p: any, idx: number) => (
+                <div key={p.id || idx} className="p-4 bg-slate-50/60 border border-gray-150 rounded-3xl hover:border-emerald-500/30 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                  <div className="space-y-3">
+                    <div className="relative rounded-2xl overflow-hidden h-44 bg-gray-100">
+                      <img 
+                        src={p.imageUrl || p.img || (isMemberSource ? 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400' : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80')} 
+                        alt={p.name || p.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
+                      <span className="absolute top-3 left-3 px-2 py-0.5 bg-emerald-700 text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-sm font-sora">
+                        {p.category || (isMemberSource ? 'ANGGOTA' : 'OFFICIAL')}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-emerald-700 font-bold uppercase tracking-wider block">
+                        {isMemberSource ? (p.merchantName || 'UMKM Anggota') : `Resmi ${community?.name || 'Komunitas'}`}
+                      </span>
+                      <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-relaxed mt-0.5">
+                        {p.name || p.title}
+                      </h4>
+                      <p className="text-[10px] text-gray-500 font-medium line-clamp-2 mt-1 leading-relaxed">
+                        {p.description || (isMemberSource ? 'Produk berkualitas dari anggota terdaftar.' : 'Produk resmi pilihan dari pengurus komunitas.')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-150/60">
+                    <span className="text-sm font-black text-emerald-850">
+                      Rp {Number(p.price || 0).toLocaleString('id-ID')}
+                    </span>
+                    <button 
+                      onClick={() => onNavigateToProducts ? onNavigateToProducts(productSourceType) : onViewDashboard()}
+                      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 hover:scale-[1.03] text-white font-extrabold text-[10px] rounded-xl shadow-xs transition-all cursor-pointer font-sora duration-200"
+                    >
+                      Detail Produk
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 6. Bottom Banner CTA */}
       <section className="py-12 px-4 md:px-8 max-w-[1280px] mx-auto relative z-10">

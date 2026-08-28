@@ -73,6 +73,20 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     config?.activities?.length === 3 ? config.activities : defaultActivities
   )
 
+  // Product Showcase Configuration States
+  const [productShowcaseEnabled, setProductShowcaseEnabled] = useState(
+    config?.productShowcase?.enabled !== undefined ? Boolean(config.productShowcase.enabled) : true
+  )
+  const [productSourceType, setProductSourceType] = useState<'community' | 'member'>(
+    config?.productShowcase?.sourceType || 'community'
+  )
+  const [productSectionTitle, setProductSectionTitle] = useState(
+    config?.productShowcase?.title || ''
+  )
+  const [productSectionSubtitle, setProductSectionSubtitle] = useState(
+    config?.productShowcase?.subtitle || ''
+  )
+
   // CTA Banner
   const [ctaText, setCtaText] = useState(config?.ctaBanner?.text || 'Bergabung sekarang dan jadilah bagian dari ekosistem bisnis.')
   const [ctaButtonText, setCtaButtonText] = useState(config?.ctaBanner?.buttonText || 'Menjadi Anggota Sekarang')
@@ -178,6 +192,12 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       ctaBanner: {
         text: ctaText,
         buttonText: ctaButtonText
+      },
+      productShowcase: {
+        enabled: productShowcaseEnabled,
+        sourceType: productSourceType,
+        title: productSectionTitle,
+        subtitle: productSectionSubtitle
       }
     }
 
@@ -385,6 +405,112 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 4.5. Pengaturan Etalase Produk Landing Page */}
+      <div className="space-y-4 pt-4 border-t border-gray-100">
+        <div className="flex justify-between items-center flex-wrap gap-2">
+          <h4 className="font-extrabold text-[#0F5132] uppercase tracking-wider border-l-4 border-emerald-600 pl-2">
+            4.5. Etalase Produk di Landing Page
+          </h4>
+          {/* Power ON / OFF Switch */}
+          <div className="flex items-center gap-2.5">
+            <span className="text-[11px] font-bold text-gray-600">
+              Status Etalase: <strong className={productShowcaseEnabled ? 'text-emerald-700' : 'text-rose-600'}>{productShowcaseEnabled ? 'AKTIF (ON)' : 'NONAKTIF (OFF)'}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => setProductShowcaseEnabled(!productShowcaseEnabled)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                productShowcaseEnabled ? 'bg-emerald-600' : 'bg-gray-300'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  productShowcaseEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {productShowcaseEnabled ? (
+          <div className="bg-emerald-50/40 p-4 border border-emerald-100/70 rounded-2xl space-y-4">
+            <div>
+              <label className="block text-[10px] text-gray-600 uppercase tracking-wider mb-2 font-bold">
+                Pilih Sumber Produk yang Ingin Ditampilkan:
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setProductSourceType('community')}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    productSourceType === 'community'
+                      ? 'bg-emerald-700 text-white border-emerald-800 shadow-sm'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-xs">🏢 Produk Resmi Komunitas</span>
+                      {productSourceType === 'community' && <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">Aktif</span>}
+                    </div>
+                    <p className={`text-[10px] leading-relaxed ${productSourceType === 'community' ? 'text-emerald-100' : 'text-gray-500'}`}>
+                      Menampilkan merchandise, seragam, bahan baku, atau paket usaha resmi komunitas.
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setProductSourceType('member')}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    productSourceType === 'member'
+                      ? 'bg-emerald-700 text-white border-emerald-800 shadow-sm'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-xs">🛍️ Produk Anggota (Marketplace)</span>
+                      {productSourceType === 'member' && <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">Aktif</span>}
+                    </div>
+                    <p className={`text-[10px] leading-relaxed ${productSourceType === 'member' ? 'text-emerald-100' : 'text-gray-500'}`}>
+                      Menampilkan galeri produk unggulan karya UMKM anggota komunitas.
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-emerald-100/60">
+              <div>
+                <label className="block text-[9px] text-gray-500 font-bold mb-1 uppercase tracking-wider">Judul Seksi (Opsional)</label>
+                <input
+                  type="text"
+                  value={productSectionTitle}
+                  onChange={e => setProductSectionTitle(e.target.value)}
+                  placeholder={productSourceType === 'community' ? `Produk Resmi ${community?.name || 'Komunitas'}` : `Produk Unggulan Anggota ${community?.name || ''}`}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-white outline-none text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] text-gray-500 font-bold mb-1 uppercase tracking-wider">Deskripsi Seksi (Opsional)</label>
+                <input
+                  type="text"
+                  value={productSectionSubtitle}
+                  onChange={e => setProductSectionSubtitle(e.target.value)}
+                  placeholder={productSourceType === 'community' ? 'Koleksi produk resmi, merchandise, dan paket usaha pilihan komunitas' : 'Karya terbaik dan produk berkualitas dari pelaku UMKM anggota kami'}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl bg-white outline-none text-xs"
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 text-[11px]">
+            Seksi etalase produk disembunyikan di landing page. Pengunjung tidak akan melihat kartu produk sebelum masuk ke dashboard.
+          </div>
+        )}
       </div>
 
       {/* 5. CTA Banner Fields */}
