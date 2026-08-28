@@ -3,19 +3,11 @@ import { Inter, Poppins, Geist } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser, logout } from "@/app/actions/auth";
 import { getWalletDetails } from "@/app/actions/wallet-affiliate";
-import Link from "next/link";
-import { redirect } from "next/navigation";
 import { DataStore } from "@/lib/data-store";
-import OnboardingGuard from "./components/OnboardingGuard";
-import { headers } from "next/headers";
-import FloatingChat from "@/components/FloatingChat";
-import HeaderNavigation from "./components/HeaderNavigation";
-import MobileBottomNav from "@/components/MobileBottomNav";
-import { GsapScrollTrigger } from "@/components/GsapScrollTrigger";
 import Script from "next/script";
-import { Logo } from "@/components/Logo";
 import GoeyToastProvider from "@/components/GoeyToastProvider";
 import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
+
 
 const inter = Inter({
   variable: "--font-inter",

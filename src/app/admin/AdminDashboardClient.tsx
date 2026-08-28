@@ -15,8 +15,8 @@ import {
   Settings
 } from 'lucide-react'
 import { logout } from '@/app/actions/auth'
-import { Logo } from '@/components/Logo'
 import { formatCategoryName } from '@/lib/utils'
+
 import {
   updateUserRoleAndLevelAction,
   addCourseAction,

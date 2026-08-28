@@ -5,9 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { login, register, getReferralCookie } from '@/app/actions/auth'
 import { getIndukCommunities } from '@/app/actions/community'
 import { PasswordInput } from '@/components/ui/password-input'
-import { Logo } from '@/components/Logo'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+
  
 function AuthContent() {
   const router = useRouter()

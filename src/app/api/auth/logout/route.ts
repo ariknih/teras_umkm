@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
   const host = request.headers.get('host') || ''
@@ -35,6 +34,4 @@ export async function GET(request: NextRequest) {
   return response
 }
 
-export async function POST(request: NextRequest) {
-  return GET(request)
-}
+export const POST = GET

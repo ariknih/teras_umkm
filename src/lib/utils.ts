@@ -5,47 +5,68 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+const CATEGORY_MAP: Record<string, string> = {
+  TOKO: "Toko & Ritel",
+  KAFE: "Kafe & Kuliner",
+  JASA: "Jasa & Layanan",
+  KERJAAN: "Lowongan Kerja",
+  ELEKTRONIK: "Elektronik",
+  MAKANAN_MINUMAN: "Makanan & Minuman",
+  KOMPUTER_AKSESORIS: "Komputer & Aksesoris",
+  PERAWATAN_KECANTIKAN: "Perawatan & Kecantikan",
+  HANDPHONE_AKSESORIS: "Handphone & Aksesoris",
+  PERLENGKAPAN_RUMAH: "Perlengkapan Rumah",
+  PAKAIAN_PRIA: "Pakaian Pria",
+  PAKAIAN_WANITA: "Pakaian Wanita",
+  SEPATU_PRIA: "Sepatu Pria",
+  FASHION_MUSLIM: "Fashion Muslim",
+  TAS_PRIA: "Tas Pria",
+  FASHION_BAYI_ANAK: "Fashion Bayi & Anak",
+  AKSESORIS_FASHION: "Aksesoris Fashion",
+  IBU_BAYI: "Ibu & Bayi",
+  JAM_TANGAN: "Jam Tangan",
+  SEPATU_WANITA: "Sepatu Wanita",
+  KESEHATAN: "Kesehatan",
+  TAS_WANITA: "Tas Wanita",
+  HOBI_KOLEKSI: "Hobi & Koleksi",
+  OTOMOTIF: "Otomotif",
+  OLAHRAGA_OUTDOOR: "Olahraga & Outdoor",
+  BUKU_ALAT_TULIS: "Buku & Alat Tulis",
+  SOUVENIR_PERLENGKAPAN_PESTA: "Souvenir & Pesta",
+  FOTOGRAFI: "Fotografi",
+  VOUCHER: "Voucher",
+  DEALS_SEKITAR: "Deals Sekitar"
+}
+
 export function formatCategoryName(catVal: string): string {
-  if (!catVal) return '';
-  const predefined = [
-    { name: "Toko & Ritel", value: "TOKO" },
-    { name: "Kafe & Kuliner", value: "KAFE" },
-    { name: "Jasa & Layanan", value: "JASA" },
-    { name: "Lowongan Kerja", value: "KERJAAN" },
-    { name: "Elektronik", value: "ELEKTRONIK" },
-    { name: "Makanan & Minuman", value: "MAKANAN_MINUMAN" },
-    { name: "Komputer & Aksesoris", value: "KOMPUTER_AKSESORIS" },
-    { name: "Perawatan & Kecantikan", value: "PERAWATAN_KECANTIKAN" },
-    { name: "Handphone & Aksesoris", value: "HANDPHONE_AKSESORIS" },
-    { name: "Perlengkapan Rumah", value: "PERLENGKAPAN_RUMAH" },
-    { name: "Pakaian Pria", value: "PAKAIAN_PRIA" },
-    { name: "Pakaian Wanita", value: "PAKAIAN_WANITA" },
-    { name: "Sepatu Pria", value: "SEPATU_PRIA" },
-    { name: "Fashion Muslim", value: "FASHION_MUSLIM" },
-    { name: "Tas Pria", value: "TAS_PRIA" },
-    { name: "Fashion Bayi & Anak", value: "FASHION_BAYI_ANAK" },
-    { name: "Aksesoris Fashion", value: "AKSESORIS_FASHION" },
-    { name: "Ibu & Bayi", value: "IBU_BAYI" },
-    { name: "Jam Tangan", value: "JAM_TANGAN" },
-    { name: "Sepatu Wanita", value: "SEPATU_WANITA" },
-    { name: "Kesehatan", value: "KESEHATAN" },
-    { name: "Tas Wanita", value: "TAS_WANITA" },
-    { name: "Hobi & Koleksi", value: "HOBI_KOLEKSI" },
-    { name: "Otomotif", value: "OTOMOTIF" },
-    { name: "Olahraga & Outdoor", value: "OLAHRAGA_OUTDOOR" },
-    { name: "Buku & Alat Tulis", value: "BUKU_ALAT_TULIS" },
-    { name: "Souvenir & Pesta", value: "SOUVENIR_PERLENGKAPAN_PESTA" },
-    { name: "Fotografi", value: "FOTOGRAFI" },
-    { name: "Voucher", value: "VOUCHER" },
-    { name: "Deals Sekitar", value: "DEALS_SEKITAR" }
-  ];
-  const found = predefined.find(p => p.value === catVal || p.value.toLowerCase() === catVal.toLowerCase());
-  if (found) return found.name;
+  if (!catVal) return ''
+  const upper = catVal.toUpperCase()
+  if (CATEGORY_MAP[upper]) return CATEGORY_MAP[upper]
   return catVal
     .replace(/_/g, ' ')
     .toLowerCase()
     .split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    .join(' ')
 }
 
+/**
+ * Standard Haversine distance in km between two GPS coordinates
+ */
+export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371 // km
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+/**
+ * Clean standard Indonesian Rupiah currency formatting
+ */
+export function formatRupiah(amount: number | null | undefined): string {
+  return `Rp ${(amount ?? 0).toLocaleString('id-ID')}`
+}

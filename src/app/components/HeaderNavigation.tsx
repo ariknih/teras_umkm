@@ -8,7 +8,6 @@ import NotificationBell from './NotificationBell'
 import ChatHeaderButton from './ChatHeaderButton'
 import { Menu, X, LogOut, Settings, Shield, User as UserIcon, LayoutDashboard, Wallet, Search, MapPin, MessageSquare, Store, Briefcase, Tag, Users } from 'lucide-react'
 import { AuthDialog } from '@/components/AuthDialog'
-import { Logo } from '@/components/Logo'
 
 interface HeaderNavigationProps {
   user: any
@@ -24,22 +23,16 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
 
   const [isOpenMobile, setIsOpenMobile] = useState(false)
   const [isOpenProfile, setIsOpenProfile] = useState(false)
-  const [isSearchExpandedMobile, setIsSearchExpandedMobile] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isPending, startTransition] = useTransition()
   
   const profileRef = useRef<HTMLDivElement>(null)
-  const mobileSearchRef = useRef<HTMLDivElement>(null)
-  const mobileSearchInputRef = useRef<HTMLInputElement>(null)
 
-  // Close dropdown or mobile search on click outside
+  // Close profile dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsOpenProfile(false)
-      }
-      if (mobileSearchRef.current && !mobileSearchRef.current.contains(event.target as Node)) {
-        setIsSearchExpandedMobile(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -50,15 +43,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
     e.preventDefault()
     if (searchQuery.trim()) {
       router.push(`/market?q=${encodeURIComponent(searchQuery.trim())}`)
-      setIsSearchExpandedMobile(false)
     }
-  }
-
-  const handleExpandMobileSearch = () => {
-    setIsSearchExpandedMobile(true)
-    setTimeout(() => {
-      mobileSearchInputRef.current?.focus()
-    }, 50)
   }
 
   const handleLogout = () => {
@@ -97,63 +82,26 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             />
           </Link>
 
-          {/* ── MOBILE HEADER CENTER LAYOUT (Figma Screenshot 1 & 2) ── */}
-          <div ref={mobileSearchRef} className="flex-1 md:hidden flex items-center justify-center min-w-0">
-            {isSearchExpandedMobile ? (
-              /* Screenshot 2: Expanded Search Input on Mobile */
-              <form onSubmit={handleSearchSubmit} className="w-full flex items-center gap-2 border border-[#2DB24A] rounded-full px-3.5 py-1.5 bg-white shadow-xs animate-in fade-in duration-200">
-                <img src="/images/search icon header.svg" alt="Search" className="w-4 h-4 object-contain shrink-0" />
-                <input
-                  ref={mobileSearchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari semuanya di Saloka!"
-                  className="w-full text-xs text-slate-800 placeholder:text-slate-400 outline-none font-medium bg-transparent"
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsSearchExpandedMobile(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer border-none bg-transparent shrink-0"
-                >
-                  <X size={16} />
-                </button>
-              </form>
-            ) : (
-              /* Screenshot 1: Default Mobile State (Search Icon + 4 Link Icons) */
-              <div className="flex items-center justify-center gap-0.5 sm:gap-2 px-0.5">
-                {/* Clickable Search Icon */}
-                <button
-                  type="button"
-                  onClick={handleExpandMobileSearch}
-                  aria-label="Cari produk di Saloka"
-                  className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all cursor-pointer border-none bg-transparent flex items-center justify-center shrink-0"
-                >
-                  <img src="/images/search icon header.svg" alt="Search" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
-                </button>
-
-                {/* Market Icon */}
-                <Link href="/market" aria-label="Market" className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all flex items-center justify-center shrink-0">
-                  <img src="/images/marketplace icon.svg" alt="Market" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
-                </Link>
-
-                {/* Jasa Icon */}
-                <Link href="/jasa" aria-label="Jasa" className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all flex items-center justify-center shrink-0">
-                  <img src="/images/jasa icon.svg" alt="Jasa" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
-                </Link>
-
-                {/* Affiliate Icon */}
-                <Link href="/affiliate" aria-label="Affiliate" className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all flex items-center justify-center shrink-0">
-                  <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
-                </Link>
-
-                {/* Community Icon */}
-                <Link href="/community" aria-label="Community" className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full active:scale-95 transition-all flex items-center justify-center shrink-0">
-                  <img src="/images/comunity icon.svg" alt="Community" className="w-5.5 h-5.5 sm:w-6 sm:h-6 object-contain" />
-                </Link>
-              </div>
+          {/* ── MOBILE HEADER CENTER LAYOUT: Always-visible search box ── */}
+          <form onSubmit={handleSearchSubmit} className="flex-1 md:hidden flex items-center gap-2 border border-slate-200 focus-within:border-[#2DB24A] rounded-full px-3 py-1.5 bg-slate-50 transition-colors min-w-0">
+            <img src="/images/search icon header.svg" alt="Search" className="w-4 h-4 object-contain shrink-0 opacity-50" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari di Saloka..."
+              className="w-full text-xs text-slate-800 placeholder:text-slate-400 outline-none font-medium bg-transparent min-w-0"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer border-none bg-transparent shrink-0"
+              >
+                <X size={14} />
+              </button>
             )}
-          </div>
+          </form>
 
           {/* ── DESKTOP & TABLET HEADER CENTER LAYOUT ── */}
           <form onSubmit={handleSearchSubmit} className="hidden md:block relative flex-1 max-w-[220px] md:max-w-[260px] lg:max-w-[300px]">

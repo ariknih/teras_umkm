@@ -1,4 +1,5 @@
 
+import { calculateDistance } from './utils'
 import { db } from './db'
 import crypto from 'crypto'
 import { ProductCategory } from '@prisma/client'
@@ -5396,21 +5397,9 @@ export const DataStore = {
       const uLat = userObj.latitude;
       const uLng = userObj.longitude;
 
-      // Distance calculation helper (Haversine formula)
-      const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371; // km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-      };
-
       for (const prod of productsList) {
         if (prod.latitude && prod.longitude && prod.merchantId !== userId) {
-          const dist = getDistance(uLat, uLng, prod.latitude, prod.longitude);
+          const dist = calculateDistance(uLat, uLng, prod.latitude, prod.longitude);
           if (dist <= 10) {
             reminders.push({
               id: `rem-prod-${prod.id}`,
@@ -10463,7 +10452,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.discussion.findMany({
+        return await (db as any).discussion.findMany({
           where: { communityId },
           include: {
             author: {
@@ -10601,7 +10590,7 @@ export const DataStore = {
 
     if (await isDbConnected()) {
       try {
-        createdDisc = await db.discussion.create({
+        createdDisc = await (db as any).discussion.create({
           data: {
             communityId: data.communityId,
             title: data.title,
@@ -10685,7 +10674,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        return await db.discussion.update({
+        return await (db as any).discussion.update({
           where: { id },
           data: {
             title: data.title,
@@ -10723,7 +10712,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        await db.discussion.delete({ where: { id } })
+        await (db as any).discussion.delete({ where: { id } })
         return { success: true }
       } catch (_) {}
     }
@@ -10742,8 +10731,8 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        const current = await db.discussion.findUnique({ where: { id } })
-        return await db.discussion.update({
+        const current = await (db as any).discussion.findUnique({ where: { id } })
+        return await (db as any).discussion.update({
           where: { id },
           data: { isPinned: !current?.isPinned }
         })
@@ -10765,8 +10754,8 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        const current = await db.discussion.findUnique({ where: { id } })
-        return await db.discussion.update({
+        const current = await (db as any).discussion.findUnique({ where: { id } })
+        return await (db as any).discussion.update({
           where: { id },
           data: { isClosed: !current?.isClosed }
         })
@@ -10790,7 +10779,7 @@ export const DataStore = {
 
     if (await isDbConnected()) {
       try {
-        createdReply = await db.discussionReply.create({
+        createdReply = await (db as any).discussionReply.create({
           data: {
             discussionId,
             authorId,
@@ -10836,7 +10825,7 @@ export const DataStore = {
       let discussion: any = null
       if (await isDbConnected()) {
         try {
-          discussion = await db.discussion.findUnique({
+          discussion = await (db as any).discussion.findUnique({
             where: { id: discussionId }
           })
         } catch (_) {}
@@ -10869,7 +10858,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        await db.discussionReply.delete({ where: { id } })
+        await (db as any).discussionReply.delete({ where: { id } })
         return { success: true }
       } catch (_) {}
     }
@@ -10885,7 +10874,7 @@ export const DataStore = {
     syncMockDb()
     if (await isDbConnected()) {
       try {
-        const reply = await db.discussionReply.findUnique({ where: { id } })
+        const reply = await (db as any).discussionReply.findUnique({ where: { id } })
         if (reply) {
           let votes: string[] = []
           try {
@@ -10897,7 +10886,7 @@ export const DataStore = {
           } else {
             votes.push(userId)
           }
-          return await db.discussionReply.update({
+          return await (db as any).discussionReply.update({
             where: { id },
             data: {
               helpfulCount: votes.length,
@@ -10940,8 +10929,8 @@ export const DataStore = {
     try {
       if (await isDbConnected()) {
         try {
-          reply = await db.discussionReply.findUnique({ where: { id: replyId } })
-          discussion = await db.discussion.findUnique({ where: { id: discussionId } })
+          reply = await (db as any).discussionReply.findUnique({ where: { id: replyId } })
+          discussion = await (db as any).discussion.findUnique({ where: { id: discussionId } })
         } catch (_) {}
       }
       if (!reply) {
@@ -10956,12 +10945,13 @@ export const DataStore = {
 
     if (await isDbConnected()) {
       try {
-        updatedDisc = await db.discussion.update({
+        updatedDisc = await (db as any).discussion.update({
           where: { id: discussionId },
           data: { bestReplyId: replyId }
         })
       } catch (_) {}
     }
+
 
     if (!updatedDisc) {
       const list = (globalThis as any).__mockDiscussions || []

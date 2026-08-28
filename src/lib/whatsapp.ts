@@ -9,6 +9,27 @@ interface WaMessageOptions {
   gatewayKey?: string
 }
 
+async function postFonnte(token: string, target: string, message: string): Promise<boolean> {
+  try {
+    const res = await fetch('https://api.fonnte.com/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ target, message })
+    })
+    if (res.ok) {
+      console.log('Fonnte send success')
+      return true
+    }
+    console.warn('Fonnte send status:', res.status)
+  } catch (err) {
+    console.error('Error sending Fonnte:', err)
+  }
+  return false
+}
+
 export async function sendWhatsAppMessage({
   merchantId,
   merchantName,
@@ -27,34 +48,13 @@ export async function sendWhatsAppMessage({
 
   let success = false
 
-  // Try Fonnte first if a custom key is provided (since the merchant subscribed to Fonnte Lite/Premium)
+  // 1. Try custom merchant Fonnte key first if provided
   const isCustomKey = gatewayKey && gatewayKey !== 'TERAS_DEFAULT_GATEWAY_KEY' && !gatewayKey.includes('demo')
   if (isCustomKey) {
-    try {
-      const response = await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': gatewayKey!,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          target: recipientPhone,
-          message: message
-        })
-      })
-      if (response.ok) {
-        const resData = await response.json()
-        console.log('Custom Fonnte send success:', resData)
-        success = true
-      } else {
-        console.warn('Custom Fonnte send failed, status:', response.status)
-      }
-    } catch (err) {
-      console.error('Error sending custom Fonnte:', err)
-    }
+    success = await postFonnte(gatewayKey!, recipientPhone, message)
   }
 
-  // If not sent yet, try Kirimi if configured
+  // 2. If not sent yet, try Kirimi if configured
   if (!success && kirimiUserCode && kirimiSecret && kirimiDeviceId) {
     try {
       let formattedPhone = recipientPhone.replace(/[^0-9]/g, '')
@@ -77,8 +77,7 @@ export async function sendWhatsAppMessage({
       })
 
       if (response.ok) {
-        const resData = await response.json()
-        console.log('Kirimi send response success:', resData)
+        console.log('Kirimi send response success')
         success = true
       } else {
         console.warn('Kirimi WA gateway returned error status:', response.status)
@@ -88,7 +87,7 @@ export async function sendWhatsAppMessage({
     }
   }
 
-  // If not sent yet, try Twilio if configured
+  // 3. If not sent yet, try Twilio if configured
   if (!success && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
     try {
       const twilioSid = process.env.TWILIO_ACCOUNT_SID
@@ -115,8 +114,7 @@ export async function sendWhatsAppMessage({
         })
       })
       if (response.ok) {
-        const resData = await response.json()
-        console.log('Twilio send response success:', resData)
+        console.log('Twilio send response success')
         success = true
       } else {
         console.warn('Twilio WA gateway returned error status:', response.status)
@@ -126,30 +124,9 @@ export async function sendWhatsAppMessage({
     }
   }
 
-  // If not sent yet, try default Fonnte if configured
+  // 4. If not sent yet, try default system Fonnte token
   if (!success && process.env.FONNTE_API_TOKEN) {
-    try {
-      const response = await fetch('https://api.fonnte.com/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': process.env.FONNTE_API_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          target: recipientPhone,
-          message: message
-        })
-      })
-      if (response.ok) {
-        const resData = await response.json()
-        console.log('Fonnte send response success:', resData)
-        success = true
-      } else {
-        console.warn('Fonnte WA gateway returned error status:', response.status)
-      }
-    } catch (err) {
-      console.error('Error sending Fonnte:', err)
-    }
+    success = await postFonnte(process.env.FONNTE_API_TOKEN, recipientPhone, message)
   }
 
   // Always log to simulated logs for merchant dashboard preview

@@ -19,3 +19,7 @@ You must ALWAYS automatically apply the relevant installed skills from `.agents/
    - Always run `npm run build` to verify 0 errors before committing or claiming completion.
    - Automatically commit and push working changes to `origin master`.
 
+3. **Code Efficiency & Architecture Standards (`.agents/rules/ponytail.md`)**:
+   - Apply "Ponytail, lazy senior dev mode" on EVERY prompt: efisiensi maksimal, YAGNI, standard library & native features first, minimalkan boilerplate & abstraksi tak diminta, satukan duplikasi, dan tulis kode minimum yang reliable.
+
+

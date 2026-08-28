@@ -8,6 +8,7 @@ import { getProducts } from '@/app/actions/products'
 import { checkoutCart, getWalletDetails, getActivePaymentMethods } from '@/app/actions/wallet-affiliate'
 import { getCurrentUser, getCurrentUserProfile } from '@/app/actions/auth'
 import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api'
+import { calculateDistance as getDistance } from '@/lib/utils'
 
 interface CartItem {
   productId: string
@@ -35,32 +36,22 @@ interface ProductDetails {
 }
 
 interface CourierRate {
-  courier_code: string;
-  courier_name: string;
-  price: number;
-  etd: string;
+  courier_code: string
+  courier_name: string
+  price: number
+  etd: string
 }
 
 interface SavedAddress {
   id: string
   name: string
   phone: string
-  label: string // 'Utama', 'Rumah', 'Kantor'
+  label: string
   addressText: string
   latitude: number
   longitude: number
 }
 
-const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 6371; // km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
 
 export default function CartPage() {
   const router = useRouter()
