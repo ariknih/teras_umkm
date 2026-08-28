@@ -4,6 +4,7 @@ import { getProducts } from '@/app/actions/products'
 import { getCourses } from '@/app/actions/lms'
 import { getActiveBanners } from '@/app/actions/landing'
 import { getServicesAction } from '@/app/actions/services'
+import { getIndukCommunities } from '@/app/actions/community'
 import InteractiveFeatures from '@/app/components/InteractiveFeatures'
 import ScrollReveal from '@/app/components/ScrollReveal'
 import BannerCarousel from '@/app/components/BannerCarousel'
@@ -11,11 +12,12 @@ import HomeExplorer from '@/app/components/HomeExplorer'
 
 export default async function HomePage() {
   const user = await getCurrentUser()
-  const [allProducts, services, activeBanners, courses] = await Promise.all([
+  const [allProducts, services, activeBanners, courses, communities] = await Promise.all([
     getProducts(),
     getServicesAction(),
     getActiveBanners(),
-    getCourses()
+    getCourses(),
+    getIndukCommunities()
   ])
 
   return (
@@ -27,7 +29,7 @@ export default async function HomePage() {
       </div>
 
       {/* ── INTERACTIVE EXPLORER: MARKETPLACE & JASA TOGGLE ─────────────── */}
-      <HomeExplorer products={allProducts} services={services} />
+      <HomeExplorer products={allProducts} services={services} communities={communities} />
 
       {/* ── KEUNGGULAN PLATFORM ──────────────────────────────────────── */}
       <section className="w-full px-6 md:px-20 py-16 flex flex-col items-center bg-surface">

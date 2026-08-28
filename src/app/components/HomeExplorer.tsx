@@ -51,6 +51,7 @@ interface Service {
 interface HomeExplorerProps {
   products: Product[]
   services: Service[]
+  communities?: any[]
 }
 
 const NEARBY_ITEMS = [
@@ -93,9 +94,52 @@ const FILTER_CHIPS = [
   { key: 'KOMPUTER', label: 'Komputer & Laptop', icon: '/images/komputer&laptop icon.svg' }
 ]
 
-export default function HomeExplorer({ products, services }: HomeExplorerProps) {
+export default function HomeExplorer({ products, services, communities = [] }: HomeExplorerProps) {
   const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'JASA'>('MARKETPLACE')
   const [selectedChip, setSelectedChip] = useState('ALL')
+
+  const displayCommunities = useMemo(() => {
+    if (communities && communities.length > 0) {
+      return communities.slice(0, 3).map((c: any) => ({
+        id: c.id,
+        title: c.name,
+        badge: c.type === 'KOPERASI' ? 'Koperasi Resmi' : 'Perkumpulan UMKM',
+        desc: c.description || 'Komunitas pelaku UMKM untuk kolaborasi, permodalan, dan promosi bersama.',
+        members: `${c._count?.members ?? c.membersCount ?? (c.members?.length || 1)} Anggota`,
+        image: c.avatarUrl || c.coverUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=2DB24A&color=ffffff&bold=true`,
+        href: `/community/${c.id}`
+      }))
+    }
+    return [
+      {
+        id: 'comm-dummy-1',
+        title: 'Perahu Kita',
+        badge: 'Perkumpulan UMKM',
+        desc: 'Wadah bagi pelaku usaha, UMKM, dan masyarakat untuk saling berbagi pengalaman dan peluang bersama.',
+        members: '1 Anggota',
+        image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=150&h=150&fit=crop&q=80',
+        href: '/community/comm-dummy-1'
+      },
+      {
+        id: 'comm-dummy-2',
+        title: 'Koperasi Produksi Maju Bersama',
+        badge: 'Koperasi Resmi',
+        desc: 'Koperasi produksi resmi pelaku usaha mikro kecil untuk pengadaan bahan baku bersama dan bagi hasil SHU.',
+        members: '1 Anggota',
+        image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=150&h=150&fit=crop&q=80',
+        href: '/community/comm-dummy-2'
+      },
+      {
+        id: 'comm-dummy-3',
+        title: 'Asosiasi Kuliner Kreatif Jogja',
+        badge: 'Perkumpulan UMKM',
+        desc: 'Wadah kolaborasi pemilik usaha kuliner kreatif untuk peningkatan mutu, sertifikasi halal, dan pemasaran.',
+        members: '1 Anggota',
+        image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&h=150&fit=crop&q=80',
+        href: '/community/comm-dummy-3'
+      }
+    ]
+  }, [communities])
 
   return (
     <section className="w-full max-w-[1280px] mx-auto px-4 sm:px-6 md:px-8 py-4 space-y-6 sm:space-y-7">
@@ -189,16 +233,16 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {POPULAR_COMMUNITIES.map((comm, idx) => (
+          {displayCommunities.map((comm, idx) => (
             <Link
-              key={idx}
-              href="/community"
+              key={comm.id || idx}
+              href={comm.href}
               className="bg-[#F8FAFC] rounded-xl border border-slate-200/80 p-3.5 flex gap-3 hover:border-[#2DB24A]/60 shadow-2xs hover:shadow-md transition-all group"
             >
               <img
                 src={comm.image}
                 alt={comm.title}
-                className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
+                className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
               />
               <div className="space-y-1 flex-1 min-w-0">
                 <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
@@ -239,17 +283,17 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
             />
             <div className="space-y-1">
               <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
-                Koperasi Reguler
+                Kelas & Pelatihan Bisnis
               </span>
               <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-[#2DB24A]">
-                Koperasi Produksi Maju Bersama
+                Saloka Academy LMS
               </h4>
               <p className="text-[11px] text-slate-500 line-clamp-2">
-                Koperasi produksi resmi pelaku usaha mikro kecil dan menengah...
+                Tingkatkan omzet dan keahlian usaha melalui kursus digital marketing, keuangan, dan sertifikasi halal.
               </p>
               <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
-                <Users size={10} />
-                <span>0 Anggota</span>
+                <GraduationCap size={10} />
+                <span>Pelatihan Terstruktur & Sertifikat</span>
               </div>
             </div>
           </Link>
@@ -272,17 +316,17 @@ export default function HomeExplorer({ products, services }: HomeExplorerProps) 
             />
             <div className="space-y-1">
               <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
-                Koperasi Reguler
+                Komisi Referral Multi-Tier
               </span>
               <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-[#2DB24A]">
-                Koperasi Produksi Maju Bersama
+                Saloka Affiliate System
               </h4>
               <p className="text-[11px] text-slate-500 line-clamp-2">
-                Koperasi produksi resmi pelaku usaha mikro kecil dan menengah...
+                Bagikan link produk atau komunitas dan dapatkan penghasilan komisi multi-level secara otomatis.
               </p>
               <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
-                <Users size={10} />
-                <span>0 Anggota</span>
+                <Coins size={10} />
+                <span>Komisi Langsung Masuk Saldo</span>
               </div>
             </div>
           </Link>

@@ -1,13 +1,32 @@
-'use client'
-
 import React, { useState, useEffect, useRef, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import CartButton from './CartButton'
 import NotificationBell from './NotificationBell'
 import ChatHeaderButton from './ChatHeaderButton'
-import { Menu, X, LogOut, Settings, Shield, User as UserIcon, LayoutDashboard, Wallet, Search, MapPin, MessageSquare, Store, Briefcase, Tag, Users } from 'lucide-react'
+import {
+  Menu,
+  X,
+  LogOut,
+  Settings,
+  Shield,
+  User as UserIcon,
+  LayoutDashboard,
+  Wallet,
+  Search,
+  MapPin,
+  MessageSquare,
+  Store,
+  Briefcase,
+  Tag,
+  Users,
+  ShoppingBag,
+  Sparkles,
+  ChevronRight,
+  Loader2
+} from 'lucide-react'
 import { AuthDialog } from '@/components/AuthDialog'
+import { searchGlobalAction, GlobalSearchResult } from '@/app/actions/search'
 
 interface HeaderNavigationProps {
   user: any
@@ -24,26 +43,73 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
   const [isOpenMobile, setIsOpenMobile] = useState(false)
   const [isOpenProfile, setIsOpenProfile] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchResults, setSearchResults] = useState<GlobalSearchResult | null>(null)
+  const [searchTab, setSearchTab] = useState<'ALL' | 'PRODUK' | 'JASA' | 'KOMUNITAS'>('ALL')
   const [isPending, startTransition] = useTransition()
   
   const profileRef = useRef<HTMLDivElement>(null)
+  const desktopSearchRef = useRef<HTMLDivElement>(null)
+  const mobileSearchRef = useRef<HTMLDivElement>(null)
 
-  // Close profile dropdown on click outside
+  // Close dropdowns on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsOpenProfile(false)
+      }
+      const isInsideDesktopSearch = desktopSearchRef.current && desktopSearchRef.current.contains(event.target as Node)
+      const isInsideMobileSearch = mobileSearchRef.current && mobileSearchRef.current.contains(event.target as Node)
+      if (!isInsideDesktopSearch && !isInsideMobileSearch) {
+        setIsSearchOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Close search on pathname change
+  useEffect(() => {
+    setIsSearchOpen(false)
+  }, [pathname])
+
+  // Debounced search query
+  useEffect(() => {
+    let timer: any = null
+    const runSearch = async () => {
+      setIsSearching(true)
+      try {
+        const res = await searchGlobalAction(searchQuery)
+        setSearchResults(res)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setIsSearching(false)
+      }
+    }
+
+    if (isSearchOpen) {
+      timer = setTimeout(() => {
+        runSearch()
+      }, 150)
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer)
+    }
+  }, [searchQuery, isSearchOpen])
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
+      setIsSearchOpen(false)
       router.push(`/market?q=${encodeURIComponent(searchQuery.trim())}`)
     }
+  }
+
+  const handleCloseSearch = () => {
+    setIsSearchOpen(false)
   }
 
   const handleLogout = () => {
@@ -53,6 +119,388 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
       setIsOpenMobile(false)
       window.location.href = '/'
     })
+  }
+
+  // ── Render Search Popover Content (used in desktop & mobile) ──
+  const renderSearchDropdownContent = () => {
+    const hasQuery = searchQuery.trim().length > 0
+    const products = searchResults?.products || []
+    const services = searchResults?.services || []
+    const communities = searchResults?.communities || []
+    const recommendedProducts = searchResults?.recommendedProducts || []
+    const recommendedServices = searchResults?.recommendedServices || []
+    const totalMatches = searchResults?.totalMatches || 0
+
+    return (
+      <div className="p-3 sm:p-4 space-y-3.5 text-slate-800">
+        {/* Quick Filter Tabs (When searching) */}
+        {hasQuery && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-100 text-[11px] font-bold">
+            <button
+              type="button"
+              onClick={() => setSearchTab('ALL')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer border-none ${
+                searchTab === 'ALL' ? 'bg-[#2DB24A] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Semua ({totalMatches})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchTab('PRODUK')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer border-none ${
+                searchTab === 'PRODUK' ? 'bg-[#2DB24A] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Produk ({products.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchTab('JASA')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer border-none ${
+                searchTab === 'JASA' ? 'bg-[#2DB24A] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Jasa ({services.length})
+            </button>
+            {communities.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSearchTab('KOMUNITAS')}
+                className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer border-none ${
+                  searchTab === 'KOMUNITAS' ? 'bg-[#2DB24A] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Komunitas ({communities.length})
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Loading Indicator */}
+        {isSearching && (
+          <div className="flex items-center justify-center py-6 gap-2 text-xs text-slate-500 font-medium">
+            <Loader2 className="w-4 h-4 text-[#2DB24A] animate-spin" />
+            <span>Mencari di Saloka...</span>
+          </div>
+        )}
+
+        {/* Case 1: Query Typed & Matches Found */}
+        {!isSearching && hasQuery && totalMatches > 0 && (
+          <div className="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
+            {/* Products Section */}
+            {(searchTab === 'ALL' || searchTab === 'PRODUK') && products.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-500 uppercase tracking-wider px-1">
+                  <span className="flex items-center gap-1 text-[#2DB24A]">
+                    <ShoppingBag size={13} /> Produk Terkait ({products.length})
+                  </span>
+                  <Link
+                    href={`/market?q=${encodeURIComponent(searchQuery)}`}
+                    onClick={handleCloseSearch}
+                    className="text-[10px] text-[#2DB24A] hover:underline font-bold"
+                  >
+                    Lihat Semua
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {products.slice(0, searchTab === 'PRODUK' ? 8 : 4).map((p: any) => (
+                    <Link
+                      key={p.id}
+                      href={`/market/product/${p.id}`}
+                      onClick={handleCloseSearch}
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200/80 transition-all group cursor-pointer"
+                    >
+                      <img
+                        src={p.imageUrl || 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=150&q=80'}
+                        alt={p.title}
+                        className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-bold text-[9px] rounded uppercase">
+                            {p.category || 'PRODUK'}
+                          </span>
+                          {p.merchant?.name && (
+                            <span className="text-[10px] text-slate-400 truncate">
+                              • {p.merchant.name}
+                            </span>
+                          )}
+                        </div>
+                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                          {p.title}
+                        </h5>
+                        <p className="text-xs font-extrabold text-slate-900 mt-0.5">
+                          Rp {Number(p.price || 0).toLocaleString('id-ID')}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-300 group-hover:text-[#2DB24A] transition-colors shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Services Section */}
+            {(searchTab === 'ALL' || searchTab === 'JASA') && services.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-500 uppercase tracking-wider px-1">
+                  <span className="flex items-center gap-1 text-blue-600">
+                    <Briefcase size={13} /> Jasa & Layanan ({services.length})
+                  </span>
+                  <Link
+                    href={`/jasa?search=${encodeURIComponent(searchQuery)}`}
+                    onClick={handleCloseSearch}
+                    className="text-[10px] text-blue-600 hover:underline font-bold"
+                  >
+                    Lihat Semua
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {services.slice(0, searchTab === 'JASA' ? 8 : 4).map((s: any) => (
+                    <Link
+                      key={s.id}
+                      href={`/jasa/${s.id}`}
+                      onClick={handleCloseSearch}
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200/80 transition-all group cursor-pointer"
+                    >
+                      <img
+                        src={s.images?.[0] || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=150&q=80'}
+                        alt={s.title}
+                        className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-bold text-[9px] rounded uppercase">
+                            {s.category || 'JASA'}
+                          </span>
+                          {s.location && (
+                            <span className="text-[10px] text-slate-400 truncate flex items-center gap-0.5">
+                              <MapPin size={9} /> {s.location}
+                            </span>
+                          )}
+                        </div>
+                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                          {s.title}
+                        </h5>
+                        <p className="text-xs font-extrabold text-slate-900 mt-0.5">
+                          {s.pricePerSession ? `Rp ${Number(s.pricePerSession).toLocaleString('id-ID')} / sesi` : (s.pricePerDay ? `Rp ${Number(s.pricePerDay).toLocaleString('id-ID')} / hari` : 'Hubungi Penyedia')}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-300 group-hover:text-[#2DB24A] transition-colors shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Communities Section */}
+            {(searchTab === 'ALL' || searchTab === 'KOMUNITAS') && communities.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-500 uppercase tracking-wider px-1">
+                  <span className="flex items-center gap-1 text-amber-700">
+                    <Users size={13} /> Komunitas ({communities.length})
+                  </span>
+                  <Link
+                    href="/community"
+                    onClick={handleCloseSearch}
+                    className="text-[10px] text-amber-700 hover:underline font-bold"
+                  >
+                    Lihat Semua
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {communities.slice(0, 3).map((c: any) => (
+                    <Link
+                      key={c.id}
+                      href={`/community/${c.id}`}
+                      onClick={handleCloseSearch}
+                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200/80 transition-all group cursor-pointer"
+                    >
+                      <img
+                        src={c.avatarUrl || c.coverUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=2DB24A&color=ffffff&bold=true`}
+                        alt={c.name}
+                        className="w-11 h-11 rounded-xl object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="px-1.5 py-0.5 bg-amber-50 text-amber-800 font-bold text-[9px] rounded uppercase">
+                          {c.type === 'KOPERASI' ? 'KOPERASI RESMI' : 'PERKUMPULAN UMKM'}
+                        </span>
+                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                          {c.name}
+                        </h5>
+                        <p className="text-[10px] text-slate-400 truncate">
+                          {c._count?.members || 1} Anggota • {c.domisili || 'Indonesia'}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-300 group-hover:text-[#2DB24A] transition-colors shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Case 2: Query Typed & NO Matches Found -> Show Notice & RECOMMENDATIONS FALLBACK */}
+        {!isSearching && hasQuery && totalMatches === 0 && (
+          <div className="space-y-3">
+            {/* Friendly Notification */}
+            <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-xl text-center space-y-1">
+              <p className="text-xs font-bold text-amber-900">
+                Produk atau jasa "{searchQuery}" tidak ditemukan
+              </p>
+              <p className="text-[11px] text-amber-700 font-medium">
+                Jangan khawatir! Berikut rekomendasi produk & jasa pilihan untuk Anda:
+              </p>
+            </div>
+
+            {/* Recommendations Section */}
+            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+              <div className="flex items-center gap-1.5 text-xs font-extrabold text-slate-800 px-1">
+                <Sparkles size={14} className="text-[#2DB24A]" />
+                <span>Rekomendasi Produk & Jasa</span>
+              </div>
+              <div className="grid grid-cols-1 gap-1.5">
+                {recommendedProducts.slice(0, 3).map((p: any) => (
+                  <Link
+                    key={p.id}
+                    href={`/market/product/${p.id}`}
+                    onClick={handleCloseSearch}
+                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-slate-200 transition-all group cursor-pointer"
+                  >
+                    <img
+                      src={p.imageUrl || 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=150&q=80'}
+                      alt={p.title}
+                      className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="px-1.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-bold text-[9px] rounded uppercase">
+                        {p.category || 'PRODUK'}
+                      </span>
+                      <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                        {p.title}
+                      </h5>
+                      <p className="text-xs font-extrabold text-slate-900 mt-0.5">
+                        Rp {Number(p.price || 0).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-300 group-hover:text-[#2DB24A] transition-colors shrink-0" />
+                  </Link>
+                ))}
+
+                {recommendedServices.slice(0, 2).map((s: any) => (
+                  <Link
+                    key={s.id}
+                    href={`/jasa/${s.id}`}
+                    onClick={handleCloseSearch}
+                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 border border-slate-100 hover:border-slate-200 transition-all group cursor-pointer"
+                  >
+                    <img
+                      src={s.images?.[0] || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=150&q=80'}
+                      alt={s.title}
+                      className="w-11 h-11 rounded-lg object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 font-bold text-[9px] rounded uppercase">
+                        {s.category || 'JASA'}
+                      </span>
+                      <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors mt-0.5">
+                        {s.title}
+                      </h5>
+                      <p className="text-xs font-extrabold text-slate-900 mt-0.5">
+                        {s.pricePerSession ? `Rp ${Number(s.pricePerSession).toLocaleString('id-ID')} / sesi` : (s.pricePerDay ? `Rp ${Number(s.pricePerDay).toLocaleString('id-ID')} / hari` : 'Hubungi Penyedia')}
+                      </p>
+                    </div>
+                    <ChevronRight size={14} className="text-slate-300 group-hover:text-[#2DB24A] transition-colors shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Case 3: Search Box Focused with Empty Query (Discovery & Shortcuts) */}
+        {!isSearching && !hasQuery && (
+          <div className="space-y-3">
+            {/* Quick Keyword Chips */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider px-1">
+                Pencarian Populer
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {['Snackbox', 'Kuliner', 'Fashion', 'Elektronik', 'Desain Grafis', 'Servis Elektronik'].map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery(term)
+                    }}
+                    className="px-2.5 py-1 bg-slate-100 hover:bg-[#E8F8EE] hover:text-[#0F5132] text-slate-600 text-xs font-semibold rounded-lg transition-all cursor-pointer border-none"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Recommended Items Preview */}
+            {recommendedProducts.length > 0 && (
+              <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider px-1 flex items-center gap-1">
+                  <Sparkles size={11} className="text-[#2DB24A]" /> Rekomendasi Produk Pilihan
+                </span>
+                <div className="grid grid-cols-1 gap-1.5">
+                  {recommendedProducts.slice(0, 3).map((p: any) => (
+                    <Link
+                      key={p.id}
+                      href={`/market/product/${p.id}`}
+                      onClick={handleCloseSearch}
+                      className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
+                    >
+                      <img
+                        src={p.imageUrl || 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=150&q=80'}
+                        alt={p.title}
+                        className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-100"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#2DB24A] transition-colors">
+                          {p.title}
+                        </h5>
+                        <p className="text-[11px] font-extrabold text-slate-800">
+                          Rp {Number(p.price || 0).toLocaleString('id-ID')}
+                        </p>
+                      </div>
+                      <ChevronRight size={13} className="text-slate-300 group-hover:text-[#2DB24A] shrink-0" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer Actions */}
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold">
+          <Link
+            href={hasQuery ? `/market?q=${encodeURIComponent(searchQuery)}` : '/market'}
+            onClick={handleCloseSearch}
+            className="text-[#2DB24A] hover:underline flex items-center gap-1"
+          >
+            <span>Semua di Marketplace</span>
+            <ChevronRight size={12} />
+          </Link>
+          <Link
+            href={hasQuery ? `/jasa?search=${encodeURIComponent(searchQuery)}` : '/jasa'}
+            onClick={handleCloseSearch}
+            className="text-blue-600 hover:underline flex items-center gap-1"
+          >
+            <span>Semua di Jasa</span>
+            <ChevronRight size={12} />
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -83,37 +531,72 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
           </Link>
 
           {/* ── MOBILE HEADER CENTER LAYOUT: Always-visible search box ── */}
-          <form onSubmit={handleSearchSubmit} className="flex-1 md:hidden flex items-center gap-2 border border-slate-200 focus-within:border-[#2DB24A] rounded-full px-3 py-1.5 bg-slate-50 transition-colors min-w-0">
-            <img src="/images/search icon header.svg" alt="Search" className="w-4 h-4 object-contain shrink-0 opacity-50" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari di Saloka..."
-              className="w-full text-xs text-slate-800 placeholder:text-slate-400 outline-none font-medium bg-transparent min-w-0"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer border-none bg-transparent shrink-0"
-              >
-                <X size={14} />
-              </button>
+          <div ref={mobileSearchRef} className="relative flex-1 md:hidden min-w-0">
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 border border-slate-200 focus-within:border-[#2DB24A] rounded-full px-3 py-1.5 bg-slate-50 transition-colors min-w-0">
+              <img src="/images/search icon header.svg" alt="Search" className="w-4 h-4 object-contain shrink-0 opacity-50" />
+              <input
+                type="text"
+                value={searchQuery}
+                onFocus={() => setIsSearchOpen(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setIsSearchOpen(true)
+                }}
+                placeholder="Cari di Saloka..."
+                className="w-full text-xs text-slate-800 placeholder:text-slate-400 outline-none font-medium bg-transparent min-w-0"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer border-none bg-transparent shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </form>
+
+            {/* Mobile Search Dropdown */}
+            {isSearchOpen && (
+              <div className="fixed left-3 right-3 top-[68px] z-50 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[75vh] overflow-y-auto">
+                {renderSearchDropdownContent()}
+              </div>
             )}
-          </form>
+          </div>
 
           {/* ── DESKTOP & TABLET HEADER CENTER LAYOUT ── */}
-          <form onSubmit={handleSearchSubmit} className="hidden md:block relative flex-1 max-w-[220px] md:max-w-[260px] lg:max-w-[300px]">
-            <img src="/images/search icon header.svg" alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 object-contain" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari semuanya di Saloka!"
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-[#2DB24A]/40 focus:border-[#2DB24A] rounded-full text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#2DB24A]/30 transition-all font-medium"
-            />
-          </form>
+          <div ref={desktopSearchRef} className="hidden md:block relative flex-1 max-w-[240px] md:max-w-[280px] lg:max-w-[340px]">
+            <form onSubmit={handleSearchSubmit} className="relative w-full">
+              <img src="/images/search icon header.svg" alt="Search" className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 object-contain pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onFocus={() => setIsSearchOpen(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setIsSearchOpen(true)
+                }}
+                placeholder="Cari semuanya di Saloka!"
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-[#2DB24A]/40 focus:border-[#2DB24A] rounded-full text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#2DB24A]/30 transition-all font-medium"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer border-none bg-transparent"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </form>
+
+            {/* Desktop Search Dropdown Popover */}
+            {isSearchOpen && (
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[440px] lg:w-[480px] z-50 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+                {renderSearchDropdownContent()}
+              </div>
+            )}
+          </div>
 
           {/* Middle: Links with Icons (Desktop) */}
           <div className="hidden lg:flex items-center gap-4 xl:gap-5">
