@@ -11,6 +11,7 @@ import ConnectivityStatus from './ConnectivityStatus'
 import ProductCompareModal from './ProductCompareModal'
 import { GsapScrollTrigger } from '@/components/GsapScrollTrigger'
 import OnboardingGuard from './OnboardingGuard'
+import { SnackboxProvider } from '@/context/SnackboxContext'
 
 interface ClientLayoutWrapperProps {
   user: any
@@ -35,26 +36,29 @@ export default function ClientLayoutWrapper({
 
   if (isAdminRoute || isBuilderRoute) {
     return (
-      <div className={`min-h-full flex-grow flex flex-col ${isAdminRoute ? "bg-[#0c0d0e]" : "bg-[#e8eaed]"}`}>
-        <main className="flex-grow flex flex-col">
-          {children}
-        </main>
-      </div>
+      <SnackboxProvider>
+        <div className={`min-h-full flex-grow flex flex-col ${isAdminRoute ? "bg-[#0c0d0e]" : "bg-[#e8eaed]"}`}>
+          <main className="flex-grow flex flex-col">
+            {children}
+          </main>
+        </div>
+      </SnackboxProvider>
     )
   }
 
   return (
-    <div className="min-h-full flex-grow flex flex-col bg-bg-dark pb-16 md:pb-0">
-      <GsapScrollTrigger />
-      <OnboardingGuard isLoggedIn={!!user} userSetupCompleted={!!userSetupCompleted} userId={dbUser?.id || ''} />
+    <SnackboxProvider>
+      <div className="min-h-full flex-grow flex flex-col bg-bg-dark pb-16 md:pb-0">
+        <GsapScrollTrigger />
+        <OnboardingGuard isLoggedIn={!!user} userSetupCompleted={!!userSetupCompleted} userId={dbUser?.id || ''} />
 
-      {/* ── RESPONSIVE NAVIGATION HEADER ──────────────────────────── */}
-      <HeaderNavigation user={dbUser} wallet={wallet} logoutAction={logoutAction} />
+        {/* ── RESPONSIVE NAVIGATION HEADER ──────────────────────────── */}
+        <HeaderNavigation user={dbUser} wallet={wallet} logoutAction={logoutAction} />
 
-      {/* Page Content */}
-      <main className="flex-grow flex flex-col pt-[100px]">
-        {children}
-      </main>
+        {/* Page Content */}
+        <main className="flex-grow flex flex-col pt-[100px]">
+          {children}
+        </main>
 
       {/* ── GLOBAL FOOTER ──────────────────────────────────────────────── */}
       {/* ── GLOBAL FOOTER (Figma Screenshot 2 Exact Specs) ────────────────── */}
@@ -145,5 +149,6 @@ export default function ClientLayoutWrapper({
       <ConnectivityStatus />
       <ProductCompareModal />
     </div>
+  </SnackboxProvider>
   )
 }
