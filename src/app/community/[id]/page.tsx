@@ -25,6 +25,7 @@ import {
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts, getProductsByMerchantIdsAction } from '@/app/actions/products'
+import { getCommunityOfficialProductsAction, createCommunityOfficialProductAction, updateCommunityOfficialProductAction, deleteCommunityOfficialProductAction } from '@/app/actions/community-products'
 import { createUserNotificationAction } from '@/app/actions/orders'
 import { getCommunityShuDataAction, getUserShuSummaryAction, calculateAndSaveShuAction } from '@/app/actions/shu'
 import { recordSavingsTransactionAction, getCommunitySavingsSummaryAction } from '@/app/actions/savings'
@@ -107,6 +108,11 @@ import {
   Landmark,
   Activity,
   ShoppingBag,
+  Package,
+  ShoppingCart,
+  Search,
+  Filter,
+  Eye,
   Sliders,
   User,
   ArrowUpCircle,
@@ -137,6 +143,28 @@ export default function CommunityDetailPage() {
   const [membershipDetails, setMembershipDetails] = useState<any>(null)
   const [shuConfig, setShuConfig] = useState<any>(null)
   const [userShu, setUserShu] = useState<any>(null)
+
+
+  // State for Official Community Products (Produk Resmi Komunitas)
+  const [communityOfficialProducts, setCommunityOfficialProducts] = useState<any[]>([])
+  const [isLoadingOfficialProducts, setIsLoadingOfficialProducts] = useState(false)
+  const [isOfficialProductModalOpen, setIsOfficialProductModalOpen] = useState(false)
+  const [editingOfficialProduct, setEditingOfficialProduct] = useState<any>(null)
+  const [isDetailOfficialProductModalOpen, setIsDetailOfficialProductModalOpen] = useState(false)
+  const [selectedOfficialProductDetail, setSelectedOfficialProductDetail] = useState<any>(null)
+  const [officialProdName, setOfficialProdName] = useState('')
+  const [officialProdDesc, setOfficialProdDesc] = useState('')
+  const [officialProdPrice, setOfficialProdPrice] = useState('95000')
+  const [officialProdStock, setOfficialProdStock] = useState('50')
+  const [officialProdCategory, setOfficialProdCategory] = useState('Merchandise & Seragam')
+  const [officialProdImageUrl, setOfficialProdImageUrl] = useState('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80')
+  const [officialProdStatus, setOfficialProdStatus] = useState('TERSEDIA')
+  const [officialProdSku, setOfficialProdSku] = useState('')
+  const [isUploadingOfficialImage, setIsUploadingOfficialImage] = useState(false)
+  const [isSavingOfficialProduct, setIsSavingOfficialProduct] = useState(false)
+  const [officialProductSearchQuery, setOfficialProductSearchQuery] = useState('')
+  const [officialProductCategoryFilter, setOfficialProductCategoryFilter] = useState('Semua')
+  const [officialProductDetailQty, setOfficialProductDetailQty] = useState(1)
 
   // State for Announcements
   const [announcements, setAnnouncements] = useState<any[]>([])
@@ -188,6 +216,167 @@ export default function CommunityDetailPage() {
   // Cooperative Products & Projects
   const [coopProducts, setCoopProducts] = useState<any[]>([])
   const [fundingProjects, setFundingProjects] = useState<any[]>([])
+
+
+  // Handlers for Official Community Products CRUD
+  const handleOpenCreateOfficialProduct = () => {
+    setEditingOfficialProduct(null)
+    setOfficialProdName('')
+    setOfficialProdDesc('')
+    setOfficialProdPrice('95000')
+    setOfficialProdStock('50')
+    setOfficialProdCategory('Merchandise & Seragam')
+    setOfficialProdImageUrl('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80')
+    setOfficialProdStatus('TERSEDIA')
+    setOfficialProdSku(`COMM-${Date.now().toString().slice(-6)}`)
+    setIsOfficialProductModalOpen(true)
+  }
+
+  const handleOpenEditOfficialProduct = (prod: any) => {
+    setEditingOfficialProduct(prod)
+    setOfficialProdName(prod.name || '')
+    setOfficialProdDesc(prod.description || '')
+    setOfficialProdPrice(String(prod.price || 0))
+    setOfficialProdStock(String(prod.stock || 0))
+    setOfficialProdCategory(prod.category || 'Merchandise & Seragam')
+    setOfficialProdImageUrl(prod.imageUrl || '')
+    setOfficialProdStatus(prod.status || 'TERSEDIA')
+    setOfficialProdSku(prod.sku || '')
+    setIsOfficialProductModalOpen(true)
+  }
+
+  const handleOpenDetailOfficialProduct = (prod: any) => {
+    setSelectedOfficialProductDetail(prod)
+    setOfficialProductDetailQty(1)
+    setIsDetailOfficialProductModalOpen(true)
+  }
+
+  const handleOfficialImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsUploadingOfficialImage(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setOfficialProdImageUrl(data.url)
+        goeyToast.success('Foto produk berhasil diunggah!')
+      } else {
+        goeyToast.error(data.error || 'Gagal mengunggah foto.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal mengunggah foto.')
+    } finally {
+      setIsUploadingOfficialImage(false)
+    }
+  }
+
+  const handleSaveOfficialProduct = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!officialProdName.trim()) {
+      goeyToast.error('Nama produk wajib diisi!')
+      return
+    }
+    const priceNum = Number(officialProdPrice) || 0
+    if (priceNum <= 0) {
+      goeyToast.error('Harga produk tidak valid!')
+      return
+    }
+
+    setIsSavingOfficialProduct(true)
+    try {
+      const fd = new FormData()
+      fd.append('communityId', id)
+      fd.append('name', officialProdName.trim())
+      fd.append('description', officialProdDesc.trim())
+      fd.append('price', String(priceNum))
+      fd.append('stock', String(Number(officialProdStock) || 0))
+      fd.append('category', officialProdCategory)
+      fd.append('imageUrl', officialProdImageUrl)
+      fd.append('status', officialProdStatus)
+      fd.append('sku', officialProdSku || `COMM-${Date.now()}`)
+
+      if (editingOfficialProduct) {
+        const res = await updateCommunityOfficialProductAction(editingOfficialProduct.id, fd)
+        if (res.error) {
+          goeyToast.error(res.error)
+        } else {
+          goeyToast.success('Produk resmi komunitas berhasil diperbarui!')
+          setIsOfficialProductModalOpen(false)
+          setEditingOfficialProduct(null)
+          loadData()
+        }
+      } else {
+        const res = await createCommunityOfficialProductAction(fd)
+        if (res.error) {
+          goeyToast.error(res.error)
+        } else {
+          goeyToast.success('Produk resmi komunitas berhasil ditambahkan!')
+          setIsOfficialProductModalOpen(false)
+          loadData()
+        }
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal menyimpan produk komunitas.')
+    } finally {
+      setIsSavingOfficialProduct(false)
+    }
+  }
+
+  const handleDeleteOfficialProduct = (productId: string, productName: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hapus Produk Komunitas',
+      message: `Apakah Anda yakin ingin menghapus produk "${productName}" dari katalog resmi komunitas ini?`,
+      confirmText: 'Ya, Hapus Produk',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await deleteCommunityOfficialProductAction(productId, id)
+          if (res?.error) {
+            goeyToast.error(res.error)
+          } else {
+            setCommunityOfficialProducts(prev => prev.filter(p => p.id !== productId))
+            goeyToast.success('Produk resmi komunitas berhasil dihapus!')
+          }
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Gagal menghapus produk.')
+        }
+      }
+    })
+  }
+
+  const handleBuyOfficialProduct = (prod: any, qty: number = 1) => {
+    try {
+      const cartItem = {
+        id: prod.id,
+        name: prod.name,
+        price: prod.price,
+        quantity: qty,
+        image: prod.imageUrl,
+        merchantId: community.id,
+        merchantName: `Resmi ${community.name}`,
+        isOfficialCommunity: true
+      }
+      const existingCart = JSON.parse(localStorage.getItem('cart') || '[]')
+      const idx = existingCart.findIndex((x: any) => x.id === prod.id)
+      if (idx >= 0) {
+        existingCart[idx].quantity += qty
+      } else {
+        existingCart.push(cartItem)
+      }
+      localStorage.setItem('cart', JSON.stringify(existingCart))
+      window.dispatchEvent(new Event('cart-updated'))
+      goeyToast.success(`"${prod.name}" (${qty} pcs) berhasil dimasukkan ke keranjang!`)
+      if (isDetailOfficialProductModalOpen) {
+        setIsDetailOfficialProductModalOpen(false)
+      }
+    } catch (_) {
+      goeyToast.error('Gagal menambahkan ke keranjang.')
+    }
+  }
 
   // Product CRUD Modal State
   const [productModalOpen, setProductModalOpen] = useState(false)
@@ -451,6 +640,7 @@ export default function CommunityDetailPage() {
     | 'diskusi'
     | 'event'
     | 'marketplace'
+    | 'produk_komunitas'
     | 'anggota'
     | 'galeri'
     | 'pengumuman'
@@ -689,7 +879,8 @@ export default function CommunityDetailPage() {
         userShuRes,
         savingsRes,
         annListRes,
-        repListRes
+        repListRes,
+        officialProductsRes
       ] = await Promise.all([
         getCurrentUser().catch(() => null),
         getIndukCommunityDetail(id).catch(() => null),
@@ -702,7 +893,8 @@ export default function CommunityDetailPage() {
         getUserShuSummaryAction(id).catch(() => null),
         getCommunitySavingsSummaryAction(id).catch(() => ({ success: false, summary: null })),
         getAnnouncementsAction(id).catch(() => []),
-        getCooperativeReportsAction(id).catch(() => [])
+        getCooperativeReportsAction(id).catch(() => []),
+        getCommunityOfficialProductsAction(id).catch(() => [])
       ])
 
       setUser(currentUser)
@@ -853,6 +1045,9 @@ export default function CommunityDetailPage() {
       if (userShuRes?.success && userShuRes.distributions) {
         setUserShuSummary(userShuRes.distributions)
       }
+
+      // Set official community products
+      setCommunityOfficialProducts(officialProductsRes || [])
 
       // Set announcements and reports directly from parallel fetch
       setAnnouncements(annListRes || [])
@@ -1534,6 +1729,7 @@ export default function CommunityDetailPage() {
     { id: 'simpanan', label: 'Simpanan', icon: Wallet },
     { id: 'pendanaan', label: 'Pendanaan', icon: Landmark, badge: 'PRO' },
     { id: 'shu', label: 'SHU', icon: PieChart },
+    { id: 'produk_komunitas', label: 'Produk Komunitas', icon: Package },
     { id: 'marketplace', label: 'Marketplace', icon: Store },
     { id: 'laporan', label: 'Laporan', icon: FileText },
     { id: 'anggota', label: 'Anggota', icon: Users },
@@ -1546,6 +1742,7 @@ export default function CommunityDetailPage() {
     { id: 'pelatihan', label: 'Pelatihan', icon: GraduationCap },
     { id: 'mentor', label: 'Mentor', icon: Award },
     { id: 'kolaborasi', label: 'Kolaborasi', icon: Users },
+    { id: 'produk_komunitas', label: 'Produk Komunitas', icon: Package },
     { id: 'marketplace', label: 'Produk UMKM', icon: Store },
     { id: 'anggota', label: 'Anggota', icon: Users },
     { id: 'event', label: 'Event', icon: Calendar },
@@ -1557,6 +1754,7 @@ export default function CommunityDetailPage() {
     { id: 'mentor', label: 'Mentor', icon: Award },
     { id: 'kompetisi', label: 'Kompetisi', icon: Trophy },
     { id: 'startup', label: 'Startup', icon: Rocket },
+    { id: 'produk_komunitas', label: 'Produk Komunitas', icon: Package },
     { id: 'event', label: 'Event', icon: Calendar },
     { id: 'diskusi', label: 'Diskusi', icon: MessageSquare },
     { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
@@ -1565,6 +1763,7 @@ export default function CommunityDetailPage() {
     { id: 'beranda', label: 'Beranda', icon: Home },
     { id: 'diskusi', label: 'Diskusi', icon: MessageSquare },
     { id: 'merchant', label: 'Merchant', icon: Store },
+    { id: 'produk_komunitas', label: 'Produk Komunitas', icon: Package },
     { id: 'marketplace', label: 'Produk', icon: ShoppingBag },
     { id: 'supplier', label: 'Supplier', icon: Truck },
     { id: 'event', label: 'Event', icon: Calendar },
@@ -1579,6 +1778,7 @@ export default function CommunityDetailPage() {
     { id: 'event', label: 'Event', icon: Calendar },
     { id: 'galeri', label: 'Galeri', icon: ImageIcon },
     { id: 'anggota', label: 'Anggota', icon: Users },
+    { id: 'produk_komunitas', label: 'Produk Komunitas', icon: Package },
     { id: 'marketplace', label: 'Produk Anggota', icon: Store },
     { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
     { id: 'tentang', label: 'Tentang', icon: Info },
@@ -1599,7 +1799,7 @@ export default function CommunityDetailPage() {
     { id: 'landing_view', label: 'Halaman Landing', icon: ExternalLink },
     ...sidebarNavList.filter((item) => {
       if (!isCanManageCoop && !isMember) {
-        return ['beranda', 'marketplace', 'tentang'].includes(item.id)
+        return ['beranda', 'produk_komunitas', 'marketplace', 'tentang'].includes(item.id)
       }
       if (!isCanManageCoop && item.id === 'laporan') return false
       return !disabledModules.includes(item.id)
@@ -2064,6 +2264,82 @@ export default function CommunityDetailPage() {
                   })}
                 </div>
 
+                {/* PRODUK RESMI KOMUNITAS (SHOWCASE) */}
+                <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Package className="w-4 h-4 text-[#2DB24A]" /> Produk Resmi {community.name}
+                      </h3>
+                      <p className="text-[11px] text-gray-500 font-medium mt-0.5">Katalog resmi merchandise, seragam, bahan baku, dan produk yang dikelola pengurus komunitas</p>
+                    </div>
+                    <button onClick={() => setActiveSidebarNav('produk_komunitas')} className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1 cursor-pointer">
+                      Lihat Semua ({communityOfficialProducts.length}) <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-1">
+                    {communityOfficialProducts && communityOfficialProducts.length > 0 ? (
+                      communityOfficialProducts.slice(0, 3).map((prod: any) => (
+                        <div
+                          key={prod.id}
+                          onClick={() => handleOpenDetailOfficialProduct(prod)}
+                          className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2 group hover:border-[#2DB24A]/40 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+                        >
+                          <div className="space-y-2">
+                            <div className="relative rounded-lg overflow-hidden h-32 bg-gray-100">
+                              <img
+                                src={prod.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'}
+                                alt={prod.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                {prod.category || 'Official'}
+                              </span>
+                              <span className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 text-white font-extrabold text-[8px] rounded-md">
+                                Stok: {prod.stock || 0}
+                              </span>
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">
+                                {prod.name}
+                              </h4>
+                              <p className="text-[10px] text-gray-500 font-medium line-clamp-1 mt-0.5">
+                                {prod.description || 'Produk resmi komunitas'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-200/60">
+                            <span className="text-xs font-black text-[#0F5132]">
+                              Rp {Number(prod.price || 0).toLocaleString('id-ID')}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleBuyOfficialProduct(prod, 1)
+                              }}
+                              className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                            >
+                              <ShoppingCart className="w-3 h-3" /> Beli
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full p-6 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl space-y-2">
+                        <Package className="w-8 h-8 text-[#2DB24A] mx-auto opacity-70" />
+                        <h4 className="text-xs font-bold text-gray-800">Belum Ada Produk Resmi Komunitas</h4>
+                        <p className="text-[11px] text-gray-500 max-w-sm mx-auto">Pengurus komunitas dapat menambahkan produk resmi untuk dijual kepada anggota dan publik.</p>
+                        {isCanManageCoop && (
+                          <button onClick={handleOpenCreateOfficialProduct} className="px-3.5 py-1.5 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5 mt-1">
+                            <Plus className="w-3.5 h-3.5" /> Tambah Produk Komunitas
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* PRODUK UNGGULAN ANGGOTA */}
                 <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
                   <div className="flex justify-between items-center">
@@ -2500,6 +2776,226 @@ export default function CommunityDetailPage() {
                       })
                     })()}
                   </div>
+                </div>
+              </div>
+            )}
+
+            
+            {/* TAB: PRODUK RESMI KOMUNITAS (OFFICIAL PRODUCTS CRUD) ──────────────── */}
+            {activeSidebarNav === 'produk_komunitas' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
+                  {/* Header */}
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="p-2 bg-[#E8F8EE] text-[#0F5132] rounded-xl">
+                          <Package className="w-5 h-5" />
+                        </span>
+                        <h2 className="text-xl font-black text-gray-900 font-sora">
+                          Produk Resmi {community.name}
+                        </h2>
+                        <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-black uppercase rounded-md tracking-wider">
+                          Official Catalog
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 font-medium mt-1.5">
+                        Koleksi produk resmi, merchandise, seragam, bahan baku, dan paket usaha terpercaya yang dikelola langsung oleh pengurus komunitas.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {isCanManageCoop && (
+                        <button
+                          onClick={handleOpenCreateOfficialProduct}
+                          className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" /> Tambah Produk Komunitas
+                        </button>
+                      )}
+                      <Link
+                        href="/cart"
+                        className="px-4 py-2.5 bg-white border border-gray-200 hover:border-[#2DB24A] hover:text-[#2DB24A] text-gray-700 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <ShoppingCart className="w-4 h-4 text-[#2DB24A]" /> Keranjang Belanja
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Search & Category Filter Pills */}
+                  <div className="space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                      <div className="relative w-full sm:w-80">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Cari produk resmi komunitas..."
+                          value={officialProductSearchQuery}
+                          onChange={(e) => setOfficialProductSearchQuery(e.target.value)}
+                          className="w-full pl-9.5 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 placeholder-gray-400 focus:bg-white focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A] outline-hidden transition-all"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 w-full sm:w-auto justify-end">
+                        <span>Total: <strong className="text-gray-900">{communityOfficialProducts.length}</strong> produk</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                      {['Semua', 'Merchandise & Seragam', 'Bahan Baku', 'Produk Olahan', 'Paket Usaha', 'Lainnya'].map((cat) => {
+                        const isSelected = officialProductCategoryFilter === cat
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => setOfficialProductCategoryFilter(cat)}
+                            className={`px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#2DB24A] text-white shadow-xs'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200/70 hover:text-gray-900'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Product Cards Grid */}
+                  {(() => {
+                    const filteredProducts = communityOfficialProducts.filter((p) => {
+                      const matchQuery = !officialProductSearchQuery.trim() ||
+                        p.name?.toLowerCase().includes(officialProductSearchQuery.toLowerCase()) ||
+                        p.description?.toLowerCase().includes(officialProductSearchQuery.toLowerCase()) ||
+                        p.category?.toLowerCase().includes(officialProductSearchQuery.toLowerCase())
+                      const matchCat = officialProductCategoryFilter === 'Semua' || p.category === officialProductCategoryFilter
+                      return matchQuery && matchCat
+                    })
+
+                    if (filteredProducts.length === 0) {
+                      return (
+                        <div className="p-12 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                          <Package className="w-12 h-12 text-gray-300 mx-auto" />
+                          <h4 className="text-sm font-extrabold text-gray-800">
+                            {officialProductSearchQuery || officialProductCategoryFilter !== 'Semua'
+                              ? 'Tidak Ada Produk yang Cocok'
+                              : 'Belum Ada Produk Resmi Komunitas'}
+                          </h4>
+                          <p className="text-xs text-gray-500 max-w-md mx-auto">
+                            {officialProductSearchQuery || officialProductCategoryFilter !== 'Semua'
+                              ? 'Coba gunakan kata kunci pencarian lain atau pilih kategori Semua.'
+                              : 'Pengurus komunitas belum menambahkan katalog produk resmi. Klik tombol Tambah Produk Komunitas untuk mulai menjual.'}
+                          </p>
+                          {isCanManageCoop && (
+                            <button
+                              onClick={handleOpenCreateOfficialProduct}
+                              className="px-4 py-2 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5"
+                            >
+                              <Plus className="w-4 h-4" /> Tambah Produk Sekarang
+                            </button>
+                          )}
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
+                        {filteredProducts.map((prod: any) => {
+                          const isOutOfStock = Number(prod.stock || 0) <= 0
+                          return (
+                            <div
+                              key={prod.id}
+                              className="p-4 bg-white border border-gray-200/90 rounded-2xl space-y-3.5 hover:border-[#2DB24A]/50 hover:shadow-md transition-all flex flex-col justify-between group"
+                            >
+                              <div className="space-y-3">
+                                {/* Image & Badges */}
+                                <div className="relative rounded-xl overflow-hidden h-44 bg-gray-100">
+                                  <img
+                                    src={prod.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'}
+                                    alt={prod.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                  <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                    {prod.category || 'Official'}
+                                  </span>
+                                  <span className="absolute top-2.5 right-2.5 px-2 py-0.5 bg-black/60 backdrop-blur-md text-white font-extrabold text-[9px] rounded-md shadow-xs">
+                                    {isOutOfStock ? 'Stok Habis' : `Stok: ${prod.stock} unit`}
+                                  </span>
+                                </div>
+
+                                {/* Title & Info */}
+                                <div>
+                                  <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-bold mb-1">
+                                    <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
+                                    <span>Resmi {community.name}</span>
+                                  </div>
+                                  <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">
+                                    {prod.name}
+                                  </h4>
+                                  <p className="text-xs text-gray-500 font-medium line-clamp-2 mt-1 leading-relaxed">
+                                    {prod.description || 'Produk resmi berkualitas pilihan dari komunitas.'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Price & Action Buttons */}
+                              <div className="pt-3 border-t border-gray-100 space-y-2.5">
+                                <div className="flex justify-between items-baseline">
+                                  <div>
+                                    <span className="text-[10px] text-gray-400 font-bold block">Harga Komunitas</span>
+                                    <span className="text-base font-black text-[#0F5132]">
+                                      Rp {Number(prod.price || 0).toLocaleString('id-ID')}
+                                    </span>
+                                  </div>
+                                  {prod.sku && (
+                                    <span className="text-[9px] font-mono text-gray-400">
+                                      {prod.sku}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleOpenDetailOfficialProduct(prod)}
+                                    className="flex-1 py-2 bg-gray-100 hover:bg-gray-200/80 text-gray-800 font-extrabold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" /> Detail
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleBuyOfficialProduct(prod, 1)}
+                                    disabled={isOutOfStock}
+                                    className={`flex-1 py-2 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                      isOutOfStock
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                        : 'bg-[#2DB24A] hover:bg-[#0F5132] text-white'
+                                    }`}
+                                  >
+                                    <ShoppingCart className="w-3.5 h-3.5" /> + Keranjang
+                                  </button>
+                                </div>
+
+                                {isCanManageCoop && (
+                                  <div className="flex items-center justify-end gap-1.5 pt-1.5 border-t border-dashed border-gray-100">
+                                    <button
+                                      onClick={() => handleOpenEditOfficialProduct(prod)}
+                                      className="px-2.5 py-1 text-[11px] font-bold text-gray-600 hover:text-[#2DB24A] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                    >
+                                      <Edit3 className="w-3 h-3" /> Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteOfficialProduct(prod.id, prod.name)}
+                                      className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                    >
+                                      <Trash2 className="w-3 h-3" /> Hapus
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )}

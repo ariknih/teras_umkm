@@ -8424,6 +8424,262 @@ export const DataStore = {
     )
   },
 
+
+  // ─── OFFICIAL COMMUNITY PRODUCTS (PRODUK RESMI KOMUNITAS) CRUD ────────────────────────
+  async getCommunityOfficialProducts(communityId: string) {
+    syncMockDb()
+    const seedCommunityProducts = [
+      {
+        id: `comm-prod-1-${communityId}`,
+        communityId,
+        name: 'Kaos Resmi & Seragam Komunitas',
+        description: 'Seragam resmi berbahan Cotton Combed 24s premium dengan bordir logo resmi komunitas. Nyaman dipakai harian, kopdar, dan event resmi.',
+        price: 95000,
+        stock: 50,
+        category: 'Merchandise & Seragam',
+        status: 'TERSEDIA',
+        imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
+        sku: 'COMM-TSHIRT-01',
+        isOfficial: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: `comm-prod-2-${communityId}`,
+        communityId,
+        name: 'Paket Bahan Baku Produksi Bersama',
+        description: 'Bahan baku berkualitas pilihan hasil pengadaan kolektif komunitas untuk efisiensi modal usaha anggota UMKM.',
+        price: 175000,
+        stock: 30,
+        category: 'Bahan Baku',
+        status: 'TERSEDIA',
+        imageUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&auto=format&fit=crop&q=80',
+        sku: 'COMM-RAW-02',
+        isOfficial: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: `comm-prod-3-${communityId}`,
+        communityId,
+        name: 'Tumbler & Notebook Kolaborasi Eksklusif',
+        description: 'Set merchandise ramah lingkungan dan buku agenda kerja resmi berlogo komunitas untuk pendukung dan anggota aktif.',
+        price: 65000,
+        stock: 40,
+        category: 'Merchandise & Seragam',
+        status: 'TERSEDIA',
+        imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=500&auto=format&fit=crop&q=80',
+        sku: 'COMM-SET-03',
+        isOfficial: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+
+    return withFallback(
+      async () => {
+        try {
+          const list = await (db as any).communityProduct?.findMany({
+            where: { communityId },
+            orderBy: { createdAt: 'desc' }
+          })
+          if (list && list.length > 0) return list
+        } catch (_) {}
+        // Fallback to mock/seed
+        if (!(globalThis as any).__mockCommunityOfficialProducts) {
+          (globalThis as any).__mockCommunityOfficialProducts = []
+        }
+        const existing = (globalThis as any).__mockCommunityOfficialProducts.filter((p: any) => p.communityId === communityId)
+        if (existing.length === 0) {
+          (globalThis as any).__mockCommunityOfficialProducts.push(...seedCommunityProducts)
+          saveMockDb()
+          return seedCommunityProducts
+        }
+        return existing
+      },
+      async () => {
+        if (!(globalThis as any).__mockCommunityOfficialProducts) {
+          (globalThis as any).__mockCommunityOfficialProducts = []
+        }
+        const existing = (globalThis as any).__mockCommunityOfficialProducts.filter((p: any) => p.communityId === communityId)
+        if (existing.length === 0) {
+          (globalThis as any).__mockCommunityOfficialProducts.push(...seedCommunityProducts)
+          saveMockDb()
+          return seedCommunityProducts
+        }
+        return existing
+      }
+    )
+  },
+
+  async createCommunityOfficialProduct(data: {
+    communityId: string
+    name: string
+    description?: string
+    price: number
+    stock: number
+    category: string
+    imageUrl?: string
+    status?: string
+    sku?: string
+  }) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          return await (db as any).communityProduct?.create({
+            data: {
+              communityId: data.communityId,
+              name: data.name,
+              description: data.description || '',
+              price: Number(data.price || 0),
+              stock: Number(data.stock || 0),
+              category: data.category || 'Merchandise & Seragam',
+              imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
+              status: data.status || 'TERSEDIA',
+              sku: data.sku || `COMM-${Date.now()}`,
+              isOfficial: true
+            }
+          })
+        } catch (_) {}
+        const newProd = {
+          id: `comm-prod-${Date.now()}`,
+          communityId: data.communityId,
+          name: data.name,
+          description: data.description || '',
+          price: Number(data.price || 0),
+          stock: Number(data.stock || 0),
+          category: data.category || 'Merchandise & Seragam',
+          imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
+          status: data.status || 'TERSEDIA',
+          sku: data.sku || `COMM-${Date.now()}`,
+          isOfficial: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        if (!(globalThis as any).__mockCommunityOfficialProducts) {
+          (globalThis as any).__mockCommunityOfficialProducts = []
+        }
+        ;(globalThis as any).__mockCommunityOfficialProducts.unshift(newProd)
+        saveMockDb()
+        return newProd
+      },
+      async () => {
+        const newProd = {
+          id: `comm-prod-${Date.now()}`,
+          communityId: data.communityId,
+          name: data.name,
+          description: data.description || '',
+          price: Number(data.price || 0),
+          stock: Number(data.stock || 0),
+          category: data.category || 'Merchandise & Seragam',
+          imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
+          status: data.status || 'TERSEDIA',
+          sku: data.sku || `COMM-${Date.now()}`,
+          isOfficial: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        if (!(globalThis as any).__mockCommunityOfficialProducts) {
+          (globalThis as any).__mockCommunityOfficialProducts = []
+        }
+        ;(globalThis as any).__mockCommunityOfficialProducts.unshift(newProd)
+        saveMockDb()
+        return newProd
+      }
+    )
+  },
+
+  async updateCommunityOfficialProduct(id: string, data: {
+    name?: string
+    description?: string
+    price?: number
+    stock?: number
+    category?: string
+    imageUrl?: string
+    status?: string
+    sku?: string
+  }) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          return await (db as any).communityProduct?.update({
+            where: { id },
+            data: {
+              ...(data.name ? { name: data.name } : {}),
+              ...(data.description !== undefined ? { description: data.description } : {}),
+              ...(data.price !== undefined ? { price: Number(data.price) } : {}),
+              ...(data.stock !== undefined ? { stock: Number(data.stock) } : {}),
+              ...(data.category ? { category: data.category } : {}),
+              ...(data.imageUrl ? { imageUrl: data.imageUrl } : {}),
+              ...(data.status ? { status: data.status } : {}),
+              ...(data.sku ? { sku: data.sku } : {})
+            }
+          })
+        } catch (_) {}
+        const list = (globalThis as any).__mockCommunityOfficialProducts || []
+        const p = list.find((x: any) => x.id === id)
+        if (p) {
+          if (data.name) p.name = data.name
+          if (data.description !== undefined) p.description = data.description
+          if (data.price !== undefined) p.price = Number(data.price)
+          if (data.stock !== undefined) p.stock = Number(data.stock)
+          if (data.category) p.category = data.category
+          if (data.imageUrl) p.imageUrl = data.imageUrl
+          if (data.status) p.status = data.status
+          if (data.sku) p.sku = data.sku
+          p.updatedAt = new Date()
+          saveMockDb()
+          return p
+        }
+        return null
+      },
+      async () => {
+        const list = (globalThis as any).__mockCommunityOfficialProducts || []
+        const p = list.find((x: any) => x.id === id)
+        if (p) {
+          if (data.name) p.name = data.name
+          if (data.description !== undefined) p.description = data.description
+          if (data.price !== undefined) p.price = Number(data.price)
+          if (data.stock !== undefined) p.stock = Number(data.stock)
+          if (data.category) p.category = data.category
+          if (data.imageUrl) p.imageUrl = data.imageUrl
+          if (data.status) p.status = data.status
+          if (data.sku) p.sku = data.sku
+          p.updatedAt = new Date()
+          saveMockDb()
+          return p
+        }
+        return null
+      }
+    )
+  },
+
+  async deleteCommunityOfficialProduct(id: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          await (db as any).communityProduct?.delete({ where: { id } })
+          return { success: true }
+        } catch (_) {}
+        if ((globalThis as any).__mockCommunityOfficialProducts) {
+          (globalThis as any).__mockCommunityOfficialProducts = (globalThis as any).__mockCommunityOfficialProducts.filter((x: any) => x.id !== id)
+          saveMockDb()
+        }
+        return { success: true }
+      },
+      async () => {
+        if ((globalThis as any).__mockCommunityOfficialProducts) {
+          (globalThis as any).__mockCommunityOfficialProducts = (globalThis as any).__mockCommunityOfficialProducts.filter((x: any) => x.id !== id)
+          saveMockDb()
+        }
+        return { success: true }
+      }
+    )
+  },
+
   // ─── DISCUSSION FORUM CRUD ────────────────────────────────────────
   async getDiscussions(communityId: string) {
     return withMutationFallback(
