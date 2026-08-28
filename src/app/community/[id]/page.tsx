@@ -25,6 +25,8 @@ import {
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts, getProductsByMerchantIdsAction } from '@/app/actions/products'
+import { getCommunityEventsAction, createCommunityEventAction, updateCommunityEventAction, deleteCommunityEventAction, registerCommunityEventAction } from '@/app/actions/community-events'
+import { getCommunityGalleryAction, createCommunityGalleryItemAction, deleteCommunityGalleryItemAction } from '@/app/actions/community-gallery'
 import { getCommunityOfficialProductsAction, createCommunityOfficialProductAction, updateCommunityOfficialProductAction, deleteCommunityOfficialProductAction } from '@/app/actions/community-products'
 import { createUserNotificationAction } from '@/app/actions/orders'
 import { getCommunityShuDataAction, getUserShuSummaryAction, calculateAndSaveShuAction } from '@/app/actions/shu'
@@ -145,6 +147,46 @@ export default function CommunityDetailPage() {
   const [userShu, setUserShu] = useState<any>(null)
 
 
+
+  // State for Community Events (Agenda & Event Komunitas)
+  const [communityEvents, setCommunityEvents] = useState<any[]>([])
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false)
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<any>(null)
+  const [eventTitle, setEventTitle] = useState('')
+  const [eventDesc, setEventDesc] = useState('')
+  const [eventDate, setEventDate] = useState('')
+  const [eventLocation, setEventLocation] = useState('')
+  const [eventIsOnline, setEventIsOnline] = useState(false)
+  const [eventLinkUrl, setEventLinkUrl] = useState('')
+  const [eventBannerUrl, setEventBannerUrl] = useState('https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80')
+  const [eventMaxParticipants, setEventMaxParticipants] = useState('100')
+  const [eventPrice, setEventPrice] = useState('0')
+  const [eventOrganizer, setEventOrganizer] = useState('Pengurus Komunitas')
+  const [isSavingEvent, setIsSavingEvent] = useState(false)
+  const [isUploadingEventBanner, setIsUploadingEventBanner] = useState(false)
+  const [registeredEventIds, setRegisteredEventIds] = useState<string[]>([])
+
+  // State for Community Gallery (Galeri Dokumentasi Kegiatan)
+  const [communityGallery, setCommunityGallery] = useState<any[]>([])
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false)
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false)
+  const [galleryTitle, setGalleryTitle] = useState('')
+  const [galleryCaption, setGalleryCaption] = useState('')
+  const [galleryCategory, setGalleryCategory] = useState('Kopdar & Networking')
+  const [galleryDate, setGalleryDate] = useState('')
+  const [galleryImageUrl, setGalleryImageUrl] = useState('')
+  const [galleryCategoryFilter, setGalleryCategoryFilter] = useState('Semua')
+  const [isUploadingGalleryImage, setIsUploadingGalleryImage] = useState(false)
+  const [isSavingGallery, setIsSavingGallery] = useState(false)
+  const [selectedLightboxImage, setSelectedLightboxImage] = useState<any>(null)
+
+  // State for Member Directory Search & Filters & Detail Modal
+  const [memberSearchQuery, setMemberSearchQuery] = useState('')
+  const [memberRoleFilter, setMemberRoleFilter] = useState<'Semua' | 'Pengurus' | 'Anggota'>('Semua')
+  const [selectedMemberDetail, setSelectedMemberDetail] = useState<any>(null)
+  const [isMemberDetailModalOpen, setIsMemberDetailModalOpen] = useState(false)
+
   // State for Official Community Products (Produk Resmi Komunitas)
   const [communityOfficialProducts, setCommunityOfficialProducts] = useState<any[]>([])
   const [isLoadingOfficialProducts, setIsLoadingOfficialProducts] = useState(false)
@@ -217,6 +259,251 @@ export default function CommunityDetailPage() {
   const [coopProducts, setCoopProducts] = useState<any[]>([])
   const [fundingProjects, setFundingProjects] = useState<any[]>([])
 
+
+
+  // Handlers for Community Events CRUD
+  const handleOpenCreateEvent = () => {
+    setEditingEvent(null)
+    setEventTitle('')
+    setEventDesc('')
+    setEventDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16))
+    setEventLocation('Gedung Serbaguna Komunitas / Space')
+    setEventIsOnline(false)
+    setEventLinkUrl('')
+    setEventBannerUrl('https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80')
+    setEventMaxParticipants('100')
+    setEventPrice('0')
+    setEventOrganizer('Pengurus ' + (community?.name || 'Komunitas'))
+    setIsEventModalOpen(true)
+  }
+
+  const handleOpenEditEvent = (ev: any) => {
+    setEditingEvent(ev)
+    setEventTitle(ev.title || '')
+    setEventDesc(ev.description || '')
+    setEventDate(ev.eventDate ? (ev.eventDate.includes('T') ? ev.eventDate.slice(0, 16) : ev.eventDate) : '')
+    setEventLocation(ev.location || '')
+    setEventIsOnline(Boolean(ev.isOnline))
+    setEventLinkUrl(ev.linkUrl || '')
+    setEventBannerUrl(ev.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80')
+    setEventMaxParticipants(String(ev.maxParticipants || 100))
+    setEventPrice(String(ev.price || 0))
+    setEventOrganizer(ev.organizer || 'Pengurus Komunitas')
+    setIsEventModalOpen(true)
+  }
+
+  const handleEventBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsUploadingEventBanner(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setEventBannerUrl(data.url)
+        goeyToast.success('Banner event berhasil diunggah!')
+      } else {
+        goeyToast.error(data.error || 'Gagal mengunggah banner.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal mengunggah banner.')
+    } finally {
+      setIsUploadingEventBanner(false)
+    }
+  }
+
+  const handleSaveEvent = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!eventTitle.trim()) {
+      goeyToast.error('Judul event wajib diisi!')
+      return
+    }
+    if (!eventDate) {
+      goeyToast.error('Tanggal event wajib ditentukan!')
+      return
+    }
+
+    setIsSavingEvent(true)
+    try {
+      const fd = new FormData()
+      fd.append('communityId', id)
+      fd.append('title', eventTitle.trim())
+      fd.append('description', eventDesc.trim())
+      fd.append('eventDate', eventDate)
+      fd.append('location', eventLocation.trim())
+      fd.append('isOnline', String(eventIsOnline))
+      fd.append('linkUrl', eventLinkUrl.trim())
+      fd.append('bannerUrl', eventBannerUrl)
+      fd.append('maxParticipants', eventMaxParticipants)
+      fd.append('price', eventPrice)
+      fd.append('organizer', eventOrganizer.trim())
+
+      if (editingEvent) {
+        const res = await updateCommunityEventAction(editingEvent.id, fd)
+        if (res.error) {
+          goeyToast.error(res.error)
+        } else {
+          goeyToast.success('Event berhasil diperbarui!')
+          setIsEventModalOpen(false)
+          setEditingEvent(null)
+          loadData()
+        }
+      } else {
+        const res = await createCommunityEventAction(fd)
+        if (res.error) {
+          goeyToast.error(res.error)
+        } else {
+          goeyToast.success('Event baru berhasil ditambahkan!')
+          setIsEventModalOpen(false)
+          loadData()
+        }
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal menyimpan event.')
+    } finally {
+      setIsSavingEvent(false)
+    }
+  }
+
+  const handleDeleteEvent = (eventId: string, title: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hapus Event Komunitas',
+      message: `Apakah Anda yakin ingin menghapus event "${title}" dari jadwal kegiatan komunitas?`,
+      confirmText: 'Ya, Hapus Event',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await deleteCommunityEventAction(eventId, id)
+          if (res?.error) {
+            goeyToast.error(res.error)
+          } else {
+            setCommunityEvents(prev => prev.filter(e => e.id !== eventId))
+            goeyToast.success('Event berhasil dihapus!')
+          }
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Gagal menghapus event.')
+        }
+      }
+    })
+  }
+
+  const handleRegisterEvent = async (eventId: string, title: string) => {
+    if (!user) {
+      goeyToast.error('Silakan login terlebih dahulu untuk mendaftar event.')
+      return
+    }
+    try {
+      const res = await registerCommunityEventAction(eventId, id)
+      if (res?.error) {
+        goeyToast.error(res.error)
+      } else {
+        setRegisteredEventIds(prev => [...prev, eventId])
+        goeyToast.success(`Pendaftaran Anda untuk event "${title}" berhasil dikonfirmasi!`)
+        loadData()
+      }
+    } catch (err: any) {
+      goeyToast.error('Gagal melakukan pendaftaran event.')
+    }
+  }
+
+  // Handlers for Community Gallery CRUD
+  const handleOpenCreateGallery = () => {
+    setGalleryTitle('')
+    setGalleryCaption('')
+    setGalleryCategory('Kopdar & Networking')
+    setGalleryDate(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }))
+    setGalleryImageUrl('')
+    setIsGalleryModalOpen(true)
+  }
+
+  const handleGalleryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsUploadingGalleryImage(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setGalleryImageUrl(data.url)
+        goeyToast.success('Foto berhasil diunggah!')
+      } else {
+        goeyToast.error(data.error || 'Gagal mengunggah foto.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal mengunggah foto.')
+    } finally {
+      setIsUploadingGalleryImage(false)
+    }
+  }
+
+  const handleSaveGallery = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!galleryTitle.trim()) {
+      goeyToast.error('Judul foto wajib diisi!')
+      return
+    }
+    if (!galleryImageUrl) {
+      goeyToast.error('Foto kegiatan wajib diunggah!')
+      return
+    }
+
+    setIsSavingGallery(true)
+    try {
+      const fd = new FormData()
+      fd.append('communityId', id)
+      fd.append('title', galleryTitle.trim())
+      fd.append('caption', galleryCaption.trim())
+      fd.append('category', galleryCategory)
+      fd.append('date', galleryDate.trim())
+      fd.append('imageUrl', galleryImageUrl)
+
+      const res = await createCommunityGalleryItemAction(fd)
+      if (res.error) {
+        goeyToast.error(res.error)
+      } else {
+        goeyToast.success('Foto kegiatan berhasil ditambahkan ke galeri!')
+        setIsGalleryModalOpen(false)
+        loadData()
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal menyimpan foto galeri.')
+    } finally {
+      setIsSavingGallery(false)
+    }
+  }
+
+  const handleDeleteGallery = (itemId: string, title: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hapus Foto Galeri',
+      message: `Apakah Anda yakin ingin menghapus foto "${title}" dari galeri komunitas?`,
+      confirmText: 'Ya, Hapus Foto',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await deleteCommunityGalleryItemAction(itemId, id)
+          if (res?.error) {
+            goeyToast.error(res.error)
+          } else {
+            setCommunityGallery(prev => prev.filter(g => g.id !== itemId))
+            goeyToast.success('Foto galeri berhasil dihapus!')
+          }
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Gagal menghapus foto galeri.')
+        }
+      }
+    })
+  }
+
+  const handleOpenMemberDetail = (mem: any) => {
+    setSelectedMemberDetail(mem)
+    setIsMemberDetailModalOpen(true)
+  }
 
   // Handlers for Official Community Products CRUD
   const handleOpenCreateOfficialProduct = () => {
@@ -880,7 +1167,9 @@ export default function CommunityDetailPage() {
         savingsRes,
         annListRes,
         repListRes,
-        officialProductsRes
+        officialProductsRes,
+        commEventsRes,
+        commGalleryRes
       ] = await Promise.all([
         getCurrentUser().catch(() => null),
         getIndukCommunityDetail(id).catch(() => null),
@@ -894,7 +1183,9 @@ export default function CommunityDetailPage() {
         getCommunitySavingsSummaryAction(id).catch(() => ({ success: false, summary: null })),
         getAnnouncementsAction(id).catch(() => []),
         getCooperativeReportsAction(id).catch(() => []),
-        getCommunityOfficialProductsAction(id).catch(() => [])
+        getCommunityOfficialProductsAction(id).catch(() => []),
+        getCommunityEventsAction(id).catch(() => []),
+        getCommunityGalleryAction(id).catch(() => [])
       ])
 
       setUser(currentUser)
@@ -1046,8 +1337,10 @@ export default function CommunityDetailPage() {
         setUserShuSummary(userShuRes.distributions)
       }
 
-      // Set official community products
+      // Set official community products, events, and gallery
       setCommunityOfficialProducts(officialProductsRes || [])
+      setCommunityEvents(commEventsRes || [])
+      setCommunityGallery(commGalleryRes || [])
 
       // Set announcements and reports directly from parallel fetch
       setAnnouncements(annListRes || [])
@@ -2720,67 +3013,171 @@ export default function CommunityDetailPage() {
               />
             )}
 
-            {/* TAB 3: EVENT ────────────────────────────────────────────────────── */}
+                        {/* TAB 3: EVENT ────────────────────────────────────────────────────── */}
             {activeSidebarNav === 'event' && (
               <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Calendar className="w-6 h-6 text-[#2DB24A]" /> Event & Agenda Kegiatan {community.name}
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Ikuti workshop, web seminar, bazaar UMKM, dan kegiatan kopdar rutin anggota.</p>
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="p-2 bg-[#E8F8EE] text-[#0F5132] rounded-xl">
+                          <Calendar className="w-5 h-5" />
+                        </span>
+                        <h2 className="text-xl font-black text-gray-900 font-sora">
+                          Event & Agenda Kegiatan {community.name}
+                        </h2>
+                      </div>
+                      <p className="text-xs text-gray-500 font-medium mt-1.5">
+                        Ikuti workshop, web seminar, bazaar UMKM, dan kegiatan kopdar rutin anggota untuk memperluas jejaring dan wawasan usaha.
+                      </p>
+                    </div>
+                    {isCanManageCoop && (
+                      <button
+                        onClick={handleOpenCreateEvent}
+                        className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                      >
+                        <Plus className="w-4 h-4" /> Tambah Event Baru
+                      </button>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {(() => {
-                      const realEvents = (announcements || []).filter((a: any) => a.type === 'EVENT' || a.title?.toLowerCase().includes('event') || a.title?.toLowerCase().includes('workshop') || a.title?.toLowerCase().includes('kopdar'))
-                      if (realEvents.length === 0) {
-                        return (
-                          <div className="col-span-full p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
-                            <Calendar className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
-                            <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Agenda Event</h4>
-                            <p className="text-xs text-gray-500 max-w-md mx-auto">Komunitas ini belum memiliki agenda workshop, kopdar, atau pameran mendatang.</p>
-                          </div>
-                        )
-                      }
-                      return realEvents.map((ev: any, idx: number) => {
-                        const dateObj = ev.publishedAt ? new Date(ev.publishedAt) : new Date()
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5">
+                    {communityEvents && communityEvents.length > 0 ? (
+                      communityEvents.map((ev: any) => {
+                        const dateObj = ev.eventDate ? new Date(ev.eventDate) : new Date()
                         const day = String(dateObj.getDate())
                         const month = dateObj.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase()
                         const year = String(dateObj.getFullYear())
+                        const timeStr = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                        
+                        let regs: any[] = []
+                        try {
+                          regs = typeof ev.registeredUsers === 'string' ? JSON.parse(ev.registeredUsers) : (ev.registeredUsers || [])
+                        } catch (_) { regs = [] }
+                        const isUserRegistered = user && (registeredEventIds.includes(ev.id) || regs.some((r: any) => r.userId === user.id))
+                        const isPast = dateObj.getTime() < Date.now()
+
                         return (
-                          <div key={ev.id || idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-4 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                            <div className="space-y-3">
-                              <div className="flex justify-between items-start">
-                                <div className="w-14 h-14 rounded-2xl bg-white border border-gray-200 text-center flex flex-col justify-center shadow-xs shrink-0">
-                                  <span className="text-base font-black text-gray-900 leading-none">{day}</span>
-                                  <span className="text-[10px] font-bold text-[#2DB24A] leading-none mt-1 uppercase">{month} {year}</span>
+                          <div
+                            key={ev.id}
+                            className="p-5 bg-white border border-gray-200/90 rounded-2xl space-y-4 hover:border-[#2DB24A]/50 hover:shadow-md transition-all flex flex-col justify-between"
+                          >
+                            <div className="space-y-3.5">
+                              {/* Banner Image & Top Header */}
+                              {ev.bannerUrl && (
+                                <div className="relative rounded-xl overflow-hidden h-36 bg-gray-100">
+                                  <img src={ev.bannerUrl} alt={ev.title} className="w-full h-full object-cover" />
+                                  <span className={`absolute top-2.5 left-2.5 px-2.5 py-0.5 font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs ${
+                                    isPast ? 'bg-gray-700 text-white' : 'bg-[#2DB24A] text-white'
+                                  }`}>
+                                    {isPast ? 'Selesai' : 'Mendatang'}
+                                  </span>
+                                  {ev.isOnline && (
+                                    <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 bg-blue-600/90 backdrop-blur-md text-white font-extrabold text-[9px] rounded-md shadow-xs">
+                                      Online Event
+                                    </span>
+                                  )}
                                 </div>
-                                <span className="px-2.5 py-1 text-[10px] font-extrabold rounded-md uppercase tracking-wider bg-[#E8F8EE] text-[#0F5132]">
-                                  Mendatang
+                              )}
+
+                              <div className="flex gap-3.5 items-start">
+                                <div className="w-14 h-14 rounded-2xl bg-[#E8F8EE] border border-emerald-200/80 text-center flex flex-col justify-center shadow-xs shrink-0">
+                                  <span className="text-base font-black text-[#0F5132] leading-none">{day}</span>
+                                  <span className="text-[10px] font-extrabold text-[#2DB24A] leading-none mt-1 uppercase">{month} {year}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="text-sm font-extrabold text-gray-900 leading-snug font-sora line-clamp-2">
+                                    {ev.title}
+                                  </h3>
+                                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-gray-500 font-semibold">
+                                    <span>⏰ {timeStr} WIB</span>
+                                    <span>•</span>
+                                    <span>📍 {ev.location || 'Online'}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <p className="text-xs text-gray-600 leading-relaxed font-medium line-clamp-3">
+                                {ev.description || 'Mari berpartisipasi dalam event kebersamaan komunitas.'}
+                              </p>
+
+                              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-gray-50 rounded-xl text-xs font-semibold text-gray-600 border border-gray-100">
+                                <span>👥 Terdaftar: <strong className="text-gray-900">{regs.length} / {ev.maxParticipants || 100}</strong> peserta</span>
+                                <span className="font-extrabold text-[#0F5132]">
+                                  {Number(ev.price || 0) === 0 ? 'Gratis untuk Anggota' : `Rp ${Number(ev.price).toLocaleString('id-ID')}`}
                                 </span>
                               </div>
-                              <div>
-                                <h3 className="text-sm font-extrabold text-gray-900 leading-snug">{ev.title}</h3>
-                                <p className="text-xs text-gray-500 font-medium mt-1">{ev.content}</p>
-                              </div>
                             </div>
-                            <div className="flex justify-between items-center pt-3 border-t border-gray-200/60">
-                              <span className="text-[11px] font-semibold text-gray-500">Terbuka untuk Anggota</span>
-                              <button onClick={() => goeyToast.success(`Pendaftaran event "${ev.title}" berhasil!`)} className="px-4 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                                Lihat Detail
+
+                            <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-100">
+                              {isCanManageCoop ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => handleOpenEditEvent(ev)}
+                                    className="px-3 py-1.5 text-xs font-bold text-gray-700 hover:text-[#2DB24A] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" /> Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteEvent(ev.id, ev.title)}
+                                    className="px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" /> Hapus
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] font-semibold text-gray-400">
+                                  Penyelenggara: {ev.organizer || 'Pengurus'}
+                                </span>
+                              )}
+
+                              <button
+                                onClick={() => handleRegisterEvent(ev.id, ev.title)}
+                                disabled={isPast || isUserRegistered}
+                                className={`px-4 py-2 text-xs font-extrabold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+                                  isUserRegistered
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 cursor-default'
+                                    : isPast
+                                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                      : 'bg-[#2DB24A] hover:bg-[#0F5132] text-white'
+                                }`}
+                              >
+                                {isUserRegistered ? (
+                                  <>
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" /> Terdaftar
+                                  </>
+                                ) : isPast ? (
+                                  'Event Telah Berakhir'
+                                ) : (
+                                  'Daftar / Ikuti Event'
+                                )}
                               </button>
                             </div>
                           </div>
                         )
                       })
-                    })()}
+                    ) : (
+                      <div className="col-span-full p-12 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                        <Calendar className="w-12 h-12 text-[#2DB24A] mx-auto opacity-70" />
+                        <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Agenda Event</h4>
+                        <p className="text-xs text-gray-500 max-w-md mx-auto">
+                          Komunitas ini belum memiliki agenda workshop, kopdar, atau bazaar mendatang. Pengurus dapat menambahkan jadwal event baru.
+                        </p>
+                        {isCanManageCoop && (
+                          <button
+                            onClick={handleOpenCreateEvent}
+                            className="px-4 py-2 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5"
+                          >
+                            <Plus className="w-4 h-4" /> Buat Event Sekarang
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             )}
 
-            
             {/* TAB: PRODUK RESMI KOMUNITAS (OFFICIAL PRODUCTS CRUD) ──────────────── */}
             {activeSidebarNav === 'produk_komunitas' && (
               <div className="space-y-6">
@@ -3066,25 +3463,66 @@ export default function CommunityDetailPage() {
               </div>
             )}
 
-            {/* TAB 5: ANGGOTA ──────────────────────────────────────────────────── */}
+                        {/* TAB 5: ANGGOTA ──────────────────────────────────────────────────── */}
             {activeSidebarNav === 'anggota' && (
               <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-5">
                     <div>
-                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                        <Users className="w-6 h-6 text-[#2DB24A]" /> Direktori Anggota {community.name}
-                      </h2>
-                      <p className="text-xs text-gray-500 font-medium mt-1">Jejaring resmi pelaku UMKM, pemilik usaha, dan pengurus komunitas.</p>
+                      <div className="flex items-center gap-2">
+                        <span className="p-2 bg-[#E8F8EE] text-[#0F5132] rounded-xl">
+                          <Users className="w-5 h-5" />
+                        </span>
+                        <h2 className="text-xl font-black text-gray-900 font-sora">
+                          Direktori Anggota {community.name}
+                        </h2>
+                      </div>
+                      <p className="text-xs text-gray-500 font-medium mt-1.5">
+                        Jejaring resmi pelaku UMKM, pemilik usaha, dan pengurus komunitas. Saling terhubung untuk berbagi peluang usaha.
+                      </p>
                     </div>
-                    <button onClick={() => handleJoin()} className="px-4 py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0">
+                    <button
+                      onClick={() => handleJoin()}
+                      className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                    >
                       <Plus className="w-4 h-4" /> Undang Anggota Baru
                     </button>
                   </div>
 
+                  {/* Search & Role Filter Pills */}
+                  {isMember && (
+                    <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pb-1">
+                      <div className="relative w-full sm:w-80">
+                        <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Cari nama anggota atau lokasi..."
+                          value={memberSearchQuery}
+                          onChange={(e) => setMemberSearchQuery(e.target.value)}
+                          className="w-full pl-9.5 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-800 placeholder-gray-400 focus:bg-white focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A] outline-hidden transition-all"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto">
+                        {(['Semua', 'Pengurus', 'Anggota'] as const).map((rf) => (
+                          <button
+                            key={rf}
+                            onClick={() => setMemberRoleFilter(rf)}
+                            className={`px-3.5 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap transition-all cursor-pointer ${
+                              memberRoleFilter === rf
+                                ? 'bg-[#2DB24A] text-white shadow-xs'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            {rf}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {!isMember ? (
-                      <div className="col-span-full p-8 bg-gradient-to-b from-emerald-50/50 via-white to-gray-50 border border-emerald-200/70 rounded-3xl text-center space-y-4 shadow-xs">
+                      <div className="col-span-full p-10 bg-gradient-to-b from-emerald-50/50 via-white to-gray-50 border border-emerald-200/70 rounded-3xl text-center space-y-4 shadow-xs">
                         <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#007A3D] border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
                           <Lock className="w-7 h-7" />
                         </div>
@@ -3105,8 +3543,31 @@ export default function CommunityDetailPage() {
                           </button>
                         </div>
                       </div>
-                    ) : members && members.length > 0 ? (
-                      members.map((m: any, idx: number) => {
+                    ) : (() => {
+                      const filteredMembers = (members || []).filter((m: any) => {
+                        const memberName = m.user?.name || m.name || ''
+                        const memberLoc = m.user?.locationName || m.loc || ''
+                        const matchQ = !memberSearchQuery.trim() ||
+                          memberName.toLowerCase().includes(memberSearchQuery.toLowerCase()) ||
+                          memberLoc.toLowerCase().includes(memberSearchQuery.toLowerCase())
+                        const isPengurus = m.role === 'ADMIN' || m.role === 'KETUA' || m.userId === community?.ketuaId
+                        const matchR = memberRoleFilter === 'Semua' || (memberRoleFilter === 'Pengurus' ? isPengurus : !isPengurus)
+                        return matchQ && matchR
+                      })
+
+                      if (filteredMembers.length === 0) {
+                        return (
+                          <div className="col-span-full p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                            <Users className="w-10 h-10 text-gray-300 mx-auto" />
+                            <h4 className="text-sm font-extrabold text-gray-800">Tidak Ada Anggota yang Cocok</h4>
+                            <p className="text-xs text-gray-500 max-w-md mx-auto">
+                              Silakan sesuaikan kata kunci pencarian atau ubah filter peranan.
+                            </p>
+                          </div>
+                        )
+                      }
+
+                      return filteredMembers.map((m: any, idx: number) => {
                         const memberId = m.userId || m.id || `m-${idx}`
                         const memberName = m.user?.name || m.name || 'Anggota Saloka'
                         const userAvatar = m.user?.image || m.user?.avatarUrl || m.avatarUrl || m.img
@@ -3115,34 +3576,36 @@ export default function CommunityDetailPage() {
                         const isAuthorizedToKick = user?.role === 'ADMIN' || user?.id === community?.ketuaId
                         const canKickThisMember = isAuthorizedToKick && m.userId !== community?.ketuaId && m.userId !== user?.id
                         const isMenuOpen = openMemberMenuId === memberId
+                        const isLeader = m.role === 'ADMIN' || m.role === 'KETUA' || m.userId === community?.ketuaId
 
                         return (
                           <div
                             key={memberId}
-                            className="relative p-4 bg-white border border-gray-200/80 rounded-2xl flex items-center justify-between shadow-xs hover:border-[#2DB24A]/40 transition-all"
+                            onClick={() => handleOpenMemberDetail(m)}
+                            className="relative p-4 bg-white border border-gray-200/80 rounded-2xl flex items-center justify-between shadow-xs hover:border-[#2DB24A]/50 hover:shadow-md transition-all cursor-pointer group"
                           >
-                            {/* Left: User Avatar & Details */}
-                            <div className="flex items-center gap-3.5">
+                            <div className="flex items-center gap-3.5 min-w-0">
                               <img
                                 src={avatarSrc}
                                 alt={memberName}
-                                className="w-12 h-12 rounded-full object-cover shrink-0 border border-gray-100 shadow-xs"
+                                className="w-12 h-12 rounded-full object-cover shrink-0 border border-gray-100 shadow-xs group-hover:scale-105 transition-transform"
                               />
-                              <div>
-                                <span className={`inline-block px-2.5 py-0.5 font-bold text-[10px] rounded-md capitalize tracking-wide ${m.role === 'ADMIN' || m.role === 'KETUA' ? 'bg-amber-100 text-amber-800' : 'bg-[#E8F8EE] text-[#0F5132]'}`}>
-                                  {m.role?.toLowerCase() || 'anggota'}
+                              <div className="min-w-0">
+                                <span className={`inline-block px-2.5 py-0.5 font-bold text-[9px] rounded-md uppercase tracking-wider ${
+                                  isLeader ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-[#E8F8EE] text-[#0F5132]'
+                                }`}>
+                                  {isLeader ? 'Pengurus' : 'Anggota UMKM'}
                                 </span>
-                                <h4 className="text-sm font-extrabold text-gray-900 leading-tight mt-0.5 font-sora">
+                                <h4 className="text-sm font-extrabold text-gray-900 leading-tight mt-1 font-sora truncate group-hover:text-[#2DB24A] transition-colors">
                                   {memberName}
                                 </h4>
-                                <p className="text-xs text-gray-400 font-medium mt-0.5">
-                                  {m.user?.locationName || m.loc || 'DIY, Yogyakarta'}
+                                <p className="text-xs text-gray-400 font-medium mt-0.5 truncate">
+                                  {m.user?.locationName || m.loc || 'Yogyakarta, Indonesia'}
                                 </p>
                               </div>
                             </div>
 
-                            {/* Right: Three-Dots Action Menu Button & Popover */}
-                            <div className="relative">
+                            <div className="relative shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
                               <button
                                 type="button"
                                 onClick={() => setOpenMemberMenuId(isMenuOpen ? null : memberId)}
@@ -3152,7 +3615,6 @@ export default function CommunityDetailPage() {
                                 <MoreVertical className="w-4 h-4" />
                               </button>
 
-                              {/* Floating Dropdown Popover (Frame 2) */}
                               {isMenuOpen && (
                                 <div className="absolute right-0 top-9 z-30 bg-white border border-gray-100 rounded-2xl shadow-xl p-1.5 min-w-[130px] animate-in fade-in zoom-in-95 duration-150">
                                   {canKickThisMember ? (
@@ -3170,7 +3632,7 @@ export default function CommunityDetailPage() {
                                     </button>
                                   ) : (
                                     <div className="px-3 py-1.5 text-[11px] font-medium text-gray-400 text-center">
-                                      Tidak ada aksi
+                                      {isLeader ? 'Ketua / Pengurus' : 'Tidak ada aksi'}
                                     </div>
                                   )}
                                 </div>
@@ -3179,37 +3641,130 @@ export default function CommunityDetailPage() {
                           </div>
                         )
                       })
-                    ) : (
-                      <div className="col-span-full p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
-                        <Users className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
-                        <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Anggota Terdaftar</h4>
-                        <p className="text-xs text-gray-500 max-w-md mx-auto">Komunitas ini belum memiliki daftar anggota terdaftar. Pengurus atau ketua dapat mengundang anggota baru.</p>
-                        <button onClick={() => handleJoin()} className="px-4 py-2 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5">
-                          <Plus className="w-4 h-4" /> Gabung Jadi Anggota Pertama
-                        </button>
-                      </div>
-                    )}
+                    })()}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* TAB 6: GALERI ──────────────────────────────────────────────────── */}
+                        {/* TAB 6: GALERI ──────────────────────────────────────────────────── */}
             {activeSidebarNav === 'galeri' && (
               <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <ImageIcon className="w-6 h-6 text-[#2DB24A]" /> Galeri Kegiatan {community.name}
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Dokumentasi momen kebersamaan, workshop, pelatihan, bazaar, dan kopdar anggota.</p>
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="p-2 bg-[#E8F8EE] text-[#0F5132] rounded-xl">
+                          <ImageIcon className="w-5 h-5" />
+                        </span>
+                        <h2 className="text-xl font-black text-gray-900 font-sora">
+                          Galeri Foto Kegiatan {community.name}
+                        </h2>
+                      </div>
+                      <p className="text-xs text-gray-500 font-medium mt-1.5">
+                        Dokumentasi momen kebersamaan, workshop, pelatihan usaha, bazaar UMKM, dan kopdar silaturahmi anggota.
+                      </p>
+                    </div>
+                    {(isMember || isCanManageCoop) && (
+                      <button
+                        onClick={handleOpenCreateGallery}
+                        className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                      >
+                        <Upload className="w-4 h-4" /> Unggah Foto Kegiatan
+                      </button>
+                    )}
                   </div>
 
-                  <div className="p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
-                    <ImageIcon className="w-10 h-10 text-[#2DB24A] mx-auto opacity-70" />
-                    <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Galeri Foto Kegiatan</h4>
-                    <p className="text-xs text-gray-500 max-w-md mx-auto">Dokumentasi foto kegiatan komunitas belum diunggah.</p>
+                  {/* Album Category Filter Pills */}
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                    {['Semua', 'Kopdar & Networking', 'Workshop & Pelatihan', 'Bazaar & Pameran', 'Kunjungan Usaha'].map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setGalleryCategoryFilter(cat)}
+                        className={`px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
+                          galleryCategoryFilter === cat
+                            ? 'bg-[#2DB24A] text-white shadow-xs'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
                   </div>
+
+                  {/* Gallery Image Grid */}
+                  {(() => {
+                    const filteredGallery = (communityGallery || []).filter((g: any) => {
+                      return galleryCategoryFilter === 'Semua' || g.category === galleryCategoryFilter
+                    })
+
+                    if (filteredGallery.length === 0) {
+                      return (
+                        <div className="p-12 text-center bg-gray-50 border border-dashed border-gray-200 rounded-3xl space-y-3">
+                          <ImageIcon className="w-12 h-12 text-gray-300 mx-auto" />
+                          <h4 className="text-sm font-extrabold text-gray-800">Belum Ada Foto di Kategori Ini</h4>
+                          <p className="text-xs text-gray-500 max-w-md mx-auto">
+                            Pengurus atau anggota dapat mengunggah momen kegiatan komunitas di sini.
+                          </p>
+                          {(isMember || isCanManageCoop) && (
+                            <button
+                              onClick={handleOpenCreateGallery}
+                              className="px-4 py-2 bg-[#2DB24A] text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-[#0F5132] transition-all cursor-pointer inline-flex items-center gap-1.5"
+                            >
+                              <Plus className="w-4 h-4" /> Unggah Foto Sekarang
+                            </button>
+                          )}
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4.5">
+                        {filteredGallery.map((item: any) => (
+                          <div
+                            key={item.id}
+                            className="bg-white border border-gray-200/80 rounded-2xl overflow-hidden shadow-xs hover:border-[#2DB24A]/40 hover:shadow-md transition-all flex flex-col justify-between group"
+                          >
+                            <div className="relative h-48 bg-gray-100 overflow-hidden cursor-pointer" onClick={() => setSelectedLightboxImage(item)}>
+                              <img
+                                src={item.imageUrl}
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                {item.category || 'Dokumentasi'}
+                              </span>
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-xs font-black text-gray-900 flex items-center gap-1.5 shadow-md">
+                                  <Eye className="w-3.5 h-3.5 text-[#2DB24A]" /> Lihat Foto
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="p-4 space-y-2">
+                              <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1 font-sora">
+                                {item.title}
+                              </h4>
+                              <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed font-medium">
+                                {item.caption || 'Dokumentasi kegiatan resmi komunitas.'}
+                              </p>
+                              <div className="flex justify-between items-center pt-2 border-t border-gray-100 text-[10px] text-gray-400 font-semibold">
+                                <span>📅 {item.date || 'Juli 2026'}</span>
+                                {isCanManageCoop && (
+                                  <button
+                                    onClick={() => handleDeleteGallery(item.id, item.title)}
+                                    className="text-rose-500 hover:text-rose-700 font-bold hover:underline cursor-pointer"
+                                  >
+                                    Hapus
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )}
@@ -3373,38 +3928,116 @@ export default function CommunityDetailPage() {
               </div>
             )}
 
-            {/* TAB 9: AKTIVITAS ───────────────────────────────────────────────── */}
+                        {/* TAB 9: AKTIVITAS ───────────────────────────────────────────────── */}
             {activeSidebarNav === 'aktivitas' && (
               <div className="space-y-6">
                 <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
                   <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Activity className="w-6 h-6 text-[#2DB24A]" /> Log Aktivitas & Timeline {community.name}
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Jejak kegiatan terbaru, pendaftaran anggota, diskusi, dan perkembangan proyek komunitas.</p>
+                    <div className="flex items-center gap-2">
+                      <span className="p-2 bg-[#E8F8EE] text-[#0F5132] rounded-xl">
+                        <Activity className="w-5 h-5" />
+                      </span>
+                      <h2 className="text-xl font-black text-gray-900 font-sora">
+                        Log Aktivitas & Timeline {community.name}
+                      </h2>
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium mt-1.5">
+                      Jejak kegiatan terbaru, pengumuman resmi, diskusi anggota, produk baru, dan perkembangan komunitas secara real-time.
+                    </p>
                   </div>
 
                   <div className="space-y-3.5">
-                    {[
-                      { title: 'Kopdar Rutin Perahu Kita Juli 2026', time: 'Hari ini, 14:00 WIB', category: 'Kopdar', author: 'Super Admin Saloka', desc: 'Pertemuan bulanan anggota membahas program pameran UMKM.' },
-                      { title: 'Peluncuran Fitur Marketplace Komunitas', time: 'Kemarin, 09:30 WIB', category: 'Sistem', author: 'Tim Perahu Kita', desc: 'Anggota kini dapat menampilkan katalog produk di tab Marketplace.' },
-                      { title: 'Pendaftaran 15 Anggota Baru Minggu Ini', time: '2 hari lalu', category: 'Keanggotaan', author: 'Sekretariat', desc: 'Selamat bergabung bagi para pelaku usaha kuliner & kriya!' },
-                    ].map((act, idx) => (
-                      <div key={idx} className="p-4 bg-gray-50/70 border border-gray-100 rounded-2xl flex items-start gap-4 hover:border-[#2DB24A]/30 transition-all">
-                        <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center font-bold shrink-0">
-                          <Activity className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="flex justify-between items-center">
-                            <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{act.category}</span>
-                            <span className="text-[10px] text-gray-400 font-semibold">{act.time}</span>
+                    {(() => {
+                      const dynamicActivities: any[] = [];
+                      const annList = announcements || [];
+                      const evList = communityEvents || [];
+                      const opList = communityOfficialProducts || [];
+
+                      // 1. Announcements activities
+                      for (const a of annList.slice(0, 3)) {
+                        dynamicActivities.push({
+                          id: `act-ann-${a.id}`,
+                          title: a.title,
+                          desc: a.content,
+                          category: 'PENGUMUMAN',
+                          color: 'bg-blue-50 text-blue-600',
+                          time: a.publishedAt ? new Date(a.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : 'Terbaru',
+                          author: 'Pengurus Komunitas',
+                          targetTab: 'pengumuman'
+                        });
+                      }
+
+                      // 2. Events activities
+                      for (const ev of evList.slice(0, 3)) {
+                        dynamicActivities.push({
+                          id: `act-ev-${ev.id}`,
+                          title: `Event Baru: ${ev.title}`,
+                          desc: ev.description || 'Agenda pertemuan dan pelatihan anggota komunitas.',
+                          category: 'EVENT',
+                          color: 'bg-amber-50 text-amber-700',
+                          time: ev.eventDate ? new Date(ev.eventDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : 'Mendatang',
+                          author: ev.organizer || 'Divisi Acara',
+                          targetTab: 'event'
+                        });
+                      }
+
+                      // 3. Official Products activities
+                      for (const op of opList.slice(0, 2)) {
+                        dynamicActivities.push({
+                          id: `act-op-${op.id}`,
+                          title: `Produk Resmi Baru: ${op.name}`,
+                          desc: `Telah dirilis di katalog resmi komunitas dengan harga Rp ${Number(op.price || 0).toLocaleString('id-ID')}.`,
+                          category: 'PRODUK RESMI',
+                          color: 'bg-emerald-50 text-emerald-700',
+                          time: 'Tersedia',
+                          author: 'Manajemen Komunitas',
+                          targetTab: 'produk_komunitas'
+                        });
+                      }
+
+                      if (dynamicActivities.length === 0) {
+                        return (
+                          <div className="p-10 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl space-y-2">
+                            <Activity className="w-8 h-8 text-gray-300 mx-auto" />
+                            <p className="text-sm font-bold text-gray-500">Belum ada jejak aktivitas tercatat</p>
                           </div>
-                          <h4 className="text-xs font-extrabold text-gray-900">{act.title}</h4>
-                          <p className="text-xs text-gray-600 font-medium leading-relaxed">{act.desc}</p>
-                          <span className="text-[10px] text-gray-400 font-semibold block pt-1">Oleh: {act.author}</span>
+                        )
+                      }
+
+                      return dynamicActivities.map((act) => (
+                        <div
+                          key={act.id}
+                          className="p-4 bg-gray-50/80 border border-gray-200/80 rounded-2xl flex items-start gap-4 hover:border-[#2DB24A]/40 transition-all group"
+                        >
+                          <div className="w-10 h-10 rounded-xl bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center font-bold shrink-0">
+                            <Activity className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 space-y-1 min-w-0">
+                            <div className="flex justify-between items-center">
+                              <span className={`px-2 py-0.5 font-extrabold text-[9px] rounded uppercase ${act.color}`}>
+                                {act.category}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-semibold">{act.time}</span>
+                            </div>
+                            <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">
+                              {act.title}
+                            </h4>
+                            <p className="text-xs text-gray-600 font-medium leading-relaxed line-clamp-2">
+                              {act.desc}
+                            </p>
+                            <div className="flex justify-between items-center pt-1.5 border-t border-gray-100">
+                              <span className="text-[10px] text-gray-400 font-semibold">Oleh: {act.author}</span>
+                              <button
+                                onClick={() => setActiveSidebarNav(act.targetTab)}
+                                className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer flex items-center gap-1"
+                              >
+                                Buka {act.category.toLowerCase()} →
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    })()}
                   </div>
                 </div>
               </div>

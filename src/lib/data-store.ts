@@ -8689,6 +8689,497 @@ export const DataStore = {
     )
   },
 
+
+  // ─── COMMUNITY EVENTS CRUD ───────────────────────────────────────────
+  async getCommunityEvents(communityId: string) {
+    syncMockDb()
+    const seedEvents = [
+      {
+        id: `ev-1-${communityId}`,
+        communityId,
+        title: 'Workshop Digital Marketing & Foto Produk UMKM 2026',
+        description: 'Tingkatkan omset jualan online melalui strategi konten video pendek, live shopping, dan teknik fotografi produk profesional dengan smartphone.',
+        eventDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Gedung Pusat UMKM Saloka & Online Zoom',
+        isOnline: true,
+        linkUrl: 'https://zoom.us/j/saloka-event',
+        bannerUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80',
+        maxParticipants: 100,
+        registeredUsers: '[]',
+        price: 0,
+        status: 'UPCOMING',
+        organizer: 'Pengurus Komunitas',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: `ev-2-${communityId}`,
+        communityId,
+        title: 'Kopdar Bulanan & Temu Mitra Bisnis Kolaborasi',
+        description: 'Ajang networking, sharing pengalaman bisnis antar anggota, dan sesi konsultasi legalitas usaha bersama para praktisi.',
+        eventDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Saloka Coffee & Space, Sleman, DIY',
+        isOnline: false,
+        linkUrl: '',
+        bannerUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80',
+        maxParticipants: 50,
+        registeredUsers: '[]',
+        price: 0,
+        status: 'UPCOMING',
+        organizer: 'Divisi Acara & Networking',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: `ev-3-${communityId}`,
+        communityId,
+        title: 'Bazaar & Pameran Produk Karya Unggulan Komunitas',
+        description: 'Pameran stand produk UMKM binaan komunitas untuk menjangkau ribuan pengunjung publik dan buyer potensial.',
+        eventDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Atrium Plaza Saloka Yogyakarta',
+        isOnline: false,
+        linkUrl: '',
+        bannerUrl: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&auto=format&fit=crop&q=80',
+        maxParticipants: 200,
+        registeredUsers: '[]',
+        price: 0,
+        status: 'UPCOMING',
+        organizer: 'Panitia Bazaar Saloka',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+
+    return withFallback(
+      async () => {
+        try {
+          const list = await (db as any).communityEvent?.findMany({
+            where: { communityId },
+            orderBy: { eventDate: 'asc' }
+          })
+          if (list && list.length > 0) return list
+        } catch (_) {}
+        if (!(globalThis as any).__mockCommunityEvents) {
+          (globalThis as any).__mockCommunityEvents = []
+        }
+        const existing = (globalThis as any).__mockCommunityEvents.filter((e: any) => e.communityId === communityId)
+        if (existing.length === 0) {
+          (globalThis as any).__mockCommunityEvents.push(...seedEvents)
+          saveMockDb()
+          return seedEvents
+        }
+        return existing
+      },
+      async () => {
+        if (!(globalThis as any).__mockCommunityEvents) {
+          (globalThis as any).__mockCommunityEvents = []
+        }
+        const existing = (globalThis as any).__mockCommunityEvents.filter((e: any) => e.communityId === communityId)
+        if (existing.length === 0) {
+          (globalThis as any).__mockCommunityEvents.push(...seedEvents)
+          saveMockDb()
+          return seedEvents
+        }
+        return existing
+      }
+    )
+  },
+
+  async createCommunityEvent(data: {
+    communityId: string
+    title: string
+    description?: string
+    eventDate: string
+    location?: string
+    isOnline?: boolean
+    linkUrl?: string
+    bannerUrl?: string
+    maxParticipants?: number
+    price?: number
+    organizer?: string
+  }) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          return await (db as any).communityEvent?.create({
+            data: {
+              communityId: data.communityId,
+              title: data.title,
+              description: data.description || '',
+              eventDate: data.eventDate,
+              location: data.location || 'Lokasi Komunitas',
+              isOnline: Boolean(data.isOnline),
+              linkUrl: data.linkUrl || '',
+              bannerUrl: data.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80',
+              maxParticipants: Number(data.maxParticipants || 100),
+              registeredUsers: '[]',
+              price: Number(data.price || 0),
+              status: 'UPCOMING',
+              organizer: data.organizer || 'Pengurus Komunitas'
+            }
+          })
+        } catch (_) {}
+        const newEv = {
+          id: `ev-${Date.now()}`,
+          communityId: data.communityId,
+          title: data.title,
+          description: data.description || '',
+          eventDate: data.eventDate,
+          location: data.location || 'Lokasi Komunitas',
+          isOnline: Boolean(data.isOnline),
+          linkUrl: data.linkUrl || '',
+          bannerUrl: data.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80',
+          maxParticipants: Number(data.maxParticipants || 100),
+          registeredUsers: '[]',
+          price: Number(data.price || 0),
+          status: 'UPCOMING',
+          organizer: data.organizer || 'Pengurus Komunitas',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        if (!(globalThis as any).__mockCommunityEvents) {
+          (globalThis as any).__mockCommunityEvents = []
+        }
+        ;(globalThis as any).__mockCommunityEvents.unshift(newEv)
+        saveMockDb()
+        return newEv
+      },
+      async () => {
+        const newEv = {
+          id: `ev-${Date.now()}`,
+          communityId: data.communityId,
+          title: data.title,
+          description: data.description || '',
+          eventDate: data.eventDate,
+          location: data.location || 'Lokasi Komunitas',
+          isOnline: Boolean(data.isOnline),
+          linkUrl: data.linkUrl || '',
+          bannerUrl: data.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80',
+          maxParticipants: Number(data.maxParticipants || 100),
+          registeredUsers: '[]',
+          price: Number(data.price || 0),
+          status: 'UPCOMING',
+          organizer: data.organizer || 'Pengurus Komunitas',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        if (!(globalThis as any).__mockCommunityEvents) {
+          (globalThis as any).__mockCommunityEvents = []
+        }
+        ;(globalThis as any).__mockCommunityEvents.unshift(newEv)
+        saveMockDb()
+        return newEv
+      }
+    )
+  },
+
+  async updateCommunityEvent(id: string, data: {
+    title?: string
+    description?: string
+    eventDate?: string
+    location?: string
+    isOnline?: boolean
+    linkUrl?: string
+    bannerUrl?: string
+    maxParticipants?: number
+    price?: number
+    status?: string
+    organizer?: string
+  }) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          return await (db as any).communityEvent?.update({
+            where: { id },
+            data: {
+              ...(data.title ? { title: data.title } : {}),
+              ...(data.description !== undefined ? { description: data.description } : {}),
+              ...(data.eventDate ? { eventDate: data.eventDate } : {}),
+              ...(data.location ? { location: data.location } : {}),
+              ...(data.isOnline !== undefined ? { isOnline: data.isOnline } : {}),
+              ...(data.linkUrl !== undefined ? { linkUrl: data.linkUrl } : {}),
+              ...(data.bannerUrl ? { bannerUrl: data.bannerUrl } : {}),
+              ...(data.maxParticipants !== undefined ? { maxParticipants: Number(data.maxParticipants) } : {}),
+              ...(data.price !== undefined ? { price: Number(data.price) } : {}),
+              ...(data.status ? { status: data.status } : {}),
+              ...(data.organizer ? { organizer: data.organizer } : {})
+            }
+          })
+        } catch (_) {}
+        const list = (globalThis as any).__mockCommunityEvents || []
+        const ev = list.find((x: any) => x.id === id)
+        if (ev) {
+          Object.assign(ev, data, { updatedAt: new Date() })
+          saveMockDb()
+          return ev
+        }
+        return null
+      },
+      async () => {
+        const list = (globalThis as any).__mockCommunityEvents || []
+        const ev = list.find((x: any) => x.id === id)
+        if (ev) {
+          Object.assign(ev, data, { updatedAt: new Date() })
+          saveMockDb()
+          return ev
+        }
+        return null
+      }
+    )
+  },
+
+  async deleteCommunityEvent(id: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          await (db as any).communityEvent?.delete({ where: { id } })
+          return { success: true }
+        } catch (_) {}
+        if ((globalThis as any).__mockCommunityEvents) {
+          (globalThis as any).__mockCommunityEvents = (globalThis as any).__mockCommunityEvents.filter((x: any) => x.id !== id)
+          saveMockDb()
+        }
+        return { success: true }
+      },
+      async () => {
+        if ((globalThis as any).__mockCommunityEvents) {
+          (globalThis as any).__mockCommunityEvents = (globalThis as any).__mockCommunityEvents.filter((x: any) => x.id !== id)
+          saveMockDb()
+        }
+        return { success: true }
+      }
+    )
+  },
+
+  async registerCommunityEvent(eventId: string, userId: string, userName: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        const list = (globalThis as any).__mockCommunityEvents || []
+        const ev = list.find((x: any) => x.id === eventId)
+        if (ev) {
+          let regs: any[] = []
+          try {
+            regs = typeof ev.registeredUsers === 'string' ? JSON.parse(ev.registeredUsers) : (ev.registeredUsers || [])
+          } catch (_) { regs = [] }
+          if (!regs.find((r: any) => r.userId === userId)) {
+            regs.push({ userId, userName, registeredAt: new Date() })
+            ev.registeredUsers = JSON.stringify(regs)
+            ev.updatedAt = new Date()
+            saveMockDb()
+          }
+          return { success: true, count: regs.length }
+        }
+        return { success: true }
+      },
+      async () => {
+        const list = (globalThis as any).__mockCommunityEvents || []
+        const ev = list.find((x: any) => x.id === eventId)
+        if (ev) {
+          let regs: any[] = []
+          try {
+            regs = typeof ev.registeredUsers === 'string' ? JSON.parse(ev.registeredUsers) : (ev.registeredUsers || [])
+          } catch (_) { regs = [] }
+          if (!regs.find((r: any) => r.userId === userId)) {
+            regs.push({ userId, userName, registeredAt: new Date() })
+            ev.registeredUsers = JSON.stringify(regs)
+            ev.updatedAt = new Date()
+            saveMockDb()
+          }
+          return { success: true, count: regs.length }
+        }
+        return { success: true }
+      }
+    )
+  },
+
+  // ─── COMMUNITY GALLERY CRUD ───────────────────────────────────────────
+  async getCommunityGallery(communityId: string) {
+    syncMockDb()
+    const seedGallery = [
+      {
+        id: `gal-1-${communityId}`,
+        communityId,
+        title: 'Kopdar Akbar & Sesi Networking UMKM',
+        caption: 'Momen kebersamaan temu anggota dan pengurus dalam rangka penyusunan program kerja kolaborasi.',
+        category: 'Kopdar & Networking',
+        imageUrl: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800&auto=format&fit=crop&q=80',
+        date: '20 Juli 2026',
+        authorName: 'Admin Komunitas',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: `gal-2-${communityId}`,
+        communityId,
+        title: 'Workshop Desain Kemasan & Branding Produk',
+        caption: 'Pelatihan intensif pembuatan packaging ramah lingkungan dan standar sertifikasi halal bagi UMKM.',
+        category: 'Workshop & Pelatihan',
+        imageUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80',
+        date: '15 Juli 2026',
+        authorName: 'Admin Komunitas',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: `gal-3-${communityId}`,
+        communityId,
+        title: 'Bazaar Festival Kuliner & Kriya Nusantara',
+        caption: 'Stand pameran produk anggota binaan komunitas yang ramai dikunjungi konsumen dan buyer ritel.',
+        category: 'Bazaar & Pameran',
+        imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
+        date: '08 Juli 2026',
+        authorName: 'Admin Komunitas',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: `gal-4-${communityId}`,
+        communityId,
+        title: 'Kunjungan Usaha ke Rumah Produksi Anggota',
+        caption: 'Kunjungan benchmarking ke salah satu unit produksi anggota peraih omset terbaik.',
+        category: 'Kunjungan Usaha',
+        imageUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80',
+        date: '01 Juli 2026',
+        authorName: 'Admin Komunitas',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ]
+
+    return withFallback(
+      async () => {
+        try {
+          const list = await (db as any).communityGallery?.findMany({
+            where: { communityId },
+            orderBy: { createdAt: 'desc' }
+          })
+          if (list && list.length > 0) return list
+        } catch (_) {}
+        if (!(globalThis as any).__mockCommunityGallery) {
+          (globalThis as any).__mockCommunityGallery = []
+        }
+        const existing = (globalThis as any).__mockCommunityGallery.filter((g: any) => g.communityId === communityId)
+        if (existing.length === 0) {
+          (globalThis as any).__mockCommunityGallery.push(...seedGallery)
+          saveMockDb()
+          return seedGallery
+        }
+        return existing
+      },
+      async () => {
+        if (!(globalThis as any).__mockCommunityGallery) {
+          (globalThis as any).__mockCommunityGallery = []
+        }
+        const existing = (globalThis as any).__mockCommunityGallery.filter((g: any) => g.communityId === communityId)
+        if (existing.length === 0) {
+          (globalThis as any).__mockCommunityGallery.push(...seedGallery)
+          saveMockDb()
+          return seedGallery
+        }
+        return existing
+      }
+    )
+  },
+
+  async createCommunityGalleryItem(data: {
+    communityId: string
+    title: string
+    imageUrl: string
+    caption?: string
+    category?: string
+    date?: string
+    authorId?: string
+    authorName?: string
+  }) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          return await (db as any).communityGallery?.create({
+            data: {
+              communityId: data.communityId,
+              title: data.title,
+              imageUrl: data.imageUrl,
+              caption: data.caption || '',
+              category: data.category || 'Kopdar & Networking',
+              date: data.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+              authorId: data.authorId || '',
+              authorName: data.authorName || 'Anggota Komunitas'
+            }
+          })
+        } catch (_) {}
+        const newGal = {
+          id: `gal-${Date.now()}`,
+          communityId: data.communityId,
+          title: data.title,
+          imageUrl: data.imageUrl,
+          caption: data.caption || '',
+          category: data.category || 'Kopdar & Networking',
+          date: data.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+          authorId: data.authorId || '',
+          authorName: data.authorName || 'Anggota Komunitas',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        if (!(globalThis as any).__mockCommunityGallery) {
+          (globalThis as any).__mockCommunityGallery = []
+        }
+        ;(globalThis as any).__mockCommunityGallery.unshift(newGal)
+        saveMockDb()
+        return newGal
+      },
+      async () => {
+        const newGal = {
+          id: `gal-${Date.now()}`,
+          communityId: data.communityId,
+          title: data.title,
+          imageUrl: data.imageUrl,
+          caption: data.caption || '',
+          category: data.category || 'Kopdar & Networking',
+          date: data.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+          authorId: data.authorId || '',
+          authorName: data.authorName || 'Anggota Komunitas',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        if (!(globalThis as any).__mockCommunityGallery) {
+          (globalThis as any).__mockCommunityGallery = []
+        }
+        ;(globalThis as any).__mockCommunityGallery.unshift(newGal)
+        saveMockDb()
+        return newGal
+      }
+    )
+  },
+
+  async deleteCommunityGalleryItem(id: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          await (db as any).communityGallery?.delete({ where: { id } })
+          return { success: true }
+        } catch (_) {}
+        if ((globalThis as any).__mockCommunityGallery) {
+          (globalThis as any).__mockCommunityGallery = (globalThis as any).__mockCommunityGallery.filter((x: any) => x.id !== id)
+          saveMockDb()
+        }
+        return { success: true }
+      },
+      async () => {
+        if ((globalThis as any).__mockCommunityGallery) {
+          (globalThis as any).__mockCommunityGallery = (globalThis as any).__mockCommunityGallery.filter((x: any) => x.id !== id)
+          saveMockDb()
+        }
+        return { success: true }
+      }
+    )
+  },
+
   // ─── DISCUSSION FORUM CRUD ────────────────────────────────────────
   async getDiscussions(communityId: string) {
     return withMutationFallback(
