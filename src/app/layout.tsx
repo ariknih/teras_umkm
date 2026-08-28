@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser, logout } from "@/app/actions/auth";
 import { getWalletDetails } from "@/app/actions/wallet-affiliate";
@@ -9,10 +9,9 @@ import GoeyToastProvider from "@/components/GoeyToastProvider";
 import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
 
 
-const manrope = Manrope({
+const inter = Inter({
   variable: "--font-manrope-base",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -75,7 +74,7 @@ export default async function RootLayout({
   return (
     <html
       lang="id"
-      className={`${manrope.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head suppressHydrationWarning>
