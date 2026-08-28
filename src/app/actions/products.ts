@@ -171,3 +171,114 @@ export async function deleteProduct(id: string) {
     return { error: e.message || 'Gagal menghapus produk.' }
   }
 }
+
+
+export async function createMemberProductAction(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const communityId = formData.get('communityId') as string
+  const title = formData.get('title') as string
+  const description = (formData.get('description') as string) || ''
+  const price = parseFloat(formData.get('price') as string)
+  const category = (formData.get('category') as string) || 'Kuliner & Minuman'
+  const stock = parseInt(formData.get('stock') as string) || 10
+  const imageUrl = (formData.get('imageUrl') as string) || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=200&fit=crop&q=80'
+  const merchantId = (formData.get('merchantId') as string) || user.id
+
+  if (!title) return { error: 'Nama produk wajib diisi.' }
+  if (isNaN(price) || price < 0) return { error: 'Harga produk tidak valid.' }
+
+  try {
+    const product = await DataStore.createProduct({
+      title,
+      description,
+      price,
+      category,
+      stock,
+      imageUrl,
+      merchantId,
+      latitude: -6.2088,
+      longitude: 106.8456
+    })
+
+    await invalidateCachePattern('products:')
+    if (communityId) {
+      revalidatePath(`/community/${communityId}`)
+    }
+    revalidatePath('/market')
+    revalidatePath('/merchant/dashboard')
+    return { success: true, product }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menambahkan produk anggota.' }
+  }
+}
+
+export async function updateMemberProductAction(id: string, formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const communityId = formData.get('communityId') as string
+  const title = formData.get('title') as string
+  const description = formData.get('description') as string
+  const price = parseFloat(formData.get('price') as string)
+  const category = formData.get('category') as string
+  const stock = parseInt(formData.get('stock') as string)
+  const imageUrl = formData.get('imageUrl') as string
+
+  if (!id) return { error: 'ID Produk wajib diisi.' }
+
+  try {
+    const existing = await DataStore.getProductById(id)
+    if (!existing) return { error: 'Produk tidak ditemukan.' }
+
+    const targetMerchantId = existing.merchantId || user.id
+
+    const data: any = {}
+    if (title) data.title = title
+    if (description !== undefined) data.description = description
+    if (!isNaN(price)) data.price = price
+    if (category) data.category = category
+    if (!isNaN(stock)) data.stock = stock
+    if (imageUrl) data.imageUrl = imageUrl
+
+    const product = await DataStore.updateProduct(id, targetMerchantId, data)
+    await invalidateCachePattern('products:')
+    await deleteCache(`product:${id}`)
+    if (communityId) {
+      revalidatePath(`/community/${communityId}`)
+    }
+    revalidatePath('/market')
+    revalidatePath(`/market/product/${id}`)
+    revalidatePath('/merchant/dashboard')
+    return { success: true, product }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal memperbarui produk anggota.' }
+  }
+}
+
+export async function deleteMemberProductAction(id: string, communityId?: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  if (!id) return { error: 'ID Produk wajib diisi.' }
+
+  try {
+    const existing = await DataStore.getProductById(id)
+    if (!existing) return { error: 'Produk tidak ditemukan.' }
+
+    const targetMerchantId = existing.merchantId || user.id
+    await DataStore.deleteProduct(id, targetMerchantId)
+
+    await invalidateCachePattern('products:')
+    await deleteCache(`product:${id}`)
+    if (communityId) {
+      revalidatePath(`/community/${communityId}`)
+    }
+    revalidatePath('/market')
+    revalidatePath('/merchant/dashboard')
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menghapus produk anggota.' }
+  }
+}
