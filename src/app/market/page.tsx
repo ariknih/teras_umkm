@@ -69,7 +69,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <div className="relative min-h-screen bg-[#F5F7FA] pb-24">
+    <div id="Body Container" className="relative min-h-screen bg-[#F5F7FA] pb-0">
       {/* Structured JSON-LD Schema for Marketplace */}
       <Script
         id="json-ld-market"
@@ -84,9 +84,9 @@ export default async function MarketPage({ searchParams }: PageProps) {
         }}
       />
 
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 pt-6">
+      <div id="Content Container" className="max-w-[1440px] mx-auto p-0">
         {/* ─── Compact header ──────────────────────────────────── */}
-        <div className="mb-4">
+        <div id="Header Section" className="mb-4 max-w-[1200px]">
           <h1 className="text-base font-bold text-gray-800 mb-0.5">Marketplace</h1>
           <p className="text-xs text-gray-400">
             Beli produk UMKM, temukan jasa terdekat, atau lowongan kerja mandiri.
@@ -94,7 +94,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
         </div>
 
         {/* ─── Horizontal Scrollable Category Pill Bar ─────────── */}
-        <div className="mb-4 relative">
+        <div id="Category Bar" className="mb-4 relative max-w-[1200px]">
           <div
             id="category-scroll"
             className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide"

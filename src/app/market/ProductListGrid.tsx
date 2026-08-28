@@ -195,7 +195,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
   }
 
   return (
-    <div className="space-y-6">
+    <div id="Product List Section" className="space-y-6 max-w-[1200px]">
       {/* Geolocation Banner & Controls */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-4 rounded-lg shadow-sm">
         <div className="flex items-center gap-3">
@@ -482,7 +482,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+          <div id="Card Container" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 m-0">
             {filteredProducts.slice(0, visibleCount).map((product) => {
               const dist = (product as any).distance
               const productId = product.id || ''
@@ -631,7 +631,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
           </div>
 
           {filteredProducts.length > visibleCount && (
-            <div className="flex justify-center pt-2">
+            <div id="More Button" className="flex justify-center mt-6">
               <button
                 type="button"
                 disabled={isLoadingMore}
