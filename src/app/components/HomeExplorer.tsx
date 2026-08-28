@@ -149,22 +149,22 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="bg-[#E8F5E9] text-[#2DB24A] border border-[#C8E6C9] text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+              <span className="bg-[#E8F5E9] text-[#2DB24A] border border-[#C8E6C9] desktop-caption-large-medium px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                 <img src="/images/jasa icon.svg" alt="Snackbox" className="w-3.5 h-3.5 object-contain" />
                 <span>Snackbox Saloka</span>
               </span>
-              <span className="bg-[#FFF3D6] text-[#D97706] text-[10px] font-black px-2.5 py-1 rounded-full shadow-2xs uppercase tracking-wide">
+              <span className="bg-[#FFF3D6] text-[#D97706] desktop-caption-large-medium px-2.5 py-1 rounded-full shadow-2xs uppercase tracking-wide">
                 ★ BARU
               </span>
             </div>
-            <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">
+            <h3 className="desktop-heading-h4-bold text-slate-900 leading-tight">
               Jajanan & kue tradisional dari kelurahanmu
             </h3>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
+            <p className="desktop-paragraph-medium-regular text-slate-500 leading-relaxed max-w-2xl">
               Dibuat langsung oleh pembuat kue di sekitarmu! Dipesan, digoreng/dikukus, diantar selagi hangat.
             </p>
             <div className="flex items-center gap-1.5 pt-0.5">
-              <span className="bg-[#EBF3FE] text-[#1E40AF] text-[11px] font-bold px-3 py-1 rounded-full inline-flex items-center gap-1 cursor-pointer hover:bg-[#DBEAFE] transition-colors">
+              <span className="bg-[#EBF3FE] text-[#1E40AF] desktop-caption-large-medium px-3 py-1 rounded-full inline-flex items-center gap-1 cursor-pointer hover:bg-[#DBEAFE] transition-colors">
                 📍 Menampilkan
               </span>
             </div>
@@ -172,7 +172,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
 
           <Link
             href="/snackbox"
-            className="text-xs font-bold text-[#006E24] hover:underline flex items-center gap-1 self-start sm:self-center shrink-0"
+            className="desktop-caption-large-medium text-[#006E24] hover:underline flex items-center gap-1 self-start sm:self-center shrink-0"
           >
             <span>Buka Snackbox</span>
             <ChevronRight size={14} />
@@ -195,10 +195,10 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                   loading="lazy"
                   className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                 />
-                <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
+                <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] desktop-caption-large-medium px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
                   13%
                 </div>
-                <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white desktop-caption-large-medium px-1.5 py-0.5 rounded">
                   ±75g
                 </div>
               </div>
@@ -206,18 +206,18 @@ export default function HomeExplorer({ products, services, communities = [] }: H
               {/* Body */}
               <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
                 <div>
-                  <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
+                  <h4 className="desktop-caption-large-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
                     {item.title}
                   </h4>
                   <div className="pt-1">
-                    <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                    <p className="desktop-caption-large-medium text-slate-900 leading-tight">
                       Rp {item.price.toLocaleString('id-ID')}
                     </p>
                     <div className="flex items-center gap-1.5 pt-0.5">
-                      <span className="text-[10px] text-slate-400 line-through">
+                      <span className="desktop-caption-large-medium text-slate-400 line-through">
                         Rp {Math.round(item.price * 1.15).toLocaleString('id-ID')}
                       </span>
-                      <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                      <span className="bg-[#E8F5E9] text-[#006E24] desktop-caption-large-medium px-1 py-0.2 rounded border border-[#C8E6C9]">
                         13%
                       </span>
                     </div>
@@ -225,12 +225,12 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                 </div>
 
                 <div className="pt-1.5 border-t border-slate-100 space-y-1">
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-1 desktop-caption-large-medium text-slate-500">
                     <span className="text-amber-500 font-bold">★ {item.rating}</span>
                     <span>•</span>
                     <span>{item.sold} terjual</span>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
+                  <div className="flex items-center gap-1 desktop-caption-large-medium text-slate-500 truncate">
                     <span className="text-[#006E24] font-bold">✔</span>
                     <span className="truncate">{item.store}</span>
                   </div>
@@ -244,12 +244,12 @@ export default function HomeExplorer({ products, services, communities = [] }: H
       {/* ── KOMUNITAS POPULER ────────────────────────────────────────────── */}
       <div id="komunitas-populer" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 shadow-2xs space-y-4 mb-5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
+          <h3 className="desktop-heading-h4-bold text-slate-900">
             Komunitas Populer
           </h3>
           <Link
             href="/community"
-            className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1"
+            className="desktop-caption-large-medium text-[#2DB24A] hover:underline flex items-center gap-1"
           >
             <span>Lihat semua komunitas</span>
             <ChevronRight size={14} />
@@ -269,16 +269,16 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                 className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
               />
               <div className="space-y-1 flex-1 min-w-0">
-                <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
+                <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 desktop-caption-large-medium px-2 py-0.5 rounded shadow-2xs inline-block">
                   {comm.badge}
                 </span>
-                <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-[#2DB24A] transition-colors">
+                <h4 className="desktop-caption-large-medium text-slate-900 line-clamp-1 group-hover:text-[#2DB24A] transition-colors">
                   {comm.title}
                 </h4>
-                <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                <p className="desktop-paragraph-medium-regular text-slate-500 line-clamp-2 leading-relaxed">
                   {comm.desc}
                 </p>
-                <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
+                <div className="flex items-center gap-1 desktop-caption-large-medium text-slate-400 pt-0.5">
                   <Users size={10} />
                   <span>{comm.members}</span>
                 </div>
@@ -293,8 +293,8 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         {/* ── SALOKA ACADEMY ── */}
         <div id="saloka-academy" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 shadow-2xs space-y-3.5 mb-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <h3 className="text-base font-extrabold text-slate-900">Saloka Academy</h3>
-            <Link href="/academy" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
+            <h3 className="desktop-heading-h4-bold text-slate-900">Saloka Academy</h3>
+            <Link href="/academy" className="desktop-caption-large-medium text-[#2DB24A] hover:underline flex items-center gap-1">
               <span>Belajar di Saloka Academy</span>
               <ChevronRight size={14} />
             </Link>
@@ -306,16 +306,16 @@ export default function HomeExplorer({ products, services, communities = [] }: H
               className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
             />
             <div className="space-y-1">
-              <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
+              <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 desktop-caption-large-medium px-2 py-0.5 rounded shadow-2xs inline-block">
                 Kelas & Pelatihan Bisnis
               </span>
-              <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-[#2DB24A]">
+              <h4 className="desktop-caption-large-medium text-slate-900 line-clamp-1 group-hover:text-[#2DB24A]">
                 Saloka Academy LMS
               </h4>
-              <p className="text-[11px] text-slate-500 line-clamp-2">
+              <p className="desktop-paragraph-medium-regular text-slate-500 line-clamp-2">
                 Tingkatkan omzet dan keahlian usaha melalui kursus digital marketing, keuangan, dan sertifikasi halal.
               </p>
-              <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
+              <div className="flex items-center gap-1 desktop-caption-large-medium text-slate-400 pt-0.5">
                 <GraduationCap size={10} />
                 <span>Pelatihan Terstruktur & Sertifikat</span>
               </div>
@@ -326,8 +326,8 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         {/* ── AFFILIATE HUB ── */}
         <div id="affiliate-hub" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 shadow-2xs space-y-3.5 mb-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <h3 className="text-base font-extrabold text-slate-900">Affiliate Hub</h3>
-            <Link href="/affiliate" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
+            <h3 className="desktop-heading-h4-bold text-slate-900">Affiliate Hub</h3>
+            <Link href="/affiliate" className="desktop-caption-large-medium text-[#2DB24A] hover:underline flex items-center gap-1">
               <span>Jadi affiliate sekarang</span>
               <ChevronRight size={14} />
             </Link>
@@ -339,16 +339,16 @@ export default function HomeExplorer({ products, services, communities = [] }: H
               className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
             />
             <div className="space-y-1">
-              <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
+              <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 desktop-caption-large-medium px-2 py-0.5 rounded shadow-2xs inline-block">
                 Komisi Referral Multi-Tier
               </span>
-              <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-[#2DB24A]">
+              <h4 className="desktop-caption-large-medium text-slate-900 line-clamp-1 group-hover:text-[#2DB24A]">
                 Saloka Affiliate System
               </h4>
-              <p className="text-[11px] text-slate-500 line-clamp-2">
+              <p className="desktop-paragraph-medium-regular text-slate-500 line-clamp-2">
                 Bagikan link produk atau komunitas dan dapatkan penghasilan komisi multi-level secara otomatis.
               </p>
-              <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
+              <div className="flex items-center gap-1 desktop-caption-large-medium text-slate-400 pt-0.5">
                 <Coins size={10} />
                 <span>Komisi Langsung Masuk Saldo</span>
               </div>
@@ -363,11 +363,11 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         {/* Section Header with Product Marketplace / Booking Jasa Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
-            <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base sm:text-lg">
+            <div className="flex items-center gap-2 text-slate-900">
               <img src="/images/search green icon.svg" alt="Mode Pencarian" className="w-5 h-5 object-contain" />
-              <h3>Mode Pencarian</h3>
+              <h3 className="desktop-heading-h4-bold">Mode Pencarian</h3>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="desktop-paragraph-medium-regular text-slate-500 mt-0.5">
               Mulai dari produk hingga jasa profesional, Saloka punya semuanya!
             </p>
           </div>
@@ -377,7 +377,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
             <button
               type="button"
               onClick={() => setActiveTab('MARKETPLACE')}
-              className={`px-4 py-2 rounded-lg font-extrabold text-xs transition-all cursor-pointer border-none ${
+              className={`px-4 py-2 rounded-lg desktop-caption-large-medium transition-all cursor-pointer border-none ${
                 activeTab === 'MARKETPLACE'
                   ? 'bg-[#2DB24A] text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 bg-transparent'
@@ -388,7 +388,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
             <button
               type="button"
               onClick={() => setActiveTab('JASA')}
-              className={`px-4 py-2 rounded-lg font-extrabold text-xs transition-all cursor-pointer border-none ${
+              className={`px-4 py-2 rounded-lg desktop-caption-large-medium transition-all cursor-pointer border-none ${
                 activeTab === 'JASA'
                   ? 'bg-[#2DB24A] text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 bg-transparent'
@@ -406,7 +406,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
               key={chip.key}
               type="button"
               onClick={() => setSelectedChip(chip.key)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 shrink-0 border ${
+              className={`px-3.5 py-1.5 rounded-xl desktop-caption-large-medium whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 shrink-0 border ${
                 selectedChip === chip.key
                   ? 'bg-[#2DB24A] text-white border-[#2DB24A] shadow-2xs'
                   : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
@@ -434,7 +434,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                   loading="lazy"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
+                <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] desktop-caption-large-medium px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
                   {prod.discount}
                 </div>
               </div>
@@ -442,18 +442,18 @@ export default function HomeExplorer({ products, services, communities = [] }: H
               {/* Content */}
               <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
                 <div>
-                  <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
+                  <h4 className="desktop-caption-large-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
                     {prod.title}
                   </h4>
                   <div className="pt-1">
-                    <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                    <p className="desktop-caption-large-medium text-slate-900 leading-tight">
                       Rp {prod.price.toLocaleString('id-ID')}
                     </p>
                     <div className="flex items-center gap-1.5 pt-0.5">
-                      <span className="text-[10px] text-slate-400 line-through">
+                      <span className="desktop-caption-large-medium text-slate-400 line-through">
                         Rp {prod.originalPrice.toLocaleString('id-ID')}
                       </span>
-                      <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                      <span className="bg-[#E8F5E9] text-[#006E24] desktop-caption-large-medium px-1 py-0.2 rounded border border-[#C8E6C9]">
                         {prod.discount}
                       </span>
                     </div>
@@ -461,12 +461,12 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                 </div>
 
                 <div className="pt-1.5 border-t border-slate-100 space-y-1">
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                  <div className="flex items-center gap-1 desktop-caption-large-medium text-slate-500">
                     <span className="text-amber-500 font-bold">★ {prod.rating}</span>
                     <span>•</span>
                     <span>{prod.sold} terjual</span>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
+                  <div className="flex items-center gap-1 desktop-caption-large-medium text-slate-500 truncate">
                     <span className="text-[#006E24] font-bold">✔</span>
                     <span className="truncate">{prod.seller}</span>
                   </div>

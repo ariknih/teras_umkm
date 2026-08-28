@@ -80,17 +80,17 @@ export default function BannerCarousel({ banners }: { banners?: Banner[] }) {
               {/* Text & CTA overlay (Tokopedia Banner Typography) */}
               {banner.title && (
                 <div className="absolute inset-y-0 left-0 flex flex-col justify-center px-4 sm:px-8 md:px-12 text-white z-20 space-y-1.5 sm:space-y-2.5 max-w-xl">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#006E24] text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-white shadow-xs w-fit">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#006E24] desktop-caption-large-medium uppercase tracking-wider text-white shadow-xs w-fit">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-ping" />
                     <span>Promo Saloka</span>
                   </div>
 
-                  <h3 className="text-sm sm:text-lg md:text-2xl font-extrabold tracking-tight drop-shadow leading-snug line-clamp-2 text-white">
+                  <h3 className="desktop-heading-h1-bold tracking-tight drop-shadow leading-snug line-clamp-2 text-white">
                     {banner.title}
                   </h3>
 
                   <div>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-4 sm:py-1.5 bg-white hover:bg-emerald-50 text-[#006E24] font-extrabold text-[10px] sm:text-xs rounded-xl shadow-sm transition-all duration-150">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-4 sm:py-1.5 bg-white hover:bg-emerald-50 text-[#006E24] desktop-caption-large-medium rounded-xl shadow-sm transition-all duration-150">
                       <span>Cek Sekarang</span>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
@@ -162,7 +162,7 @@ export default function BannerCarousel({ banners }: { banners?: Banner[] }) {
             {/* ── TOKOPEDIA BOTTOM-RIGHT "LIHAT PROMO LAINNYA" PILL ── */}
             <Link
               href="/market"
-              className="absolute bottom-2.5 sm:bottom-3 right-3 sm:right-6 z-30 text-[10px] sm:text-xs font-bold text-white bg-black/60 hover:bg-black/80 backdrop-blur-xs px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 border border-white/20 transition-all shadow-xs"
+              className="absolute bottom-2.5 sm:bottom-3 right-3 sm:right-6 z-30 desktop-caption-large-medium text-white bg-black/60 hover:bg-black/80 backdrop-blur-xs px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full flex items-center gap-1 border border-white/20 transition-all shadow-xs"
             >
               <span>Lihat Promo Lainnya</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

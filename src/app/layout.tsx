@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Poppins, Geist } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser, logout } from "@/app/actions/auth";
 import { getWalletDetails } from "@/app/actions/wallet-affiliate";
@@ -9,22 +9,10 @@ import GoeyToastProvider from "@/components/GoeyToastProvider";
 import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
 
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const poppins = Poppins({
-  variable: "--font-poppins",
+const manrope = Manrope({
+  variable: "--font-manrope-base",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
-  display: "swap",
-});
-
-const geist = Geist({
-  variable: "--font-geist",
-  subsets: ["latin"],
   display: "swap",
 });
 
@@ -87,7 +75,7 @@ export default async function RootLayout({
   return (
     <html
       lang="id"
-      className={`${inter.variable} ${poppins.variable} ${geist.variable} h-full antialiased`}
+      className={`${manrope.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head suppressHydrationWarning>

@@ -392,7 +392,7 @@ export default function CommunityDirectoryPage() {
             </p>
           </div>
         ) : (
-          <div id="directory-grid-section" className="space-y-8 mb-6">
+          <div id="directory-grid-section" className="space-y-8 mb-12">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCommunities.slice(0, visibleCount).map((c) => {
                 // Parse coopTier

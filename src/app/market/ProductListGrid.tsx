@@ -208,10 +208,10 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
             </svg>
           </div>
           <div>
-            <h4 className="text-xs font-bold text-text-primary font-sora">
+            <h4 className="desktop-caption-large-medium text-text-primary">
               Rekomendasi Berbasis Jarak
             </h4>
-            <p className="text-[10px] text-text-secondary">
+            <p className="desktop-caption-large-regular text-text-secondary">
               {locStatus === 'success' 
                 ? '✓ Lokasi terdeteksi. Jarak produk diperbarui secara real-time.' 
                 : locStatus === 'loading'
@@ -226,21 +226,21 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
             <button
               onClick={requestLocation}
               disabled={locStatus === 'loading'}
-              className="btn-primary disabled:opacity-50 text-xs"
+              className="btn-primary disabled:opacity-50 desktop-caption-large-medium"
             >
               {locStatus === 'loading' ? 'Mengakses...' : 'Akses Lokasi'}
             </button>
           )}
 
           {locStatus === 'success' && (
-            <label className="flex items-center gap-2 cursor-pointer bg-slate-100 hover:bg-slate-200/60 px-3 py-2 rounded text-xs select-none transition-colors">
+            <label className="flex items-center gap-2 cursor-pointer bg-slate-100 hover:bg-slate-200/60 px-3 py-2 rounded desktop-caption-large-medium select-none transition-colors">
               <input
                 type="checkbox"
                 checked={sortBy === 'distance-asc'}
                 onChange={(e) => setSortBy(e.target.checked ? 'distance-asc' : 'default')}
                 className="w-3.5 h-3.5 accent-primary cursor-pointer"
               />
-              <span className="font-geist font-bold text-text-primary">Urutkan Jarak Terdekat</span>
+              <span className="text-text-primary">Urutkan Jarak Terdekat</span>
             </label>
           )}
         </div>
@@ -276,7 +276,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
             <button
               id="filter-dropdown-btn"
               onClick={() => setFilterOpen(v => !v)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-bold font-geist transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border desktop-caption-large-medium transition-all ${
                 filterOpen || activeFilterCount > 0
                   ? 'bg-primary/10 border-primary text-primary'
                   : 'bg-white border-slate-200 text-text-secondary hover:border-primary/40 hover:text-text-primary'
@@ -285,7 +285,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Filter</span>
               {activeFilterCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-primary text-black text-[9px] font-black flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-primary text-black desktop-caption-large-medium flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -297,11 +297,11 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
               <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[340px] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
                 {/* Dropdown header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Filter &amp; Sortir</span>
+                  <span className="desktop-caption-large-medium text-slate-800 uppercase tracking-wider">Filter &amp; Sortir</span>
                   {activeFilterCount > 0 && (
                     <button
                       onClick={handleResetFilters}
-                      className="text-[10px] font-bold text-rose-600 hover:underline transition-colors cursor-pointer"
+                      className="desktop-caption-large-medium text-rose-600 hover:underline transition-colors cursor-pointer"
                     >
                       Reset semua ({activeFilterCount})
                     </button>
@@ -314,7 +314,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
                       <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
-                      <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase">Urutkan</label>
+                      <label className="desktop-caption-large-medium text-slate-600 tracking-wider uppercase">Urutkan</label>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {([
@@ -326,7 +326,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                         <button
                           key={opt.val}
                           onClick={() => setSortBy(opt.val as any)}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all text-left cursor-pointer ${
+                          className={`px-3 py-2 rounded-xl desktop-caption-large-medium border transition-all text-left cursor-pointer ${
                             sortBy === opt.val
                               ? 'bg-[#E8F5E9] border-[#006E24] text-[#006E24]'
                               : 'bg-white border-slate-200 text-slate-700 hover:border-[#006E24]/30'
@@ -343,12 +343,12 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <DollarSign className="w-3.5 h-3.5 text-slate-500" />
-                        <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase">Rentang Harga</label>
+                        <label className="desktop-caption-large-medium text-slate-600 tracking-wider uppercase">Rentang Harga</label>
                       </div>
                       {(minPrice !== '' || maxPrice !== '') && (
                         <button
                           onClick={() => { setMinPrice(''); setMaxPrice('') }}
-                          className="text-[10px] text-rose-600 hover:underline font-bold transition-colors cursor-pointer"
+                          className="desktop-caption-large-medium text-rose-600 hover:underline transition-colors cursor-pointer"
                         >
                           Hapus
                         </button>
@@ -356,7 +356,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <span className="text-[10px] text-slate-500 font-medium">Min (Rp)</span>
+                        <span className="desktop-caption-large-medium text-slate-500">Min (Rp)</span>
                         <input
                           type="number"
                           placeholder="0"
@@ -366,7 +366,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                         />
                       </div>
                       <div className="space-y-1">
-                        <span className="text-[10px] text-slate-500 font-medium">Max (Rp)</span>
+                        <span className="desktop-caption-large-medium text-slate-500">Max (Rp)</span>
                         <input
                           type="number"
                           placeholder="Tak terbatas"
@@ -389,7 +389,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                           <button
                             key={p.label}
                             onClick={() => { setMinPrice(p.min as any); setMaxPrice(p.max as any) }}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-full desktop-caption-large-medium border transition-all cursor-pointer ${
                               active
                                 ? 'bg-[#E8F5E9] border-[#006E24] text-[#006E24]'
                                 : 'bg-white border-slate-200 text-slate-600 hover:border-[#006E24]/30'
@@ -406,7 +406,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
                       <Package className="w-3.5 h-3.5 text-slate-500" />
-                      <label className="text-[11px] font-bold text-slate-600 tracking-wider uppercase">Ketersediaan</label>
+                      <label className="desktop-caption-large-medium text-slate-600 tracking-wider uppercase">Ketersediaan</label>
                     </div>
                     <label className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
                       <input
@@ -415,7 +415,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                         onChange={(e) => setInStockOnly(e.target.checked)}
                         className="w-4 h-4 accent-[#006E24] cursor-pointer"
                       />
-                      <span className="text-xs font-semibold text-slate-800">Hanya tampilkan produk ready stok</span>
+                      <span className="desktop-caption-large-medium text-slate-800">Hanya tampilkan produk ready stok</span>
                     </label>
                   </div>
 
@@ -425,7 +425,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                 <div className="px-4 pb-4">
                   <button
                     onClick={() => setFilterOpen(false)}
-                    className="w-full py-2.5 bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
+                    className="w-full py-2.5 bg-[#006E24] hover:bg-[#005a1d] text-white desktop-caption-large-medium rounded-xl transition-colors cursor-pointer shadow-xs"
                   >
                     Terapkan Filter
                   </button>
@@ -438,34 +438,34 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
         {/* Active filters chip bar */}
         {isFilterActive && (
           <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border-subtle/50">
-            <span className="text-[10px] text-text-secondary font-geist">Aktif:</span>
+            <span className="desktop-caption-large-regular text-text-secondary">Aktif:</span>
             {searchQuery && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full desktop-caption-large-medium text-text-primary">
                 &quot;{searchQuery}&quot;
                 <button onClick={() => setSearchQuery('')}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
               </span>
             )}
             {sortBy !== 'default' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full desktop-caption-large-medium text-text-primary">
                 {sortBy === 'price-asc' ? 'Harga ↑' : sortBy === 'price-desc' ? 'Harga ↓' : 'Terdekat'}
                 <button onClick={() => setSortBy('default')}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
               </span>
             )}
             {(minPrice !== '' || maxPrice !== '') && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full desktop-caption-large-medium text-text-primary">
                 Rp {minPrice || '0'} – {maxPrice || '∞'}
                 <button onClick={() => { setMinPrice(''); setMaxPrice('') }}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
               </span>
             )}
             {inStockOnly && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full desktop-caption-large-medium text-text-primary">
                 Tersedia
                 <button onClick={() => setInStockOnly(false)}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
               </span>
             )}
             <button
               onClick={handleResetFilters}
-              className="ml-auto text-[10px] text-red-400 hover:text-red-300 font-bold font-geist transition-colors"
+              className="ml-auto desktop-caption-large-medium text-red-400 hover:text-red-300 transition-colors"
             >
               Hapus semua
             </button>
@@ -477,8 +477,8 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
       {filteredProducts.length === 0 ? (
         <div className="text-center py-20 rounded-lg bg-white">
           <div className="text-4xl mb-3">🔍</div>
-          <h3 className="font-semibold text-sm text-gray-700 mb-1">Produk Tidak Ditemukan</h3>
-          <p className="text-xs text-gray-400 max-w-xs mx-auto">Coba kata kunci lain atau ganti kategori.</p>
+          <h3 className="desktop-paragraph-small-semibold text-gray-700 mb-1">Produk Tidak Ditemukan</h3>
+          <p className="desktop-caption-large-regular text-gray-400 max-w-xs mx-auto">Coba kata kunci lain atau ganti kategori.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -540,25 +540,25 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                       />
                     ) : (
                       <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                        <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">{formatCategoryName(product.category)}</span>
+                        <span className="desktop-caption-large-medium text-gray-300 uppercase tracking-widest">{formatCategoryName(product.category)}</span>
                       </div>
                     )}
                     {discount > 0 && (
-                      <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
+                      <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] desktop-caption-large-medium px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
                         {discount}%
                       </div>
                     )}
-                    <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                    <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white desktop-caption-large-medium px-1.5 py-0.5 rounded">
                       {formatCategoryName(product.category)}
                     </div>
                     {currentUser && product.merchantId === currentUser.id && (
-                      <div className="absolute top-2 right-2 bg-slate-900/80 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                      <div className="absolute top-2 right-2 bg-slate-900/80 text-white desktop-caption-large-medium px-1.5 py-0.5 rounded">
                         Produk Anda
                       </div>
                     )}
                     {product.stock <= 0 && (
                       <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                        <span className="text-[10px] font-extrabold text-rose-600 uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-rose-200">
+                        <span className="desktop-caption-large-medium text-rose-600 uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-rose-200">
                           Habis
                         </span>
                       </div>
@@ -568,28 +568,28 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                   {/* Content — matching screenshot standard */}
                   <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
                     <div>
-                      <h3 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
+                      <h3 className="desktop-paragraph-small-semibold text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
                         {product.title}
                       </h3>
-                      
+
                       <div className="pt-1">
-                        <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                        <p className="desktop-paragraph-medium-bold text-slate-900 leading-tight">
                           {product.price === 0 ? 'Gratis' : `Rp ${product.price.toLocaleString('id-ID')}`}
                         </p>
 
                         {discount > 0 && (
                           <div className="flex items-center gap-1.5 pt-0.5">
-                            <span className="text-[11px] text-slate-400 line-through">
+                            <span className="desktop-caption-large-regular text-slate-400 line-through">
                               Rp {originalPrice.toLocaleString('id-ID')}
                             </span>
-                            <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                            <span className="bg-[#E8F5E9] text-[#006E24] desktop-caption-large-medium px-1 py-0.2 rounded border border-[#C8E6C9]">
                               {discount}%
                             </span>
                           </div>
                         )}
 
                         {dist !== undefined && (
-                          <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[#006E24] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
+                          <span className="inline-flex items-center gap-1 mt-1.5 desktop-caption-large-medium text-[#006E24] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
                             📍 {dist.toFixed(1)} km
                           </span>
                         )}
@@ -597,17 +597,17 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     </div>
 
                     <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                        <span className="text-amber-500 font-bold">★ {rating}</span>
+                      <div className="flex items-center gap-1 desktop-caption-large-regular text-slate-500">
+                        <span className="text-amber-500">★ {rating}</span>
                         <span>•</span>
                         <span>{sold}+ terjual</span>
                       </div>
                       <div className="flex items-center justify-between gap-1">
-                        <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate flex-1">
-                          <span className="text-[#006E24] font-bold text-xs">✔</span>
-                          <span className="truncate font-medium text-slate-600">{product.merchant?.name || storeName}</span>
+                        <div className="flex items-center gap-1 desktop-caption-large-regular text-slate-500 truncate flex-1">
+                          <span className="text-[#006E24]">✔</span>
+                          <span className="truncate text-slate-600">{product.merchant?.name || storeName}</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded bg-[#006E24] hover:bg-[#005a1d] text-white text-[10px] font-bold flex items-center gap-0.5 shadow-2xs shrink-0">
+                        <span className="px-2 py-0.5 rounded bg-[#006E24] hover:bg-[#005a1d] text-white desktop-caption-large-medium flex items-center gap-0.5 shadow-2xs shrink-0">
                           + Keranjang
                         </span>
                       </div>
@@ -642,10 +642,10 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     setIsLoadingMore(false)
                   }, 300)
                 }}
-                className="px-6 py-2.5 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-200 shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+                className="px-6 py-2.5 bg-white hover:bg-slate-50 text-slate-800 desktop-caption-large-medium uppercase tracking-wider rounded-xl border border-slate-200 shadow-xs transition-all flex items-center gap-2 cursor-pointer"
               >
                 <span>{isLoadingMore ? 'Memuat Produk...' : 'Muat Lebih Banyak Produk'}</span>
-                <span className="text-[10px] text-slate-400 font-mono">({Math.min(visibleCount, filteredProducts.length)} / {filteredProducts.length})</span>
+                <span className="desktop-caption-large-regular text-slate-400">({Math.min(visibleCount, filteredProducts.length)} / {filteredProducts.length})</span>
               </button>
             </div>
           )}

@@ -59,22 +59,22 @@
   --color-primary-hover: var(--primary-hover);
   --color-inverse-primary: var(--inverse-primary);
 
-  --font-plus-jakarta: var(--font-poppins), "Poppins", sans-serif;
-  --font-sora: "Sora", sans-serif;
-  --font-inter: var(--font-inter), sans-serif;
-  --font-geist: var(--font-geist), sans-serif;
-  --font-poppins: var(--font-poppins), "Poppins", sans-serif;
+  --font-plus-jakarta: var(--font-manrope-base), "Manrope", sans-serif;
+  --font-sora: var(--font-manrope-base), "Manrope", sans-serif;
+  --font-inter: var(--font-manrope-base), "Manrope", sans-serif;
+  --font-geist: var(--font-manrope-base), "Manrope", sans-serif;
+  --font-poppins: var(--font-manrope-base), "Manrope", sans-serif;
 
   /* Stitch Fonts */
-  --font-display-lg: "Sora", sans-serif;
-  --font-label-caps: "Inter", sans-serif;
-  --font-heading-md: "Poppins", sans-serif;
-  --font-headline-xl: "Sora", sans-serif;
-  --font-headline-lg: "Sora", sans-serif;
-  --font-body-medium: "Inter", sans-serif;
-  --font-body-semibold: "Inter", sans-serif;
-  --font-body-base: "Inter", sans-serif;
-  --font-headline-xl-mobile: "Sora", sans-serif;
+  --font-display-lg: "Manrope", sans-serif;
+  --font-label-caps: "Manrope", sans-serif;
+  --font-heading-md: "Manrope", sans-serif;
+  --font-headline-xl: "Manrope", sans-serif;
+  --font-headline-lg: "Manrope", sans-serif;
+  --font-body-medium: "Manrope", sans-serif;
+  --font-body-semibold: "Manrope", sans-serif;
+  --font-body-base: "Manrope", sans-serif;
+  --font-headline-xl-mobile: "Manrope", sans-serif;
 
   /* Stitch Font Sizes */
   --text-display-lg: 36px;
@@ -162,6 +162,1010 @@
     background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite ease-in-out;
+  }
+
+  /* Text style scale (Manrope) */
+  .desktop-heading-h1-bold {
+    font-size: 40px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 48px;
+  }
+  .desktop-heading-h1-semibold {
+    font-size: 40px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 48px;
+  }
+  .desktop-heading-h2-bold {
+    font-size: 36px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 44px;
+  }
+  .desktop-heading-h2-semibold {
+    font-size: 36px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 44px;
+  }
+  .desktop-heading-h3-bold {
+    font-size: 32px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 40px;
+  }
+  .desktop-heading-h3-semibold {
+    font-size: 32px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 40px;
+  }
+  .desktop-heading-h4-bold {
+    font-size: 28px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 36px;
+  }
+  .desktop-heading-h4-semibold {
+    font-size: 28px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 36px;
+  }
+  .desktop-heading-h5-bold {
+    font-size: 24px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 32px;
+  }
+  .desktop-heading-h5-semibold {
+    font-size: 24px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 32px;
+  }
+  .desktop-heading-h6-bold {
+    font-size: 20px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-heading-h6-semibold {
+    font-size: 20px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-paragraph-large-bold {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-paragraph-large-semibold {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-paragraph-large-medium {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-paragraph-large-regular {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-paragraph-large-italic {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-paragraph-large-underline {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-paragraph-large-strikethrough {
+    font-size: 18px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .desktop-paragraph-medium-bold {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .desktop-paragraph-medium-semibold {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .desktop-paragraph-medium-medium {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .desktop-paragraph-medium-regular {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .desktop-paragraph-medium-italic {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .desktop-paragraph-medium-underline {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .desktop-paragraph-medium-strikethrough {
+    font-size: 16px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .desktop-paragraph-small-bold {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .desktop-paragraph-small-semibold {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .desktop-paragraph-small-medium {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .desktop-paragraph-small-regular {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .desktop-paragraph-small-italic {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .desktop-paragraph-small-underline {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .desktop-paragraph-small-strikethrough {
+    font-size: 14px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .desktop-caption-large-bold {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .desktop-caption-large-semibold {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .desktop-caption-large-medium {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .desktop-caption-large-regular {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .desktop-caption-large-italic {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .desktop-caption-large-underline {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .desktop-caption-large-strikethrough {
+    font-size: 12px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .desktop-caption-medium-bold {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .desktop-caption-medium-semibold {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .desktop-caption-medium-medium {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .desktop-caption-medium-regular {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .desktop-caption-medium-italic {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .desktop-caption-medium-underline {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .desktop-caption-medium-strikethrough {
+    font-size: 10px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-heading-h1-bold {
+    font-size: 36px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 44px;
+  }
+  .mobile-heading-h1-semibold {
+    font-size: 36px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 44px;
+  }
+  .mobile-heading-h1-bold-1 {
+    font-size: 36px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 44px;
+  }
+  .mobile-heading-h1-semibold-1 {
+    font-size: 36px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 44px;
+  }
+  .mobile-heading-h2-bold {
+    font-size: 32px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 40px;
+  }
+  .mobile-heading-h2-semibold {
+    font-size: 32px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 40px;
+  }
+  .mobile-heading-h2-bold-1 {
+    font-size: 32px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 40px;
+  }
+  .mobile-heading-h2-semibold-1 {
+    font-size: 32px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 40px;
+  }
+  .mobile-heading-h3-bold {
+    font-size: 28px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 36px;
+  }
+  .mobile-heading-h3-semibold {
+    font-size: 28px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 36px;
+  }
+  .mobile-heading-h3-bold-1 {
+    font-size: 28px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 36px;
+  }
+  .mobile-heading-h3-semibold-1 {
+    font-size: 28px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 36px;
+  }
+  .mobile-heading-h4-bold {
+    font-size: 24px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 32px;
+  }
+  .mobile-heading-h4-semibold {
+    font-size: 24px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 32px;
+  }
+  .mobile-heading-h4-bold-1 {
+    font-size: 24px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 32px;
+  }
+  .mobile-heading-h4-semibold-1 {
+    font-size: 24px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 32px;
+  }
+  .mobile-heading-h5-bold {
+    font-size: 20px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .mobile-heading-h5-semibold {
+    font-size: 20px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .mobile-heading-h5-bold-1 {
+    font-size: 20px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .mobile-heading-h5-semibold-1 {
+    font-size: 20px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .mobile-heading-h6-bold {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .mobile-heading-h6-semibold {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .mobile-heading-h6-bold-1 {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .mobile-heading-h6-semibold-1 {
+    font-size: 18px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 28px;
+  }
+  .mobile-paragraph-large-bold {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-semibold {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-medium {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-regular {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-italic {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-underline {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-strikethrough {
+    font-size: 16px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-bold-1 {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-semibold-1 {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-medium-1 {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-regular-1 {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-italic-1 {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-underline-1 {
+    font-size: 16px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-large-strikethrough-1 {
+    font-size: 16px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 24px;
+  }
+  .mobile-paragraph-medium-bold {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-semibold {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-medium {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-regular {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-italic {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-underline {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-strikethrough {
+    font-size: 14px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-bold-1 {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-semibold-1 {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-medium-1 {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-regular-1 {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-italic-1 {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-underline-1 {
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-medium-strikethrough-1 {
+    font-size: 14px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 20px;
+  }
+  .mobile-paragraph-small-bold {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-semibold {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-medium {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-regular {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-italic {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-underline {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-strikethrough {
+    font-size: 12px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-bold-1 {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-semibold-1 {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-medium-1 {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-regular-1 {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-italic-1 {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-underline-1 {
+    font-size: 12px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-paragraph-small-strikethrough-1 {
+    font-size: 12px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 18px;
+  }
+  .mobile-caption-large-bold {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-semibold {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-medium {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-regular {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-italic {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-underline {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-strikethrough {
+    font-size: 10px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-bold-1 {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-semibold-1 {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-medium-1 {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-regular-1 {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-italic-1 {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-underline-1 {
+    font-size: 10px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-large-strikethrough-1 {
+    font-size: 10px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-bold {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-semibold {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-medium {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-regular {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 12px;
+  }
+  .mobile-caption-medium-italic {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-underline {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-strikethrough {
+    font-size: 8px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-bold-1 {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-semibold-1 {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-medium-1 {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 500;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-regular-1 {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 12px;
+  }
+  .mobile-caption-medium-italic-1 {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-style: italic;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-underline-1 {
+    font-size: 8px;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
+  }
+  .mobile-caption-medium-strikethrough-1 {
+    font-size: 8px;
+    text-decoration: line-through;
+    font-family: "Manrope", sans-serif;
+    font-weight: 400;
+    letter-spacing: 0em;
+    line-height: 16px;
   }
 }
 
