@@ -1362,7 +1362,7 @@ export default function AdminDashboardClient({
           <div className={`h-[64px] border-b border-[#E5E7EB] flex items-center justify-between transition-all duration-300 ${isSidebarCollapsed ? 'px-3 justify-center' : 'px-5 gap-3'}`}>
             {!isSidebarCollapsed ? (
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-9 h-9 bg-[#2db24a] text-white rounded-lg flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                <div className="w-9 h-9 bg-primary text-white rounded-lg flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
                   S
                 </div>
                 <div className="flex flex-col justify-center min-w-max">
@@ -1371,7 +1371,7 @@ export default function AdminDashboardClient({
                 </div>
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-lg bg-[#2db24a] text-white flex items-center justify-center font-bold text-lg shadow-sm">
+              <div className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-lg shadow-sm">
                 S
               </div>
             )}
@@ -1558,7 +1558,7 @@ export default function AdminDashboardClient({
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 bg-[#eef8e9] px-3 py-1.5 rounded-full border border-[#2db24a]/20">
+            <div className="hidden sm:flex items-center gap-2 bg-[#eef8e9] px-3 py-1.5 rounded-full border border-primary/20">
               <span className="w-2 h-2 rounded-full bg-[#006e24] animate-pulse" />
               <span className="text-[11px] font-semibold text-[#006e24] tracking-wider uppercase">System Status: Active</span>
             </div>
@@ -1611,13 +1611,13 @@ export default function AdminDashboardClient({
                       </span>
                       <h3 className="font-semibold text-xs text-[#6B7280] mb-2 uppercase tracking-wider">TOTAL VOLUME JUAL BELI</h3>
                       <div className="flex items-baseline gap-3">
-                        <span className="font-sora text-3xl font-extrabold text-[#2db24a] tracking-tight">
+                        <span className="font-sora text-3xl font-extrabold text-primary tracking-tight">
                           Rp {totalVolume.toLocaleString('id-ID')}
                         </span>
                       </div>
                     </div>
                     <div className="mt-8 flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[#2db24a] animate-pulse" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                       <span className="text-xs font-semibold text-[#6B7280]">{orders.length} order sukses terverifikasi</span>
                     </div>
                   </div>
@@ -1701,7 +1701,7 @@ export default function AdminDashboardClient({
                             <span className="text-[#6B7280] font-medium text-[11px]">{count} item ({pct}%)</span>
                           </div>
                           <div className="w-full bg-[#f2f4f6] h-2 rounded-full overflow-hidden">
-                            <div className="bg-[#2db24a] h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
+                            <div className="bg-primary h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
                           </div>
                         </div>
                       )
@@ -1938,7 +1938,7 @@ export default function AdminDashboardClient({
                           <select
                             value={editUser.role}
                             onChange={e => setEditUser({ ...editUser, role: e.target.value })}
-                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                           >
                             <option value="ADMIN">ADMIN</option>
                             <option value="MERCHANT">MERCHANT</option>
@@ -1954,7 +1954,7 @@ export default function AdminDashboardClient({
                             type="number"
                             value={editUser.level}
                             onChange={e => setEditUser({ ...editUser, level: Number(e.target.value), xp: Number(e.target.value) * 100 })}
-                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                           />
                         </div>
                       </div>
@@ -1965,7 +1965,7 @@ export default function AdminDashboardClient({
                           <select
                             value={editUser.membershipLevel}
                             onChange={e => setEditUser({ ...editUser, membershipLevel: e.target.value })}
-                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                           >
                             <option value="Reseller">Reseller</option>
                             <option value="Agen">Agen</option>
@@ -1978,7 +1978,7 @@ export default function AdminDashboardClient({
                           <select
                             value={editUser.membershipAccess}
                             onChange={e => setEditUser({ ...editUser, membershipAccess: e.target.value })}
-                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
+                            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                           >
                             <option value="Gold">Gold</option>
                             <option value="Platinum">Platinum</option>
@@ -1992,7 +1992,7 @@ export default function AdminDashboardClient({
                         <select
                           value={editUser.indukCommunityId || ''}
                           onChange={e => setEditUser({ ...editUser, indukCommunityId: e.target.value || null })}
-                          className="w-full bg-emerald-50/50 border border-emerald-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
+                          className="w-full bg-emerald-50/50 border border-emerald-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                         >
                           <option value="">-- Tanpa Induk Komunitas --</option>
                           {communities.map((c: any) => (
@@ -2014,7 +2014,7 @@ export default function AdminDashboardClient({
                             <select
                               value={editUser.bootcampStatus || 'NONE'}
                               onChange={e => setEditUser({ ...editUser, bootcampStatus: e.target.value })}
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-[#2db24a] focus:ring-1 focus:ring-[#2db24a]"
+                              className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                             >
                               <option value="NONE">Tidak Terkualifikasi / Belum Aktif</option>
                               <option value="QUALIFIED">Lolos Kualifikasi (Tombol Aktif)</option>
@@ -2035,7 +2035,7 @@ export default function AdminDashboardClient({
                         <button
                           type="submit"
                           disabled={isPending}
-                          className="flex-1 py-2.5 bg-[#2db24a] hover:bg-[#259a3f] text-white font-bold rounded-xl uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+                          className="flex-1 py-2.5 bg-primary hover:bg-[#259a3f] text-white font-bold rounded-xl uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
@@ -2709,7 +2709,7 @@ export default function AdminDashboardClient({
                 </div>
                 <button
                   onClick={() => { resetCourseForm(); setCourseModal({ open: true, mode: 'add' }); }}
-                  className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold uppercase text-xs tracking-wider rounded-[var(--radius-brand)] transition-colors cursor-pointer shadow-md"
+                  className="px-4 py-2.5 bg-primary hover:bg-[#259a3f] text-white font-bold uppercase text-xs tracking-wider rounded-[var(--radius-brand)] transition-colors cursor-pointer shadow-md"
                 >
                   + Tambah Kelas Baru
                 </button>
@@ -2954,7 +2954,7 @@ export default function AdminDashboardClient({
                         <button
                           type="submit"
                           disabled={isPending || !!courseImageError}
-                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                          className="flex-1 py-2.5 bg-primary hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
@@ -3204,7 +3204,7 @@ export default function AdminDashboardClient({
                         <button
                           type="submit"
                           disabled={isPending || !!lessonVideoError}
-                          className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                          className="flex-1 py-2.5 bg-primary hover:bg-[#259a3f] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                           {isPending ? 'Menyimpan...' : 'Simpan'}
                         </button>
@@ -3352,7 +3352,7 @@ export default function AdminDashboardClient({
                                     onClick={() => handleToggleKycCommunity(comm)}
                                     className={`px-2.5 py-1 rounded text-[9px] font-extrabold uppercase border cursor-pointer transition-all shadow-2xs ${
                                       comm.isKycRequired
-                                        ? 'bg-emerald-100 text-[#0F5132] border-[#2DB24A]/40 hover:bg-emerald-200'
+                                        ? 'bg-emerald-100 text-[#0F5132] border-primary/40 hover:bg-emerald-200'
                                         : 'bg-gray-100 text-gray-500 border-gray-300 hover:bg-gray-200'
                                     }`}
                                     title="Klik untuk mengubah status syarat KYC"
@@ -3519,7 +3519,7 @@ export default function AdminDashboardClient({
                     return (
                       <div key={post.id} className="p-6 hover:bg-slate-50/50 transition-all">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0F5132]/20 to-[#2DB24A]/20 flex items-center justify-center font-bold text-[#0F5132] border border-[#0F5132]/30 text-xs">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#0F5132]/20 to-primary/20 flex items-center justify-center font-bold text-[#0F5132] border border-[#0F5132]/30 text-xs">
                             {author?.name?.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -3909,7 +3909,7 @@ export default function AdminDashboardClient({
                       </div>
                       <button
                         onClick={() => alert(`Unduhan Sertifikat untuk "${selectedCertUser.name}" berhasil diproses!`)}
-                        className="mt-6 px-6 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white text-xs font-bold uppercase tracking-widest rounded-[var(--radius-brand)] shadow-lg cursor-pointer transition-colors"
+                        className="mt-6 px-6 py-2.5 bg-primary hover:bg-[#259a3f] text-white text-xs font-bold uppercase tracking-widest rounded-[var(--radius-brand)] shadow-lg cursor-pointer transition-colors"
                       >
                         Cetak / Download PDF Sertifikat
                       </button>
@@ -5646,7 +5646,7 @@ export default function AdminDashboardClient({
 
                 {/* JUDUL MODAL - STICKY TOP */}
                 <div className="flex justify-between items-center border-b border-gray-100 pb-3 shrink-0">
-                  <h3 className="font-sora text-sm font-extrabold text-[#16A34A] uppercase tracking-wider">
+                  <h3 className="font-sora text-sm font-extrabold text-primary uppercase tracking-wider">
                     {communityModal.mode === 'add' ? 'Tambah Komunitas Induk Baru' : 'Edit Komunitas Induk'}
                   </h3>
                   <button
@@ -5665,8 +5665,8 @@ export default function AdminDashboardClient({
                     {/* BAGIAN 1: INFORMASI DASAR */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>
-                        <h4 className="text-[10px] font-extrabold text-[#16A34A] uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-primary"></span>
+                        <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
                           INFORMASI DASAR
                         </h4>
                       </div>
@@ -5682,7 +5682,7 @@ export default function AdminDashboardClient({
                             value={commForm.name}
                             onChange={e => setCommForm({ ...commForm, name: e.target.value })}
                             placeholder="e.g. Komunitas UMKM Batik Solo"
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs"
                           />
                         </div>
 
@@ -5694,7 +5694,7 @@ export default function AdminDashboardClient({
                             required
                             value={commForm.ketuaId}
                             onChange={e => setCommForm({ ...commForm, ketuaId: e.target.value })}
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs cursor-pointer"
                           >
                             <option value="">-- Pilih Ketua Komunitas --</option>
                             {users.map(u => (
@@ -5714,7 +5714,7 @@ export default function AdminDashboardClient({
                           <select
                             value={commForm.type}
                             onChange={e => setCommForm({ ...commForm, type: e.target.value, category: e.target.value ? commForm.category : '' })}
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs cursor-pointer"
                           >
                             <option value="">-- Pilih Tipe Komunitas --</option>
                             <option value="PERKUMPULAN">PERKUMPULAN</option>
@@ -5730,7 +5730,7 @@ export default function AdminDashboardClient({
                             disabled={!commForm.type}
                             value={commForm.category}
                             onChange={e => setCommForm({ ...commForm, category: e.target.value })}
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                           >
                             <option value="">-- Pilih Kategori --</option>
                             <option value="FREE">FREE</option>
@@ -5748,7 +5748,7 @@ export default function AdminDashboardClient({
                           value={commForm.description}
                           onChange={e => setCommForm({ ...commForm, description: e.target.value })}
                           placeholder="Tuliskan deskripsi visi dan tujuan komunitas..."
-                          className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                          className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs"
                         />
                       </div>
                     </div>
@@ -5756,8 +5756,8 @@ export default function AdminDashboardClient({
                     {/* BAGIAN 2: TEMPLATE HALAMAN */}
                     <div className="space-y-3 pt-2 border-t border-gray-100">
                       <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>
-                        <h4 className="text-[10px] font-extrabold text-[#16A34A] uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-primary"></span>
+                        <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
                           TEMPLATE HALAMAN
                         </h4>
                       </div>
@@ -5769,7 +5769,7 @@ export default function AdminDashboardClient({
                         <select
                           value={selectedTemplate}
                           onChange={e => setSelectedTemplate(e.target.value)}
-                          className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs font-semibold cursor-pointer"
+                          className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs font-semibold cursor-pointer"
                         >
                           <option value="Community">▼ Community</option>
                           <option value="Business">▼ Business</option>
@@ -5783,16 +5783,16 @@ export default function AdminDashboardClient({
                       <div className="p-3 bg-gray-50 border border-gray-200 rounded-[10px] shadow-2xs space-y-2">
                         <div className="flex justify-between items-center border-b border-gray-200/60 pb-1.5">
                           <span className="text-[9px] font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-                            <Sliders className="w-3 h-3 text-[#16A34A]" /> Preview Layout ({selectedTemplate})
+                            <Sliders className="w-3 h-3 text-primary" /> Preview Layout ({selectedTemplate})
                           </span>
-                          <span className="px-2 py-0.5 bg-[#E8F5E9] border border-[#16A34A]/30 text-[#16A34A] font-extrabold text-[8px] rounded uppercase">
+                          <span className="px-2 py-0.5 bg-[#E8F5E9] border border-primary/30 text-primary font-extrabold text-[8px] rounded uppercase">
                             Card Layout Kecil
                           </span>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
                           {[
-                            { title: 'Hero Banner', bg: 'bg-[#16A34A] text-white', icon: Sparkles },
+                            { title: 'Hero Banner', bg: 'bg-primary text-white', icon: Sparkles },
                             { title: 'Aktivitas Terbaru', bg: 'bg-white border border-gray-200 text-gray-800', icon: Activity },
                             { title: 'Diskusi', bg: 'bg-white border border-gray-200 text-gray-800', icon: MessageSquare },
                             { title: 'Event', bg: 'bg-white border border-gray-200 text-gray-800', icon: Calendar },
@@ -5812,26 +5812,26 @@ export default function AdminDashboardClient({
                       </div>
 
                       {/* MODUL BAWAAN & BUTTON SESUAIKAN MODUL */}
-                      <div className="p-3 bg-emerald-50/50 border border-[#16A34A]/20 rounded-[10px] flex items-center justify-between gap-3">
+                      <div className="p-3 bg-emerald-50/50 border border-primary/20 rounded-[10px] flex items-center justify-between gap-3">
                         <div className="space-y-1">
                           <span className="block text-[10px] font-extrabold text-gray-900 uppercase tracking-wider">
                             Modul Bawaan
                           </span>
                           <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-gray-700 font-semibold">
-                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Hero Banner</span>
-                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Aktivitas</span>
-                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Diskusi</span>
-                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Event</span>
-                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Produk Anggota</span>
-                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Galeri</span>
-                            <span className="flex items-center gap-0.5 text-[#16A34A]">✓ Anggota</span>
+                            <span className="flex items-center gap-0.5 text-primary">✓ Hero Banner</span>
+                            <span className="flex items-center gap-0.5 text-primary">✓ Aktivitas</span>
+                            <span className="flex items-center gap-0.5 text-primary">✓ Diskusi</span>
+                            <span className="flex items-center gap-0.5 text-primary">✓ Event</span>
+                            <span className="flex items-center gap-0.5 text-primary">✓ Produk Anggota</span>
+                            <span className="flex items-center gap-0.5 text-primary">✓ Galeri</span>
+                            <span className="flex items-center gap-0.5 text-primary">✓ Anggota</span>
                           </div>
                         </div>
 
                         <button
                           type="button"
                           onClick={() => setModuleSettingsOpen(true)}
-                          className="px-3 py-1.5 bg-white border border-[#16A34A] text-[#16A34A] hover:bg-[#16A34A] hover:text-white font-extrabold text-[11px] rounded-[8px] transition-all shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
+                          className="px-3 py-1.5 bg-white border border-primary text-primary hover:bg-primary hover:text-white font-extrabold text-[11px] rounded-[8px] transition-all shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
                         >
                           <Settings className="w-3 h-3" /> Sesuaikan Modul
                         </button>
@@ -5841,8 +5841,8 @@ export default function AdminDashboardClient({
                     {/* BAGIAN 3: LEGALITAS KOMUNITAS */}
                     <div className="space-y-3 pt-2 border-t border-gray-100">
                       <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>
-                        <h4 className="text-[10px] font-extrabold text-[#16A34A] uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-primary"></span>
+                        <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">
                           LEGALITAS KOMUNITAS
                         </h4>
                       </div>
@@ -5857,7 +5857,7 @@ export default function AdminDashboardClient({
                             value={commForm.aktaNotaris}
                             onChange={e => setCommForm({ ...commForm, aktaNotaris: e.target.value })}
                             placeholder="No. Akta Notaris"
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs"
                           />
                         </div>
                         <div>
@@ -5869,7 +5869,7 @@ export default function AdminDashboardClient({
                             value={commForm.nomorAhu}
                             onChange={e => setCommForm({ ...commForm, nomorAhu: e.target.value })}
                             placeholder="AHU-xxxxx"
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs"
                           />
                         </div>
                         <div>
@@ -5881,7 +5881,7 @@ export default function AdminDashboardClient({
                             value={commForm.nomorNpwp}
                             onChange={e => setCommForm({ ...commForm, nomorNpwp: e.target.value })}
                             placeholder="xx.xxx.xxx.x-xxx.xxx"
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs"
                           />
                         </div>
                         <div>
@@ -5893,7 +5893,7 @@ export default function AdminDashboardClient({
                             value={commForm.domisili}
                             onChange={e => setCommForm({ ...commForm, domisili: e.target.value })}
                             placeholder="Kota / Kabupaten"
-                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-[#16A34A] transition-all shadow-2xs"
+                            className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs"
                           />
                         </div>
                       </div>
@@ -5913,7 +5913,7 @@ export default function AdminDashboardClient({
                             type="checkbox"
                             checked={commForm.isVerified}
                             onChange={e => setCommForm({ ...commForm, isVerified: e.target.checked })}
-                            className="w-4 h-4 rounded accent-[#16A34A] cursor-pointer"
+                            className="w-4 h-4 rounded accent-primary cursor-pointer"
                           />
                           <span>Verified Komunitas</span>
                         </label>
@@ -5942,7 +5942,7 @@ export default function AdminDashboardClient({
                     <button
                       type="submit"
                       disabled={isPending}
-                      className="px-5 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white font-extrabold text-xs rounded-[8px] transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                      className="px-5 py-2 bg-primary hover:bg-[#15803D] text-white font-extrabold text-xs rounded-[8px] transition-all cursor-pointer shadow-sm disabled:opacity-50"
                     >
                       {isPending ? 'Menyimpan...' : 'Simpan Komunitas'}
                     </button>
@@ -5961,14 +5961,14 @@ export default function AdminDashboardClient({
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 font-sans">
               <div className="bg-white border border-gray-200 rounded-[12px] max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 text-gray-900">
                 <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                  <h3 className="font-sora text-sm font-extrabold text-[#16A34A] uppercase tracking-wider flex items-center gap-2">
+                  <h3 className="font-sora text-sm font-extrabold text-primary uppercase tracking-wider flex items-center gap-2">
                     <Settings className="w-4 h-4" /> Pengaturan Modul Halaman
                   </h3>
                   <button onClick={() => setModuleSettingsOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
                 </div>
 
                 <p className="text-xs text-gray-600 font-medium leading-relaxed">
-                  Pilih modul bawaan yang diizinkan aktif pada template <strong className="text-[#16A34A] font-bold">{selectedTemplate}</strong>.
+                  Pilih modul bawaan yang diizinkan aktif pada template <strong className="text-primary font-bold">{selectedTemplate}</strong>.
                 </p>
 
                 <div className="space-y-2.5 pt-1">
@@ -5987,7 +5987,7 @@ export default function AdminDashboardClient({
                         type="checkbox"
                         checked={!!modulesConfig[item.key]}
                         onChange={e => setModulesConfig({ ...modulesConfig, [item.key]: e.target.checked })}
-                        className="w-4 h-4 rounded accent-[#16A34A] cursor-pointer"
+                        className="w-4 h-4 rounded accent-primary cursor-pointer"
                       />
                     </label>
                   ))}
@@ -6007,7 +6007,7 @@ export default function AdminDashboardClient({
                       setModuleSettingsOpen(false)
                       alert('Konfigurasi modul berhasil disimpan!')
                     }}
-                    className="flex-1 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs rounded-[12px] transition-all cursor-pointer shadow-2xs"
+                    className="flex-1 py-2 bg-primary hover:bg-[#15803D] text-white font-bold text-xs rounded-[12px] transition-all cursor-pointer shadow-2xs"
                   >
                     Simpan Modul
                   </button>

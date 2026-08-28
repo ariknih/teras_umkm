@@ -219,7 +219,7 @@ export default function FloatingChat() {
             initial={{ opacity: 0, y: 15, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
-            className="absolute bottom-16 right-0 w-56 bg-surface/95 backdrop-blur-md border border-[#2DB24A]/35 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1 z-50"
+            className="absolute bottom-16 right-0 w-56 bg-surface/95 backdrop-blur-md border border-primary/35 rounded-2xl p-2.5 shadow-2xl flex flex-col gap-1 z-50"
           >
             {/* Livechat Option */}
             <button
@@ -231,9 +231,9 @@ export default function FloatingChat() {
                 setIsOpen(true)
                 setShowMenu(false)
               }}
-              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#2DB24A]/10 text-left transition-colors cursor-pointer w-full border-none bg-transparent group"
+              className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-primary/10 text-left transition-colors cursor-pointer w-full border-none bg-transparent group"
             >
-              <div className="w-7 h-7 rounded-lg bg-[#2DB24A]/10 text-[#2DB24A] flex items-center justify-center text-sm group-hover:bg-[#2DB24A] group-hover:text-white transition-colors shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-sm group-hover:bg-primary group-hover:text-white transition-colors shrink-0">
                 💬
               </div>
               <div className="leading-tight">
@@ -296,7 +296,7 @@ export default function FloatingChat() {
             setShowMenu(!showMenu)
           }
         }}
-        className="w-14 h-14 bg-gradient-to-tr from-[#2DB24A] to-[#259a3f] border border-[#2DB24A]/35 text-white rounded-full shadow-[0_8px_30px_rgba(198,169,107,0.3)] flex items-center justify-center relative cursor-pointer group"
+        className="w-14 h-14 bg-gradient-to-tr from-primary to-[#259a3f] border border-primary/35 text-white rounded-full shadow-[0_8px_30px_rgba(198,169,107,0.3)] flex items-center justify-center relative cursor-pointer group"
       >
         {isOpen || showMenu ? (
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
@@ -322,17 +322,17 @@ export default function FloatingChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="absolute bottom-18 right-0 w-[calc(100vw-32px)] sm:w-[420px] max-w-[420px] h-[520px] max-h-[80vh] sm:max-h-none bg-surface/95 backdrop-blur-xl border border-[#2DB24A]/30 rounded-2xl shadow-[0_12px_40px_rgba(115,92,0,0.12)] flex overflow-hidden"
+            className="absolute bottom-18 right-0 w-[calc(100vw-32px)] sm:w-[420px] max-w-[420px] h-[520px] max-h-[80vh] sm:max-h-none bg-surface/95 backdrop-blur-xl border border-primary/30 rounded-2xl shadow-[0_12px_40px_rgba(115,92,0,0.12)] flex overflow-hidden"
           >
             {/* Left sidebar: Conversations list */}
             <div 
-              className={`w-full sm:w-1/3 border-r border-[#2DB24A]/20 bg-surface-container-low/90 flex flex-col justify-between ${
+              className={`w-full sm:w-1/3 border-r border-primary/20 bg-surface-container-low/90 flex flex-col justify-between ${
                 activeMobileView === 'list' ? 'flex' : 'hidden sm:flex'
               }`}
             >
               <div className="flex-1 overflow-y-auto">
-                <div className="p-3 border-b border-border-subtle bg-[#2DB24A]/5">
-                  <h4 className="text-[10px] font-extrabold text-[#2DB24A] uppercase tracking-widest">Pesan Masuk</h4>
+                <div className="p-3 border-b border-border-subtle bg-primary/5">
+                  <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-widest">Pesan Masuk</h4>
                 </div>
                 
                 {/* CS Ticket row */}
@@ -343,10 +343,10 @@ export default function FloatingChat() {
                     setActiveMobileView('chat')
                   }}
                   className={`w-full p-2.5 flex items-center gap-2 border-b border-border-subtle text-left transition-colors ${
-                    isCsMode ? 'bg-[#2DB24A]/15' : 'hover:bg-surface-container-low'
+                    isCsMode ? 'bg-primary/15' : 'hover:bg-surface-container-low'
                   }`}
                 >
-                  <div className="w-7 h-7 rounded-full bg-[#2DB24A]/10 flex items-center justify-center text-[#2DB24A] font-bold text-xs">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                     🎧
                   </div>
                   <div className="flex-1 min-w-0">
@@ -372,17 +372,17 @@ export default function FloatingChat() {
                           setActiveMobileView('chat')
                         }}
                         className={`w-full p-2.5 flex items-center gap-2 border-b border-border-subtle text-left transition-colors ${
-                          isActive ? 'bg-[#2DB24A]/15' : 'hover:bg-surface-container-low'
+                          isActive ? 'bg-primary/15' : 'hover:bg-surface-container-low'
                         }`}
                       >
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#2DB24A] to-[#259a3f] flex items-center justify-center text-white font-bold text-[10px]">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-[#259a3f] flex items-center justify-center text-white font-bold text-[10px]">
                           {recipient?.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center">
                             <p className="text-[10px] font-bold text-foreground truncate">{recipient?.name}</p>
                             {conv.unreadCount > 0 && (
-                              <span className="w-3.5 h-3.5 bg-[#2DB24A] text-white font-extrabold text-[8px] rounded-full flex items-center justify-center">
+                              <span className="w-3.5 h-3.5 bg-primary text-white font-extrabold text-[8px] rounded-full flex items-center justify-center">
                                 {conv.unreadCount}
                               </span>
                             )}
@@ -400,7 +400,7 @@ export default function FloatingChat() {
                 <button
                   type="button"
                   onClick={handleOpenCsCreation}
-                  className="w-full py-1.5 bg-[#2DB24A]/10 hover:bg-[#2DB24A]/20 border border-[#2DB24A]/30 text-[#2DB24A] font-geist font-bold text-[9px] uppercase tracking-wider rounded-lg transition-colors"
+                  className="w-full py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary font-geist font-bold text-[9px] uppercase tracking-wider rounded-lg transition-colors"
                 >
                   🎧 Ajukan Tiket CS
                 </button>
@@ -424,7 +424,7 @@ export default function FloatingChat() {
                       setActiveRoom(null)
                       setIsCsMode(false)
                     }}
-                    className="sm:hidden p-1 text-[#2DB24A] hover:text-[#1e7d32] text-xs font-bold font-geist"
+                    className="sm:hidden p-1 text-primary hover:text-[#1e7d32] text-xs font-bold font-geist"
                   >
                     ← Kembali
                   </button>
@@ -442,7 +442,7 @@ export default function FloatingChat() {
                   </div>
                 </div>
                 {!isCsMode && activeRoom?.product && (
-                  <div className="text-[8px] bg-[#2DB24A]/10 border border-[#2DB24A]/20 px-2 py-0.5 rounded-md text-[#2DB24A] font-semibold truncate max-w-[100px]">
+                  <div className="text-[8px] bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md text-primary font-semibold truncate max-w-[100px]">
                     🎁 {activeRoom.product.title}
                   </div>
                 )}
@@ -460,7 +460,7 @@ export default function FloatingChat() {
                     <button
                       type="button"
                       onClick={handleOpenCsCreation}
-                      className="px-4 py-2 bg-[#2DB24A] hover:bg-[#1e7d32] text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all shadow-md shadow-[#2DB24A]/20"
+                      className="px-4 py-2 bg-primary hover:bg-[#1e7d32] text-white font-geist font-bold text-[10px] uppercase tracking-wider rounded-lg transition-all shadow-md shadow-primary/20"
                     >
                       Buka Tiket CS
                     </button>
@@ -478,7 +478,7 @@ export default function FloatingChat() {
                     if (isSystem) {
                       return (
                         <div key={m.id} className="flex justify-center my-2">
-                          <span className="bg-[#2DB24A]/10 border border-[#2DB24A]/20 text-[#2DB24A] text-[8px] font-medium px-2 py-1 rounded-md max-w-[85%] text-center leading-relaxed">
+                          <span className="bg-primary/10 border border-primary/20 text-primary text-[8px] font-medium px-2 py-1 rounded-md max-w-[85%] text-center leading-relaxed">
                             📢 {m.content}
                           </span>
                         </div>
@@ -493,7 +493,7 @@ export default function FloatingChat() {
                         <div
                           className={`max-w-[80%] rounded-2xl p-2.5 shadow-sm text-xs leading-relaxed ${
                             isMe
-                              ? 'bg-gradient-to-br from-[#2DB24A]/20 to-[#2DB24A]/10 border border-[#2DB24A]/30 text-foreground rounded-tr-none'
+                              ? 'bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 text-foreground rounded-tr-none'
                               : 'bg-surface border border-border-subtle text-foreground rounded-tl-none shadow-sm'
                           }`}
                         >
@@ -540,7 +540,7 @@ export default function FloatingChat() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="p-2 border border-border-subtle bg-surface-container hover:bg-surface-container-low hover:border-[#2DB24A]/30 rounded-lg hover:text-[#2DB24A] transition-colors text-xs flex items-center justify-center shrink-0 cursor-pointer"
+                      className="p-2 border border-border-subtle bg-surface-container hover:bg-surface-container-low hover:border-primary/30 rounded-lg hover:text-primary transition-colors text-xs flex items-center justify-center shrink-0 cursor-pointer"
                       title="Upload Image"
                     >
                       📷
@@ -557,11 +557,11 @@ export default function FloatingChat() {
                       value={newMessage}
                       onChange={e => setNewMessage(e.target.value)}
                       placeholder="Tulis pesan..."
-                      className="flex-1 px-3 py-1.5 bg-surface-container border border-border-subtle rounded-lg text-xs text-foreground placeholder:text-foreground/50 focus:outline-none focus:border-[#2DB24A]/40 font-medium"
+                      className="flex-1 px-3 py-1.5 bg-surface-container border border-border-subtle rounded-lg text-xs text-foreground placeholder:text-foreground/50 focus:outline-none focus:border-primary/40 font-medium"
                     />
                     <button
                       type="submit"
-                      className="px-4 py-1.5 bg-[#2DB24A] hover:bg-[#1e7d32] text-white font-geist font-bold text-xs uppercase rounded-lg transition-colors shrink-0 cursor-pointer shadow-md shadow-[#2DB24A]/10"
+                      className="px-4 py-1.5 bg-primary hover:bg-[#1e7d32] text-white font-geist font-bold text-xs uppercase rounded-lg transition-colors shrink-0 cursor-pointer shadow-md shadow-primary/10"
                     >
                       Kirim
                     </button>
@@ -581,10 +581,10 @@ export default function FloatingChat() {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-md bg-surface border border-[#2DB24A]/30 rounded-2xl p-6 shadow-[0_20px_50px_rgba(115,92,0,0.15)]"
+              className="w-full max-w-md bg-surface border border-primary/30 rounded-2xl p-6 shadow-[0_20px_50px_rgba(115,92,0,0.15)]"
             >
               <div className="flex items-center gap-3 mb-4 border-b border-border-subtle pb-3">
-                <span className="w-8 h-8 rounded-full bg-[#2DB24A]/10 flex items-center justify-center text-[#2DB24A] text-sm">
+                <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm">
                   🎧
                 </span>
                 <div>
@@ -602,7 +602,7 @@ export default function FloatingChat() {
                 value={ticketMessage}
                 onChange={(e) => setTicketMessage(e.target.value)}
                 placeholder="Tulis keluhan atau pertanyaan Anda secara lengkap di sini..."
-                className="w-full px-4 py-3 bg-surface-container border border-border-subtle focus:border-[#2DB24A]/40 rounded-lg text-xs text-foreground placeholder:text-foreground/50 outline-none resize-none mb-4 transition-all font-medium"
+                className="w-full px-4 py-3 bg-surface-container border border-border-subtle focus:border-primary/40 rounded-lg text-xs text-foreground placeholder:text-foreground/50 outline-none resize-none mb-4 transition-all font-medium"
               />
               
               <div className="flex justify-end gap-2 text-xs font-geist">
@@ -616,7 +616,7 @@ export default function FloatingChat() {
                 <button
                   type="button"
                   onClick={submitTicketModal}
-                  className="px-4 py-2 bg-[#2DB24A] hover:bg-[#1e7d32] text-white font-extrabold rounded-lg transition-colors cursor-pointer shadow-md shadow-[#2DB24A]/15"
+                  className="px-4 py-2 bg-primary hover:bg-[#1e7d32] text-white font-extrabold rounded-lg transition-colors cursor-pointer shadow-md shadow-primary/15"
                 >
                   Ajukan Tiket
                 </button>

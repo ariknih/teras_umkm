@@ -109,7 +109,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
                   href={cat.value ? `/market?category=${cat.value}${queryParam ? `&query=${encodeURIComponent(queryParam)}` : ''}` : "/market"}
                   className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-200 whitespace-nowrap ${
                     isActive
-                      ? "bg-[#2DB24A] text-white shadow-sm"
+                      ? "bg-primary text-white shadow-sm"
                       : "bg-white hover:bg-slate-50 text-gray-500 hover:text-gray-800 border border-gray-200"
                   }`}
                 >

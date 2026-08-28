@@ -796,7 +796,7 @@ export default function CartPage() {
     return (
       <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F8F9FA]">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-[#2DB24A] rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-slate-200 border-t-primary rounded-full animate-spin" />
           <span className="text-sm font-semibold text-slate-800 tracking-tight">
             Memuat keranjang belanjaan-mu
           </span>
@@ -809,7 +809,7 @@ export default function CartPage() {
     return (
       <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F5F7F9] py-12 px-6">
         <div className="relative z-10 w-full max-w-md text-center border border-slate-100 bg-white shadow-xl p-8 rounded-3xl">
-          <div className="w-16 h-16 bg-emerald-50 text-[#2DB24A] flex items-center justify-center mx-auto rounded-full mb-6 text-2xl font-bold">
+          <div className="w-16 h-16 bg-emerald-50 text-primary flex items-center justify-center mx-auto rounded-full mb-6 text-2xl font-bold">
             ✓
           </div>
           <h2 className="font-sora text-2xl font-bold text-slate-900 mb-3">Pesanan Berhasil dibuat!</h2>
@@ -817,13 +817,13 @@ export default function CartPage() {
             Pesanan Anda telah berhasil tercatat di sistem Saloka UMKM.
           </p>
           <div className="bg-slate-50 border border-slate-100 p-4 mb-8 rounded-2xl text-left text-xs text-slate-600 space-y-2">
-            <div className="flex justify-between"><span>Poin Diperoleh (1%):</span><span className="text-[#2DB24A] font-bold">+{Math.round(total * 0.01)} Poin</span></div>
-            <div className="flex justify-between"><span>Cashback Dompet (5%):</span><span className="text-[#2DB24A] font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span></div>
+            <div className="flex justify-between"><span>Poin Diperoleh (1%):</span><span className="text-primary font-bold">+{Math.round(total * 0.01)} Poin</span></div>
+            <div className="flex justify-between"><span>Cashback Dompet (5%):</span><span className="text-primary font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span></div>
           </div>
           <div className="flex flex-col gap-3">
             <Link
               href="/orders"
-              className="py-3.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl text-center transition-all shadow-md"
+              className="py-3.5 bg-primary hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl text-center transition-all shadow-md"
             >
               Lihat Detail Tagihan & Status Pesanan
             </Link>
@@ -875,7 +875,7 @@ export default function CartPage() {
           <div className="space-y-10">
             <div className="text-center py-16 px-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs max-w-lg mx-auto">
               <div className="w-20 h-20 bg-[#E8F7EC] rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-10 h-10 text-[#2DB24A]">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-10 h-10 text-primary">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
                 </svg>
               </div>
@@ -885,7 +885,7 @@ export default function CartPage() {
               </p>
               <Link
                 href="/market"
-                className="px-7 py-2.5 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-full transition-colors shadow-xs inline-block cursor-pointer"
+                className="px-7 py-2.5 bg-primary hover:bg-[#259a3f] text-white font-bold text-xs rounded-full transition-colors shadow-xs inline-block cursor-pointer"
               >
                 Cari produk lagi
               </Link>
@@ -895,14 +895,14 @@ export default function CartPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-sm text-slate-800">Rekomendasi produk untuk kamu</h3>
-                <Link href="/market" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
+                <Link href="/market" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
                   Pindah ke marketplace &gt;
                 </Link>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {products.slice(0, 8).map(prod => (
-                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-[#2DB24A] transition-all group">
+                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-primary transition-all group">
                     <div className="aspect-square bg-slate-50 relative overflow-hidden">
                       {prod.imageUrl ? (
                         <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -911,7 +911,7 @@ export default function CartPage() {
                       )}
                     </div>
                     <div className="p-3 space-y-1">
-                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
+                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-primary transition-colors">{prod.title}</h4>
                       <p className="font-bold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
                       <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
                         <span>⭐ 4.9</span>
@@ -1115,7 +1115,7 @@ export default function CartPage() {
                   <button
                     type="button"
                     onClick={() => setViewMode('checkout')}
-                    className="w-full py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl transition-colors shadow-xs text-center cursor-pointer"
+                    className="w-full py-3 bg-primary hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl transition-colors shadow-xs text-center cursor-pointer"
                   >
                     Beli ({cartDetails.length})
                   </button>
@@ -1124,7 +1124,7 @@ export default function CartPage() {
                     <p className="text-xs text-slate-700 font-medium">Masih ingin cari barang lainnya?</p>
                     <Link
                       href="/market"
-                      className="block w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] font-bold text-xs rounded-lg hover:bg-emerald-50 transition-colors text-center"
+                      className="block w-full py-2 bg-white border border-primary text-primary font-bold text-xs rounded-lg hover:bg-emerald-50 transition-colors text-center"
                     >
                       Lanjut belanja
                     </Link>
@@ -1138,14 +1138,14 @@ export default function CartPage() {
             <div className="space-y-4 pt-6">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-sm text-slate-800">Rekomendasi produk untuk kamu</h3>
-                <Link href="/market" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
+                <Link href="/market" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
                   Pindah ke marketplace &gt;
                 </Link>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {products.slice(0, 8).map(prod => (
-                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-[#2DB24A] transition-all group">
+                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-primary transition-all group">
                     <div className="aspect-square bg-slate-50 relative overflow-hidden">
                       {prod.imageUrl ? (
                         <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -1154,7 +1154,7 @@ export default function CartPage() {
                       )}
                     </div>
                     <div className="p-3 space-y-1">
-                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-[#2DB24A] transition-colors">{prod.title}</h4>
+                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-primary transition-colors">{prod.title}</h4>
                       <p className="font-bold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
                       <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
                         <span>⭐ 4.9</span>
@@ -1176,7 +1176,7 @@ export default function CartPage() {
                 <button
                   type="button"
                   onClick={() => setViewMode('cart')}
-                  className="text-xs text-[#2DB24A] font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  className="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
                 >
                   ← Kembali ke Keranjang Belanja
                 </button>
@@ -1196,13 +1196,13 @@ export default function CartPage() {
                     return activeAddress ? (
                       <div>
                         <div className="flex items-center justify-between gap-4 mb-1">
-                          <span className="px-2.5 py-0.5 bg-[#E8F7EC] text-[#2DB24A] font-bold text-[11px] rounded-full flex items-center gap-1">
+                          <span className="px-2.5 py-0.5 bg-[#E8F7EC] text-primary font-bold text-[11px] rounded-full flex items-center gap-1">
                             📍 {activeAddress.label || 'Alamat 1'}
                           </span>
                           <button
                             type="button"
                             onClick={() => setShowAddressModal(true)}
-                            className="text-slate-400 font-medium text-xs hover:text-[#2DB24A] underline cursor-pointer"
+                            className="text-slate-400 font-medium text-xs hover:text-primary underline cursor-pointer"
                           >
                             Ganti Alamat
                           </button>
@@ -1217,7 +1217,7 @@ export default function CartPage() {
                         <button
                           type="button"
                           onClick={() => setShowAddAddressModal(true)}
-                          className="text-[#2DB24A] hover:underline font-bold"
+                          className="text-primary hover:underline font-bold"
                         >
                           + Tambah Alamat
                         </button>
@@ -1321,7 +1321,7 @@ export default function CartPage() {
                                       }}
                                       className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between ${
                                         selectedCourier === opt.id
-                                          ? 'bg-[#F0FDF4] border-[#2DB24A] text-[#2DB24A] font-bold'
+                                          ? 'bg-[#F0FDF4] border-primary text-primary font-bold'
                                           : 'bg-white border-slate-200/60 text-slate-700 hover:bg-slate-50'
                                       }`}
                                     >
@@ -1337,14 +1337,14 @@ export default function CartPage() {
                             <div className="px-3.5 py-2.5 border-t border-slate-100 bg-white flex items-center justify-between text-[11px]">
                               <div className="flex items-center gap-1.5">
                                 <span className="text-slate-400">🛡️</span>
-                                <span className="text-[#2DB24A] font-medium underline cursor-pointer">Pakai Asuransi Pengiriman</span>
+                                <span className="text-primary font-medium underline cursor-pointer">Pakai Asuransi Pengiriman</span>
                                 <span className="text-slate-400">(Rp.2.000)</span>
                               </div>
                               <input
                                 type="checkbox"
                                 checked={useInsurance[mId] !== false}
                                 onChange={(e) => setUseInsurance(prev => ({ ...prev, [mId]: e.target.checked }))}
-                                className="w-4 h-4 text-[#2DB24A] accent-[#2DB24A] rounded cursor-pointer"
+                                className="w-4 h-4 text-primary accent-primary rounded cursor-pointer"
                               />
                             </div>
                           </div>
@@ -1404,7 +1404,7 @@ export default function CartPage() {
                           }}
                           className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
-                              ? 'bg-[#F0FDF4] border-[#2DB24A] text-[#2DB24A]'
+                              ? 'bg-[#F0FDF4] border-primary text-primary'
                               : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300'
                           }`}
                         >
@@ -1412,15 +1412,15 @@ export default function CartPage() {
                             <span>{opt.icon}</span>
                             <span>{opt.label}</span>
                           </div>
-                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#2DB24A]' : 'border-slate-300'}`}>
-                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#2DB24A]" />}
+                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-primary' : 'border-slate-300'}`}>
+                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  <button type="button" className="text-xs font-bold text-[#2DB24A] hover:underline pt-1">
+                  <button type="button" className="text-xs font-bold text-primary hover:underline pt-1">
                     Lihat semua metode pembayaran &gt;
                   </button>
                 </div>
@@ -1434,18 +1434,18 @@ export default function CartPage() {
                       onChange={e => setCouponCode(e.target.value.toUpperCase())}
                       placeholder="Masukkan kode promo"
                       className={`bg-slate-50 border rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none flex-1 ${
-                        couponSuccess ? 'border-[#2DB24A] bg-[#F0FDF4]' : couponError ? 'border-red-400 bg-red-50' : 'border-slate-200 focus:border-[#2DB24A]'
+                        couponSuccess ? 'border-primary bg-[#F0FDF4]' : couponError ? 'border-red-400 bg-red-50' : 'border-slate-200 focus:border-primary'
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => handleApplyCoupon(couponCode)}
-                      className="bg-[#2DB24A] hover:bg-[#259a3f] text-white text-xs font-bold rounded-lg px-4 py-2 transition-colors cursor-pointer shrink-0"
+                      className="bg-primary hover:bg-[#259a3f] text-white text-xs font-bold rounded-lg px-4 py-2 transition-colors cursor-pointer shrink-0"
                     >
                       Gunakan
                     </button>
                   </div>
-                  {couponSuccess && <p className="text-[11px] text-[#2DB24A] font-bold">✔ Kode promo berhasil dipasang!</p>}
+                  {couponSuccess && <p className="text-[11px] text-primary font-bold">✔ Kode promo berhasil dipasang!</p>}
                   {couponError && <p className="text-[11px] text-red-500 font-medium">Kode promo tidak ditemukan, pastikan kode promo sudah benar</p>}
                 </div>
 
@@ -1575,9 +1575,9 @@ export default function CartPage() {
                 >
                   {/* Radio selector dot */}
                   <div className="mt-1 shrink-0">
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedAddressId === addr.id ? 'border-[#2DB24A]' : 'border-slate-300'}`}>
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedAddressId === addr.id ? 'border-primary' : 'border-slate-300'}`}>
                       {selectedAddressId === addr.id && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#2DB24A]" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary" />
                       )}
                     </div>
                   </div>
@@ -1595,7 +1595,7 @@ export default function CartPage() {
                           e.stopPropagation();
                           selectAddress(addr);
                         }}
-                        className="text-[#2DB24A] hover:text-[#0F5132] hover:underline text-xs"
+                        className="text-primary hover:text-[#0F5132] hover:underline text-xs"
                       >
                         Ubah
                       </button>
@@ -1604,7 +1604,7 @@ export default function CartPage() {
                       {addr.addressText}
                     </p>
                     <div className="flex gap-1.5">
-                      <span className="px-1.5 py-0.5 border border-[#2DB24A] text-[#2DB24A] text-[9px] font-semibold rounded uppercase scale-90 origin-left">
+                      <span className="px-1.5 py-0.5 border border-primary text-primary text-[9px] font-semibold rounded uppercase scale-90 origin-left">
                         {addr.label}
                       </span>
                     </div>
@@ -1617,7 +1617,7 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={() => setShowAddAddressModal(true)}
-                className="w-full h-11 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 + Tambah Alamat Baru
               </button>
@@ -1650,7 +1650,7 @@ export default function CartPage() {
                     value={formName}
                     onChange={e => setFormName(e.target.value)}
                     placeholder="Nama Lengkap"
-                    className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#2DB24A] bg-[#FDFDFD]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
                   />
                 </div>
                 <div>
@@ -1660,7 +1660,7 @@ export default function CartPage() {
                     value={formPhone}
                     onChange={e => setFormPhone(e.target.value)}
                     placeholder="Nomor Telepon"
-                    className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#2DB24A] bg-[#FDFDFD]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
                   />
                 </div>
               </div>
@@ -1672,7 +1672,7 @@ export default function CartPage() {
                   value={formProvinceCity}
                   onChange={e => setFormProvinceCity(e.target.value)}
                   placeholder="Provinsi, Kota, Kecamatan, Kode Pos"
-                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#2DB24A] bg-[#FDFDFD]"
+                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
                 />
               </div>
 
@@ -1683,7 +1683,7 @@ export default function CartPage() {
                   value={formStreetName}
                   onChange={e => setFormStreetName(e.target.value)}
                   placeholder="Nama Jalan, Gedung, No. Rumah"
-                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#2DB24A] bg-[#FDFDFD]"
+                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
                 />
               </div>
 
@@ -1694,7 +1694,7 @@ export default function CartPage() {
                   value={formDetails}
                   onChange={e => setFormDetails(e.target.value)}
                   placeholder="Detail Lainnya (Cth: Blok / Unit No., Patokan)"
-                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#2DB24A] bg-[#FDFDFD]"
+                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
                 />
               </div>
 
@@ -1709,12 +1709,12 @@ export default function CartPage() {
                     onChange={e => setAddressSearchQuery(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleGeocodeSearch() }}
                     placeholder="Cari kelurahan/kecamatan/jalan untuk dipin..."
-                    className="flex-grow h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#2DB24A]"
+                    className="flex-grow h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary"
                   />
                   <button
                     type="button"
                     onClick={handleGeocodeSearch}
-                    className="px-4 h-10 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-bold rounded cursor-pointer"
+                    className="px-4 h-10 bg-primary hover:bg-primary/90 text-white font-bold rounded cursor-pointer"
                   >
                     Cari Pin
                   </button>
@@ -1751,7 +1751,7 @@ export default function CartPage() {
                   <button
                     type="button"
                     onClick={handleRequestGps}
-                    className="absolute top-2 right-2 bg-white/95 border border-slate-200 text-[#2DB24A] hover:bg-slate-50 px-2.5 py-1 text-[10px] font-bold rounded shadow-sm flex items-center gap-1 cursor-pointer z-10"
+                    className="absolute top-2 right-2 bg-white/95 border border-slate-200 text-primary hover:bg-slate-50 px-2.5 py-1 text-[10px] font-bold rounded shadow-sm flex items-center gap-1 cursor-pointer z-10"
                   >
                     📍 GPS Saya
                   </button>
@@ -1768,7 +1768,7 @@ export default function CartPage() {
                       onClick={() => setFormLabel(type as any)}
                       className={`h-9 px-4 border text-xs font-bold rounded transition-colors ${
                         formLabel === type
-                          ? 'border-[#2DB24A] text-[#2DB24A] bg-[#2DB24A]/5'
+                          ? 'border-primary text-primary bg-primary/5'
                           : 'border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer'
                       }`}
                     >
@@ -1790,7 +1790,7 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={createNewAddress}
-                className="h-10 px-6 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-bold uppercase tracking-wider rounded shadow-sm cursor-pointer"
+                className="h-10 px-6 bg-primary hover:bg-primary/90 text-white font-bold uppercase tracking-wider rounded shadow-sm cursor-pointer"
               >
                 OK
               </button>

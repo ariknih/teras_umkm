@@ -270,7 +270,7 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
                   style={{ textDecoration: 'none', color: 'inherit' }}
                   className="group"
                 >
-                  <div className="h-full border border-neutral-200/80 rounded-2xl overflow-hidden bg-white hover:border-[#2DB24A]/40 transition-all duration-300 shadow-sm hover:shadow-md flex flex-col justify-between">
+                  <div className="h-full border border-neutral-200/80 rounded-2xl overflow-hidden bg-white hover:border-primary/40 transition-all duration-300 shadow-sm hover:shadow-md flex flex-col justify-between">
                     <div style={{ aspectRatio: '1/1', background: '#F3F4F6', overflow: 'hidden', position: 'relative' }}>
                       {prod.imageUrl ? (
                         <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -280,7 +280,7 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
                     </div>
                     <div style={{ padding: '14px 16px' }} className="flex-grow flex flex-col justify-between">
                       <div>
-                        <span className="text-[8px] font-bold text-[#2DB24A] uppercase tracking-wider bg-[#2DB24A]/10 px-2 py-0.5 rounded-full">{prod.category || 'Toko'}</span>
+                        <span className="text-[8px] font-bold text-primary uppercase tracking-wider bg-primary/10 px-2 py-0.5 rounded-full">{prod.category || 'Toko'}</span>
                         <p className="margin: 4px 0 0 font-bold text-sm text-[#111111] line-clamp-2 mt-1">{prod.title}</p>
                       </div>
                       <div className="mt-4">
@@ -312,7 +312,7 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
           {(c.items || []).map((item: string, i: number) => (
             <li key={i} className="flex gap-3 text-base" style={{ color: s.color || '#374151', alignItems: 'flex-start' }}>
-              <span className="w-5 h-5 rounded-full bg-[#2DB24A]/10 text-[#2DB24A] flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Check className="w-3.5 h-3.5 stroke-[3]" />
               </span>
               <span>{item}</span>
@@ -392,7 +392,7 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
             { v: timerValues.seconds, l: 'DETIK' }
           ].map((item, i) => (
             <div key={i} className="text-center">
-              <div className="bg-[#111111] text-[#2DB24A] rounded-xl px-4 py-3 text-2xl font-black min-w-[56px] shadow">{item.v}</div>
+              <div className="bg-[#111111] text-primary rounded-xl px-4 py-3 text-2xl font-black min-w-[56px] shadow">{item.v}</div>
               <div className="text-[10px] text-neutral-400 font-bold mt-2 letter-spacing-wide">{item.l}</div>
             </div>
           ))}
@@ -404,7 +404,7 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
         {(c.plans || []).map((plan: any, i: number) => (
           <div key={i} style={{ flex: '1 1 240px', maxWidth: '360px', border: `2px solid ${plan.highlighted ? '#2DB24A' : '#E5E7EB'}`, borderRadius: 20, padding: 24, background: plan.highlighted ? '#F0FFF4' : '#fff' }} className="shadow-sm relative overflow-hidden">
             {plan.highlighted && (
-              <span className="absolute top-3 right-3 bg-[#2DB24A] text-white px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">Terpopuler</span>
+              <span className="absolute top-3 right-3 bg-primary text-white px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">Terpopuler</span>
             )}
             <p style={{ fontWeight: 800, fontSize: 18, margin: '0 0 8px', color: '#111111' }}>{plan.name}</p>
             <p style={{ margin: '0 0 20px' }}><span style={{ fontSize: 32, fontWeight: 800, color: '#2DB24A' }}>Rp {plan.price}</span><span style={{ color: '#9CA3AF', fontSize: 14 }}>{plan.period}</span></p>
@@ -422,14 +422,14 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
     )
     case 'visitor_counter': return (
       <div style={{ ...p, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#374151', fontSize: 14 }}>
-        <Users className="w-5 h-5 text-[#2DB24A]" />
-        <span className="text-gray-600">Ada <strong className="text-[#2DB24A] font-extrabold">{c.count || 1247}</strong> {c.label || 'orang telah melihat halaman ini'}</span>
+        <Users className="w-5 h-5 text-primary" />
+        <span className="text-gray-600">Ada <strong className="text-primary font-extrabold">{c.count || 1247}</strong> {c.label || 'orang telah melihat halaman ini'}</span>
       </div>
     )
     case 'sold_counter': return (
       <div style={{ ...p, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#374151', fontSize: 14 }}>
         <span className="text-lg">🛒</span>
-        <span className="text-gray-600">Sudah <strong className="text-[#2DB24A] font-extrabold">{c.count || 342}</strong> {c.label || 'terjual hari ini'}</span>
+        <span className="text-gray-600">Sudah <strong className="text-primary font-extrabold">{c.count || 342}</strong> {c.label || 'terjual hari ini'}</span>
       </div>
     )
     case 'sales_notification': return (
@@ -446,7 +446,7 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
         <span style={{ fontWeight: 800, fontSize: 20, color: '#2DB24A', fontFamily: 'Poppins, sans-serif' }} className="tracking-tight">{c.logoText || 'Brand'}</span>
         <div style={{ display: 'flex', gap: 20 }}>
           {(c.links || []).map((l: any, i: number) => (
-            <a key={i} href={l.url || '#'} className="hover:text-[#2DB24A] transition-colors" style={{ color: s.color || '#374151', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+            <a key={i} href={l.url || '#'} className="hover:text-primary transition-colors" style={{ color: s.color || '#374151', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
               {l.label}
             </a>
           ))}
@@ -490,11 +490,11 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
                   type={f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text'}
                   required={f.required}
                   placeholder={f.placeholder} 
-                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 text-[14px] bg-neutral-50 focus:outline-none focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A]/20 transition-all" 
+                  className="w-full border border-neutral-200 rounded-xl px-4 py-2.5 text-[14px] bg-neutral-50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all" 
                 />
               </div>
             ))}
-            <button type="submit" className="w-full py-3 bg-[#2DB24A] hover:bg-[#259b3f] text-white rounded-xl font-bold text-base transition-colors mt-2">{c.submitLabel || 'Kirim Sekarang'}</button>
+            <button type="submit" className="w-full py-3 bg-primary hover:bg-[#259b3f] text-white rounded-xl font-bold text-base transition-colors mt-2">{c.submitLabel || 'Kirim Sekarang'}</button>
           </form>
         )}
       </div>
@@ -531,7 +531,7 @@ function PublicRenderComp({ comp }: { comp: BuilderComponent }) {
             <p className="text-sm text-gray-600">{c.content}</p>
             <button 
               onClick={() => setPopupVisible(false)}
-              className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#259b3f] text-white font-bold rounded-xl text-sm"
+              className="px-6 py-2.5 bg-primary hover:bg-[#259b3f] text-white font-bold rounded-xl text-sm"
             >
               {c.buttonLabel || 'Ambil Sekarang'}
             </button>

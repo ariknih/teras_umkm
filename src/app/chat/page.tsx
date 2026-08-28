@@ -184,7 +184,7 @@ function ChatClient() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#2DB24A] animate-spin mb-3" />
+        <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Memuat Chat...</span>
       </div>
     )
@@ -201,7 +201,7 @@ function ChatClient() {
               <h1 className="font-sora font-extrabold text-slate-800 text-base flex items-center gap-2">
                 <span>💬</span> Hubungi Penjual
               </h1>
-              <Link href="/market" className="text-[10px] text-[#2DB24A] hover:underline font-bold uppercase tracking-wider flex items-center gap-1">
+              <Link href="/market" className="text-[10px] text-primary hover:underline font-bold uppercase tracking-wider flex items-center gap-1">
                 <ArrowLeft size={10} /> Kembali Belanja
               </Link>
             </div>
@@ -210,7 +210,7 @@ function ChatClient() {
               placeholder="Cari toko atau pembeli..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2DB24A]"
+              className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-primary"
             />
           </div>
 
@@ -235,9 +235,9 @@ function ChatClient() {
                       setActiveRoom(conv)
                       await markChatAsReadAction(conv.id)
                     }}
-                    className={`w-full p-4 flex gap-3 text-left transition-colors items-center hover:bg-slate-50 ${isSelected ? 'bg-slate-50/80 border-l-4 border-l-[#2DB24A]' : ''}`}
+                    className={`w-full p-4 flex gap-3 text-left transition-colors items-center hover:bg-slate-50 ${isSelected ? 'bg-slate-50/80 border-l-4 border-l-primary' : ''}`}
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2DB24A] to-[#0F5132] text-white font-extrabold flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#0F5132] text-white font-extrabold flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden">
                       {recipient?.image ? (
                         <img src={recipient.image} alt={recipient.name} className="w-full h-full object-cover" />
                       ) : (
@@ -280,7 +280,7 @@ function ChatClient() {
                 return (
                   <div className="p-4 border-b border-slate-200 bg-white flex justify-between items-center shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[#2DB24A] text-white font-extrabold flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                      <div className="w-9 h-9 rounded-full bg-primary text-white font-extrabold flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                         {recipient?.image ? (
                           <img src={recipient.image} alt={recipient.name} className="w-full h-full object-cover" />
                         ) : (
@@ -300,7 +300,7 @@ function ChatClient() {
               <div ref={scrollRef} className="flex-1 p-5 overflow-y-auto space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center py-20 text-slate-400 space-y-2">
-                    <Sparkles className="w-6 h-6 mx-auto text-[#2DB24A] opacity-60" />
+                    <Sparkles className="w-6 h-6 mx-auto text-primary opacity-60" />
                     <p className="text-[11px] font-bold text-slate-600">Mulai Obrolan Baru</p>
                     <p className="text-[10px] text-slate-400 leading-normal max-w-xs mx-auto">Kirim pesan ke toko untuk menanyakan ketersediaan produk atau proses pengiriman barang.</p>
                   </div>
@@ -314,7 +314,7 @@ function ChatClient() {
                         <div className={`max-w-[70%] space-y-1.5`}>
                           <div className={`p-3.5 rounded-2xl shadow-sm text-xs leading-relaxed ${
                             isMe 
-                              ? 'bg-[#2DB24A] text-white rounded-tr-none' 
+                              ? 'bg-primary text-white rounded-tr-none' 
                               : 'bg-white border border-slate-200/60 text-slate-800 rounded-tl-none'
                           }`}>
                             {msg.imageUrl && (
@@ -365,7 +365,7 @@ function ChatClient() {
                     title="Kirim Gambar"
                   >
                     {uploadingImage ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-[#2DB24A]" />
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
                     ) : (
                       <ImageIcon size={18} />
                     )}
@@ -385,13 +385,13 @@ function ChatClient() {
                         setNewMessage(val)
                       }
                     }}
-                    className="flex-grow h-10 px-4 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#2DB24A] bg-slate-50/50"
+                    className="flex-grow h-10 px-4 border border-slate-200 rounded-lg text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-primary bg-slate-50/50"
                   />
 
                   <button
                     type="submit"
                     disabled={!newMessage.trim() && !uploadImage}
-                    className="h-10 w-10 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white rounded-lg transition-colors flex items-center justify-center shadow disabled:opacity-50 cursor-pointer"
+                    className="h-10 w-10 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors flex items-center justify-center shadow disabled:opacity-50 cursor-pointer"
                   >
                     <Send size={16} />
                   </button>
@@ -400,7 +400,7 @@ function ChatClient() {
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-slate-50/30">
-              <div className="w-16 h-16 rounded-full bg-[#EAF5ED] text-[#2DB24A] flex items-center justify-center mb-4 border border-emerald-100">
+              <div className="w-16 h-16 rounded-full bg-[#EAF5ED] text-primary flex items-center justify-center mb-4 border border-emerald-100">
                 <MessageSquare className="w-8 h-8" />
               </div>
               <h2 className="font-sora text-sm font-bold text-slate-800 mb-1">Mulai Obrolan Real-Time</h2>
@@ -420,7 +420,7 @@ export default function ChatPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[#2DB24A] animate-spin mb-3" />
+        <Loader2 className="w-8 h-8 text-primary animate-spin mb-3" />
         <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Memuat Chat...</span>
       </div>
     }>

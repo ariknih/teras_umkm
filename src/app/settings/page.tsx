@@ -467,7 +467,7 @@ export default function SettingsPage() {
                       }
                       goeyToast.success(`Status diperbarui: ${d.status}`)
                     }}
-                    className="w-full sm:w-auto px-6 py-4 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all cursor-pointer border-none"
+                    className="w-full sm:w-auto px-6 py-4 bg-primary hover:bg-[#259a3f] text-white font-bold text-sm rounded-[var(--radius-brand)] flex items-center gap-2 justify-center transition-all cursor-pointer border-none"
                   >
                     🔄 Refresh Status Verifikasi
                   </button>
@@ -687,7 +687,7 @@ export default function SettingsPage() {
                 <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)] bg-surface-container/25">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-bold text-foreground">WhatsApp Gateway API Token (Fonnte / Kirimi)</label>
-                    <span className="px-2 py-0.5 bg-emerald-500/10 text-[#2DB24A] text-[9px] font-bold uppercase tracking-wider rounded">Lite / Premium</span>
+                    <span className="px-2 py-0.5 bg-emerald-500/10 text-primary text-[9px] font-bold uppercase tracking-wider rounded">Lite / Premium</span>
                   </div>
                   <input
                     type="password"
@@ -831,7 +831,7 @@ export default function SettingsPage() {
           <div className="mt-10 pt-6 border-t border-border-subtle flex items-center justify-between">
             <div className="flex flex-col gap-1">
               {saved && (
-                <span className="text-xs font-bold text-[#2DB24A] flex items-center gap-2 animate-in fade-in">
+                <span className="text-xs font-bold text-primary flex items-center gap-2 animate-in fade-in">
                   <CheckCircle2 size={16} />
                   Pengaturan berhasil disimpan!
                 </span>
@@ -846,7 +846,7 @@ export default function SettingsPage() {
             <button 
               onClick={handleSave}
               disabled={saving}
-              className="px-8 py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-full text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-3 bg-primary hover:bg-[#259a3f] text-white font-bold rounded-full text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
             </button>

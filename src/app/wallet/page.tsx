@@ -346,7 +346,7 @@ export default function WalletPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 pb-6 border-b border-[#E5E7EB]">
           <div>
             <h1 className="text-3xl font-bold text-[#0F5132] mb-1">
-              Buku Ledger <span className="text-[#2DB24A]">Keuangan.</span>
+              Buku Ledger <span className="text-primary">Keuangan.</span>
             </h1>
             <p className="text-xs text-text-secondary">
               Kelola saldo, deposit payment gateway, dan tarik dana ke berbagai bank & e-wallet.
@@ -367,9 +367,9 @@ export default function WalletPage() {
         </div>
 
         {/* Level Progression Banner */}
-        <div className="mb-10 border border-[#2DB24A]/20 bg-[#EAF5ED]/50 p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="mb-10 border border-primary/20 bg-[#EAF5ED]/50 p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-[#EAF5ED] border-2 border-[#2DB24A] flex items-center justify-center text-[#0F5132] font-bold text-xl">
+            <div className="w-14 h-14 rounded-full bg-[#EAF5ED] border-2 border-primary flex items-center justify-center text-[#0F5132] font-bold text-xl">
               {currentLevel}
             </div>
             <div>
@@ -385,11 +385,11 @@ export default function WalletPage() {
           <div className="w-full md:w-72">
             <div className="flex justify-between text-[10px] font-semibold text-[#6B7280] mb-1">
               <span>Progress XP</span>
-              <span className="text-[#2DB24A]">{xpInCurrentLevel} / {nextLevelXp} XP</span>
+              <span className="text-primary">{xpInCurrentLevel} / {nextLevelXp} XP</span>
             </div>
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden border border-slate-100">
               <div 
-                className="h-full bg-[#2DB24A] rounded-full transition-all duration-500" 
+                className="h-full bg-primary rounded-full transition-all duration-500" 
                 style={{ width: `${(xpInCurrentLevel / nextLevelXp) * 100}%` }}
               />
             </div>
@@ -418,7 +418,7 @@ export default function WalletPage() {
                 <span className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-4">
                   Total Saldo Tersedia
                 </span>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-[#2DB24A]">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-primary">
                   Rp {(wallet?.balance ?? 0).toLocaleString('id-ID')}
                 </h2>
               </div>
@@ -448,13 +448,13 @@ export default function WalletPage() {
                     value={depositAmount}
                     onChange={(e) => setDepositAmount(e.target.value)}
                     placeholder="Minimal Rp 10.000"
-                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-[#2DB24A]/50 transition-colors"
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-primary/50 transition-colors"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isDepositLoading}
-                  className="w-full h-11 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                 >
                   {isDepositLoading ? 'Menghubungkan Midtrans...' : 'Isi Saldo Sekarang'}
                 </button>
@@ -479,7 +479,7 @@ export default function WalletPage() {
                     <select
                       value={withdrawMethod}
                       onChange={(e) => setWithdrawMethod(e.target.value)}
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] focus:outline-none focus:border-[#2DB24A]/50 cursor-pointer"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] focus:outline-none focus:border-primary/50 cursor-pointer"
                     >
                       <optgroup label="Bank Transfer">
                         <option value="BCA">BCA (Bank Central Asia)</option>
@@ -505,7 +505,7 @@ export default function WalletPage() {
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
                       placeholder="100000"
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-[#2DB24A]/50 transition-colors"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                   </div>
                 </div>
@@ -521,7 +521,7 @@ export default function WalletPage() {
                       value={accountNumber}
                       onChange={(e) => setAccountNumber(e.target.value)}
                       placeholder="Masukkan nomor tujuan transfer"
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-[#2DB24A]/50 transition-colors"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                   </div>
                   <div>
@@ -534,7 +534,7 @@ export default function WalletPage() {
                       value={accountName}
                       onChange={(e) => setAccountName(e.target.value)}
                       placeholder="Nama lengkap pemilik"
-                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-[#2DB24A]/50 transition-colors"
+                      className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-primary/50 transition-colors"
                     />
                   </div>
                 </div>
@@ -542,7 +542,7 @@ export default function WalletPage() {
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="w-full h-11 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                 >
                   {isPending ? 'Mengaudit Transaksi...' : 'Tarik Saldo Rekening'}
                 </button>
@@ -570,7 +570,7 @@ export default function WalletPage() {
                 value={manualOrderId || pendingOrderId || ''}
                 onChange={(e) => setManualOrderId(e.target.value)}
                 placeholder="Masukkan Order ID (dep-user-...)"
-                className="flex-grow h-11 px-4 bg-white border border-slate-200 rounded text-xs text-[#111111] focus:outline-none focus:border-[#2DB24A]/50"
+                className="flex-grow h-11 px-4 bg-white border border-slate-200 rounded text-xs text-[#111111] focus:outline-none focus:border-primary/50"
               />
               <button
                 type="button"
@@ -645,7 +645,7 @@ export default function WalletPage() {
                           </span>
                         </td>
                         <td className="p-4 text-[#111111] font-medium">{tx.description}</td>
-                        <td className={`p-4 text-right font-bold text-sm ${isDebit ? 'text-red-600' : 'text-[#2DB24A]'}`}>
+                        <td className={`p-4 text-right font-bold text-sm ${isDebit ? 'text-red-600' : 'text-primary'}`}>
                           {isDebit ? '-' : '+'} Rp {tx.amount.toLocaleString('id-ID')}
                         </td>
                       </tr>

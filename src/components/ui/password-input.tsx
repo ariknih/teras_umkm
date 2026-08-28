@@ -50,7 +50,7 @@ export function PasswordInput({
 
   const getStrengthColor = (score: number) => {
     if (score === 0) return "bg-slate-200";
-    return "bg-[#2DB24A]";
+    return "bg-primary";
   };
 
   return (
@@ -63,7 +63,7 @@ export function PasswordInput({
       <div className="relative">
         <Input
           id={id}
-          className="pe-10 pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#2DB24A] text-xs text-slate-800 placeholder:text-slate-400"
+          className="pe-10 pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary text-xs text-slate-800 placeholder:text-slate-400"
           placeholder="••••••••"
           type={isVisible ? "text" : "password"}
           value={value}
@@ -105,7 +105,7 @@ export function PasswordInput({
             {strength.map((req, index) => (
               <div key={index} className="flex items-center gap-1.5 whitespace-nowrap">
                 {req.met ? (
-                  <span className="w-4 h-4 rounded-full bg-[#2DB24A] text-white flex items-center justify-center shrink-0">
+                  <span className="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center shrink-0">
                     <Check size={10} strokeWidth={3} />
                   </span>
                 ) : (

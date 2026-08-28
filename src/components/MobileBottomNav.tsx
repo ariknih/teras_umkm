@@ -59,14 +59,14 @@ export default function MobileBottomNav({ isLoggedIn, user }: { isLoggedIn?: boo
               href={item.href}
               className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-150 ${
                 item.isActive
-                  ? 'text-[#2DB24A] font-extrabold scale-105'
+                  ? 'text-primary font-extrabold scale-105'
                   : 'text-slate-500 hover:text-slate-800 font-medium'
               }`}
             >
               <div className="relative">
                 <Icon size={20} strokeWidth={item.isActive ? 2.5 : 2} />
                 {item.isActive && (
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#2DB24A]" />
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
                 )}
               </div>
               <span className="text-[10px] tracking-tight mt-0.5">{item.label}</span>

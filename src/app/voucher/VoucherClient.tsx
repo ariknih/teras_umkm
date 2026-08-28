@@ -93,7 +93,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
       <div className="max-w-[1100px] mx-auto space-y-6">
         
         {/* ── HEADER BANNER ── */}
-        <div className="bg-gradient-to-r from-emerald-950 via-[#2DB24A] to-[#0A4D1A] rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-white shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="bg-gradient-to-r from-emerald-950 via-primary to-[#0A4D1A] rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-white shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-slate-950 font-black text-xs rounded-full uppercase tracking-wider shadow-2xs">
               <Sparkles size={13} className="fill-slate-950" />
@@ -131,7 +131,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
             onClick={() => setActiveCategory('ALL')}
             className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeCategory === 'ALL'
-                ? 'bg-[#2DB24A] text-white shadow-2xs font-extrabold'
+                ? 'bg-primary text-white shadow-2xs font-extrabold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
@@ -141,7 +141,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
             onClick={() => setActiveCategory('BELANJA')}
             className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
               activeCategory === 'BELANJA'
-                ? 'bg-[#2DB24A] text-white shadow-2xs font-extrabold'
+                ? 'bg-primary text-white shadow-2xs font-extrabold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
@@ -152,7 +152,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
             onClick={() => setActiveCategory('ONGKIR')}
             className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
               activeCategory === 'ONGKIR'
-                ? 'bg-[#2DB24A] text-white shadow-2xs font-extrabold'
+                ? 'bg-primary text-white shadow-2xs font-extrabold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
@@ -163,7 +163,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
             onClick={() => setActiveCategory('COIN')}
             className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
               activeCategory === 'COIN'
-                ? 'bg-[#2DB24A] text-white shadow-2xs font-extrabold'
+                ? 'bg-primary text-white shadow-2xs font-extrabold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
@@ -184,9 +184,9 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
                 className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between relative group"
               >
                 {/* Top Badge Strip */}
-                <div className={`p-4 ${isOngkir ? 'bg-emerald-50 text-[#2DB24A]' : 'bg-amber-50 text-amber-900'} border-b border-slate-100 flex items-center justify-between`}>
+                <div className={`p-4 ${isOngkir ? 'bg-emerald-50 text-primary' : 'bg-amber-50 text-amber-900'} border-b border-slate-100 flex items-center justify-between`}>
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${isOngkir ? 'bg-[#2DB24A] text-white' : 'bg-amber-500 text-white'}`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${isOngkir ? 'bg-primary text-white' : 'bg-amber-500 text-white'}`}>
                       {isOngkir ? <Truck size={16} /> : <Ticket size={16} />}
                     </div>
                     <div>
@@ -207,7 +207,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
                 {/* Body Content */}
                 <div className="p-4 space-y-3">
                   <div>
-                    <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-1 group-hover:text-[#2DB24A] transition-colors">
+                    <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-1 group-hover:text-primary transition-colors">
                       {v.title}
                     </h3>
                     <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">
@@ -223,7 +223,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-[#2DB24A] h-full rounded-full transition-all"
+                        className="bg-primary h-full rounded-full transition-all"
                         style={{ width: `${usedPct}%` }}
                       />
                     </div>
@@ -239,7 +239,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
                       onClick={() => handleCopyCode(v.code)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                         copiedCode === v.code
-                          ? 'bg-[#2DB24A] text-white'
+                          ? 'bg-primary text-white'
                           : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
                       }`}
                     >
@@ -262,7 +262,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
                 <div className="p-4 pt-0">
                   <Link
                     href={`/cart?code=${encodeURIComponent(v.code)}`}
-                    className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl transition-all shadow-2xs flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 bg-primary hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl transition-all shadow-2xs flex items-center justify-center gap-1.5"
                   >
                     <span>Pakai di Keranjang</span>
                     <ArrowRight size={13} strokeWidth={2.5} />
@@ -276,7 +276,7 @@ export default function VoucherClient({ initialVouchers = [] }: { initialVoucher
         {/* ── INFO HOW TO USE VOUCHER ── */}
         <div className="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs space-y-3">
           <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-2">
-            <ShieldCheck size={16} className="text-[#2DB24A]" />
+            <ShieldCheck size={16} className="text-primary" />
             <span>Cara Menggunakan Voucher di Saloka.id</span>
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600">

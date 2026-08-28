@@ -339,7 +339,7 @@ export default function ProfileViewerClient({
             <span className="text-xs font-bold text-[#111111]">
               Pratinjau Desain Landing Page
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF5ED] border border-[#2DB24A]/30 text-[#0F5132] uppercase">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#EAF5ED] border border-primary/30 text-[#0F5132] uppercase">
               {customMainPage ? 'Page Builder' : activeTemplate}
             </span>
           </div>
@@ -359,11 +359,11 @@ export default function ProfileViewerClient({
   const xpPercent = Math.min(Math.max((user.xp / 1000) * 100, 5), 100)
 
   return (
-    <div className="min-h-screen bg-[#F4F7F5] text-[#111111] font-sans pb-24 overflow-hidden relative selection:bg-[#2DB24A]/30 selection:text-white">
+    <div className="min-h-screen bg-[#F4F7F5] text-[#111111] font-sans pb-24 overflow-hidden relative selection:bg-primary/30 selection:text-white">
       {/* Profile Header Navigation */}
 
       {/* Cover Banner */}
-      <div className="bg-[#EAF5ED] h-48 w-full border-b border-[#2DB24A]/20 relative">
+      <div className="bg-[#EAF5ED] h-48 w-full border-b border-primary/20 relative">
       </div>
 
       {/* Main Content Area */}
@@ -375,12 +375,12 @@ export default function ProfileViewerClient({
             <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 shadow-sm relative overflow-hidden">
               <div className="flex flex-col items-center text-center">
                 {/* Large Initials Avatar */}
-                <div className="w-24 h-24 rounded-2xl bg-[#EAF5ED] border border-[#2DB24A]/20 flex items-center justify-center text-3xl font-bold text-[#0F5132] mb-6">
+                <div className="w-24 h-24 rounded-2xl bg-[#EAF5ED] border border-primary/20 flex items-center justify-center text-3xl font-bold text-[#0F5132] mb-6">
                   {user.name.substring(0, 2).toUpperCase()}
                 </div>
 
                 {/* Verified Badge */}
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#EAF5ED] border border-[#2DB24A]/20 rounded-full text-[10px] text-[#0f5132] font-semibold uppercase tracking-wider mb-2">
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#EAF5ED] border border-primary/20 rounded-full text-[10px] text-[#0f5132] font-semibold uppercase tracking-wider mb-2">
                   <Shield className="w-3 h-3 text-[#0f5132] fill-[#0f5132]/10" />
                   {user.membershipLevel} Verified
                 </span>
@@ -396,11 +396,11 @@ export default function ProfileViewerClient({
                 <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6">
                   <div className="flex justify-between items-center text-xs mb-2">
                     <span className="font-bold text-text-secondary uppercase text-[10px] tracking-wider">Progress Level</span>
-                    <span className="font-bold text-[#2DB24A]">LV {user.level}</span>
+                    <span className="font-bold text-primary">LV {user.level}</span>
                   </div>
                   <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
                     <div 
-                      className="h-full bg-[#2DB24A] rounded-full transition-all duration-500" 
+                      className="h-full bg-primary rounded-full transition-all duration-500" 
                       style={{ width: `${xpPercent}%` }}
                     />
                   </div>
@@ -416,7 +416,7 @@ export default function ProfileViewerClient({
                     <span className="text-text-secondary">Peran Platform</span>
                     <span className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
                       user.role === 'ADMIN' ? 'bg-red-50 border border-red-200 text-red-700' :
-                      user.role === 'MERCHANT' ? 'bg-[#EAF5ED] border border-[#2DB24A]/30 text-[#0F5132]' :
+                      user.role === 'MERCHANT' ? 'bg-[#EAF5ED] border border-primary/30 text-[#0F5132]' :
                       user.role === 'AFFILIATE' ? 'bg-blue-50 border border-blue-200 text-blue-700' :
                       'bg-emerald-50 border border-emerald-250 text-emerald-800'
                     }`}>
@@ -439,7 +439,7 @@ export default function ProfileViewerClient({
                           {user.userCommunities.map((uc) => (
                             <div key={uc.communityId} className="p-2 bg-gray-50 border border-gray-200/80 rounded-xl flex items-center justify-between gap-2 text-xs">
                               <div>
-                                <Link href={`/community/${uc.communityId}`} className="font-bold text-slate-900 hover:text-[#2DB24A] transition-colors block">
+                                <Link href={`/community/${uc.communityId}`} className="font-bold text-slate-900 hover:text-primary transition-colors block">
                                   {uc.communityName}
                                 </Link>
                                 <span className="text-[10px] text-gray-500">
@@ -483,7 +483,7 @@ export default function ProfileViewerClient({
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-text-secondary">Hak Akses VIP</span>
-                    <span className="font-bold text-[#2DB24A]">{user.membershipAccess}</span>
+                    <span className="font-bold text-primary">{user.membershipAccess}</span>
                   </div>
                   {user.email && (
                     <div className="flex justify-between items-center pt-2 border-t border-border-subtle">
@@ -503,7 +503,7 @@ export default function ProfileViewerClient({
                 </h3>
                 <div className="grid grid-cols-1 gap-3">
                   {badges.map((b: any) => (
-                    <div key={b.id} className="flex gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-[#2DB24A]/25 transition-all">
+                    <div key={b.id} className="flex gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:border-primary/25 transition-all">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 text-xs ${b.color}`}>
                         {b.id.includes('admin') ? '🛡️' : b.id.includes('merchant') ? '⭐' : b.id.includes('graduate') ? '🎓' : '⚡'}
                       </div>
@@ -526,7 +526,7 @@ export default function ProfileViewerClient({
                 onClick={() => setActiveTab('profile')}
                 className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   activeTab === 'profile'
-                    ? 'bg-[#2DB24A] text-white shadow-sm'
+                    ? 'bg-primary text-white shadow-sm'
                     : 'text-slate-600 hover:text-[#0F5132] hover:bg-slate-50'
                 }`}
               >
@@ -537,7 +537,7 @@ export default function ProfileViewerClient({
                   onClick={() => setActiveTab('products')}
                   className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     activeTab === 'products'
-                      ? 'bg-[#2DB24A] text-white shadow-sm'
+                      ? 'bg-primary text-white shadow-sm'
                       : 'text-slate-600 hover:text-[#0F5132] hover:bg-slate-50'
                   }`}
                 >
@@ -549,7 +549,7 @@ export default function ProfileViewerClient({
                   onClick={() => setActiveTab('storefront')}
                   className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     (activeTab as string) === 'storefront'
-                      ? 'bg-[#2DB24A] text-white shadow-sm'
+                      ? 'bg-primary text-white shadow-sm'
                       : 'text-slate-600 hover:text-[#0F5132] hover:bg-slate-50'
                   }`}
                 >
@@ -565,7 +565,7 @@ export default function ProfileViewerClient({
                 {/* Referral Center Card */}
                 <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 shadow-sm relative overflow-hidden">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1.5 h-6 bg-[#2DB24A] rounded-full" />
+                    <div className="w-1.5 h-6 bg-primary rounded-full" />
                     <h3 className="text-sm font-bold text-[#0F5132]">
                       Program Kemitraan & Rujukan (Referral)
                     </h3>
@@ -624,7 +624,7 @@ export default function ProfileViewerClient({
                           />
                           <button
                             onClick={handleCopyLink}
-                            className="px-4 h-10 bg-[#2DB24A] text-white hover:bg-[#2DB24A]/90 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-w-[100px] cursor-pointer"
+                            className="px-4 h-10 bg-primary text-white hover:bg-primary/90 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-w-[100px] cursor-pointer"
                           >
                             {copiedLink ? (
                               <>
@@ -681,7 +681,7 @@ export default function ProfileViewerClient({
                 {isOwner && (user as any).kycStatus !== 'APPROVED' && (user as any).kycStatus !== 'VERIFIED' && (
                   <div className="bg-white border border-[#E5E7EB] rounded-2xl p-6 shadow-sm space-y-5 relative overflow-hidden">
                     <div className="flex items-center gap-3">
-                      <div className="w-1.5 h-6 bg-[#2DB24A] rounded-full" />
+                      <div className="w-1.5 h-6 bg-primary rounded-full" />
                       <h3 className="text-sm font-bold text-[#0f5132]">
                         Verifikasi Identitas (KYC)
                       </h3>
@@ -698,11 +698,11 @@ export default function ProfileViewerClient({
                       </div>
                                         ) : (
                       <div className="space-y-4 pt-2">
-                        <div className="bg-slate-50 border border-[#2DB24A]/20 rounded-xl p-5 space-y-4 shadow-sm hover:border-[#2DB24A]/40 transition-all duration-300">
+                        <div className="bg-slate-50 border border-primary/20 rounded-xl p-5 space-y-4 shadow-sm hover:border-primary/40 transition-all duration-300">
                           <div className="flex justify-between items-start gap-4">
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-[#EAF5ED] border border-[#2DB24A]/30 text-[#0F5132] uppercase tracking-wider">
+                                <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-[#EAF5ED] border border-primary/30 text-[#0F5132] uppercase tracking-wider">
                                   Instan & Aman
                                 </span>
                                 <h4 className="text-xs font-bold text-text-primary">
@@ -742,7 +742,7 @@ export default function ProfileViewerClient({
                                 setKycStarting(false)
                               }
                             }}
-                            className="w-full py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                            className="w-full py-3 bg-primary hover:bg-[#259a3f] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
                           >
                             {kycStarting ? (
                               <>
@@ -765,7 +765,7 @@ export default function ProfileViewerClient({
                 {/* Performance & Analytics Summary Cards */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-4 bg-[#2DB24A] rounded-full" />
+                    <div className="w-1.5 h-4 bg-primary rounded-full" />
                     <h3 className="text-xs font-bold text-[#0F5132] uppercase tracking-wider">
                       Ringkasan Analitik & Performa
                     </h3>
@@ -784,14 +784,14 @@ export default function ProfileViewerClient({
                       <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm">
                         <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Total Pesanan Masuk</span>
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-xl font-bold text-[#2DB24A]">{merchantStats?.totalOrders || 0}</span>
+                          <span className="text-xl font-bold text-primary">{merchantStats?.totalOrders || 0}</span>
                           <span className="text-[9px] text-text-secondary">Pesanan</span>
                         </div>
                       </div>
                       <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm col-span-2 sm:col-span-1">
                         <span className="block text-[8px] uppercase tracking-widest text-text-secondary font-bold mb-2">Total Omzet Pendapatan</span>
                         <div className="flex items-baseline gap-1.5">
-                          <span className="text-lg font-bold text-[#2DB24A]">Rp {(merchantStats?.totalRevenue || 0).toLocaleString('id-ID')}</span>
+                          <span className="text-lg font-bold text-primary">Rp {(merchantStats?.totalRevenue || 0).toLocaleString('id-ID')}</span>
                         </div>
                       </div>
                     </div>
@@ -801,7 +801,7 @@ export default function ProfileViewerClient({
                       <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm">
                         <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Akumulasi Komisi</span>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-base font-bold text-[#2DB24A]">Rp {(affiliateStats?.totalEarnings || 0).toLocaleString('id-ID')}</span>
+                          <span className="text-base font-bold text-primary">Rp {(affiliateStats?.totalEarnings || 0).toLocaleString('id-ID')}</span>
                         </div>
                       </div>
                       <div className="bg-white border border-[#E5E7EB] rounded-xl p-4 shadow-sm">
@@ -819,10 +819,10 @@ export default function ProfileViewerClient({
                         </div>
                       </div>
                       {isOwner && wallet && (
-                        <div className="bg-[#EAF5ED] border border-[#2DB24A]/25 rounded-xl p-4">
+                        <div className="bg-[#EAF5ED] border border-primary/25 rounded-xl p-4">
                           <span className="block text-[8px] uppercase tracking-wider text-text-secondary font-bold mb-2">Saldo Dompet</span>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-base font-bold text-[#2DB24A]">Rp {(wallet.balance || 0).toLocaleString('id-ID')}</span>
+                            <span className="text-base font-bold text-primary">Rp {(wallet.balance || 0).toLocaleString('id-ID')}</span>
                           </div>
                         </div>
                       )}
@@ -833,10 +833,10 @@ export default function ProfileViewerClient({
                   {isOwner && (
                     <div className="flex justify-between items-center bg-white border border-[#E5E7EB] rounded-xl p-4 text-xs shadow-sm">
                       <div className="flex items-center gap-3 text-text-secondary">
-                        <Wallet className="w-4 h-4 text-[#2DB24A]" />
+                        <Wallet className="w-4 h-4 text-primary" />
                         <span>Kelola penarikan komisi dan histori penarikan di Pusat Dompet Saloka</span>
                       </div>
-                      <Link href="/wallet" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
+                      <Link href="/wallet" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
                         Buka Dompet
                         <ArrowUpRight className="w-4 h-4" />
                       </Link>
@@ -881,7 +881,7 @@ export default function ProfileViewerClient({
                                     {ref.status}
                                   </span>
                                 </td>
-                                <td className="p-4 text-right font-bold text-[#2DB24A]">
+                                <td className="p-4 text-right font-bold text-primary">
                                   + Rp {ref.amount.toLocaleString('id-ID')}
                                 </td>
                               </tr>
@@ -900,7 +900,7 @@ export default function ProfileViewerClient({
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-6 bg-[#2DB24A] rounded-full" />
+                    <div className="w-1.5 h-6 bg-primary rounded-full" />
                     <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
                       Katalog Etalase Produk
                     </h3>
@@ -919,7 +919,7 @@ export default function ProfileViewerClient({
                     {products.map((p: any) => (
                       <div 
                         key={p.id}
-                        className="group bg-white border border-[#E5E7EB] rounded-2xl p-5 hover:border-[#2DB24A]/30 transition-all duration-300 flex flex-col justify-between shadow-sm relative"
+                        className="group bg-white border border-[#E5E7EB] rounded-2xl p-5 hover:border-primary/30 transition-all duration-300 flex flex-col justify-between shadow-sm relative"
                       >
                         <div>
                           <div className="relative">

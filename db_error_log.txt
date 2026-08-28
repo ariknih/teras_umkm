@@ -2,3 +2,296 @@
 
 [2026-08-24T10:51:13.067Z] isDbConnected warning: database connection check timed out (>10s)
 
+[2026-08-28T16:30:56.102Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__10z5pny._.js:3419:29)
+    at async Object.getServices (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__10z5pny._.js:11812:13)
+    at async getServicesAction (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1937:26)
+    at async Promise.all (index 1)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T16:30:56.105Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__10z5pny._.js:3419:29)
+    at async Object.getProducts (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__10z5pny._.js:4116:13)
+    at async getProducts (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1445:12)
+    at async Promise.all (index 0)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T16:30:56.107Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__10z5pny._.js:3419:29)
+    at async Object.getActiveBanners (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__10z5pny._.js:11645:13)
+    at async getActiveBanners (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1752:16)
+    at async Promise.all (index 2)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T16:30:56.113Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__10z5pny._.js:3419:29)
+    at async Object.getCourses (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__10z5pny._.js:4268:13)
+    at async getCourses (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1652:12)
+    at async Promise.all (index 3)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:06:35.370Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3452:29)
+    at async withFallback (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3475:9)
+    at async getProducts (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1445:12)
+    at async Promise.all (index 0)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:06:35.375Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3452:29)
+    at async withFallback (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3475:9)
+    at async getServicesAction (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1937:26)
+    at async Promise.all (index 1)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:06:35.381Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3452:29)
+    at async withFallback (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3475:9)
+    at async getActiveBanners (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1752:16)
+    at async Promise.all (index 2)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:06:35.477Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3452:29)
+    at async withFallback (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3475:9)
+    at async getCourses (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1652:12)
+    at async Promise.all (index 3)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:12:16.482Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3452:29)
+    at async withFallback (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3475:9)
+    at async getProducts (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1445:12)
+    at async Promise.all (index 0)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:12:16.485Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3452:29)
+    at async withFallback (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3475:9)
+    at async getServicesAction (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1937:26)
+    at async Promise.all (index 1)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:12:16.487Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3452:29)
+    at async withFallback (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3475:9)
+    at async getActiveBanners (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1752:16)
+    at async Promise.all (index 2)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:12:16.491Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async isDbConnected (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3452:29)
+    at async withFallback (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__041-~e2._.js:3475:9)
+    at async getCourses (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/_0g.2osq._.js:1652:12)
+    at async Promise.all (index 3)
+    at async HomePage (/Users/dzakidarthmatheus/Github/teras_umkm/.next/dev/server/chunks/ssr/[root-of-the-server]__0k87tdz._.js:155:61)
+
+[2026-08-28T18:17:00.029Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async p (/Users/dzakidarthmatheus/Github/teras_umkm/.next/server/chunks/_0ml3i.u._.js:1:107815)
+    at async g (/Users/dzakidarthmatheus/Github/teras_umkm/.next/server/chunks/_0ml3i.u._.js:6:59)
+    at async n (/Users/dzakidarthmatheus/Github/teras_umkm/.next/server/chunks/[root-of-the-server]__0_m-3xn._.js:16:310)
+    at async s (/Users/dzakidarthmatheus/Github/teras_umkm/.next/server/chunks/[root-of-the-server]__0_m-3xn._.js:16:1001)
+    at async rW.do (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/next/dist/compiled/next-server/app-route-turbo.runtime.prod.js:5:20876)
+
+[2026-08-28T18:17:00.074Z] isDbConnected error: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+PrismaClientKnownRequestError: 
+Invalid `prisma.$queryRaw()` invocation:
+
+
+
+    at zr.handleRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:8286)
+    at zr.handleAndLogRequestError (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7581)
+    at zr.request (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:65:7288)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async a (/Users/dzakidarthmatheus/Github/teras_umkm/node_modules/@prisma/client/runtime/client.js:75:6862)
+    at async n (/Users/dzakidarthmatheus/Github/teras_umkm/.next/server/chunks/ssr/_0~58cge._.js:1:156073)
+    at async Object.getActiveCoinVouchers (/Users/dzakidarthmatheus/Github/teras_umkm/.next/server/chunks/ssr/_0~58cge._.js:6:86940)
+    at async m (/Users/dzakidarthmatheus/Github/teras_umkm/.next/server/chunks/ssr/_121n90-._.js:1:477)
+    at async h (/Users/dzakidarthmatheus/Github/teras_umkm/.next/server/chunks/ssr/[root-of-the-server]__0360io-._.js:1:2219)
+

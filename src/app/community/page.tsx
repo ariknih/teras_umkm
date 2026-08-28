@@ -626,20 +626,20 @@ export default function CommunityDirectoryPage() {
                               onClick={() => setPerkumpulanTier('REGULER')}
                               className={`p-3.5 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                                 perkumpulanTier === 'REGULER' 
-                                  ? 'bg-emerald-50/30 border-[#2DB24A] shadow-sm ring-2 ring-[#2DB24A]/20' 
+                                  ? 'bg-emerald-50/30 border-primary shadow-sm ring-2 ring-primary/20' 
                                   : 'bg-white border-black/5 hover:border-black/15'
                               }`}
                             >
                               <div className="space-y-2">
                                 <div className="flex items-start justify-between gap-1">
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                                    perkumpulanTier === 'REGULER' ? 'border-[#2DB24A]' : 'border-gray-300'
+                                    perkumpulanTier === 'REGULER' ? 'border-primary' : 'border-gray-300'
                                   }`}>
-                                    {perkumpulanTier === 'REGULER' && <div className="w-2 h-2 rounded-full bg-[#2DB24A]" />}
+                                    {perkumpulanTier === 'REGULER' && <div className="w-2 h-2 rounded-full bg-primary" />}
                                   </div>
                                   <div className="text-right">
                                     <h5 className="font-black text-xs text-[#0F5132] font-sora">PERKUMPULAN REGULER</h5>
-                                    <span className="text-[10px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 0 (Selamanya Gratis)</span>
+                                    <span className="text-[10px] text-primary font-extrabold block mt-0.5">Rp 0 (Selamanya Gratis)</span>
                                   </div>
                                 </div>
                                 <div className="space-y-1 text-left pt-2 border-t border-gray-100 text-[9px] font-semibold text-gray-600">
@@ -733,7 +733,7 @@ export default function CommunityDirectoryPage() {
                           </div>
                           <button
                             type="button"
-                            className="px-2.5 py-1.5 border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A]/5 text-[9px] font-extrabold rounded-lg flex items-center gap-1 transition-all cursor-pointer bg-white"
+                            className="px-2.5 py-1.5 border border-primary text-primary hover:bg-primary/5 text-[9px] font-extrabold rounded-lg flex items-center gap-1 transition-all cursor-pointer bg-white"
                           >
                             <span>⚙️</span> Sesuaikan Modul
                           </button>
@@ -842,7 +842,7 @@ export default function CommunityDirectoryPage() {
                               onClick={() => setCoopTier('BASIC')}
                               className={`p-4 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                                 coopTier === 'BASIC' 
-                                  ? 'bg-emerald-50/30 border-[#2DB24A] shadow-sm ring-2 ring-[#2DB24A]/20' 
+                                  ? 'bg-emerald-50/30 border-primary shadow-sm ring-2 ring-primary/20' 
                                   : 'bg-white border-black/5 hover:border-black/15 hover:shadow-xs'
                               }`}
                             >
@@ -850,27 +850,27 @@ export default function CommunityDirectoryPage() {
                                 <div className="space-y-2">
                                   <div className="flex items-start justify-between gap-1">
                                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                                      coopTier === 'BASIC' ? 'border-[#2DB24A]' : 'border-gray-300'
+                                      coopTier === 'BASIC' ? 'border-primary' : 'border-gray-300'
                                     }`}>
-                                      {coopTier === 'BASIC' && <div className="w-2 h-2 rounded-full bg-[#2DB24A]" />}
+                                      {coopTier === 'BASIC' && <div className="w-2 h-2 rounded-full bg-primary" />}
                                     </div>
                                     <div className="text-right">
                                       <h5 className="font-black text-xs text-[#0F5132] font-sora flex items-center justify-end gap-1">
                                         <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 inline-block" /> BASIC
                                       </h5>
                                       <span className="text-[8px] text-emerald-700/80 font-bold block">Paket Dasar</span>
-                                      <span className="text-[10px] text-[#2DB24A] font-extrabold block mt-0.5">Rp 99.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
+                                      <span className="text-[10px] text-primary font-extrabold block mt-0.5">Rp 99.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
                                       <span className="text-[7px] text-gray-400 font-semibold block">atau Rp 999.000/thn</span>
                                     </div>
                                   </div>
 
                                   <div className="space-y-1 text-left pt-2 border-t border-gray-100">
                                     <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
-                                      <span className="w-3.5 h-3.5 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span className="w-3.5 h-3.5 rounded-full bg-[#E8F8EE] text-primary flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                       <span>Simpanan Pokok</span>
                                     </div>
                                     <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
-                                      <span className="w-3.5 h-3.5 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                      <span className="w-3.5 h-3.5 rounded-full bg-[#E8F8EE] text-primary flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                       <span>Simpanan Wajib</span>
                                     </div>
                                   </div>
@@ -1135,7 +1135,7 @@ export default function CommunityDirectoryPage() {
                     </div>
 
                     {/* BAGIAN 5: PENGATURAN KYC ANGGOTA */}
-                    <div className="p-3.5 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-xl flex items-center justify-between gap-3">
+                    <div className="p-3.5 bg-[#E8F8EE] border border-primary/25 rounded-xl flex items-center justify-between gap-3">
                       <div>
                         <label className="text-xs font-extrabold text-[#0F5132] block font-sora">
                           Wajibkan Verifikasi KYC Anggota
@@ -1148,7 +1148,7 @@ export default function CommunityDirectoryPage() {
                         type="button"
                         onClick={() => setIsKycRequired(!isKycRequired)}
                         className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-all duration-300 shrink-0 ${
-                          isKycRequired ? 'bg-[#2DB24A] justify-end' : 'bg-gray-300 justify-start'
+                          isKycRequired ? 'bg-primary justify-end' : 'bg-gray-300 justify-start'
                         }`}
                       >
                         <span className="bg-white w-4 h-4 rounded-full shadow-xs transition-all" />
@@ -1449,7 +1449,7 @@ export default function CommunityDirectoryPage() {
                   {/* Info Box Superadmin Verification */}
                   <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-4 text-left space-y-1 shadow-xs">
                     <div className="flex items-center gap-2 font-bold text-xs text-[#0F5132]">
-                      <Info className="w-4 h-4 text-[#2DB24A] shrink-0" />
+                      <Info className="w-4 h-4 text-primary shrink-0" />
                       <span>Tahap Selanjutnya: Verifikasi Super Admin</span>
                     </div>
                     <p className="text-[11px] text-emerald-900/80 font-medium leading-relaxed pl-6">

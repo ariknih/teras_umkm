@@ -1044,7 +1044,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
         <div className="mb-10 pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
             <h1 className="font-poppins text-2xl font-bold text-[#0F5132] mb-1">
-              Merchant <span className="text-[#2DB24A]">Center</span>
+              Merchant <span className="text-primary">Center</span>
             </h1>
             <p className="text-xs text-text-secondary">
               Kelola katalog produk, edit rincian stok barang, dan periksa buku penjualan Anda.
@@ -1085,7 +1085,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               onClick={() => { setActiveTab(tab.id as any); setEditingProduct(null); setEditingPage(null); }}
               className={`pb-3 px-5 text-xs font-bold transition-all relative shrink-0 cursor-pointer ${
                 activeTab === tab.id
-                  ? 'text-[#2DB24A] font-extrabold border-b-2 border-[#2DB24A]'
+                  ? 'text-primary font-extrabold border-b-2 border-primary'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
@@ -1103,12 +1103,12 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Saldo Penjualan Merchant
                 </span>
-                <h2 className="font-sora text-2xl font-black text-[#2DB24A] mb-4">
+                <h2 className="font-sora text-2xl font-black text-primary mb-4">
                   Rp {(wallet?.balance ?? 0).toLocaleString('id-ID')}
                 </h2>
                 <Link
                   href="/wallet"
-                  className="text-[10px] font-bold text-[#0F5132] hover:text-[#2DB24A] uppercase tracking-wider flex items-center gap-1 transition-colors"
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors"
                 >
                   Buka Ledger Penarikan
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
@@ -1126,7 +1126,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </h2>
                 <button
                   onClick={() => setActiveTab('catalog')}
-                  className="text-[10px] font-bold text-[#0F5132] hover:text-[#2DB24A] uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   Lihat Semua Produk
                 </button>
@@ -1141,7 +1141,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </h2>
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className="text-[10px] font-bold text-[#0F5132] hover:text-[#2DB24A] uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   Proses Pesanan Sekarang
                 </button>
@@ -2517,7 +2517,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 const config = JSON.parse(profile?.landingPageConfig || '{}')
                 if (config.customDomain) {
                   return (
-                    <div className="bg-[#2DB24A]/5 border border-[#2DB24A]/10 rounded-2xl p-5 flex items-center justify-between text-xs">
+                    <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-3">
                         <div className="btn-primary w-10 bg-primary/10 flex items-center justify-center text-primary shrink-0">
                           <Globe size={18} />
@@ -2819,7 +2819,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <button
                       type="submit"
                       disabled={isPending}
-                      className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                      className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
                     >
                       {isPending ? 'Menyimpan...' : 'Simpan Pengaturan Halaman'}
                     </button>
@@ -2837,7 +2837,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
                     <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Halaman Terbit</span>
-                    <h3 className="font-sora text-2xl font-black text-[#2DB24A] mt-2">
+                    <h3 className="font-sora text-2xl font-black text-primary mt-2">
                       {pagesList.filter((p: any) => p.status === 'PUBLISHED').length}
                     </h3>
                   </div>
@@ -2888,7 +2888,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         } catch (e) {}
                         setShowDomainModal(true)
                       }}
-                      className="btn-primary border border-[#2DB24A] text-[#2DB24A] hover:bg-primary/5 text-xs flex items-center gap-1.5 cursor-pointer outline-none"
+                      className="btn-primary border border-primary text-primary hover:bg-primary/5 text-xs flex items-center gap-1.5 cursor-pointer outline-none"
                     >
                       <Globe size={14} />
                       Hubungkan Domain
@@ -2983,7 +2983,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                     </div>
                                   </div>
                                 </td>
-                                <td className="py-4 px-5 font-mono text-[11px] text-[#2DB24A] hover:underline">
+                                <td className="py-4 px-5 font-mono text-[11px] text-primary hover:underline">
                                   <a href={finalHref} target="_blank" rel="noreferrer">
                                     {displayUrl}
                                   </a>
@@ -2991,7 +2991,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                                 <td className="py-4 px-5">
                                   <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border ${
                                     page.status === 'PUBLISHED'
-                                      ? 'bg-green-500/10 border-green-500/25 text-[#2DB24A]'
+                                      ? 'bg-green-500/10 border-green-500/25 text-primary'
                                       : page.status === 'DRAFT'
                                       ? 'bg-amber-500/10 border-amber-500/25 text-amber-500'
                                       : 'bg-slate-100 border-slate-200 text-text-secondary'
@@ -3206,13 +3206,13 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <div className="flex bg-white rounded-lg p-0.5 border border-slate-100 text-[9px] font-bold">
                       <button
                         onClick={() => setCreatePagePreview('mobile')}
-                        className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'mobile' ? 'bg-[#2DB24A] text-white' : 'text-text-secondary'}`}
+                        className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'mobile' ? 'bg-primary text-white' : 'text-text-secondary'}`}
                       >
                         Mobile
                       </button>
                       <button
                         onClick={() => setCreatePagePreview('desktop')}
-                        className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'desktop' ? 'bg-[#2DB24A] text-white' : 'text-text-secondary'}`}
+                        className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'desktop' ? 'bg-primary text-white' : 'text-text-secondary'}`}
                       >
                         Desktop
                       </button>
@@ -3297,7 +3297,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     handleCreatePage(createPageName, createPageTemplate)
                   }}
                   disabled={isPending}
-                  className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                  className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   {isPending ? 'Memproses...' : 'Buat Halaman'}
                 </button>
@@ -3431,7 +3431,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       handleSaveCustomDomain(customDomainInput)
                     }}
                     disabled={isPending}
-                    className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#2DB24A]/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                    className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
                   >
                     {isPending ? 'Menyimpan...' : 'Hubungkan Domain'}
                   </button>
@@ -3563,7 +3563,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="px-6 py-3 bg-[#2DB24A] hover:bg-[#259a3f] text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer border-none shadow-sm disabled:opacity-50"
+                  className="px-6 py-3 bg-primary hover:bg-[#259a3f] text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer border-none shadow-sm disabled:opacity-50"
                 >
                   {isPending ? 'Mengirim Pengajuan...' : 'Kirim Pengajuan Level Up'}
                 </button>

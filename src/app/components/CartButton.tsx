@@ -57,7 +57,7 @@ export default function CartButton({ userId, communityId }: { userId?: string; c
         className="w-4 h-4 object-contain group-hover:scale-110 transition-transform duration-300"
       />
       {itemCount > 0 && (
-        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#2DB24A] text-white rounded-full font-black text-[10px] flex items-center justify-center border-2 border-white">
+        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-white rounded-full font-black text-[10px] flex items-center justify-center border-2 border-white">
           {itemCount}
         </span>
       )}

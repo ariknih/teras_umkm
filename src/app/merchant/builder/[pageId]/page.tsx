@@ -391,7 +391,7 @@ function RenderComp({ comp }: { comp: BuilderComponent }) {
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {(c.items || []).map((item: string, i: number) => (
             <li key={i} className="flex gap-3 text-base" style={{ color: s.color || '#374151', alignItems: 'flex-start' }}>
-              <span className="w-5 h-5 rounded-full bg-[#2DB24A]/10 text-[#2DB24A] flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Check className="w-3.5 h-3.5 stroke-[3]" />
               </span>
               <span>{item}</span>
@@ -471,7 +471,7 @@ function RenderComp({ comp }: { comp: BuilderComponent }) {
             { v: timerValues.seconds, l: 'DETIK' }
           ].map((item, i) => (
             <div key={i} className="text-center">
-              <div className="bg-[#111111] text-[#2DB24A] rounded-xl px-4 py-3 text-2xl font-black min-w-[56px] shadow">{item.v}</div>
+              <div className="bg-[#111111] text-primary rounded-xl px-4 py-3 text-2xl font-black min-w-[56px] shadow">{item.v}</div>
               <div className="text-[10px] text-neutral-400 font-bold mt-2 letter-spacing-wide">{item.l}</div>
             </div>
           ))}
@@ -494,14 +494,14 @@ function RenderComp({ comp }: { comp: BuilderComponent }) {
     )
     case 'visitor_counter': return (
       <div style={{ ...p, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#374151', fontSize: 14 }}>
-        <Users className="w-5 h-5 text-[#2DB24A]" />
-        <span className="text-gray-600">Ada <strong className="text-[#2DB24A] font-extrabold">{c.count || 1247}</strong> {c.label || 'orang telah melihat halaman ini'}</span>
+        <Users className="w-5 h-5 text-primary" />
+        <span className="text-gray-600">Ada <strong className="text-primary font-extrabold">{c.count || 1247}</strong> {c.label || 'orang telah melihat halaman ini'}</span>
       </div>
     )
     case 'sold_counter': return (
       <div style={{ ...p, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#374151', fontSize: 14 }}>
         <span className="text-lg">🛒</span>
-        <span className="text-gray-600">Sudah <strong className="text-[#2DB24A] font-extrabold">{c.count || 342}</strong> {c.label || 'terjual hari ini'}</span>
+        <span className="text-gray-600">Sudah <strong className="text-primary font-extrabold">{c.count || 342}</strong> {c.label || 'terjual hari ini'}</span>
       </div>
     )
     case 'sales_notification': return (
@@ -710,12 +710,12 @@ function UploadZone({
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
-          className="w-full border-2 border-dashed border-[#2DB24A]/30 hover:border-[#2DB24A]/60 hover:bg-[#2DB24A]/5 rounded-xl py-5 flex flex-col items-center gap-2 transition-all disabled:opacity-50"
+          className="w-full border-2 border-dashed border-primary/30 hover:border-primary/60 hover:bg-primary/5 rounded-xl py-5 flex flex-col items-center gap-2 transition-all disabled:opacity-50"
         >
           {uploading ? (
             <>
-              <svg className="animate-spin w-5 h-5 text-[#2DB24A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12a8 8 0 018-8"/></svg>
-              <span className="text-[11px] text-[#2DB24A] font-semibold">Mengupload...</span>
+              <svg className="animate-spin w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 12a8 8 0 018-8"/></svg>
+              <span className="text-[11px] text-primary font-semibold">Mengupload...</span>
             </>
           ) : (
             <>
@@ -751,7 +751,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
   const upS = (k: string, v: any) => onChange({ ...comp, style: { ...comp.style, [k]: v } })
   const upA = (k: string, v: any) => onChange({ ...comp, advance: { ...comp.advance, [k]: v } })
 
-  const inp = 'w-full border border-[#e4e6ea] rounded-lg px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A]/20 text-gray-800 transition-colors'
+  const inp = 'w-full border border-[#e4e6ea] rounded-lg px-3 py-2 text-[13px] bg-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-gray-800 transition-colors'
   const lbl = 'block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5'
   const section = 'space-y-4'
 
@@ -849,7 +849,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 <input type="text" className={inp} value={img.alt||''} placeholder="Alt text..." onChange={e=>{const a=[...(c.images||[])];a[i]={...a[i],alt:e.target.value};upC('images',a)}}/>
               </div>
             ))}
-            <button onClick={()=>upC('images',[...(c.images||[]),{src:'',alt:'Slide baru'}])} className="w-full py-2 border border-dashed border-[#2DB24A]/40 text-[#2DB24A] text-[13px] rounded-lg hover:bg-[#2DB24A]/5 transition-colors">+ Tambah Slide</button>
+            <button onClick={()=>upC('images',[...(c.images||[]),{src:'',alt:'Slide baru'}])} className="w-full py-2 border border-dashed border-primary/40 text-primary text-[13px] rounded-lg hover:bg-primary/5 transition-colors">+ Tambah Slide</button>
           </div>
         )
       case 'video':
@@ -879,7 +879,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
       case 'space':
         return (
           <div className={section}>
-            <div><label className={lbl}>Tinggi (px)</label><input type="range" min={4} max={300} value={c.height||32} onChange={e=>upC('height',+e.target.value)} className="w-full accent-[#2DB24A]"/><p className="text-[12px] text-gray-500 mt-1">{c.height||32}px</p></div>
+            <div><label className={lbl}>Tinggi (px)</label><input type="range" min={4} max={300} value={c.height||32} onChange={e=>upC('height',+e.target.value)} className="w-full accent-primary"/><p className="text-[12px] text-gray-500 mt-1">{c.height||32}px</p></div>
           </div>
         )
       case 'banner_announcement':
@@ -901,7 +901,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 <button onClick={()=>upC('items',(c.items||[]).filter((_:any,j:number)=>j!==i))} className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors text-lg">×</button>
               </div>
             ))}
-            <button onClick={()=>upC('items',[...(c.items||[]),'Fitur baru'])} className="w-full py-2 border border-dashed border-[#2DB24A]/40 text-[#2DB24A] text-[13px] rounded-lg hover:bg-[#2DB24A]/5 transition-colors">+ Tambah Item</button>
+            <button onClick={()=>upC('items',[...(c.items||[]),'Fitur baru'])} className="w-full py-2 border border-dashed border-primary/40 text-primary text-[13px] rounded-lg hover:bg-primary/5 transition-colors">+ Tambah Item</button>
           </div>
         )
       case 'faq':
@@ -915,7 +915,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 <textarea className={inp} rows={2} value={item.answer} placeholder="Jawaban..." onChange={e=>{const a=[...(c.items||[])];a[i]={...a[i],answer:e.target.value};upC('items',a)}}/>
               </div>
             ))}
-            <button onClick={()=>upC('items',[...(c.items||[]),{question:'Pertanyaan baru?',answer:'Jawaban.'}])} className="w-full py-2 border border-dashed border-[#2DB24A]/40 text-[#2DB24A] text-[13px] rounded-lg hover:bg-[#2DB24A]/5 transition-colors">+ Tambah FAQ</button>
+            <button onClick={()=>upC('items',[...(c.items||[]),{question:'Pertanyaan baru?',answer:'Jawaban.'}])} className="w-full py-2 border border-dashed border-primary/40 text-primary text-[13px] rounded-lg hover:bg-primary/5 transition-colors">+ Tambah FAQ</button>
           </div>
         )
       case 'testimonials':
@@ -930,13 +930,13 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 <textarea className={inp} rows={3} value={item.text} placeholder="Isi testimoni..." onChange={e=>{const a=[...(c.items||[])];a[i]={...a[i],text:e.target.value};upC('items',a)}}/>
               </div>
             ))}
-            <button onClick={()=>upC('items',[...(c.items||[]),{name:'Nama Pelanggan',role:'',text:'Testimoni produk ini sangat bagus!'}])} className="w-full py-2 border border-dashed border-[#2DB24A]/40 text-[#2DB24A] text-[13px] rounded-lg hover:bg-[#2DB24A]/5 transition-colors">+ Tambah Testimoni</button>
+            <button onClick={()=>upC('items',[...(c.items||[]),{name:'Nama Pelanggan',role:'',text:'Testimoni produk ini sangat bagus!'}])} className="w-full py-2 border border-dashed border-primary/40 text-primary text-[13px] rounded-lg hover:bg-primary/5 transition-colors">+ Tambah Testimoni</button>
           </div>
         )
       case 'rating':
         return (
           <div className={section}>
-            <div><label className={lbl}>Skor (0–5)</label><input type="range" min={0} max={5} step={0.1} value={c.score||4.8} onChange={e=>upC('score',+e.target.value)} className="w-full accent-[#2DB24A]"/><p className="text-[12px] text-gray-500 mt-1">{c.score||4.8} bintang</p></div>
+            <div><label className={lbl}>Skor (0–5)</label><input type="range" min={0} max={5} step={0.1} value={c.score||4.8} onChange={e=>upC('score',+e.target.value)} className="w-full accent-primary"/><p className="text-[12px] text-gray-500 mt-1">{c.score||4.8} bintang</p></div>
             <div><label className={lbl}>Total Ulasan</label><input type="number" className={inp} value={c.total||128} min={0} onChange={e=>upC('total',+e.target.value)}/></div>
             <div><label className={lbl}>Label</label><input type="text" className={inp} value={c.label||''} onChange={e=>upC('label',e.target.value)}/></div>
           </div>
@@ -981,10 +981,10 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 <input type="text" className={inp} value={plan.name} placeholder="Nama Paket" onChange={e=>{const a=[...plans];a[i]={...a[i],name:e.target.value};upC('plans',a)}}/>
                 <div className="flex gap-2"><input type="text" className={inp} value={plan.price} placeholder="99.000" onChange={e=>{const a=[...plans];a[i]={...a[i],price:e.target.value};upC('plans',a)}}/><input type="text" className={inp} value={plan.period||'/bulan'} placeholder="/bulan" onChange={e=>{const a=[...plans];a[i]={...a[i],period:e.target.value};upC('plans',a)}}/></div>
                 <input type="text" className={inp} value={plan.cta} placeholder="Teks tombol" onChange={e=>{const a=[...plans];a[i]={...a[i],cta:e.target.value};upC('plans',a)}}/>
-                <label className="flex items-center gap-2 text-[12px] text-gray-600 cursor-pointer"><input type="checkbox" checked={plan.highlighted||false} onChange={e=>{const a=[...plans];a[i]={...a[i],highlighted:e.target.checked};upC('plans',a)}} className="accent-[#2DB24A] rounded"/>Highlight (featured)</label>
+                <label className="flex items-center gap-2 text-[12px] text-gray-600 cursor-pointer"><input type="checkbox" checked={plan.highlighted||false} onChange={e=>{const a=[...plans];a[i]={...a[i],highlighted:e.target.checked};upC('plans',a)}} className="accent-primary rounded"/>Highlight (featured)</label>
               </div>
             ))}
-            <button onClick={()=>upC('plans',[...plans,{name:'Paket Baru',price:'0',period:'/bulan',features:['Fitur A'],cta:'Pilih',highlighted:false}])} className="w-full py-2 border border-dashed border-[#2DB24A]/40 text-[#2DB24A] text-[13px] rounded-lg hover:bg-[#2DB24A]/5 transition-colors">+ Tambah Paket</button>
+            <button onClick={()=>upC('plans',[...plans,{name:'Paket Baru',price:'0',period:'/bulan',features:['Fitur A'],cta:'Pilih',highlighted:false}])} className="w-full py-2 border border-dashed border-primary/40 text-primary text-[13px] rounded-lg hover:bg-primary/5 transition-colors">+ Tambah Paket</button>
           </div>
         )
       }
@@ -1000,7 +1000,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 <button onClick={()=>upC('links',(c.links||[]).filter((_:any,j:number)=>j!==i))} className="flex-shrink-0 text-gray-300 hover:text-red-400 text-lg">×</button>
               </div>
             ))}
-            <button onClick={()=>upC('links',[...(c.links||[]),{label:'Menu Baru',url:'#'}])} className="w-full py-2 border border-dashed border-[#2DB24A]/40 text-[#2DB24A] text-[13px] rounded-lg hover:bg-[#2DB24A]/5 transition-colors">+ Tambah Menu</button>
+            <button onClick={()=>upC('links',[...(c.links||[]),{label:'Menu Baru',url:'#'}])} className="w-full py-2 border border-dashed border-primary/40 text-primary text-[13px] rounded-lg hover:bg-primary/5 transition-colors">+ Tambah Menu</button>
           </div>
         )
       case 'tabs': {
@@ -1015,7 +1015,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 <textarea className={inp} rows={3} value={t.content} placeholder="Konten tab..." onChange={e=>{const a=[...tabs];a[i]={...a[i],content:e.target.value};upC('tabs',a)}}/>
               </div>
             ))}
-            <button onClick={()=>upC('tabs',[...tabs,{label:'Tab Baru',content:'Konten tab baru.'}])} className="w-full py-2 border border-dashed border-[#2DB24A]/40 text-[#2DB24A] text-[13px] rounded-lg hover:bg-[#2DB24A]/5 transition-colors">+ Tambah Tab</button>
+            <button onClick={()=>upC('tabs',[...tabs,{label:'Tab Baru',content:'Konten tab baru.'}])} className="w-full py-2 border border-dashed border-primary/40 text-primary text-[13px] rounded-lg hover:bg-primary/5 transition-colors">+ Tambah Tab</button>
           </div>
         )
       }
@@ -1029,10 +1029,10 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 <select className={inp} value={f.type||'text'} onChange={e=>{const a=[...(c.fields||[])];a[i]={...a[i],type:e.target.value};upC('fields',a)}}><option value="text">Teks</option><option value="email">Email</option><option value="tel">Telepon</option><option value="textarea">Textarea</option><option value="select">Dropdown</option></select>
                 <input type="text" className={inp} value={f.label} placeholder="Label" onChange={e=>{const a=[...(c.fields||[])];a[i]={...a[i],label:e.target.value};upC('fields',a)}}/>
                 <input type="text" className={inp} value={f.placeholder||''} placeholder="Placeholder..." onChange={e=>{const a=[...(c.fields||[])];a[i]={...a[i],placeholder:e.target.value};upC('fields',a)}}/>
-                <label className="flex items-center gap-2 text-[12px] text-gray-600 cursor-pointer"><input type="checkbox" checked={f.required||false} onChange={e=>{const a=[...(c.fields||[])];a[i]={...a[i],required:e.target.checked};upC('fields',a)}} className="accent-[#2DB24A] rounded"/>Wajib diisi</label>
+                <label className="flex items-center gap-2 text-[12px] text-gray-600 cursor-pointer"><input type="checkbox" checked={f.required||false} onChange={e=>{const a=[...(c.fields||[])];a[i]={...a[i],required:e.target.checked};upC('fields',a)}} className="accent-primary rounded"/>Wajib diisi</label>
               </div>
             ))}
-            <button onClick={()=>upC('fields',[...(c.fields||[]),{type:'text',label:'Field Baru',placeholder:'',required:false}])} className="w-full py-2 border border-dashed border-[#2DB24A]/40 text-[#2DB24A] text-[13px] rounded-lg hover:bg-[#2DB24A]/5 transition-colors">+ Tambah Field</button>
+            <button onClick={()=>upC('fields',[...(c.fields||[]),{type:'text',label:'Field Baru',placeholder:'',required:false}])} className="w-full py-2 border border-dashed border-primary/40 text-primary text-[13px] rounded-lg hover:bg-primary/5 transition-colors">+ Tambah Field</button>
             <div><label className={lbl}>Teks Tombol Submit</label><input type="text" className={inp} value={c.submitLabel||''} onChange={e=>upC('submitLabel',e.target.value)}/></div>
             <div><label className={lbl}>Redirect URL setelah Submit</label><input type="text" className={inp} value={c.redirectUrl||''} onChange={e=>upC('redirectUrl',e.target.value)} placeholder="https://..."/></div>
           </div>
@@ -1068,7 +1068,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
               <label className={lbl}>Jumlah Kolom</label>
               <div className="flex bg-gray-100 rounded-lg p-0.5">
                 {[1,2,3].map(n => (
-                  <button key={n} onClick={()=>upC('columns',n)} className={`flex-1 py-1.5 rounded-md text-[12px] font-bold transition-all ${(c.columns||2)===n?'bg-white text-[#2DB24A] shadow-sm':'text-gray-400'}`}>{n}</button>
+                  <button key={n} onClick={()=>upC('columns',n)} className={`flex-1 py-1.5 rounded-md text-[12px] font-bold transition-all ${(c.columns||2)===n?'bg-white text-primary shadow-sm':'text-gray-400'}`}>{n}</button>
                 ))}
               </div>
             </div>
@@ -1078,7 +1078,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                 {[['showPrice','Tampilkan Harga'],['showStock','Tampilkan Stok'],['showBuyBtn','Tombol Beli']].map(([k,l]) => (
                   <label key={k} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl cursor-pointer">
                     <span className="text-[13px] text-gray-600">{l}</span>
-                    <input type="checkbox" checked={(c as any)[k] !== false} onChange={e=>upC(k,e.target.checked)} className="w-4 h-4 accent-[#2DB24A] rounded"/>
+                    <input type="checkbox" checked={(c as any)[k] !== false} onChange={e=>upC(k,e.target.checked)} className="w-4 h-4 accent-primary rounded"/>
                   </label>
                 ))}
               </div>
@@ -1091,14 +1091,14 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
               {merchantProducts.length === 0 ? (
                 <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                   <p className="text-[12px] text-gray-400">Belum ada produk di katalog.</p>
-                  <a href="/merchant/dashboard" target="_blank" className="text-[11px] text-[#2DB24A] underline mt-1 block">Tambah Produk →</a>
+                  <a href="/merchant/dashboard" target="_blank" className="text-[11px] text-primary underline mt-1 block">Tambah Produk →</a>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                   {merchantProducts.map((prod: any) => {
                     const isSelected = selected.includes(prod.id)
                     return (
-                      <label key={prod.id} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border transition-all ${isSelected ? 'border-[#2DB24A]/40 bg-[#2DB24A]/5' : 'border-transparent bg-gray-50 hover:bg-gray-100'}`}>
+                      <label key={prod.id} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border transition-all ${isSelected ? 'border-primary/40 bg-primary/5' : 'border-transparent bg-gray-50 hover:bg-gray-100'}`}>
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -1108,7 +1108,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                               : selected.filter((id: string) => id !== prod.id)
                             upC('productIds', next)
                           }}
-                          className="w-4 h-4 accent-[#2DB24A] rounded flex-shrink-0"
+                          className="w-4 h-4 accent-primary rounded flex-shrink-0"
                         />
                         {prod.imageUrl ? (
                           <img src={prod.imageUrl} alt={prod.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-[#e4e6ea]"/>
@@ -1117,7 +1117,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
                         )}
                         <div className="min-w-0">
                           <p className="text-[12px] font-semibold text-gray-800 truncate">{prod.title}</p>
-                          <p className="text-[11px] text-[#2DB24A] font-bold">Rp {prod.price?.toLocaleString('id-ID')}</p>
+                          <p className="text-[11px] text-primary font-bold">Rp {prod.price?.toLocaleString('id-ID')}</p>
                         </div>
                       </label>
                     )
@@ -1141,7 +1141,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
           <label className={lbl}>Rata Teks</label>
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             {[['left','Kiri'],['center','Tengah'],['right','Kanan']].map(([v,ico])=>(
-              <button key={v} onClick={()=>upS('textAlign',v)} className={`flex-1 py-1.5 rounded-md text-[12px] font-semibold transition-all ${s.textAlign===v?'bg-white text-[#2DB24A] shadow-sm':'text-gray-400 hover:text-gray-600'}`}>{ico}</button>
+              <button key={v} onClick={()=>upS('textAlign',v)} className={`flex-1 py-1.5 rounded-md text-[12px] font-semibold transition-all ${s.textAlign===v?'bg-white text-primary shadow-sm':'text-gray-400 hover:text-gray-600'}`}>{ico}</button>
             ))}
           </div>
         </div>
@@ -1149,7 +1149,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
           <label className={lbl}>Ukuran Font</label>
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             {[['sm','S'],['default','M'],['lg','L']].map(([v,l])=>(
-              <button key={v} onClick={()=>upS('fontSize',v)} className={`flex-1 py-1.5 rounded-md text-[12px] font-bold transition-all ${s.fontSize===v||(v==='default'&&!s.fontSize)?'bg-white text-[#2DB24A] shadow-sm':'text-gray-400 hover:text-gray-600'}`}>{l}</button>
+              <button key={v} onClick={()=>upS('fontSize',v)} className={`flex-1 py-1.5 rounded-md text-[12px] font-bold transition-all ${s.fontSize===v||(v==='default'&&!s.fontSize)?'bg-white text-primary shadow-sm':'text-gray-400 hover:text-gray-600'}`}>{l}</button>
             ))}
           </div>
         </div>
@@ -1157,7 +1157,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
           <label className={lbl}>Ketebalan Font</label>
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             {[['normal','Normal'],['default','Medium'],['bold','Bold']].map(([v,l])=>(
-              <button key={v} onClick={()=>upS('fontWeight',v)} className={`flex-1 py-1.5 rounded-md text-[12px] font-semibold transition-all ${s.fontWeight===v||(v==='default'&&!s.fontWeight)?'bg-white text-[#2DB24A] shadow-sm':'text-gray-400 hover:text-gray-600'}`}>{l}</button>
+              <button key={v} onClick={()=>upS('fontWeight',v)} className={`flex-1 py-1.5 rounded-md text-[12px] font-semibold transition-all ${s.fontWeight===v||(v==='default'&&!s.fontWeight)?'bg-white text-primary shadow-sm':'text-gray-400 hover:text-gray-600'}`}>{l}</button>
             ))}
           </div>
         </div>
@@ -1177,11 +1177,11 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
         </div>
         <div>
           <label className={lbl}>Opacity: {s.opacity??100}%</label>
-          <input type="range" min={0} max={100} value={s.opacity??100} onChange={e=>upS('opacity',+e.target.value)} className="w-full accent-[#2DB24A]"/>
+          <input type="range" min={0} max={100} value={s.opacity??100} onChange={e=>upS('opacity',+e.target.value)} className="w-full accent-primary"/>
         </div>
         <div>
           <label className={lbl}>Border Radius (px)</label>
-          <input type="range" min={0} max={50} value={s.borderRadius??0} onChange={e=>upS('borderRadius',+e.target.value)} className="w-full accent-[#2DB24A]"/>
+          <input type="range" min={0} max={50} value={s.borderRadius??0} onChange={e=>upS('borderRadius',+e.target.value)} className="w-full accent-primary"/>
           <p className="text-[12px] text-gray-500 mt-1">{s.borderRadius??0}px</p>
         </div>
         <div>
@@ -1214,7 +1214,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
             {[['showDesktop','🖥  Desktop'],['showTablet','📟  Tablet'],['showMobile','📱  Mobile']].map(([k,l])=>(
               <label key={k} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl cursor-pointer">
                 <span className="text-[13px] text-gray-600">{l}</span>
-                <input type="checkbox" checked={(a as any)[k]!==false} onChange={e=>upA(k,e.target.checked)} className="w-4 h-4 accent-[#2DB24A] rounded"/>
+                <input type="checkbox" checked={(a as any)[k]!==false} onChange={e=>upA(k,e.target.checked)} className="w-4 h-4 accent-primary rounded"/>
               </label>
             ))}
           </div>
@@ -1230,7 +1230,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
       {/* Panel header */}
       <div className="px-4 py-3 border-b border-[#f0f0f0] flex-shrink-0">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[#2DB24A] flex-shrink-0">{getIcon(comp.type)}</span>
+          <span className="text-primary flex-shrink-0">{getIcon(comp.type)}</span>
           <span className="text-[13px] font-semibold text-gray-800 capitalize flex-1 truncate">{comp.type.replace(/_/g,' ')}</span>
           <button onClick={onDuplicate} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Duplikat">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -1241,7 +1241,7 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
         </div>
         <div className="flex bg-gray-100 rounded-lg p-0.5">
           {(['content','style','advance'] as const).map(t=>(
-            <button key={t} onClick={()=>setTab(t)} className={`flex-1 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wide transition-all ${tab===t?'bg-white text-[#2DB24A] shadow-sm':'text-gray-400 hover:text-gray-600'}`}>
+            <button key={t} onClick={()=>setTab(t)} className={`flex-1 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wide transition-all ${tab===t?'bg-white text-primary shadow-sm':'text-gray-400 hover:text-gray-600'}`}>
               {t==='content'?'Konten':t==='style'?'Gaya':'Lanjutan'}
             </button>
           ))}
@@ -1882,7 +1882,7 @@ export default function BuilderPage() {
             {showCanvasMenu&&(
               <div className="absolute top-full left-0 mt-1 bg-white border border-[#e4e6ea] rounded-xl shadow-lg overflow-hidden z-50 min-w-[130px]">
                 {(['Slimmer','Normal','Full'] as const).map(w=>(
-                  <button key={w} onClick={()=>{setCanvasW(w);setShowCanvasMenu(false)}} className={`w-full text-left px-4 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 ${canvasW===w?'text-[#2DB24A]':'text-gray-700'}`}>{w}</button>
+                  <button key={w} onClick={()=>{setCanvasW(w);setShowCanvasMenu(false)}} className={`w-full text-left px-4 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 ${canvasW===w?'text-primary':'text-gray-700'}`}>{w}</button>
                 ))}
               </div>
             )}
@@ -1893,7 +1893,7 @@ export default function BuilderPage() {
               onClick={() => setShowStyleMenu(p => !p)}
               className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600 border border-[#e4e6ea] rounded-lg px-3 h-8 hover:bg-gray-50 transition-colors"
             >
-              <Sparkles size={11} className="text-[#2DB24A]" />
+              <Sparkles size={11} className="text-primary" />
               Style & AI
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -2138,7 +2138,7 @@ export default function BuilderPage() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a8 8 0 000 16h10"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 10l-4-4 4-4"/></svg>
           </button>
           <div className="w-px h-5 bg-[#e4e6ea] mx-1"/>
-          <button onClick={handleSave} disabled={saving} className={`h-8 px-5 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${saved?'bg-emerald-500 text-white':'bg-[#2DB24A] hover:bg-[#0F5132] text-white'} disabled:opacity-70`}>
+          <button onClick={handleSave} disabled={saving} className={`h-8 px-5 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${saved?'bg-emerald-500 text-white':'bg-primary hover:bg-[#0F5132] text-white'} disabled:opacity-70`}>
             {saving?<><svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 12a8 8 0 018-8"/></svg>Saving...</>:saved?<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>Saved!</>:'Save'}
           </button>
         </div>
@@ -2176,9 +2176,9 @@ export default function BuilderPage() {
                     style={{color:'rgba(255,255,255,0.6)'}}
                     title={`Klik untuk tambah ${item.label}`}
                   >
-                    <span className="flex-shrink-0 transition-colors group-hover:text-[#2DB24A]" style={{color:'rgba(255,255,255,0.3)'}}>{getIcon(item.type)}</span>
+                    <span className="flex-shrink-0 transition-colors group-hover:text-primary" style={{color:'rgba(255,255,255,0.3)'}}>{getIcon(item.type)}</span>
                     <span className="text-[12px] font-medium group-hover:text-white transition-colors flex-1">{item.label}</span>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="opacity-0 group-hover:opacity-100 text-[#2DB24A] flex-shrink-0 transition-opacity"><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14"/></svg>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="opacity-0 group-hover:opacity-100 text-primary flex-shrink-0 transition-opacity"><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14"/></svg>
                   </button>
                 ))}
               </div>
@@ -2483,7 +2483,7 @@ export default function BuilderPage() {
 
                   {/* Drop zone at bottom */}
                   <div
-                    className={`py-6 flex items-center justify-center border-t border-dashed transition-all cursor-pointer ${dragOverIdx===comps.length?'border-[#2DB24A] bg-[#2DB24A]/5':'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'}`}
+                    className={`py-6 flex items-center justify-center border-t border-dashed transition-all cursor-pointer ${dragOverIdx===comps.length?'border-primary bg-primary/5':'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'}`}
                     onDragOver={e=>{e.preventDefault();setDragOverIdx(comps.length)}}
                     onDrop={e=>{
                       e.preventDefault()

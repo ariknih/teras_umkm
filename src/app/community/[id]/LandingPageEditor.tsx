@@ -204,24 +204,24 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Badge Hero</label>
-            <input type="text" value={heroBadge} onChange={e => setHeroBadge(e.target.value)} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-[#2DB24A] outline-none" required />
+            <input type="text" value={heroBadge} onChange={e => setHeroBadge(e.target.value)} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none" required />
           </div>
           <div>
             <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Nama Komunitas (Judul)</label>
-            <input type="text" value={heroTitle} onChange={e => setHeroTitle(e.target.value)} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-[#2DB24A] outline-none" required />
+            <input type="text" value={heroTitle} onChange={e => setHeroTitle(e.target.value)} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none" required />
           </div>
           <div className="col-span-full">
             <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Sub-Slogan (Slogan Tebal)</label>
-            <input type="text" value={heroSubtitle} onChange={e => setHeroSubtitle(e.target.value)} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-[#2DB24A] outline-none" required />
+            <input type="text" value={heroSubtitle} onChange={e => setHeroSubtitle(e.target.value)} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none" required />
           </div>
           <div className="col-span-full">
             <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Deskripsi Hero</label>
-            <textarea value={heroDescription} onChange={e => setHeroDescription(e.target.value)} rows={3} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-[#2DB24A] outline-none" required />
+            <textarea value={heroDescription} onChange={e => setHeroDescription(e.target.value)} rows={3} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none" required />
           </div>
           <div className="col-span-full">
             <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Foto Utama Landing Page (Collage Cover)</label>
             <div className="flex gap-4 items-center">
-              <input type="text" value={heroCoverUrl} onChange={e => setHeroCoverUrl(e.target.value)} placeholder="https://..." className="flex-1 px-3.5 py-2 border border-gray-200 rounded-xl focus:border-[#2DB24A] outline-none" />
+              <input type="text" value={heroCoverUrl} onChange={e => setHeroCoverUrl(e.target.value)} placeholder="https://..." className="flex-1 px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none" />
               <label className="px-4 py-2 bg-slate-50 border border-gray-200 hover:bg-slate-100 rounded-xl cursor-pointer flex items-center gap-1.5 font-bold transition-all shadow-3xs shrink-0">
                 {uploadingHero ? <Loader2 className="w-4 h-4 animate-spin text-emerald-700" /> : <Upload className="w-4 h-4 text-gray-500" />}
                 Unggah Foto
@@ -274,7 +274,7 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
               value={vision} 
               onChange={e => setVision(e.target.value)} 
               rows={3} 
-              className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-[#2DB24A] outline-none" 
+              className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none" 
               required 
             />
           </div>
@@ -291,7 +291,7 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
                     updated[idx] = e.target.value
                     setMissions(updated)
                   }}
-                  className="flex-1 px-3.5 py-2 border border-gray-200 rounded-xl focus:border-[#2DB24A] outline-none"
+                  className="flex-1 px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none"
                   required
                 />
               </div>
@@ -404,7 +404,7 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
 
       {/* Submit Button */}
       <div className="pt-6 border-t border-gray-100 flex justify-end">
-        <button type="submit" disabled={saving} className="px-6 py-3 bg-[#2DB24A] hover:bg-[#0F5132] disabled:bg-emerald-300 text-white font-extrabold rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2 font-sora">
+        <button type="submit" disabled={saving} className="px-6 py-3 bg-primary hover:bg-[#0F5132] disabled:bg-emerald-300 text-white font-extrabold rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2 font-sora">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {saving ? 'Menyimpan...' : 'Perbarui Landing Page'}
         </button>

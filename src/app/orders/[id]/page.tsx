@@ -126,7 +126,7 @@ export default function OrderDetailPage({ params }: PageProps) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center pt-20">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-9 h-9 border-3 border-slate-200 border-t-[#2DB24A] rounded-full animate-spin" />
+          <div className="w-9 h-9 border-3 border-slate-200 border-t-primary rounded-full animate-spin" />
           <p className="text-xs font-bold text-slate-700">Memuat rincian pesanan...</p>
         </div>
       </div>
@@ -142,7 +142,7 @@ export default function OrderDetailPage({ params }: PageProps) {
           </div>
           <h2 className="font-extrabold text-base text-slate-900">Pesanan Tidak Ditemukan</h2>
           <p className="text-xs text-slate-500">ID Pesanan #{id} tidak terdaftar di sistem atau telah dihapus.</p>
-          <Link href="/orders" className="px-6 py-2.5 bg-[#2DB24A] text-white text-xs font-bold rounded-xl inline-block">
+          <Link href="/orders" className="px-6 py-2.5 bg-primary text-white text-xs font-bold rounded-xl inline-block">
             Kembali ke Daftar Pesanan
           </Link>
         </div>
@@ -178,7 +178,7 @@ export default function OrderDetailPage({ params }: PageProps) {
         <div className="flex items-center justify-between">
           <Link
             href="/orders"
-            className="inline-flex items-center gap-1.5 text-slate-600 hover:text-[#2DB24A] transition-colors text-xs font-bold"
+            className="inline-flex items-center gap-1.5 text-slate-600 hover:text-primary transition-colors text-xs font-bold"
           >
             <ArrowLeft size={15} />
             <span>Kembali ke Daftar Pesanan</span>
@@ -190,7 +190,7 @@ export default function OrderDetailPage({ params }: PageProps) {
               target="_blank"
               className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-all shadow-2xs"
             >
-              <FileText size={13} className="text-[#2DB24A]" />
+              <FileText size={13} className="text-primary" />
               <span>Lihat Invoice</span>
             </Link>
           </div>
@@ -205,7 +205,7 @@ export default function OrderDetailPage({ params }: PageProps) {
               </span>
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase border ${
                 order.status === 'COMPLETED'
-                  ? 'bg-[#E8F5E9] border-[#C8E6C9] text-[#2DB24A]'
+                  ? 'bg-[#E8F5E9] border-[#C8E6C9] text-primary'
                   : order.status === 'CANCELLED'
                   ? 'bg-rose-50 border-rose-200 text-rose-600'
                   : 'bg-amber-50 border-amber-200 text-amber-700'
@@ -223,7 +223,7 @@ export default function OrderDetailPage({ params }: PageProps) {
               type="button"
               onClick={handleCompleteOrder}
               disabled={completing}
-              className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              className="px-5 py-2.5 bg-primary hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
             >
               <CheckCircle2 size={14} strokeWidth={2.5} />
               <span>{completing ? 'Memproses...' : 'Konfirmasi Pesanan Diterima'}</span>
@@ -246,7 +246,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                   title="Salin Resi"
                 >
                   <span>{order.shippingLabel}</span>
-                  <Copy size={11} className={copiedResi ? 'text-[#2DB24A]' : 'text-slate-400'} />
+                  <Copy size={11} className={copiedResi ? 'text-primary' : 'text-slate-400'} />
                 </button>
               </div>
             )}
@@ -268,16 +268,16 @@ export default function OrderDetailPage({ params }: PageProps) {
                   {/* Connect Line (Desktop) */}
                   {idx < statuses.length - 1 && (
                     <div className="hidden md:block absolute top-4 left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5 bg-slate-200 z-0">
-                      <div className={`h-full bg-[#2DB24A] transition-all duration-500 ${idx < currentIdx ? 'w-full' : 'w-0'}`} />
+                      <div className={`h-full bg-primary transition-all duration-500 ${idx < currentIdx ? 'w-full' : 'w-0'}`} />
                     </div>
                   )}
                   
                   {/* Circle Indicator */}
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center z-10 border-2 transition-all duration-300 ${
                     isPast 
-                      ? 'bg-[#E8F5E9] border-[#2DB24A] text-[#2DB24A] font-bold' 
+                      ? 'bg-[#E8F5E9] border-primary text-primary font-bold' 
                       : 'bg-slate-50 border-slate-200 text-slate-400'
-                  } ${isCurrent ? 'ring-4 ring-[#2DB24A]/20 scale-105 shadow-xs' : ''}`}>
+                  } ${isCurrent ? 'ring-4 ring-primary/20 scale-105 shadow-xs' : ''}`}>
                     <StepIcon size={16} strokeWidth={isPast ? 2.5 : 2} />
                   </div>
 
@@ -289,7 +289,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                       {step.description}
                     </p>
                     {logDate && (
-                      <p className="text-[10px] font-bold text-[#2DB24A] mt-1 font-mono">
+                      <p className="text-[10px] font-bold text-primary mt-1 font-mono">
                         {logDate}
                       </p>
                     )}
@@ -333,19 +333,19 @@ export default function OrderDetailPage({ params }: PageProps) {
               </div>
               <div className="flex justify-between">
                 <span>Biaya Pengiriman</span>
-                <span className="font-semibold text-[#2DB24A]">
+                <span className="font-semibold text-primary">
                   {order.shippingFee ? `Rp ${order.shippingFee.toLocaleString('id-ID')}` : 'Gratis'}
                 </span>
               </div>
               {order.discountAmount > 0 && (
-                <div className="flex justify-between text-[#2DB24A] font-bold">
+                <div className="flex justify-between text-primary font-bold">
                   <span>Diskon Kupon</span>
                   <span>-Rp {order.discountAmount.toLocaleString('id-ID')}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-slate-100 pt-2.5 text-slate-900 font-extrabold text-sm">
                 <span>Total Bayar</span>
-                <span className="text-[#2DB24A] font-mono">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
+                <span className="text-primary font-mono">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
               </div>
             </div>
           </div>
@@ -390,7 +390,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                   {order.status === 'COMPLETED' && !alreadyReviewed && (
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                       <h5 className="text-xs font-bold text-slate-800">Beri Ulasan untuk Produk Ini:</h5>
-                      {reviewSuccess && <p className="text-xs text-[#2DB24A] font-bold">✔ {reviewSuccess}</p>}
+                      {reviewSuccess && <p className="text-xs text-primary font-bold">✔ {reviewSuccess}</p>}
                       {reviewError && <p className="text-xs text-rose-600 font-bold">⚠️ {reviewError}</p>}
                       
                       <form onSubmit={(e) => handleReviewSubmit(item.productId, e)} className="space-y-3">
@@ -412,12 +412,12 @@ export default function OrderDetailPage({ params }: PageProps) {
                           onChange={(e) => setComment(e.target.value)}
                           rows={2}
                           required
-                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#2DB24A]"
+                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-primary"
                         />
                         <button
                           type="submit"
                           disabled={submittingReview}
-                          className="px-4 py-2 bg-[#2DB24A] hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                          className="px-4 py-2 bg-primary hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer"
                         >
                           {submittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
                         </button>
@@ -426,7 +426,7 @@ export default function OrderDetailPage({ params }: PageProps) {
                   )}
 
                   {alreadyReviewed && (
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-[#2DB24A] text-[11px] font-bold rounded-lg border border-emerald-200">
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-primary text-[11px] font-bold rounded-lg border border-emerald-200">
                       <CheckCircle2 size={13} />
                       <span>Ulasan telah dikirim</span>
                     </div>

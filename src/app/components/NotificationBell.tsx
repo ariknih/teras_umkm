@@ -114,7 +114,7 @@ export default function NotificationBell() {
               <button
                 id="mark-all-read-btn"
                 onClick={handleMarkAllRead}
-                className="text-[10px] font-bold text-[#2DB24A] hover:underline uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
+                className="text-[10px] font-bold text-primary hover:underline uppercase tracking-wider cursor-pointer bg-transparent border-none outline-none"
               >
                 Tandai semua dibaca
               </button>
@@ -137,13 +137,13 @@ export default function NotificationBell() {
                     }
                   }}
                   className={`px-4 py-3 hover:bg-slate-50 transition-colors duration-150 flex flex-col gap-1 cursor-pointer ${
-                    !notif.isRead ? 'bg-[#E8F5E9]/40 border-l-3 border-l-[#2DB24A]' : ''
+                    !notif.isRead ? 'bg-[#E8F5E9]/40 border-l-3 border-l-primary' : ''
                   }`}
                 >
                   {notif.linkUrl ? (
                     <Link href={notif.linkUrl} className="block">
                       <div className="flex justify-between items-start gap-2">
-                        <span className={`text-[11px] ${!notif.isRead ? 'font-bold text-[#2DB24A]' : 'font-semibold text-slate-800'}`}>
+                        <span className={`text-[11px] ${!notif.isRead ? 'font-bold text-primary' : 'font-semibold text-slate-800'}`}>
                           {notif.title}
                         </span>
                         <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap">
@@ -157,7 +157,7 @@ export default function NotificationBell() {
                   ) : (
                     <div>
                       <div className="flex justify-between items-start gap-2">
-                        <span className={`text-[11px] ${!notif.isRead ? 'font-bold text-[#2DB24A]' : 'font-semibold text-slate-800'}`}>
+                        <span className={`text-[11px] ${!notif.isRead ? 'font-bold text-primary' : 'font-semibold text-slate-800'}`}>
                           {notif.title}
                         </span>
                         <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap">

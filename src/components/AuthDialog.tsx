@@ -205,9 +205,9 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
           <DialogHeader className="text-center sm:text-center">
             <DialogTitle className="sm:text-center text-xl font-black tracking-tight text-slate-900">
               {tab === "login" ? (
-                <>Masuk ke <span className="text-slate-900">Saloka</span><span className="text-[#2DB24A]">.id</span></>
+                <>Masuk ke <span className="text-slate-900">Saloka</span><span className="text-primary">.id</span></>
               ) : (
-                <>Daftar ke <span className="text-slate-900">Saloka</span><span className="text-[#2DB24A]">.id</span></>
+                <>Daftar ke <span className="text-slate-900">Saloka</span><span className="text-primary">.id</span></>
               )}
             </DialogTitle>
             <DialogDescription className="sm:text-center text-xs text-slate-500 mt-1 font-medium leading-relaxed">
@@ -223,7 +223,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
             onClick={() => handleTabChange("login")}
             className={`flex-1 py-2 text-center text-xs font-bold tracking-wide rounded-lg transition-all ${
               tab === "login" 
-                ? "bg-[#2DB24A] text-white shadow-sm" 
+                ? "bg-primary text-white shadow-sm" 
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -234,7 +234,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
             onClick={() => handleTabChange("register")}
             className={`flex-1 py-2 text-center text-xs font-bold tracking-wide rounded-lg transition-all ${
               tab === "register" 
-                ? "bg-[#2DB24A] text-white shadow-sm" 
+                ? "bg-primary text-white shadow-sm" 
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -261,7 +261,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Nama Anda"
-                  className="pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A]/20 text-xs"
+                  className="pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary/20 text-xs"
                 />
               </div>
 
@@ -269,7 +269,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                 <div className="flex justify-between items-center">
                   <Label htmlFor="dialog-username" className="text-xs font-bold text-slate-700">Username</Label>
                   {username && (
-                    <span className={`text-[10px] font-semibold ${isUsernameAvailable ? 'text-[#2DB24A]' : 'text-red-500'}`}>
+                    <span className={`text-[10px] font-semibold ${isUsernameAvailable ? 'text-primary' : 'text-red-500'}`}>
                       {usernameMsg}
                     </span>
                   )}
@@ -281,7 +281,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                   value={username}
                   onChange={handleUsernameChange}
                   placeholder="budi_santoso22"
-                  className={`pl-4 py-2.5 rounded-xl text-xs border ${username ? (isUsernameAvailable ? 'border-[#2DB24A] focus:border-[#2DB24A]' : 'border-red-500 focus:border-red-500') : 'border-slate-200 focus:border-[#2DB24A]'}`}
+                  className={`pl-4 py-2.5 rounded-xl text-xs border ${username ? (isUsernameAvailable ? 'border-primary focus:border-primary' : 'border-red-500 focus:border-red-500') : 'border-slate-200 focus:border-primary'}`}
                 />
                 <p className="text-[10px] text-slate-400">
                   Gunakan huruf kecil, angka, 106, underscore, dan dash. Contoh: user.number23.
@@ -299,7 +299,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="penya-user.id@gmail.com"
-              className="pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#2DB24A] focus:ring-1 focus:ring-[#2DB24A]/20 text-xs"
+              className="pl-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary focus:ring-1 focus:ring-primary/20 text-xs"
             />
           </div>
 
@@ -313,7 +313,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
               required
             />
             {tab === "login" && (
-              <a href="#" className="absolute right-0 top-0 text-[10px] text-[#2DB24A] hover:underline font-semibold">
+              <a href="#" className="absolute right-0 top-0 text-[10px] text-primary hover:underline font-semibold">
                 Lupa sandi?
               </a>
             )}
@@ -327,7 +327,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                   id="dialog-role"
                   value={role}
                   onChange={(e) => setRole(e.target.value as any)}
-                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] transition-all outline-none text-slate-800 text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
+                  className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none text-slate-800 text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
                 >
                   <option value="CUSTOMER">Customer</option>
                   <option value="MERCHANT">Merchant</option>
@@ -345,7 +345,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
                       value={selectedCommunityId}
                       onChange={(e) => setSelectedCommunityId(e.target.value)}
                       required
-                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-[#2DB24A] focus:border-[#2DB24A] transition-all outline-none text-slate-800 text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary transition-all outline-none text-slate-800 text-xs cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239ca3af%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px] bg-[right_16px_center] bg-no-repeat"
                     >
                       {communities.map((comm) => (
                         <option key={comm.id} value={comm.id}>
@@ -378,7 +378,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full py-3 mt-2 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-none outline-none"
+            className="w-full py-3 mt-2 bg-primary hover:bg-[#24943E] text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-none outline-none"
           >
             {isPending ? (
               <>
@@ -415,7 +415,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
         </button>
 
         <p className="text-center text-[10px] text-slate-400 mt-3 leading-tight">
-          Dengan mendaftar, Anda menyetujui <a className="underline text-[#2DB24A] font-semibold" href="#">Syarat Layanan</a> dan <a className="underline text-[#2DB24A] font-semibold" href="#">Kebijakan Privasi</a> kami.
+          Dengan mendaftar, Anda menyetujui <a className="underline text-primary font-semibold" href="#">Syarat Layanan</a> dan <a className="underline text-primary font-semibold" href="#">Kebijakan Privasi</a> kami.
         </p>
       </DialogContent>
     </Dialog>

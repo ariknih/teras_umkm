@@ -535,12 +535,12 @@ export default function AffiliatePage() {
               href={`/profile/${user.id}`}
               className="px-3 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle rounded text-xs font-geist text-text-primary transition-colors flex items-center gap-2"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-[#2DB24A]">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5 text-primary">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
               Lihat Profil Anda
             </Link>
-            <span className="btn-primary bg-[#2DB24A]/10 border border-[#2DB24A]/25 text-[10px] text-[#0F5132]">
+            <span className="btn-primary bg-primary/10 border border-primary/25 text-[10px] text-[#0F5132]">
               Akses: {user.membershipAccess} ({user.membershipLevel})
             </span>
           </div>
@@ -562,7 +562,7 @@ export default function AffiliatePage() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-5 py-3.5 text-xs font-geist font-bold uppercase tracking-wider border-b-2 whitespace-nowrap transition-all ${
                 activeTab === tab.id
-                  ? 'border-[#2DB24A] text-[#2DB24A] bg-[#2DB24A]/5'
+                  ? 'border-primary text-primary bg-primary/5'
                   : 'border-transparent text-text-secondary hover:text-[#0F5132] hover:bg-slate-50'
               }`}
             >

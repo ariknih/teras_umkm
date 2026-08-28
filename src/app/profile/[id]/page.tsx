@@ -66,7 +66,7 @@ export default async function ProfilePage({ params }: PageProps) {
         <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_70%)] pointer-events-none z-0" />
 
         <div className="relative z-10 w-full max-w-md text-center border border-black/5 bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl">
-          <div className="w-16 h-16 rounded-2xl bg-[#2DB24A]/10 border border-[#2DB24A]/20 flex items-center justify-center mx-auto text-[#2DB24A] mb-6">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-6">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 13.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H4.25c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125Z" />
             </svg>
@@ -78,7 +78,7 @@ export default async function ProfilePage({ params }: PageProps) {
           <div className="flex flex-col gap-3">
             <Link
               href="/auth?tab=login"
-              className="w-full py-3 bg-[#2DB24A] hover:bg-[#2DB24A]/90 text-white text-center font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-lg"
+              className="w-full py-3 bg-primary hover:bg-primary/90 text-white text-center font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-lg"
             >
               Masuk Sekarang
             </Link>

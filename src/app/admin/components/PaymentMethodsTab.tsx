@@ -196,7 +196,7 @@ export default function PaymentMethodsTab() {
         </div>
         <button
           onClick={openCreateModal}
-          className="bg-[#16A34A] hover:bg-[#15803D] text-white font-bold py-2.5 px-5 rounded-xl transition-colors inline-flex items-center gap-2 text-sm shadow-sm cursor-pointer"
+          className="bg-primary hover:bg-[#15803D] text-white font-bold py-2.5 px-5 rounded-xl transition-colors inline-flex items-center gap-2 text-sm shadow-sm cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
           Tambah Metode
@@ -254,7 +254,7 @@ export default function PaymentMethodsTab() {
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center gap-2">
-                      <svg className="w-8 h-8 animate-spin text-[#16A34A]" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      <svg className="w-8 h-8 animate-spin text-primary" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                       <span className="text-sm">Memuat data...</span>
                     </div>
                   </td>
@@ -269,7 +269,7 @@ export default function PaymentMethodsTab() {
                       </p>
                       <button
                         onClick={openCreateModal}
-                        className="mt-2 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold py-2 px-4 rounded-lg text-xs transition-colors cursor-pointer"
+                        className="mt-2 bg-primary hover:bg-[#15803D] text-white font-bold py-2 px-4 rounded-lg text-xs transition-colors cursor-pointer"
                       >
                         + Tambah Sekarang
                       </button>
@@ -306,7 +306,7 @@ export default function PaymentMethodsTab() {
                     <td className="py-4 px-6">
                       <button
                         onClick={() => handleToggleStatus(method.id, method.isActive)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${method.isActive ? 'bg-[#16A34A]' : 'bg-slate-300'}`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${method.isActive ? 'bg-primary' : 'bg-slate-300'}`}
                         title={method.isActive ? 'Klik untuk menonaktifkan' : 'Klik untuk mengaktifkan'}
                       >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${method.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -350,14 +350,14 @@ export default function PaymentMethodsTab() {
               <button
                 type="button"
                 onClick={() => setFormType('BANK')}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${formType === 'BANK' ? 'bg-white text-[#16A34A] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${formType === 'BANK' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 🏦 Transfer Bank
               </button>
               <button
                 type="button"
                 onClick={() => setFormType('QRIS')}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${formType === 'QRIS' ? 'bg-white text-[#16A34A] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${formType === 'QRIS' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
               >
                 📱 QRIS
               </button>
@@ -374,7 +374,7 @@ export default function PaymentMethodsTab() {
                       value={formData.providerName}
                       onChange={e => setFormData({ ...formData, providerName: e.target.value })}
                       placeholder="BCA"
-                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -385,7 +385,7 @@ export default function PaymentMethodsTab() {
                       value={formData.accountNumber}
                       onChange={e => setFormData({ ...formData, accountNumber: e.target.value })}
                       placeholder="1234567890"
-                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 font-mono focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -396,7 +396,7 @@ export default function PaymentMethodsTab() {
                       value={formData.accountName}
                       onChange={e => setFormData({ ...formData, accountName: e.target.value })}
                       placeholder="PT Saloka Indonesia"
-                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 </>
@@ -410,7 +410,7 @@ export default function PaymentMethodsTab() {
                       value={formData.providerName}
                       onChange={e => setFormData({ ...formData, providerName: e.target.value })}
                       placeholder="QRIS Saloka"
-                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -420,7 +420,7 @@ export default function PaymentMethodsTab() {
                       placeholder="https://..."
                       value={formData.qrImageUrl}
                       onChange={e => setFormData({ ...formData, qrImageUrl: e.target.value })}
-                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -429,7 +429,7 @@ export default function PaymentMethodsTab() {
                       placeholder="00020101021126670016ID.CO.QRIS.WWW..."
                       value={formData.qrRawString}
                       onChange={e => setFormData({ ...formData, qrRawString: e.target.value })}
-                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 h-24 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
+                      className="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-slate-800 h-24 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                     <p className="text-[10px] text-slate-400 mt-1">Jika diisi, QRIS ini bisa menjadi Dinamis di halaman checkout.</p>
                   </div>
@@ -441,7 +441,7 @@ export default function PaymentMethodsTab() {
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${formData.isActive ? 'bg-[#16A34A]' : 'bg-slate-300'}`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${formData.isActive ? 'bg-primary' : 'bg-slate-300'}`}
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
@@ -458,7 +458,7 @@ export default function PaymentMethodsTab() {
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="flex-1 py-2.5 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+                  className="flex-1 py-2.5 bg-primary hover:bg-[#15803D] text-white font-bold rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isPending ? (editingMethod ? 'Memperbarui...' : 'Menyimpan...') : (editingMethod ? 'Perbarui' : 'Simpan')}
                 </button>
