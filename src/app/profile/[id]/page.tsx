@@ -132,7 +132,7 @@ export default async function ProfilePage({ params }: PageProps) {
         return o.items.some((item: any) => item.product?.merchantId === user.id);
       });
       merchantStats.totalOrders = merchantOrders.length;
-      merchantStats.totalRevenue = merchantOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      merchantStats.totalRevenue = merchantOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
     } catch (e) {
       console.error("Failed to fetch merchant stats:", e);
     }
@@ -140,7 +140,7 @@ export default async function ProfilePage({ params }: PageProps) {
 
   // Get all products and filter for this user
   const allProducts = await getProducts();
-  const userProducts = allProducts.filter((p) => p.merchantId === user.id);
+  const userProducts = allProducts.filter((p: any) => p.merchantId === user.id);
 
   // Get all community memberships and roles for this user
   let userCommunities: any[] = [];
@@ -182,7 +182,7 @@ export default async function ProfilePage({ params }: PageProps) {
         indukCommunityName: userCommunities.length > 0 ? userCommunities[0].communityName : null,
         userCommunities
       }}
-      products={userProducts.map((p) => ({
+      products={userProducts.map((p: any) => ({
         id: p.id,
         title: p.title,
         description: p.description,

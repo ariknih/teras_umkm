@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   }
   try {
     const tickets = await DataStore.getSupportTickets()
-    const ticket = tickets.find(t => t.id === ticketId)
+    const ticket = tickets.find((t: any) => t.id === ticketId)
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
     }

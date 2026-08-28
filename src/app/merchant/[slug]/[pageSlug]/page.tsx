@@ -59,7 +59,7 @@ export default async function MerchantSubdomainSubPage({ params }: PageProps) {
   }
 
   const allProducts = await getProducts();
-  const merchantProducts = allProducts.filter((p) => p.merchantId === user.id);
+  const merchantProducts = allProducts.filter((p: any) => p.merchantId === user.id);
 
   const rawComps = pageData.builderComponents || [];
   const resolvedComps = rawComps.map((comp: any) => {
@@ -70,7 +70,7 @@ export default async function MerchantSubdomainSubPage({ params }: PageProps) {
         ...comp, 
         content: { 
           ...comp.content, 
-          _resolvedProducts: resolved.map(p => ({
+          _resolvedProducts: resolved.map((p: any) => ({
             id: p.id,
             title: p.title,
             description: p.description,

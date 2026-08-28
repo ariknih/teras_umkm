@@ -19,8 +19,8 @@ export default async function CoursePage({ params }: PageProps) {
   const userProfile = await getCurrentUserProfile();
   const progressList = userProfile ? await getUserProgress() : [];
   const completedLessonIds = progressList
-    .filter((p) => p.completed)
-    .map((p) => p.lessonId);
+    .filter((p: any) => p.completed)
+    .map((p: any) => p.lessonId);
 
   let purchasedCourseIds: string[] = []
   if (userProfile && userProfile.landingPageConfig) {

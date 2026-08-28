@@ -60,7 +60,7 @@ export default async function StoreSubPage({ params }: PageProps) {
 
   // Get all products and filter for this user
   const allProducts = await getProducts();
-  const merchantProducts = allProducts.filter((p) => p.merchantId === user.id);
+  const merchantProducts = allProducts.filter((p: any) => p.merchantId === user.id);
 
   // Resolve components
   const rawComps = pageData.builderComponents || [];
@@ -72,7 +72,7 @@ export default async function StoreSubPage({ params }: PageProps) {
         ...comp, 
         content: { 
           ...comp.content, 
-          _resolvedProducts: resolved.map(p => ({
+          _resolvedProducts: resolved.map((p: any) => ({
             id: p.id,
             title: p.title,
             description: p.description,

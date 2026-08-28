@@ -99,10 +99,10 @@ export async function getCsAnalytics() {
   }
   try {
     const allTickets = await DataStore.getSupportTickets()
-    const openTickets = allTickets.filter(t => t.status === 'OPEN').length
-    const pendingTickets = allTickets.filter(t => t.status === 'PENDING').length
-    const resolvedTickets = allTickets.filter(t => t.status === 'RESOLVED').length
-    const escalatedTickets = allTickets.filter(t => t.status === 'ESCALATED').length
+    const openTickets = allTickets.filter((t: any) => t.status === 'OPEN').length
+    const pendingTickets = allTickets.filter((t: any) => t.status === 'PENDING').length
+    const resolvedTickets = allTickets.filter((t: any) => t.status === 'RESOLVED').length
+    const escalatedTickets = allTickets.filter((t: any) => t.status === 'ESCALATED').length
 
     const users = await DataStore.getProducts() // Hack to load users list from datastore via isDbConnected check if needed, or query users.
     // Wait, let's just count how many CS users exist.

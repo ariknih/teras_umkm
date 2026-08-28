@@ -53,7 +53,7 @@ export default function FloatingChat() {
       try {
         const list = await getMyConversations()
         setConversations(list)
-        const unread = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+        const unread = list.reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0)
         setUnreadTotal(unread)
       } catch (_) {}
     }

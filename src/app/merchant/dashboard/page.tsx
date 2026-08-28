@@ -377,7 +377,7 @@ export default function MerchantDashboardPage() {
         setProfile(fullProfile)
         if (u.role === 'MERCHANT') {
           const list = await getProducts()
-          const myProducts = list.filter((p) => p.merchantId === u.id)
+          const myProducts = list.filter((p: any) => p.merchantId === u.id)
           setProducts(myProducts as any)
           const w = await getWalletDetails()
           setWallet(w)

@@ -7,7 +7,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let productEntries: any[] = []
   try {
     const products = await DataStore.getProducts()
-    productEntries = products.map((p) => ({
+    productEntries = products.map((p: any) => ({
       url: `${baseUrl}/market/product/${p.id}`,
       lastModified: p.updatedAt || new Date(),
       changeFrequency: 'daily' as const,

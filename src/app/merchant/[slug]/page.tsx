@@ -51,7 +51,7 @@ export default async function MerchantSubdomainPage({ params }: PageProps) {
 
   // Get all products and filter for this merchant
   const allProducts = await getProducts();
-  const userProducts = allProducts.filter((p) => p.merchantId === user.id);
+  const userProducts = allProducts.filter((p: any) => p.merchantId === user.id);
 
   // Check if merchant has designed a custom landing page in page builder
   let pageData: any = null;
@@ -69,12 +69,12 @@ export default async function MerchantSubdomainPage({ params }: PageProps) {
     const resolvedComps = rawComps.map((comp: any) => {
       if (comp.type === 'product_showcase') {
         const ids: string[] = comp.content.productIds || [];
-        const resolved = userProducts.filter((p) => ids.includes(p.id));
+        const resolved = userProducts.filter((p: any) => ids.includes(p.id));
         return { 
           ...comp, 
           content: { 
             ...comp.content, 
-            _resolvedProducts: resolved.map(p => ({
+            _resolvedProducts: resolved.map((p: any) => ({
               id: p.id,
               title: p.title,
               description: p.description,
@@ -93,11 +93,7 @@ export default async function MerchantSubdomainPage({ params }: PageProps) {
       <StorePageViewerClient
         pageName={pageData.name || 'Halaman Utama'}
         components={resolvedComps}
-        user={{
-          id: user.id,
-          name: user.name,
-          role: user.role,
-        }}
+        user={{ id: user.id, name: user.name, role: user.role }}
       />
     );
   }
@@ -128,7 +124,7 @@ export default async function MerchantSubdomainPage({ params }: PageProps) {
         latitude: user.latitude || -6.2088,
         longitude: user.longitude || 106.8456,
       }}
-      products={userProducts.map((p) => ({
+      products={userProducts.map((p: any) => ({
         id: p.id,
         title: p.title,
         description: p.description,

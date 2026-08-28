@@ -49,7 +49,7 @@ export default async function SubdomainMainPage({ params }: PageProps) {
 
   // Get all products and filter for this user
   const allProducts = await getProducts();
-  const userProducts = allProducts.filter((p) => p.merchantId === user.id);
+  const userProducts = allProducts.filter((p: any) => p.merchantId === user.id);
 
   // Check if they designed a custom main page in the page builder
   let pageData: any = null;
@@ -68,12 +68,12 @@ export default async function SubdomainMainPage({ params }: PageProps) {
     const resolvedComps = rawComps.map((comp: any) => {
       if (comp.type === 'product_showcase') {
         const ids: string[] = comp.content.productIds || [];
-        const resolved = userProducts.filter((p) => ids.includes(p.id));
+        const resolved = userProducts.filter((p: any) => ids.includes(p.id));
         return { 
           ...comp, 
           content: { 
             ...comp.content, 
-            _resolvedProducts: resolved.map(p => ({
+            _resolvedProducts: resolved.map((p: any) => ({
               id: p.id,
               title: p.title,
               description: p.description,
@@ -127,7 +127,7 @@ export default async function SubdomainMainPage({ params }: PageProps) {
         latitude: user.latitude || -6.2088,
         longitude: user.longitude || 106.8456,
       }}
-      products={userProducts.map((p) => ({
+      products={userProducts.map((p: any) => ({
         id: p.id,
         title: p.title,
         description: p.description,

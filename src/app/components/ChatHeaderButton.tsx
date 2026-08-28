@@ -14,7 +14,7 @@ export default function ChatHeaderButton({ userId }: { userId?: string }) {
     const updateUnreadCount = async () => {
       try {
         const list = await getMyConversations()
-        const count = list.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+        const count = list.reduce((sum: number, c: any) => sum + (c.unreadCount || 0), 0)
         setUnreadCount(count)
       } catch (e) {
         console.error('Failed to fetch unread count', e)

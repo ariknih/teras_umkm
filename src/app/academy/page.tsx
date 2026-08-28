@@ -9,7 +9,7 @@ export default async function AcademyPage() {
 
   // Create a set of completed lesson IDs for easy lookup
   const completedLessons = new Set(
-    progressList.filter((p) => p.completed).map((p) => p.lessonId)
+    progressList.filter((p: any) => p.completed).map((p: any) => p.lessonId)
   );
 
   return (
@@ -30,7 +30,7 @@ export default async function AcademyPage() {
 
         {/* Course Catalog Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {courses.map((course) => {
+          {courses.map((course: any) => {
             const courseLessons = course.lessons || []
             const totalLessons = courseLessons.length
             const completedCount = courseLessons.filter((l: any) => completedLessons.has(l.id)).length
