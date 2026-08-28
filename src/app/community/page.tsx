@@ -277,13 +277,13 @@ export default function CommunityDirectoryPage() {
   const requiresKycToCreate = globalKycRequired && !isKycApproved
 
   return (
-    <div className="min-h-screen bg-[#F5F7F9] text-[#111111] pt-28 pb-24 px-4 md:px-10 relative overflow-hidden">
+    <div id="Body Container" className="min-h-screen bg-[#F5F7F9] text-[#111111] p-0 relative overflow-hidden flex flex-col items-center">
       {/* Background glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(45,178,74,0.03)_0%,transparent_80%)] pointer-events-none z-0" />
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-8">
         {/* Banner Card */}
-        <div className="border border-black/5 bg-white/60 backdrop-blur-xl p-8 md:p-12 rounded-3xl text-center space-y-4 shadow-2xl relative overflow-hidden">
+        <div id="Banner Card" className="border border-black/5 bg-white/60 backdrop-blur-xl p-8 md:p-12 rounded-3xl text-center space-y-4 shadow-2xl relative overflow-hidden max-w-[1200px] mb-6">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(45,178,74,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(45,178,74,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
           <span className="px-3 py-1 border border-primary/20 bg-primary/5 text-primary text-[10px] font-bold tracking-widest uppercase rounded-full inline-block">
@@ -363,7 +363,7 @@ export default function CommunityDirectoryPage() {
         )}
 
         {/* Search Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-black/5 pb-4">
+        <div id="Search Bar" className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-black/5 pb-4 max-w-[1200px] mb-6">
           <h2 className="font-sora text-lg font-bold text-[#111111]">
             Semua Komunitas Terdaftar ({filteredCommunities.length})
           </h2>
@@ -392,7 +392,7 @@ export default function CommunityDirectoryPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div id="Directory Grid Section" className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCommunities.slice(0, visibleCount).map((c) => {
                 // Parse coopTier
