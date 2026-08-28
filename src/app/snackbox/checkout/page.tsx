@@ -10,10 +10,8 @@ import {
   ShieldCheck,
   ArrowLeft,
   ChevronRight,
-  Sparkles,
   ShoppingBag,
-  CheckCircle2,
-  AlertCircle
+  CheckCircle2
 } from 'lucide-react'
 import { useSnackbox } from '@/context/SnackboxContext'
 import { mockDeliveryOptions } from '@/lib/mock-snackbox'
@@ -47,21 +45,20 @@ export default function SnackboxCheckoutPage() {
     setDeliveryFee(opt.price)
   }
 
-  // If cart has no items selected, show empty cart view
   if (cart.items.length === 0 || summary.totalItemsPerBox === 0) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 text-center border border-slate-200 shadow-sm space-y-4">
-          <div className="w-16 h-16 rounded-3xl bg-emerald-50 text-[#2DB24A] flex items-center justify-center mx-auto">
-            <ShoppingBag className="w-8 h-8" />
+      <div className="min-h-screen bg-[#F5F7FA] flex items-center justify-center p-4">
+        <div className="max-w-sm w-full bg-white rounded-xl p-6 text-center border border-slate-200 shadow-xs space-y-3">
+          <div className="w-12 h-12 rounded-full bg-[#E8F5E9] text-[#006E24] flex items-center justify-center mx-auto">
+            <ShoppingBag className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-extrabold text-slate-900">Belum Ada Item di Box Anda</h2>
+          <h2 className="text-base font-bold text-slate-900">Belum Ada Item di Box Anda</h2>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Silakan pilih kue dan snack terlebih dahulu di katalog Snackbox sebelum melanjutkan ke checkout.
+            Silakan pilih kue dan jajanan terlebih dahulu di katalog Snackbox.
           </p>
           <button
             onClick={() => router.push('/snackbox')}
-            className="w-full py-3.5 rounded-2xl bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold text-xs transition-colors shadow-sm"
+            className="w-full py-2.5 rounded-lg bg-[#006E24] hover:bg-[#005a1d] text-white font-bold text-xs transition-colors shadow-xs cursor-pointer"
           >
             Kembali ke Katalog Snackbox
           </button>
@@ -71,11 +68,11 @@ export default function SnackboxCheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-20 pt-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F5F7FA] pb-24 pt-5 font-inter">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6">
         {/* Navigation Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-6">
-          <Link href="/snackbox" className="hover:text-[#2DB24A] flex items-center gap-1 transition-colors">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-4">
+          <Link href="/snackbox" className="hover:text-[#006E24] flex items-center gap-1 transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Kembali ke Snackbox</span>
           </Link>
@@ -84,51 +81,51 @@ export default function SnackboxCheckoutPage() {
         </div>
 
         {/* Page Title */}
-        <div className="mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100/80 text-emerald-800 text-xs font-bold mb-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#2DB24A]" />
-            <span>Satu Transaksi Resmi ke Saloka</span>
+        <div className="mb-5 pb-3 border-b border-slate-200/80">
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900">
+              Checkout Pesanan Snackbox
+            </h1>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9] flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" />
+              1 Transaksi Resmi ke Saloka
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Checkout Pesanan Snackbox
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Pesanan dari berbagai mitra kue di <strong>Kelurahan {kelurahan.name}</strong> disatukan dalam 1 pengiriman resmi Saloka.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Pesanan kue mitra di <strong>Kelurahan {kelurahan.name}</strong> disatukan dalam 1 pengiriman terpadu Saloka.
           </p>
         </div>
 
         {/* Main 2-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           {/* Left Column: Delivery Address, Order Items, Delivery Options */}
-          <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+          <div className="lg:col-span-7 xl:col-span-8 space-y-4">
             
             {/* ── 1. SECTION: ALAMAT PENGIRIMAN ── */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-4">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-emerald-50 text-[#2DB24A]">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <h3 className="font-extrabold text-base text-slate-900">Alamat Pengiriman Acara</h3>
+                  <MapPin className="w-4 h-4 text-[#006E24]" />
+                  <h3 className="font-bold text-sm text-slate-900">Alamat Pengiriman Acara</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsEditingAddress(!isEditingAddress)}
-                  className="text-xs font-bold text-[#2DB24A] hover:underline"
+                  className="text-xs font-bold text-[#006E24] hover:underline cursor-pointer"
                 >
                   {isEditingAddress ? 'Simpan' : 'Ganti Alamat'}
                 </button>
               </div>
 
               {isEditingAddress ? (
-                <div className="space-y-3 pt-2">
+                <div className="space-y-2.5 pt-1">
                   <div>
                     <label className="text-[11px] font-bold text-slate-700 block mb-1">Nama Penerima / Lokasi:</label>
                     <input
                       type="text"
                       value={recipientName}
                       onChange={e => setRecipientName(e.target.value)}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#2DB24A]"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-[#006E24]"
                     />
                   </div>
                   <div>
@@ -137,7 +134,7 @@ export default function SnackboxCheckoutPage() {
                       type="text"
                       value={recipientPhone}
                       onChange={e => setRecipientPhone(e.target.value)}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#2DB24A]"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-[#006E24]"
                     />
                   </div>
                   <div>
@@ -146,7 +143,7 @@ export default function SnackboxCheckoutPage() {
                       rows={2}
                       value={addressDetail}
                       onChange={e => setAddressDetail(e.target.value)}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#2DB24A]"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-[#006E24]"
                     />
                   </div>
                   <div>
@@ -155,12 +152,12 @@ export default function SnackboxCheckoutPage() {
                       type="text"
                       value={eventTimeNote}
                       onChange={e => setEventTimeNote(e.target.value)}
-                      className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#2DB24A]"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-[#006E24]"
                     />
                   </div>
                 </div>
               ) : (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs text-slate-700">
+                <div className="p-3 rounded-lg bg-[#F5F7FA] border border-slate-100 space-y-1 text-xs text-slate-700">
                   <div className="flex items-center gap-2 font-bold text-slate-900">
                     <span>{recipientName}</span>
                     <span className="text-slate-400">•</span>
@@ -168,9 +165,8 @@ export default function SnackboxCheckoutPage() {
                   </div>
                   <p className="text-slate-600 leading-relaxed">{addressDetail}</p>
                   {eventTimeNote && (
-                    <div className="mt-2 pt-2 border-t border-slate-200/60 text-[11px] text-emerald-800 font-semibold flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-[#2DB24A]" />
-                      <span>{eventTimeNote}</span>
+                    <div className="mt-1.5 pt-1.5 border-t border-slate-200/60 text-[11px] text-[#006E24] font-medium flex items-center gap-1">
+                      <span>⏰ {eventTimeNote}</span>
                     </div>
                   )}
                 </div>
@@ -178,31 +174,29 @@ export default function SnackboxCheckoutPage() {
             </div>
 
             {/* ── 2. SECTION: SNACKBOX SALOKA (DAFTAR ISI BOX) ── */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-xl bg-emerald-50 text-[#2DB24A]">
-                    <Package className="w-4 h-4" />
-                  </div>
+                  <Package className="w-4 h-4 text-[#006E24]" />
                   <div>
-                    <h3 className="font-extrabold text-base text-slate-900">
+                    <h3 className="font-bold text-sm text-slate-900">
                       Isi Paket Snackbox Saloka
                     </h3>
-                    <span className="text-[11px] font-semibold text-slate-500">
-                      Seller Resmi: <strong>Saloka.id (Middleman Terpadu)</strong>
+                    <span className="text-[10px] text-slate-500">
+                      Seller Resmi: <strong>Saloka.id</strong>
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-extrabold border ${
+                <div className="flex items-center gap-1.5">
+                  <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold border ${
                     cart.boxType === 'reguler'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      ? 'bg-[#E8F5E9] text-[#006E24] border-[#C8E6C9]'
                       : 'bg-amber-50 text-amber-800 border-amber-200'
                   }`}>
                     {cart.boxType === 'reguler' ? 'Box Reguler' : 'Box Borongan'}
                   </span>
-                  <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-slate-900 text-white">
+                  <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-slate-900 text-white">
                     {cart.boxCount} Box
                   </span>
                 </div>
@@ -213,25 +207,25 @@ export default function SnackboxCheckoutPage() {
                 {cart.items.filter(i => i.selected).map(item => {
                   const totalLine = item.product.price * item.quantity * cart.boxCount
                   return (
-                    <div key={item.product.id} className="py-3 flex items-center gap-3">
+                    <div key={item.product.id} className="py-2.5 flex items-center gap-3">
                       <img
                         src={item.product.imageUrl}
                         alt={item.product.title}
-                        className="w-12 h-12 rounded-xl object-cover bg-slate-100 shrink-0"
+                        className="w-11 h-11 rounded-lg object-cover bg-slate-100 shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
+                        <h4 className="font-medium text-xs text-slate-900 truncate">
                           {item.product.title}
                         </h4>
-                        <span className="text-[10px] text-slate-500 font-medium">
-                          Rp {item.product.price.toLocaleString('id-ID')} / pcs • Kategori: {item.product.category}
+                        <span className="text-[10px] text-slate-500">
+                          Rp {item.product.price.toLocaleString('id-ID')} / pcs • {item.product.category}
                         </span>
                       </div>
                       <div className="text-right shrink-0">
-                        <span className="text-xs font-bold text-slate-700 block">
+                        <span className="text-[11px] font-medium text-slate-600 block">
                           {item.quantity * cart.boxCount} pcs total
                         </span>
-                        <span className="text-xs font-extrabold text-slate-900">
+                        <span className="text-xs font-bold text-slate-900">
                           Rp {totalLine.toLocaleString('id-ID')}
                         </span>
                       </div>
@@ -240,28 +234,26 @@ export default function SnackboxCheckoutPage() {
                 })}
               </div>
 
-              <div className="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-100 text-xs text-emerald-900 flex items-center justify-between">
+              <div className="p-2.5 bg-[#E8F5E9]/60 rounded-lg border border-[#C8E6C9] text-xs text-[#006E24] flex items-center justify-between">
                 <span>Total Kue Terpilih: <strong>{totalPiecesCount} pcs per box</strong></span>
-                <span className="font-extrabold text-sm text-emerald-950">
+                <span className="font-bold text-slate-900">
                   Subtotal: Rp {summary.subtotalGross.toLocaleString('id-ID')}
                 </span>
               </div>
             </div>
 
             {/* ── 3. SECTION: OPSI PENGIRIMAN ── */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-4">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 space-y-3">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-50 text-[#2DB24A]">
-                  <Truck className="w-4 h-4" />
-                </div>
+                <Truck className="w-4 h-4 text-[#006E24]" />
                 <div>
-                  <h3 className="font-extrabold text-base text-slate-900">Opsi Kurir Pengiriman</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Armada kurir makanan berpendingin Saloka</p>
+                  <h3 className="font-bold text-sm text-slate-900">Opsi Pengiriman</h3>
+                  <p className="text-[11px] text-slate-500">Armada pengantar makanan berpendingin Saloka</p>
                 </div>
               </div>
 
               {/* Delivery Options Radio */}
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {mockDeliveryOptions.map(opt => {
                   const isSelected = selectedDelivery.id === opt.id
                   return (
@@ -269,31 +261,31 @@ export default function SnackboxCheckoutPage() {
                       key={opt.id}
                       type="button"
                       onClick={() => handleDeliveryChange(opt)}
-                      className={`w-full p-4 rounded-2xl border transition-all text-left flex items-start justify-between cursor-pointer ${
+                      className={`w-full p-3 rounded-lg border transition-all text-left flex items-start justify-between cursor-pointer ${
                         isSelected
-                          ? 'bg-emerald-50/70 border-[#2DB24A] shadow-xs'
+                          ? 'bg-[#E8F5E9]/80 border-[#006E24] shadow-2xs'
                           : 'bg-white border-slate-200 hover:border-slate-300'
                       }`}
                     >
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="font-extrabold text-xs sm:text-sm text-slate-900">{opt.name}</span>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                          <span className="font-bold text-xs text-slate-900">{opt.name}</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
                             {opt.serviceType}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500">{opt.estimate}</p>
-                        <p className="text-[11px] text-slate-400 font-medium">{opt.description}</p>
+                        <p className="text-[11px] text-slate-500">{opt.estimate}</p>
+                        <p className="text-[10px] text-slate-400 font-normal">{opt.description}</p>
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="font-extrabold text-xs sm:text-sm text-slate-900 block">
+                        <span className="font-bold text-xs text-slate-900 block">
                           Rp {opt.price.toLocaleString('id-ID')}
                         </span>
-                        <div className={`w-4 h-4 rounded-full border mt-1.5 ml-auto flex items-center justify-center ${
-                          isSelected ? 'border-[#2DB24A] bg-[#2DB24A]' : 'border-slate-300 bg-white'
+                        <div className={`w-3.5 h-3.5 rounded-full border mt-1.5 ml-auto flex items-center justify-center ${
+                          isSelected ? 'border-[#006E24] bg-[#006E24]' : 'border-slate-300 bg-white'
                         }`}>
-                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          {isSelected && <div className="w-1 h-1 rounded-full bg-white" />}
                         </div>
                       </div>
                     </button>
@@ -302,20 +294,20 @@ export default function SnackboxCheckoutPage() {
               </div>
 
               {/* Asuransi Pengiriman Checkbox */}
-              <div className="pt-3 border-t border-slate-100 flex items-start gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+              <div className="pt-2 border-t border-slate-100 flex items-start gap-2.5 p-3 rounded-lg bg-[#F5F7FA] border border-slate-200/70">
                 <input
                   type="checkbox"
                   id="insurance-checkbox"
                   checked={isInsuranceSelected}
                   onChange={e => setIsInsuranceSelected(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 text-[#2DB24A] rounded border-slate-300 focus:ring-[#2DB24A] cursor-pointer"
+                  className="mt-0.5 w-3.5 h-3.5 text-[#006E24] rounded border-slate-300 focus:ring-[#006E24] cursor-pointer"
                 />
                 <label htmlFor="insurance-checkbox" className="text-xs text-slate-700 cursor-pointer select-none">
                   <span className="font-bold text-slate-900 block">
-                    Paket Asuransi Pengiriman Saloka (+Rp 2.000)
+                    Paket Asuransi Pengiriman (+Rp 2.000)
                   </span>
                   <span className="text-slate-500 text-[11px] leading-relaxed block mt-0.5">
-                    Garansi ganti rugi 100% jika box rusak, penyok, atau basah akibat cuaca saat pengiriman.
+                    Garansi ganti rugi 100% jika kemasan box basah atau rusak di perjalanan.
                   </span>
                 </label>
               </div>

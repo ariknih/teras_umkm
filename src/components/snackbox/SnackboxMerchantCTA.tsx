@@ -2,61 +2,54 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Store, ChefHat, ArrowRight, Sparkles, ShieldCheck, CheckCircle } from 'lucide-react'
+import { Store, ChefHat, ArrowRight, CheckCircle2 } from 'lucide-react'
 
 export default function SnackboxMerchantCTA() {
   return (
-    <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white p-6 sm:p-8 md:p-10 shadow-xl border border-emerald-900/40">
-      {/* Background glow & decorative shapes */}
-      <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#2DB24A]/20 blur-3xl pointer-events-none" />
-      <div className="absolute left-1/3 bottom-0 w-48 h-48 rounded-full bg-amber-500/10 blur-2xl pointer-events-none" />
+    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-7 shadow-xs relative overflow-hidden">
+      {/* Decorative accent */}
+      <div className="absolute right-0 top-0 w-48 h-full bg-gradient-to-l from-[#E8F5E9]/50 to-transparent pointer-events-none" />
 
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-        {/* Left copy */}
-        <div className="lg:col-span-8 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div className="space-y-2 max-w-2xl">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#E8F5E9] border border-[#C8E6C9] text-[#006E24] text-[11px] font-bold">
             <ChefHat className="w-3.5 h-3.5" />
-            <span>Kemitraan Dapur & Pembuat Kue UMKM</span>
+            <span>Kemitraan Usaha Kue & Cemilan Rumahan</span>
           </div>
 
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight">
-            Punya usaha kue atau cemilan rumahan di kelurahanmu?
-          </h2>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
+            Punya Usaha Kue Rumahan di Kelurahanmu?
+          </h3>
 
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-            Bergabunglah dengan jaringan mitra <strong>Snackbox Saloka</strong>. Cukup fokus memasak kue terbaik dari dapur rumahmu, Saloka yang tangani kurasi box, pemasaran, transaksi instan, dan pengiriman kurir ke pelanggan.
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Bergabunglah jadi penyedia snackbox resmi Saloka. Anda cukup fokus membuat kue terbaik di dapur, Saloka yang mengurus pesanan borongan, pembayaran aman, dan pengiriman kurir langsung ke pelanggan.
           </p>
 
-          {/* Benefits bullets */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 text-xs font-medium text-slate-200">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-[#2DB24A] shrink-0" />
-              <span>Pesanan borongan rutin</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-[#2DB24A] shrink-0" />
-              <span>Pencairan saldo instan</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-[#2DB24A] shrink-0" />
-              <span>Kemasan standar Saloka</span>
-            </div>
+          <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] text-slate-600 font-medium">
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#006E24]" />
+              Pesanan borongan rutin
+            </span>
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#006E24]" />
+              Pencairan saldo instan
+            </span>
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#006E24]" />
+              Standar kemasan Saloka
+            </span>
           </div>
         </div>
 
-        {/* Right CTA */}
-        <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-start lg:items-end justify-center gap-3">
+        <div className="shrink-0">
           <Link
             href="/auth?role=MERCHANT"
-            className="w-full sm:w-auto lg:w-full px-6 py-3.5 rounded-2xl bg-[#2DB24A] hover:bg-[#24943E] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-emerald-600/30 active:scale-95 text-center"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold transition-all shadow-xs active:scale-95"
           >
             <Store className="w-4 h-4" />
-            <span>Jadi Penjual Snackbox</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>Daftar Jadi Penjual Snackbox</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-          <span className="text-[11px] text-slate-400 font-medium text-center w-full">
-            Gratis pendaftaran • Kurasi cepat 1x24 jam
-          </span>
         </div>
       </div>
     </div>

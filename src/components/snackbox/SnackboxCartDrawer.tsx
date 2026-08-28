@@ -35,12 +35,9 @@ export default function SnackboxCartDrawer() {
     kelurahan
   } = useSnackbox()
 
-  // Handle ESC close and body scroll lock
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsCartOpen(false)
-      }
+      if (e.key === 'Escape') setIsCartOpen(false)
     }
     if (isCartOpen) {
       document.addEventListener('keydown', handleKeyDown)
@@ -59,36 +56,34 @@ export default function SnackboxCartDrawer() {
   const isAllSelected = cart.items.length > 0 && cart.items.every(i => i.selected)
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* Backdrop click */}
+    <div className="fixed inset-0 z-[100] flex justify-end bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="absolute inset-0" onClick={() => setIsCartOpen(false)} />
 
-      {/* Drawer Container */}
       <div 
-        className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300 overflow-hidden"
+        className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-200 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Drawer Header */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-[#2DB24A] flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5" />
+        <div className="px-4 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#E8F5E9] text-[#006E24] flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-extrabold text-base text-slate-900 leading-tight">Keranjang Snackbox</h3>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                <h3 className="font-bold text-sm text-slate-900 leading-tight">Keranjang Snackbox</h3>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9]">
                   {cart.items.length} Menu
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Pengiriman untuk: <strong className="text-slate-800">Kel. {kelurahan.name}</strong>
+              <p className="text-[11px] text-slate-500 font-medium">
+                Lokasi: <strong className="text-slate-700">Kel. {kelurahan.name}</strong>
               </p>
             </div>
           </div>
           <button
             onClick={() => setIsCartOpen(false)}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -96,113 +91,108 @@ export default function SnackboxCartDrawer() {
 
         {/* Drawer Body */}
         {cart.items.length === 0 ? (
-          /* Empty State */
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/50">
-            <div className="w-20 h-20 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[#2DB24A] mb-4 shadow-sm animate-pulse">
-              <Package className="w-10 h-10" />
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#F5F7FA]">
+            <div className="w-16 h-16 rounded-full bg-[#E8F5E9] border border-[#C8E6C9] flex items-center justify-center text-[#006E24] mb-3">
+              <Package className="w-8 h-8" />
             </div>
-            <h4 className="font-extrabold text-lg text-slate-900">Keranjang Snackbox Kosong</h4>
-            <p className="text-xs text-slate-500 max-w-xs mt-1.5 leading-relaxed">
-              Anda belum memilih snack atau kue untuk dimasukkan ke dalam box. Pilih kue favorit Anda dari katalog.
+            <h4 className="font-bold text-sm text-slate-900">Keranjang Box Masih Kosong</h4>
+            <p className="text-xs text-slate-500 max-w-xs mt-1 leading-relaxed">
+              Pilih aneka kue dan jajanan favorit untuk dimasukkan ke dalam paket Snackbox.
             </p>
             <button
               onClick={() => setIsCartOpen(false)}
-              className="mt-6 px-6 py-3 rounded-2xl bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold text-xs shadow-md transition-all active:scale-95"
+              className="mt-5 px-5 py-2.5 rounded-lg bg-[#006E24] hover:bg-[#005a1d] text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
             >
-              Mulai Pilih Snackbox
+              Pilih Snack Sekarang
             </button>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Box Type Selector */}
-            <BoxTypeSelector />
+            <BoxTypeSelector compact />
 
-            {/* Select All & Clear Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+            {/* Select All & Clear */}
+            <div className="flex items-center justify-between pt-1 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => selectAllItems(!isAllSelected)}
-                className="flex items-center gap-2 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors"
+                className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#006E24] transition-colors cursor-pointer"
               >
                 {isAllSelected ? (
-                  <CheckSquare className="w-4 h-4 text-[#2DB24A]" />
+                  <CheckSquare className="w-4 h-4 text-[#006E24]" />
                 ) : (
                   <Square className="w-4 h-4 text-slate-400" />
                 )}
-                <span>Pilih Semua Menu ({cart.items.length})</span>
+                <span>Pilih Semua ({cart.items.length})</span>
               </button>
 
               <button
                 type="button"
                 onClick={clearCart}
-                className="text-xs font-semibold text-rose-500 hover:text-rose-700 transition-colors flex items-center gap-1"
+                className="text-xs font-medium text-rose-600 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Kosongkan</span>
+                <span>Hapus semua</span>
               </button>
             </div>
 
             {/* Cart Items List */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {cart.items.map(item => {
                 const itemTotal = item.product.price * item.quantity
                 return (
                   <div
                     key={item.product.id}
-                    className={`p-3.5 rounded-2xl border transition-all flex items-center gap-3 ${
+                    className={`p-2.5 rounded-xl border transition-all flex items-center gap-2.5 ${
                       item.selected
-                        ? 'bg-white border-slate-200/90 shadow-sm'
-                        : 'bg-slate-50/80 border-slate-200/60 opacity-60'
+                        ? 'bg-white border-slate-200 shadow-2xs'
+                        : 'bg-slate-50 border-slate-200/60 opacity-60'
                     }`}
                   >
-                    {/* Checkbox */}
                     <button
                       type="button"
                       onClick={() => toggleItemSelection(item.product.id)}
-                      className="text-slate-400 hover:text-[#2DB24A] transition-colors shrink-0"
+                      className="text-slate-400 hover:text-[#006E24] transition-colors shrink-0 cursor-pointer"
                     >
                       {item.selected ? (
-                        <CheckSquare className="w-5 h-5 text-[#2DB24A]" />
+                        <CheckSquare className="w-4 h-4 text-[#006E24]" />
                       ) : (
-                        <Square className="w-5 h-5 text-slate-400" />
+                        <Square className="w-4 h-4 text-slate-400" />
                       )}
                     </button>
 
-                    {/* Image */}
                     <img
                       src={item.product.imageUrl}
                       alt={item.product.title}
-                      className="w-14 h-14 rounded-xl object-cover bg-slate-100 shrink-0"
+                      className="w-12 h-12 rounded-lg object-cover bg-slate-100 shrink-0"
                     />
 
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
+                      <h4 className="font-medium text-xs text-slate-900 truncate">
                         {item.product.title}
                       </h4>
-                      <p className="text-[11px] font-semibold text-[#2DB24A]">
+                      <p className="text-[11px] font-bold text-slate-900 mt-0.5">
                         Rp {item.product.price.toLocaleString('id-ID')}
                         <span className="text-slate-400 font-normal text-[10px]"> / pcs</span>
                       </p>
                     </div>
 
-                    {/* Stepper per item */}
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                         <button
                           type="button"
                           onClick={() => updateItemQty(item.product.id, item.quantity - 1)}
-                          className="w-6 h-6 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors shadow-2xs text-xs font-bold"
+                          className="w-5 h-5 rounded bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors text-xs font-bold cursor-pointer"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-6 text-center text-xs font-bold text-slate-900">
+                        <span className="w-5 text-center text-xs font-bold text-slate-900">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => updateItemQty(item.product.id, item.quantity + 1)}
-                          className="w-6 h-6 rounded-lg bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors shadow-2xs text-xs font-bold"
+                          className="w-5 h-5 rounded bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors text-xs font-bold cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -213,14 +203,13 @@ export default function SnackboxCartDrawer() {
                       </span>
                     </div>
 
-                    {/* Delete button */}
                     <button
                       type="button"
                       onClick={() => removeItem(item.product.id)}
-                      className="text-slate-300 hover:text-rose-500 transition-colors p-1"
-                      title="Hapus dari box"
+                      className="text-slate-300 hover:text-rose-500 transition-colors p-1 cursor-pointer"
+                      title="Hapus item"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 )
@@ -228,48 +217,47 @@ export default function SnackboxCartDrawer() {
             </div>
 
             {/* Stepper Jumlah Box */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50/60 to-slate-50 border border-emerald-100 flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-[#F5F7FA] border border-slate-200 flex items-center justify-between">
               <div>
-                <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
-                  <Package className="w-4 h-4 text-[#2DB24A]" />
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-[#006E24]" />
                   <span>Jumlah Paket Box</span>
                 </span>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[10px] text-slate-500 mt-0.5">
                   {cart.boxType === 'reguler'
-                    ? `Tiap box berisi ${totalPiecesCount} pcs kue seragam`
+                    ? `Setiap box berisi ${totalPiecesCount} pcs kue seragam`
                     : `Total ${totalPiecesCount * cart.boxCount} pcs kue untuk ${cart.boxCount} box`}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setBoxCount(cart.boxCount - 1)}
                   disabled={cart.boxCount <= 1}
-                  className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 flex items-center justify-center transition-colors text-xs font-bold"
+                  className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-700 flex items-center justify-center transition-colors text-xs font-bold cursor-pointer"
                 >
-                  <Minus className="w-3.5 h-3.5" />
+                  <Minus className="w-3 h-3" />
                 </button>
-                <span className="w-8 text-center text-sm font-extrabold text-slate-900">
+                <span className="w-7 text-center text-xs font-extrabold text-slate-900">
                   {cart.boxCount}
                 </span>
                 <button
                   type="button"
                   onClick={() => setBoxCount(cart.boxCount + 1)}
-                  className="w-8 h-8 rounded-xl bg-[#2DB24A] hover:bg-[#24943E] text-white flex items-center justify-center transition-colors text-xs font-bold shadow-sm"
+                  className="w-7 h-7 rounded-lg bg-[#006E24] hover:bg-[#005a1d] text-white flex items-center justify-center transition-colors text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3 h-3" />
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Drawer Footer & Checkout CTA */}
+        {/* Drawer Footer */}
         {cart.items.length > 0 && (
-          <div className="p-5 border-t border-slate-100 bg-white space-y-3 shrink-0 shadow-lg">
-            {/* Calculation summary */}
-            <div className="space-y-1.5 text-xs text-slate-600">
+          <div className="p-4 border-t border-slate-200 bg-white space-y-2.5 shrink-0 shadow-lg">
+            <div className="space-y-1 text-xs text-slate-600">
               <div className="flex justify-between">
                 <span>Subtotal per Box ({totalPiecesCount} pcs):</span>
                 <span className="font-bold text-slate-900">
@@ -277,37 +265,28 @@ export default function SnackboxCartDrawer() {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Jumlah Pesanan Box:</span>
+                <span>Jumlah Box:</span>
                 <span className="font-bold text-slate-900">× {cart.boxCount} Box</span>
               </div>
               <div className="flex justify-between pt-1.5 border-t border-slate-100 text-sm font-extrabold text-slate-900">
-                <span className="flex items-center gap-1 text-[#2DB24A]">
-                  <Sparkles className="w-4 h-4" /> Total Snackbox:
-                </span>
-                <span className="text-base text-emerald-800 font-extrabold">
+                <span>Total Snackbox:</span>
+                <span className="text-base text-[#006E24] font-extrabold">
                   Rp {summary.subtotalGross.toLocaleString('id-ID')}
                 </span>
               </div>
             </div>
 
-            {/* Trust badge */}
-            <div className="flex items-center gap-2 text-[10px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-100">
-              <ShieldCheck className="w-4 h-4 text-[#2DB24A] shrink-0" />
-              <span>Semua pesanan digaransikan fresh, higienis & dikirim tepat waktu oleh Saloka.</span>
-            </div>
-
-            {/* Checkout Button */}
             <Link
               href="/snackbox/checkout"
               onClick={() => setIsCartOpen(false)}
-              className={`w-full py-3.5 px-4 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 ${
+              className={`w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer ${
                 totalItemTypesCount === 0
                   ? 'bg-slate-200 text-slate-400 pointer-events-none'
-                  : 'bg-[#2DB24A] hover:bg-[#24943E] text-white'
+                  : 'bg-[#006E24] hover:bg-[#005a1d] text-white'
               }`}
             >
-              <span>Lanjut ke Checkout ({cart.boxCount} Box)</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Beli Sekarang ({cart.boxCount} Box)</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         )}
