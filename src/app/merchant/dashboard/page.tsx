@@ -29,12 +29,17 @@ interface Product {
 }
 
 const PRODUCT_CATEGORIES = [
-  { value: 'TOKO', label: 'Toko & Ritel' },
+  { value: 'KUE_TRADISIONAL', label: 'Kue Tradisional (Snackbox)' },
+  { value: 'SNACK_GURIH', label: 'Snack Gurih / Gorengan (Snackbox)' },
+  { value: 'SNACK_MANIS', label: 'Snack Manis / Kue Basah (Snackbox)' },
+  { value: 'KUE_KERING', label: 'Kue Kering / Pastry (Snackbox)' },
+  { value: 'JAJANAN_PASAR', label: 'Jajanan Pasar & Cemilan (Snackbox)' },
+  { value: 'MAKANAN_MINUMAN', label: 'Makanan & Minuman' },
   { value: 'KAFE', label: 'Kafe & Kuliner' },
+  { value: 'TOKO', label: 'Toko & Ritel' },
   { value: 'JASA', label: 'Jasa & Layanan' },
   { value: 'KERJAAN', label: 'Lowongan Kerja' },
   { value: 'ELEKTRONIK', label: 'Elektronik' },
-  { value: 'MAKANAN_MINUMAN', label: 'Makanan & Minuman' },
   { value: 'KOMPUTER_AKSESORIS', label: 'Komputer & Aksesoris' },
   { value: 'PERAWATAN_KECANTIKAN', label: 'Perawatan & Kecantikan' },
   { value: 'HANDPHONE_AKSESORIS', label: 'Handphone & Aksesoris' },
@@ -59,6 +64,16 @@ const PRODUCT_CATEGORIES = [
   { value: 'FOTOGRAFI', label: 'Fotografi' },
   { value: 'VOUCHER', label: 'Voucher' },
   { value: 'DEALS_SEKITAR', label: 'Deals Sekitar' },
+]
+
+const SNACKBOX_ELIGIBLE_CATEGORIES = [
+  'KUE_TRADISIONAL',
+  'SNACK_GURIH',
+  'SNACK_MANIS',
+  'KUE_KERING',
+  'JAJANAN_PASAR',
+  'KAFE',
+  'MAKANAN_MINUMAN'
 ]
 
 export default function MerchantDashboardPage() {
@@ -123,6 +138,22 @@ export default function MerchantDashboardPage() {
   // Image upload states
   const [createImageUrl, setCreateImageUrl] = useState<string>('')
   const [editImageUrl, setEditImageUrl] = useState<string>('')
+
+  // Category Search & Snackbox States (Create form)
+  const [createCategory, setCreateCategory] = useState('TOKO')
+  const [createCategorySearch, setCreateCategorySearch] = useState('')
+  const [createIsSnackbox, setCreateIsSnackbox] = useState(false)
+  const [createSnackboxShare, setCreateSnackboxShare] = useState(15)
+  const [createPortionWeight, setCreatePortionWeight] = useState('75g')
+  const [createPriceValue, setCreatePriceValue] = useState<number>(0)
+
+  // Category Search & Snackbox States (Edit form)
+  const [editCategory, setEditCategory] = useState('TOKO')
+  const [editCategorySearch, setEditCategorySearch] = useState('')
+  const [editIsSnackbox, setEditIsSnackbox] = useState(false)
+  const [editSnackboxShare, setEditSnackboxShare] = useState(15)
+  const [editPortionWeight, setEditPortionWeight] = useState('')
+  const [editPriceValue, setEditPriceValue] = useState<number>(0)
 
   // Global Affiliate Settings State
   const [globalAffEnabled, setGlobalAffEnabled] = useState(false)
@@ -1294,10 +1325,54 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="edit-category" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Kategori</label>
-                      <select id="edit-category" name="category" defaultValue={editingProduct.category} className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none">
-                        {PRODUCT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                      </select>
+                      <div className="flex items-center justify-between mb-2">
+                        <label htmlFor="edit-category" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">
+                          Kategori Bisnis
+                        </label>
+                        <span className="text-[10px] font-mono text-primary font-bold">
+                          {formatCategoryName(editCategory || editingProduct.category)}
+                        </span>
+                      </div>
+                      
+                      {/* Searchbar for category filter in edit mode */}
+                      <div className="space-y-1.5">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={editCategorySearch}
+                            onChange={(e) => setEditCategorySearch(e.target.value)}
+                            placeholder="🔍 Cari kategori..."
+                            className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary placeholder:text-text-secondary/60"
+                          />
+                          {editCategorySearch && (
+                            <button
+                              type="button"
+                              onClick={() => setEditCategorySearch('')}
+                              className="absolute right-2.5 top-2 text-xs text-text-secondary hover:text-text-primary"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        <select
+                          id="edit-category"
+                          name="category"
+                          value={editCategory || editingProduct.category}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setEditCategory(val)
+                            if (SNACKBOX_ELIGIBLE_CATEGORIES.includes(val)) {
+                              setEditIsSnackbox(true)
+                            }
+                          }}
+                          className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
+                        >
+                          {PRODUCT_CATEGORIES
+                            .filter(c => !editCategorySearch || c.label.toLowerCase().includes(editCategorySearch.toLowerCase()) || c.value.toLowerCase().includes(editCategorySearch.toLowerCase()))
+                            .map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                        </select>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Gambar Produk (Format: JPG, JPEG, PNG)</label>
@@ -1362,6 +1437,91 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       </div>
                     </div>
                   </div>
+
+                  {/* ── SNACKBOX INTEGRATION & REVENUE SHARE SECTION (EDIT MODE) ── */}
+                  {SNACKBOX_ELIGIBLE_CATEGORIES.includes(editCategory || editingProduct.category) && (
+                    <div className="border border-emerald-400/40 bg-emerald-950/20 p-4 rounded-xl space-y-3.5 animate-in fade-in duration-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <input
+                            id="edit-isSnackboxEnabled"
+                            type="checkbox"
+                            name="isSnackboxEnabled"
+                            checked={editIsSnackbox}
+                            onChange={(e) => setEditIsSnackbox(e.target.checked)}
+                            className="w-4 h-4 text-[#006E24] focus:ring-[#006E24] rounded cursor-pointer accent-[#2DB24A]"
+                          />
+                          <label htmlFor="edit-isSnackboxEnabled" className="text-xs font-bold text-text-primary cursor-pointer flex items-center gap-1.5">
+                            <span>🍱 Tampilkan di Layanan Snackbox Saloka</span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+                              Rekomendasi Kuliner
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-text-secondary leading-relaxed">
+                        Produk kue / snack Anda akan otomatis masuk ke katalog resmi kurasi <strong>Snackbox Saloka</strong> per kelurahan untuk pesanan acara kantor, rapat, dan hajatan.
+                      </p>
+
+                      {editIsSnackbox && (
+                        <div className="space-y-4 pt-3 border-t border-border-subtle">
+                          <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                              <label className="text-[11px] font-bold text-text-primary">
+                                Bagi Hasil dengan Saloka: <span className="text-primary font-mono text-sm font-extrabold">{editSnackboxShare}%</span>
+                              </label>
+                              <span className="text-[10px] text-text-secondary font-mono">Rentang Pilihan: 15% – 20%</span>
+                            </div>
+                            <input
+                              type="range"
+                              min="15"
+                              max="20"
+                              step="0.5"
+                              value={editSnackboxShare}
+                              onChange={(e) => setEditSnackboxShare(parseFloat(e.target.value))}
+                              className="w-full h-2 bg-surface-container rounded-lg appearance-none cursor-pointer accent-[#2DB24A]"
+                            />
+                            <input type="hidden" name="snackboxRevenueShare" value={editSnackboxShare} />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                                Perkiraan Berat / Porsi
+                              </label>
+                              <input
+                                type="text"
+                                name="snackboxPortionWeight"
+                                value={editPortionWeight}
+                                onChange={(e) => setEditPortionWeight(e.target.value)}
+                                placeholder="cth: 75g atau 1 potong"
+                                className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
+                              />
+                            </div>
+
+                            {/* Live Revenue Calculation Breakdown */}
+                            <div className="bg-surface-container p-3 rounded-lg border border-border-subtle space-y-1 text-xs">
+                              <div className="flex justify-between text-text-secondary">
+                                <span>Bagi Hasil Saloka ({editSnackboxShare}%):</span>
+                                <span className="font-bold text-amber-400">
+                                  Rp {Math.round((editingProduct.price || 0) * (editSnackboxShare / 100)).toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-primary font-bold">
+                                <span>Merchant Terima Bersih ({100 - editSnackboxShare}%):</span>
+                                <span className="font-extrabold">
+                                  Rp {Math.round((editingProduct.price || 0) * ((100 - editSnackboxShare) / 100)).toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                              <p className="text-[9px] text-text-secondary/70 pt-0.5">
+                                *Termasuk kemasan box resmi Saloka & pengantaran terpadu kurir.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
@@ -1564,7 +1724,18 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <div className="flex gap-2">
                       <button
                         id={`btn-edit-prod-${p.id}`}
-                        onClick={() => { setEditingProduct(p); setEditImageUrl(p.imageUrl || ''); setError(null); setSuccess(null); }}
+                        onClick={() => {
+                          setEditingProduct(p)
+                          setEditImageUrl(p.imageUrl || '')
+                          setEditCategory(p.category || 'TOKO')
+                          setEditCategorySearch('')
+                          setEditIsSnackbox((p as any).isSnackboxEnabled || false)
+                          setEditSnackboxShare((p as any).snackboxRevenueShare || 15)
+                          setEditPortionWeight((p as any).snackboxPortionWeight || '')
+                          setEditPriceValue(p.price || 0)
+                          setError(null)
+                          setSuccess(null)
+                        }}
                         className="px-3 py-2 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/45 rounded text-[10px] font-geist font-bold uppercase tracking-wider text-text-primary transition-all duration-300"
                       >
                         Edit
@@ -1611,11 +1782,56 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="create-category" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Kategori Bisnis</label>
-                  <select id="create-category" name="category" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none">
-                    {PRODUCT_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                  </select>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="create-category" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider">
+                      Kategori Bisnis
+                    </label>
+                    <span className="text-[10px] font-mono text-primary font-bold">
+                      {formatCategoryName(createCategory)}
+                    </span>
+                  </div>
+                  
+                  {/* Searchbar for category filter */}
+                  <div className="space-y-1.5">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={createCategorySearch}
+                        onChange={(e) => setCreateCategorySearch(e.target.value)}
+                        placeholder="🔍 Cari kategori (cth: Kue, Snack, Kafe, Fashion...)"
+                        className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary placeholder:text-text-secondary/60"
+                      />
+                      {createCategorySearch && (
+                        <button
+                          type="button"
+                          onClick={() => setCreateCategorySearch('')}
+                          className="absolute right-2.5 top-2 text-xs text-text-secondary hover:text-text-primary"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    <select
+                      id="create-category"
+                      name="category"
+                      value={createCategory}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setCreateCategory(val)
+                        if (SNACKBOX_ELIGIBLE_CATEGORIES.includes(val)) {
+                          setCreateIsSnackbox(true)
+                        }
+                      }}
+                      className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
+                    >
+                      {PRODUCT_CATEGORIES
+                        .filter(c => !createCategorySearch || c.label.toLowerCase().includes(createCategorySearch.toLowerCase()) || c.value.toLowerCase().includes(createCategorySearch.toLowerCase()))
+                        .map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
+                  </div>
                 </div>
+
                 <div>
                   <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Gambar Produk (Format: JPG, JPEG, PNG)</label>
                   <div className="flex-grow">
@@ -1679,6 +1895,91 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   </div>
                 </div>
               </div>
+
+              {/* ── SNACKBOX INTEGRATION & REVENUE SHARE SECTION ── */}
+              {SNACKBOX_ELIGIBLE_CATEGORIES.includes(createCategory) && (
+                <div className="border border-emerald-400/40 bg-emerald-950/20 p-4 rounded-xl space-y-3.5 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        id="create-isSnackboxEnabled"
+                        type="checkbox"
+                        name="isSnackboxEnabled"
+                        checked={createIsSnackbox}
+                        onChange={(e) => setCreateIsSnackbox(e.target.checked)}
+                        className="w-4 h-4 text-[#006E24] focus:ring-[#006E24] rounded cursor-pointer accent-[#2DB24A]"
+                      />
+                      <label htmlFor="create-isSnackboxEnabled" className="text-xs font-bold text-text-primary cursor-pointer flex items-center gap-1.5">
+                        <span>🍱 Tampilkan di Layanan Snackbox Saloka</span>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+                          Rekomendasi Kuliner
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-text-secondary leading-relaxed">
+                    Produk kue / snack Anda akan otomatis masuk ke katalog resmi kurasi <strong>Snackbox Saloka</strong> per kelurahan untuk pesanan acara kantor, rapat, dan hajatan.
+                  </p>
+
+                  {createIsSnackbox && (
+                    <div className="space-y-4 pt-3 border-t border-border-subtle">
+                      <div>
+                        <div className="flex justify-between items-center mb-1.5">
+                          <label className="text-[11px] font-bold text-text-primary">
+                            Bagi Hasil dengan Saloka: <span className="text-primary font-mono text-sm font-extrabold">{createSnackboxShare}%</span>
+                          </label>
+                          <span className="text-[10px] text-text-secondary font-mono">Rentang Pilihan: 15% – 20%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="15"
+                          max="20"
+                          step="0.5"
+                          value={createSnackboxShare}
+                          onChange={(e) => setCreateSnackboxShare(parseFloat(e.target.value))}
+                          className="w-full h-2 bg-surface-container rounded-lg appearance-none cursor-pointer accent-[#2DB24A]"
+                        />
+                        <input type="hidden" name="snackboxRevenueShare" value={createSnackboxShare} />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1.5">
+                            Perkiraan Berat / Porsi
+                          </label>
+                          <input
+                            type="text"
+                            name="snackboxPortionWeight"
+                            value={createPortionWeight}
+                            onChange={(e) => setCreatePortionWeight(e.target.value)}
+                            placeholder="cth: 75g atau 1 potong"
+                            className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
+                          />
+                        </div>
+
+                        {/* Live Revenue Calculation Breakdown */}
+                        <div className="bg-surface-container p-3 rounded-lg border border-border-subtle space-y-1 text-xs">
+                          <div className="flex justify-between text-text-secondary">
+                            <span>Bagi Hasil Saloka ({createSnackboxShare}%):</span>
+                            <span className="font-bold text-amber-400">
+                              Rp {Math.round(createPriceValue * (createSnackboxShare / 100)).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-primary font-bold">
+                            <span>Merchant Terima Bersih ({100 - createSnackboxShare}%):</span>
+                            <span className="font-extrabold">
+                              Rp {Math.round(createPriceValue * ((100 - createSnackboxShare) / 100)).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                          <p className="text-[9px] text-text-secondary/70 pt-0.5">
+                            *Termasuk kemasan box resmi Saloka & pengantaran terpadu kurir.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <div className="flex justify-between items-center mb-2">

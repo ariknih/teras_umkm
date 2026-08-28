@@ -482,7 +482,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
             {filteredProducts.slice(0, visibleCount).map((product) => {
               const dist = (product as any).distance
               const productId = product.id || ''
@@ -498,7 +498,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
               const isOfficial = idNum % 2 === 0
               const isAffiliate = currentUser?.role === 'AFFILIATE'
               return (
-                <div key={productId} className="group flex flex-col bg-white border-0 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-[0_1px_6px_0_rgba(49,53,59,0.12)] h-full relative">
+                <div key={productId} className="group flex flex-col bg-white border border-slate-200/90 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-[0_2px_8px_0_rgba(49,53,59,0.12)] hover:border-[#006E24]/40 h-full relative">
                   {/* Share button overlay for AFFILIATE only */}
                   {isAffiliate && (
                     <button
@@ -544,12 +544,15 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                       </div>
                     )}
                     {discount > 0 && (
-                      <div className="absolute top-1.5 left-1.5 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1.5 py-0.5 rounded border border-[#C8E6C9]">
+                      <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
                         {discount}%
                       </div>
                     )}
+                    <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                      {formatCategoryName(product.category)}
+                    </div>
                     {currentUser && product.merchantId === currentUser.id && (
-                      <div className="absolute top-1.5 right-1.5 bg-slate-900/80 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
+                      <div className="absolute top-2 right-2 bg-slate-900/80 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
                         Produk Anda
                       </div>
                     )}
@@ -562,44 +565,51 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     )}
                   </div>
 
-                  {/* Content — clean like screenshot */}
-                  <div className="p-3 flex-1 flex flex-col justify-between space-y-1.5">
+                  {/* Content — matching screenshot standard */}
+                  <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
                     <div>
                       <h3 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
                         {product.title}
                       </h3>
                       
-                      <p className="text-sm font-extrabold text-slate-900 leading-tight pt-1">
-                        {product.price === 0 ? 'Gratis' : `Rp ${product.price.toLocaleString('id-ID')}`}
-                      </p>
+                      <div className="pt-1">
+                        <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                          {product.price === 0 ? 'Gratis' : `Rp ${product.price.toLocaleString('id-ID')}`}
+                        </p>
 
-                      {discount > 0 && (
-                        <div className="flex items-center gap-1.5 pt-0.5">
-                          <span className="text-[11px] text-slate-400 line-through">
-                            Rp {originalPrice.toLocaleString('id-ID')}
-                          </span>
-                          <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.2 rounded border border-[#C8E6C9]">
-                            {discount}%
-                          </span>
-                        </div>
-                      )}
+                        {discount > 0 && (
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <span className="text-[11px] text-slate-400 line-through">
+                              Rp {originalPrice.toLocaleString('id-ID')}
+                            </span>
+                            <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                              {discount}%
+                            </span>
+                          </div>
+                        )}
 
-                      {dist !== undefined && (
-                        <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[#006E24] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
-                          📍 {dist.toFixed(1)} km
-                        </span>
-                      )}
+                        {dist !== undefined && (
+                          <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[#006E24] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
+                            📍 {dist.toFixed(1)} km
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100/80 space-y-1">
+                    <div className="pt-2 border-t border-slate-100 space-y-1.5">
                       <div className="flex items-center gap-1 text-[10px] text-slate-500">
                         <span className="text-amber-500 font-bold">★ {rating}</span>
                         <span>•</span>
                         <span>{sold}+ terjual</span>
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
-                        <span className="text-[#006E24] font-bold">✔</span>
-                        <span className="truncate">{product.merchant?.name || storeName}</span>
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate flex-1">
+                          <span className="text-[#006E24] font-bold text-xs">✔</span>
+                          <span className="truncate font-medium text-slate-600">{product.merchant?.name || storeName}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-[#006E24] hover:bg-[#005a1d] text-white text-[10px] font-bold flex items-center gap-0.5 shadow-2xs shrink-0">
+                          + Keranjang
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -610,6 +620,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
 
             {isLoadingMore && (
               <>
+                <ProductCardSkeleton />
                 <ProductCardSkeleton />
                 <ProductCardSkeleton />
                 <ProductCardSkeleton />

@@ -276,18 +276,31 @@ export default function SnackboxCartDrawer() {
               </div>
             </div>
 
-            <Link
-              href="/snackbox/checkout"
-              onClick={() => setIsCartOpen(false)}
-              className={`w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer ${
-                totalItemTypesCount === 0
-                  ? 'bg-slate-200 text-slate-400 pointer-events-none'
-                  : 'bg-[#006E24] hover:bg-[#005a1d] text-white'
-              }`}
-            >
-              <span>Beli Sekarang ({cart.boxCount} Box)</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            <div className="space-y-2 pt-1">
+              <Link
+                href="/cart"
+                onClick={() => setIsCartOpen(false)}
+                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all border border-[#006E24] text-[#006E24] hover:bg-[#E8F5E9] active:scale-95 cursor-pointer ${
+                  totalItemTypesCount === 0 ? 'pointer-events-none opacity-50' : ''
+                }`}
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Lanjut ke Keranjang Belanja (/cart)</span>
+              </Link>
+
+              <Link
+                href="/snackbox/checkout"
+                onClick={() => setIsCartOpen(false)}
+                className={`w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer ${
+                  totalItemTypesCount === 0
+                    ? 'bg-slate-200 text-slate-400 pointer-events-none'
+                    : 'bg-[#006E24] hover:bg-[#005a1d] text-white'
+                }`}
+              >
+                <span>Checkout Langsung Snackbox ({cart.boxCount} Box)</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         )}
       </div>

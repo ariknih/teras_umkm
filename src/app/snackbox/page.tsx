@@ -157,7 +157,7 @@ export default function SnackboxPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
               {localProducts.map(product => (
                 <SnackboxProductCard key={product.id} product={product} />
               ))}
@@ -175,7 +175,7 @@ export default function SnackboxPage() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
               {trendingOtherProducts.map(product => (
                 <SnackboxProductCard key={product.id} product={product} />
               ))}
@@ -221,13 +221,14 @@ export default function SnackboxPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
                 {exploreFilteredProducts.slice(0, visibleExploreCount).map(product => (
                   <SnackboxProductCard key={product.id} product={product} />
                 ))}
 
                 {isLoadingMore && (
                   <>
+                    <ProductCardSkeleton />
                     <ProductCardSkeleton />
                     <ProductCardSkeleton />
                     <ProductCardSkeleton />

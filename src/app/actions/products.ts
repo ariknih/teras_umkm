@@ -55,6 +55,10 @@ export async function createProduct(formData: FormData) {
     const affiliateCommissionType = formData.get('affiliateCommissionType') as string || 'PERCENT'
     const affiliateCommissionValue = parseFloat(formData.get('affiliateCommissionValue') as string || '0')
 
+    const isSnackboxEnabled = formData.get('isSnackboxEnabled') === 'on' || formData.get('isSnackboxEnabled') === 'true'
+    const snackboxRevenueShare = parseFloat(formData.get('snackboxRevenueShare') as string || '15')
+    const snackboxPortionWeight = (formData.get('snackboxPortionWeight') as string) || ''
+
     const product = await DataStore.createProduct({
       title,
       description,
@@ -67,13 +71,18 @@ export async function createProduct(formData: FormData) {
       longitude,
       isAffiliateEnabled,
       affiliateCommissionType,
-      affiliateCommissionValue
+      affiliateCommissionValue,
+      isSnackboxEnabled,
+      snackboxRevenueShare,
+      snackboxPortionWeight
     })
     
     // Reward 50 XP for posting a product or job request
     await DataStore.addXp(user.id, 50)
     
+    await invalidateCachePattern('products:')
     revalidatePath('/market')
+    revalidatePath('/snackbox')
     revalidatePath('/merchant/dashboard')
     return { success: true, product }
   } catch (e: any) {
@@ -100,6 +109,10 @@ export async function updateProduct(id: string, formData: FormData) {
   const affiliateCommissionType = formData.get('affiliateCommissionType') as string
   const affiliateCommissionValueStr = formData.get('affiliateCommissionValue') as string
 
+  const isSnackboxEnabledStr = formData.get('isSnackboxEnabled') as string
+  const snackboxRevenueShareStr = formData.get('snackboxRevenueShare') as string
+  const snackboxPortionWeight = formData.get('snackboxPortionWeight') as string
+
   const data: any = {}
   if (title) data.title = title
   if (description) data.description = description
@@ -119,12 +132,23 @@ export async function updateProduct(id: string, formData: FormData) {
   if (affiliateCommissionValueStr !== null) {
     data.affiliateCommissionValue = parseFloat(affiliateCommissionValueStr || '0')
   }
+
+  if (isSnackboxEnabledStr !== null) {
+    data.isSnackboxEnabled = isSnackboxEnabledStr === 'on' || isSnackboxEnabledStr === 'true'
+  }
+  if (snackboxRevenueShareStr) {
+    data.snackboxRevenueShare = parseFloat(snackboxRevenueShareStr || '15')
+  }
+  if (snackboxPortionWeight !== null && snackboxPortionWeight !== undefined) {
+    data.snackboxPortionWeight = snackboxPortionWeight
+  }
   
   try {
     const product = await DataStore.updateProduct(id, user.id, data)
     await invalidateCachePattern('products:')
     await deleteCache(`product:${id}`)
     revalidatePath('/market')
+    revalidatePath('/snackbox')
     revalidatePath(`/market/product/${id}`)
     revalidatePath('/merchant/dashboard')
     return { success: true, product }

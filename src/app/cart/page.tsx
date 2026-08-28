@@ -58,6 +58,8 @@ export default function CartPage() {
   const searchParams = useSearchParams()
   const communityId = searchParams?.get('communityId') || ''
   const [cart, setCart] = useState<CartItem[]>([])
+  const [snackboxCart, setSnackboxCart] = useState<any | null>(null)
+  const [isSnackboxSelected, setIsSnackboxSelected] = useState<boolean>(true)
   const [products, setProducts] = useState<ProductDetails[]>([])
   const cartDetails = cart
     .map((item) => {
@@ -413,6 +415,16 @@ export default function CartPage() {
         }
         if (storedAff) {
           setAffiliateId(storedAff)
+        }
+
+        const storedSnackbox = localStorage.getItem('saloka_snackbox_cart_v1')
+        if (storedSnackbox) {
+          try {
+            const parsedSb = JSON.parse(storedSnackbox)
+            if (parsedSb?.items?.length > 0) {
+              setSnackboxCart(parsedSb)
+            }
+          } catch (e) {}
         }
         
         const list = await getProducts()
@@ -771,10 +783,17 @@ export default function CartPage() {
     selectedItemIds.size === 0 ? true : selectedItemIds.has(item.id)
   );
 
-  const subtotal = selectedCartDetails.reduce((sum, item) => {
+  const snackboxItemsTotal = snackboxCart?.items
+    ? snackboxCart.items.reduce((acc: number, item: any) => acc + ((item.product?.price || item.price || 0) * (item.quantity || 1)), 0)
+    : 0;
+  const snackboxSubtotal = snackboxItemsTotal * (snackboxCart?.boxCount || 1);
+
+  const regularSubtotal = selectedCartDetails.reduce((sum, item) => {
     const price = getProductPriceWithWholesale(item.price, item.quantity);
     return sum + price * item.quantity;
   }, 0);
+
+  const subtotal = regularSubtotal + (snackboxCart && isSnackboxSelected ? snackboxSubtotal : 0);
 
   const selectedCourierRate = courierRates.find((r) => r.courier_code === selectedCourier);
   const shippingFee = deliveryMethod === 'PICKUP' ? 0 : (selectedCourierRate ? selectedCourierRate.price : 0);
@@ -870,7 +889,7 @@ export default function CartPage() {
           </div>
         )}
 
-        {cartDetails.length === 0 ? (
+        {cartDetails.length === 0 && (!snackboxCart || !snackboxCart.items || snackboxCart.items.length === 0) ? (
           /* EMPTY CART VIEW (Screenshot 2) */
           <div className="space-y-10">
             <div className="text-center py-16 px-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs max-w-lg mx-auto">
@@ -929,7 +948,9 @@ export default function CartPage() {
           <div className="space-y-5">
             <div>
               <h1 className="text-xl font-bold text-slate-900">Keranjang Belanjamu</h1>
-              <p className="text-xs text-slate-400 mt-0.5">Kamu punya {cartDetails.length} produk di keranjangmu</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Kamu punya {cartDetails.length + (snackboxCart?.items?.length ? 1 : 0)} pesanan di keranjangmu
+              </p>
             </div>
 
             {/* Same-Day Dispatch Notice Banner */}
@@ -948,18 +969,117 @@ export default function CartPage() {
                 <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3 text-xs text-slate-700 font-medium">
                   <input
                     type="checkbox"
-                    checked={selectedItemIds.size === cartDetails.length && cartDetails.length > 0}
+                    checked={selectedItemIds.size === cartDetails.length && (snackboxCart?.items?.length ? isSnackboxSelected : true)}
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedItemIds(new Set(cartDetails.map(i => i.id)))
+                        setIsSnackboxSelected(true)
                       } else {
                         setSelectedItemIds(new Set())
+                        setIsSnackboxSelected(false)
                       }
                     }}
                     className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
                   />
-                  <span className="font-bold text-slate-800">Pilih semua barang ({cartDetails.length})</span>
+                  <span className="font-bold text-slate-800">
+                    Pilih semua pesanan ({cartDetails.length + (snackboxCart?.items?.length ? 1 : 0)})
+                  </span>
                 </div>
+
+                {/* ── SNACKBOX PACKAGE CART ITEM (UNIFIED FLOW) ── */}
+                {snackboxCart && snackboxCart.items?.length > 0 && (
+                  <div className="bg-white rounded-xl p-5 border border-[#2DB24A]/40 shadow-xs space-y-4 relative overflow-hidden">
+                    <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="checkbox"
+                          checked={isSnackboxSelected}
+                          onChange={(e) => setIsSnackboxSelected(e.target.checked)}
+                          className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
+                        />
+                        <span className="text-base">🍱</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-slate-900">
+                            Paket Snackbox Terpadu • Kel. {snackboxCart.kelurahanName}
+                          </span>
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9]">
+                            Box {snackboxCart.boxType?.toUpperCase() || 'REGULER'}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          localStorage.removeItem('saloka_snackbox_cart_v1')
+                          setSnackboxCart(null)
+                        }}
+                        className="text-xs text-slate-400 hover:text-red-500 font-medium cursor-pointer"
+                      >
+                        Hapus Box
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex flex-wrap gap-1.5">
+                            {snackboxCart.items.map((i: any, idx: number) => (
+                              <span key={idx} className="bg-slate-100 px-2 py-0.5 rounded-md text-[11px] text-slate-700 font-medium border border-slate-200/80">
+                                {i.product?.title || i.title} <strong className="text-[#006E24]">({i.quantity}x)</strong>
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            Total {snackboxCart.items.reduce((s: number, i: any) => s + i.quantity, 0)} kue per box • Dikirim terpadu armada Saloka
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0">
+                          <div className="text-right">
+                            <div className="font-extrabold text-[#006E24] text-sm">
+                              Rp {(snackboxItemsTotal * (snackboxCart.boxCount || 1)).toLocaleString('id-ID')}
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              Rp {snackboxItemsTotal.toLocaleString('id-ID')} / box
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3">
+                            <div className="inline-flex items-center border border-slate-200 rounded-md bg-slate-50 overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextCount = Math.max(1, (snackboxCart.boxCount || 1) - 1)
+                                  const updated = { ...snackboxCart, boxCount: nextCount }
+                                  setSnackboxCart(updated)
+                                  localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                }}
+                                className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
+                              >
+                                -
+                              </button>
+                              <span className="px-3 py-1 text-xs font-bold text-slate-800 bg-white">
+                                {snackboxCart.boxCount || 1} Box
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const nextCount = (snackboxCart.boxCount || 1) + 1
+                                  const updated = { ...snackboxCart, boxCount: nextCount }
+                                  setSnackboxCart(updated)
+                                  localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                }}
+                                className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Items grouped by Merchant */}
                 {(() => {

@@ -171,48 +171,72 @@ export default function HomeExplorer({ products, services, communities = [] }: H
           </div>
 
           <Link
-            href="/market?cat=kuliner"
-            className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1 self-start sm:self-center shrink-0"
+            href="/snackbox"
+            className="text-xs font-bold text-[#006E24] hover:underline flex items-center gap-1 self-start sm:self-center shrink-0"
           >
             <span>Buka Snackbox</span>
             <ChevronRight size={14} />
           </Link>
         </div>
 
-        {/* 6 Horizontal Cards Grid matching Figma screenshot 2 */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5 pt-1">
+        {/* 6 Horizontal Cards Grid matching Figma screenshot */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 pt-1">
           {NEARBY_ITEMS.map((item) => (
-            <div
+            <Link
               key={item.id}
-              className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#2DB24A]/60 transition-all duration-200 flex flex-col justify-between group p-2 text-slate-900"
+              href="/snackbox"
+              className="group flex flex-col bg-white border border-slate-200/90 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-[0_2px_8px_0_rgba(49,53,59,0.12)] hover:border-[#006E24]/40 h-full relative cursor-pointer"
             >
-              <div className="space-y-2">
-                <div className="w-full aspect-square bg-slate-50 relative rounded-lg overflow-hidden">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+              {/* Aspect Square Image */}
+              <div className="aspect-square w-full bg-slate-100 relative overflow-hidden">
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  loading="lazy"
+                  className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
+                  13%
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-[#2DB24A] transition-colors">
-                    {item.title}
-                  </h4>
-                  <p className="text-xs font-extrabold text-slate-900 mt-0.5">
-                    Rp {item.price.toLocaleString('id-ID')}
-                  </p>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500 mt-1">
-                    <img src="/images/Star.svg" alt="Rating" className="w-2.5 h-2.5 object-contain shrink-0" />
-                    <span className="font-bold text-slate-700">{item.rating}</span>
-                    <span>·</span>
-                    <span>Terjual {item.sold}</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                    {item.store}
-                  </p>
+                <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                  ±75g
                 </div>
               </div>
-            </div>
+
+              {/* Body */}
+              <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
+                <div>
+                  <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
+                    {item.title}
+                  </h4>
+                  <div className="pt-1">
+                    <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                      Rp {item.price.toLocaleString('id-ID')}
+                    </p>
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <span className="text-[10px] text-slate-400 line-through">
+                        Rp {Math.round(item.price * 1.15).toLocaleString('id-ID')}
+                      </span>
+                      <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                        13%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-1.5 border-t border-slate-100 space-y-1">
+                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                    <span className="text-amber-500 font-bold">★ {item.rating}</span>
+                    <span>•</span>
+                    <span>{item.sold} terjual</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
+                    <span className="text-[#006E24] font-bold">✔</span>
+                    <span className="truncate">{item.store}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
       </div>
@@ -395,46 +419,57 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         </div>
 
         {/* 12 Product Cards Grid (2 Rows x 6 Columns) matching Figma screenshot 3 */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5 pt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 pt-2">
           {FIGMA_MARKETPLACE_PRODUCTS.map((prod) => (
             <Link
               key={prod.id}
               href="/market"
-              className="bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-2xs hover:shadow-md hover:border-[#2DB24A]/60 transition-all duration-200 flex flex-col justify-between group p-2.5 text-slate-900"
+              className="group flex flex-col bg-white border border-slate-200/90 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-[0_2px_8px_0_rgba(49,53,59,0.12)] hover:border-[#006E24]/40 h-full relative cursor-pointer"
             >
-              <div className="space-y-2">
-                {/* Image */}
-                <div className="w-full aspect-square bg-slate-50 relative rounded-xl overflow-hidden">
-                  <img
-                    src={prod.image}
-                    alt={prod.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span className="absolute top-1.5 right-1.5 bg-[#FFF3D6] text-[#D97706] border border-[#FDE68A] text-[10px] font-extrabold px-1.5 py-0.5 rounded-md shadow-2xs">
-                    {prod.discount}
-                  </span>
+              {/* Image */}
+              <div className="w-full aspect-square bg-slate-100 relative overflow-hidden">
+                <img
+                  src={prod.image}
+                  alt={prod.title}
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
+                  {prod.discount}
                 </div>
+              </div>
 
-                {/* Content */}
-                <div className="space-y-1">
-                  <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-[#2DB24A] transition-colors leading-tight">
+              {/* Content */}
+              <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
+                <div>
+                  <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
                     {prod.title}
                   </h4>
-                  <p className="text-xs font-extrabold text-slate-900 leading-tight">
-                    Rp {prod.price.toLocaleString('id-ID')}
-                  </p>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                    <span className="line-through">Rp {prod.originalPrice.toLocaleString('id-ID')}</span>
+                  <div className="pt-1">
+                    <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                      Rp {prod.price.toLocaleString('id-ID')}
+                    </p>
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <span className="text-[10px] text-slate-400 line-through">
+                        Rp {prod.originalPrice.toLocaleString('id-ID')}
+                      </span>
+                      <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                        {prod.discount}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500 pt-0.5">
-                    <img src="/images/Star.svg" alt="Rating" className="w-2.5 h-2.5 object-contain shrink-0" />
-                    <span className="font-bold text-slate-700">{prod.rating}</span>
-                    <span>·</span>
-                    <span>Terjual {prod.sold}</span>
+                </div>
+
+                <div className="pt-1.5 border-t border-slate-100 space-y-1">
+                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                    <span className="text-amber-500 font-bold">★ {prod.rating}</span>
+                    <span>•</span>
+                    <span>{prod.sold} terjual</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 line-clamp-1">
-                    {prod.seller}
-                  </p>
+                  <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
+                    <span className="text-[#006E24] font-bold">✔</span>
+                    <span className="truncate">{prod.seller}</span>
+                  </div>
                 </div>
               </div>
             </Link>

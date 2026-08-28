@@ -1196,33 +1196,39 @@ export const DataStore = {
     isAffiliateEnabled?: boolean;
     affiliateCommissionType?: string;
     affiliateCommissionValue?: number;
+    isSnackboxEnabled?: boolean;
+    snackboxRevenueShare?: number;
+    snackboxPortionWeight?: string;
   }) {
     return withMutationFallback(
       async () => {
-        return await db.product.create({ data })
+        return await db.product.create({ data: data as any })
       },
       async () => {
         const newProd = {
           id: `prod-${Date.now()}`,
           title: data.title,
           description: data.description,
-              price: data.price,
-              category: data.category,
-              stock: data.stock,
-              imageUrl: data.imageUrl || null,
-              merchantId: data.merchantId,
-              latitude: data.latitude || null,
-              longitude: data.longitude || null,
-              jvPartnerId: data.jvPartnerId || null,
-              jvSharePercent: data.jvSharePercent || null,
-              isAffiliateEnabled: data.isAffiliateEnabled || false,
-              affiliateCommissionType: data.affiliateCommissionType || 'PERCENT',
-              affiliateCommissionValue: data.affiliateCommissionValue || 0.0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }
-            globalMockProducts.push(newProd)
-            return newProd
+          price: data.price,
+          category: data.category,
+          stock: data.stock,
+          imageUrl: data.imageUrl || null,
+          merchantId: data.merchantId,
+          latitude: data.latitude || null,
+          longitude: data.longitude || null,
+          jvPartnerId: data.jvPartnerId || null,
+          jvSharePercent: data.jvSharePercent || null,
+          isAffiliateEnabled: data.isAffiliateEnabled || false,
+          affiliateCommissionType: data.affiliateCommissionType || 'PERCENT',
+          affiliateCommissionValue: data.affiliateCommissionValue || 0.0,
+          isSnackboxEnabled: data.isSnackboxEnabled || false,
+          snackboxRevenueShare: data.snackboxRevenueShare || 15,
+          snackboxPortionWeight: data.snackboxPortionWeight || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+        globalMockProducts.push(newProd)
+        return newProd
       }
     )
   },
@@ -1242,25 +1248,28 @@ export const DataStore = {
       isAffiliateEnabled?: boolean;
       affiliateCommissionType?: string;
       affiliateCommissionValue?: number;
+      isSnackboxEnabled?: boolean;
+      snackboxRevenueShare?: number;
+      snackboxPortionWeight?: string;
     }>
   ) {
     return withMutationFallback(
       async () => {
         return await db.product.update({
-                  where: { id, merchantId },
-                  data
-                })
+          where: { id, merchantId },
+          data: data as any
+        })
       },
       async () => {
         const idx = globalMockProducts.findIndex(p => p.id === id && p.merchantId === merchantId)
-            if (idx === -1) throw new Error('Product not found or unauthorized')
-            const updated = {
-              ...globalMockProducts[idx],
-              ...data,
-              updatedAt: new Date()
-            }
-            globalMockProducts[idx] = updated
-            return updated
+        if (idx === -1) throw new Error('Product not found or unauthorized')
+        const updated = {
+          ...globalMockProducts[idx],
+          ...data,
+          updatedAt: new Date()
+        }
+        globalMockProducts[idx] = updated
+        return updated
       }
     )
   },
