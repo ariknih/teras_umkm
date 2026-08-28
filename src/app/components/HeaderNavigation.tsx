@@ -507,7 +507,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
   return (
     <>
       <header className="fixed top-3 sm:top-4 left-0 right-0 z-50 w-full flex justify-center px-2 sm:px-4 md:px-8 print:hidden pointer-events-none">
-        <div className="w-full max-w-[1280px] bg-white/95 backdrop-blur-md rounded-full shadow-md border border-[#2DB24A]/20 px-3 sm:px-4 md:px-5 py-2 flex items-center justify-between pointer-events-auto gap-2 md:gap-4 transition-all">
+        <div className="w-full max-w-[1200px] bg-white/95 backdrop-blur-md rounded-full shadow-md border border-[#2DB24A]/20 px-3 sm:px-4 md:px-5 py-2 flex items-center justify-between pointer-events-auto gap-2 md:gap-4 transition-all">
           
           {/* Left: Brand logo */}
           <Link href="/" className="flex items-center shrink-0">
