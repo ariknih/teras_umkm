@@ -8,8 +8,8 @@ export default function SnackboxHeader() {
   const { kelurahan, setIsKelurahanModalOpen, setIsCartOpen, totalItemTypesCount, summary } = useSnackbox()
 
   return (
-    <div className="bg-white border-b border-slate-200 sticky top-[72px] sm:top-[76px] z-30 shadow-2xs">
-      <div className="max-w-[1440px] mx-auto px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
+    <div id="snackbox-header-bar" className="bg-white border-b border-slate-200 sticky top-[72px] sm:top-[76px] z-30 shadow-2xs flex justify-center">
+      <div id="snackbox-header-content" className="w-full max-w-[1200px] mx-auto py-[12px] mb-[24px] flex items-center justify-between gap-3">
         {/* Left: Location Indicator with Switcher Button */}
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-[#F5F7FA] border border-slate-200 px-3 py-1.5 rounded-lg shrink-0">

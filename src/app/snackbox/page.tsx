@@ -82,11 +82,11 @@ export default function SnackboxPage() {
   }, [])
 
   return (
-    <div className="relative min-h-screen bg-[#F5F7FA] pb-24 font-inter">
+    <div className="relative min-h-screen bg-[#F5F7FA] font-inter">
       {/* ── 1. HEADER BAR: LOKASI KELURAHAN & KERANJANG BOX ── */}
       <SnackboxHeader />
 
-      <div className="max-w-[1200px] mx-auto px-4 md:px-6 pt-5 space-y-6">
+      <div className="max-w-[1200px] mx-auto space-y-6">
 
         {/* ── COMPACT PAGE TITLE (Marketplace style) ── */}
         <div id="page-title" className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-1 border-b border-slate-200/60">
