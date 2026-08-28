@@ -157,3 +157,16 @@ export async function selectBestReplyAction(discussionId: string, replyId: strin
     return { error: e.message || 'Gagal memilih jawaban terbaik.' }
   }
 }
+
+export async function toggleLikeDiscussionAction(discussionId: string, communityId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  try {
+    const discussion = await DataStore.toggleLikeDiscussion(user.id, discussionId)
+    revalidatePath(`/community/${communityId}`)
+    return { success: true, discussion }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menyukai diskusi.' }
+  }
+}

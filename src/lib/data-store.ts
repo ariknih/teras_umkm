@@ -9399,6 +9399,72 @@ export const DataStore = {
     )
   },
 
+  async toggleLikeDiscussion(userId: string, discussionId: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        try {
+          const d = await (db as any).discussion.findUnique({ where: { id: discussionId } })
+          if (d) {
+            let currentLikes: string[] = []
+            if (d.tags && d.tags.includes('__LIKES__:')) {
+              try { currentLikes = JSON.parse(d.tags.split('__LIKES__:')[1] || '[]') } catch(_) {}
+            }
+            const exists = currentLikes.includes(userId)
+            const updatedLikes = exists ? currentLikes.filter((x: string) => x !== userId) : [...currentLikes, userId]
+            const cleanTags = (d.tags || '').split('__LIKES__:')[0].trim()
+            const newTags = `${cleanTags} __LIKES__:${JSON.stringify(updatedLikes)}`
+
+            const updated = await (db as any).discussion.update({
+              where: { id: discussionId },
+              data: { tags: newTags },
+              include: { author: { select: { id: true, name: true, image: true } }, replies: true }
+            })
+            return {
+              ...updated,
+              likes: updatedLikes,
+              likesCount: updatedLikes.length
+            }
+          }
+        } catch (_) {}
+
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          if (!Array.isArray(disc.likes)) disc.likes = []
+          const idx = disc.likes.indexOf(userId)
+          if (idx !== -1) {
+            disc.likes.splice(idx, 1)
+          } else {
+            disc.likes.push(userId)
+          }
+          disc.likesCount = disc.likes.length
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
+      },
+      async () => {
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          if (!Array.isArray(disc.likes)) disc.likes = []
+          const idx = disc.likes.indexOf(userId)
+          if (idx !== -1) {
+            disc.likes.splice(idx, 1)
+          } else {
+            disc.likes.push(userId)
+          }
+          disc.likesCount = disc.likes.length
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
+      }
+    )
+  },
 
   async updateDiscussion(id: string, authorId: string, data: {
     title?: string

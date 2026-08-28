@@ -11,7 +11,7 @@ import {
   getDiscussionsAction, createDiscussionAction, updateDiscussionAction, 
   deleteDiscussionAction, togglePinDiscussionAction, toggleCloseDiscussionAction, 
   createDiscussionReplyAction, deleteDiscussionReplyAction, toggleHelpfulReplyAction, 
-  selectBestReplyAction 
+  selectBestReplyAction, toggleLikeDiscussionAction 
 } from '@/app/actions/discussion'
 import { ForumPostSkeleton } from '@/components/ui/GhostSkeleton'
 
@@ -137,6 +137,52 @@ export default function DiscussionForum({
         loadDiscussions()
       }
     })
+  }
+
+  // Handle toggle like on discussion
+  const handleToggleLike = async (discussionId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    if (!currentUser) {
+      goeyToast.error('Silakan masuk terlebih dahulu untuk menyukai topik ini.')
+      return
+    }
+
+    // Optimistic UI update for instant feedback
+    setDiscussions(prev => prev.map(d => {
+      if (d.id === discussionId) {
+        const likes = Array.isArray(d.likes) ? [...d.likes] : []
+        const idx = likes.indexOf(currentUser.id)
+        if (idx !== -1) {
+          likes.splice(idx, 1)
+        } else {
+          likes.push(currentUser.id)
+        }
+        return { ...d, likes, likesCount: likes.length }
+      }
+      return d
+    }))
+
+    if (selectedDiscussion && selectedDiscussion.id === discussionId) {
+      setSelectedDiscussion((prev: any) => {
+        if (!prev) return prev
+        const likes = Array.isArray(prev.likes) ? [...prev.likes] : []
+        const idx = likes.indexOf(currentUser.id)
+        if (idx !== -1) {
+          likes.splice(idx, 1)
+        } else {
+          likes.push(currentUser.id)
+        }
+        return { ...prev, likes, likesCount: likes.length }
+      })
+    }
+
+    try {
+      const res = await toggleLikeDiscussionAction(discussionId, communityId) as any
+      if (res.error) {
+        goeyToast.error(res.error)
+        loadDiscussions()
+      }
+    } catch (_) {}
   }
 
   // Handle delete
@@ -533,9 +579,18 @@ export default function DiscussionForum({
                             >
                               <span>💬 {repliesCount} balasan</span>
                             </div>
-                            <div className="flex items-center gap-1 font-bold text-rose-600">
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleLike(disc.id, e)}
+                              className={`flex items-center gap-1.5 font-bold transition-all cursor-pointer px-2 py-0.5 rounded-lg text-xs ${
+                                Array.isArray(disc.likes) && currentUser && disc.likes.includes(currentUser.id)
+                                  ? 'text-rose-600 bg-rose-50 scale-105'
+                                  : 'text-gray-500 hover:text-rose-600 hover:bg-rose-50/60'
+                              }`}
+                              title="Sukai topik ini"
+                            >
                               <span>❤️ {likesCount}</span>
-                            </div>
+                            </button>
                             <span className="text-gray-400 font-medium">
                               {timeAgoStr}
                             </span>
@@ -916,11 +971,25 @@ export default function DiscussionForum({
               </div>
             )}
 
-            {/* Footer Buttons: Share & Stats */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-100 text-xs text-gray-500 font-semibold">
-              <div className="flex items-center gap-1.5 font-bold text-gray-600">
-                <MessageCircle className="w-4 h-4 text-gray-400" />
-                <span>{selectedDiscussion.replies?.length || 0} Balasan</span>
+            {/* Footer Buttons: Like, Share & Stats */}
+            <div className="flex justify-between items-center pt-4 border-t border-gray-100 text-xs text-gray-500 font-semibold flex-wrap gap-3">
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => handleToggleLike(selectedDiscussion.id)}
+                  className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 font-extrabold transition-all cursor-pointer text-xs ${
+                    Array.isArray(selectedDiscussion.likes) && currentUser && selectedDiscussion.likes.includes(currentUser.id)
+                      ? 'bg-rose-50 text-rose-600 border-rose-200 shadow-xs'
+                      : 'border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-rose-600'
+                  }`}
+                >
+                  <span>❤️</span>
+                  <span>{selectedDiscussion.likes?.length !== undefined ? selectedDiscussion.likes.length : (selectedDiscussion.likesCount || 0)} Suka</span>
+                </button>
+                <div className="flex items-center gap-1.5 font-bold text-gray-600">
+                  <MessageCircle className="w-4 h-4 text-gray-400" />
+                  <span>{selectedDiscussion.replies?.length || 0} Balasan</span>
+                </div>
               </div>
               <button
                 onClick={() => handleShare(selectedDiscussion.id)}
