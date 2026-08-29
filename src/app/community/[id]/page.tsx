@@ -7936,6 +7936,337 @@ export default function CommunityDetailPage() {
         )}
       </AnimatePresence>
 
+      {/* ── MODAL CRUD EVENT KOMUNITAS ─────────────────────────────────── */}
+      <AnimatePresence>
+        {isEventModalOpen && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
+            >
+              <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-emerald-50/50 to-white">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#0F5132] flex items-center justify-center">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-sora text-sm font-black text-gray-900">
+                      {editingEvent ? 'Ubah Informasi Event' : 'Tambah Event Komunitas Baru'}
+                    </h3>
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      {editingEvent ? 'Perbarui jadwal dan detail agenda event komunitas.' : 'Buat jadwal workshop, kopdar, atau seminar baru untuk anggota.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsEventModalOpen(false)
+                    setEditingEvent(null)
+                  }}
+                  className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEvent} className="p-5 space-y-4 overflow-y-auto flex-1">
+                {/* Judul Event */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Judul Event *</label>
+                  <input
+                    type="text"
+                    required
+                    value={eventTitle}
+                    onChange={(e) => setEventTitle(e.target.value)}
+                    placeholder="Contoh: Workshop Digital Marketing & Foto Produk 2026"
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                  />
+                </div>
+
+                {/* Tanggal & Waktu */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Tanggal & Waktu Pelaksanaan *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                  />
+                </div>
+
+                {/* Status Online / Offline */}
+                <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-gray-900 block">Event Diselenggarakan Online</span>
+                    <span className="text-[10px] text-gray-500">Centang jika event diadakan via Zoom / Google Meet / Webinar</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={eventIsOnline}
+                    onChange={(e) => setEventIsOnline(e.target.checked)}
+                    className="w-4 h-4 accent-[#2DB24A] cursor-pointer"
+                  />
+                </div>
+
+                {/* Lokasi / Link URL */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Lokasi / Gedung</label>
+                    <input
+                      type="text"
+                      value={eventLocation}
+                      onChange={(e) => setEventLocation(e.target.value)}
+                      placeholder={eventIsOnline ? "Online via Zoom" : "Contoh: Gedung UMKM Saloka & Coffee Space"}
+                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Link Pertemuan / Web (Opsional)</label>
+                    <input
+                      type="url"
+                      value={eventLinkUrl}
+                      onChange={(e) => setEventLinkUrl(e.target.value)}
+                      placeholder="https://zoom.us/j/..."
+                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Kapasitas & Biaya */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Kapasitas Maksimal Peserta</label>
+                    <input
+                      type="number"
+                      value={eventMaxParticipants}
+                      onChange={(e) => setEventMaxParticipants(e.target.value)}
+                      placeholder="100"
+                      min="1"
+                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Biaya Pendaftaran (Rp)</label>
+                    <input
+                      type="number"
+                      value={eventPrice}
+                      onChange={(e) => setEventPrice(e.target.value)}
+                      placeholder="0 (Gratis)"
+                      min="0"
+                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Penyelenggara */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Penyelenggara / Kontak PJ</label>
+                  <input
+                    type="text"
+                    value={eventOrganizer}
+                    onChange={(e) => setEventOrganizer(e.target.value)}
+                    placeholder="Contoh: Pengurus Komunitas & Divisi Edukasi"
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                  />
+                </div>
+
+                {/* Banner Event Image Upload */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Banner Foto Event</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={eventBannerUrl}
+                      onChange={(e) => setEventBannerUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                    <label className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-250 text-gray-700 font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                      {isUploadingEventBanner ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2DB24A]" /> : <Upload className="w-3.5 h-3.5" />}
+                      <span>Unggah</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleEventBannerUpload} />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Deskripsi Event */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Deskripsi & Agenda Event</label>
+                  <textarea
+                    rows={3}
+                    value={eventDesc}
+                    onChange={(e) => setEventDesc(e.target.value)}
+                    placeholder="Jelaskan topik materi, manfaat untuk anggota, pembicara, dan panduan mengikuti acara..."
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all resize-none"
+                  />
+                </div>
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-2.5 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEventModalOpen(false)
+                      setEditingEvent(null)
+                    }}
+                    className="px-4 py-2.5 border border-gray-250 text-gray-600 hover:bg-gray-50 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEvent || isUploadingEventBanner}
+                    className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingEvent ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                      </>
+                    ) : (
+                      editingEvent ? 'Simpan Perubahan' : 'Publikasikan Event'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODAL CRUD GALERI FOTO KEGIATAN ─────────────────────────────── */}
+      <AnimatePresence>
+        {isGalleryModalOpen && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]"
+            >
+              <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-emerald-50/50 to-white">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#0F5132] flex items-center justify-center">
+                    <ImageIcon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-sora text-sm font-black text-gray-900">
+                      Tambah Foto Dokumentasi Kegiatan
+                    </h3>
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      Unggah momen kopdar, workshop, pameran UMKM, atau aktivitas komunitas.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsGalleryModalOpen(false)}
+                  className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveGallery} className="p-5 space-y-4 overflow-y-auto flex-1">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Judul Dokumentasi *</label>
+                  <input
+                    type="text"
+                    required
+                    value={galleryTitle}
+                    onChange={(e) => setGalleryTitle(e.target.value)}
+                    placeholder="Contoh: Kopdar Akbar & Business Matching 2026"
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Kategori Foto</label>
+                    <select
+                      value={galleryCategory}
+                      onChange={(e) => setGalleryCategory(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-bold text-gray-700 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    >
+                      <option value="Kopdar & Networking">Kopdar & Networking</option>
+                      <option value="Pelatihan & Workshop">Pelatihan & Workshop</option>
+                      <option value="Bazaar & Pameran">Bazaar & Pameran</option>
+                      <option value="Rapat Pengurus">Rapat Pengurus</option>
+                      <option value="Dokumentasi Umum">Dokumentasi Umum</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Tanggal Kegiatan</label>
+                    <input
+                      type="text"
+                      value={galleryDate}
+                      onChange={(e) => setGalleryDate(e.target.value)}
+                      placeholder="18 Agustus 2026"
+                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Upload Foto */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Foto Kegiatan *</label>
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      required
+                      value={galleryImageUrl}
+                      onChange={(e) => setGalleryImageUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                    <label className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 border border-gray-250 text-gray-700 font-bold text-xs rounded-xl cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                      {isUploadingGalleryImage ? <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2DB24A]" /> : <Upload className="w-3.5 h-3.5" />}
+                      <span>Unggah</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleGalleryImageUpload} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Keterangan / Cerita Singkat</label>
+                  <textarea
+                    rows={3}
+                    value={galleryCaption}
+                    onChange={(e) => setGalleryCaption(e.target.value)}
+                    placeholder="Ceritakan momen seru, jumlah peserta yang hadir, atau hasil dari kegiatan ini..."
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2.5 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsGalleryModalOpen(false)}
+                    className="px-4 py-2.5 border border-gray-250 text-gray-600 hover:bg-gray-50 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingGallery || isUploadingGalleryImage}
+                    className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingGallery ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                      </>
+                    ) : (
+                      'Simpan Foto Galeri'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* MODAL CRUD PENGUMUMAN */}
       {isAnnouncementModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[999] animate-fadeIn">
