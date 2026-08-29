@@ -426,19 +426,19 @@ export default function CommunityDirectoryPage() {
   const requiresKycToCreate = globalKycRequired && !isKycApproved
 
   return (
-    <div id="body-container" className="min-h-screen bg-[#F5F7F9] text-[#111111] p-0 relative overflow-hidden flex flex-col items-center">
+    <div id="body-container" className="min-h-screen bg-[#F5F7F9] text-[#111111] py-4 sm:py-6 px-3 sm:px-6 relative overflow-x-hidden flex flex-col items-center">
       {/* Background glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(45,178,74,0.03)_0%,transparent_80%)] pointer-events-none z-0" />
 
-      <div className="relative z-10 max-w-[1200px] mx-auto space-y-8">
+      <div className="relative z-10 w-full max-w-[1200px] mx-auto space-y-6">
         {/* Banner Card */}
-        <div id="banner-card" className="border border-black/5 bg-white/60 backdrop-blur-xl p-8 md:p-12 rounded-3xl text-center space-y-4 shadow-2xl relative overflow-hidden max-w-[1200px] mb-6">
+        <div id="banner-card" className="border border-black/5 bg-white/60 backdrop-blur-xl p-5 sm:p-8 md:p-12 rounded-3xl text-center space-y-3 sm:space-y-4 shadow-xl relative overflow-hidden w-full mb-4 sm:mb-6">
           <div className="absolute inset-0 bg-[linear-gradient(rgba(45,178,74,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(45,178,74,0.02)_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
           
-          <span className="px-3 py-1 border border-primary/20 bg-primary/5 text-primary text-[10px] font-bold tracking-widest uppercase rounded-full inline-block">
+          <span className="px-3 py-1 border border-primary/20 bg-primary/5 text-primary text-[9px] sm:text-[10px] font-bold tracking-widest uppercase rounded-full inline-block">
             SALOKA BUSINESS NETWORK
           </span>
-          <h1 className="font-sora text-3xl md:text-5xl font-extrabold text-[#111111] tracking-tight">
+          <h1 className="font-sora text-2xl sm:text-3xl md:text-5xl font-extrabold text-[#111111] tracking-tight">
             Direktori Komunitas Induk
           </h1>
           <p className="text-xs md:text-sm text-text-secondary max-w-2xl mx-auto leading-relaxed">
@@ -465,11 +465,11 @@ export default function CommunityDirectoryPage() {
           </div>
         </div>
 
-        {/* Komunitas & Role Saya (Multi-Community Memberships) Widget - Mobile Carousel with Exact Logos & Lihat Semua */}
+        {/* Komunitas & Role Saya (Multi-Community Memberships) Widget - Touch Swipeable Carousel & View All */}
         {user && myCommunities && myCommunities.length > 0 && (
-          <div className="bg-white border border-gray-200/80 rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
+          <div className="bg-white border border-gray-200/80 rounded-3xl p-3.5 sm:p-6 shadow-xs space-y-3.5 w-full">
             {/* Header: Title Left + "Lihat semua >" Always Visible Right on Mobile */}
-            <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-3">
+            <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-100 text-[#0F5132] flex items-center justify-center font-bold shrink-0 shadow-2xs">
                   <Users className="w-4 h-4" />
@@ -481,34 +481,34 @@ export default function CommunityDirectoryPage() {
               <button
                 type="button"
                 onClick={() => setAllRolesModalOpen(true)}
-                className="text-[11px] sm:text-xs font-extrabold text-[#2DB24A] hover:text-[#0F5132] transition-colors flex items-center gap-0.5 shrink-0 whitespace-nowrap cursor-pointer"
+                className="text-[11px] sm:text-xs font-extrabold text-[#2DB24A] hover:text-[#0F5132] transition-colors flex items-center gap-0.5 shrink-0 whitespace-nowrap cursor-pointer p-1"
               >
                 <span>Lihat semua</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            {/* Horizontal Scroll Carousel (Swipeable on Mobile & Desktop) */}
-            <div className="flex overflow-x-auto no-scrollbar gap-3 pb-2 -mx-1 px-1 snap-x snap-mandatory items-stretch">
+            {/* Horizontal Scroll Carousel with Touch-Pan Support */}
+            <div className="flex overflow-x-auto no-scrollbar gap-2.5 sm:gap-3.5 pb-2 -mx-1 px-1 snap-x snap-mandatory items-stretch touch-pan-x">
               {myCommunities.map((mc: any) => (
                 <Link
                   key={mc.communityId}
                   href={`/community/${mc.communityId}`}
-                  className="w-[145px] sm:w-[165px] md:w-[185px] shrink-0 snap-start bg-white border border-gray-200/90 hover:border-[#2DB24A]/60 rounded-3xl p-4 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer"
+                  className="w-[130px] sm:w-[155px] md:w-[180px] shrink-0 snap-start bg-white border border-gray-200/90 hover:border-[#2DB24A]/60 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer select-none"
                 >
                   {/* Top: Circular Community Logo Avatar */}
-                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300">
+                  <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300">
                     {renderCommunityLogo(mc.communityName, mc.avatarUrl)}
                   </div>
 
                   {/* Middle: Community Name (max 2 lines) */}
-                  <h4 className="font-sora text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#2DB24A] transition-colors line-clamp-2 h-9 sm:h-10 flex items-center justify-center mt-2.5 leading-tight px-0.5">
+                  <h4 className="font-sora text-[11px] sm:text-xs md:text-sm font-black text-slate-900 group-hover:text-[#2DB24A] transition-colors line-clamp-2 h-8 sm:h-10 flex items-center justify-center mt-2 leading-tight px-0.5">
                     {mc.communityName}
                   </h4>
 
                   {/* Bottom: Role Badge & Active Status */}
-                  <div className="w-full mt-3 space-y-1">
-                    <span className={`w-full py-1.5 px-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider block shadow-2xs ${
+                  <div className="w-full mt-2.5 space-y-1">
+                    <span className={`w-full py-1 sm:py-1.5 px-1.5 sm:px-2 rounded-lg sm:rounded-xl text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-wider block shadow-2xs ${
                       mc.role === 'KETUA' 
                         ? 'bg-purple-100 text-purple-800 border border-purple-200' 
                         : mc.role === 'PEMBUAT_PENDING'
@@ -517,7 +517,7 @@ export default function CommunityDirectoryPage() {
                     }`}>
                       {mc.role === 'KETUA' ? 'KETUA' : mc.role === 'PEMBUAT_PENDING' ? 'CALON KETUA' : 'ANGGOTA'}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400 block">
+                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 block">
                       {mc.isVerified ? '✓ Aktif' : '⏳ Pending'}
                     </span>
                   </div>
@@ -525,19 +525,19 @@ export default function CommunityDirectoryPage() {
               ))}
 
               {/* End Card: View All */}
-              {myCommunities.length > 3 && (
+              {myCommunities.length > 2 && (
                 <button
                   type="button"
                   onClick={() => setAllRolesModalOpen(true)}
-                  className="w-[125px] sm:w-[140px] shrink-0 snap-start bg-gray-50/80 hover:bg-emerald-50/60 border border-dashed border-gray-250 hover:border-[#2DB24A] rounded-3xl p-4 flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+                  className="w-[110px] sm:w-[135px] shrink-0 snap-start bg-gray-50/90 hover:bg-emerald-50/60 border border-dashed border-gray-250 hover:border-[#2DB24A] rounded-2xl sm:rounded-3xl p-3 sm:p-4 flex flex-col items-center justify-center text-center transition-all cursor-pointer group select-none"
                 >
-                  <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[#2DB24A] group-hover:scale-110 transition-transform shadow-xs mb-2">
-                    <ChevronRight className="w-5 h-5" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[#2DB24A] group-hover:scale-110 transition-transform shadow-xs mb-1.5">
+                    <ChevronRight className="w-4 h-4" />
                   </div>
-                  <span className="font-sora text-xs font-black text-slate-900 group-hover:text-[#0F5132]">
+                  <span className="font-sora text-[11px] sm:text-xs font-black text-slate-900 group-hover:text-[#0F5132]">
                     Lihat Semua
                   </span>
-                  <span className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                  <span className="text-[9px] text-gray-500 font-semibold mt-0.5">
                     ({myCommunities.length} Komunitas)
                   </span>
                 </button>
@@ -625,7 +625,7 @@ export default function CommunityDirectoryPage() {
         )}
 
         {/* Search Bar */}
-        <div id="search-bar" className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-black/5 pb-4 max-w-[1200px] mb-6">
+        <div id="search-bar" className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-black/5 pb-4 w-full mb-6">
           <h2 className="font-sora text-lg font-bold text-[#111111]">
             Semua Komunitas Terdaftar ({filteredCommunities.length})
           </h2>
