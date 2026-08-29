@@ -19,6 +19,7 @@ import SnackboxCategoryTabs from '@/components/snackbox/SnackboxCategoryTabs'
 import SnackboxMerchantCTA from '@/components/snackbox/SnackboxMerchantCTA'
 import KelurahanSwitcherModal from '@/components/snackbox/KelurahanSwitcherModal'
 import SnackboxCartDrawer from '@/components/snackbox/SnackboxCartDrawer'
+import SnackboxStickyCartBar from '@/components/snackbox/SnackboxStickyCartBar'
 import { ProductCardSkeleton } from '@/components/ui/GhostSkeleton'
 
 const CATEGORIES: SnackboxCategory[] = [
@@ -82,7 +83,7 @@ export default function SnackboxPage() {
   }, [])
 
   return (
-    <div className="relative min-h-screen bg-[#F5F7FA] font-inter">
+    <div className="relative min-h-screen bg-[#F5F7FA] font-inter pb-20">
       {/* ── 1. HEADER BAR: LOKASI KELURAHAN & KERANJANG BOX ── */}
       <SnackboxHeader />
 
@@ -270,6 +271,7 @@ export default function SnackboxPage() {
       {/* Switcher Modal & Cart Drawer */}
       <KelurahanSwitcherModal />
       <SnackboxCartDrawer />
+      <SnackboxStickyCartBar />
     </div>
   )
 }
