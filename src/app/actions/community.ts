@@ -213,17 +213,17 @@ export async function deleteCommentAction(commentId: string, postId: string) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getIndukCommunities() {
-  return await DataStore.getCommunities()
+  return await cacheWrap('community:induk:all', () => DataStore.getCommunities(), 60)
 }
 
 export async function getIndukCommunityDetail(id: string) {
-  return await DataStore.getCommunityById(id)
+  return await cacheWrap(`community:induk:${id}`, () => DataStore.getCommunityById(id), 60)
 }
 
 export async function getUserCommunitiesWithRolesAction(userId?: string) {
   const targetUserId = userId || (await getCurrentUser())?.id
   if (!targetUserId) return []
-  return await DataStore.getUserCommunitiesWithRoles(targetUserId)
+  return await cacheWrap(`user:communities:roles:${targetUserId}`, () => DataStore.getUserCommunitiesWithRoles(targetUserId), 60)
 }
 
 export async function switchActiveIndukCommunityAction(communityId: string) {
@@ -338,6 +338,9 @@ export async function createIndukCommunity(formData: FormData) {
       coinBalance: initialCoins,
       templateType
     })
+    deleteCache('community:induk:all')
+    invalidateCachePattern('community:induk:*')
+    invalidateCachePattern('user:communities:roles:*')
     revalidatePath('/community')
     return { success: true, community }
   } catch (e: any) {
@@ -360,6 +363,9 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
 
   try {
     const result = await DataStore.joinCommunity(user.id, communityId, effectiveAsInduk)
+    deleteCache('community:induk:all')
+    invalidateCachePattern('community:induk:*')
+    invalidateCachePattern('user:communities:roles:*')
     revalidatePath('/community')
     revalidatePath('/merchant/dashboard')
     return { success: true, ...result }

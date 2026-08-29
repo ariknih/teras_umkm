@@ -4392,7 +4392,7 @@ export const DataStore = {
             updatedAt: new Date('2026-02-15')
           }
         ];
-    return withMutationFallback(
+    return withFallback(
       async () => {
         return await db.community.findMany({
           include: {

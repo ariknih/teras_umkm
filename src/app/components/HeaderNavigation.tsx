@@ -612,7 +612,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
               <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-4 h-4 object-contain" />
               <span>Affiliate</span>
             </Link>
-            <Link href="/community" className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+            <Link href="/community" prefetch={true} className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/comunity icon.svg" alt="Community" className="w-4 h-4 object-contain" />
               <span>Community</span>
             </Link>
@@ -793,6 +793,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             </Link>
             <Link
               href="/community"
+              prefetch={true}
               onClick={() => setIsOpenMobile(false)}
               className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
             >

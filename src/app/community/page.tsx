@@ -125,37 +125,78 @@ export default function CommunityDirectoryPage() {
 
   const [myCommunities, setMyCommunities] = useState<any[]>([])
 
-  async function loadData() {
+  async function loadData(isBackgroundSync: boolean = false) {
     try {
-      const [currentUser, comms, kycRes] = await Promise.all([
+      // Parallelize ALL independent queries in a single roundtrip
+      const [currentUser, comms, kycRes, myComms] = await Promise.all([
         getCurrentUser().catch(() => null),
         getIndukCommunities().catch(() => []),
-        getGlobalKycSettingAction().catch(() => null)
+        getGlobalKycSettingAction().catch(() => null),
+        getUserCommunitiesWithRolesAction().catch(() => [])
       ])
 
-      setUser(currentUser)
+      if (currentUser) {
+        setUser(currentUser)
+        try {
+          sessionStorage.setItem('cache_community_user', JSON.stringify(currentUser))
+        } catch (_) {}
+      }
 
       // Exclude pending and suspended communities from public directory
       const verifiedComms = (comms || []).filter((c: any) => c.isVerified && !c.isSuspended)
       setCommunities(verifiedComms)
+      try {
+        sessionStorage.setItem('cache_communities_directory', JSON.stringify(verifiedComms))
+      } catch (_) {}
 
       if (kycRes && kycRes.required !== undefined) {
         setGlobalKycRequired(kycRes.required)
       }
 
-      if (currentUser?.id) {
-        const myComms = await getUserCommunitiesWithRolesAction(currentUser.id).catch(() => [])
-        setMyCommunities(myComms || [])
+      if (Array.isArray(myComms)) {
+        setMyCommunities(myComms)
+        try {
+          sessionStorage.setItem('cache_my_communities', JSON.stringify(myComms))
+        } catch (_) {}
       }
     } catch (e) {
-      console.error(e)
+      console.error('Error loading community directory data:', e)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    loadData()
+    // SWR Pattern: Load from sessionStorage cache instantly for 0ms initial render
+    try {
+      const cachedCommsStr = sessionStorage.getItem('cache_communities_directory')
+      const cachedMyCommsStr = sessionStorage.getItem('cache_my_communities')
+      const cachedUserStr = sessionStorage.getItem('cache_community_user')
+
+      let hasCachedData = false
+
+      if (cachedCommsStr) {
+        const parsedComms = JSON.parse(cachedCommsStr)
+        if (Array.isArray(parsedComms) && parsedComms.length > 0) {
+          setCommunities(parsedComms)
+          setLoading(false)
+          hasCachedData = true
+        }
+      }
+      if (cachedMyCommsStr) {
+        const parsedMy = JSON.parse(cachedMyCommsStr)
+        if (Array.isArray(parsedMy)) setMyCommunities(parsedMy)
+      }
+      if (cachedUserStr) {
+        const parsedUser = JSON.parse(cachedUserStr)
+        if (parsedUser) setUser(parsedUser)
+      }
+
+      // Fetch fresh data in parallel (background sync if cache was hit)
+      loadData(hasCachedData)
+    } catch (_) {
+      loadData(false)
+    }
   }, [])
 
   const getTierPrice = (tier: string) => {
@@ -415,8 +456,7 @@ export default function CommunityDirectoryPage() {
                   >
                     {/* Banner */}
                     <div className="h-28 w-full bg-gradient-to-r from-neutral-200 via-neutral-100 to-green-500/10 relative overflow-hidden">
-                      <img 
-                        src={
+                      <img src={
                           c.coverUrl || 
                           (c.name.toLowerCase().includes('perahu') 
                             ? "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fm=webp&fit=crop&w=1200&q=80" 
@@ -425,7 +465,7 @@ export default function CommunityDirectoryPage() {
                               : "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fm=webp&fit=crop&w=1200&q=80")
                         } 
                         alt={c.name} 
-                        loading="lazy"
+                        loading="lazy" decoding="async"
                         className="object-cover w-full h-full" 
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
@@ -436,8 +476,7 @@ export default function CommunityDirectoryPage() {
                       <div className="flex gap-4">
                         {/* Icon */}
                         <div className="w-12 h-12 rounded-xl bg-white border border-primary/20 flex items-center justify-center font-bold text-lg text-primary shadow -mt-10 z-10 shrink-0 overflow-hidden">
-                          <img 
-                            src={
+                          <img src={
                               c.avatarUrl || 
                               (c.name.toLowerCase().includes('perahu') 
                                 ? "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fm=webp&w=200&h=200&fit=crop&q=80" 
@@ -446,7 +485,7 @@ export default function CommunityDirectoryPage() {
                                   : "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fm=webp&w=200&h=200&fit=crop&q=80")
                             } 
                             alt={c.name} 
-                            loading="lazy"
+                            loading="lazy" decoding="async"
                             className="object-cover w-full h-full" 
                           />
                         </div>
