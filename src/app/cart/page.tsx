@@ -1196,7 +1196,7 @@ export default function CartPage() {
                   return Object.entries(groups).map(([mId, items]) => {
                     const shopName = items[0]?.merchant?.name || 'Toko Mitra Saloka';
                     return (
-                      <div key={mId} className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+                      <div key={mId} className="bg-white rounded-2xl p-5 border border-market-green-200 shadow-xs space-y-4">
                         <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                           <input
                             type="checkbox"
@@ -1209,10 +1209,10 @@ export default function CartPage() {
                               })
                               setSelectedItemIds(next)
                             }}
-                            className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
+                            className="w-4 h-4 text-market-green-600 accent-market-green-600 rounded cursor-pointer"
                           />
-                          <span className="w-2 h-2 rounded-full bg-[#006E24]" />
-                          <span className="font-bold text-xs text-slate-800">{shopName}</span>
+                          <span className="w-2 h-2 rounded-full bg-market-green-500" />
+                          <span className="font-bold text-sm text-slate-900">{shopName}</span>
                         </div>
 
                         <div className="space-y-4">
@@ -1222,70 +1222,57 @@ export default function CartPage() {
 
                             return (
                               <div key={item.id} className="pb-4 border-b border-slate-100 last:border-b-0 last:pb-0 space-y-2">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
-                                  <div className="flex gap-3 items-center flex-1">
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={(e) => {
-                                        const next = new Set(selectedItemIds)
-                                        if (e.target.checked) next.add(item.id)
-                                        else next.delete(item.id)
-                                        setSelectedItemIds(next)
-                                      }}
-                                      className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
-                                    />
-                                    <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden shrink-0 relative">
-                                      {item.imageUrl ? (
-                                        <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
-                                      )}
-                                    </div>
-                                    <div className="space-y-1">
-                                      <h4 className="font-bold text-slate-900 line-clamp-1 text-xs">{item.title}</h4>
-                                      <p className="text-xs font-extrabold text-slate-900 leading-tight">
-                                        Rp {wholesalePrice.toLocaleString('id-ID')}
-                                      </p>
-                                    </div>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      const next = new Set(selectedItemIds)
+                                      if (e.target.checked) next.add(item.id)
+                                      else next.delete(item.id)
+                                      setSelectedItemIds(next)
+                                    }}
+                                    className="w-4 h-4 shrink-0 text-market-green-600 accent-market-green-600 rounded cursor-pointer"
+                                  />
+                                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 relative">
+                                    {item.imageUrl ? (
+                                      <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
+                                    )}
                                   </div>
 
-                                  <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
-                                    <div className="font-extrabold text-slate-900 text-sm">
-                                      Rp {(wholesalePrice * item.quantity).toLocaleString('id-ID')}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h4 className="font-bold text-sm text-slate-900 truncate">{item.title}</h4>
+                                      <span className="text-sm font-bold text-slate-900 shrink-0">
+                                        Rp {(wholesalePrice * item.quantity).toLocaleString('id-ID')}
+                                      </span>
                                     </div>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                      Rp {wholesalePrice.toLocaleString('id-ID')} / pcs
+                                    </p>
 
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center justify-between mt-2">
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveItem(item.id)}
-                                        className="text-slate-400 hover:text-red-500 text-xs font-medium cursor-pointer"
+                                        className="text-xs text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                                       >
                                         Hapus
                                       </button>
-                                      <div className="inline-flex items-center border border-slate-200 rounded-md bg-slate-50 overflow-hidden">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
-                                          className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
-                                        >
-                                          -
-                                        </button>
-                                        <span className="px-2.5 font-bold text-slate-800 text-xs">{item.quantity}</span>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
-                                          className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
-                                        >
-                                          +
-                                        </button>
-                                      </div>
+                                      <QuantityStepper
+                                        size="sm"
+                                        value={item.quantity}
+                                        onDecrement={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
+                                        onIncrement={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
+                                      />
                                     </div>
                                   </div>
                                 </div>
 
                                 {/* Note to Seller */}
-                                <div className="pl-7 pt-1">
+                                <div className="pl-[76px]">
                                   {activeNoteInput[item.id] ? (
                                     <div className="flex items-center gap-2">
                                       <input
@@ -1293,12 +1280,12 @@ export default function CartPage() {
                                         value={itemNotes[item.id] || ''}
                                         onChange={(e) => setItemNotes(prev => ({ ...prev, [item.id]: e.target.value }))}
                                         placeholder="Tulis catatan khusus untuk penjual (warna, ukuran, packing)..."
-                                        className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#006E24]"
+                                        className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-market-green-500"
                                       />
                                       <button
                                         type="button"
                                         onClick={() => setActiveNoteInput(prev => ({ ...prev, [item.id]: false }))}
-                                        className="text-[11px] font-bold text-[#006E24] hover:underline"
+                                        className="text-[11px] font-bold text-market-green-600 hover:underline"
                                       >
                                         Simpan
                                       </button>
@@ -1307,7 +1294,7 @@ export default function CartPage() {
                                     <button
                                       type="button"
                                       onClick={() => setActiveNoteInput(prev => ({ ...prev, [item.id]: true }))}
-                                      className="text-[11px] text-slate-500 hover:text-[#006E24] font-medium flex items-center gap-1 cursor-pointer"
+                                      className="text-[11px] text-slate-500 hover:text-market-green-600 font-medium flex items-center gap-1 cursor-pointer"
                                     >
                                       <span>✏️ {itemNotes[item.id] ? `Catatan: "${itemNotes[item.id]}"` : '+ Tulis Catatan untuk Penjual'}</span>
                                     </button>
