@@ -22,6 +22,8 @@ import {
   Users
 } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
+import { useSnackbox } from '@/context/SnackboxContext'
+import { mockSnackboxProducts } from '@/lib/mock-snackbox'
 
 interface Product {
   id: string
@@ -53,15 +55,6 @@ interface HomeExplorerProps {
   services: Service[]
   communities?: any[]
 }
-
-const NEARBY_ITEMS = [
-  { id: 'near-1', title: 'Risoles Mayu', price: 2000, rating: '4.6', sold: '25', store: 'Kelurahan Cihapit, Bandung', image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=400&q=80' },
-  { id: 'near-2', title: 'Klepon', price: 2000, rating: '4.6', sold: '25', store: 'Kelurahan Cihapit, Bandung', image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?auto=format&fit=crop&w=400&q=80' },
-  { id: 'near-3', title: 'Lemper', price: 2500, rating: '4.6', sold: '25', store: 'Kelurahan Cihapit, Bandung', image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=400&q=80' },
-  { id: 'near-4', title: 'Nagasari', price: 2000, rating: '4.6', sold: '25', store: 'Kelurahan Cihapit, Bandung', image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80' },
-  { id: 'near-5', title: 'Kue Putu', price: 3000, rating: '4.6', sold: '25', store: 'Kelurahan Cihapit, Bandung', image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80' },
-  { id: 'near-6', title: 'Onde-onde', price: 1500, rating: '4.6', sold: '25', store: 'Kelurahan Cihapit, Bandung', image: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=400&q=80' },
-]
 
 const POPULAR_COMMUNITIES = [
   { id: 'comm-1', title: 'Koperasi Produksi Maju Bersama', badge: 'Koperasi Reguler', desc: 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah...', members: '0 Anggota', image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=500&q=80' },
@@ -97,18 +90,27 @@ const FILTER_CHIPS = [
 export default function HomeExplorer({ products, services, communities = [] }: HomeExplorerProps) {
   const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'JASA'>('MARKETPLACE')
   const [selectedChip, setSelectedChip] = useState('ALL')
+  const { kelurahan } = useSnackbox()
+
+  const localSnackboxProducts = useMemo(() => {
+    return mockSnackboxProducts.filter(p => p.kelurahanId === kelurahan.id).slice(0, 6)
+  }, [kelurahan.id])
 
   const displayCommunities = useMemo(() => {
     if (communities && communities.length > 0) {
-      return communities.slice(0, 3).map((c: any) => ({
-        id: c.id,
-        title: c.name,
-        badge: c.type === 'KOPERASI' ? 'Koperasi Resmi' : 'Perkumpulan UMKM',
-        desc: c.description || 'Komunitas pelaku UMKM untuk kolaborasi, permodalan, dan promosi bersama.',
-        members: `${c._count?.members ?? c.membersCount ?? (c.members?.length || 1)} Anggota`,
-        image: c.avatarUrl || c.coverUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=2DB24A&color=ffffff&bold=true`,
-        href: `/community/${c.id}`
-      }))
+      const getMemberCount = (c: any) => c._count?.members ?? c.membersCount ?? (c.members?.length || 1)
+      return [...communities]
+        .sort((a, b) => getMemberCount(b) - getMemberCount(a))
+        .slice(0, 3)
+        .map((c: any) => ({
+          id: c.id,
+          title: c.name,
+          badge: c.type === 'KOPERASI' ? 'Koperasi Resmi' : 'Perkumpulan UMKM',
+          desc: c.description || 'Komunitas pelaku UMKM untuk kolaborasi, permodalan, dan promosi bersama.',
+          members: `${getMemberCount(c)} Anggota`,
+          image: c.avatarUrl || c.coverUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=2DB24A&color=ffffff&bold=true`,
+          href: `/community/${c.id}`
+        }))
     }
     return [
       {
@@ -164,8 +166,8 @@ export default function HomeExplorer({ products, services, communities = [] }: H
               Dibuat langsung oleh pembuat kue di sekitarmu! Dipesan, digoreng/dikukus, diantar selagi hangat.
             </p>
             <div className="flex items-center gap-1.5 pt-0.5">
-              <span className="bg-[#EBF3FE] text-[#1E40AF] text-[11px] font-bold px-3 py-1 rounded-full inline-flex items-center gap-1 cursor-pointer hover:bg-[#DBEAFE] transition-colors">
-                📍 Menampilkan
+              <span className="bg-[#EBF3FE] text-[#1E40AF] text-[11px] font-bold px-3 py-1 rounded-full inline-flex items-center gap-1">
+                📍 Menampilkan Kel. {kelurahan.name}
               </span>
             </div>
           </div>
@@ -179,66 +181,94 @@ export default function HomeExplorer({ products, services, communities = [] }: H
           </Link>
         </div>
 
-        {/* 6 Horizontal Cards Grid matching Figma screenshot */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 pt-1">
-          {NEARBY_ITEMS.map((item) => (
+        {/* 6 Horizontal Cards Grid, filtered to the active kelurahan */}
+        {localSnackboxProducts.length === 0 ? (
+          <div className="text-center py-10 rounded-xl bg-[#F5F7FA] border border-slate-200/80">
+            <h4 className="font-bold text-xs text-slate-700 mb-0.5">
+              Dapur di Kelurahan {kelurahan.name} Sedang Dikurasi
+            </h4>
+            <p className="text-[11px] text-slate-400 max-w-xs mx-auto mb-3">
+              Anda tetap bisa memesan pilihan kue lezat dari kelurahan sekitar.
+            </p>
             <Link
-              key={item.id}
               href="/snackbox"
-              className="group flex flex-col bg-white border border-slate-200/90 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-[0_2px_8px_0_rgba(49,53,59,0.12)] hover:border-[#006E24]/40 h-full relative cursor-pointer"
+              className="inline-block px-4 py-1.5 rounded-lg bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold transition-all shadow-xs"
             >
-              {/* Aspect Square Image */}
-              <div className="aspect-square w-full bg-slate-100 relative overflow-hidden">
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  loading="lazy"
-                  className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
-                  13%
-                </div>
-                <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
-                  ±75g
-                </div>
-              </div>
+              Pilih Kelurahan Lain
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 pt-1">
+            {localSnackboxProducts.map((product) => {
+              const discountPct = product.originalPrice
+                ? Math.round((1 - product.price / product.originalPrice) * 100)
+                : null
+              return (
+                <Link
+                  key={product.id}
+                  href="/snackbox"
+                  className="group flex flex-col bg-white border border-slate-200/90 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-[0_2px_8px_0_rgba(49,53,59,0.12)] hover:border-[#006E24]/40 h-full relative cursor-pointer"
+                >
+                  {/* Aspect Square Image */}
+                  <div className="aspect-square w-full bg-slate-100 relative overflow-hidden">
+                    <img
+                      src={product.imageUrl}
+                      alt={product.title}
+                      loading="lazy"
+                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {discountPct !== null && (
+                      <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
+                        {discountPct}%
+                      </div>
+                    )}
+                    {product.portionWeight && (
+                      <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                        ±{product.portionWeight}
+                      </div>
+                    )}
+                  </div>
 
-              {/* Body */}
-              <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
-                <div>
-                  <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
-                    {item.title}
-                  </h4>
-                  <div className="pt-1">
-                    <p className="text-sm font-extrabold text-slate-900 leading-tight">
-                      Rp {item.price.toLocaleString('id-ID')}
-                    </p>
-                    <div className="flex items-center gap-1.5 pt-0.5">
-                      <span className="text-[10px] text-slate-400 line-through">
-                        Rp {Math.round(item.price * 1.15).toLocaleString('id-ID')}
-                      </span>
-                      <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
-                        13%
-                      </span>
+                  {/* Body */}
+                  <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
+                    <div>
+                      <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
+                        {product.title}
+                      </h4>
+                      <div className="pt-1">
+                        <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                          Rp {product.price.toLocaleString('id-ID')}
+                        </p>
+                        {product.originalPrice && discountPct !== null && (
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <span className="text-[10px] text-slate-400 line-through">
+                              Rp {product.originalPrice.toLocaleString('id-ID')}
+                            </span>
+                            <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                              {discountPct}%
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-slate-100 space-y-1">
+                      <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                        <span className="text-amber-500 font-bold">★ {product.rating}</span>
+                        <span>•</span>
+                        <span>{product.soldCount} terjual</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
+                        <span className="text-[#006E24] font-bold">✔</span>
+                        <span className="truncate">{product.kelurahanName}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="pt-1.5 border-t border-slate-100 space-y-1">
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                    <span className="text-amber-500 font-bold">★ {item.rating}</span>
-                    <span>•</span>
-                    <span>{item.sold} terjual</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
-                    <span className="text-[#006E24] font-bold">✔</span>
-                    <span className="truncate">{item.store}</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── KOMUNITAS POPULER ────────────────────────────────────────────── */}

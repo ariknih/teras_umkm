@@ -90,40 +90,16 @@ export default function SnackboxPage() {
       <div className="max-w-[1200px] mx-auto space-y-6">
 
         {/* ── COMPACT PAGE TITLE (Marketplace style) ── */}
-        <div id="page-title" className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-1 border-b border-slate-200/60">
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-gray-800 mb-0.5 flex items-center gap-2">
-              <span>Snackbox Kelurahan</span>
-              <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9]">
-                Kel. {kelurahan.name}
-              </span>
-            </h1>
-            <p className="text-xs text-gray-500">
-              Pesan aneka kue & jajanan pasar terkurasi dari pembuat kue lokal. Dikemas rapi & diantar langsung oleh Saloka.
-            </p>
-          </div>
-
-          {/* Quick Search Bar */}
-          <div className="relative w-full md:w-80">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-              <Search className="w-4 h-4" />
+        <div id="page-title" className="pb-1 border-b border-slate-200/60">
+          <h1 className="text-base sm:text-lg font-bold text-gray-800 mb-0.5 flex items-center gap-2">
+            <span>Snackbox Kelurahan</span>
+            <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9]">
+              Kel. {kelurahan.name}
             </span>
-            <input
-              type="text"
-              placeholder="Cari kue, snack, atau rasa..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-9 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#006E24] focus:ring-1 focus:ring-[#006E24]/20 transition-all font-medium"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+          </h1>
+          <p className="text-xs text-gray-500">
+            Pesan aneka kue & jajanan pasar terkurasi dari pembuat kue lokal. Dikemas rapi & diantar langsung oleh Saloka.
+          </p>
         </div>
 
         {/* ── 2. SECTION: SNACK DI SEKITAR KELURAHAN AKTIF ── */}
@@ -191,6 +167,28 @@ export default function SnackboxPage() {
             <h2 className="text-sm font-bold text-slate-900">
               Jelajah Seluruh Katalog Snackbox
             </h2>
+          </div>
+
+          {/* Quick Search Bar */}
+          <div className="relative w-full">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+              <Search className="w-4 h-4" />
+            </span>
+            <input
+              type="text"
+              placeholder="Cari kue, snack, atau rasa..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-9 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#006E24] focus:ring-1 focus:ring-[#006E24]/20 transition-all font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Category Pills Bar */}
