@@ -41,6 +41,112 @@ import {
   Clock
 } from 'lucide-react'
 
+// Helper to render exact vector/custom community logos matching blueprint
+function renderCommunityLogo(commName: string = '', avatarUrl?: string | null) {
+  const name = (commName || '').toLowerCase()
+
+  // 1. Asosiasi Kuliner Kreatif Jogja -> 5-pointed colorful gradient star logo
+  if (name.includes('kuliner') || name.includes('asosiasi kuliner')) {
+    return (
+      <svg viewBox="0 0 100 100" className="w-full h-full object-contain p-1">
+        <polygon points="50,6 63,36 96,36 69,57 79,90 50,70 21,90 31,57 4,36 37,36" fill="none" stroke="url(#starGradWidget)" strokeWidth="10" strokeLinejoin="round" />
+        <defs>
+          <linearGradient id="starGradWidget" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#F59E0B" />
+            <stop offset="30%" stopColor="#EF4444" />
+            <stop offset="60%" stopColor="#8B5CF6" />
+            <stop offset="85%" stopColor="#3B82F6" />
+            <stop offset="100%" stopColor="#10B981" />
+          </linearGradient>
+        </defs>
+      </svg>
+    )
+  }
+
+  // 2. kopjaswara -> Green shaking hands inside green circular badge
+  if (name.includes('kopjas') || name.includes('kopjaswara')) {
+    return (
+      <div className="w-full h-full rounded-full bg-[#E8F8EE] flex items-center justify-center p-2 text-[#2DB24A]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+          <path d="m11 17 2 2a1 1 0 0 0 1.4 0l4.3-4.3a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0l-4.3 4.3a1 1 0 0 0 0 1.4Z" />
+          <path d="m18 10 1-1a2 2 0 0 0 0-2.8l-2.2-2.2a2 2 0 0 0-2.8 0l-6 6a2 2 0 0 0 0 2.8l1 1" />
+          <path d="m2 14 3-3" />
+          <path d="m5 17 3-3" />
+          <path d="M14 6 8 12" />
+        </svg>
+      </div>
+    )
+  }
+
+  // 3. Pelajar Pengusaha Indonesia -> Circle of colorful community people
+  if (name.includes('pelajar') || name.includes('pengusaha')) {
+    return (
+      <svg viewBox="0 0 100 100" className="w-full h-full object-contain p-1">
+        <circle cx="50" cy="18" r="8" fill="#EF4444" />
+        <path d="M42 34 C42 26, 58 26, 58 34 L56 50 L44 50 Z" fill="#EF4444" />
+        
+        <circle cx="80" cy="40" r="8" fill="#F59E0B" />
+        <path d="M72 52 C78 46, 88 56, 82 62 L68 68 L64 58 Z" fill="#F59E0B" />
+        
+        <circle cx="68" cy="80" r="8" fill="#10B981" />
+        <path d="M60 88 C54 82, 64 72, 70 78 L68 92 L58 90 Z" fill="#10B981" />
+        
+        <circle cx="32" cy="80" r="8" fill="#8B5CF6" />
+        <path d="M40 88 C46 82, 36 72, 30 78 L32 92 L42 90 Z" fill="#8B5CF6" />
+
+        <circle cx="20" cy="40" r="8" fill="#3B82F6" />
+        <path d="M28 52 C22 46, 12 56, 18 62 L32 68 L36 58 Z" fill="#3B82F6" />
+      </svg>
+    )
+  }
+
+  // 4. Koperasi Produksi Maju Bersama -> Green & gold cooperative logo with store canopy
+  if (name.includes('produksi') || name.includes('maju bersama') || name.includes('koperasi produksi')) {
+    return (
+      <div className="w-full h-full rounded-full bg-white flex items-center justify-center p-0.5">
+        <svg viewBox="0 0 100 100" className="w-full h-full">
+          <circle cx="50" cy="50" r="46" fill="#F4FAF5" stroke="#2DB24A" strokeWidth="6" />
+          <path d="M25 42 Q50 30 75 42 L75 50 Q50 40 25 50 Z" fill="#FF9800" />
+          <path d="M28 50 Q50 42 72 50 L70 72 Q50 82 30 72 Z" fill="#2DB24A" />
+          <path d="M40 62 Q50 72 60 62" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" fill="none" />
+        </svg>
+      </div>
+    )
+  }
+
+  // 5. Perahu Kita -> Cyan sailing boat emblem
+  if (name.includes('perahu')) {
+    return (
+      <div className="w-full h-full rounded-full bg-cyan-50 flex items-center justify-center p-2 text-cyan-600">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+          <path d="M2 18h20c-1.5 2.5-4 4-8 4s-6.5-1.5-8-4Z" fill="#06B6D4" fillOpacity="0.3" />
+          <path d="M12 3v11" />
+          <path d="M12 3 4.5 14h15L12 3z" fill="#0D9488" fillOpacity="0.4" />
+        </svg>
+      </div>
+    )
+  }
+
+  // Fallback: custom avatarUrl if valid and not dummy unsplash photo
+  if (avatarUrl && avatarUrl.startsWith('http') && !avatarUrl.includes('photo-1544551763') && !avatarUrl.includes('photo-1556742049') && !avatarUrl.includes('photo-1555396273') && !avatarUrl.includes('photo-1523240795')) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={commName}
+        loading="lazy"
+        decoding="async"
+        className="w-full h-full object-cover rounded-full"
+      />
+    )
+  }
+
+  return (
+    <div className="w-full h-full rounded-full bg-emerald-100 text-[#0F5132] font-sora font-black text-sm sm:text-base flex items-center justify-center">
+      {commName ? commName.substring(0, 2).toUpperCase() : 'KM'}
+    </div>
+  )
+}
+
 export default function CommunityDirectoryPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
@@ -125,6 +231,7 @@ export default function CommunityDirectoryPage() {
   }
 
   const [myCommunities, setMyCommunities] = useState<any[]>([])
+  const [allRolesModalOpen, setAllRolesModalOpen] = useState(false)
 
   async function loadData(isBackgroundSync: boolean = false) {
     try {
@@ -358,83 +465,162 @@ export default function CommunityDirectoryPage() {
           </div>
         </div>
 
-        {/* Komunitas & Role Saya (Multi-Community Memberships) Widget - Exact Screenshot Style */}
+        {/* Komunitas & Role Saya (Multi-Community Memberships) Widget - Mobile Carousel with Exact Logos & Lihat Semua */}
         {user && myCommunities && myCommunities.length > 0 && (
-          <div className="bg-white border border-gray-200/80 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#0F5132] flex items-center justify-center font-bold shadow-2xs">
+          <div className="bg-white border border-gray-200/80 rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
+            {/* Header: Title Left + "Lihat semua >" Always Visible Right on Mobile */}
+            <div className="flex items-center justify-between gap-2 border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-100 text-[#0F5132] flex items-center justify-center font-bold shrink-0 shadow-2xs">
                   <Users className="w-4 h-4" />
                 </div>
-                <h3 className="font-sora text-sm font-black text-slate-900 tracking-tight">
-                  Komunitas & Role Saya ({myCommunities.length})
+                <h3 className="font-sora text-xs sm:text-sm font-black text-slate-900 truncate">
+                  Komunitas & Role Saya <span className="text-[#0F5132]">({myCommunities.length})</span>
                 </h3>
               </div>
-              <a
-                href="#search-bar"
-                className="text-xs font-bold text-slate-600 hover:text-[#2DB24A] transition-colors flex items-center gap-1 cursor-pointer"
+              <button
+                type="button"
+                onClick={() => setAllRolesModalOpen(true)}
+                className="text-[11px] sm:text-xs font-extrabold text-[#2DB24A] hover:text-[#0F5132] transition-colors flex items-center gap-0.5 shrink-0 whitespace-nowrap cursor-pointer"
               >
                 <span>Lihat semua</span>
                 <ChevronRight className="w-3.5 h-3.5" />
-              </a>
+              </button>
             </div>
 
-            {/* Vertical Cards Grid (Carousel on Mobile, Grid on Desktop) */}
-            <div className="flex md:grid overflow-x-auto no-scrollbar gap-3.5 pb-2 -mx-1 px-1 snap-x snap-mandatory md:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
-              {myCommunities.map((mc: any) => {
-                const fallbackAvatar = mc.communityName?.toLowerCase().includes('kuliner')
-                  ? 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fm=webp&w=200&h=200&fit=crop&q=80'
-                  : mc.communityName?.toLowerCase().includes('pelajar')
-                    ? 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fm=webp&w=200&h=200&fit=crop&q=80'
-                    : mc.communityName?.toLowerCase().includes('perahu')
-                      ? 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fm=webp&w=200&h=200&fit=crop&q=80'
-                      : mc.communityName?.toLowerCase().includes('koperasi') || mc.communityName?.toLowerCase().includes('kopjas')
-                        ? 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fm=webp&w=200&h=200&fit=crop&q=80'
-                        : 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fm=webp&w=200&h=200&fit=crop&q=80'
+            {/* Horizontal Scroll Carousel (Swipeable on Mobile & Desktop) */}
+            <div className="flex overflow-x-auto no-scrollbar gap-3 pb-2 -mx-1 px-1 snap-x snap-mandatory items-stretch">
+              {myCommunities.map((mc: any) => (
+                <Link
+                  key={mc.communityId}
+                  href={`/community/${mc.communityId}`}
+                  className="w-[145px] sm:w-[165px] md:w-[185px] shrink-0 snap-start bg-white border border-gray-200/90 hover:border-[#2DB24A]/60 rounded-3xl p-4 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer"
+                >
+                  {/* Top: Circular Community Logo Avatar */}
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    {renderCommunityLogo(mc.communityName, mc.avatarUrl)}
+                  </div>
 
-                const logoSrc = mc.avatarUrl || fallbackAvatar
+                  {/* Middle: Community Name (max 2 lines) */}
+                  <h4 className="font-sora text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#2DB24A] transition-colors line-clamp-2 h-9 sm:h-10 flex items-center justify-center mt-2.5 leading-tight px-0.5">
+                    {mc.communityName}
+                  </h4>
 
-                return (
-                  <Link
-                    key={mc.communityId}
-                    href={`/community/${mc.communityId}`}
-                    className="w-[170px] sm:w-auto shrink-0 snap-start bg-white border border-gray-200/90 hover:border-[#2DB24A]/60 rounded-3xl p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer"
+                  {/* Bottom: Role Badge & Active Status */}
+                  <div className="w-full mt-3 space-y-1">
+                    <span className={`w-full py-1.5 px-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider block shadow-2xs ${
+                      mc.role === 'KETUA' 
+                        ? 'bg-purple-100 text-purple-800 border border-purple-200' 
+                        : mc.role === 'PEMBUAT_PENDING'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-200'
+                          : 'bg-emerald-100 text-[#0F5132] border border-emerald-200/80'
+                    }`}>
+                      {mc.role === 'KETUA' ? 'KETUA' : mc.role === 'PEMBUAT_PENDING' ? 'CALON KETUA' : 'ANGGOTA'}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 block">
+                      {mc.isVerified ? '✓ Aktif' : '⏳ Pending'}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+
+              {/* End Card: View All */}
+              {myCommunities.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setAllRolesModalOpen(true)}
+                  className="w-[125px] sm:w-[140px] shrink-0 snap-start bg-gray-50/80 hover:bg-emerald-50/60 border border-dashed border-gray-250 hover:border-[#2DB24A] rounded-3xl p-4 flex flex-col items-center justify-center text-center transition-all cursor-pointer group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-[#2DB24A] group-hover:scale-110 transition-transform shadow-xs mb-2">
+                    <ChevronRight className="w-5 h-5" />
+                  </div>
+                  <span className="font-sora text-xs font-black text-slate-900 group-hover:text-[#0F5132]">
+                    Lihat Semua
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                    ({myCommunities.length} Komunitas)
+                  </span>
+                </button>
+              )}
+            </div>
+
+            {/* ── MODAL SEMUA KOMUNITAS & ROLE SAYA ───────────────────────── */}
+            <AnimatePresence>
+              {allRolesModalOpen && (
+                <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[85vh]"
                   >
-                    {/* Top: Circular Logo Avatar with clean border */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-emerald-50/40 border border-gray-150 p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300">
-                      <img
-                        src={logoSrc}
-                        alt={mc.communityName}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover rounded-full"
-                      />
+                    <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-emerald-50/50 to-white">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-100 text-[#0F5132] flex items-center justify-center font-bold shadow-2xs">
+                          <Users className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h3 className="font-sora text-sm font-black text-gray-900">
+                            Komunitas & Role Saya ({myCommunities.length})
+                          </h3>
+                          <p className="text-[10px] text-gray-500 font-medium">
+                            Daftar seluruh komunitas yang Anda ikuti beserta hak akses Anda
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setAllRolesModalOpen(false)}
+                        className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
 
-                    {/* Middle: Community Name */}
-                    <h4 className="font-sora text-xs sm:text-sm font-black text-slate-900 group-hover:text-[#2DB24A] transition-colors line-clamp-2 h-10 flex items-center justify-center mt-3 leading-snug">
-                      {mc.communityName}
-                    </h4>
+                    <div className="p-5 space-y-3 overflow-y-auto flex-1">
+                      {myCommunities.map((mc: any) => (
+                        <div
+                          key={mc.communityId}
+                          className="p-4 bg-gray-50/80 hover:bg-[#E8F8EE]/40 border border-gray-200/80 hover:border-[#2DB24A]/40 rounded-2xl flex items-center justify-between gap-3 transition-all"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-12 h-12 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center shrink-0 shadow-xs">
+                              {renderCommunityLogo(mc.communityName, mc.avatarUrl)}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-sora text-xs sm:text-sm font-black text-gray-900 truncate">
+                                {mc.communityName}
+                              </h4>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                  mc.role === 'KETUA' 
+                                    ? 'bg-purple-100 text-purple-800' 
+                                    : mc.role === 'PEMBUAT_PENDING'
+                                      ? 'bg-amber-100 text-amber-900'
+                                      : 'bg-emerald-100 text-[#0F5132]'
+                                }`}>
+                                  {mc.role === 'KETUA' ? '👑 KETUA' : mc.role === 'PEMBUAT_PENDING' ? '⏳ CALON KETUA' : '👤 ANGGOTA'}
+                                </span>
+                                <span className="text-[10px] font-semibold text-gray-400">
+                                  {mc.isVerified ? '✓ Aktif' : '⏳ Pending'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
 
-                    {/* Bottom: Role Badge & Active Status */}
-                    <div className="w-full mt-3 space-y-1.5">
-                      <span className={`w-full py-1.5 px-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider block shadow-2xs ${
-                        mc.role === 'KETUA' 
-                          ? 'bg-purple-100 text-purple-800 border border-purple-200' 
-                          : mc.role === 'PEMBUAT_PENDING'
-                            ? 'bg-amber-100 text-amber-900 border border-amber-200'
-                            : 'bg-emerald-100 text-[#0F5132] border border-emerald-200/80'
-                      }`}>
-                        {mc.role === 'KETUA' ? 'KETUA' : mc.role === 'PEMBUAT_PENDING' ? 'CALON KETUA' : 'ANGGOTA'}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400 block">
-                        {mc.isVerified ? '✓ Aktif' : '⏳ Pending'}
-                      </span>
+                          <Link
+                            href={`/community/${mc.communityId}`}
+                            onClick={() => setAllRolesModalOpen(false)}
+                            className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[11px] rounded-xl shadow-xs transition-colors shrink-0"
+                          >
+                            Buka
+                          </Link>
+                        </div>
+                      ))}
                     </div>
-                  </Link>
-                )
-              })}
-            </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
