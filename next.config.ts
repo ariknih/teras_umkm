@@ -51,11 +51,23 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [
+    const baseHeaders = [
       {
         source: '/:path*',
         headers: securityHeaders,
       },
+    ];
+
+    // Immutable long-lived caching is only safe in production, where
+    // static assets and build chunks are content-hashed. Applying it in
+    // `next dev` causes the browser to keep serving stale Turbopack
+    // chunks after a code change, breaking HMR with module-factory errors.
+    if (process.env.NODE_ENV !== 'production') {
+      return baseHeaders;
+    }
+
+    return [
+      ...baseHeaders,
       {
         source: '/images/:path*',
         headers: [
