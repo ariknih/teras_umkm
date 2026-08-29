@@ -2256,15 +2256,9 @@ export default function CommunityDetailPage() {
     (item) => item.id !== 'beranda' && item.id !== 'tentang' && item.id !== 'anggota'
   )
 
-  const settingsTab = isCanManageCoop
-    ? [
-        { id: 'pengaturan', label: 'Pengaturan', icon: Sliders },
-        { id: 'desain_landing', label: 'Desain Landing', icon: Sparkles }
-      ]
-    : []
-
   const activeSidebarNavList = [
     { id: 'landing_view', label: 'Halaman Landing', icon: ExternalLink },
+    ...(isCanManageCoop ? [{ id: 'desain_landing', label: 'Desain Landing', icon: Sparkles, badge: 'EDIT' }] : []),
     ...sidebarNavList.filter((item) => {
       if (!isCanManageCoop && !isMember) {
         return ['beranda', 'produk_komunitas', 'marketplace', 'tentang'].includes(item.id)
@@ -2272,7 +2266,7 @@ export default function CommunityDetailPage() {
       if (!isCanManageCoop && item.id === 'laporan') return false
       return !disabledModules.includes(item.id)
     }),
-    ...settingsTab
+    ...(isCanManageCoop ? [{ id: 'pengaturan', label: 'Pengaturan', icon: Sliders }] : [])
   ]
 
   const isKetua = Boolean(user && community && community.ketuaId === user.id)
@@ -2599,7 +2593,7 @@ export default function CommunityDetailPage() {
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           
           {/* ── LEFT SIDEBAR MENU PANEL (Sticky Docked with ScrollSpy active state) ──────────────────────────────────────── */}
-          <div className="w-full lg:w-60 shrink-0 space-y-4 lg:sticky lg:top-24 self-start">
+          <div className="w-full lg:w-60 shrink-0 space-y-4 lg:sticky lg:top-24 self-start max-h-[calc(100vh-6.5rem)] overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-slate-200">
             <Link href="/community" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 font-semibold transition-colors">
               <ChevronLeft className="w-4 h-4" /> Kembali ke Komunitas
             </Link>
