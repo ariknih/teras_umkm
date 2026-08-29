@@ -17,7 +17,7 @@ export default function SnackboxCategoryTabs({
   itemCounts = {}
 }: SnackboxCategoryTabsProps) {
   return (
-    <div className="relative">
+    <div className="relative w-full">
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {categories.map(cat => {
           const isActive = activeCategory === cat

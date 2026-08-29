@@ -127,8 +127,8 @@ export default function SnackboxPage() {
         </div>
 
         {/* ── 2. SECTION: SNACK DI SEKITAR KELURAHAN AKTIF ── */}
-        <section id="nearby-snacks" className="space-y-3">
-          <div className="flex items-center justify-between">
+        <section id="nearby-snacks" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-[#EAEAEA] bg-white">
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-[#006E24]" />
               <h2 className="text-sm font-bold text-slate-900">
@@ -141,7 +141,7 @@ export default function SnackboxPage() {
           </div>
 
           {localProducts.length === 0 ? (
-            <div className="text-center py-12 rounded-xl bg-white border border-slate-200/80">
+            <div className="w-full text-center py-12 rounded-xl bg-white border border-slate-200/80">
               <ChefHat className="w-8 h-8 text-slate-400 mx-auto mb-2" />
               <h3 className="font-bold text-xs text-slate-700 mb-0.5">
                 Dapur di Kelurahan {kelurahan.name} Sedang Dikurasi
@@ -158,7 +158,7 @@ export default function SnackboxPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+            <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
               {localProducts.map(product => (
                 <SnackboxProductCard key={product.id} product={product} />
               ))}
@@ -168,7 +168,7 @@ export default function SnackboxPage() {
 
         {/* ── 3. SECTION: TRENDING DI KELURAHAN LAIN ── */}
         {trendingOtherProducts.length > 0 && (
-          <section id="trending-other-kelurahan" className="space-y-3 pt-3 border-t border-slate-200/80">
+          <section id="trending-other-kelurahan" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-[#EAEAEA] bg-white">
             <div className="flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-amber-600" />
               <h2 className="text-sm font-bold text-slate-900">
@@ -176,7 +176,7 @@ export default function SnackboxPage() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+            <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
               {trendingOtherProducts.map(product => (
                 <SnackboxProductCard key={product.id} product={product} />
               ))}
@@ -185,7 +185,7 @@ export default function SnackboxPage() {
         )}
 
         {/* ── 4. SECTION: JELAJAH DI KELURAHAN LAIN (KATEGORI & KATALOG) ── */}
-        <section id="explore-catalog" className="space-y-3 pt-3 border-t border-slate-200/80">
+        <section id="explore-catalog" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-[#EAEAEA] bg-white">
           <div className="flex items-center gap-1.5">
             <Compass className="w-4 h-4 text-[#006E24]" />
             <h2 className="text-sm font-bold text-slate-900">
@@ -203,7 +203,7 @@ export default function SnackboxPage() {
 
           {/* Grid Products */}
           {exploreFilteredProducts.length === 0 ? (
-            <div className="text-center py-16 rounded-xl bg-white border border-slate-200">
+            <div className="w-full text-center py-16 rounded-xl bg-white border border-slate-200">
               <Package className="w-8 h-8 text-slate-300 mx-auto mb-2" />
               <h3 className="font-bold text-xs text-slate-700 mb-0.5">Produk Tidak Ditemukan</h3>
               <p className="text-[11px] text-slate-400 max-w-xs mx-auto mb-3">
@@ -221,7 +221,7 @@ export default function SnackboxPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="w-full space-y-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
                 {exploreFilteredProducts.slice(0, visibleExploreCount).map(product => (
                   <SnackboxProductCard key={product.id} product={product} />
