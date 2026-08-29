@@ -60,6 +60,7 @@ export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [snackboxCart, setSnackboxCart] = useState<any | null>(null)
   const [isSnackboxSelected, setIsSnackboxSelected] = useState<boolean>(true)
+  const [isBoxTypeDropdownOpen, setIsBoxTypeDropdownOpen] = useState(false)
   const [products, setProducts] = useState<ProductDetails[]>([])
   const cartDetails = cart
     .map((item) => {
@@ -988,23 +989,79 @@ export default function CartPage() {
 
                 {/* ── SNACKBOX PACKAGE CART ITEM (UNIFIED FLOW) ── */}
                 {snackboxCart && snackboxCart.items?.length > 0 && (
-                  <div className="bg-white rounded-xl p-5 border border-[#2DB24A]/40 shadow-xs space-y-4 relative overflow-hidden">
-                    <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
+                  <div className="bg-white rounded-2xl p-5 border border-market-green-200 shadow-xs space-y-4 relative overflow-visible">
+                    <div className="flex items-center justify-between pb-3 border-b border-market-green-100">
                       <div className="flex items-center gap-2.5">
                         <input
                           type="checkbox"
                           checked={isSnackboxSelected}
                           onChange={(e) => setIsSnackboxSelected(e.target.checked)}
-                          className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
+                          className="w-4 h-4 text-market-green-600 accent-market-green-600 rounded cursor-pointer"
                         />
                         <span className="text-base">🍱</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-slate-900">
-                            Paket Snackbox Terpadu • Kel. {snackboxCart.kelurahanName}
-                          </span>
-                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9]">
-                            Box {snackboxCart.boxType?.toUpperCase() || 'REGULER'}
-                          </span>
+                        <span className="font-bold text-xs text-slate-900">Snackbox Saloka</span>
+
+                        {/* Box Type Dropdown */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setIsBoxTypeDropdownOpen(v => !v)}
+                            className="flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-market-green-50 text-market-green-700 border border-market-green-200 cursor-pointer hover:bg-market-green-100 transition-colors"
+                          >
+                            <span>{snackboxCart.boxType === 'borongan' ? 'Box Borongan' : 'Box Reguler'}</span>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className={`transition-transform ${isBoxTypeDropdownOpen ? 'rotate-180' : ''}`}>
+                              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+
+                          {isBoxTypeDropdownOpen && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setIsBoxTypeDropdownOpen(false)} />
+                              <div className="absolute left-0 top-full mt-1.5 z-20 w-56 bg-white rounded-xl border border-slate-200 shadow-lg p-1.5 space-y-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = { ...snackboxCart, boxType: 'reguler', boxCount: 1 }
+                                    setSnackboxCart(updated)
+                                    localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                    setIsBoxTypeDropdownOpen(false)
+                                  }}
+                                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                                    (snackboxCart.boxType || 'reguler') === 'reguler'
+                                      ? 'bg-market-green-50 border border-market-green-500'
+                                      : 'border border-transparent hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                                    📦 Box Reguler
+                                  </span>
+                                  <span className="text-[10px] font-bold text-slate-500">1 Box</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = { ...snackboxCart, boxType: 'borongan', boxCount: snackboxCart.boxCount && snackboxCart.boxCount > 1 ? snackboxCart.boxCount : 1 }
+                                    setSnackboxCart(updated)
+                                    localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                    setIsBoxTypeDropdownOpen(false)
+                                  }}
+                                  className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                                    snackboxCart.boxType === 'borongan'
+                                      ? 'bg-market-green-50 border border-market-green-500'
+                                      : 'border border-transparent hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                                    🎁 Box Borongan
+                                  </span>
+                                  <span className="text-[10px] font-bold text-slate-500">
+                                    {snackboxCart.boxType === 'borongan' ? (snackboxCart.boxCount || 1) : 1} Box
+                                  </span>
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                       <button
@@ -1025,7 +1082,7 @@ export default function CartPage() {
                           <div className="flex flex-wrap gap-1.5">
                             {snackboxCart.items.map((i: any, idx: number) => (
                               <span key={idx} className="bg-slate-100 px-2 py-0.5 rounded-md text-[11px] text-slate-700 font-medium border border-slate-200/80">
-                                {i.product?.title || i.title} <strong className="text-[#006E24]">({i.quantity}x)</strong>
+                                {i.product?.title || i.title} <strong className="text-market-green-700">({i.quantity}x)</strong>
                               </span>
                             ))}
                           </div>
@@ -1036,7 +1093,7 @@ export default function CartPage() {
 
                         <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto shrink-0">
                           <div className="text-right">
-                            <div className="font-extrabold text-[#006E24] text-sm">
+                            <div className="font-extrabold text-market-green-700 text-sm">
                               Rp {(snackboxItemsTotal * (snackboxCart.boxCount || 1)).toLocaleString('id-ID')}
                             </div>
                             <div className="text-[10px] text-slate-400">
@@ -1044,37 +1101,44 @@ export default function CartPage() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-3">
-                            <div className="inline-flex items-center border border-slate-200 rounded-md bg-slate-50 overflow-hidden">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const nextCount = Math.max(1, (snackboxCart.boxCount || 1) - 1)
-                                  const updated = { ...snackboxCart, boxCount: nextCount }
-                                  setSnackboxCart(updated)
-                                  localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
-                                }}
-                                className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
-                              >
-                                -
-                              </button>
-                              <span className="px-3 py-1 text-xs font-bold text-slate-800 bg-white">
-                                {snackboxCart.boxCount || 1} Box
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const nextCount = (snackboxCart.boxCount || 1) + 1
-                                  const updated = { ...snackboxCart, boxCount: nextCount }
-                                  setSnackboxCart(updated)
-                                  localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
-                                }}
-                                className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
-                              >
-                                +
-                              </button>
+                          {snackboxCart.boxType === 'borongan' ? (
+                            <div className="flex items-center gap-3">
+                              <div className="inline-flex items-center border border-slate-200 rounded-md bg-slate-50 overflow-hidden">
+                                <button
+                                  type="button"
+                                  disabled={(snackboxCart.boxCount || 1) <= 1}
+                                  onClick={() => {
+                                    const nextCount = Math.max(1, (snackboxCart.boxCount || 1) - 1)
+                                    const updated = { ...snackboxCart, boxCount: nextCount }
+                                    setSnackboxCart(updated)
+                                    localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                  }}
+                                  className="px-2.5 py-1 text-xs hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-600 cursor-pointer"
+                                >
+                                  -
+                                </button>
+                                <span className="px-3 py-1 text-xs font-bold text-slate-800 bg-white">
+                                  {snackboxCart.boxCount || 1} Box
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const nextCount = (snackboxCart.boxCount || 1) + 1
+                                    const updated = { ...snackboxCart, boxCount: nextCount }
+                                    setSnackboxCart(updated)
+                                    localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                  }}
+                                  className="px-2.5 py-1 text-xs hover:bg-slate-200 font-bold text-slate-600 cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <span className="px-3 py-1 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-md">
+                              1 Box
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

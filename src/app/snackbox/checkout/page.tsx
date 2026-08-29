@@ -177,10 +177,10 @@ export default function SnackboxCheckoutPage() {
             <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4 text-[#006E24]" />
+                  <Package className="w-4 h-4 text-market-green-600" />
                   <div>
                     <h3 className="font-bold text-sm text-slate-900">
-                      Isi Paket Snackbox Saloka
+                      Snackbox Saloka
                     </h3>
                     <span className="text-[10px] text-slate-500">
                       Seller Resmi: <strong>Saloka.id</strong>
@@ -189,11 +189,7 @@ export default function SnackboxCheckoutPage() {
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold border ${
-                    cart.boxType === 'reguler'
-                      ? 'bg-[#E8F5E9] text-[#006E24] border-[#C8E6C9]'
-                      : 'bg-amber-50 text-amber-800 border-amber-200'
-                  }`}>
+                  <span className="px-2.5 py-0.5 rounded text-[11px] font-bold border bg-market-green-50 text-market-green-700 border-market-green-200">
                     {cart.boxType === 'reguler' ? 'Box Reguler' : 'Box Borongan'}
                   </span>
                   <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-slate-900 text-white">
