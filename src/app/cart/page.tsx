@@ -796,6 +796,8 @@ export default function CartPage() {
 
   const subtotal = regularSubtotal + (snackboxCart && isSnackboxSelected ? snackboxSubtotal : 0);
 
+  const selectedPesananCount = selectedCartDetails.length + (snackboxCart?.items?.length && isSnackboxSelected ? 1 : 0);
+
   const selectedCourierRate = courierRates.find((r) => r.courier_code === selectedCourier);
   const shippingFee = deliveryMethod === 'PICKUP' ? 0 : (selectedCourierRate ? selectedCourierRate.price : 0);
   
@@ -1360,7 +1362,7 @@ export default function CartPage() {
                     onClick={() => setViewMode('checkout')}
                     className="w-full py-3 bg-primary hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl transition-colors shadow-xs text-center cursor-pointer"
                   >
-                    Beli ({cartDetails.length})
+                    Beli ({selectedPesananCount})
                   </button>
 
                   <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl p-4 text-center space-y-2.5 mt-4">
