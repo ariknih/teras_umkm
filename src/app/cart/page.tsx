@@ -525,6 +525,7 @@ export default function CartPage() {
   }
 
   const handleRemoveItem = (productId: string) => {
+    if (!window.confirm('Hapus produk ini dari keranjang?')) return
     const updated = cart.filter((item) => item.productId !== productId)
     saveCart(updated)
   }
@@ -1035,7 +1036,7 @@ export default function CartPage() {
                                   Rp {itemPrice.toLocaleString('id-ID')}
                                 </span>
                               </div>
-                              <div className="flex items-center justify-between mt-2">
+                              <div className="flex items-center justify-end gap-4 mt-2">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1253,7 +1254,7 @@ export default function CartPage() {
                                       Rp {wholesalePrice.toLocaleString('id-ID')} / pcs
                                     </p>
 
-                                    <div className="flex items-center justify-between mt-2">
+                                    <div className="flex items-center justify-end gap-4 mt-2">
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveItem(item.id)}
@@ -1264,7 +1265,13 @@ export default function CartPage() {
                                       <QuantityStepper
                                         size="sm"
                                         value={item.quantity}
-                                        onDecrement={() => handleUpdateQuantity(item.id, item.quantity - 1, item.stock)}
+                                        onDecrement={() => {
+                                          if (item.quantity <= 1) {
+                                            handleRemoveItem(item.id)
+                                            return
+                                          }
+                                          handleUpdateQuantity(item.id, item.quantity - 1, item.stock)
+                                        }}
                                         onIncrement={() => handleUpdateQuantity(item.id, item.quantity + 1, item.stock)}
                                       />
                                     </div>
