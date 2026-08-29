@@ -4441,6 +4441,8 @@ export const DataStore = {
       communityId: string
       communityName: string
       communityType: string
+      avatarUrl?: string | null
+      coverUrl?: string | null
       landingPageConfig?: string | null
       isVerified: boolean
       role: 'KETUA' | 'ANGGOTA' | 'PEMBUAT_PENDING'
@@ -4456,6 +4458,8 @@ export const DataStore = {
         communityId: c.id,
         communityName: c.name,
         communityType: c.type,
+        avatarUrl: c.avatarUrl || null,
+        coverUrl: c.coverUrl || null,
         landingPageConfig: c.landingPageConfig,
         isVerified: Boolean(c.isVerified),
         role: c.isVerified ? 'KETUA' : 'PEMBUAT_PENDING',
@@ -4487,6 +4491,8 @@ export const DataStore = {
           communityId: comm.id,
           communityName: comm.name,
           communityType: comm.type,
+          avatarUrl: comm.avatarUrl || null,
+          coverUrl: comm.coverUrl || null,
           landingPageConfig: comm.landingPageConfig,
           isVerified: Boolean(comm.isVerified),
           role: 'ANGGOTA',

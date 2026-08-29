@@ -81,6 +81,8 @@ interface User {
     communityId: string
     communityName: string
     communityType: string
+    avatarUrl?: string | null
+    coverUrl?: string | null
     isVerified: boolean
     role: 'KETUA' | 'ANGGOTA' | 'PEMBUAT_PENDING'
     roleLabel: string
