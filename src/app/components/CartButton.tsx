@@ -13,13 +13,19 @@ export default function CartButton({ userId, communityId }: { userId?: string; c
           ? (communityId ? `teras_cart_${userId}_${communityId}` : `teras_cart_${userId}`) 
           : 'teras_cart'
         const storedCart = localStorage.getItem(cartKey)
+        let count = 0
         if (storedCart) {
           const cart = JSON.parse(storedCart)
-          const count = cart.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
-          setItemCount(count)
-        } else {
-          setItemCount(0)
+          count = cart.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
         }
+
+        const storedSnackbox = localStorage.getItem('saloka_snackbox_cart_v1')
+        if (storedSnackbox) {
+          const snackboxCart = JSON.parse(storedSnackbox)
+          if (snackboxCart?.items?.length > 0) count += 1
+        }
+
+        setItemCount(count)
       } catch (e) {
         console.error('Failed to read cart count', e)
       }

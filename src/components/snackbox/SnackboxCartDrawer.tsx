@@ -30,6 +30,7 @@ export default function SnackboxCartDrawer() {
   } = useSnackbox()
 
   const [pendingRemove, setPendingRemove] = useState<{ id: string; title: string } | null>(null)
+  const [isConfirmClearAllOpen, setIsConfirmClearAllOpen] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -101,7 +102,7 @@ export default function SnackboxCartDrawer() {
                 </button>
                 <button
                   type="button"
-                  onClick={clearCart}
+                  onClick={() => setIsConfirmClearAllOpen(true)}
                   className="text-xs font-medium text-rose-500 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -264,7 +265,7 @@ export default function SnackboxCartDrawer() {
                 </Link>
 
                 <Link
-                  href="/snackbox/checkout"
+                  href="/cart?step=checkout"
                   onClick={() => setIsCartOpen(false)}
                   className="flex-1 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xs active:scale-95 cursor-pointer bg-market-green-500 hover:bg-market-green-600 text-white"
                 >
@@ -286,6 +287,18 @@ export default function SnackboxCartDrawer() {
       onConfirm={() => {
         if (pendingRemove) removeItem(pendingRemove.id)
         setPendingRemove(null)
+      }}
+    />
+
+    <ConfirmDialog
+      open={isConfirmClearAllOpen}
+      title="Hapus semua snack?"
+      description="Seluruh isi Snackbox kamu akan dikosongkan."
+      confirmLabel="Hapus Semua"
+      onCancel={() => setIsConfirmClearAllOpen(false)}
+      onConfirm={() => {
+        clearCart()
+        setIsConfirmClearAllOpen(false)
       }}
     />
     </>

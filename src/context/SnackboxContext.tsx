@@ -92,6 +92,7 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
     setCart(newCart)
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart))
+      window.dispatchEvent(new Event('storage'))
     } catch (e) {}
   }
 

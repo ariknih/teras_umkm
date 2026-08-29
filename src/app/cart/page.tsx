@@ -72,7 +72,9 @@ export default function CartPage() {
     })
     .filter(Boolean) as Array<ProductDetails & { quantity: number }>
 
-  const [viewMode, setViewMode] = useState<'cart' | 'checkout'>('cart')
+  const [viewMode, setViewMode] = useState<'cart' | 'checkout'>(
+    searchParams?.get('step') === 'checkout' ? 'checkout' : 'cart'
+  )
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
 
   const [affiliateId, setAffiliateId] = useState<string>('')
@@ -642,6 +644,17 @@ export default function CartPage() {
     setTimeout(() => setSuccessMessage(null), 3500)
   }
 
+  // Snackbox has no real backend Product records yet, so it can't go through
+  // the same DB-backed order flow as regular products — its portion of the
+  // order is cleared client-side once the (real or simulated) checkout succeeds.
+  const clearSnackboxCartIfSelected = () => {
+    if (snackboxCart && isSnackboxSelected && snackboxCart.items?.length > 0) {
+      localStorage.removeItem('saloka_snackbox_cart_v1')
+      window.dispatchEvent(new Event('storage'))
+      setSnackboxCart(null)
+    }
+  }
+
   // Checkout Execution
   const handleCheckout = async () => {
     if (!currentUser) {
@@ -653,9 +666,23 @@ export default function CartPage() {
     setSuccessMessage(null)
     setIsPendingCheckout(true)
 
-    if (selectedCartDetails.length === 0) {
+    const hasSnackboxSelected = !!(snackboxCart && isSnackboxSelected && snackboxCart.items?.length > 0)
+
+    if (selectedCartDetails.length === 0 && !hasSnackboxSelected) {
       setError('Pilih minimal 1 produk yang ingin dibeli.')
       setIsPendingCheckout(false)
+      return
+    }
+
+    // Snackbox-only checkout (no real products selected): simulate, since
+    // there's no backend product record to create a real order against.
+    if (selectedCartDetails.length === 0 && hasSnackboxSelected) {
+      setTimeout(() => {
+        clearSnackboxCartIfSelected()
+        setSuccessMessage('Pesanan Snackbox berhasil dibuat!')
+        setCheckoutSuccess(true)
+        setIsPendingCheckout(false)
+      }, 900)
       return
     }
 
@@ -691,6 +718,7 @@ export default function CartPage() {
         if (res.error || !res.order) throw new Error(res.error || 'Gagal melakukan checkout via dompet.')
         
         // Success
+        clearSnackboxCartIfSelected()
         setSuccessMessage('Pembayaran dengan Saldo Dompet berhasil.')
         await verifyCheckout(res.order!.id, false)
         setIsPendingCheckout(false)
@@ -717,8 +745,9 @@ export default function CartPage() {
         setCart([])
         window.dispatchEvent(new Event('storage'))
         setAffiliateId('')
+        clearSnackboxCartIfSelected()
         router.push(`/orders/${res.order!.id}`)
-        
+
         setIsPendingCheckout(false)
       } catch (err: any) {
         setError(err.message || 'Checkout gagal.')
@@ -744,6 +773,7 @@ export default function CartPage() {
         setCart([])
         window.dispatchEvent(new Event('storage'))
         setAffiliateId('')
+        clearSnackboxCartIfSelected()
         router.push(`/orders/${res.order.id}`)
       } catch (err: any) {
         setError(err.message || 'Gagal melakukan checkout COD.')
@@ -765,6 +795,7 @@ export default function CartPage() {
       setCart([])
       window.dispatchEvent(new Event('storage'))
       setAffiliateId('')
+      clearSnackboxCartIfSelected()
       setSuccessMessage('Pesanan Anda telah berhasil dibuat!')
       setCheckoutSuccess(true)
       setIsPendingCheckout(false)
@@ -1009,6 +1040,7 @@ export default function CartPage() {
                         type="button"
                         onClick={() => {
                           localStorage.removeItem('saloka_snackbox_cart_v1')
+                          window.dispatchEvent(new Event('storage'))
                           setSnackboxCart(null)
                         }}
                         className="text-xs text-slate-400 hover:text-red-500 font-medium cursor-pointer"
@@ -1060,6 +1092,7 @@ export default function CartPage() {
                                     const updated = { ...snackboxCart, items: updatedItems }
                                     setSnackboxCart(updated)
                                     localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                    window.dispatchEvent(new Event('storage'))
                                   }}
                                   onIncrement={() => {
                                     const nextQty = (i.quantity || 1) + 1
@@ -1069,6 +1102,7 @@ export default function CartPage() {
                                     const updated = { ...snackboxCart, items: updatedItems }
                                     setSnackboxCart(updated)
                                     localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                    window.dispatchEvent(new Event('storage'))
                                   }}
                                 />
                               </div>
@@ -1117,12 +1151,14 @@ export default function CartPage() {
                                 const updated = { ...snackboxCart, boxCount: nextCount }
                                 setSnackboxCart(updated)
                                 localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                window.dispatchEvent(new Event('storage'))
                               }}
                               onIncrement={() => {
                                 const nextCount = (snackboxCart.boxCount || 1) + 1
                                 const updated = { ...snackboxCart, boxCount: nextCount }
                                 setSnackboxCart(updated)
                                 localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                window.dispatchEvent(new Event('storage'))
                               }}
                             />
                             <span className="text-sm font-bold text-slate-900">Box</span>
@@ -1142,6 +1178,7 @@ export default function CartPage() {
                                 const updated = { ...snackboxCart, boxType: 'reguler', boxCount: 1 }
                                 setSnackboxCart(updated)
                                 localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                window.dispatchEvent(new Event('storage'))
                                 setIsBoxTypeDropdownOpen(false)
                               }}
                               className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer ${
@@ -1162,6 +1199,7 @@ export default function CartPage() {
                                 const updated = { ...snackboxCart, boxType: 'borongan', boxCount: snackboxCart.boxCount && snackboxCart.boxCount > 1 ? snackboxCart.boxCount : 1 }
                                 setSnackboxCart(updated)
                                 localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                window.dispatchEvent(new Event('storage'))
                                 setIsBoxTypeDropdownOpen(false)
                               }}
                               className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer ${
@@ -1442,10 +1480,50 @@ export default function CartPage() {
                   })()}
                 </div>
 
-                {/* 2. Merchant Store Card & Items */}
+                {/* 2. Snackbox Saloka (only if selected in cart) */}
+                {snackboxCart && isSnackboxSelected && snackboxCart.items?.length > 0 && (
+                  <div className="bg-white rounded-2xl p-5 border border-market-green-200 shadow-xs space-y-4">
+                    <div className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2.5">
+                      Snackbox Saloka
+                    </div>
+
+                    <div className="space-y-3">
+                      {snackboxCart.items.map((i: any, idx: number) => {
+                        const itemPrice = i.product?.price || i.price || 0
+                        const itemTitle = i.product?.title || i.title
+                        const itemImage = i.product?.imageUrl || i.imageUrl
+                        return (
+                          <div key={i.product?.id || idx} className="flex items-center justify-between gap-4 pb-3 border-b border-slate-50 last:border-b-0 text-xs">
+                            <div className="flex gap-3 items-center">
+                              <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden shrink-0">
+                                <img src={itemImage} alt={itemTitle} className="object-cover w-full h-full" />
+                              </div>
+                              <h4 className="font-bold text-slate-800 text-xs">{itemTitle}</h4>
+                            </div>
+                            <div className="text-right font-bold text-slate-900">
+                              <div>Rp {(itemPrice * (i.quantity || 1)).toLocaleString('id-ID')}</div>
+                              <div className="text-[10px] text-slate-400 font-normal">{i.quantity || 1}pcs x Rp{itemPrice.toLocaleString('id-ID')}</div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-market-green-25 border border-market-green-200 text-xs">
+                      <span className="font-bold text-slate-800">
+                        {snackboxCart.boxType === 'borongan' ? 'Box Borongan' : 'Box Reguler'} • {snackboxCart.boxCount || 1} Box
+                      </span>
+                      <span className="font-extrabold text-market-green-700 text-sm">
+                        Rp {snackboxSubtotal.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Merchant Store Card & Items */}
                 {(() => {
                   const groups: Record<string, typeof cartDetails> = {};
-                  cartDetails.forEach(item => {
+                  selectedCartDetails.forEach(item => {
                     const mId = item.merchantId || 'unknown';
                     if (!groups[mId]) groups[mId] = [];
                     groups[mId].push(item);
@@ -2040,6 +2118,7 @@ export default function CartPage() {
             const updated = { ...snackboxCart, items: updatedItems }
             setSnackboxCart(updated)
             localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+            window.dispatchEvent(new Event('storage'))
           }
           setPendingRemove(null)
         }}
