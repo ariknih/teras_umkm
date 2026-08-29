@@ -20,7 +20,8 @@ interface SnackboxContextValue {
   cart: SnackboxCart
   isCartOpen: boolean
   setIsCartOpen: (open: boolean) => void
-  
+  cartBumpTick: number
+
   addItem: (product: SnackboxProduct, qty?: number) => void
   removeItem: (productId: string) => void
   updateItemQty: (productId: string, qty: number) => void
@@ -52,6 +53,7 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
   const [kelurahan, setKelurahanState] = useState<Kelurahan>(defaultKelurahan)
   const [isKelurahanModalOpen, setIsKelurahanModalOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [cartBumpTick, setCartBumpTick] = useState(0)
 
   const [cart, setCart] = useState<SnackboxCart>({
     items: [],
@@ -134,7 +136,7 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
       ...cart,
       items: updatedItems
     })
-    setIsCartOpen(true)
+    setCartBumpTick(tick => tick + 1)
   }
 
   const removeItem = (productId: string) => {
@@ -189,7 +191,8 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
   const setBoxType = (type: BoxType) => {
     saveCartToStorage({
       ...cart,
-      boxType: type
+      boxType: type,
+      boxCount: type === 'reguler' ? 1 : cart.boxCount
     })
   }
 
@@ -282,6 +285,7 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
         cart,
         isCartOpen,
         setIsCartOpen,
+        cartBumpTick,
         addItem,
         removeItem,
         updateItemQty,
