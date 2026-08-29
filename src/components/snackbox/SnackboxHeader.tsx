@@ -1,62 +1,57 @@
 'use client'
 
 import React from 'react'
-import { MapPin, ShoppingBag, ChevronDown, CheckCircle2 } from 'lucide-react'
+import { MapPin, ShoppingBag, ChevronRight, PawPrint } from 'lucide-react'
 import { useSnackbox } from '@/context/SnackboxContext'
 
 export default function SnackboxHeader() {
   const { kelurahan, setIsKelurahanModalOpen, setIsCartOpen, totalItemTypesCount, summary } = useSnackbox()
 
   return (
-    <div id="snackbox-header-bar" className="bg-white border-b border-slate-200 sticky top-[72px] sm:top-[76px] z-30 shadow-2xs flex justify-center">
-      <div id="snackbox-header-content" className="w-full max-w-[1200px] mx-auto py-[12px] mb-[24px] flex items-center justify-between gap-3">
-        {/* Left: Location Indicator with Switcher Button */}
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-1.5 text-xs text-slate-600 bg-[#F5F7FA] border border-slate-200 px-3 py-1.5 rounded-lg shrink-0">
-            <MapPin className="w-3.5 h-3.5 text-[#006E24] shrink-0" />
-            <span className="text-slate-500 hidden sm:inline">Lokasi:</span>
-            <span className="font-bold text-slate-800 truncate max-w-[150px] sm:max-w-[240px]">
-              Kel. {kelurahan.name}, {kelurahan.kota}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsKelurahanModalOpen(true)}
-              className="ml-1 text-[11px] font-extrabold text-[#006E24] hover:underline flex items-center gap-0.5 cursor-pointer"
-            >
-              <span>Ganti</span>
-              <ChevronDown className="w-3 h-3" />
-            </button>
+    <div id="snackbox-header-bar" className="w-full max-w-[1200px] mx-auto mb-6">
+      <div
+        id="snackbox-header-content"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-market-green-500 bg-gradient-to-r from-market-green-25 to-market-green-50"
+      >
+        {/* Left: Logo + Title */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="shrink-0 w-11 h-11 rounded-lg bg-white border border-market-green-100 flex items-center justify-center shadow-xs">
+            <PawPrint className="w-5 h-5 text-market-green-600" />
           </div>
-
-          <div className="hidden md:flex items-center gap-1 text-[11px] text-[#006E24] font-semibold bg-[#E8F5E9] border border-[#C8E6C9] px-2.5 py-1 rounded-md shrink-0">
-            <CheckCircle2 className="w-3 h-3" />
-            <span>Pesanan Resmi Terpadu Saloka</span>
+          <div className="min-w-0">
+            <h1 className="text-base font-bold text-slate-900 leading-tight">Snackbox Saloka!</h1>
+            <p className="text-xs text-slate-500 truncate">Dibuat langsung oleh pembuat kue di sekitarmu!</p>
           </div>
         </div>
 
-        {/* Right: Cart Button */}
-        <div className="flex items-center gap-2">
+        {/* Right: Location Switcher + Cart Button */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsKelurahanModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs bg-white border border-slate-200 pl-3 pr-2.5 py-2 rounded-lg cursor-pointer hover:border-market-green-500/40"
+          >
+            <MapPin className="w-3.5 h-3.5 text-market-green-600 shrink-0" />
+            <span className="font-semibold text-slate-800 truncate max-w-[150px] sm:max-w-[200px]">
+              Kel. {kelurahan.name}, {kelurahan.kota}
+            </span>
+            <span className="ml-1 font-extrabold text-market-green-600">Ganti</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
-              totalItemTypesCount > 0
-                ? 'bg-[#006E24] text-white border-[#006E24] shadow-xs hover:bg-[#005a1d]'
-                : 'bg-white border-slate-200 text-slate-700 hover:border-[#006E24]/40 hover:text-slate-900'
-            }`}
+            className="flex items-center gap-2 pl-4 pr-3.5 py-2 rounded-lg bg-market-green-500 hover:bg-market-green-600 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
-            <div className="relative">
-              <ShoppingBag className="w-4 h-4" />
-              {totalItemTypesCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 w-4 h-4 rounded-full bg-amber-400 text-slate-950 text-[9px] font-black flex items-center justify-center">
-                  {totalItemTypesCount}
-                </span>
-              )}
-            </div>
-            <span className="hidden sm:inline">Keranjang Box</span>
+            <ShoppingBag className="w-4 h-4" />
+            <span>Keranjang Snackbox</span>
+            <span className="w-5 h-5 rounded-full bg-white text-market-green-600 text-[11px] font-black flex items-center justify-center">
+              {totalItemTypesCount}
+            </span>
             {totalItemTypesCount > 0 && (
-              <span className="font-extrabold pl-1 border-l border-white/30 text-[11px]">
+              <span className="font-extrabold pl-1 border-l border-white/30 text-[11px] flex items-center gap-0.5">
                 Rp {summary.subtotalGross.toLocaleString('id-ID')}
+                <ChevronRight className="w-3 h-3" />
               </span>
             )}
           </button>
