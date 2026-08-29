@@ -83,7 +83,7 @@ export default function SnackboxPage() {
   }, [])
 
   return (
-    <div className="relative min-h-screen bg-[#F5F7FA] font-inter pb-20">
+    <div className="relative min-h-screen bg-[#F5F7FA] font-inter pb-32">
       {/* ── 1. HEADER BAR: LOKASI KELURAHAN & KERANJANG BOX ── */}
       <SnackboxHeader />
 
