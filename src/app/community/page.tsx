@@ -41,94 +41,10 @@ import {
   Clock
 } from 'lucide-react'
 
-// Helper to render exact vector/custom community logos matching blueprint
+// Helper to render real community profile photo/avatar matching the directory
 function renderCommunityLogo(commName: string = '', avatarUrl?: string | null) {
-  const name = (commName || '').toLowerCase()
-
-  // 1. Asosiasi Kuliner Kreatif Jogja -> 5-pointed colorful gradient star logo
-  if (name.includes('kuliner') || name.includes('asosiasi kuliner')) {
-    return (
-      <svg viewBox="0 0 100 100" className="w-full h-full object-contain p-1">
-        <polygon points="50,6 63,36 96,36 69,57 79,90 50,70 21,90 31,57 4,36 37,36" fill="none" stroke="url(#starGradWidget)" strokeWidth="10" strokeLinejoin="round" />
-        <defs>
-          <linearGradient id="starGradWidget" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#F59E0B" />
-            <stop offset="30%" stopColor="#EF4444" />
-            <stop offset="60%" stopColor="#8B5CF6" />
-            <stop offset="85%" stopColor="#3B82F6" />
-            <stop offset="100%" stopColor="#10B981" />
-          </linearGradient>
-        </defs>
-      </svg>
-    )
-  }
-
-  // 2. kopjaswara -> Green shaking hands inside green circular badge
-  if (name.includes('kopjas') || name.includes('kopjaswara')) {
-    return (
-      <div className="w-full h-full rounded-full bg-[#E8F8EE] flex items-center justify-center p-2 text-[#2DB24A]">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
-          <path d="m11 17 2 2a1 1 0 0 0 1.4 0l4.3-4.3a1 1 0 0 0 0-1.4l-2-2a1 1 0 0 0-1.4 0l-4.3 4.3a1 1 0 0 0 0 1.4Z" />
-          <path d="m18 10 1-1a2 2 0 0 0 0-2.8l-2.2-2.2a2 2 0 0 0-2.8 0l-6 6a2 2 0 0 0 0 2.8l1 1" />
-          <path d="m2 14 3-3" />
-          <path d="m5 17 3-3" />
-          <path d="M14 6 8 12" />
-        </svg>
-      </div>
-    )
-  }
-
-  // 3. Pelajar Pengusaha Indonesia -> Circle of colorful community people
-  if (name.includes('pelajar') || name.includes('pengusaha')) {
-    return (
-      <svg viewBox="0 0 100 100" className="w-full h-full object-contain p-1">
-        <circle cx="50" cy="18" r="8" fill="#EF4444" />
-        <path d="M42 34 C42 26, 58 26, 58 34 L56 50 L44 50 Z" fill="#EF4444" />
-        
-        <circle cx="80" cy="40" r="8" fill="#F59E0B" />
-        <path d="M72 52 C78 46, 88 56, 82 62 L68 68 L64 58 Z" fill="#F59E0B" />
-        
-        <circle cx="68" cy="80" r="8" fill="#10B981" />
-        <path d="M60 88 C54 82, 64 72, 70 78 L68 92 L58 90 Z" fill="#10B981" />
-        
-        <circle cx="32" cy="80" r="8" fill="#8B5CF6" />
-        <path d="M40 88 C46 82, 36 72, 30 78 L32 92 L42 90 Z" fill="#8B5CF6" />
-
-        <circle cx="20" cy="40" r="8" fill="#3B82F6" />
-        <path d="M28 52 C22 46, 12 56, 18 62 L32 68 L36 58 Z" fill="#3B82F6" />
-      </svg>
-    )
-  }
-
-  // 4. Koperasi Produksi Maju Bersama -> Green & gold cooperative logo with store canopy
-  if (name.includes('produksi') || name.includes('maju bersama') || name.includes('koperasi produksi')) {
-    return (
-      <div className="w-full h-full rounded-full bg-white flex items-center justify-center p-0.5">
-        <svg viewBox="0 0 100 100" className="w-full h-full">
-          <circle cx="50" cy="50" r="46" fill="#F4FAF5" stroke="#2DB24A" strokeWidth="6" />
-          <path d="M25 42 Q50 30 75 42 L75 50 Q50 40 25 50 Z" fill="#FF9800" />
-          <path d="M28 50 Q50 42 72 50 L70 72 Q50 82 30 72 Z" fill="#2DB24A" />
-          <path d="M40 62 Q50 72 60 62" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" fill="none" />
-        </svg>
-      </div>
-    )
-  }
-
-  // 5. Perahu Kita -> Cyan sailing boat emblem
-  if (name.includes('perahu')) {
-    return (
-      <div className="w-full h-full rounded-full bg-cyan-50 flex items-center justify-center p-2 text-cyan-600">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
-          <path d="M2 18h20c-1.5 2.5-4 4-8 4s-6.5-1.5-8-4Z" fill="#06B6D4" fillOpacity="0.3" />
-          <path d="M12 3v11" />
-          <path d="M12 3 4.5 14h15L12 3z" fill="#0D9488" fillOpacity="0.4" />
-        </svg>
-      </div>
-    )
-  }
-
-  // Fallback: custom avatarUrl if valid and not dummy unsplash photo
-  if (avatarUrl && avatarUrl.startsWith('http') && !avatarUrl.includes('photo-1544551763') && !avatarUrl.includes('photo-1556742049') && !avatarUrl.includes('photo-1555396273') && !avatarUrl.includes('photo-1523240795')) {
+  // If community has an avatarUrl (from database/seed/upload), use it directly
+  if (avatarUrl && typeof avatarUrl === 'string' && avatarUrl.trim() !== '') {
     return (
       <img
         src={avatarUrl}
@@ -140,9 +56,20 @@ function renderCommunityLogo(commName: string = '', avatarUrl?: string | null) {
     )
   }
 
+  // Initials fallback if no photo is available
+  const initials = commName
+    ? commName
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(w => w[0])
+        .join('')
+        .toUpperCase()
+    : 'KM'
+
   return (
-    <div className="w-full h-full rounded-full bg-emerald-100 text-[#0F5132] font-sora font-black text-sm sm:text-base flex items-center justify-center">
-      {commName ? commName.substring(0, 2).toUpperCase() : 'KM'}
+    <div className="w-full h-full rounded-full bg-emerald-100 text-[#0F5132] font-sora font-black text-xs sm:text-sm flex items-center justify-center">
+      {initials}
     </div>
   )
 }
@@ -490,16 +417,20 @@ export default function CommunityDirectoryPage() {
 
             {/* Horizontal Scroll Carousel with Touch-Pan Support */}
             <div className="flex overflow-x-auto no-scrollbar gap-2.5 sm:gap-3.5 pb-2 -mx-1 px-1 snap-x snap-mandatory items-stretch touch-pan-x">
-              {myCommunities.map((mc: any) => (
-                <Link
-                  key={mc.communityId}
-                  href={`/community/${mc.communityId}`}
-                  className="w-[130px] sm:w-[155px] md:w-[180px] shrink-0 snap-start bg-white border border-gray-200/90 hover:border-[#2DB24A]/60 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer select-none"
-                >
-                  {/* Top: Circular Community Logo Avatar */}
-                  <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300">
-                    {renderCommunityLogo(mc.communityName, mc.avatarUrl)}
-                  </div>
+              {myCommunities.map((mc: any) => {
+                const matchedComm = communities.find((c: any) => c.id === mc.communityId || c.name === mc.communityName)
+                const effectiveAvatar = mc.avatarUrl || matchedComm?.avatarUrl || null
+
+                return (
+                  <Link
+                    key={mc.communityId}
+                    href={`/community/${mc.communityId}`}
+                    className="w-[130px] sm:w-[155px] md:w-[180px] shrink-0 snap-start bg-white border border-gray-200/90 hover:border-[#2DB24A]/60 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer select-none"
+                  >
+                    {/* Top: Circular Community Logo Avatar */}
+                    <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      {renderCommunityLogo(mc.communityName, effectiveAvatar)}
+                    </div>
 
                   {/* Middle: Community Name (max 2 lines) */}
                   <h4 className="font-sora text-[11px] sm:text-xs md:text-sm font-black text-slate-900 group-hover:text-[#2DB24A] transition-colors line-clamp-2 h-8 sm:h-10 flex items-center justify-center mt-2 leading-tight px-0.5">
@@ -522,7 +453,7 @@ export default function CommunityDirectoryPage() {
                     </span>
                   </div>
                 </Link>
-              ))}
+              )})}
 
               {/* End Card: View All */}
               {myCommunities.length > 2 && (
@@ -577,15 +508,19 @@ export default function CommunityDirectoryPage() {
                     </div>
 
                     <div className="p-5 space-y-3 overflow-y-auto flex-1">
-                      {myCommunities.map((mc: any) => (
-                        <div
-                          key={mc.communityId}
-                          className="p-4 bg-gray-50/80 hover:bg-[#E8F8EE]/40 border border-gray-200/80 hover:border-[#2DB24A]/40 rounded-2xl flex items-center justify-between gap-3 transition-all"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-12 h-12 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center shrink-0 shadow-xs">
-                              {renderCommunityLogo(mc.communityName, mc.avatarUrl)}
-                            </div>
+                      {myCommunities.map((mc: any) => {
+                        const matchedComm = communities.find((c: any) => c.id === mc.communityId || c.name === mc.communityName)
+                        const effectiveAvatar = mc.avatarUrl || matchedComm?.avatarUrl || null
+
+                        return (
+                          <div
+                            key={mc.communityId}
+                            className="p-4 bg-gray-50/80 hover:bg-[#E8F8EE]/40 border border-gray-200/80 hover:border-[#2DB24A]/40 rounded-2xl flex items-center justify-between gap-3 transition-all"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-12 h-12 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                                {renderCommunityLogo(mc.communityName, effectiveAvatar)}
+                              </div>
                             <div className="min-w-0">
                               <h4 className="font-sora text-xs sm:text-sm font-black text-gray-900 truncate">
                                 {mc.communityName}
@@ -615,7 +550,7 @@ export default function CommunityDirectoryPage() {
                             Buka
                           </Link>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </motion.div>
                 </div>
