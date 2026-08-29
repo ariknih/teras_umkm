@@ -97,6 +97,7 @@ import {
   QrCode,
   Megaphone,
   MoreVertical,
+  MoreHorizontal,
   AlertTriangle,
   Image as ImageIcon,
   Utensils,
@@ -145,6 +146,7 @@ export default function CommunityDetailPage() {
   const [membershipDetails, setMembershipDetails] = useState<any>(null)
   const [shuConfig, setShuConfig] = useState<any>(null)
   const [userShu, setUserShu] = useState<any>(null)
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false)
 
 
 
@@ -2537,8 +2539,8 @@ export default function CommunityDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F7F9] text-[#111827] pt-24 pb-20 px-3 md:px-8 font-sans">
-      <div className="max-w-[1280px] mx-auto space-y-6">
+    <div className="min-h-screen bg-[#F5F7F9] text-[#111827] pt-4 md:pt-8 pb-28 md:pb-20 px-3 md:px-8 font-sans max-w-full overflow-x-hidden">
+      <div className="max-w-[1280px] mx-auto space-y-4 md:space-y-6">
 
         {/* TOP BAR / PACKAGE HEADER (Khusus Admin Koperasi) */}
         {isKoperasi && isCanManageCoop && (
@@ -2592,8 +2594,174 @@ export default function CommunityDetailPage() {
         {/* ── 2-PANEL FLEX LAYOUT: UNIFIED SALOKA DESIGN SYSTEM FOR ALL 5 COMMUNITIES ── */}
         <div className="flex flex-col lg:flex-row gap-6 items-start">
           
-          {/* ── LEFT SIDEBAR MENU PANEL (Sticky Docked with ScrollSpy active state) ──────────────────────────────────────── */}
-          <div className="w-full lg:w-60 shrink-0 space-y-4 lg:sticky lg:top-24 self-start max-h-[calc(100vh-6.5rem)] overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-slate-200">
+          {/* ── MOBILE ONLY: COMPACT COMMUNITY HEADER & HORIZONTAL TABS ──────────────── */}
+          <div className="lg:hidden w-full space-y-3">
+            {/* Back Button */}
+            <Link href="/community" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 font-semibold transition-colors">
+              <ChevronLeft className="w-4 h-4" /> Kembali ke Komunitas
+            </Link>
+
+            {/* Compact Mobile Community Info Card */}
+            <div className="p-3.5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-[#E8F8EE] border border-emerald-200/80 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
+                  {community.avatarUrl ? (
+                    <img src={community.avatarUrl} alt={community.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-sora font-black text-sm text-[#0F5132]">
+                      {community.name.substring(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="font-sora text-sm font-black text-gray-900 line-clamp-1">
+                    {community.name}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                    <span className={`px-2 py-0.5 text-[8px] font-black rounded uppercase tracking-wider ${
+                      community.type === 'KOPERASI'
+                        ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    }`}>
+                      {community.type === 'KOPERASI' ? `KOPERASI ${coopTier}` : 'PERKUMPULAN'}
+                    </span>
+                    <span className="text-[10px] text-gray-500 font-semibold flex items-center gap-1">
+                      <Users className="w-3 h-3 text-[#2DB24A]" /> {realStats.activeMembersCount || (members || []).length} Anggota
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons for Landing & Edit */}
+              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => handleSidebarClick('landing_view')}
+                  className="flex-1 py-2 px-2.5 bg-gray-50 hover:bg-emerald-50 border border-gray-250 hover:border-[#2DB24A]/40 text-gray-700 hover:text-[#0F5132] font-bold text-[11px] rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-[#2DB24A]" />
+                  <span>Halaman Landing</span>
+                </button>
+                {isCanManageCoop && (
+                  <button
+                    onClick={() => handleSidebarClick('desain_landing')}
+                    className="flex-1 py-2 px-2.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-bold text-[11px] rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Edit Desain</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile Horizontal Scrollable Tabs: [Beranda] [Aktivitas] [Diskusi] [Event] [Galeri] [Lainnya ▾] */}
+            <div className="relative">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar p-1.5 bg-white border border-gray-200/80 rounded-2xl shadow-xs">
+                {[
+                  { id: 'beranda', label: 'Beranda', icon: Home },
+                  { id: 'aktivitas', label: 'Aktivitas', icon: Activity },
+                  { id: 'diskusi', label: 'Diskusi', icon: MessageSquare },
+                  { id: 'event', label: 'Event', icon: Calendar },
+                  { id: 'galeri', label: 'Galeri', icon: ImageIcon }
+                ].map((tab) => {
+                  const Icon = tab.icon
+                  const isActive = activeSidebarNav === tab.id
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleSidebarClick(tab.id)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                        isActive
+                          ? 'bg-[#E8F8EE] text-[#0F5132] font-black border border-[#2DB24A]/35 shadow-xs'
+                          : 'text-gray-600 bg-gray-50/70 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
+                      <span>{tab.label}</span>
+                    </button>
+                  )
+                })}
+
+                {/* Lainnya Dropdown Tab */}
+                {(() => {
+                  const isMoreActive = !['beranda', 'aktivitas', 'diskusi', 'event', 'galeri', 'landing_view'].includes(activeSidebarNav)
+                  const currentMoreItem = activeSidebarNavList.find(item => item.id === activeSidebarNav)
+                  return (
+                    <button
+                      onClick={() => setMobileMoreOpen(!mobileMoreOpen)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
+                        isMoreActive
+                          ? 'bg-[#E8F8EE] text-[#0F5132] font-black border border-[#2DB24A]/35 shadow-xs'
+                          : 'text-gray-600 bg-gray-50/70 hover:bg-gray-100 hover:text-gray-900 border border-transparent'
+                      }`}
+                    >
+                      <MoreHorizontal className={`w-4 h-4 shrink-0 ${isMoreActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
+                      <span>{isMoreActive && currentMoreItem ? currentMoreItem.label : 'Lainnya'} ▾</span>
+                    </button>
+                  )
+                })()}
+              </div>
+
+              {/* Mobile "Lainnya" Drawer / Modal */}
+              <AnimatePresence>
+                {mobileMoreOpen && (
+                  <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs p-3">
+                    <motion.div
+                      initial={{ y: 50, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 50, opacity: 0 }}
+                      className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl space-y-4 border border-gray-100 max-h-[80vh] overflow-y-auto"
+                    >
+                      <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 text-[#0F5132] flex items-center justify-center font-bold">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </div>
+                          <h3 className="font-sora text-sm font-black text-gray-900">Menu Komunitas Lainnya</h3>
+                        </div>
+                        <button onClick={() => setMobileMoreOpen(false)} className="text-gray-400 hover:text-gray-700 cursor-pointer p-1">
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {activeSidebarNavList.filter(item => !['beranda', 'aktivitas', 'diskusi', 'event', 'galeri'].includes(item.id)).map((item) => {
+                          const Icon = item.icon
+                          const isActive = activeSidebarNav === item.id
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setMobileMoreOpen(false)
+                                handleSidebarClick(item.id)
+                              }}
+                              className={`p-3 rounded-2xl text-left border flex flex-col justify-between gap-2 transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]'
+                                  : 'bg-gray-50 border-gray-200/80 text-gray-700 hover:bg-gray-100'
+                              }`}
+                            >
+                              <Icon className={`w-5 h-5 ${isActive ? 'text-[#2DB24A]' : 'text-gray-500'}`} />
+                              <span className="text-xs font-bold leading-tight">{item.label}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+
+                      <button
+                        onClick={() => setMobileMoreOpen(false)}
+                        className="w-full py-2.5 bg-gray-100 text-gray-600 font-bold text-xs rounded-xl hover:bg-gray-200 transition-colors"
+                      >
+                        Tutup Menu
+                      </button>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* ── DESKTOP LEFT SIDEBAR MENU PANEL (Sticky Docked on lg screens only) ──────────────────────────────────────── */}
+          <div className="hidden lg:block lg:w-60 shrink-0 space-y-4 lg:sticky lg:top-24 self-start max-h-[calc(100vh-6.5rem)] overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-slate-200">
             <Link href="/community" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 font-semibold transition-colors">
               <ChevronLeft className="w-4 h-4" /> Kembali ke Komunitas
             </Link>
@@ -2681,64 +2849,64 @@ export default function CommunityDetailPage() {
             {/* TAB 1: BERANDA ─────────────────────────────────────────────────── */}
             {activeSidebarNav === 'beranda' && (
               <div className="space-y-6">
-                {/* HERO BANNER CARD */}
-                <div className="relative rounded-3xl overflow-hidden text-white shadow-sm border border-gray-200/60">
+                {/* HERO BANNER CARD (Responsive 180-220px on Mobile, 260-290px on Desktop) */}
+                <div className="relative rounded-3xl overflow-hidden text-white shadow-xs border border-gray-200/60 min-h-[190px] sm:min-h-[220px] md:min-h-[260px] flex flex-col justify-between">
                   <img
                     src={bannerCover}
                     alt="Cover"
-                    className="w-full h-64 md:h-72 object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0F5132]/95 via-[#0F5132]/80 to-transparent p-6 md:p-8 flex flex-col justify-between">
-                    <div>
-                      <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md text-white font-extrabold text-[10px] uppercase tracking-wider rounded-full border border-white/30 mb-3 shadow-xs">
+                  <div className="relative z-10 inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-black/90 via-[#0F5132]/85 to-[#0F5132]/40 md:to-transparent p-4 sm:p-6 md:p-8 flex flex-col justify-between flex-1 gap-3">
+                    <div className="space-y-1.5">
+                      <span className="inline-block px-2.5 py-0.5 bg-white/20 backdrop-blur-md text-white font-extrabold text-[9px] uppercase tracking-wider rounded-full border border-white/30 shadow-xs">
                         {bannerBadge}
                       </span>
-                      <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shrink-0 overflow-hidden">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shrink-0 overflow-hidden">
                           {community.avatarUrl ? (
                             <img src={community.avatarUrl} alt="Logo" className="w-full h-full object-cover" />
                           ) : (
-                            <PromoIcon className="w-6 h-6" />
+                            <PromoIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                           )}
                         </div>
-                        <h1 className="text-2xl md:text-3xl font-black font-sora tracking-tight drop-shadow-sm">
+                        <h1 className="text-lg sm:text-xl md:text-3xl font-black font-sora tracking-tight drop-shadow-sm line-clamp-2">
                           {community.name}
                         </h1>
                       </div>
-                      <p className="text-xs md:text-sm font-semibold text-emerald-100 mt-1">
+                      <p className="text-[11px] sm:text-xs md:text-sm font-semibold text-emerald-100 line-clamp-1">
                         {bannerSlogan}
                       </p>
-                      <p className="text-xs text-emerald-100/90 max-w-xl mt-2 leading-relaxed line-clamp-2">
+                      <p className="text-[10px] sm:text-xs text-emerald-100/90 max-w-xl leading-relaxed line-clamp-2 hidden sm:block">
                         {community.description || "Wadah bagi pelaku usaha, UMKM, dan masyarakat untuk saling berbagi pengalaman, memperluas relasi dan menciptakan peluang bersama."}
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-white/20 text-xs text-emerald-100 font-medium">
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1.5 font-semibold text-white">
-                          <Shield className="w-4 h-4 text-emerald-300" />
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2.5 border-t border-white/20 text-[11px] text-emerald-100 font-medium">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] sm:text-xs">
+                        <span className="flex items-center gap-1 font-semibold text-white">
+                          <Shield className="w-3.5 h-3.5 text-emerald-300" />
                           Ketua: {community.ketua?.name || 'Super Admin Saloka'}
                         </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1.5">
-                          <Calendar className="w-4 h-4 text-emerald-300" />
-                          Dibentuk {community.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '25 Juli 2026'}
+                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-300" />
+                          {community.createdAt ? new Date(community.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '25 Juli 2026'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         {!isMember && (
                           <button
                             onClick={() => handleJoin()}
-                            className="px-5 py-2.5 bg-white text-[#0F5132] hover:bg-emerald-50 font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                            className="px-3.5 py-1.5 sm:px-5 sm:py-2.5 bg-white text-[#0F5132] hover:bg-emerald-50 font-extrabold text-[10px] sm:text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                           >
-                            <Users className="w-4 h-4" /> {bannerCta}
+                            <Users className="w-3.5 h-3.5" /> {bannerCta}
                           </button>
                         )}
                         <button
                           onClick={handleShareReferralLink}
-                          className="px-4 py-2 bg-white/20 hover:bg-white/35 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer border border-white/30 backdrop-blur-md"
+                          className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px] sm:text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer border border-white/30 backdrop-blur-md"
                         >
-                          <Share2 className="w-4 h-4 text-emerald-200" /> Share Link Referral ({user?.referralCode || user?.username || 'REF001'})
+                          <Share2 className="w-3.5 h-3.5 text-emerald-200" /> Share Link ({user?.referralCode || user?.username || 'REF001'})
                         </button>
                       </div>
                     </div>
@@ -2777,53 +2945,108 @@ export default function CommunityDetailPage() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-1">
+                  {/* Mobile Horizontal Carousel & Desktop Grid */}
+                  <div className="pt-1">
                     {communityOfficialProducts && communityOfficialProducts.length > 0 ? (
-                      communityOfficialProducts.slice(0, 3).map((prod: any) => (
-                        <div
-                          key={prod.id}
-                          onClick={() => handleOpenDetailOfficialProduct(prod)}
-                          className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2 group hover:border-[#2DB24A]/40 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-                        >
-                          <div className="space-y-2">
-                            <div className="relative rounded-lg overflow-hidden h-32 bg-gray-100">
-                              <img
-                                src={prod.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'}
-                                alt={prod.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                              <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
-                                {prod.category || 'Official'}
-                              </span>
-                              <span className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 text-white font-extrabold text-[8px] rounded-md">
-                                Stok: {prod.stock || 0}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">
-                                {prod.name}
-                              </h4>
-                              <p className="text-[10px] text-gray-500 font-medium line-clamp-1 mt-0.5">
-                                {prod.description || 'Produk resmi komunitas'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center pt-2 border-t border-gray-200/60">
-                            <span className="text-xs font-black text-[#0F5132]">
-                              Rp {Number(prod.price || 0).toLocaleString('id-ID')}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleBuyOfficialProduct(prod, 1)
-                              }}
-                              className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                      <>
+                        {/* Mobile Carousel (Horizontal Scroll) */}
+                        <div className="flex md:hidden overflow-x-auto no-scrollbar gap-3 pb-2 -mx-1 px-1 snap-x snap-mandatory">
+                          {communityOfficialProducts.map((prod: any) => (
+                            <div
+                              key={prod.id}
+                              onClick={() => handleOpenDetailOfficialProduct(prod)}
+                              className="w-[210px] shrink-0 snap-start p-3 bg-gray-50 border border-gray-150 rounded-2xl space-y-2 group hover:border-[#2DB24A]/40 transition-all cursor-pointer flex flex-col justify-between shadow-xs"
                             >
-                              <ShoppingCart className="w-3 h-3" /> Beli
-                            </button>
-                          </div>
+                              <div className="space-y-2">
+                                <div className="relative rounded-xl overflow-hidden h-28 bg-gray-100">
+                                  <img
+                                    src={prod.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'}
+                                    alt={prod.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                    {prod.category || 'Official'}
+                                  </span>
+                                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 text-white font-extrabold text-[8px] rounded-md">
+                                    Stok: {prod.stock || 0}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">
+                                    {prod.name}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-500 font-medium line-clamp-1 mt-0.5">
+                                    {prod.description || 'Produk resmi komunitas'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center pt-2 border-t border-gray-200/60">
+                                <span className="text-xs font-black text-[#0F5132]">
+                                  Rp {Number(prod.price || 0).toLocaleString('id-ID')}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleBuyOfficialProduct(prod, 1)
+                                  }}
+                                  className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                  <ShoppingCart className="w-3 h-3" /> Beli
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))
+
+                        {/* Desktop Grid (3 Columns) */}
+                        <div className="hidden md:grid md:grid-cols-3 gap-3.5">
+                          {communityOfficialProducts.slice(0, 3).map((prod: any) => (
+                            <div
+                              key={prod.id}
+                              onClick={() => handleOpenDetailOfficialProduct(prod)}
+                              className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2 group hover:border-[#2DB24A]/40 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+                            >
+                              <div className="space-y-2">
+                                <div className="relative rounded-lg overflow-hidden h-32 bg-gray-100">
+                                  <img
+                                    src={prod.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80'}
+                                    alt={prod.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                    {prod.category || 'Official'}
+                                  </span>
+                                  <span className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 text-white font-extrabold text-[8px] rounded-md">
+                                    Stok: {prod.stock || 0}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">
+                                    {prod.name}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-500 font-medium line-clamp-1 mt-0.5">
+                                    {prod.description || 'Produk resmi komunitas'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center pt-2 border-t border-gray-200/60">
+                                <span className="text-xs font-black text-[#0F5132]">
+                                  Rp {Number(prod.price || 0).toLocaleString('id-ID')}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleBuyOfficialProduct(prod, 1)
+                                  }}
+                                  className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                  <ShoppingCart className="w-3 h-3" /> Beli
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     ) : (
                       <div className="col-span-full p-6 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl space-y-2">
                         <Package className="w-8 h-8 text-[#2DB24A] mx-auto opacity-70" />
@@ -2853,44 +3076,90 @@ export default function CommunityDetailPage() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-1">
+                  {/* Mobile Horizontal Carousel & Desktop Grid */}
+                  <div className="pt-1">
                     {products && products.length > 0 ? (
-                      products.slice(0, 4).map((p, idx) => (
-                        <div 
-                          key={p.id || idx} 
-                          onClick={() => router.push(`/cart`)}
-                          className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2 group hover:border-[#2DB24A]/40 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
-                        >
-                          <div className="space-y-2">
-                            <div className="relative rounded-lg overflow-hidden h-28 bg-gray-100">
-                              <img 
-                                src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=200&fit=crop&q=80'} 
-                                alt={p.name || p.title} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                              />
-                              <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
-                                {p.category || 'Unggulan'}
-                              </span>
-                            </div>
-                            <div>
-                              <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">{p.name || p.title}</h4>
-                              <p className="text-[10px] text-gray-400 font-semibold">{p.merchant?.name || p.merchantName || p.merchant || 'Merchant Saloka'}</p>
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center pt-2 border-t border-gray-200/60">
-                            <span className="text-xs font-black text-[#0F5132]">Rp {Number(p.price || 0).toLocaleString('id-ID')}</span>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                goeyToast.success(`"${p.name || p.title}" ditambahkan ke keranjang belanja!`)
-                              }} 
-                              className="px-2.5 py-1 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-lg transition-all cursor-pointer"
+                      <>
+                        {/* Mobile Carousel (Horizontal Scroll) */}
+                        <div className="flex md:hidden overflow-x-auto no-scrollbar gap-3 pb-2 -mx-1 px-1 snap-x snap-mandatory">
+                          {products.map((p, idx) => (
+                            <div 
+                              key={p.id || idx} 
+                              onClick={() => router.push(`/cart`)}
+                              className="w-[190px] shrink-0 snap-start p-3 bg-gray-50 border border-gray-150 rounded-2xl space-y-2 group hover:border-[#2DB24A]/40 transition-all cursor-pointer flex flex-col justify-between shadow-xs"
                             >
-                              Beli
-                            </button>
-                          </div>
+                              <div className="space-y-2">
+                                <div className="relative rounded-xl overflow-hidden h-28 bg-gray-100">
+                                  <img 
+                                    src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=200&fit=crop&q=80'} 
+                                    alt={p.name || p.title} 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                    {p.category || 'Unggulan'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">{p.name || p.title}</h4>
+                                  <p className="text-[10px] text-gray-400 font-semibold truncate">{p.merchant?.name || p.merchantName || p.merchant || 'Merchant Saloka'}</p>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center pt-2 border-t border-gray-200/60">
+                                <span className="text-xs font-black text-[#0F5132]">Rp {Number(p.price || 0).toLocaleString('id-ID')}</span>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    goeyToast.success(`"${p.name || p.title}" ditambahkan ke keranjang belanja!`)
+                                  }} 
+                                  className="px-2.5 py-1 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-lg transition-all cursor-pointer"
+                                >
+                                  Beli
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))
+
+                        {/* Desktop Grid (4 Columns) */}
+                        <div className="hidden md:grid md:grid-cols-4 gap-3.5">
+                          {products.slice(0, 4).map((p, idx) => (
+                            <div 
+                              key={p.id || idx} 
+                              onClick={() => router.push(`/cart`)}
+                              className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2 group hover:border-[#2DB24A]/40 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between"
+                            >
+                              <div className="space-y-2">
+                                <div className="relative rounded-lg overflow-hidden h-28 bg-gray-100">
+                                  <img 
+                                    src={p.imageUrl || p.img || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=200&fit=crop&q=80'} 
+                                    alt={p.name || p.title} 
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                                  />
+                                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                                    {p.category || 'Unggulan'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h4 className="text-xs font-bold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1">{p.name || p.title}</h4>
+                                  <p className="text-[10px] text-gray-400 font-semibold">{p.merchant?.name || p.merchantName || p.merchant || 'Merchant Saloka'}</p>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center pt-2 border-t border-gray-200/60">
+                                <span className="text-xs font-black text-[#0F5132]">Rp {Number(p.price || 0).toLocaleString('id-ID')}</span>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    goeyToast.success(`"${p.name || p.title}" ditambahkan ke keranjang belanja!`)
+                                  }} 
+                                  className="px-2.5 py-1 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-lg transition-all cursor-pointer"
+                                >
+                                  Beli
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     ) : (
                       <div className="col-span-full p-8 text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl space-y-2">
                         <Store className="w-8 h-8 text-[#2DB24A] mx-auto opacity-70" />
@@ -3055,9 +3324,167 @@ export default function CommunityDetailPage() {
                   </div>
                 )}
 
-                {/* 3-COLUMN DASHBOARD GRID */}
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-5 items-start">
-                  <div className="md:col-span-1 lg:col-span-2 space-y-4">
+                {/* ── MOBILE SINGLE-COLUMN FLOW (Tentang -> Aktivitas -> Event -> Galeri -> Ajak Teman) ── */}
+                <div className="lg:hidden space-y-4">
+                  {/* 1. Tentang Komunitas */}
+                  <div className="p-4 sm:p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Tentang {community.name}</h3>
+                      <button onClick={() => setActiveSidebarNav('tentang')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Selengkapnya →</button>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                      {community.name} adalah perkumpulan yang menghubungkan orang-orang dengan minat dan tujuan yang sama untuk belajar, berkolaborasi, dan berkembang bersama.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {['Kolaborasi', 'Edukasi', 'Networking', 'Promosi Produk', 'Pengembangan Usaha'].map((tag) => (
+                        <span key={tag} className="px-2.5 py-1 bg-gray-100 text-gray-600 font-semibold text-[10px] rounded-lg">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. Aktivitas Terbaru */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Aktivitas Terbaru</h3>
+                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                        {['Semua', 'Diskusi', 'Pengumuman', 'Event'].map((tab) => (
+                          <button
+                            key={tab}
+                            onClick={() => setFeedFilter(tab.toLowerCase() as any)}
+                            className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all shrink-0 cursor-pointer ${
+                              feedFilter === tab.toLowerCase()
+                                ? 'bg-[#2DB24A] text-white shadow-xs'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
+                      <div className="flex justify-between items-start">
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-extrabold text-[9px] rounded-md uppercase">
+                          Pengumuman
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">2 jam lalu</span>
+                      </div>
+                      <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
+                        Workshop Digital Marketing untuk UMKM
+                      </h4>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                        Mari tingkatkan penjualan produk lokal melalui strategi digital yang tepat. Terbuka untuk semua anggota {community.name}!
+                      </p>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1">👍 24</span>
+                          <span className="flex items-center gap-1">💬 12</span>
+                        </div>
+                        <button onClick={() => setActiveSidebarNav('pengumuman')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Detail →</button>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
+                      <div className="flex justify-between items-start">
+                        <span className="px-2 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[9px] rounded-md uppercase">
+                          Diskusi
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">5 jam lalu</span>
+                      </div>
+                      <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
+                        Bagaimana cara mendapatkan supplier kemasan ramah lingkungan?
+                      </h4>
+                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                        Saya sedang mencari rekomendasi supplier kemasan untuk produk makanan. Ada yang punya pengalaman?
+                      </p>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1">👍 18</span>
+                          <span className="flex items-center gap-1">💬 28</span>
+                        </div>
+                        <button onClick={() => setActiveSidebarNav('diskusi')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Diskusi →</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Event Mendatang */}
+                  <div className="p-4 sm:p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Event Mendatang</h3>
+                      <button onClick={() => setActiveSidebarNav('event')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Semua</button>
+                    </div>
+                    <div className="space-y-2">
+                      {communityEvents && communityEvents.length > 0 ? (
+                        communityEvents.slice(0, 2).map((ev: any, idx: number) => {
+                          const dateObj = ev.eventDate ? new Date(ev.eventDate) : new Date()
+                          const day = String(dateObj.getDate())
+                          const month = dateObj.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase()
+                          return (
+                            <div key={ev.id || idx} className="flex items-center gap-2.5 p-2 bg-gray-50 rounded-xl">
+                              <div className="w-11 h-11 rounded-xl bg-white border border-gray-200 text-center flex flex-col justify-center shrink-0">
+                                <span className="text-xs font-black text-gray-900 leading-none">{day}</span>
+                                <span className="text-[9px] font-bold text-[#2DB24A] leading-none mt-0.5">{month}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-[11px] font-bold text-gray-900 line-clamp-1">{ev.title}</h4>
+                                <p className="text-[9px] text-gray-500 font-medium line-clamp-1">{ev.description || 'Event Komunitas'}</p>
+                              </div>
+                              <button onClick={() => setActiveSidebarNav('event')} className="px-2 py-1 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-[10px] rounded-lg transition-colors cursor-pointer shrink-0">
+                                Lihat
+                              </button>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <div className="p-4 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl space-y-1">
+                          <Calendar className="w-5 h-5 text-gray-300 mx-auto" />
+                          <p className="text-[11px] font-bold text-gray-500">Belum Ada Event Mendatang</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 4. Galeri Kegiatan */}
+                  <div className="p-4 sm:p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Galeri Kegiatan</h3>
+                      <button onClick={() => setActiveSidebarNav('galeri')} className="text-[10px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Semua</button>
+                    </div>
+                    {communityGallery && communityGallery.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {communityGallery.slice(0, 3).map((item: any) => (
+                          <div key={item.id} className="aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                            <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center bg-gray-50 border border-dashed border-gray-200 rounded-xl space-y-1">
+                        <ImageIcon className="w-5 h-5 text-gray-300 mx-auto" />
+                        <p className="text-[11px] font-bold text-gray-500">Belum Ada Foto di Galeri</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 5. Ajak Teman Bergabung */}
+                  <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl space-y-2 text-center shadow-xs">
+                    <div className="flex justify-center text-[#2DB24A]"><Users className="w-6 h-6" /></div>
+                    <h4 className="font-extrabold text-xs text-[#0F5132]">Ajak Teman Bergabung</h4>
+                    <p className="text-[10px] text-emerald-800/80 leading-relaxed font-medium">
+                      Semakin banyak anggota, semakin besar peluang yang kita ciptakan bersama.
+                    </p>
+                    <button onClick={handleShareReferralLink} className="w-full py-2 bg-white border border-[#2DB24A] text-[#0F5132] font-bold text-xs rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                      <Share2 className="w-3.5 h-3.5" /> Bagikan Komunitas
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── DESKTOP 3-COLUMN GRID (lg and above only) ── */}
+                <div className="hidden lg:grid lg:grid-cols-7 gap-5 items-start">
+                  <div className="lg:col-span-2 space-y-4">
                     <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
                       <div className="flex justify-between items-center">
                         <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Tentang {community.name}</h3>
@@ -3080,13 +3507,13 @@ export default function CommunityDetailPage() {
                       <p className="text-[10px] text-emerald-800/80 leading-relaxed font-medium">
                         Semakin banyak anggota, semakin besar peluang yang kita ciptakan bersama.
                       </p>
-                      <button className="w-full py-2 bg-white border border-[#2DB24A] text-[#0F5132] font-bold text-xs rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                      <button onClick={handleShareReferralLink} className="w-full py-2 bg-white border border-[#2DB24A] text-[#0F5132] font-bold text-xs rounded-xl hover:bg-[#2DB24A] hover:text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
                         <Share2 className="w-3.5 h-3.5" /> Bagikan Komunitas
                       </button>
                     </div>
                   </div>
 
-                  <div className="md:col-span-2 lg:col-span-3 space-y-4">
+                  <div className="lg:col-span-3 space-y-4">
                     <div className="flex items-center gap-2 overflow-x-auto pb-1">
                       {['Semua', 'Diskusi', 'Pengumuman', 'Event', 'Produk'].map((tab) => (
                         <button
@@ -3150,7 +3577,7 @@ export default function CommunityDetailPage() {
                     </div>
                   </div>
 
-                  <div className="md:col-span-1 lg:col-span-2 space-y-4">
+                  <div className="lg:col-span-2 space-y-4">
                     <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3">
                       <div className="flex justify-between items-center">
                         <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Event Mendatang</h3>
