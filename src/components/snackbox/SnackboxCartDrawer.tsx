@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   X,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useSnackbox } from '@/context/SnackboxContext'
 import QuantityStepper from '@/components/ui/QuantityStepper'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 export default function SnackboxCartDrawer() {
   const {
@@ -27,6 +28,8 @@ export default function SnackboxCartDrawer() {
     clearCart,
     summary
   } = useSnackbox()
+
+  const [pendingRemove, setPendingRemove] = useState<{ id: string; title: string } | null>(null)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,6 +52,7 @@ export default function SnackboxCartDrawer() {
   const isAllSelected = cart.items.length > 0 && cart.items.every(i => i.selected)
 
   return (
+    <>
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="absolute inset-0" onClick={() => setIsCartOpen(false)} />
 
@@ -140,7 +144,7 @@ export default function SnackboxCartDrawer() {
                       <div className="flex items-center justify-end gap-4 mt-2">
                         <button
                           type="button"
-                          onClick={() => removeItem(item.product.id)}
+                          onClick={() => setPendingRemove({ id: item.product.id, title: item.product.title })}
                           className="text-xs text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                         >
                           Hapus
@@ -149,7 +153,13 @@ export default function SnackboxCartDrawer() {
                         <QuantityStepper
                           size="sm"
                           value={item.quantity}
-                          onDecrement={() => updateItemQty(item.product.id, item.quantity - 1)}
+                          onDecrement={() => {
+                            if (item.quantity <= 1) {
+                              setPendingRemove({ id: item.product.id, title: item.product.title })
+                              return
+                            }
+                            updateItemQty(item.product.id, item.quantity - 1)
+                          }}
                           onIncrement={() => updateItemQty(item.product.id, item.quantity + 1)}
                         />
                       </div>
@@ -267,5 +277,17 @@ export default function SnackboxCartDrawer() {
         )}
       </div>
     </div>
+
+    <ConfirmDialog
+      open={!!pendingRemove}
+      title={`Hapus ${pendingRemove?.title}?`}
+      description="Snack ini akan dihapus dari Snackbox kamu."
+      onCancel={() => setPendingRemove(null)}
+      onConfirm={() => {
+        if (pendingRemove) removeItem(pendingRemove.id)
+        setPendingRemove(null)
+      }}
+    />
+    </>
   )
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from 'react'
 import QuantityStepper from '@/components/ui/QuantityStepper'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Script from 'next/script'
@@ -62,6 +63,7 @@ export default function CartPage() {
   const [snackboxCart, setSnackboxCart] = useState<any | null>(null)
   const [isSnackboxSelected, setIsSnackboxSelected] = useState<boolean>(true)
   const [isBoxTypeDropdownOpen, setIsBoxTypeDropdownOpen] = useState(false)
+  const [pendingRemove, setPendingRemove] = useState<{ type: 'regular' | 'snackbox'; id?: string; index?: number; title: string } | null>(null)
   const [products, setProducts] = useState<ProductDetails[]>([])
   const cartDetails = cart
     .map((item) => {
@@ -525,7 +527,6 @@ export default function CartPage() {
   }
 
   const handleRemoveItem = (productId: string) => {
-    if (!window.confirm('Hapus produk ini dari keranjang?')) return
     const updated = cart.filter((item) => item.productId !== productId)
     saveCart(updated)
   }
@@ -1039,12 +1040,7 @@ export default function CartPage() {
                               <div className="flex items-center justify-end gap-4 mt-2">
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    const updatedItems = snackboxCart.items.filter((_: any, iidx: number) => iidx !== idx)
-                                    const updated = { ...snackboxCart, items: updatedItems }
-                                    setSnackboxCart(updated)
-                                    localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
-                                  }}
+                                  onClick={() => setPendingRemove({ type: 'snackbox', index: idx, title: itemTitle })}
                                   className="text-xs text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                                 >
                                   Hapus
@@ -1052,8 +1048,11 @@ export default function CartPage() {
                                 <QuantityStepper
                                   size="sm"
                                   value={i.quantity || 1}
-                                  disableDecrement={(i.quantity || 1) <= 1}
                                   onDecrement={() => {
+                                    if ((i.quantity || 1) <= 1) {
+                                      setPendingRemove({ type: 'snackbox', index: idx, title: itemTitle })
+                                      return
+                                    }
                                     const nextQty = Math.max(1, (i.quantity || 1) - 1)
                                     const updatedItems = snackboxCart.items.map((it: any, iidx: number) =>
                                       iidx === idx ? { ...it, quantity: nextQty } : it
@@ -1257,7 +1256,7 @@ export default function CartPage() {
                                     <div className="flex items-center justify-end gap-4 mt-2">
                                       <button
                                         type="button"
-                                        onClick={() => handleRemoveItem(item.id)}
+                                        onClick={() => setPendingRemove({ type: 'regular', id: item.id, title: item.title })}
                                         className="text-xs text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                                       >
                                         Hapus
@@ -1267,7 +1266,7 @@ export default function CartPage() {
                                         value={item.quantity}
                                         onDecrement={() => {
                                           if (item.quantity <= 1) {
-                                            handleRemoveItem(item.id)
+                                            setPendingRemove({ type: 'regular', id: item.id, title: item.title })
                                             return
                                           }
                                           handleUpdateQuantity(item.id, item.quantity - 1, item.stock)
@@ -2022,6 +2021,28 @@ export default function CartPage() {
         }
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-sFQP1v53tr2M3CQd'}
         strategy="lazyOnload"
+      />
+
+      <ConfirmDialog
+        open={!!pendingRemove}
+        title={`Hapus ${pendingRemove?.title}?`}
+        description={
+          pendingRemove?.type === 'snackbox'
+            ? 'Snack ini akan dihapus dari Snackbox kamu.'
+            : 'Produk ini akan dihapus dari keranjang belanja.'
+        }
+        onCancel={() => setPendingRemove(null)}
+        onConfirm={() => {
+          if (pendingRemove?.type === 'regular' && pendingRemove.id) {
+            handleRemoveItem(pendingRemove.id)
+          } else if (pendingRemove?.type === 'snackbox' && snackboxCart) {
+            const updatedItems = snackboxCart.items.filter((_: any, iidx: number) => iidx !== pendingRemove.index)
+            const updated = { ...snackboxCart, items: updatedItems }
+            setSnackboxCart(updated)
+            localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+          }
+          setPendingRemove(null)
+        }}
       />
     </>
   )
