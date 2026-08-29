@@ -4,8 +4,6 @@ import React, { useEffect } from 'react'
 import Link from 'next/link'
 import {
   X,
-  Plus,
-  Minus,
   Package,
   ShoppingBag,
   ArrowRight,
@@ -13,6 +11,7 @@ import {
   Trash2
 } from 'lucide-react'
 import { useSnackbox } from '@/context/SnackboxContext'
+import QuantityStepper from '@/components/ui/QuantityStepper'
 
 export default function SnackboxCartDrawer() {
   const {
@@ -147,25 +146,12 @@ export default function SnackboxCartDrawer() {
                           Hapus
                         </button>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateItemQty(item.product.id, item.quantity - 1)}
-                            className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="w-4 text-center text-sm font-bold text-slate-900">
-                            {item.quantity}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => updateItemQty(item.product.id, item.quantity + 1)}
-                            className="w-7 h-7 rounded-full bg-market-green-50 hover:bg-market-green-100 border border-market-green-200 text-market-green-600 flex items-center justify-center transition-colors cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <QuantityStepper
+                          size="sm"
+                          value={item.quantity}
+                          onDecrement={() => updateItemQty(item.product.id, item.quantity - 1)}
+                          onIncrement={() => updateItemQty(item.product.id, item.quantity + 1)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -231,26 +217,13 @@ export default function SnackboxCartDrawer() {
               {cart.boxType === 'borongan' && (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">Jumlah box</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setBoxCount(cart.boxCount - 1)}
-                      disabled={cart.boxCount <= 1}
-                      className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 disabled:opacity-40 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="w-4 text-center text-sm font-bold text-slate-900">
-                      {cart.boxCount}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setBoxCount(cart.boxCount + 1)}
-                      className="w-7 h-7 rounded-full bg-market-green-50 hover:bg-market-green-100 border border-market-green-200 text-market-green-600 flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <QuantityStepper
+                    size="sm"
+                    value={cart.boxCount}
+                    disableDecrement={cart.boxCount <= 1}
+                    onDecrement={() => setBoxCount(cart.boxCount - 1)}
+                    onIncrement={() => setBoxCount(cart.boxCount + 1)}
+                  />
                 </div>
               )}
             </div>

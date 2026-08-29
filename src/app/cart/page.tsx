@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useTransition } from 'react'
+import QuantityStepper from '@/components/ui/QuantityStepper'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Script from 'next/script'
@@ -1047,42 +1048,29 @@ export default function CartPage() {
                                 >
                                   Hapus
                                 </button>
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const nextQty = Math.max(1, (i.quantity || 1) - 1)
-                                      const updatedItems = snackboxCart.items.map((it: any, iidx: number) =>
-                                        iidx === idx ? { ...it, quantity: nextQty } : it
-                                      )
-                                      const updated = { ...snackboxCart, items: updatedItems }
-                                      setSnackboxCart(updated)
-                                      localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
-                                    }}
-                                    disabled={(i.quantity || 1) <= 1}
-                                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
-                                  >
-                                    -
-                                  </button>
-                                  <span className="w-4 text-center text-sm font-bold text-slate-900">
-                                    {i.quantity || 1}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const nextQty = (i.quantity || 1) + 1
-                                      const updatedItems = snackboxCart.items.map((it: any, iidx: number) =>
-                                        iidx === idx ? { ...it, quantity: nextQty } : it
-                                      )
-                                      const updated = { ...snackboxCart, items: updatedItems }
-                                      setSnackboxCart(updated)
-                                      localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
-                                    }}
-                                    className="w-7 h-7 rounded-full bg-market-green-50 hover:bg-market-green-100 border border-market-green-200 text-market-green-600 flex items-center justify-center transition-colors cursor-pointer"
-                                  >
-                                    +
-                                  </button>
-                                </div>
+                                <QuantityStepper
+                                  size="sm"
+                                  value={i.quantity || 1}
+                                  disableDecrement={(i.quantity || 1) <= 1}
+                                  onDecrement={() => {
+                                    const nextQty = Math.max(1, (i.quantity || 1) - 1)
+                                    const updatedItems = snackboxCart.items.map((it: any, iidx: number) =>
+                                      iidx === idx ? { ...it, quantity: nextQty } : it
+                                    )
+                                    const updated = { ...snackboxCart, items: updatedItems }
+                                    setSnackboxCart(updated)
+                                    localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                  }}
+                                  onIncrement={() => {
+                                    const nextQty = (i.quantity || 1) + 1
+                                    const updatedItems = snackboxCart.items.map((it: any, iidx: number) =>
+                                      iidx === idx ? { ...it, quantity: nextQty } : it
+                                    )
+                                    const updated = { ...snackboxCart, items: updatedItems }
+                                    setSnackboxCart(updated)
+                                    localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
+                                  }}
+                                />
                               </div>
                             </div>
                           </div>
@@ -1120,34 +1108,24 @@ export default function CartPage() {
 
                         {snackboxCart.boxType === 'borongan' ? (
                           <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                            <button
-                              type="button"
-                              disabled={(snackboxCart.boxCount || 1) <= 1}
-                              onClick={() => {
+                            <QuantityStepper
+                              size="sm"
+                              value={snackboxCart.boxCount || 1}
+                              disableDecrement={(snackboxCart.boxCount || 1) <= 1}
+                              onDecrement={() => {
                                 const nextCount = Math.max(1, (snackboxCart.boxCount || 1) - 1)
                                 const updated = { ...snackboxCart, boxCount: nextCount }
                                 setSnackboxCart(updated)
                                 localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
                               }}
-                              className="w-7 h-7 rounded-full bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 flex items-center justify-center transition-colors cursor-pointer border border-slate-200"
-                            >
-                              -
-                            </button>
-                            <span className="w-14 text-center text-sm font-bold text-slate-900">
-                              {snackboxCart.boxCount || 1} Box
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
+                              onIncrement={() => {
                                 const nextCount = (snackboxCart.boxCount || 1) + 1
                                 const updated = { ...snackboxCart, boxCount: nextCount }
                                 setSnackboxCart(updated)
                                 localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated))
                               }}
-                              className="w-7 h-7 rounded-full bg-market-green-500 hover:bg-market-green-600 text-white flex items-center justify-center transition-colors cursor-pointer"
-                            >
-                              +
-                            </button>
+                            />
+                            <span className="text-sm font-bold text-slate-900">Box</span>
                           </div>
                         ) : (
                           <span className="text-sm font-bold text-slate-900">1 Box</span>
