@@ -1,6 +1,7 @@
 import React from 'react'
-import { 
-  Users, Wallet, GraduationCap, Building2, Coins, Calendar, PieChart, 
+import Image from 'next/image'
+import {
+  Users, Wallet, GraduationCap, Building2, Coins, Calendar, PieChart,
   MapPin, Shield, Star, HelpCircle, ArrowRight, Share2, ChevronRight, Award, Plus, Play, Sliders
 } from 'lucide-react'
 
@@ -514,11 +515,14 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
 
         {/* Right column layout with quote */}
         <div className="relative justify-self-center lg:justify-self-end w-full max-w-[500px]">
-          <div className="relative rounded-[32px] overflow-hidden shadow-2xl border border-gray-250/20 bg-white group">
-            <img 
+          <div className="relative aspect-[4/3] w-full rounded-[32px] overflow-hidden shadow-2xl border border-gray-250/20 bg-white group">
+            <Image
               src={hero.coverUrl}
-              alt="Community Banner" 
-              className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-700"
+              alt="Community Banner"
+              fill
+              sizes="(max-width: 1024px) 100vw, 500px"
+              priority
+              className="object-cover group-hover:scale-105 transition-transform duration-700"
             />
             {/* Soft gradient bottom layer */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
@@ -674,10 +678,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
               <div key={idx} className="bg-white border border-gray-150 rounded-[32px] overflow-hidden shadow-xs hover:border-emerald-500/30 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
                 <div>
                   <div className="h-52 overflow-hidden bg-gray-100 relative">
-                    <img 
-                      src={act.imageUrl} 
-                      alt={act.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    <Image
+                      src={act.imageUrl}
+                      alt={act.title}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <span className="absolute top-3 left-3 px-2 py-0.5 bg-emerald-700 text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-sm font-sora">
                       {act.category}
@@ -738,10 +744,12 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                 <div key={p.id || idx} className="p-4 bg-slate-50/60 border border-gray-150 rounded-3xl hover:border-emerald-500/30 hover:bg-white hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
                   <div className="space-y-3">
                     <div className="relative rounded-2xl overflow-hidden h-44 bg-gray-100">
-                      <img 
-                        src={p.imageUrl || p.img || (isMemberSource ? 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400' : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80')} 
-                        alt={p.name || p.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      <Image
+                        src={p.imageUrl || p.img || (isMemberSource ? 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400' : 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80')}
+                        alt={p.name || p.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <span className="absolute top-3 left-3 px-2 py-0.5 bg-emerald-700 text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-sm font-sora">
                         {p.category || (isMemberSource ? 'ANGGOTA' : 'OFFICIAL')}

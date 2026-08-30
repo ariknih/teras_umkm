@@ -3,10 +3,35 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap } from '@/lib/cache'
 
-export async function getCooperativeReportsAction(communityId: string) {
+async function isCommunityManager(user: { id: string; role: string } | null, communityId: string) {
+  if (!user) return false
+  if (user.role === 'ADMIN') return true
+  const community = await DataStore.getCommunityById(communityId)
+  return community?.ketuaId === user.id
+}
+
+export async function getCooperativeReportsAction(
+  communityId: string,
+  viewerCtx?: { userId: string | null; role: string | null; isKetua: boolean; isMember: boolean }
+) {
   if (!communityId) return []
-  return await DataStore.getCooperativeReports(communityId)
+
+  let isManager = false
+  let isMember = false
+  if (viewerCtx) {
+    isManager = viewerCtx.role === 'ADMIN' || viewerCtx.isKetua
+    isMember = viewerCtx.isMember
+  } else {
+    const user = await getCurrentUser()
+    isManager = await isCommunityManager(user, communityId)
+    isMember = user ? await DataStore.isCommunityMember(user.id, communityId) : false
+  }
+  if (!isManager && !isMember) return []
+
+  const all = await cacheWrap(`community:reports:${communityId}`, () => DataStore.getCooperativeReports(communityId), 60)
+  return isManager ? (all || []) : (all || []).filter((r: any) => r.status === 'PUBLISHED')
 }
 
 export async function createCooperativeReportAction(formData: FormData) {
@@ -24,6 +49,9 @@ export async function createCooperativeReportAction(formData: FormData) {
   if (!communityId) return { error: 'CommunityId wajib diisi.' }
   if (!title || !type || !yearStr || !fileUrl) {
     return { error: 'Judul, jenis laporan, tahun buku, dan file laporan wajib diisi.' }
+  }
+  if (!(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola laporan komunitas ini.' }
   }
 
   const year = Number(yearStr)
@@ -63,6 +91,9 @@ export async function updateCooperativeReportAction(id: string, formData: FormDa
   if (!title || !type || !yearStr || !fileUrl) {
     return { error: 'Judul, jenis laporan, tahun buku, dan file laporan wajib diisi.' }
   }
+  if (!communityId || !(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola laporan komunitas ini.' }
+  }
 
   const year = Number(yearStr)
   if (isNaN(year)) return { error: 'Tahun buku harus berupa angka.' }
@@ -90,6 +121,9 @@ export async function updateCooperativeReportAction(id: string, formData: FormDa
 export async function deleteCooperativeReportAction(id: string, communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+  if (!communityId || !(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola laporan komunitas ini.' }
+  }
 
   try {
     const res = await DataStore.deleteCooperativeReport(id)
@@ -105,6 +139,9 @@ export async function deleteCooperativeReportAction(id: string, communityId?: st
 export async function togglePublishReportAction(id: string, currentStatus: string, communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+  if (!communityId || !(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola laporan komunitas ini.' }
+  }
 
   const newStatus = currentStatus === 'DRAFT' ? 'PUBLISHED' : 'DRAFT'
   try {

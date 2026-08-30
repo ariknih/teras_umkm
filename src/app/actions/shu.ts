@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
 import { calculateAndSaveShuDistribution } from '@/lib/shu-calculator'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap } from '@/lib/cache'
 
 export async function calculateAndSaveShuAction(formData: FormData) {
   const currentUser = await getCurrentUser()
@@ -57,16 +58,32 @@ export async function calculateAndSaveShuAction(formData: FormData) {
   }
 }
 
-export async function getCommunityShuDataAction(communityId: string, year?: number) {
-  const targetYear = year || new Date().getFullYear()
-  const config = await DataStore.getShuConfigByCommunityAndYear(communityId, targetYear)
-  const history = await DataStore.getCommunityShuHistory(communityId)
-  
-  return {
-    success: true,
-    config,
-    history
+export async function getCommunityShuDataAction(
+  communityId: string,
+  year?: number,
+  viewerCtx?: { userId: string | null; role: string | null; isKetua: boolean; isMember: boolean }
+) {
+  let authorized = false
+  if (viewerCtx) {
+    authorized = viewerCtx.role === 'ADMIN' || viewerCtx.isKetua || viewerCtx.isMember
+  } else {
+    const user = await getCurrentUser()
+    if (user) {
+      authorized = user.role === 'ADMIN' || await DataStore.isCommunityMember(user.id, communityId)
+      if (!authorized) {
+        const community = await DataStore.getCommunityById(communityId)
+        authorized = community?.ketuaId === user.id
+      }
+    }
   }
+  if (!authorized) return { success: false as const, error: 'Anda tidak memiliki akses untuk melihat data SHU komunitas ini.' }
+
+  const targetYear = year || new Date().getFullYear()
+  return await cacheWrap(`community:shu:${communityId}:${targetYear}`, async () => {
+    const config = await DataStore.getShuConfigByCommunityAndYear(communityId, targetYear)
+    const history = await DataStore.getCommunityShuHistory(communityId)
+    return { success: true as const, config, history }
+  }, 60)
 }
 
 export async function getUserShuSummaryAction(communityId: string, year?: number) {

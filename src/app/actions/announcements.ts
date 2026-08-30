@@ -3,10 +3,27 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap } from '@/lib/cache'
 
-export async function getAnnouncementsAction(communityId: string) {
+async function isCommunityManager(user: { id: string; role: string } | null, communityId: string) {
+  if (!user) return false
+  if (user.role === 'ADMIN') return true
+  const community = await DataStore.getCommunityById(communityId)
+  return community?.ketuaId === user.id
+}
+
+export async function getAnnouncementsAction(
+  communityId: string,
+  viewerCtx?: { userId: string | null; role: string | null; isKetua: boolean; isMember: boolean }
+) {
   if (!communityId) return []
-  return await DataStore.getAnnouncements(communityId)
+
+  const isManager = viewerCtx
+    ? viewerCtx.role === 'ADMIN' || viewerCtx.isKetua
+    : await isCommunityManager(await getCurrentUser(), communityId)
+
+  const all = await cacheWrap(`community:announcements:${communityId}`, () => DataStore.getAnnouncements(communityId), 60)
+  return isManager ? (all || []) : (all || []).filter((a: any) => a.status === 'PUBLISHED')
 }
 
 export async function createAnnouncementAction(formData: FormData) {
@@ -22,6 +39,9 @@ export async function createAnnouncementAction(formData: FormData) {
 
   if (!communityId) return { error: 'CommunityId wajib diisi.' }
   if (!title || !content) return { error: 'Judul dan isi pengumuman wajib diisi.' }
+  if (!(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
+  }
 
   const publishedAt = publishedAtStr ? new Date(publishedAtStr) : new Date()
 
@@ -53,6 +73,9 @@ export async function updateAnnouncementAction(id: string, formData: FormData) {
   const isPinned = formData.get('isPinned') === 'true'
 
   if (!title || !content) return { error: 'Judul dan isi pengumuman wajib diisi.' }
+  if (!communityId || !(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
+  }
 
   const publishedAt = publishedAtStr ? new Date(publishedAtStr) : undefined
 
@@ -76,6 +99,9 @@ export async function updateAnnouncementAction(id: string, formData: FormData) {
 export async function deleteAnnouncementAction(id: string, communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+  if (!communityId || !(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
+  }
 
   try {
     const res = await DataStore.deleteAnnouncement(id)
@@ -91,6 +117,9 @@ export async function deleteAnnouncementAction(id: string, communityId?: string)
 export async function togglePublishAnnouncementAction(id: string, currentStatus: string, communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+  if (!communityId || !(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
+  }
 
   const newStatus = currentStatus === 'DRAFT' ? 'PUBLISHED' : 'DRAFT'
   try {
@@ -107,6 +136,9 @@ export async function togglePublishAnnouncementAction(id: string, currentStatus:
 export async function togglePinAnnouncementAction(id: string, currentPinned: boolean, communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+  if (!communityId || !(await isCommunityManager(user, communityId))) {
+    return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
+  }
 
   try {
     const ann = await DataStore.updateAnnouncement(id, { isPinned: !currentPinned })

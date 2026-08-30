@@ -3,6 +3,7 @@
 import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap } from '@/lib/cache'
 
 export async function recordSavingsTransactionAction(formData: FormData) {
   const currentUser = await getCurrentUser()
@@ -52,9 +53,57 @@ export async function recordSavingsTransactionAction(formData: FormData) {
   }
 }
 
-export async function getCommunitySavingsSummaryAction(communityId: string) {
+export async function getCommunitySavingsSummaryAction(
+  communityId: string,
+  viewerCtx?: { userId: string | null; role: string | null; isKetua: boolean; isMember: boolean }
+) {
   if (!communityId) return { success: false, error: 'Community ID required' }
 
+  let userId: string | null = null
+  let role: string | null = null
+  let isKetua = false
+  let isMember = false
+
+  if (viewerCtx) {
+    ;({ userId, role, isKetua, isMember } = viewerCtx)
+  } else {
+    const user = await getCurrentUser()
+    if (user) {
+      userId = user.id
+      role = user.role
+      isMember = await DataStore.isCommunityMember(user.id, communityId)
+      const community = await DataStore.getCommunityById(communityId)
+      isKetua = community?.ketuaId === user.id
+    }
+  }
+
+  const isManager = role === 'ADMIN' || isKetua
+  if (!userId || (!isManager && !isMember)) {
+    return { success: false, error: 'Anda tidak memiliki akses untuk melihat data simpanan komunitas ini.' }
+  }
+
+  const full = await computeCommunitySavingsSummary(communityId)
+  if (!full.success || !full.summary) return full
+  if (isManager) return full
+
+  const s = full.summary
+  return {
+    success: true,
+    summary: {
+      totalSavingsCommunity: s.totalSavingsCommunity,
+      totalPokok: s.totalPokok,
+      totalWajib: s.totalWajib,
+      totalSukarela: s.totalSukarela,
+      memberBalances: { [userId]: s.memberBalances[userId] || { pokok: 0, wajib: 0, sukarela: 0, total: 0 } },
+      transactions: s.transactions.filter((tx: any) => tx.userId === userId),
+      totalTransaksiCommunity: s.totalTransaksiCommunity,
+      memberTransaksi: { [userId]: s.memberTransaksi[userId] || 0 }
+    }
+  }
+}
+
+async function computeCommunitySavingsSummary(communityId: string) {
+  return await cacheWrap(`community:savings:${communityId}`, async () => {
   try {
     const transactions = await DataStore.getSavingsTransactions(communityId)
     const memberships = await DataStore.getIndukCommunityMembers(communityId)
@@ -167,4 +216,5 @@ export async function getCommunitySavingsSummaryAction(communityId: string) {
   } catch (error: any) {
     return { success: false, error: error.message }
   }
+  }, 60)
 }

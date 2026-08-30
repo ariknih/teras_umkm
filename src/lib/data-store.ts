@@ -7008,21 +7008,21 @@ export const DataStore = {
 
     if (await isDbConnected()) {
       try {
-        const memberships = await db.communityMembership.findMany({
-          where: { communityId },
-          include: { user: { select: { id: true, role: true } } }
-        })
+        const [memberships, shuDist, shuCfg] = await Promise.all([
+          db.communityMembership.findMany({
+            where: { communityId },
+            include: { user: { select: { id: true, role: true } } }
+          }),
+          db.shuMemberDistribution.findMany({
+            where: { communityId, year: currentYear }
+          }),
+          db.shuConfig.findUnique({
+            where: { communityId_year: { communityId, year: currentYear } }
+          })
+        ])
         activeMembersCount = memberships.length
         activeMerchantsCount = memberships.filter(m => m.user?.role === 'MERCHANT').length
-
-        const shuDist = await db.shuMemberDistribution.findMany({
-          where: { communityId, year: currentYear }
-        })
         totalSavingsCollected = shuDist.reduce((sum, d) => sum + (d.simpananMember || 0), 0)
-
-        const shuCfg = await db.shuConfig.findUnique({
-          where: { communityId_year: { communityId, year: currentYear } }
-        })
         shuCurrentYearProfit = shuCfg?.totalNetProfit || 0
       } catch (_) {}
     } else {

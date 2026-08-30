@@ -380,7 +380,24 @@ export async function getUserIndukCommunityAction() {
   return await DataStore.getUserIndukCommunity(user.id)
 }
 
-export async function getIndukCommunityMembersAction(communityId: string) {
+export async function getIndukCommunityMembersAction(
+  communityId: string,
+  viewerCtx?: { userId: string | null; role: string | null; isKetua: boolean; isMember: boolean }
+) {
+  let authorized = false
+  if (viewerCtx) {
+    authorized = viewerCtx.role === 'ADMIN' || viewerCtx.isKetua || viewerCtx.isMember
+  } else {
+    const user = await getCurrentUser()
+    if (user) {
+      authorized = user.role === 'ADMIN' || await DataStore.isCommunityMember(user.id, communityId)
+      if (!authorized) {
+        const community = await DataStore.getCommunityById(communityId)
+        authorized = community?.ketuaId === user.id
+      }
+    }
+  }
+  if (!authorized) return []
   return await cacheWrap(`community:members:${communityId}`, () => DataStore.getIndukCommunityMembers(communityId), 60)
 }
 
@@ -510,17 +527,19 @@ export async function submitCooperativeLoanAction(formData: FormData) {
   }
 }
 
-export async function getCooperativeLoansAction(communityId?: string) {
+export async function getCooperativeLoansAction(communityId?: string, preloadedCommunity?: { ketuaId: string } | null) {
   const user = await getCurrentUser()
   if (!user) return []
 
-  const isKetua = communityId ? (await DataStore.getCommunityById(communityId))?.ketuaId === user.id : false
+  const community = communityId
+    ? (preloadedCommunity !== undefined ? preloadedCommunity : await DataStore.getCommunityById(communityId))
+    : null
+  const isKetua = communityId ? community?.ketuaId === user.id : false
 
-  if (user.role === 'ADMIN' || isKetua) {
-    return await DataStore.getCooperativeLoans(communityId)
-  } else {
-    return await DataStore.getCooperativeLoans(communityId, user.id)
-  }
+  const allLoans = await cacheWrap(`community:loans:${communityId || 'all'}`, () => DataStore.getCooperativeLoans(communityId), 60)
+
+  if (user.role === 'ADMIN' || isKetua) return allLoans
+  return (allLoans || []).filter((l: any) => l.userId === user.id)
 }
 
 export async function approveCooperativeLoanAction(loanId: string, role: 'KETUA' | 'ADMIN') {
@@ -733,8 +752,25 @@ export async function deleteCooperativeProductAction(id: string, communityId: st
   return { success: true }
 }
 
-export async function getMerchantFundingProjectsAction(communityId: string) {
-  return await DataStore.getMerchantFundingProjects(communityId)
+export async function getMerchantFundingProjectsAction(
+  communityId: string,
+  viewerCtx?: { userId: string | null; role: string | null; isKetua: boolean; isMember: boolean }
+) {
+  let authorized = false
+  if (viewerCtx) {
+    authorized = viewerCtx.role === 'ADMIN' || viewerCtx.isKetua || viewerCtx.isMember
+  } else {
+    const user = await getCurrentUser()
+    if (user) {
+      authorized = user.role === 'ADMIN' || await DataStore.isCommunityMember(user.id, communityId)
+      if (!authorized) {
+        const community = await DataStore.getCommunityById(communityId)
+        authorized = community?.ketuaId === user.id
+      }
+    }
+  }
+  if (!authorized) return []
+  return await cacheWrap(`community:funding_projects:${communityId}`, () => DataStore.getMerchantFundingProjects(communityId), 60)
 }
 
 export async function createMerchantFundingProjectAction(formData: FormData) {
