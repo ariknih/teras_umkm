@@ -4435,7 +4435,7 @@ export const DataStore = {
     )
   },
 
-  async getUserCommunitiesWithRoles(userId: string) {
+  async getUserCommunitiesWithRoles(userId: string, preloadedCommunities?: any[]) {
     syncMockDb()
     const result: Array<{
       communityId: string
@@ -4450,7 +4450,7 @@ export const DataStore = {
       statusLabel: string
     }> = []
 
-    const allCommunities = await this.getCommunities()
+    const allCommunities = preloadedCommunities || await this.getCommunities()
     const ketuaCommunities = allCommunities.filter((c: any) => c.ketuaId === userId)
 
     for (const c of ketuaCommunities) {

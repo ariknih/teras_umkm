@@ -220,10 +220,10 @@ export async function getIndukCommunityDetail(id: string) {
   return await cacheWrap(`community:induk:${id}`, () => DataStore.getCommunityById(id), 60)
 }
 
-export async function getUserCommunitiesWithRolesAction(userId?: string) {
+export async function getUserCommunitiesWithRolesAction(userId?: string, preloadedCommunities?: any[]) {
   const targetUserId = userId || (await getCurrentUser())?.id
   if (!targetUserId) return []
-  return await cacheWrap(`user:communities:roles:${targetUserId}`, () => DataStore.getUserCommunitiesWithRoles(targetUserId), 60)
+  return await cacheWrap(`user:communities:roles:${targetUserId}`, () => DataStore.getUserCommunitiesWithRoles(targetUserId, preloadedCommunities), 60)
 }
 
 export async function switchActiveIndukCommunityAction(communityId: string) {

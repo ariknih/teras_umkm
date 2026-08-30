@@ -42,7 +42,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'api.dicebear.com' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: '**.supabase.co' },
-      { protocol: 'https', hostname: '**.r2.dev' }
+      { protocol: 'https', hostname: '**.r2.dev' },
+      { protocol: 'https', hostname: '**.amazonaws.com' }
     ]
   },
   experimental: {

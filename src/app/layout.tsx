@@ -70,7 +70,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentUser();
-  let dbUser = user ? await DataStore.findUserById(user.id) : null;
+  let [dbUser, wallet] = user
+    ? await Promise.all([DataStore.findUserById(user.id), getWalletDetails(user)])
+    : [null, null];
   if (user && !dbUser) {
     dbUser = await DataStore.recreateMissingUser({
       id: user.id,
@@ -79,7 +81,6 @@ export default async function RootLayout({
       role: user.role
     });
   }
-  const wallet = user ? await getWalletDetails() : null;
   const userSetupCompleted = dbUser 
     ? (dbUser.role === 'MERCHANT' ? dbUser.landingPageSetup : true)
     : true;

@@ -5,8 +5,8 @@ import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 
-export async function getWalletDetails() {
-  const user = await getCurrentUser()
+export async function getWalletDetails(preloadedUser?: { id: string } | null) {
+  const user = preloadedUser !== undefined ? preloadedUser : await getCurrentUser()
   if (!user) return null
   return await DataStore.getWalletByUserId(user.id)
 }
