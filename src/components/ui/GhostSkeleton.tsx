@@ -137,3 +137,52 @@ export function GridSkeleton({
     </>
   )
 }
+
+export function CommunityDashboardSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#F5F7F9] pt-4 md:pt-8 pb-28 md:pb-20 px-3 md:px-8 max-w-full overflow-x-hidden animate-pulse">
+      <div className="max-w-[1280px] mx-auto space-y-4 md:space-y-6">
+        {/* Header / Hero Skeleton */}
+        <div className="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+          <div className="flex items-center gap-3.5">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-200 shrink-0" />
+            <div className="space-y-2">
+              <div className="h-5 bg-slate-200 rounded-md w-48 sm:w-64" />
+              <div className="h-3.5 bg-slate-200 rounded-md w-32" />
+            </div>
+          </div>
+          <div className="flex gap-2 w-full md:w-auto">
+            <div className="h-9 bg-slate-200 rounded-xl w-28" />
+            <div className="h-9 bg-slate-200 rounded-xl w-28" />
+          </div>
+        </div>
+
+        {/* Horizontal Navigation Skeleton */}
+        <div className="flex gap-2 overflow-hidden py-1">
+          <div className="h-9 bg-slate-200 rounded-xl w-24 shrink-0" />
+          <div className="h-9 bg-slate-200 rounded-xl w-24 shrink-0" />
+          <div className="h-9 bg-slate-200 rounded-xl w-24 shrink-0" />
+          <div className="h-9 bg-slate-200 rounded-xl w-24 shrink-0" />
+          <div className="h-9 bg-slate-200 rounded-xl w-24 shrink-0" />
+        </div>
+
+        {/* Hero Banner Skeleton */}
+        <div className="w-full h-44 sm:h-56 bg-slate-200 rounded-3xl" />
+
+        {/* 4-Metric Grid Skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="h-20 bg-white rounded-2xl border border-slate-200/80 p-3" />
+          <div className="h-20 bg-white rounded-2xl border border-slate-200/80 p-3" />
+          <div className="h-20 bg-white rounded-2xl border border-slate-200/80 p-3" />
+          <div className="h-20 bg-white rounded-2xl border border-slate-200/80 p-3" />
+        </div>
+
+        {/* Content Section Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 h-64 bg-white rounded-2xl border border-slate-200/80" />
+          <div className="h-64 bg-white rounded-2xl border border-slate-200/80" />
+        </div>
+      </div>
+    </div>
+  )
+}

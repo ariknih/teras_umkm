@@ -3,10 +3,11 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap, deleteCache } from '@/lib/cache'
 
 export async function getCommunityOfficialProductsAction(communityId: string) {
   if (!communityId) return []
-  return await DataStore.getCommunityOfficialProducts(communityId)
+  return await cacheWrap(`community:products:official:${communityId}`, () => DataStore.getCommunityOfficialProducts(communityId), 60)
 }
 
 export async function createCommunityOfficialProductAction(formData: FormData) {

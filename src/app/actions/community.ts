@@ -381,7 +381,7 @@ export async function getUserIndukCommunityAction() {
 }
 
 export async function getIndukCommunityMembersAction(communityId: string) {
-  return await DataStore.getIndukCommunityMembers(communityId)
+  return await cacheWrap(`community:members:${communityId}`, () => DataStore.getIndukCommunityMembers(communityId), 60)
 }
 
 export async function kickCommunityMemberAction(communityId: string, targetUserId: string) {
@@ -655,11 +655,11 @@ export async function updateIndukCommunity(id: string, formData: FormData) {
 // ─── REAL STATS & COOPERATIVE PRODUCTS / FUNDING ACTIONS ───────────────────
 
 export async function getCommunityRealStatsAction(communityId: string) {
-  return await DataStore.getCommunityRealStats(communityId)
+  return await cacheWrap(`community:stats:${communityId}`, () => DataStore.getCommunityRealStats(communityId), 60)
 }
 
 export async function getCooperativeProductsAction(communityId: string) {
-  return await DataStore.getCooperativeProducts(communityId)
+  return await cacheWrap(`community:coop_products:${communityId}`, () => DataStore.getCooperativeProducts(communityId), 60)
 }
 
 export async function createCooperativeProductAction(formData: FormData) {

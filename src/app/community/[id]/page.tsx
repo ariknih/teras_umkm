@@ -53,6 +53,7 @@ import {
 } from '@/app/actions/community-referral'
 import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
+import { CommunityDashboardSkeleton } from '@/components/ui/GhostSkeleton'
 import { LandingPageView } from './LandingPageView'
 import { LandingPageEditor } from './LandingPageEditor'
 import DiscussionForum from '@/components/community/DiscussionForum'
@@ -1316,7 +1317,7 @@ export default function CommunityDetailPage() {
     }
   }
 
-  async function loadData() {
+  async function loadData(isBackgroundSync: boolean = false) {
     try {
       const [
         currentUser,
@@ -1512,6 +1513,26 @@ export default function CommunityDetailPage() {
       setIsLoadingAnnouncements(false)
       setIsLoadingReports(false)
 
+      // Save to client-side SWR sessionStorage cache for 0ms next time
+      try {
+        if (commDetail) {
+          sessionStorage.setItem(`cache_comm_detail_${id}`, JSON.stringify({
+            community: commDetail,
+            members: memberList,
+            realStats: statsRes || null,
+            officialProducts: officialProductsRes || [],
+            events: commEventsRes || [],
+            gallery: commGalleryRes || [],
+            announcements: annListRes || [],
+            reports: repListRes || [],
+            coopProducts: cProductsRes || [],
+            fundingProjects: fProjectsRes || [],
+            loans: loanListRes || [],
+            isMember: Boolean(currentUser && (memberList.some((m: any) => m.userId === currentUser.id) || currentUser.id === commDetail?.ketuaId))
+          }))
+        }
+      } catch (_) {}
+
     } catch (e) {
       console.error(e)
     } finally {
@@ -1520,7 +1541,49 @@ export default function CommunityDetailPage() {
   }
 
   useEffect(() => {
-    loadData()
+    // SWR Pattern: Load from sessionStorage cache instantly for 0ms initial render
+    try {
+      const cachedStr = sessionStorage.getItem(`cache_comm_detail_${id}`)
+      const cachedUserStr = sessionStorage.getItem('cache_community_user')
+
+      let hasCachedData = false
+
+      if (cachedStr) {
+        const parsed = JSON.parse(cachedStr)
+        if (parsed && parsed.community) {
+          setCommunity(parsed.community)
+          setEditName(parsed.community.name || '')
+          setEditDescription(parsed.community.description || '')
+          setEditAvatarUrl(parsed.community.avatarUrl || '')
+          setEditCoverUrl(parsed.community.coverUrl || '')
+
+          if (parsed.members) setMembers(parsed.members)
+          if (parsed.realStats) setRealStats(parsed.realStats)
+          if (parsed.officialProducts) setCommunityOfficialProducts(parsed.officialProducts)
+          if (parsed.events) setCommunityEvents(parsed.events)
+          if (parsed.gallery) setCommunityGallery(parsed.gallery)
+          if (parsed.announcements) setAnnouncements(parsed.announcements)
+          if (parsed.reports) setReports(parsed.reports)
+          if (parsed.coopProducts) setCoopProducts(parsed.coopProducts)
+          if (parsed.fundingProjects) setFundingProjects(parsed.fundingProjects)
+          if (parsed.loans) setLoans(parsed.loans)
+          if (parsed.isMember !== undefined) setIsMember(parsed.isMember)
+
+          setLoading(false)
+          hasCachedData = true
+        }
+      }
+
+      if (cachedUserStr) {
+        const parsedUser = JSON.parse(cachedUserStr)
+        if (parsedUser) setUser(parsedUser)
+      }
+
+      // Fetch fresh data in parallel (background sync if cache was hit)
+      loadData(hasCachedData)
+    } catch (_) {
+      loadData(false)
+    }
   }, [id])
 
   // ─── ANNOUNCEMENTS HANDLERS ───────────────────────────────────
@@ -2313,11 +2376,7 @@ export default function CommunityDetailPage() {
   ]
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5F7F9] text-[#111111] flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-[#2DB24A]/20 border-t-[#2DB24A] rounded-full animate-spin"></div>
-      </div>
-    )
+    return <CommunityDashboardSkeleton />
   }
 
   if (!community) {

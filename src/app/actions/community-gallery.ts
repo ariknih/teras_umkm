@@ -3,10 +3,11 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap, deleteCache } from '@/lib/cache'
 
 export async function getCommunityGalleryAction(communityId: string) {
   if (!communityId) return []
-  return await DataStore.getCommunityGallery(communityId)
+  return await cacheWrap(`community:gallery:${communityId}`, () => DataStore.getCommunityGallery(communityId), 60)
 }
 
 export async function createCommunityGalleryItemAction(formData: FormData) {

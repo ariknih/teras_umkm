@@ -3,10 +3,11 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap, deleteCache } from '@/lib/cache'
 
 export async function getCommunityEventsAction(communityId: string) {
   if (!communityId) return []
-  return await DataStore.getCommunityEvents(communityId)
+  return await cacheWrap(`community:events:${communityId}`, () => DataStore.getCommunityEvents(communityId), 60)
 }
 
 export async function createCommunityEventAction(formData: FormData) {
