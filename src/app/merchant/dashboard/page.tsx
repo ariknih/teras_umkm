@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useTransition, useRef } from 'react'
+import React, { useState, useEffect, useTransition, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentUser, getCurrentUserProfile, updateUserLandingPage } from '@/app/actions/auth'
@@ -19,7 +19,7 @@ import {
   getMerchantServiceBookingsAction, 
   updateServiceBookingStatusAction 
 } from '@/app/actions/services'
-import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info, Briefcase, Wrench, CalendarCheck, Clock, MapPin, CheckCircle2, UserCheck } from 'lucide-react'
+import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info, Briefcase, Wrench, CalendarCheck, Clock, MapPin, CheckCircle2, UserCheck, Download } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
 
 export const SERVICE_CATEGORIES = [
@@ -130,6 +130,16 @@ export default function MerchantDashboardPage() {
   const [serviceBookingFilter, setServiceBookingFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('ALL')
   const [createServiceImageUrl, setCreateServiceImageUrl] = useState<string>('')
   const [editServiceImageUrl, setEditServiceImageUrl] = useState<string>('')
+
+  // Promotional Poster Generator State (with Saloka Watermark)
+  const [showPosterModal, setShowPosterModal] = useState(false)
+  const [posterType, setPosterType] = useState<'PRODUCT' | 'SERVICE'>('PRODUCT')
+  const [posterSelectedId, setPosterSelectedId] = useState<string>('')
+  const [posterAspect, setPosterAspect] = useState<'1:1' | '9:16'>('1:1')
+  const [posterHeadline, setPosterHeadline] = useState('PROMO SPESIAL HARI INI!')
+  const [posterTheme, setPosterTheme] = useState<'EMERALD' | 'GOLD' | 'MIDNIGHT'>('EMERALD')
+  const [copiedCaption, setCopiedCaption] = useState(false)
+  const posterCanvasRef = useRef<HTMLCanvasElement | null>(null)
   
   // LMS Academy state
   const [courses, setCourses] = useState<any[]>([])
@@ -983,6 +993,217 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
     }
   }
 
+  // ── PROMOTIONAL POSTER GENERATOR HANDLERS (WITH SALOKA WATERMARK) ──
+  const drawPoster = useCallback(() => {
+    const canvas = posterCanvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    const width = 1080
+    const height = posterAspect === '1:1' ? 1080 : 1920
+    canvas.width = width
+    canvas.height = height
+
+    // Find selected item
+    let item: any = null
+    if (posterType === 'PRODUCT') {
+      item = products.find(p => p.id === posterSelectedId) || products[0]
+    } else {
+      item = services.find(s => s.id === posterSelectedId) || services[0]
+    }
+
+    // 1. Background Gradient
+    if (posterTheme === 'EMERALD') {
+      const grad = ctx.createLinearGradient(0, 0, width, height)
+      grad.addColorStop(0, '#0F5132')
+      grad.addColorStop(0.5, '#1B7A43')
+      grad.addColorStop(1, '#083320')
+      ctx.fillStyle = grad
+    } else if (posterTheme === 'GOLD') {
+      const grad = ctx.createLinearGradient(0, 0, width, height)
+      grad.addColorStop(0, '#1E293B')
+      grad.addColorStop(0.5, '#0F172A')
+      grad.addColorStop(1, '#020617')
+      ctx.fillStyle = grad
+    } else {
+      const grad = ctx.createLinearGradient(0, 0, width, height)
+      grad.addColorStop(0, '#0F172A')
+      grad.addColorStop(0.6, '#1E1B4B')
+      grad.addColorStop(1, '#0B0F19')
+      ctx.fillStyle = grad
+    }
+    ctx.fillRect(0, 0, width, height)
+
+    // Decorative Ambient Circles
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.04)'
+    ctx.beginPath()
+    ctx.arc(width * 0.85, height * 0.15, 360, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(width * 0.15, height * 0.85, 280, 0, Math.PI * 2)
+    ctx.fill()
+
+    // 2. Merchant Store Name & Verified Badge
+    ctx.fillStyle = '#FFFFFF'
+    ctx.font = 'bold 36px sans-serif'
+    ctx.textAlign = 'left'
+    const storeTitle = profile?.name || 'Toko Resmi Saloka'
+    ctx.fillText(`🏬 ${storeTitle}`, 60, 95)
+
+    ctx.fillStyle = '#4ADE80'
+    ctx.font = 'bold 22px sans-serif'
+    ctx.fillText('✓ Terverifikasi Saloka Official Merchant', 60, 135)
+
+    // 3. Headline Tagline Banner
+    const headlineY = posterAspect === '1:1' ? 195 : 250
+    ctx.fillStyle = '#FBBF24'
+    ctx.font = '900 44px sans-serif'
+    ctx.fillText(posterHeadline.toUpperCase(), 60, headlineY)
+
+    // 4. Center Image Card
+    const imgX = 60
+    const imgY = posterAspect === '1:1' ? 230 : 320
+    const imgW = width - 120
+    const imgH = posterAspect === '1:1' ? 490 : 920
+
+    // White Card Background for photo
+    ctx.fillStyle = '#FFFFFF'
+    ctx.beginPath()
+    ctx.roundRect(imgX, imgY, imgW, imgH, 32)
+    ctx.fill()
+
+    const finishDrawing = () => {
+      // 5. Item Title & Price Details Below Card
+      const detailY = posterAspect === '1:1' ? 780 : 1330
+      ctx.textAlign = 'left'
+      ctx.fillStyle = '#FFFFFF'
+      ctx.font = 'bold 46px sans-serif'
+      const title = item?.title || (posterType === 'PRODUCT' ? 'Produk Unggulan UMKM' : 'Layanan Jasa Profesional')
+      ctx.fillText(title.length > 32 ? title.slice(0, 29) + '...' : title, 60, detailY)
+
+      // Price Tag
+      let priceText = 'Hubungi Toko'
+      if (posterType === 'PRODUCT') {
+        priceText = item?.price ? `Rp ${item.price.toLocaleString('id-ID')}` : 'Rp 0'
+      } else {
+        if (item?.pricePerSession) priceText = `Rp ${item.pricePerSession.toLocaleString('id-ID')} / Sesi`
+        else if (item?.pricePerDay) priceText = `Rp ${item.pricePerDay.toLocaleString('id-ID')} / Hari`
+      }
+
+      ctx.fillStyle = '#4ADE80'
+      ctx.font = '900 54px sans-serif'
+      ctx.fillText(priceText, 60, detailY + 70)
+
+      // Subdomain / Website URL
+      let subUrl = 'saloka.id'
+      try {
+        if (profile?.landingPageConfig) {
+          const parsed = JSON.parse(profile.landingPageConfig)
+          if (parsed.subdomain) subUrl = `${parsed.subdomain}.saloka.id`
+        }
+      } catch (_) {}
+      
+      ctx.fillStyle = '#CBD5E1'
+      ctx.font = '500 26px sans-serif'
+      ctx.fillText(`🌐 Pesan Online: ${subUrl}`, 60, detailY + 125)
+
+      // 6. WATERMARK SALOKA DI SUDUT KANAN BAWAH (MANDATORY REQUIREMENT)
+      const wmPadding = 45
+      const wmW = 380
+      const wmH = 68
+      const wmX = width - wmW - wmPadding
+      const wmY = height - wmH - wmPadding
+
+      // Watermark Container Pill
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)'
+      ctx.beginPath()
+      ctx.roundRect(wmX, wmY, wmW, wmH, 34)
+      ctx.fill()
+      ctx.lineWidth = 2.5
+      ctx.strokeStyle = '#2DB24A'
+      ctx.stroke()
+
+      // Watermark Logo Text
+      ctx.fillStyle = '#2DB24A'
+      ctx.font = 'bold 26px sans-serif'
+      ctx.textAlign = 'left'
+      ctx.fillText('⚡ Saloka.id', wmX + 26, wmY + 43)
+
+      ctx.fillStyle = '#E2E8F0'
+      ctx.font = 'bold 16px sans-serif'
+      ctx.fillText('· Official UMKM', wmX + 185, wmY + 42)
+    }
+
+    // Render photo inside rounded rect
+    const imgUrl = (posterType === 'PRODUCT' ? item?.imageUrl : item?.images?.[0]) || 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=800&q=80'
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = imgUrl
+    img.onload = () => {
+      ctx.save()
+      ctx.beginPath()
+      ctx.roundRect(imgX + 8, imgY + 8, imgW - 16, imgH - 16, 26)
+      ctx.clip()
+      ctx.drawImage(img, imgX + 8, imgY + 8, imgW - 16, imgH - 16)
+      ctx.restore()
+
+      // Category Pill on image
+      if (item?.category) {
+        ctx.fillStyle = 'rgba(15, 81, 50, 0.9)'
+        ctx.beginPath()
+        ctx.roundRect(imgX + 24, imgY + 24, 280, 50, 25)
+        ctx.fill()
+        ctx.fillStyle = '#FFFFFF'
+        ctx.font = 'bold 20px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText(item.category.toUpperCase(), imgX + 164, imgY + 56)
+      }
+
+      finishDrawing()
+    }
+    img.onerror = () => {
+      finishDrawing()
+    }
+  }, [posterType, posterSelectedId, posterAspect, posterHeadline, posterTheme, products, services, profile])
+
+  useEffect(() => {
+    if (showPosterModal) {
+      setTimeout(() => drawPoster(), 100)
+    }
+  }, [showPosterModal, drawPoster])
+
+  const handleDownloadPoster = () => {
+    const canvas = posterCanvasRef.current
+    if (!canvas) return
+    const link = document.createElement('a')
+    link.download = `poster-promosi-saloka-${Date.now()}.png`
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+  }
+
+  const handleCopyPosterCaption = () => {
+    let item: any = null
+    if (posterType === 'PRODUCT') {
+      item = products.find(p => p.id === posterSelectedId) || products[0]
+    } else {
+      item = services.find(s => s.id === posterSelectedId) || services[0]
+    }
+
+    let subUrl = 'saloka.id'
+    try {
+      if (profile?.landingPageConfig) {
+        const parsed = JSON.parse(profile.landingPageConfig)
+        if (parsed.subdomain) subUrl = `${parsed.subdomain}.saloka.id`
+      }
+    } catch (_) {}
+
+    const caption = `🔥 ${posterHeadline}\n\n✨ ${item?.title || 'Penawaran Spesial'}\n🏷️ Kategori: ${item?.category || 'UMKM'}\n\nPesan sekarang dengan mudah & aman melalui toko resmi kami:\n🌐 https://${subUrl}\n\n#SalokaID #UMKMIndonesia #ProdukLokal #BanggaBuatanIndonesia #JasaProfesional`
+    navigator.clipboard.writeText(caption)
+    setCopiedCaption(true)
+    setTimeout(() => setCopiedCaption(false), 2500)
+  }
+
   if (loading) {
     return (
       <div className="relative min-h-screen bg-[#F5F7F9] pt-12 pb-24 px-6 md:px-10 animate-pulse">
@@ -1202,9 +1423,19 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               Kelola katalog produk, edit rincian stok barang, dan periksa buku penjualan Anda.
             </p>
           </div>
-          <span className="btn-primary bg-primary/10 border border-primary/20 text-[10px] text-[#0F5132] shadow-sm">
-            Merchant: {user.name}
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowPosterModal(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Sparkles size={14} className="text-amber-300" />
+              📸 Buat Poster Promosi
+            </button>
+            <span className="btn-primary bg-primary/10 border border-primary/20 text-[10px] text-[#0F5132] shadow-sm">
+              Merchant: {user.name}
+            </span>
+          </div>
         </div>
 
         {/* Global Notifications */}
@@ -4992,6 +5223,204 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Promotional Poster Generator Modal */}
+      {showPosterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 space-y-6 shadow-2xl text-slate-900 max-h-[92vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="font-sora text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Sparkles size={18} className="text-primary" />
+                  Generator Poster Promosi 1-Klik
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Buat materi promosi siap posting Instagram & WhatsApp lengkap dengan <strong>Watermark Resmi Saloka.id</strong>.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPosterModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer text-slate-500 hover:text-slate-800"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              {/* Controls Column */}
+              <div className="space-y-4 text-xs">
+                {/* Promo Type */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Tipe Promosi
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setPosterType('PRODUCT'); setPosterSelectedId(products[0]?.id || ''); }}
+                      className={`p-3 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                        posterType === 'PRODUCT' ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      📦 Produk Fisik
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPosterType('SERVICE'); setPosterSelectedId(services[0]?.id || ''); }}
+                      className={`p-3 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                        posterType === 'SERVICE' ? 'border-primary bg-primary/10 text-primary' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      🛠️ Layanan Jasa
+                    </button>
+                  </div>
+                </div>
+
+                {/* Select Item */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Pilih Item Katalog
+                  </label>
+                  <select
+                    value={posterSelectedId}
+                    onChange={(e) => setPosterSelectedId(e.target.value)}
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-primary"
+                  >
+                    {posterType === 'PRODUCT' ? (
+                      products.map(p => (
+                        <option key={p.id} value={p.id}>{p.title} (Rp {p.price?.toLocaleString('id-ID')})</option>
+                      ))
+                    ) : (
+                      services.map(s => (
+                        <option key={s.id} value={s.id}>{s.title}</option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+                {/* Aspect Ratio */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Format Ukuran Poster
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPosterAspect('1:1')}
+                      className={`p-3 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                        posterAspect === '1:1' ? 'border-[#0F5132] bg-emerald-50 text-[#0F5132]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      ⏹️ Feed Instagram (1:1)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPosterAspect('9:16')}
+                      className={`p-3 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                        posterAspect === '9:16' ? 'border-[#0F5132] bg-emerald-50 text-[#0F5132]' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      📱 Story / Status WA (9:16)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Color Theme */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Tema Warna
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPosterTheme('EMERALD')}
+                      className={`py-2 px-3 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                        posterTheme === 'EMERALD' ? 'border-[#2DB24A] bg-[#2DB24A] text-white shadow-xs' : 'border-slate-200 text-slate-600'
+                      }`}
+                    >
+                      Emerald
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPosterTheme('GOLD')}
+                      className={`py-2 px-3 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                        posterTheme === 'GOLD' ? 'border-slate-900 bg-slate-900 text-amber-300 shadow-xs' : 'border-slate-200 text-slate-600'
+                      }`}
+                    >
+                      Luxury Dark
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPosterTheme('MIDNIGHT')}
+                      className={`py-2 px-3 rounded-xl border font-bold text-xs transition-all cursor-pointer ${
+                        posterTheme === 'MIDNIGHT' ? 'border-indigo-950 bg-indigo-950 text-indigo-200 shadow-xs' : 'border-slate-200 text-slate-600'
+                      }`}
+                    >
+                      Midnight
+                    </button>
+                  </div>
+                </div>
+
+                {/* Headline Input */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    Teks Headline Promosi
+                  </label>
+                  <input
+                    type="text"
+                    value={posterHeadline}
+                    onChange={(e) => setPosterHeadline(e.target.value)}
+                    placeholder="Contoh: PROMO SPESIAL HARI INI!"
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-primary font-bold"
+                  />
+                </div>
+
+                {/* Watermark Notice */}
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-emerald-900 text-xs">
+                  <span className="text-base">⚡</span>
+                  <p className="text-[11px] leading-tight">
+                    <strong>Watermark Resmi Saloka.id</strong> disematkan otomatis di kanan bawah untuk meningkatkan kredibilitas & kepercayaan pembeli.
+                  </p>
+                </div>
+
+                {/* Download & Copy Buttons */}
+                <div className="pt-2 space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPoster}
+                    className="w-full py-3 bg-primary hover:bg-[#23923d] text-white font-bold rounded-xl text-xs transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Download size={15} />
+                    Download Poster HD (PNG)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyPosterCaption}
+                    className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {copiedCaption ? '✓ Teks Caption Tersalin!' : '📋 Salin Caption Promosi WA/IG'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Preview Column */}
+              <div className="flex flex-col items-center justify-center bg-slate-100 p-4 rounded-2xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">
+                  Live Preview Poster
+                </span>
+                <div className="max-w-full overflow-hidden rounded-xl shadow-lg border border-slate-300">
+                  <canvas
+                    ref={posterCanvasRef}
+                    className="w-full max-h-[460px] object-contain block bg-slate-900"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

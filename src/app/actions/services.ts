@@ -150,9 +150,12 @@ export async function setServiceAvailabilityAction(serviceId: string, dateStr: s
   }
 }
 
+import { sendEmail } from '@/lib/maileroo'
+
 export async function createServiceBookingAction(data: {
   serviceId: string
   bookingDate: string
+  timeSlot?: string
   pricingType: 'SESSION' | 'DAILY'
   customerNote?: string
 }) {
@@ -175,6 +178,7 @@ export async function createServiceBookingAction(data: {
       customerId: user.id,
       merchantId: service.merchantId,
       bookingDate,
+      timeSlot: data.timeSlot || null,
       pricingType: data.pricingType,
       basePrice,
       adminFee,
@@ -182,6 +186,41 @@ export async function createServiceBookingAction(data: {
       status: 'PENDING',
       notes: data.customerNote || null
     })
+
+    // Notify Merchant via Maileroo Email (Non-blocking)
+    try {
+      const merchant = await DataStore.findUserById(service.merchantId)
+      if (merchant?.email) {
+        await sendEmail({
+          to: merchant.email,
+          toName: merchant.name || 'Merchant Saloka',
+          subject: `🔔 Pesanan Booking Jasa Baru: ${service.title}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px;">
+              <h2 style="color: #0F5132; margin-bottom: 8px;">Pesanan Booking Jasa Baru!</h2>
+              <p style="color: #475569; font-size: 14px;">Halo <strong>${merchant.name}</strong>, Anda mendapatkan pesanan booking baru di platform Saloka.id.</p>
+              
+              <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; margin: 20px 0; font-size: 14px;">
+                <p style="margin: 4px 0;"><strong>Layanan:</strong> ${service.title}</p>
+                <p style="margin: 4px 0;"><strong>Klien:</strong> ${user.name} (${user.email})</p>
+                <p style="margin: 4px 0;"><strong>Jadwal:</strong> ${bookingDate.toLocaleDateString('id-ID')} ${data.timeSlot ? `(${data.timeSlot})` : ''}</p>
+                <p style="margin: 4px 0;"><strong>Paket:</strong> ${data.pricingType === 'DAILY' ? 'Per Hari (Maks 8 Jam)' : 'Per Sesi'}</p>
+                <p style="margin: 4px 0;"><strong>Total Nilai:</strong> Rp ${totalPrice.toLocaleString('id-ID')}</p>
+                ${data.customerNote ? `<p style="margin: 4px 0;"><strong>Catatan Klien:</strong> "${data.customerNote}"</p>` : ''}
+              </div>
+
+              <a href="https://saloka.id/merchant/dashboard?tab=bookings" style="display: inline-block; background-color: #2DB24A; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">
+                Konfirmasi Jadwal di Dashboard
+              </a>
+              
+              <p style="color: #94a3b8; font-size: 11px; margin-top: 24px;">Saloka.id - Ekosistem Bisnis & Layanan UMKM Terpercaya</p>
+            </div>
+          `
+        })
+      }
+    } catch (e) {
+      console.warn('Maileroo notification error:', e)
+    }
 
     // Log to Audit Log
     await DataStore.createAuditLog({
@@ -192,7 +231,7 @@ export async function createServiceBookingAction(data: {
       module: 'JASA',
       targetId: booking.id,
       targetType: 'BOOKING',
-      detail: `Booking jasa "${service.title}" (${data.pricingType}) tgl ${bookingDate.toLocaleDateString('id-ID')}`
+      detail: `Booking jasa "${service.title}" (${data.pricingType}${data.timeSlot ? ` - ${data.timeSlot}` : ''}) tgl ${bookingDate.toLocaleDateString('id-ID')}`
     })
 
     revalidatePath('/jasa')
@@ -229,10 +268,99 @@ export async function updateServiceBookingStatusAction(bookingId: string, status
 
   try {
     const updated = await DataStore.updateServiceBookingStatus(bookingId, status)
+    
+    // ESCROW AUTO-RELEASE: If status is completed, credit the merchant's wallet balance
+    if (status === 'COMPLETED' && updated) {
+      try {
+        const payoutAmount = updated.basePrice || 0
+        if (payoutAmount > 0) {
+          await (DataStore as any).creditWallet(updated.merchantId, payoutAmount, `Penghasilan Booking Jasa #${bookingId.slice(-6).toUpperCase()}`)
+          await DataStore.createAuditLog({
+            actor: 'ADMIN',
+            actorId: 'system-escrow',
+            actorName: 'Saloka Escrow System',
+            action: 'RELEASE_ESCROW',
+            module: 'WALLET',
+            targetId: bookingId,
+            targetType: 'PAYOUT',
+            detail: `Dana escrow booking senilai Rp ${payoutAmount.toLocaleString('id-ID')} berhasil diteruskan ke saldo dompet merchant.`
+          })
+        }
+      } catch (escrowErr) {
+        console.warn('Escrow release note:', escrowErr)
+      }
+    }
+
+    // Customer Notification via Email
+    try {
+      if (updated?.customerId) {
+        const customer = await DataStore.findUserById(updated.customerId)
+        if (customer?.email) {
+          const statusText = status === 'CONFIRMED' ? 'Jadwal Telah Dikonfirmasi' : status === 'COMPLETED' ? 'Layanan Selesai Dikerjakan' : 'Status Booking Diperbarui'
+          await sendEmail({
+            to: customer.email,
+            toName: customer.name || 'Pelanggan Saloka',
+            subject: `✓ Update Booking Jasa: ${statusText}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px;">
+                <h2 style="color: #0F5132; margin-bottom: 8px;">Update Booking Jasa Anda</h2>
+                <p style="color: #475569; font-size: 14px;">Halo <strong>${customer.name}</strong>, status pesanan booking jasa Anda saat ini adalah: <strong style="color: #2DB24A;">${status}</strong>.</p>
+                <p style="color: #64748b; font-size: 13px;">Silakan login ke akun Saloka Anda untuk melihat detail jadwal atau memberikan testimoni kepuasan.</p>
+                <a href="https://saloka.id/orders" style="display: inline-block; background-color: #2DB24A; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 13px; margin-top: 12px;">
+                  Lihat Pesanan Saya
+                </a>
+              </div>
+            `
+          })
+        }
+      }
+    } catch (notifErr) {
+      console.warn('Customer status email notification note:', notifErr)
+    }
+
     revalidatePath('/orders')
     revalidatePath('/merchant/dashboard')
+    revalidatePath('/jasa')
     return { success: true, booking: updated }
   } catch (error: any) {
     return { success: false, error: error.message || 'Gagal mengubah status booking.' }
+  }
+}
+
+// ─── SERVICE REVIEWS & RATINGS ──────────────────────────────────────────
+export async function getServiceReviewsAction(serviceId: string) {
+  try {
+    const reviews = (globalThis as any).__mockServiceReviews || []
+    return reviews.filter((r: any) => r.serviceId === serviceId)
+  } catch (e) {
+    return []
+  }
+}
+
+export async function submitServiceReviewAction(serviceId: string, rating: number, comment: string) {
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: 'Silakan login terlebih dahulu untuk memberikan ulasan.' }
+
+  try {
+    if (!rating || rating < 1 || rating > 5) {
+      return { success: false, error: 'Rating bintang harus antara 1 sampai 5.' }
+    }
+
+    if (!(globalThis as any).__mockServiceReviews) (globalThis as any).__mockServiceReviews = []
+    const newReview = {
+      id: `rev-${Date.now()}`,
+      serviceId,
+      userId: user.id,
+      userName: user.name,
+      rating,
+      comment: comment.trim(),
+      createdAt: new Date().toISOString()
+    }
+    ;(globalThis as any).__mockServiceReviews.push(newReview)
+
+    revalidatePath(`/jasa/${serviceId}`)
+    return { success: true, review: newReview }
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Gagal mengirim ulasan.' }
   }
 }

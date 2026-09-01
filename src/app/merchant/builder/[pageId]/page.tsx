@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { getCurrentUserProfile, updateUserLandingPage } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
+import { getServicesAction } from '@/app/actions/services'
 import { 
   ArrowLeft,
   ChevronDown,
@@ -93,16 +94,20 @@ const CATALOG = [
     ],
   },
   {
-    category: 'PRODUK MARKETPLACE',
+    category: 'PRODUK & JASA',
     items: [
-      { type: 'product_showcase', label: 'Showcase Produk' },
+      { type: 'product_showcase',    label: 'Showcase Produk Fisik' },
+      { type: 'service_showcase',    label: 'Showcase Layanan Jasa' },
+      { type: 'service_booking_cta', label: 'Tombol Booking Jasa' },
     ],
   },
 ]
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 const ICONS: Record<string, React.ReactNode> = {
-  product_showcase: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><rect x="1" y="5" width="8" height="10" rx="1"/><rect x="11" y="5" width="8" height="10" rx="1"/><path strokeLinecap="round" d="M4 8h2M4 10h2M13 8h2M13 10h2"/></svg>,
+  product_showcase:    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><rect x="1" y="5" width="8" height="10" rx="1"/><rect x="11" y="5" width="8" height="10" rx="1"/><path strokeLinecap="round" d="M4 8h2M4 10h2M13 8h2M13 10h2"/></svg>,
+  service_showcase:    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><rect x="2" y="4" width="16" height="12" rx="2"/><path strokeLinecap="round" d="M6 8h8M6 12h5"/></svg>,
+  service_booking_cta: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><circle cx="10" cy="10" r="7"/><path strokeLinecap="round" strokeLinejoin="round" d="M10 7v4l3 2"/></svg>,
   headline:            <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M2 5a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1zm0 5a1 1 0 011-1h10a1 1 0 110 2H3a1 1 0 01-1-1zm0 5a1 1 0 011-1h6a1 1 0 110 2H3a1 1 0 01-1-1z" clipRule="evenodd"/></svg>,
   subheadline:         <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M2 5a1 1 0 011-1h14a1 1 0 110 2H3a1 1 0 01-1-1zm0 5a1 1 0 011-1h8a1 1 0 110 2H3a1 1 0 01-1-1z" clipRule="evenodd"/></svg>,
   content:             <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd"/></svg>,
@@ -143,7 +148,9 @@ function defaultContent(type: string): Record<string, any> {
     image:               { src: '', alt: 'Gambar', caption: '', width: '100%' },
     image_slide:         { images: [{ src: '', alt: 'Slide 1' }, { src: '', alt: 'Slide 2' }] },
     video:               { src: '', isLocal: false, title: 'Video Produk Kami' },
-    product_showcase:    { productIds: [], layout: 'grid', columns: 2, title: 'Produk Kami', showPrice: true, showStock: true, showBuyBtn: true, buyBtnLabel: 'Beli Sekarang' },
+    product_showcase:    { productIds: [], layout: 'grid', columns: 2, title: 'Produk Pilihan Kami', showPrice: true, showStock: true, showBuyBtn: true, buyBtnLabel: 'Beli Sekarang' },
+    service_showcase:    { serviceIds: [], layout: 'grid', columns: 2, title: 'Layanan Jasa & Keahlian', showPrice: true, showBookingBtn: true, bookingBtnLabel: 'Booking Jadwal' },
+    service_booking_cta: { serviceId: '', title: 'Butuh Layanan Profesional?', label: 'Booking Jasa Sekarang →', note: 'Jadwal fleksibel & jaminan hasil kerja berkualitas bergaransi Saloka.' },
     line:                { thickness: 1, color: '#E5E7EB' },
     space:               { height: 32 },
     feature_list:        { items: ['Kualitas terjamin & bergaransi', 'Pengiriman cepat ke seluruh Indonesia', 'Layanan pelanggan 24 jam'], icon: 'check' },
@@ -380,6 +387,83 @@ function RenderComp({ comp }: { comp: BuilderComponent }) {
         </div>
       )
     }
+    case 'service_showcase': {
+      const items: any[] = c._resolvedServices || []
+      return (
+        <div style={p}>
+          {c.title && <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: s.color || '#111111' }}>{c.title}</h3>}
+          {items.length === 0 ? (
+            <div style={{ border: '2px dashed #E5E7EB', borderRadius: 12, padding: 32, textAlign: 'center', color: '#9CA3AF' }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>💼</div>
+              <p style={{ fontSize: 13 }}>Pilih layanan jasa dari katalog Anda di panel kanan</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${c.columns || 2}, 1fr)`, gap: 12 }}>
+              {items.map((svc: any) => (
+                <div
+                  key={svc.id}
+                  style={{ border: '1px solid #E5E7EB', borderRadius: 12, overflow: 'hidden', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
+                >
+                  <div style={{ aspectRatio: '16/9', background: '#F3F4F6', overflow: 'hidden', position: 'relative' }}>
+                    {svc.images?.[0] ? (
+                      <img src={svc.images[0]} alt={svc.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>💼</div>
+                    )}
+                    <span style={{ position: 'absolute', top: 8, left: 8, background: '#2DB24A', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>
+                      {svc.category || 'JASA'}
+                    </span>
+                  </div>
+                  <div style={{ padding: '12px' }}>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: '#111111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{svc.title}</p>
+                    {c.showPrice && (
+                      <div style={{ marginTop: 4 }}>
+                        {svc.pricePerSession ? (
+                          <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: '#2DB24A' }}>
+                            Rp {svc.pricePerSession.toLocaleString('id-ID')} <span style={{ fontSize: 10, fontWeight: 400, color: '#6B7280' }}>/ sesi</span>
+                          </p>
+                        ) : null}
+                        {svc.pricePerDay ? (
+                          <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: '#1D4ED8' }}>
+                            Rp {svc.pricePerDay.toLocaleString('id-ID')} <span style={{ fontSize: 10, fontWeight: 400, color: '#6B7280' }}>/ hari</span>
+                          </p>
+                        ) : null}
+                      </div>
+                    )}
+                    {c.showBookingBtn && (
+                      <a
+                        href={`/jasa/${svc.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ display: 'block', textDecoration: 'none', marginTop: 8, width: '100%', padding: '8px', background: '#0F5132', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 12, textAlign: 'center' }}
+                      >
+                        {c.bookingBtnLabel || 'Booking Jadwal'}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+    case 'service_booking_cta': return (
+      <div style={p}>
+        <div style={{ background: s.bgColor || '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 16, padding: '20px', textAlign: 'center' }}>
+          <h4 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 700, color: '#14532D' }}>{c.title || 'Butuh Layanan Profesional?'}</h4>
+          <p style={{ margin: '0 0 14px', fontSize: 12, color: '#166534' }}>{c.note || 'Jadwal fleksibel & jaminan hasil kerja berkualitas bergaransi Saloka.'}</p>
+          <a
+            href={c.serviceId ? `/jasa/${c.serviceId}` : '/jasa'}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: 'inline-block', padding: '10px 24px', background: '#2DB24A', color: '#FFFFFF', fontWeight: 700, fontSize: 13, borderRadius: 9999, textDecoration: 'none', boxShadow: '0 2px 6px rgba(45,178,74,0.3)' }}
+          >
+            {c.label || 'Booking Jasa Sekarang →'}
+          </a>
+        </div>
+      </div>
+    )
     case 'line': return (
       <div style={{ paddingTop: s.paddingTop ?? 16, paddingBottom: s.paddingBottom ?? 16, paddingLeft: s.paddingLeft ?? 16, paddingRight: s.paddingRight ?? 16 }}>
         <hr style={{ border: 'none', borderTop: `${c.thickness || 1}px solid ${c.color || '#E5E7EB'}` }} />
@@ -736,12 +820,13 @@ function UploadZone({
 }
 
 // ─── Settings Panel (Right Sidebar) ──────────────────────────────────────────
-function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts }: {
+function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts, merchantServices }: {
   comp: BuilderComponent
   onChange: (c: BuilderComponent) => void
   onDelete: () => void
   onDuplicate: () => void
   merchantProducts: any[]
+  merchantServices: any[]
 }) {
   const [tab, setTab] = useState<'content' | 'style' | 'advance'>('content')
 
@@ -1128,6 +1213,94 @@ function SettingsPanel({ comp, onChange, onDelete, onDuplicate, merchantProducts
           </div>
         )
       }
+      case 'service_showcase': {
+        const selected: string[] = c.serviceIds || []
+        return (
+          <div className={section}>
+            <div><label className={lbl}>Judul Seksi</label><input type="text" className={inp} value={c.title||''} onChange={e=>upC('title',e.target.value)} placeholder="Layanan Jasa & Keahlian"/></div>
+            <div>
+              <label className={lbl}>Jumlah Kolom</label>
+              <div className="flex bg-gray-100 rounded-lg p-0.5">
+                {[1,2,3].map(n => (
+                  <button key={n} onClick={()=>upC('columns',n)} className={`flex-1 py-1.5 rounded-md text-[12px] font-bold transition-all ${(c.columns||2)===n?'bg-white text-primary shadow-sm':'text-gray-400'}`}>{n}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className={lbl}>Opsi Tampil</label>
+              <div className="space-y-2 mt-1">
+                {[['showPrice','Tampilkan Tarif'],['showBookingBtn','Tombol Booking']].map(([k,l]) => (
+                  <label key={k} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl cursor-pointer">
+                    <span className="text-[13px] text-gray-600">{l}</span>
+                    <input type="checkbox" checked={(c as any)[k] !== false} onChange={e=>upC(k,e.target.checked)} className="w-4 h-4 accent-primary rounded"/>
+                  </label>
+                ))}
+              </div>
+            </div>
+            {c.showBookingBtn !== false && (
+              <div><label className={lbl}>Label Tombol Booking</label><input type="text" className={inp} value={c.bookingBtnLabel||'Booking Jadwal'} onChange={e=>upC('bookingBtnLabel',e.target.value)}/></div>
+            )}
+            <div>
+              <label className={lbl}>Pilih Jasa dari Katalog ({selected.length} dipilih)</label>
+              {merchantServices.length === 0 ? (
+                <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <p className="text-[12px] text-gray-400">Belum ada layanan jasa di katalog.</p>
+                  <a href="/merchant/dashboard?tab=services" target="_blank" className="text-[11px] text-primary underline mt-1 block">Tambah Jasa di Dashboard →</a>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {merchantServices.map((svc: any) => {
+                    const isSelected = selected.includes(svc.id)
+                    return (
+                      <label key={svc.id} className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer border transition-all ${isSelected ? 'border-primary/40 bg-primary/5' : 'border-transparent bg-gray-50 hover:bg-gray-100'}`}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={e => {
+                            const next = e.target.checked
+                              ? [...selected, svc.id]
+                              : selected.filter((id: string) => id !== svc.id)
+                            upC('serviceIds', next)
+                          }}
+                          className="w-4 h-4 accent-primary rounded flex-shrink-0"
+                        />
+                        {svc.images?.[0] ? (
+                          <img src={svc.images[0]} alt={svc.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-[#e4e6ea]"/>
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center flex-shrink-0 text-lg">💼</div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-semibold text-gray-800 truncate">{svc.title}</p>
+                          <p className="text-[11px] text-emerald-700 font-bold">
+                            {svc.pricePerSession ? `Rp ${svc.pricePerSession.toLocaleString('id-ID')}/sesi` : `Rp ${svc.pricePerDay.toLocaleString('id-ID')}/hari`}
+                          </p>
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      }
+      case 'service_booking_cta':
+        return (
+          <div className={section}>
+            <div><label className={lbl}>Judul Call to Action</label><input type="text" className={inp} value={c.title||''} onChange={e=>upC('title',e.target.value)} placeholder="Butuh Layanan Profesional?"/></div>
+            <div><label className={lbl}>Keterangan Tambahan</label><textarea className={inp} rows={2} value={c.note||''} onChange={e=>upC('note',e.target.value)}/></div>
+            <div><label className={lbl}>Label Tombol</label><input type="text" className={inp} value={c.label||''} onChange={e=>upC('label',e.target.value)} placeholder="Booking Jasa Sekarang →"/></div>
+            <div>
+              <label className={lbl}>Tautkan ke Jasa Spesifik (Opsional)</label>
+              <select className={inp} value={c.serviceId||''} onChange={e=>upC('serviceId',e.target.value)}>
+                <option value="">-- Semua Layanan (/jasa) --</option>
+                {merchantServices.map((svc: any) => (
+                  <option key={svc.id} value={svc.id}>{svc.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )
       default:
         return <div className="py-10 flex flex-col items-center gap-2 text-center"><div className="text-3xl">⚙️</div><p className="text-[13px] text-gray-400">Tidak ada pengaturan konten.</p></div>
     }
@@ -1489,6 +1662,7 @@ export default function BuilderPage() {
   const [profile, setProfile] = useState<any>(null)
   const [pageName, setPageName] = useState('Halaman Saya')
   const [merchantProducts, setMerchantProducts] = useState<any[]>([])
+  const [merchantServices, setMerchantServices] = useState<any[]>([])
   const [mobileTab, setMobileTab] = useState<'canvas' | 'components' | 'settings'>('canvas')
 
   // Style & AI Theme States
@@ -1759,10 +1933,14 @@ export default function BuilderPage() {
             }
           }
         }
-        // Load merchant products
-        const prods = await getProducts()
+        // Load merchant products and services
+        const [prods, svcs] = await Promise.all([
+          getProducts(),
+          p?.id ? getServicesAction({ merchantId: p.id }) : Promise.resolve([])
+        ])
         if (p?.id) {
           setMerchantProducts(prods.filter((pr: any) => pr.merchantId === p.id))
+          setMerchantServices(svcs || [])
         }
       }catch(e){console.error(e)}
     })()
@@ -2476,7 +2654,24 @@ export default function BuilderPage() {
 
                       {/* Component content */}
                       <div className="pl-7">
-                        <RenderComp comp={comp}/>
+                        <RenderComp
+                          comp={{
+                            ...comp,
+                            content: {
+                              ...comp.content,
+                              _resolvedProducts: comp.type === 'product_showcase'
+                                ? (comp.content.productIds?.length
+                                    ? merchantProducts.filter(pr => comp.content.productIds.includes(pr.id))
+                                    : merchantProducts)
+                                : comp.content._resolvedProducts,
+                              _resolvedServices: comp.type === 'service_showcase'
+                                ? (comp.content.serviceIds?.length
+                                    ? merchantServices.filter(sv => comp.content.serviceIds.includes(sv.id))
+                                    : merchantServices)
+                                : comp.content._resolvedServices
+                            }
+                          }}
+                        />
                       </div>
                     </div>
                   ))}
@@ -2530,6 +2725,7 @@ export default function BuilderPage() {
               onDelete={()=>{delComp(selComp.id); setMobileTab('canvas')}}
               onDuplicate={()=>dupComp(selComp.id)}
               merchantProducts={merchantProducts}
+              merchantServices={merchantServices}
             />
           </aside>
         ) : (

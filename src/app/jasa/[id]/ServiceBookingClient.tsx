@@ -14,6 +14,15 @@ interface ServiceBookingClientProps {
   currentUser?: any
 }
 
+const TIME_SLOTS = [
+  '09:00 - 10:00',
+  '10:30 - 11:30',
+  '13:00 - 14:00',
+  '14:30 - 15:30',
+  '16:00 - 17:00',
+  '19:00 - 20:00'
+]
+
 export default function ServiceBookingClient({
   service,
   initialAvailability,
@@ -26,10 +35,18 @@ export default function ServiceBookingClient({
     service.pricePerSession ? 'SESSION' : 'DAILY'
   )
   const [selectedDate, setSelectedDate] = useState<string>('')
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:00 - 10:00')
   const [notes, setNotes] = useState('')
   const [availability, setAvailability] = useState<any[]>(initialAvailability)
   const [bookingSuccess, setBookingSuccess] = useState<any>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Review states
+  const [reviews, setReviews] = useState<any[]>([])
+  const [userRating, setUserRating] = useState(5)
+  const [userComment, setUserComment] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  const [reviewSuccess, setReviewSuccess] = useState(false)
 
   const isOwner = currentUser && currentUser.id === service.merchantId
 
@@ -82,6 +99,7 @@ export default function ServiceBookingClient({
       const res = await createServiceBookingAction({
         serviceId: service.id,
         bookingDate: selectedDate,
+        timeSlot: selectedPricingType === 'SESSION' ? selectedTimeSlot : undefined,
         pricingType: selectedPricingType,
         customerNote: notes
       })
@@ -107,7 +125,7 @@ export default function ServiceBookingClient({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-      {/* Left Column: Service Details & Availability */}
+      {/* Left Column: Service Details, Availability, & Reviews */}
       <div className="lg:col-span-2 space-y-6">
         {/* Main Service Card */}
         <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs p-6 md:p-8 space-y-6">
@@ -148,12 +166,12 @@ export default function ServiceBookingClient({
                 <div className={`p-4 rounded-2xl border transition-all ${
                   selectedPricingType === 'SESSION' ? 'border-[#0F5132] bg-emerald-50/50' : 'border-slate-200'
                 }`}>
-                  <p className="text-xs font-bold text-slate-500 uppercase">Tarif Per Sesi</p>
-                  <p className="text-xl font-extrabold text-[#0F5132] font-mono mt-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Paket Sesi</span>
+                  <h4 className="text-xl font-extrabold text-[#0F5132] mt-0.5">
                     Rp {service.pricePerSession.toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    ⏱️ Durasi: {service.sessionDurationMinutes || 60} Menit / sesi
+                  </h4>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Durasi: <strong>{service.sessionDurationMinutes || 60} Menit</strong> per pertemuan / konsultasi.
                   </p>
                 </div>
               ) : null}
@@ -162,33 +180,33 @@ export default function ServiceBookingClient({
                 <div className={`p-4 rounded-2xl border transition-all ${
                   selectedPricingType === 'DAILY' ? 'border-[#0F5132] bg-blue-50/50' : 'border-slate-200'
                 }`}>
-                  <p className="text-xs font-bold text-slate-500 uppercase">Tarif Harian (Full Day)</p>
-                  <p className="text-xl font-extrabold text-blue-700 font-mono mt-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Paket Harian (Max 8 Jam)</span>
+                  <h4 className="text-xl font-extrabold text-blue-900 mt-0.5">
                     Rp {service.pricePerDay.toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    💼 Jam Kerja: Maksimal {service.maxWorkHoursPerDay || 8} Jam per hari
+                  </h4>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Pekerjaan harian penuh: maksimal <strong>{service.maxWorkHoursPerDay || 8} Jam Kerja</strong>.
                   </p>
                 </div>
               ) : null}
             </div>
           </div>
 
-          {/* Availability Calendar Matrix */}
+          {/* Availability Calendar */}
           <div className="border-t border-slate-100 pt-6 space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
               <div>
-                <h3 className="font-bold text-slate-800 text-base">Kalender Ketersediaan Jadwal (14 Hari Kedepan)</h3>
-                <p className="text-xs text-slate-500">Pilih tanggal yang berstatus tersedia (hijau) untuk memesan jadwal.</p>
+                <h3 className="font-bold text-slate-800 text-base">Jadwal & Ketersediaan Tanggal</h3>
+                <p className="text-xs text-slate-500">Pilih tanggal pengerjaan yang tersedia di bawah.</p>
               </div>
               {isOwner && (
-                <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                  Mode Pemilik: Klik tanggal untuk toggle ketersediaan Anda
+                <span className="px-3 py-1 bg-amber-50 text-amber-800 text-[11px] font-semibold rounded-lg border border-amber-200">
+                  ⚙️ Mode Pemilik: Klik tanggal untuk buka/tutup ketersediaan
                 </span>
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
               {nextDays.map((dStr) => {
                 const dateObj = new Date(dStr)
                 const isAvail = isDateAvailable(dStr)
@@ -230,6 +248,39 @@ export default function ServiceBookingClient({
             </div>
           </div>
         </div>
+
+        {/* Reviews and Ratings Card */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-xs space-y-6">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="font-sora text-base font-bold text-slate-900">⭐ Ulasan & Testimoni Klien</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Ulasan kepuasan dari klien yang telah menggunakan jasa ini.</p>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-900 rounded-xl font-bold text-xs">
+              <span>★ 5.0</span>
+              <span className="text-slate-400 font-normal">({reviews.length} ulasan)</span>
+            </div>
+          </div>
+
+          {/* Reviews list */}
+          <div className="space-y-4">
+            {reviews.length === 0 ? (
+              <div className="py-6 text-center text-xs text-slate-400">
+                Belum ada ulasan untuk layanan ini. Jadilah klien pertama yang memberikan testimoni!
+              </div>
+            ) : (
+              reviews.map((r: any) => (
+                <div key={r.id} className="p-4 bg-slate-50 rounded-2xl space-y-2 border border-slate-100">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-slate-800 text-xs">{r.userName || 'Klien'}</span>
+                    <span className="text-amber-500 text-xs">{'★'.repeat(r.rating || 5)}</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">{r.comment}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Right Column: Checkout & Booking Order Card */}
@@ -242,24 +293,34 @@ export default function ServiceBookingClient({
 
           {bookingSuccess ? (
             <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl space-y-4 text-center animate-in zoom-in-95">
-              <div className="w-12 h-12 rounded-full bg-[#0F5132] text-white flex items-center justify-center mx-auto text-xl">
+              <div className="w-12 h-12 rounded-full bg-[#0F5132] text-white flex items-center justify-center mx-auto text-xl font-bold">
                 ✓
               </div>
               <div>
                 <h4 className="font-bold text-slate-900 text-base">Booking Berhasil Dibuat!</h4>
                 <p className="text-xs text-slate-600 mt-1">
-                  ID Booking: <span className="font-mono font-bold">{bookingSuccess.id}</span>
+                  ID Booking: <span className="font-mono font-bold">#{bookingSuccess.id.slice(-8).toUpperCase()}</span>
                 </p>
                 <p className="text-xs text-slate-600">
                   Tanggal: <strong>{new Date(bookingSuccess.bookingDate).toLocaleDateString('id-ID')}</strong>
+                  {bookingSuccess.timeSlot ? ` (${bookingSuccess.timeSlot})` : ''}
                 </p>
               </div>
-              <div className="pt-2">
+
+              <div className="space-y-2 pt-2">
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Halo, saya telah membuat pesanan booking jasa "${service.title}" untuk tanggal ${new Date(bookingSuccess.bookingDate).toLocaleDateString('id-ID')} ${bookingSuccess.timeSlot || ''}. Mohon konfirmasi jadwalnya ya!`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow transition-colors text-center"
+                >
+                  💬 Hubungi via WhatsApp
+                </a>
                 <Link
                   href="/orders"
                   className="block w-full py-2.5 bg-[#0F5132] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow hover:bg-[#0a3a24] transition-colors"
                 >
-                  Lihat Daftar Pesanan & Bayar →
+                  Lihat Pesanan Saya →
                 </Link>
               </div>
             </div>
@@ -332,6 +393,31 @@ export default function ServiceBookingClient({
                   {selectedDate && <span className="text-green-600 font-bold">✓ Tersedia</span>}
                 </div>
               </div>
+
+              {/* Time-Slot Picker for SESSION */}
+              {selectedPricingType === 'SESSION' && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                    Pilih Slot Jam Sesi (60 Menit)
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {TIME_SLOTS.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setSelectedTimeSlot(slot)}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          selectedTimeSlot === slot
+                            ? 'bg-[#0F5132] text-white border-[#0F5132] shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        ⏱️ {slot}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Customer Notes */}
               <div>

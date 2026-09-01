@@ -8117,6 +8117,29 @@ export const DataStore = {
     )
   },
 
+  async creditWallet(userId: string, amount: number, description?: string) {
+    return withMutationFallback(
+      async () => {
+        return await db.wallet.upsert({
+          where: { userId },
+          create: { userId, balance: amount },
+          update: { balance: { increment: amount } }
+        })
+      },
+      async () => {
+        if (!(globalThis as any).__mockWallets) (globalThis as any).__mockWallets = []
+        const wallets = (globalThis as any).__mockWallets
+        let w = wallets.find((x: any) => x.userId === userId)
+        if (!w) {
+          w = { id: `w-${Date.now()}`, userId, balance: 0 }
+          wallets.push(w)
+        }
+        w.balance += amount
+        return w
+      }
+    )
+  },
+
   // ═══════════════════════════════════════════════════════════════════════════
   // USER MANAGEMENT (Enhanced with IP, Phone, Location)
   // ═══════════════════════════════════════════════════════════════════════════
