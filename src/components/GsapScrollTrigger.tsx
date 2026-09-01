@@ -6,6 +6,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 export function GsapScrollTrigger() {
   useEffect(() => {
+    // Check if any GSAP animated elements exist before doing expensive setup
+    const hasGsapElements = document.querySelector('.gsap-split-chars, .gsap-stagger-container, .gsap-fade-up, .gsap-scale-up, .gsap-slide-left, .gsap-slide-right');
+    if (!hasGsapElements) return;
+
     // 1. Register ScrollTrigger plugin
     gsap.registerPlugin(ScrollTrigger);
 

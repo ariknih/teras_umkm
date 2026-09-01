@@ -72,6 +72,8 @@ export default function BannerCarousel({ banners }: { banners?: Banner[] }) {
                 alt={banner.title || `Promo Banner ${idx + 1}`}
                 className="w-full h-full object-cover"
                 loading={idx === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                fetchPriority={idx === 0 ? 'high' : 'auto'}
               />
 
               {/* Gradient Backdrop for Readability */}

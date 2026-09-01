@@ -3,14 +3,17 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap, invalidateCachePattern } from '@/lib/cache'
 
 export async function getServicesAction(filters?: { category?: string; search?: string; merchantId?: string }) {
   try {
-    const services = await DataStore.getServices({
+    const cacheKey = `services:${filters?.category || 'all'}:${filters?.merchantId || 'all'}`
+    const services = await cacheWrap(cacheKey, () => DataStore.getServices({
       category: filters?.category,
       merchantId: filters?.merchantId,
       isActive: true
-    })
+    }), 120)
+    
     if (filters?.search) {
       const q = filters.search.toLowerCase()
       return services.filter((s: any) =>
@@ -71,6 +74,7 @@ export async function createServiceAction(formData: FormData) {
 
     revalidatePath('/jasa')
     revalidatePath('/merchant/dashboard')
+    await invalidateCachePattern('services:')
     return { success: true, service }
   } catch (error: any) {
     return { success: false, error: error.message || 'Gagal membuat layanan jasa.' }
@@ -107,6 +111,7 @@ export async function updateServiceAction(id: string, formData: FormData) {
 
     revalidatePath('/jasa')
     revalidatePath('/merchant/dashboard')
+    await invalidateCachePattern('services:')
     return { success: true, service: updated }
   } catch (error: any) {
     return { success: false, error: error.message || 'Gagal update jasa.' }
@@ -121,6 +126,7 @@ export async function deleteServiceAction(id: string) {
     await DataStore.deleteService(id)
     revalidatePath('/jasa')
     revalidatePath('/merchant/dashboard')
+    await invalidateCachePattern('services:')
     return { success: true }
   } catch (error: any) {
     return { success: false, error: error.message || 'Gagal menghapus jasa.' }

@@ -4,6 +4,7 @@ import "./globals.css";
 import { getCurrentUser, logout } from "@/app/actions/auth";
 import { getWalletDetails } from "@/app/actions/wallet-affiliate";
 import { DataStore } from "@/lib/data-store";
+import { cacheWrap } from "@/lib/cache";
 import Script from "next/script";
 import GoeyToastProvider from "@/components/GoeyToastProvider";
 import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
@@ -71,7 +72,10 @@ export default async function RootLayout({
 }>) {
   const user = await getCurrentUser();
   let [dbUser, wallet] = user
-    ? await Promise.all([DataStore.findUserById(user.id), getWalletDetails(user)])
+    ? await Promise.all([
+        cacheWrap(`user:db:${user.id}`, () => DataStore.findUserById(user.id), 60),
+        cacheWrap(`user:wallet:${user.id}`, () => getWalletDetails(user), 60)
+      ])
     : [null, null];
   if (user && !dbUser) {
     dbUser = await DataStore.recreateMissingUser({
@@ -107,52 +111,6 @@ export default async function RootLayout({
                 localStorage.setItem('theme', 'light');
               } catch (_) {}
             `,
-          }}
-        />
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                const clean = (node) => {
-                  if (node && node.nodeType === 1) {
-                    if (node.hasAttribute('bis_skin_checked')) {
-                      node.removeAttribute('bis_skin_checked');
-                    }
-                    const kids = node.querySelectorAll('[bis_skin_checked]');
-                    for (let i = 0; i < kids.length; i++) {
-                      kids[i].removeAttribute('bis_skin_checked');
-                    }
-                  }
-                };
-                if (typeof window !== 'undefined') {
-                  const observer = new MutationObserver((mutations) => {
-                    for (let i = 0; i < mutations.length; i++) {
-                      const m = mutations[i];
-                      if (m.type === 'attributes' && m.attributeName === 'bis_skin_checked') {
-                        m.target.removeAttribute('bis_skin_checked');
-                      }
-                      if (m.addedNodes) {
-                        for (let j = 0; j < m.addedNodes.length; j++) {
-                          clean(m.addedNodes[j]);
-                        }
-                      }
-                    }
-                  });
-                  if (document.documentElement) {
-                    observer.observe(document.documentElement, {
-                      childList: true,
-                      subtree: true,
-                      attributes: true,
-                      attributeFilter: ['bis_skin_checked']
-                    });
-                  }
-                  document.addEventListener('DOMContentLoaded', () => {
-                    clean(document.body);
-                  });
-                }
-              })();
-            `
           }}
         />
       </head>

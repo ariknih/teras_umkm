@@ -230,6 +230,7 @@ export default function HomeExplorer({ products = [], services = [], communities
                       src={product.imageUrl}
                       alt={product.title}
                       loading="lazy"
+                      decoding="async"
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                     />
                     {discountPct !== null && (
@@ -310,6 +311,8 @@ export default function HomeExplorer({ products = [], services = [], communities
               <img
                 src={comm.image}
                 alt={comm.title}
+                loading="lazy"
+                decoding="async"
                 className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
               />
               <div className="space-y-1 flex-1 min-w-0">
@@ -347,6 +350,8 @@ export default function HomeExplorer({ products = [], services = [], communities
             <img
               src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=400&q=80"
               alt="Saloka Academy"
+              loading="lazy"
+              decoding="async"
               className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
             />
             <div className="space-y-1 flex-1 min-w-0">
@@ -380,6 +385,8 @@ export default function HomeExplorer({ products = [], services = [], communities
             <img
               src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&q=80"
               alt="Affiliate Hub"
+              loading="lazy"
+              decoding="async"
               className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
             />
             <div className="space-y-1 flex-1 min-w-0">
@@ -496,6 +503,7 @@ export default function HomeExplorer({ products = [], services = [], communities
                           src={prod.imageUrl}
                           alt={prod.title}
                           loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
@@ -582,6 +590,7 @@ export default function HomeExplorer({ products = [], services = [], communities
                         src={image}
                         alt={service.title}
                         loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute bottom-2 left-2 bg-blue-600/80 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">

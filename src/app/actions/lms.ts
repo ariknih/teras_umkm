@@ -3,13 +3,14 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap } from '@/lib/cache'
 
 export async function getCourses() {
-  return await DataStore.getCourses()
+  return await cacheWrap('lms:courses:all', () => DataStore.getCourses(), 300)
 }
 
 export async function getCourseById(id: string) {
-  return await DataStore.getCourseById(id)
+  return await cacheWrap(`lms:course:${id}`, () => DataStore.getCourseById(id), 300)
 }
 
 export async function getUserProgress() {

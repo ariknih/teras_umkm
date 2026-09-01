@@ -3,6 +3,7 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { revalidatePath } from 'next/cache'
+import { cacheWrap, deleteCache } from '@/lib/cache'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Landing Page Banner Actions (CRUD)
@@ -10,7 +11,7 @@ import { revalidatePath } from 'next/cache'
 
 export async function getActiveBanners() {
   try {
-    return await DataStore.getActiveBanners()
+    return await cacheWrap('banners:active', () => DataStore.getActiveBanners(), 300)
   } catch (_) {
     return []
   }
@@ -43,6 +44,7 @@ export async function createBannerAction(formData: FormData) {
 
   try {
     const banner = await DataStore.createBanner({ title, imageUrl, linkUrl, sortOrder })
+    await deleteCache('banners:active')
     revalidatePath('/')
     revalidatePath('/admin')
     return { success: true, banner }
@@ -65,6 +67,7 @@ export async function updateBannerAction(id: string, formData: FormData) {
 
   try {
     const banner = await DataStore.updateBanner(id, { title, imageUrl, linkUrl, isActive, sortOrder })
+    await deleteCache('banners:active')
     revalidatePath('/')
     revalidatePath('/admin')
     return { success: true, banner }
@@ -81,6 +84,7 @@ export async function deleteBannerAction(id: string) {
 
   try {
     await DataStore.deleteBanner(id)
+    await deleteCache('banners:active')
     revalidatePath('/')
     revalidatePath('/admin')
     return { success: true }
@@ -97,6 +101,7 @@ export async function toggleBannerActiveAction(id: string, isActive: boolean) {
 
   try {
     await DataStore.updateBanner(id, { isActive })
+    await deleteCache('banners:active')
     revalidatePath('/')
     revalidatePath('/admin')
     return { success: true }

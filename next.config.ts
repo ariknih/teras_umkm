@@ -48,52 +48,23 @@ const nextConfig: NextConfig = {
     ]
   },
   experimental: {
+    optimizePackageImports: ['lucide-react', 'date-fns', 'recharts', 'framer-motion'],
     serverActions: {
       bodySizeLimit: '50mb',
     },
   },
   async headers() {
-    const baseHeaders = [
+    return [
       {
         source: '/:path*',
         headers: securityHeaders,
       },
-    ];
-
-    // Immutable long-lived caching is only safe in production, where
-    // static assets and build chunks are content-hashed. Applying it in
-    // `next dev` causes the browser to keep serving stale Turbopack
-    // chunks after a code change, breaking HMR with module-factory errors.
-    if (process.env.NODE_ENV !== 'production') {
-      return baseHeaders;
-    }
-
-    return [
-      ...baseHeaders,
       {
         source: '/images/:path*',
         headers: [
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/_next/image/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400, stale-while-revalidate=604800',
           },
         ],
       },
