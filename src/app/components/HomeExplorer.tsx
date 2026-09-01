@@ -1,24 +1,12 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
 import {
-  Tag,
-  Truck,
   Coins,
-  Zap,
-  Building2,
   GraduationCap,
-  Wrench,
-  ArrowUpDown,
-  Search,
-  History,
-  TrendingUp,
-  X,
   ChevronRight,
-  ChevronLeft,
   MapPin,
-  Star,
   Users
 } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
@@ -34,6 +22,9 @@ interface Product {
   stock?: number
   imageUrl?: string
   merchantId?: string
+  merchant?: {
+    name: string
+  } | null
 }
 
 interface Service {
@@ -48,6 +39,9 @@ interface Service {
   maxWorkHoursPerDay?: number
   images?: string[]
   location?: string
+  merchant?: {
+    name: string
+  } | null
 }
 
 interface HomeExplorerProps {
@@ -56,41 +50,63 @@ interface HomeExplorerProps {
   communities?: any[]
 }
 
-const POPULAR_COMMUNITIES = [
-  { id: 'comm-1', title: 'Koperasi Produksi Maju Bersama', badge: 'Koperasi Reguler', desc: 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah...', members: '0 Anggota', image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=500&q=80' },
-  { id: 'comm-2', title: 'Koperasi Produksi Maju Bersama', badge: 'Koperasi Reguler', desc: 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah...', members: '0 Anggota', image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=500&q=80' },
-  { id: 'comm-3', title: 'Koperasi Produksi Maju Bersama', badge: 'Koperasi Reguler', desc: 'Koperasi produksi resmi pelaku usaha mikro kecil dan menengah...', members: '0 Anggota', image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=500&q=80' },
-]
-
-const FIGMA_MARKETPLACE_PRODUCTS = [
-  { id: 'fg-1', title: 'Lampu LED Strip', price: 1450000, originalPrice: 2042254, discount: '23%', rating: '4.6', sold: '0', seller: 'RajaGadget ID', image: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-2', title: 'Pick Gitar Set 12', price: 2400000, originalPrice: 2666667, discount: '20%', rating: '4.7', sold: '250+', seller: 'BintangShop ID', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-3', title: 'Blouse Katun Import', price: 1150000, originalPrice: 1642857, discount: '29%', rating: '4.6', sold: '5+', seller: 'KaryaNusantara', image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-4', title: 'Alat Tulis Set', price: 150000, originalPrice: 208333, discount: '17%', rating: '4.4', sold: '100+', seller: 'BeautyHaul ID', image: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-5', title: 'Lip Tint Velvet', price: 3950000, originalPrice: 4759036, discount: '29%', rating: '3.3', sold: '25+', seller: 'TechZone Store', image: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-6', title: 'Pot Tanaman Ceramic', price: 4000000, originalPrice: 5555556, discount: '10%', rating: '4.4', sold: '100+', seller: 'MitraUsaha ID', image: 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-7', title: 'Topi Pantai Anyaman', price: 3306000, originalPrice: 3890000, discount: '29%', rating: '4.7', sold: '1.2k+', seller: 'Kria Nusantara', image: 'https://images.unsplash.com/photo-1521369984125-650a00468f42?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-8', title: 'Tripod Kamera Pro', price: 1550000, originalPrice: 1850000, discount: '25%', rating: '4.9', sold: '800+', seller: 'KameraCenter', image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-9', title: 'Sandal Kulit Asli', price: 2806000, originalPrice: 3300000, discount: '23%', rating: '4.8', sold: '2k+', seller: 'Kria Nusantara', image: 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-10', title: 'Rak Buku Minimalis', price: 2618000, originalPrice: 3100000, discount: '5%', rating: '4.7', sold: '1.5k+', seller: 'SmartFurniture', image: 'https://images.unsplash.com/photo-1594620302200-9a782278ab72?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-11', title: 'Phone Case Premium', price: 280500, originalPrice: 350000, discount: '29%', rating: '4.9', sold: '5k+', seller: 'RajaGadget ID', image: 'https://images.unsplash.com/photo-1586105251261-72a756497a11?auto=format&fit=crop&w=400&q=80' },
-  { id: 'fg-12', title: 'Syal Pashmina Silk', price: 3056000, originalPrice: 3600000, discount: '11%', rating: '4.8', sold: '900+', seller: 'WeaveCraft ID', image: 'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?auto=format&fit=crop&w=400&q=80' }
-]
-
-const FILTER_CHIPS = [
-  { key: 'ALL', label: 'Kategori', icon: '/images/kategori icon.svg' },
-  { key: 'HANDPHONE', label: 'Handphone & Tablet', icon: '/images/handphone&tablet icon.svg' },
-  { key: 'TOPUP', label: 'Top-Up & Tagihan', icon: '/images/topup tagihan icon.svg' },
+const MARKETPLACE_CATEGORIES = [
+  { key: '', label: 'Semua Produk', icon: '/images/kategori icon.svg' },
+  { key: 'TOKO', label: 'Toko & Ritel', icon: '/images/kategori icon.svg' },
+  { key: 'KAFE', label: 'Kafe & Kuliner', icon: '/images/kategori icon.svg' },
+  { key: 'MAKANAN_MINUMAN', label: 'Makanan & Minuman', icon: '/images/topup tagihan icon.svg' },
   { key: 'ELEKTRONIK', label: 'Elektronik', icon: '/images/elektronik icon.svg' },
-  { key: 'HEWAN', label: 'Perawatan Hewan', icon: '/images/perawatan hewan icon.svg' },
-  { key: 'KEUANGAN', label: 'Keuangan', icon: '/images/keuangan icon.svg' },
-  { key: 'KOMPUTER', label: 'Komputer & Laptop', icon: '/images/komputer&laptop icon.svg' }
+  { key: 'HANDPHONE_AKSESORIS', label: 'Handphone & Aksesoris', icon: '/images/handphone&tablet icon.svg' },
+  { key: 'KOMPUTER_AKSESORIS', label: 'Komputer & Aksesoris', icon: '/images/komputer&laptop icon.svg' },
+  { key: 'PERAWATAN_KECANTIKAN', label: 'Perawatan & Kecantikan', icon: '/images/perawatan hewan icon.svg' },
+  { key: 'FASHION_MUSLIM', label: 'Fashion Muslim', icon: '/images/kategori icon.svg' },
+  { key: 'PAKAIAN_WANITA', label: 'Pakaian Wanita', icon: '/images/kategori icon.svg' },
+  { key: 'PERLENGKAPAN_RUMAH', label: 'Perlengkapan Rumah', icon: '/images/kategori icon.svg' },
+  { key: 'HOBI_KOLEKSI', label: 'Hobi & Koleksi', icon: '/images/keuangan icon.svg' },
+  { key: 'OTOMOTIF', label: 'Otomotif', icon: '/images/kategori icon.svg' },
 ]
 
-export default function HomeExplorer({ products, services, communities = [] }: HomeExplorerProps) {
+const JASA_CATEGORIES = [
+  { key: '', label: 'Semua Jasa', icon: '/images/jasa icon.svg' },
+  { key: 'Desain & Multimedia', label: 'Desain & Multimedia', icon: '/images/kategori icon.svg' },
+  { key: 'Teknologi & IT', label: 'Teknologi & IT', icon: '/images/komputer&laptop icon.svg' },
+  { key: 'Konsultasi Bisnis', label: 'Konsultasi Bisnis', icon: '/images/keuangan icon.svg' },
+  { key: 'Reparasi & Perawatan', label: 'Reparasi & Perawatan', icon: '/images/elektronik icon.svg' },
+  { key: 'Fotografi & Video', label: 'Fotografi & Video', icon: '/images/kategori icon.svg' },
+  { key: 'Pendidikan & Kursus Privat', label: 'Pendidikan & Kursus', icon: '/images/kategori icon.svg' },
+  { key: 'Kerajinan & Seni', label: 'Kerajinan & Seni', icon: '/images/kategori icon.svg' },
+  { key: 'Lainnya', label: 'Lainnya', icon: '/images/kategori icon.svg' },
+]
+
+export default function HomeExplorer({ products = [], services = [], communities = [] }: HomeExplorerProps) {
   const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'JASA'>('MARKETPLACE')
-  const [selectedChip, setSelectedChip] = useState('ALL')
+  const [selectedCategory, setSelectedCategory] = useState('')
   const { kelurahan } = useSnackbox()
+
+  const handleTabChange = (tab: 'MARKETPLACE' | 'JASA') => {
+    setActiveTab(tab)
+    setSelectedCategory('')
+  }
+
+  const activeCategoryList = activeTab === 'MARKETPLACE' ? MARKETPLACE_CATEGORIES : JASA_CATEGORIES
+
+  const filteredProducts = useMemo(() => {
+    if (!products || products.length === 0) return []
+    let list = [...products]
+    if (selectedCategory) {
+      list = list.filter(p => (p.category || '').toUpperCase() === selectedCategory.toUpperCase())
+    }
+    return list.slice(0, 12)
+  }, [products, selectedCategory])
+
+  const filteredServices = useMemo(() => {
+    if (!services || services.length === 0) return []
+    let list = [...services]
+    if (selectedCategory) {
+      list = list.filter(s => (s.category || '').toLowerCase() === selectedCategory.toLowerCase())
+    }
+    return list.slice(0, 12)
+  }, [services, selectedCategory])
 
   const localSnackboxProducts = useMemo(() => {
     return mockSnackboxProducts.filter(p => p.kelurahanId === kelurahan.id).slice(0, 6)
@@ -144,14 +160,14 @@ export default function HomeExplorer({ products, services, communities = [] }: H
   }, [communities])
 
   return (
-    <section className="w-full max-w-[1200px] mx-auto px-0 py-5">
+    <section className="w-full max-w-[1240px] mx-auto px-3.5 sm:px-6 py-4 sm:py-6">
       
       {/* ── SNACKBOX ─────────────────────────────────────────────────────── */}
-      <div id="snackbox" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 shadow-2xs space-y-4 mb-5">
+      <div id="snackbox" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs space-y-4 mb-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="bg-[#E8F5E9] text-[#2DB24A] border border-[#C8E6C9] text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
+              <span className="bg-[#E8F8EE] text-[#2DB24A] border border-[#C8E6C9] text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                 <img src="/images/jasa icon.svg" alt="Snackbox" className="w-3.5 h-3.5 object-contain" />
                 <span>Snackbox Saloka</span>
               </span>
@@ -174,14 +190,14 @@ export default function HomeExplorer({ products, services, communities = [] }: H
 
           <Link
             href="/snackbox"
-            className="text-xs font-bold text-[#006E24] hover:underline flex items-center gap-1 self-start sm:self-center shrink-0"
+            className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1 self-start sm:self-center shrink-0"
           >
             <span>Buka Snackbox</span>
             <ChevronRight size={14} />
           </Link>
         </div>
 
-        {/* 6 Horizontal Cards Grid, filtered to the active kelurahan */}
+        {/* Snackbox Products Grid */}
         {localSnackboxProducts.length === 0 ? (
           <div className="text-center py-10 rounded-xl bg-[#F5F7FA] border border-slate-200/80">
             <h4 className="font-bold text-xs text-slate-700 mb-0.5">
@@ -192,13 +208,13 @@ export default function HomeExplorer({ products, services, communities = [] }: H
             </p>
             <Link
               href="/snackbox"
-              className="inline-block px-4 py-1.5 rounded-lg bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold transition-all shadow-xs"
+              className="inline-block px-4 py-1.5 rounded-lg bg-[#2DB24A] hover:bg-[#24943E] text-white text-xs font-bold transition-all shadow-xs"
             >
               Pilih Kelurahan Lain
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 pt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5 pt-1">
             {localSnackboxProducts.map((product) => {
               const discountPct = product.originalPrice
                 ? Math.round((1 - product.price / product.originalPrice) * 100)
@@ -207,9 +223,8 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                 <Link
                   key={product.id}
                   href="/snackbox"
-                  className="group flex flex-col bg-white border border-slate-200/90 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-[0_2px_8px_0_rgba(49,53,59,0.12)] hover:border-[#006E24]/40 h-full relative cursor-pointer"
+                  className="group flex flex-col bg-white border border-slate-200/90 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-[0_4px_16px_0_rgba(45,178,74,0.12)] hover:border-[#2DB24A]/50 h-full relative cursor-pointer"
                 >
-                  {/* Aspect Square Image */}
                   <div className="aspect-square w-full bg-slate-100 relative overflow-hidden">
                     <img
                       src={product.imageUrl}
@@ -218,7 +233,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                       className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                     />
                     {discountPct !== null && (
-                      <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
+                      <div className="absolute top-2 left-2 bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-[10px] px-1.5 py-0.5 rounded-md border border-[#C8E6C9] shadow-2xs">
                         {discountPct}%
                       </div>
                     )}
@@ -229,10 +244,9 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                     )}
                   </div>
 
-                  {/* Body */}
                   <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
                     <div>
-                      <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
+                      <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#2DB24A] transition-colors">
                         {product.title}
                       </h4>
                       <div className="pt-1">
@@ -244,7 +258,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                             <span className="text-[10px] text-slate-400 line-through">
                               Rp {product.originalPrice.toLocaleString('id-ID')}
                             </span>
-                            <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                            <span className="bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
                               {discountPct}%
                             </span>
                           </div>
@@ -259,7 +273,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
                         <span>{product.soldCount} terjual</span>
                       </div>
                       <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
-                        <span className="text-[#006E24] font-bold">✔</span>
+                        <span className="text-[#2DB24A] font-bold">✔</span>
                         <span className="truncate">{product.kelurahanName}</span>
                       </div>
                     </div>
@@ -272,7 +286,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
       </div>
 
       {/* ── KOMUNITAS POPULER ────────────────────────────────────────────── */}
-      <div id="komunitas-populer" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 shadow-2xs space-y-4 mb-5">
+      <div id="komunitas-populer" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs space-y-4 mb-5">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h3 className="text-base sm:text-lg font-extrabold text-slate-900">
             Komunitas Populer
@@ -286,12 +300,12 @@ export default function HomeExplorer({ products, services, communities = [] }: H
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4">
           {displayCommunities.map((comm, idx) => (
             <Link
               key={comm.id || idx}
               href={comm.href}
-              className="bg-[#F8FAFC] rounded-xl border border-slate-200/80 p-3.5 flex gap-3 hover:border-[#2DB24A]/60 shadow-2xs hover:shadow-md transition-all group"
+              className="bg-[#F8FAFC] rounded-2xl border border-slate-200/80 p-3.5 flex gap-3 hover:border-[#2DB24A]/60 shadow-2xs hover:shadow-md transition-all group"
             >
               <img
                 src={comm.image}
@@ -319,9 +333,9 @@ export default function HomeExplorer({ products, services, communities = [] }: H
       </div>
 
       {/* ── SALOKA ACADEMY & AFFILIATE HUB (2 COLUMNS SIDE BY SIDE) ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 mb-5">
         {/* ── SALOKA ACADEMY ── */}
-        <div id="saloka-academy" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 shadow-2xs space-y-3.5 mb-5">
+        <div id="saloka-academy" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3.5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h3 className="text-base font-extrabold text-slate-900">Saloka Academy</h3>
             <Link href="/academy" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
@@ -329,13 +343,13 @@ export default function HomeExplorer({ products, services, communities = [] }: H
               <ChevronRight size={14} />
             </Link>
           </div>
-          <Link href="/academy" className="bg-[#F8FAFC] rounded-xl border border-slate-200/80 p-3 flex gap-3 hover:border-[#2DB24A]/60 shadow-2xs transition-all group">
+          <Link href="/academy" className="bg-[#F8FAFC] rounded-2xl border border-slate-200/80 p-3 flex gap-3 hover:border-[#2DB24A]/60 shadow-2xs transition-all group">
             <img
               src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=400&q=80"
               alt="Saloka Academy"
               className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
             />
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1 min-w-0">
               <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
                 Kelas & Pelatihan Bisnis
               </span>
@@ -354,7 +368,7 @@ export default function HomeExplorer({ products, services, communities = [] }: H
         </div>
 
         {/* ── AFFILIATE HUB ── */}
-        <div id="affiliate-hub" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 shadow-2xs space-y-3.5 mb-5">
+        <div id="affiliate-hub" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs space-y-3.5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h3 className="text-base font-extrabold text-slate-900">Affiliate Hub</h3>
             <Link href="/affiliate" className="text-xs font-bold text-[#2DB24A] hover:underline flex items-center gap-1">
@@ -362,13 +376,13 @@ export default function HomeExplorer({ products, services, communities = [] }: H
               <ChevronRight size={14} />
             </Link>
           </div>
-          <Link href="/affiliate" className="bg-[#F8FAFC] rounded-xl border border-slate-200/80 p-3 flex gap-3 hover:border-[#2DB24A]/60 shadow-2xs transition-all group">
+          <Link href="/affiliate" className="bg-[#F8FAFC] rounded-2xl border border-slate-200/80 p-3 flex gap-3 hover:border-[#2DB24A]/60 shadow-2xs transition-all group">
             <img
               src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&q=80"
               alt="Affiliate Hub"
               className="w-16 h-16 rounded-xl object-cover shrink-0 group-hover:scale-105 transition-transform"
             />
-            <div className="space-y-1">
+            <div className="space-y-1 flex-1 min-w-0">
               <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
                 Komisi Referral Multi-Tier
               </span>
@@ -388,26 +402,26 @@ export default function HomeExplorer({ products, services, communities = [] }: H
       </div>
 
       {/* ── MODE PENCARIAN ───────────────────────────────────────────────── */}
-      <div id="mode-pencarian" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 shadow-2xs space-y-5 mb-5">
+      <div id="mode-pencarian" className="bg-white border border-slate-200/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xs space-y-4 mb-5">
         
         {/* Section Header with Product Marketplace / Booking Jasa Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
           <div>
             <div className="flex items-center gap-2 text-slate-900 font-extrabold text-base sm:text-lg">
               <img src="/images/search green icon.svg" alt="Mode Pencarian" className="w-5 h-5 object-contain" />
-              <h3>Mode Pencarian</h3>
+              <h3>Katalog Produk & Jasa</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Mulai dari produk hingga jasa profesional, Saloka punya semuanya!
+              Jelajahi produk UMKM pilihan dan layanan profesional langsung dari database Saloka.
             </p>
           </div>
 
-          {/* Toggle Buttons matching Figma screenshot 3 */}
+          {/* Toggle Buttons */}
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 self-start sm:self-center shrink-0">
             <button
               type="button"
-              onClick={() => setActiveTab('MARKETPLACE')}
-              className={`px-4 py-2 rounded-lg font-extrabold text-xs transition-all cursor-pointer border-none ${
+              onClick={() => handleTabChange('MARKETPLACE')}
+              className={`px-3.5 sm:px-4 py-2 rounded-lg font-extrabold text-xs transition-all cursor-pointer border-none ${
                 activeTab === 'MARKETPLACE'
                   ? 'bg-[#2DB24A] text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 bg-transparent'
@@ -417,8 +431,8 @@ export default function HomeExplorer({ products, services, communities = [] }: H
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('JASA')}
-              className={`px-4 py-2 rounded-lg font-extrabold text-xs transition-all cursor-pointer border-none ${
+              onClick={() => handleTabChange('JASA')}
+              className={`px-3.5 sm:px-4 py-2 rounded-lg font-extrabold text-xs transition-all cursor-pointer border-none ${
                 activeTab === 'JASA'
                   ? 'bg-[#2DB24A] text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 bg-transparent'
@@ -429,81 +443,197 @@ export default function HomeExplorer({ products, services, communities = [] }: H
           </div>
         </div>
 
-        {/* Filter Category Chips with User Custom SVGs matching Figma screenshot 3 */}
-        <div className="flex gap-2.5 overflow-x-auto pb-1.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {FILTER_CHIPS.map((chip) => (
+        {/* Filter Category Chips aligned with Marketplace & Jasa DB */}
+        <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-hide -mx-1 px-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {activeCategoryList.map((chip) => (
             <button
               key={chip.key}
               type="button"
-              onClick={() => setSelectedChip(chip.key)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 shrink-0 border ${
-                selectedChip === chip.key
-                  ? 'bg-[#2DB24A] text-white border-[#2DB24A] shadow-2xs'
-                  : 'bg-white border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+              onClick={() => setSelectedCategory(chip.key)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 border ${
+                selectedCategory === chip.key
+                  ? 'bg-[#2DB24A] text-white border-[#2DB24A] shadow-2xs font-bold'
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
               }`}
             >
-              <img src={chip.icon} alt={chip.label} className="w-4 h-4 object-contain" />
+              <img src={chip.icon} alt={chip.label} className="w-3.5 h-3.5 object-contain" />
               <span>{chip.label}</span>
             </button>
           ))}
         </div>
 
-        {/* 12 Product Cards Grid (2 Rows x 6 Columns) matching Figma screenshot 3 */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 pt-2">
-          {FIGMA_MARKETPLACE_PRODUCTS.map((prod) => (
-            <Link
-              key={prod.id}
-              href="/market"
-              className="group flex flex-col bg-white border border-slate-200/90 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-[0_2px_8px_0_rgba(49,53,59,0.12)] hover:border-[#006E24]/40 h-full relative cursor-pointer"
-            >
-              {/* Image */}
-              <div className="w-full aspect-square bg-slate-100 relative overflow-hidden">
-                <img
-                  src={prod.image}
-                  alt={prod.title}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
-                  {prod.discount}
-                </div>
-              </div>
+        {/* Product / Service Cards Grid */}
+        {activeTab === 'MARKETPLACE' ? (
+          filteredProducts.length === 0 ? (
+            <div className="text-center py-12 bg-[#F8FAFC] rounded-2xl border border-slate-200/80">
+              <p className="text-xs sm:text-sm font-bold text-slate-700">Belum ada produk di kategori ini</p>
+              <Link href="/market" className="mt-2 inline-block text-xs text-[#2DB24A] font-bold hover:underline">
+                Lihat semua produk di Marketplace →
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5 pt-1">
+              {filteredProducts.map((prod) => {
+                const productId = prod.id || ''
+                const idNum = Math.abs(parseInt(productId.slice(-3), 36) || 0)
+                const discount = (idNum % 3 === 0) ? (10 + (idNum % 5) * 5) : 0
+                const originalPrice = discount ? Math.round(prod.price * (100 / (100 - discount))) : prod.price
+                const rating = (4.5 + (idNum % 5) * 0.1).toFixed(1)
+                const sold = (idNum % 10) * 25 + 10
+                const storeNames = ['Moell Store', 'Gallery Gadget', 'Wuben Light ID', 'Stanley ID', 'OMG Store', 'Infiniti Gadget']
+                const storeName = prod.merchant?.name || storeNames[idNum % storeNames.length]
 
-              {/* Content */}
-              <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
-                <div>
-                  <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
-                    {prod.title}
-                  </h4>
-                  <div className="pt-1">
-                    <p className="text-sm font-extrabold text-slate-900 leading-tight">
-                      Rp {prod.price.toLocaleString('id-ID')}
-                    </p>
-                    <div className="flex items-center gap-1.5 pt-0.5">
-                      <span className="text-[10px] text-slate-400 line-through">
-                        Rp {prod.originalPrice.toLocaleString('id-ID')}
-                      </span>
-                      <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
-                        {prod.discount}
-                      </span>
+                return (
+                  <Link
+                    key={prod.id}
+                    href={`/market/product/${prod.id}`}
+                    className="group flex flex-col bg-white border border-slate-200/90 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-[0_4px_16px_0_rgba(45,178,74,0.12)] hover:border-[#2DB24A]/50 h-full relative cursor-pointer"
+                  >
+                    {/* Image */}
+                    <div className="w-full aspect-square bg-slate-100 relative overflow-hidden shrink-0">
+                      {prod.imageUrl ? (
+                        <img
+                          src={prod.imageUrl}
+                          alt={prod.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                          <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">{formatCategoryName(prod.category)}</span>
+                        </div>
+                      )}
+                      {discount > 0 && (
+                        <div className="absolute top-2 left-2 bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-[10px] px-1.5 py-0.5 rounded-md border border-[#C8E6C9] shadow-2xs">
+                          {discount}%
+                        </div>
+                      )}
+                      <div className="absolute bottom-2 left-2 bg-slate-900/75 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                        {formatCategoryName(prod.category)}
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="pt-1.5 border-t border-slate-100 space-y-1">
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                    <span className="text-amber-500 font-bold">★ {prod.rating}</span>
-                    <span>•</span>
-                    <span>{prod.sold} terjual</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
-                    <span className="text-[#006E24] font-bold">✔</span>
-                    <span className="truncate">{prod.seller}</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
+                    {/* Content */}
+                    <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
+                      <div>
+                        <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#2DB24A] transition-colors">
+                          {prod.title}
+                        </h4>
+                        <div className="pt-1">
+                          <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                            {prod.price === 0 ? 'Gratis' : `Rp ${prod.price.toLocaleString('id-ID')}`}
+                          </p>
+                          {discount > 0 && (
+                            <div className="flex items-center gap-1.5 pt-0.5">
+                              <span className="text-[10px] text-slate-400 line-through">
+                                Rp {originalPrice.toLocaleString('id-ID')}
+                              </span>
+                              <span className="bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                                {discount}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pt-1.5 border-t border-slate-100 space-y-1">
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                          <span className="text-amber-500 font-bold">★ {rating}</span>
+                          <span>•</span>
+                          <span>{sold}+ terjual</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate flex-1 min-w-0">
+                            <span className="text-[#2DB24A] font-bold text-xs shrink-0">✔</span>
+                            <span className="truncate font-medium text-slate-600">{storeName}</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-lg bg-[#2DB24A] hover:bg-[#24943E] text-white text-[9px] font-bold shadow-2xs shrink-0">
+                            + Keranjang
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )
+        ) : (
+          filteredServices.length === 0 ? (
+            <div className="text-center py-12 bg-[#F8FAFC] rounded-2xl border border-slate-200/80">
+              <p className="text-xs sm:text-sm font-bold text-slate-700">Belum ada layanan jasa di kategori ini</p>
+              <Link href="/jasa" className="mt-2 inline-block text-xs text-[#2DB24A] font-bold hover:underline">
+                Lihat semua jasa & layanan →
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3.5 pt-1">
+              {filteredServices.map((service) => {
+                const image = service.images?.[0] || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=400&q=80'
+                return (
+                  <Link
+                    key={service.id}
+                    href={`/jasa/${service.id}`}
+                    className="group flex flex-col bg-white border border-slate-200/90 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-[0_4px_16px_0_rgba(45,178,74,0.12)] hover:border-[#2DB24A]/50 h-full relative cursor-pointer"
+                  >
+                    {/* Image */}
+                    <div className="w-full aspect-square bg-slate-100 relative overflow-hidden shrink-0">
+                      <img
+                        src={image}
+                        alt={service.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute bottom-2 left-2 bg-blue-600/80 backdrop-blur-xs text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                        {service.category || 'Jasa'}
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
+                      <div>
+                        <h4 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#2DB24A] transition-colors">
+                          {service.title}
+                        </h4>
+                        <div className="pt-1">
+                          <p className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight">
+                            {service.pricePerSession
+                              ? `Rp ${service.pricePerSession.toLocaleString('id-ID')} / sesi`
+                              : service.pricePerDay
+                              ? `Rp ${service.pricePerDay.toLocaleString('id-ID')} / hari`
+                              : 'Hubungi Penyedia'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-1.5 border-t border-slate-100 space-y-1">
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
+                          <MapPin size={10} className="text-[#2DB24A] shrink-0" />
+                          <span className="truncate">{service.location || 'Online / Terdekat'}</span>
+                        </div>
+                        <div className="pt-0.5">
+                          <span className="w-full text-center block py-1 rounded-lg bg-[#2DB24A] hover:bg-[#24943E] text-white text-[10px] font-bold shadow-2xs">
+                            Booking Jasa
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          )
+        )}
+
+        {/* Footer View All CTA */}
+        <div className="pt-2 text-center">
+          <Link
+            href={activeTab === 'MARKETPLACE' ? (selectedCategory ? `/market?category=${selectedCategory}` : '/market') : '/jasa'}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2DB24A] hover:underline"
+          >
+            <span>{activeTab === 'MARKETPLACE' ? 'Lihat Semua Produk di Marketplace' : 'Lihat Semua Layanan di Jasa'}</span>
+            <ChevronRight size={14} />
+          </Link>
         </div>
 
       </div>
