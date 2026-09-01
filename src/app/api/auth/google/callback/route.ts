@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { SignJWT } from 'jose'
 import crypto from 'crypto'
 import { DataStore } from '@/lib/data-store'
+import { getCookieDomain } from '@/lib/cookie-domain'
 
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key-12345')
 
@@ -120,13 +121,15 @@ export async function GET(request: NextRequest) {
       : (user.role === 'ADMIN' ? '/admin' : user.role === 'CUSTOMER_SERVICE' ? '/cs' : '/')
       
     const response = NextResponse.redirect(new URL(destinationUrl, request.url))
-    
+    const cookieDomain = getCookieDomain(requestUrl.host)
+
     response.cookies.set('session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7 // 7 days
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      ...(cookieDomain ? { domain: cookieDomain } : {})
     })
 
     return response

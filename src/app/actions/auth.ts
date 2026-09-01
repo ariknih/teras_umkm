@@ -4,25 +4,12 @@ import { cookies, headers } from 'next/headers'
 import { SignJWT, jwtVerify } from 'jose'
 import crypto from 'crypto'
 import { DataStore } from '@/lib/data-store'
+import { getCookieDomain } from '@/lib/cookie-domain'
 
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key-12345')
 
 function hashPassword(password: string): string {
   return crypto.createHash('sha256').update(password).digest('hex')
-}
-
-function getCookieDomain(host: string): string | undefined {
-  const cleanHost = host.split(':')[0].toLowerCase()
-  if (cleanHost.endsWith('localhost')) {
-    return '.localhost'
-  }
-  if (cleanHost.endsWith('varro.my.id')) {
-    return '.varro.my.id'
-  }
-  if (cleanHost.endsWith('vercel.app')) {
-    return undefined
-  }
-  return '.saloka.id'
 }
 
 export async function login(formData: FormData) {
@@ -349,6 +336,169 @@ export async function sendOtpWhatsApp(phone: string, otp: string) {
   } catch (err: any) {
     return { error: err.message || 'Gagal mengirim OTP' }
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Password Reset (via WhatsApp OTP)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const RESET_OTP_TTL_MS = 5 * 60 * 1000 // 5 menit
+
+export async function requestPasswordReset(phone: string) {
+  const cleanPhone = (phone || '').trim()
+  if (!cleanPhone) {
+    return { error: 'Nomor WhatsApp wajib diisi.' }
+  }
+
+  const user = await DataStore.findUserByPhoneOrWhatsApp(cleanPhone)
+  if (!user) {
+    return { error: 'Nomor WhatsApp tidak terdaftar.' }
+  }
+
+  const code = crypto.randomInt(100000, 1000000).toString()
+  const expiresAt = new Date(Date.now() + RESET_OTP_TTL_MS)
+  await DataStore.setPasswordResetOtp(user.id, code, expiresAt)
+
+  try {
+    await sendWhatsAppMessage({
+      merchantId: 'SYSTEM',
+      merchantName: 'Saloka.id Reset Password',
+      recipientName: user.name,
+      recipientPhone: cleanPhone,
+      message: `Kode OTP reset password Saloka.id Anda adalah: ${code}. Berlaku 5 menit. Harap tidak membagikan kode ini kepada siapapun.`
+    })
+  } catch (err: any) {
+    return { error: err.message || 'Gagal mengirim OTP.' }
+  }
+
+  return { success: true }
+}
+
+export async function resetPasswordWithOtp(phone: string, otp: string, newPassword: string) {
+  const cleanPhone = (phone || '').trim()
+  if (!cleanPhone || !otp || !newPassword) {
+    return { error: 'Semua kolom wajib diisi.' }
+  }
+  if (newPassword.length < 6) {
+    return { error: 'Password baru minimal 6 karakter.' }
+  }
+
+  const user = await DataStore.findUserByPhoneOrWhatsApp(cleanPhone)
+  if (!user || !(user as any).resetOtpCode || !(user as any).resetOtpExpiresAt) {
+    return { error: 'Kode OTP tidak valid. Silakan minta kode baru.' }
+  }
+  if ((user as any).resetOtpCode !== otp) {
+    return { error: 'Kode OTP salah.' }
+  }
+  if (new Date((user as any).resetOtpExpiresAt).getTime() < Date.now()) {
+    return { error: 'Kode OTP sudah kadaluarsa. Silakan minta kode baru.' }
+  }
+
+  const passwordHash = hashPassword(newPassword)
+  await DataStore.resetPasswordWithOtp(user.id, passwordHash)
+
+  return { success: true }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Contact Verification (WhatsApp OTP dan/atau Email OTP)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const VERIFY_OTP_TTL_MS = 5 * 60 * 1000 // 5 menit
+
+function generateOtpCode(): string {
+  return crypto.randomInt(100000, 1000000).toString()
+}
+
+export async function sendPhoneVerificationOtp(phone: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const cleanPhone = (phone || '').trim()
+  if (!cleanPhone) return { error: 'Nomor WhatsApp wajib diisi.' }
+
+  const existing = await DataStore.findUserByWhatsApp(cleanPhone)
+  if (existing && existing.id !== user.id) {
+    return { error: 'Nomor WhatsApp sudah digunakan oleh akun lain.' }
+  }
+
+  const code = generateOtpCode()
+  const expiresAt = new Date(Date.now() + VERIFY_OTP_TTL_MS)
+  await DataStore.setPhoneVerificationOtp(user.id, code, expiresAt)
+
+  try {
+    await sendWhatsAppMessage({
+      merchantId: 'SYSTEM',
+      merchantName: 'Saloka.id Verifikasi',
+      recipientName: user.name,
+      recipientPhone: cleanPhone,
+      message: `Kode OTP verifikasi WhatsApp Saloka.id Anda adalah: ${code}. Berlaku 5 menit. Harap tidak membagikan kode ini kepada siapapun.`
+    })
+  } catch (err: any) {
+    return { error: err.message || 'Gagal mengirim OTP.' }
+  }
+
+  return { success: true }
+}
+
+export async function verifyPhoneOtp(phone: string, otp: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const profile = await DataStore.findUserById(user.id)
+  if (!profile || !(profile as any).phoneOtpCode || !(profile as any).phoneOtpExpiresAt) {
+    return { error: 'Kode OTP tidak valid. Silakan minta kode baru.' }
+  }
+  if ((profile as any).phoneOtpCode !== otp) {
+    return { error: 'Kode OTP salah.' }
+  }
+  if (new Date((profile as any).phoneOtpExpiresAt).getTime() < Date.now()) {
+    return { error: 'Kode OTP sudah kadaluarsa. Silakan minta kode baru.' }
+  }
+
+  await DataStore.confirmPhoneVerified(user.id, (phone || '').trim())
+  return { success: true }
+}
+
+export async function sendEmailVerificationOtp() {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const code = generateOtpCode()
+  const expiresAt = new Date(Date.now() + VERIFY_OTP_TTL_MS)
+  await DataStore.setEmailVerificationOtp(user.id, code, expiresAt)
+
+  const { sendEmail } = await import('@/lib/maileroo')
+  const result = await sendEmail({
+    to: user.email,
+    toName: user.name,
+    subject: 'Kode Verifikasi Email Saloka.id',
+    html: `<p>Kode OTP verifikasi email Saloka.id Anda adalah: <strong>${code}</strong></p><p>Berlaku 5 menit. Harap tidak membagikan kode ini kepada siapapun.</p>`
+  })
+  if (!result.success) {
+    return { error: result.error || 'Gagal mengirim OTP ke email.' }
+  }
+
+  return { success: true }
+}
+
+export async function verifyEmailOtp(otp: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  const profile = await DataStore.findUserById(user.id)
+  if (!profile || !(profile as any).emailOtpCode || !(profile as any).emailOtpExpiresAt) {
+    return { error: 'Kode OTP tidak valid. Silakan minta kode baru.' }
+  }
+  if ((profile as any).emailOtpCode !== otp) {
+    return { error: 'Kode OTP salah.' }
+  }
+  if (new Date((profile as any).emailOtpExpiresAt).getTime() < Date.now()) {
+    return { error: 'Kode OTP sudah kadaluarsa. Silakan minta kode baru.' }
+  }
+
+  await DataStore.confirmEmailVerified(user.id)
+  return { success: true }
 }
 
 export async function checkSubdomainAvailability(subdomain: string) {

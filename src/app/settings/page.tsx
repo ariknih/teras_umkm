@@ -8,6 +8,7 @@ import { User, Shield, Bell, MapPin, Palette, LogOut, CheckCircle2, Settings, Sh
 import { updateUserSettingsAction } from '@/app/actions/wallet-affiliate'
 import { goeyToast } from 'goey-toast'
 import { submitKycAction } from '@/app/actions/community'
+import ContactVerificationCard from '@/components/ContactVerificationCard'
 
 type TabType = 'profile' | 'security' | 'address' | 'integrations' | 'notifications' | 'preferences' | 'kyc' | 'referral'
 
@@ -306,6 +307,16 @@ export default function SettingsPage() {
               <h2 className="font-sora text-xl font-bold text-foreground mb-6">Akun & Keamanan</h2>
               
               <div className="space-y-6">
+                <ContactVerificationCard
+                  email={user?.email || ''}
+                  phone={user?.phone || null}
+                  phoneVerified={!!user?.phoneVerified}
+                  emailVerified={!!user?.emailVerified}
+                  onVerified={(type) => {
+                    setUser((prev: any) => ({ ...prev, [type === 'phone' ? 'phoneVerified' : 'emailVerified']: true }))
+                  }}
+                />
+
                 <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)]">
                   <h3 className="text-sm font-bold text-foreground mb-4">Ubah Kata Sandi</h3>
                   <div className="space-y-4">

@@ -8195,6 +8195,102 @@ export const DataStore = {
     )
   },
 
+  async findUserByPhoneOrWhatsApp(phoneNum: string) {
+    const cleanNum = phoneNum.replace(/[^0-9]/g, '')
+    if (!cleanNum) return null
+
+    const byPhone = await withFallback(
+      async () => {
+        const users = await db.user.findMany()
+        return users.find(u => u.phone && u.phone.replace(/[^0-9]/g, '') === cleanNum) || null
+      },
+      async () => {
+        return globalMockUsers.find(u => (u as any).phone && (u as any).phone.replace(/[^0-9]/g, '') === cleanNum) || null
+      }
+    )
+    if (byPhone) return byPhone
+
+    return await DataStore.findUserByWhatsApp(cleanNum)
+  },
+
+  async setPasswordResetOtp(userId: string, code: string, expiresAt: Date) {
+    return withMutationFallback(
+      async () => {
+        return await db.user.update({ where: { id: userId }, data: { resetOtpCode: code, resetOtpExpiresAt: expiresAt } })
+      },
+      async () => {
+        const u = globalMockUsers.find(x => x.id === userId)
+        if (u) { (u as any).resetOtpCode = code; (u as any).resetOtpExpiresAt = expiresAt }
+        return u
+      }
+    )
+  },
+
+  async resetPasswordWithOtp(userId: string, passwordHash: string) {
+    return withMutationFallback(
+      async () => {
+        return await db.user.update({ where: { id: userId }, data: { passwordHash, resetOtpCode: null, resetOtpExpiresAt: null } })
+      },
+      async () => {
+        const u = globalMockUsers.find(x => x.id === userId)
+        if (u) { (u as any).passwordHash = passwordHash; (u as any).resetOtpCode = null; (u as any).resetOtpExpiresAt = null }
+        return u
+      }
+    )
+  },
+
+  async setPhoneVerificationOtp(userId: string, code: string, expiresAt: Date) {
+    return withMutationFallback(
+      async () => {
+        return await db.user.update({ where: { id: userId }, data: { phoneOtpCode: code, phoneOtpExpiresAt: expiresAt } })
+      },
+      async () => {
+        const u = globalMockUsers.find(x => x.id === userId)
+        if (u) { (u as any).phoneOtpCode = code; (u as any).phoneOtpExpiresAt = expiresAt }
+        return u
+      }
+    )
+  },
+
+  async confirmPhoneVerified(userId: string, phone: string) {
+    return withMutationFallback(
+      async () => {
+        return await db.user.update({ where: { id: userId }, data: { phone, phoneVerified: true, phoneOtpCode: null, phoneOtpExpiresAt: null } })
+      },
+      async () => {
+        const u = globalMockUsers.find(x => x.id === userId)
+        if (u) { (u as any).phone = phone; (u as any).phoneVerified = true; (u as any).phoneOtpCode = null; (u as any).phoneOtpExpiresAt = null }
+        return u
+      }
+    )
+  },
+
+  async setEmailVerificationOtp(userId: string, code: string, expiresAt: Date) {
+    return withMutationFallback(
+      async () => {
+        return await db.user.update({ where: { id: userId }, data: { emailOtpCode: code, emailOtpExpiresAt: expiresAt } })
+      },
+      async () => {
+        const u = globalMockUsers.find(x => x.id === userId)
+        if (u) { (u as any).emailOtpCode = code; (u as any).emailOtpExpiresAt = expiresAt }
+        return u
+      }
+    )
+  },
+
+  async confirmEmailVerified(userId: string) {
+    return withMutationFallback(
+      async () => {
+        return await db.user.update({ where: { id: userId }, data: { emailVerified: true, emailOtpCode: null, emailOtpExpiresAt: null } })
+      },
+      async () => {
+        const u = globalMockUsers.find(x => x.id === userId)
+        if (u) { (u as any).emailVerified = true; (u as any).emailOtpCode = null; (u as any).emailOtpExpiresAt = null }
+        return u
+      }
+    )
+  },
+
   // ═══════════════════════════════════════════════════════════════════════════
   // ADMIN MANAGEMENT (Update admin account details)
   // ═══════════════════════════════════════════════════════════════════════════

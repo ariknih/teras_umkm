@@ -139,6 +139,16 @@ model User {
   image        String?       // Profile picture URL
   passwordHash String
   phone        String?       // Nomor telepon
+  resetOtpCode      String?   // Kode OTP reset password aktif
+  resetOtpExpiresAt DateTime? // Kadaluarsa OTP reset password
+
+  // Verifikasi kontak (WhatsApp dan/atau Email) - user bisa pakai salah satu atau keduanya
+  phoneVerified     Boolean   @default(false)
+  emailVerified     Boolean   @default(false)
+  phoneOtpCode      String?
+  phoneOtpExpiresAt DateTime?
+  emailOtpCode      String?
+  emailOtpExpiresAt DateTime?
   role         Role          @default(CUSTOMER)
   isSuperAdmin Boolean       @default(false)  // Superadmin flag — hanya 1 akun
   adminPermissions String?   // JSON array string of allowed admin module keys

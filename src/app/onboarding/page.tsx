@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  getCurrentUserProfile, 
-  sendOtpWhatsApp, 
-  checkSubdomainAvailability, 
+import {
+  getCurrentUserProfile,
+  checkSubdomainAvailability,
   saveOnboardingData,
-  checkWhatsAppUnique
+  sendPhoneVerificationOtp,
+  verifyPhoneOtp,
+  sendEmailVerificationOtp,
+  verifyEmailOtp
 } from '@/app/actions/auth'
 import { 
   MapPin, 
@@ -86,11 +88,11 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
   const [isDuplicateWa, setIsDuplicateWa] = useState(false)
 
-  // Step 1: WA Verify States
+  // Step 1: Contact Verify States (WhatsApp atau Email)
+  const [verifyMethod, setVerifyMethod] = useState<'wa' | 'email'>('wa')
   const [whatsapp, setWhatsapp] = useState('')
   const [otpSent, setOtpSent] = useState(false)
   const [otpInputs, setOtpInputs] = useState<string[]>(Array(6).fill(''))
-  const [generatedOtp, setGeneratedOtp] = useState('')
   const [countdown, setCountdown] = useState(60)
 
   // Step 2: Address States
@@ -128,6 +130,11 @@ export default function OnboardingPage() {
           return
         }
         setUser(profile)
+        // Sudah verifikasi WA atau Email sebelumnya, lanjut ke step alamat
+        if (profile.phoneVerified || profile.emailVerified) {
+          if (profile.phone) setPhone(profile.phone)
+          setStep(2)
+        }
         // If already completed onboarding, redirect to dashboard
         if (profile.landingPageSetup) {
           if (typeof window !== 'undefined' && profile.id) {
@@ -180,35 +187,32 @@ export default function OnboardingPage() {
     return () => clearTimeout(timer)
   }, [subdomain])
 
-  // Step 1: Send OTP handler
+  // Step 1: Send OTP handler (WhatsApp atau Email tergantung verifyMethod)
   const handleSendOtp = async () => {
     setError(null)
     setIsDuplicateWa(false)
-    if (!whatsapp) {
+
+    if (verifyMethod === 'wa' && !whatsapp) {
       setError('Nomor WhatsApp wajib diisi.')
       return
     }
 
     startTransition(async () => {
-      // 1. Check if WhatsApp number is already in use
-      const uniqueRes = await checkWhatsAppUnique(whatsapp)
-      if (uniqueRes.error) {
-        setError(uniqueRes.error)
-        return
-      }
-      if (!uniqueRes.unique) {
-        setIsDuplicateWa(true)
-        setError('Nomor WhatsApp sudah pernah digunakan oleh akun lain.')
+      const res = verifyMethod === 'wa'
+        ? await sendPhoneVerificationOtp(whatsapp)
+        : await sendEmailVerificationOtp()
+
+      if (res.error) {
+        if (verifyMethod === 'wa' && res.error.includes('sudah digunakan')) {
+          setIsDuplicateWa(true)
+        }
+        setError(res.error)
         return
       }
 
-      // 2. Generate and send OTP if unique
-      const code = Math.floor(100000 + Math.random() * 900000).toString()
-      setGeneratedOtp(code)
       setOtpSent(true)
       setCountdown(60)
       setOtpInputs(Array(6).fill(''))
-      await sendOtpWhatsApp(whatsapp, code)
     })
   }
 
@@ -244,14 +248,20 @@ export default function OnboardingPage() {
       return
     }
 
-    if (enteredOtp !== generatedOtp) {
-      setError('Kode verifikasi WhatsApp tidak cocok. Silakan coba lagi.')
-      return
-    }
+    startTransition(async () => {
+      const res = verifyMethod === 'wa'
+        ? await verifyPhoneOtp(whatsapp, enteredOtp)
+        : await verifyEmailOtp(enteredOtp)
 
-    // OTP verified, advance to next step
-    setPhone(whatsapp) // Pre-fill phone field in next step
-    setStep(2)
+      if (res.error) {
+        setError(res.error)
+        return
+      }
+
+      // OTP verified, advance to next step
+      if (verifyMethod === 'wa') setPhone(whatsapp) // Pre-fill phone field in next step
+      setStep(2)
+    })
   }
 
   // Step 2: Address Info Submit
@@ -397,8 +407,43 @@ export default function OnboardingPage() {
       {/* Glassmorphism Main Card */}
       <div className="w-full max-w-[920px] bg-white border border-slate-200/80 rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.05)] z-10 overflow-hidden flex flex-col md:flex-row min-h-[580px] transition-all">
         
-        {/* Left Sidebar: Steps Progress Indicator */}
-        <div className="w-full md:w-[300px] bg-gradient-to-b from-emerald-950 to-green-900 p-8 text-white flex flex-col justify-between shrink-0 relative overflow-hidden">
+        {/* Top Progress Bar on Mobile (< md) */}
+        <div className="md:hidden bg-gradient-to-r from-emerald-900 to-green-800 p-4 text-white">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5">
+              <span className="font-poppins text-base font-bold text-white">
+                Saloka<span className="text-[#FFC107]">.id</span>
+              </span>
+              <span className="text-[8px] font-extrabold bg-white/20 px-1.5 py-0.5 rounded uppercase tracking-wider">Onboarding</span>
+            </div>
+            <span className="text-[10px] font-bold text-amber-300">
+              Langkah {step} dari 4
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-1.5">
+            {[
+              { s: 1, label: 'Verifikasi' },
+              { s: 2, label: 'Alamat' },
+              { s: 3, label: 'Subdomain' },
+              { s: 4, label: 'Selesai' }
+            ].map(item => (
+              <div key={item.s} className="flex-1 flex flex-col items-center gap-1">
+                <div className={`h-1.5 w-full rounded-full transition-all duration-300 ${
+                  step === item.s ? 'bg-[#FFC107]' : step > item.s ? 'bg-emerald-400' : 'bg-white/20'
+                }`} />
+                <span className={`text-[9px] font-bold truncate ${
+                  step === item.s ? 'text-white' : 'text-white/60'
+                }`}>
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Left Sidebar: Steps Progress Indicator on Desktop (>= md) */}
+        <div className="hidden md:flex md:w-[300px] bg-gradient-to-b from-emerald-950 to-green-900 p-8 text-white flex-col justify-between shrink-0 relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.15),transparent_60%)] pointer-events-none" />
           
           <div>
@@ -415,7 +460,7 @@ export default function OnboardingPage() {
 
             <div className="space-y-6">
               {[
-                { s: 1, label: 'Verifikasi WhatsApp', desc: 'Amankan Akun' },
+                { s: 1, label: 'Verifikasi Akun', desc: 'WhatsApp atau Email' },
                 { s: 2, label: 'Alamat Toko', desc: 'Lokasi Penjemputan Paket' },
                 { s: 3, label: 'Subdomain Toko', desc: 'Atur Link Website' },
                 { s: 4, label: 'Selamat Datang', desc: 'Selesai & Mulai Jualan' }
@@ -457,7 +502,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Right Content Panel */}
-        <div className="flex-grow p-8 md:p-12 flex flex-col justify-between relative bg-white min-h-[480px]">
+        <div className="flex-grow p-5 sm:p-8 md:p-12 flex flex-col justify-between relative bg-white min-h-[480px]">
           
           {/* Back button (Only for steps 2 & 3) */}
           <AnimatePresence>
@@ -467,7 +512,7 @@ export default function OnboardingPage() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
                 onClick={() => { setError(null); setStep((step - 1) as any); }}
-                className="absolute left-8 top-8 flex items-center gap-1.5 text-xs text-text-secondary hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 font-bold outline-none"
+                className="absolute left-5 sm:left-8 top-5 sm:top-8 flex items-center gap-1.5 text-xs text-text-secondary hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-0 font-bold outline-none"
               >
                 <ArrowLeft size={14} />
                 Kembali
@@ -475,7 +520,7 @@ export default function OnboardingPage() {
             )}
           </AnimatePresence>
 
-          <div className="h-full flex flex-col justify-center py-4">
+          <div className="h-full flex flex-col justify-center py-2 sm:py-4">
             
             {/* Error Banner */}
             <AnimatePresence>
@@ -490,7 +535,7 @@ export default function OnboardingPage() {
                   {isDuplicateWa && (
                     <div className="mt-3 pt-3 border-t border-red-200/50 flex flex-wrap gap-3">
                       <a 
-                        href={`https://wa.me/6281234567890?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20password%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
+                        href={`https://wa.me/6285223061670?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20password%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-[10px] font-bold"
@@ -498,7 +543,7 @@ export default function OnboardingPage() {
                         Lupa Password? Hubungi CS
                       </a>
                       <a 
-                        href={`https://wa.me/6281234567890?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20email%20atau%20informasi%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
+                        href={`https://wa.me/6285223061670?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20email%20atau%20informasi%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-colors text-[10px] font-bold"
@@ -512,7 +557,7 @@ export default function OnboardingPage() {
             </AnimatePresence>
 
             <AnimatePresence mode="wait">
-              {/* STEP 1: WHATSAPP OTP VERIFICATION */}
+              {/* STEP 1: VERIFICATION (WHATSAPP OR EMAIL) */}
               {step === 1 && (
                 <motion.div 
                   key="step-1"
@@ -520,38 +565,91 @@ export default function OnboardingPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className="space-y-6 max-w-md mx-auto w-full text-center"
+                  className="space-y-5 max-w-md mx-auto w-full text-center"
                 >
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto text-emerald-600 mb-2 shadow-inner">
-                    <Smartphone size={26} />
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto text-emerald-600 mb-1 shadow-inner">
+                    <Smartphone size={24} />
                   </div>
                   
                   <div>
-                    <h2 className="font-poppins text-2xl font-extrabold text-slate-800">Kode Verifikasi</h2>
-                    <p className="text-xs text-text-secondary mt-1.5 leading-relaxed">
-                      Silakan masukkan nomor WhatsApp aktif Anda untuk menerima kode OTP keamanan akun.
+                    <h2 className="font-poppins text-xl sm:text-2xl font-extrabold text-slate-800">Verifikasi Akun</h2>
+                    <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+                      Pilih metode verifikasi untuk mengamankan akun dan menerima notifikasi pesanan toko Anda.
                     </p>
                   </div>
 
-                  {!otpSent ? (
-                    <div className="space-y-4 text-left mt-6">
-                      <div>
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-2">
-                          Nomor WhatsApp Aktif
-                        </label>
-                        <input 
-                          type="tel"
-                          value={whatsapp}
-                          onChange={(e) => {
-                            setWhatsapp(e.target.value.replace(/[^0-9]/g, ''))
-                            setError(null)
-                            setIsDuplicateWa(false)
-                          }}
-                          placeholder="081234567890"
-                          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
-                        />
+                  {/* If user email is already verified (e.g. Google Login) */}
+                  {user?.emailVerified && !otpSent && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-left flex items-start gap-2.5">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div className="flex-grow text-xs">
+                        <p className="font-bold text-emerald-800">Email Akun Telah Terverifikasi</p>
+                        <p className="text-emerald-700 text-[11px] mt-0.5">{user.email}</p>
                       </div>
-                      
+                      <button
+                        type="button"
+                        onClick={() => setStep(2)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer border-none shrink-0"
+                      >
+                        Lanjut →
+                      </button>
+                    </div>
+                  )}
+
+                  {!otpSent && (
+                    <div className="flex p-1 bg-slate-100 rounded-xl gap-1">
+                      <button
+                        type="button"
+                        onClick={() => { setVerifyMethod('wa'); setError(null) }}
+                        className={`flex-1 py-2.5 text-center text-xs font-bold rounded-lg transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                          verifyMethod === 'wa' ? 'bg-white text-emerald-600 shadow-sm' : 'bg-transparent text-slate-500'
+                        }`}
+                      >
+                        <span>💬</span> Via WhatsApp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setVerifyMethod('email'); setError(null) }}
+                        className={`flex-1 py-2.5 text-center text-xs font-bold rounded-lg transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                          verifyMethod === 'email' ? 'bg-white text-emerald-600 shadow-sm' : 'bg-transparent text-slate-500'
+                        }`}
+                      >
+                        <span>✉️</span> Via Email (Gmail)
+                      </button>
+                    </div>
+                  )}
+
+                  {!otpSent ? (
+                    <div className="space-y-4 text-left mt-4">
+                      {verifyMethod === 'wa' ? (
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                            Nomor WhatsApp Aktif
+                          </label>
+                          <input
+                            type="tel"
+                            value={whatsapp}
+                            onChange={(e) => {
+                              setWhatsapp(e.target.value.replace(/[^0-9]/g, ''))
+                              setError(null)
+                              setIsDuplicateWa(false)
+                            }}
+                            placeholder="081234567890"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-text-secondary mb-1.5">
+                            Email Terdaftar (Untuk Kode OTP)
+                          </label>
+                          <div className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 flex items-center justify-between">
+                            <span>{user?.email}</span>
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Maileroo</span>
+                          </div>
+                        </div>
+                      )}
+
                       <motion.button
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
@@ -559,17 +657,17 @@ export default function OnboardingPage() {
                         disabled={isPending}
                         className="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-700 hover:to-green-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-500/10 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
-                        {isPending ? 'Mengirim...' : 'Kirim Kode Verifikasi via WA'}
+                        {isPending ? 'Mengirim...' : verifyMethod === 'wa' ? 'Kirim Kode OTP ke WhatsApp' : 'Kirim Kode OTP ke Email'}
                       </motion.button>
                     </div>
                   ) : (
-                    <div className="space-y-6 mt-6">
+                    <div className="space-y-5 mt-4">
                       <p className="text-xs text-text-secondary">
-                        Kode verifikasi 6 digit telah berhasil dikirim melalui WhatsApp ke <strong className="text-slate-800">{whatsapp}</strong>
+                        Kode verifikasi 6 digit telah berhasil dikirim melalui {verifyMethod === 'wa' ? 'WhatsApp' : 'email'} ke <strong className="text-slate-800">{verifyMethod === 'wa' ? whatsapp : user?.email}</strong>
                       </p>
 
                       {/* 6 Digit Input Boxes */}
-                      <div className="flex justify-center gap-2.5">
+                      <div className="flex justify-center gap-2 sm:gap-2.5">
                         {otpInputs.map((digit, idx) => (
                           <input
                             key={idx}
@@ -579,7 +677,7 @@ export default function OnboardingPage() {
                             value={digit}
                             onChange={(e) => handleOtpInputChange(idx, e.target.value)}
                             onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                            className="w-11 h-11 border border-slate-200 bg-white rounded-xl text-center font-poppins font-extrabold text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
+                            className="w-10 h-10 sm:w-11 sm:h-11 border border-slate-200 bg-white rounded-xl text-center font-poppins font-extrabold text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-slate-800"
                           />
                         ))}
                       </div>
@@ -603,12 +701,12 @@ export default function OnboardingPage() {
                         onClick={handleVerifyOtpSubmit}
                         className="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-700 hover:to-green-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-500/10 cursor-pointer"
                       >
-                        Verifikasi
+                        Verifikasi Kode
                       </motion.button>
 
-                      <div className="text-[10px] text-text-secondary pt-4 border-t border-slate-100 flex items-center justify-center gap-1.5">
-                        Ada kendala? <span>Hubungi CS Saloka di WhatsApp:</span> 
-                        <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline">0812-3456-7890</a>
+                      <div className="text-[10px] text-text-secondary pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5">
+                        Ada kendala? <span>Hubungi CS Saloka:</span> 
+                        <a href="https://wa.me/6285223061670" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline">0852-2306-1670</a>
                       </div>
                     </div>
                   )}

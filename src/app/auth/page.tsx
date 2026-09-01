@@ -397,7 +397,7 @@ function AuthContent() {
             required
           />
           {tab === "login" && (
-            <a href="#" className="absolute right-0 top-0 text-[10px] text-primary hover:underline font-semibold">
+            <a href="/forgot-password" className="absolute right-0 top-0 text-[10px] text-primary hover:underline font-semibold">
               Lupa sandi?
             </a>
           )}
