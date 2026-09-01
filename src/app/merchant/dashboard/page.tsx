@@ -1439,89 +1439,111 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   </div>
 
                   {/* ── SNACKBOX INTEGRATION & REVENUE SHARE SECTION (EDIT MODE) ── */}
-                  {SNACKBOX_ELIGIBLE_CATEGORIES.includes(editCategory || editingProduct.category) && (
-                    <div className="border border-emerald-400/40 bg-emerald-950/20 p-4 rounded-xl space-y-3.5 animate-in fade-in duration-200">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
+                  <div className={`border p-4 rounded-xl space-y-3.5 transition-all ${
+                    editIsSnackbox 
+                      ? 'border-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30' 
+                      : 'border-slate-200 bg-slate-50/50 dark:bg-slate-900/30'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="edit-isSnackboxEnabled" className="flex items-center gap-2.5 cursor-pointer">
+                        <input
+                          id="edit-isSnackboxEnabled"
+                          type="checkbox"
+                          name="isSnackboxEnabled"
+                          checked={editIsSnackbox}
+                          onChange={(e) => setEditIsSnackbox(e.target.checked)}
+                          className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer accent-[#2DB24A]"
+                        />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                          <span>🍱 Tampilkan di Halaman Snackbox Saloka</span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                            Program Snackbox
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Centang opsi ini jika produk ini ingin dimasukkan ke katalog resmi <strong>Snackbox Saloka</strong> per kelurahan untuk pesanan acara kantor, rapat, dan hajatan.
+                    </p>
+
+                    {editIsSnackbox && (
+                      <div className="space-y-4 pt-3 border-t border-emerald-200 dark:border-emerald-800/60 animate-in fade-in duration-200">
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <label className="text-[11px] font-bold text-slate-800 dark:text-slate-100">
+                              Bagi Hasil Saloka (Wajib): <span className="text-emerald-600 dark:text-emerald-400 font-mono text-sm font-extrabold">{Math.round(editSnackboxShare)}%</span>
+                            </label>
+                            <span className="text-[10px] text-slate-500 font-mono">Pilihan: 15% – 20% (Kelipatan 1%)</span>
+                          </div>
+                          
+                          {/* Slider with step 1 (no decimals) */}
                           <input
-                            id="edit-isSnackboxEnabled"
-                            type="checkbox"
-                            name="isSnackboxEnabled"
-                            checked={editIsSnackbox}
-                            onChange={(e) => setEditIsSnackbox(e.target.checked)}
-                            className="w-4 h-4 text-[#006E24] focus:ring-[#006E24] rounded cursor-pointer accent-[#2DB24A]"
+                            type="range"
+                            min="15"
+                            max="20"
+                            step="1"
+                            value={Math.round(editSnackboxShare)}
+                            onChange={(e) => setEditSnackboxShare(parseInt(e.target.value, 10))}
+                            className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#2DB24A]"
                           />
-                          <label htmlFor="edit-isSnackboxEnabled" className="text-xs font-bold text-text-primary cursor-pointer flex items-center gap-1.5">
-                            <span>🍱 Tampilkan di Layanan Snackbox Saloka</span>
-                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
-                              Rekomendasi Kuliner
-                            </span>
-                          </label>
+                          <input type="hidden" name="snackboxRevenueShare" value={Math.round(editSnackboxShare)} />
+
+                          {/* Quick selection pills for 15, 16, 17, 18, 19, 20% */}
+                          <div className="flex justify-between gap-1.5 mt-2.5">
+                            {[15, 16, 17, 18, 19, 20].map((val) => (
+                              <button
+                                key={val}
+                                type="button"
+                                onClick={() => setEditSnackboxShare(val)}
+                                className={`flex-1 py-1 text-center text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                                  Math.round(editSnackboxShare) === val
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
+                                }`}
+                              >
+                                {val}%
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-geist font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                              Perkiraan Berat / Porsi
+                            </label>
+                            <input
+                              type="text"
+                              name="snackboxPortionWeight"
+                              value={editPortionWeight}
+                              onChange={(e) => setEditPortionWeight(e.target.value)}
+                              placeholder="cth: 75g atau 1 potong"
+                              className="w-full h-10 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+
+                          {/* Live Revenue Calculation Breakdown */}
+                          <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1 text-xs shadow-sm">
+                            <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                              <span>Bagi Hasil Saloka ({Math.round(editSnackboxShare)}%):</span>
+                              <span className="font-bold text-amber-600 dark:text-amber-400">
+                                Rp {Math.round((editPriceValue || editingProduct.price || 0) * (Math.round(editSnackboxShare) / 100)).toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                              <span>Penghasilan Bersih Toko ({100 - Math.round(editSnackboxShare)}%):</span>
+                              <span className="font-extrabold">
+                                Rp {Math.round((editPriceValue || editingProduct.price || 0) * ((100 - Math.round(editSnackboxShare)) / 100)).toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                            <p className="text-[9px] text-slate-400 pt-0.5">
+                              *Termasuk kemasan box resmi Saloka & pengantaran terpadu kurir.
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-[11px] text-text-secondary leading-relaxed">
-                        Produk kue / snack Anda akan otomatis masuk ke katalog resmi kurasi <strong>Snackbox Saloka</strong> per kelurahan untuk pesanan acara kantor, rapat, dan hajatan.
-                      </p>
-
-                      {editIsSnackbox && (
-                        <div className="space-y-4 pt-3 border-t border-border-subtle">
-                          <div>
-                            <div className="flex justify-between items-center mb-1.5">
-                              <label className="text-[11px] font-bold text-text-primary">
-                                Bagi Hasil dengan Saloka: <span className="text-primary font-mono text-sm font-extrabold">{editSnackboxShare}%</span>
-                              </label>
-                              <span className="text-[10px] text-text-secondary font-mono">Rentang Pilihan: 15% – 20%</span>
-                            </div>
-                            <input
-                              type="range"
-                              min="15"
-                              max="20"
-                              step="0.5"
-                              value={editSnackboxShare}
-                              onChange={(e) => setEditSnackboxShare(parseFloat(e.target.value))}
-                              className="w-full h-2 bg-surface-container rounded-lg appearance-none cursor-pointer accent-[#2DB24A]"
-                            />
-                            <input type="hidden" name="snackboxRevenueShare" value={editSnackboxShare} />
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1.5">
-                                Perkiraan Berat / Porsi
-                              </label>
-                              <input
-                                type="text"
-                                name="snackboxPortionWeight"
-                                value={editPortionWeight}
-                                onChange={(e) => setEditPortionWeight(e.target.value)}
-                                placeholder="cth: 75g atau 1 potong"
-                                className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
-                              />
-                            </div>
-
-                            {/* Live Revenue Calculation Breakdown */}
-                            <div className="bg-surface-container p-3 rounded-lg border border-border-subtle space-y-1 text-xs">
-                              <div className="flex justify-between text-text-secondary">
-                                <span>Bagi Hasil Saloka ({editSnackboxShare}%):</span>
-                                <span className="font-bold text-amber-400">
-                                  Rp {Math.round((editingProduct.price || 0) * (editSnackboxShare / 100)).toLocaleString('id-ID')}
-                                </span>
-                              </div>
-                              <div className="flex justify-between text-primary font-bold">
-                                <span>Merchant Terima Bersih ({100 - editSnackboxShare}%):</span>
-                                <span className="font-extrabold">
-                                  Rp {Math.round((editingProduct.price || 0) * ((100 - editSnackboxShare) / 100)).toLocaleString('id-ID')}
-                                </span>
-                              </div>
-                              <p className="text-[9px] text-text-secondary/70 pt-0.5">
-                                *Termasuk kemasan box resmi Saloka & pengantaran terpadu kurir.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   <div>
                     <div className="flex justify-between items-center mb-2">
@@ -1772,7 +1794,15 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </div>
                 <div>
                   <label htmlFor="create-price" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Harga (Rp)</label>
-                  <input id="create-price" type="number" name="price" required placeholder="cth: 350000" className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
+                  <input
+                    id="create-price"
+                    type="number"
+                    name="price"
+                    required
+                    onChange={(e) => setCreatePriceValue(parseFloat(e.target.value) || 0)}
+                    placeholder="cth: 350000"
+                    className="w-full h-11 px-4 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none"
+                  />
                 </div>
                 <div>
                   <label htmlFor="create-stock" className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-2">Stok Barang</label>
@@ -1897,89 +1927,111 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
               </div>
 
               {/* ── SNACKBOX INTEGRATION & REVENUE SHARE SECTION ── */}
-              {SNACKBOX_ELIGIBLE_CATEGORIES.includes(createCategory) && (
-                <div className="border border-emerald-400/40 bg-emerald-950/20 p-4 rounded-xl space-y-3.5 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
+              <div className={`border p-4 rounded-xl space-y-3.5 transition-all ${
+                createIsSnackbox 
+                  ? 'border-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30' 
+                  : 'border-slate-200 bg-slate-50/50 dark:bg-slate-900/30'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="create-isSnackboxEnabled" className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      id="create-isSnackboxEnabled"
+                      type="checkbox"
+                      name="isSnackboxEnabled"
+                      checked={createIsSnackbox}
+                      onChange={(e) => setCreateIsSnackbox(e.target.checked)}
+                      className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded cursor-pointer accent-[#2DB24A]"
+                    />
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      <span>🍱 Tampilkan di Halaman Snackbox Saloka</span>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                        Program Snackbox
+                      </span>
+                    </span>
+                  </label>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Centang opsi ini jika produk ini ingin dimasukkan ke katalog resmi <strong>Snackbox Saloka</strong> per kelurahan untuk pesanan acara kantor, rapat, dan hajatan.
+                </p>
+
+                {createIsSnackbox && (
+                  <div className="space-y-4 pt-3 border-t border-emerald-200 dark:border-emerald-800/60 animate-in fade-in duration-200">
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-[11px] font-bold text-slate-800 dark:text-slate-100">
+                          Bagi Hasil Saloka (Wajib): <span className="text-emerald-600 dark:text-emerald-400 font-mono text-sm font-extrabold">{Math.round(createSnackboxShare)}%</span>
+                        </label>
+                        <span className="text-[10px] text-slate-500 font-mono">Pilihan: 15% – 20% (Kelipatan 1%)</span>
+                      </div>
+                      
+                      {/* Slider with step 1 (no decimals) */}
                       <input
-                        id="create-isSnackboxEnabled"
-                        type="checkbox"
-                        name="isSnackboxEnabled"
-                        checked={createIsSnackbox}
-                        onChange={(e) => setCreateIsSnackbox(e.target.checked)}
-                        className="w-4 h-4 text-[#006E24] focus:ring-[#006E24] rounded cursor-pointer accent-[#2DB24A]"
+                        type="range"
+                        min="15"
+                        max="20"
+                        step="1"
+                        value={Math.round(createSnackboxShare)}
+                        onChange={(e) => setCreateSnackboxShare(parseInt(e.target.value, 10))}
+                        className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#2DB24A]"
                       />
-                      <label htmlFor="create-isSnackboxEnabled" className="text-xs font-bold text-text-primary cursor-pointer flex items-center gap-1.5">
-                        <span>🍱 Tampilkan di Layanan Snackbox Saloka</span>
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
-                          Rekomendasi Kuliner
-                        </span>
-                      </label>
+                      <input type="hidden" name="snackboxRevenueShare" value={Math.round(createSnackboxShare)} />
+
+                      {/* Quick selection pills for 15, 16, 17, 18, 19, 20% */}
+                      <div className="flex justify-between gap-1.5 mt-2.5">
+                        {[15, 16, 17, 18, 19, 20].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => setCreateSnackboxShare(val)}
+                            className={`flex-1 py-1 text-center text-[10px] font-bold rounded-lg border transition-all cursor-pointer ${
+                              Math.round(createSnackboxShare) === val
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
+                            }`}
+                          >
+                            {val}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-geist font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                          Perkiraan Berat / Porsi
+                        </label>
+                        <input
+                          type="text"
+                          name="snackboxPortionWeight"
+                          value={createPortionWeight}
+                          onChange={(e) => setCreatePortionWeight(e.target.value)}
+                          placeholder="cth: 75g atau 1 potong"
+                          className="w-full h-10 px-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+
+                      {/* Live Revenue Calculation Breakdown */}
+                      <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1 text-xs shadow-sm">
+                        <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                          <span>Bagi Hasil Saloka ({Math.round(createSnackboxShare)}%):</span>
+                          <span className="font-bold text-amber-600 dark:text-amber-400">
+                            Rp {Math.round(createPriceValue * (Math.round(createSnackboxShare) / 100)).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                          <span>Penghasilan Bersih Toko ({100 - Math.round(createSnackboxShare)}%):</span>
+                          <span className="font-extrabold">
+                            Rp {Math.round(createPriceValue * ((100 - Math.round(createSnackboxShare)) / 100)).toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                        <p className="text-[9px] text-slate-400 pt-0.5">
+                          *Termasuk kemasan box resmi Saloka & pengantaran terpadu kurir.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <p className="text-[11px] text-text-secondary leading-relaxed">
-                    Produk kue / snack Anda akan otomatis masuk ke katalog resmi kurasi <strong>Snackbox Saloka</strong> per kelurahan untuk pesanan acara kantor, rapat, dan hajatan.
-                  </p>
-
-                  {createIsSnackbox && (
-                    <div className="space-y-4 pt-3 border-t border-border-subtle">
-                      <div>
-                        <div className="flex justify-between items-center mb-1.5">
-                          <label className="text-[11px] font-bold text-text-primary">
-                            Bagi Hasil dengan Saloka: <span className="text-primary font-mono text-sm font-extrabold">{createSnackboxShare}%</span>
-                          </label>
-                          <span className="text-[10px] text-text-secondary font-mono">Rentang Pilihan: 15% – 20%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="15"
-                          max="20"
-                          step="0.5"
-                          value={createSnackboxShare}
-                          onChange={(e) => setCreateSnackboxShare(parseFloat(e.target.value))}
-                          className="w-full h-2 bg-surface-container rounded-lg appearance-none cursor-pointer accent-[#2DB24A]"
-                        />
-                        <input type="hidden" name="snackboxRevenueShare" value={createSnackboxShare} />
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[10px] font-geist font-bold text-text-secondary uppercase tracking-wider mb-1.5">
-                            Perkiraan Berat / Porsi
-                          </label>
-                          <input
-                            type="text"
-                            name="snackboxPortionWeight"
-                            value={createPortionWeight}
-                            onChange={(e) => setCreatePortionWeight(e.target.value)}
-                            placeholder="cth: 75g atau 1 potong"
-                            className="w-full h-10 px-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-primary"
-                          />
-                        </div>
-
-                        {/* Live Revenue Calculation Breakdown */}
-                        <div className="bg-surface-container p-3 rounded-lg border border-border-subtle space-y-1 text-xs">
-                          <div className="flex justify-between text-text-secondary">
-                            <span>Bagi Hasil Saloka ({createSnackboxShare}%):</span>
-                            <span className="font-bold text-amber-400">
-                              Rp {Math.round(createPriceValue * (createSnackboxShare / 100)).toLocaleString('id-ID')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between text-primary font-bold">
-                            <span>Merchant Terima Bersih ({100 - createSnackboxShare}%):</span>
-                            <span className="font-extrabold">
-                              Rp {Math.round(createPriceValue * ((100 - createSnackboxShare) / 100)).toLocaleString('id-ID')}
-                            </span>
-                          </div>
-                          <p className="text-[9px] text-text-secondary/70 pt-0.5">
-                            *Termasuk kemasan box resmi Saloka & pengantaran terpadu kurir.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
 
               <div>
                 <div className="flex justify-between items-center mb-2">
