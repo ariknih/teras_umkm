@@ -8239,7 +8239,7 @@ export const DataStore = {
   async setPasswordResetOtp(userId: string, code: string, expiresAt: Date) {
     return withMutationFallback(
       async () => {
-        return await db.user.update({ where: { id: userId }, data: { resetOtpCode: code, resetOtpExpiresAt: expiresAt } })
+        return await db.user.update({ where: { id: userId }, data: { resetOtpCode: code, resetOtpExpiresAt: expiresAt } as any })
       },
       async () => {
         const u = globalMockUsers.find(x => x.id === userId)
@@ -8252,7 +8252,7 @@ export const DataStore = {
   async resetPasswordWithOtp(userId: string, passwordHash: string) {
     return withMutationFallback(
       async () => {
-        return await db.user.update({ where: { id: userId }, data: { passwordHash, resetOtpCode: null, resetOtpExpiresAt: null } })
+        return await db.user.update({ where: { id: userId }, data: { passwordHash, resetOtpCode: null, resetOtpExpiresAt: null } as any })
       },
       async () => {
         const u = globalMockUsers.find(x => x.id === userId)
@@ -8265,7 +8265,7 @@ export const DataStore = {
   async setPhoneVerificationOtp(userId: string, code: string, expiresAt: Date) {
     return withMutationFallback(
       async () => {
-        return await db.user.update({ where: { id: userId }, data: { phoneOtpCode: code, phoneOtpExpiresAt: expiresAt } })
+        return await db.user.update({ where: { id: userId }, data: { phoneOtpCode: code, phoneOtpExpiresAt: expiresAt } as any })
       },
       async () => {
         const u = globalMockUsers.find(x => x.id === userId)
@@ -8278,7 +8278,7 @@ export const DataStore = {
   async confirmPhoneVerified(userId: string, phone: string) {
     return withMutationFallback(
       async () => {
-        return await db.user.update({ where: { id: userId }, data: { phone, phoneVerified: true, phoneOtpCode: null, phoneOtpExpiresAt: null } })
+        return await db.user.update({ where: { id: userId }, data: { phone, phoneVerified: true, phoneOtpCode: null, phoneOtpExpiresAt: null } as any })
       },
       async () => {
         const u = globalMockUsers.find(x => x.id === userId)
@@ -8291,7 +8291,7 @@ export const DataStore = {
   async setEmailVerificationOtp(userId: string, code: string, expiresAt: Date) {
     return withMutationFallback(
       async () => {
-        return await db.user.update({ where: { id: userId }, data: { emailOtpCode: code, emailOtpExpiresAt: expiresAt } })
+        return await db.user.update({ where: { id: userId }, data: { emailOtpCode: code, emailOtpExpiresAt: expiresAt } as any })
       },
       async () => {
         const u = globalMockUsers.find(x => x.id === userId)
@@ -8304,7 +8304,7 @@ export const DataStore = {
   async confirmEmailVerified(userId: string) {
     return withMutationFallback(
       async () => {
-        return await db.user.update({ where: { id: userId }, data: { emailVerified: true, emailOtpCode: null, emailOtpExpiresAt: null } })
+        return await db.user.update({ where: { id: userId }, data: { emailVerified: true, emailOtpCode: null, emailOtpExpiresAt: null } as any })
       },
       async () => {
         const u = globalMockUsers.find(x => x.id === userId)

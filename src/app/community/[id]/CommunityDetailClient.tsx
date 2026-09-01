@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useLayoutEffect, useRef, useTransition } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useRef, useTransition, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -1151,7 +1151,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   const [isManualScrolling, setIsManualScrolling] = useState(false)
 
-  const [feedFilter, setFeedFilter] = useState<'semua' | 'diskusi' | 'pengumuman' | 'event' | 'produk'>('semua')
+  const [feedFilter, setFeedFilter] = useState<string>('semua')
 
   const [recentTransactions, setRecentTransactions] = useState<any[]>([
     {
@@ -2342,6 +2342,35 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     return !disabledModules.includes(item.id)
   })
 
+    // Synchronized Feed Filter Options: dynamically follows active navigation modules
+  const feedFilterOptions = useMemo(() => {
+    const options: Array<{ id: string; label: string }> = [{ id: 'semua', label: 'Semua' }]
+
+    if (filteredContentTabs.some((t) => t.id === 'diskusi')) {
+      options.push({ id: 'diskusi', label: 'Diskusi' })
+    }
+    if (filteredContentTabs.some((t) => t.id === 'pengumuman')) {
+      options.push({ id: 'pengumuman', label: 'Pengumuman' })
+    }
+    if (filteredContentTabs.some((t) => t.id === 'event')) {
+      options.push({ id: 'event', label: 'Event' })
+    }
+    if (filteredContentTabs.some((t) => t.id === 'produk_komunitas' || t.id === 'marketplace')) {
+      options.push({ id: 'produk', label: 'Produk' })
+    }
+    if (filteredContentTabs.some((t) => t.id === 'galeri')) {
+      options.push({ id: 'galeri', label: 'Galeri' })
+    }
+    if (filteredContentTabs.some((t) => t.id === 'kelas')) {
+      options.push({ id: 'kelas', label: 'Kelas' })
+    }
+    if (filteredContentTabs.some((t) => t.id === 'kompetisi')) {
+      options.push({ id: 'kompetisi', label: 'Kompetisi' })
+    }
+
+    return options
+  }, [filteredContentTabs])
+
   const activeSidebarNavList = [
     { id: 'landing_view', label: 'Halaman Landing', icon: ExternalLink },
     ...(isCanManageCoop ? [{ id: 'desain_landing', label: 'Desain Landing', icon: Sparkles, badge: 'EDIT' }] : []),
@@ -3512,70 +3541,142 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                     </div>
                   </div>
 
-                  {/* 2. Aktivitas Terbaru */}
+                  {/* 2. Aktivitas Terbaru (Mobile Feed Filter Sync with Navigation) */}
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Aktivitas Terbaru</h3>
-                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                        {['Semua', 'Diskusi', 'Pengumuman', 'Event'].map((tab) => (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                        {feedFilterOptions.map((tab) => (
                           <button
-                            key={tab}
-                            onClick={() => setFeedFilter(tab.toLowerCase() as any)}
-                            className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all shrink-0 cursor-pointer ${
-                              feedFilter === tab.toLowerCase()
+                            key={tab.id}
+                            onClick={() => setFeedFilter(tab.id)}
+                            className={`px-3 py-1 text-[11px] font-bold rounded-full transition-all shrink-0 cursor-pointer ${
+                              feedFilter === tab.id
                                 ? 'bg-[#2DB24A] text-white shadow-xs'
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                           >
-                            {tab}
+                            {tab.label}
                           </button>
                         ))}
                       </div>
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Aktivitas Terbaru</h3>
                     </div>
 
-                    <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
-                      <div className="flex justify-between items-start">
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-extrabold text-[9px] rounded-md uppercase">
-                          Pengumuman
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-medium">2 jam lalu</span>
-                      </div>
-                      <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
-                        Workshop Digital Marketing untuk UMKM
-                      </h4>
-                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                        Mari tingkatkan penjualan produk lokal melalui strategi digital yang tepat. Terbuka untuk semua anggota {community.name}!
-                      </p>
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1">👍 24</span>
-                          <span className="flex items-center gap-1">💬 12</span>
+                    {/* Feed Item 1: Pengumuman (shows on 'semua' or 'pengumuman') */}
+                    {(feedFilter === 'semua' || feedFilter === 'pengumuman') && (
+                      <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 font-extrabold text-[9px] rounded-md uppercase">
+                            Pengumuman
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">2 jam lalu</span>
                         </div>
-                        <button onClick={() => setActiveSidebarNav('pengumuman')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Detail →</button>
+                        <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
+                          Workshop Digital Marketing untuk UMKM
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Mari tingkatkan penjualan produk lokal melalui strategi digital yang tepat. Terbuka untuk semua anggota {community.name}!
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1">👍 24</span>
+                            <span className="flex items-center gap-1">💬 12</span>
+                          </div>
+                          <button onClick={() => setActiveSidebarNav('pengumuman')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Detail →</button>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
-                      <div className="flex justify-between items-start">
-                        <span className="px-2 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[9px] rounded-md uppercase">
-                          Diskusi
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-medium">5 jam lalu</span>
-                      </div>
-                      <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
-                        Bagaimana cara mendapatkan supplier kemasan ramah lingkungan?
-                      </h4>
-                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                        Saya sedang mencari rekomendasi supplier kemasan untuk produk makanan. Ada yang punya pengalaman?
-                      </p>
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1">👍 18</span>
-                          <span className="flex items-center gap-1">💬 28</span>
+                    {/* Feed Item 2: Diskusi (shows on 'semua' or 'diskusi') */}
+                    {(feedFilter === 'semua' || feedFilter === 'diskusi') && (
+                      <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[9px] rounded-md uppercase">
+                            Diskusi
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">5 jam lalu</span>
                         </div>
-                        <button onClick={() => setActiveSidebarNav('diskusi')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Diskusi →</button>
+                        <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
+                          Bagaimana cara mendapatkan supplier kemasan ramah lingkungan?
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Saya sedang mencari rekomendasi supplier kemasan untuk produk makanan. Ada yang punya pengalaman?
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <div className="flex items-center gap-3">
+                            <span className="flex items-center gap-1">👍 18</span>
+                            <span className="flex items-center gap-1">💬 28</span>
+                          </div>
+                          <button onClick={() => setActiveSidebarNav('diskusi')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Diskusi →</button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Feed Item 3: Event (shows on 'event') */}
+                    {feedFilter === 'event' && (
+                      <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-[9px] rounded-md uppercase">
+                            Agenda Event
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">Segera Hadir</span>
+                        </div>
+                        <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
+                          Kopdar & Networking Bisnis Anggota {community.name}
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Pertemuan rutin bulanan untuk berbagi peluang kemitraan, konsultasi bisnis, dan kolaborasi produk UMKM.
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <span className="text-[11px] text-emerald-700 font-bold">📍 Gedung Serbaguna Komunitas</span>
+                          <button onClick={() => setActiveSidebarNav('event')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Buka Event →</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Feed Item 4: Produk (shows on 'produk') */}
+                    {feedFilter === 'produk' && (
+                      <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2 py-0.5 bg-purple-50 text-purple-700 font-extrabold text-[9px] rounded-md uppercase">
+                            Produk Unggulan
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">Katalog Komunitas</span>
+                        </div>
+                        <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
+                          Etalase Produk Resmi & Anggota {community.name}
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Temukan berbagai produk berkualitas karya anggota dan merchandise resmi komunitas.
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <span className="text-[11px] text-purple-700 font-bold">🛍️ {communityOfficialProducts.length + products.length} Produk Terdaftar</span>
+                          <button onClick={() => setActiveSidebarNav(filteredContentTabs.some(t => t.id === 'produk_komunitas') ? 'produk_komunitas' : 'marketplace')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Katalog →</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Feed Item 5: Galeri (shows on 'galeri') */}
+                    {feedFilter === 'galeri' && (
+                      <div className="p-4 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-2.5">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 font-extrabold text-[9px] rounded-md uppercase">
+                            Dokumentasi Kegiatan
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">Galeri Foto</span>
+                        </div>
+                        <h4 className="font-extrabold text-xs sm:text-sm text-gray-900">
+                          Dokumentasi & Galeri Foto {community.name}
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Koleksi momen kebersamaan, pelatihan, workshop, dan pameran komunitas.
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <span className="text-[11px] text-indigo-700 font-bold">🖼️ {communityGallery.length} Foto Tersimpan</span>
+                          <button onClick={() => setActiveSidebarNav('galeri')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Buka Galeri →</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 3. Event Mendatang */}
@@ -3682,67 +3783,140 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   </div>
 
                   <div className="lg:col-span-3 space-y-4">
-                    <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                      {['Semua', 'Diskusi', 'Pengumuman', 'Event', 'Produk'].map((tab) => (
+                    {/* Synchronized Feed Filter matching Navigation */}
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                      {feedFilterOptions.map((tab) => (
                         <button
-                          key={tab}
-                          onClick={() => setFeedFilter(tab.toLowerCase() as any)}
+                          key={tab.id}
+                          onClick={() => setFeedFilter(tab.id)}
                           className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all shrink-0 cursor-pointer ${
-                            feedFilter === tab.toLowerCase()
+                            feedFilter === tab.id
                               ? 'bg-[#2DB24A] text-white shadow-xs'
                               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           }`}
                         >
-                          {tab}
+                          {tab.label}
                         </button>
                       ))}
                     </div>
 
                     <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Aktivitas Terbaru</h3>
 
-                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
-                      <div className="flex justify-between items-start">
-                        <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 font-extrabold text-[10px] rounded-md uppercase">
-                          Pengumuman
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-medium">2 jam lalu</span>
-                      </div>
-                      <h4 className="font-extrabold text-sm text-gray-900">
-                        Workshop Digital Marketing untuk UMKM
-                      </h4>
-                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                        Mari tingkatkan penjualan produk lokal melalui strategi digital yang tepat. Terbuka untuk semua anggota {community.name}!
-                      </p>
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
-                        <div className="flex items-center gap-4">
-                          <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">👍 24</span>
-                          <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">💬 12</span>
+                    {/* Feed Item 1: Pengumuman (shows on 'semua' or 'pengumuman') */}
+                    {(feedFilter === 'semua' || feedFilter === 'pengumuman') && (
+                      <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2.5 py-0.5 bg-blue-50 text-blue-600 font-extrabold text-[10px] rounded-md uppercase">
+                            Pengumuman
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">2 jam lalu</span>
                         </div>
-                        <button onClick={() => setActiveSidebarNav('pengumuman')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Detail →</button>
+                        <h4 className="font-extrabold text-sm text-gray-900">
+                          Workshop Digital Marketing untuk UMKM
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Mari tingkatkan penjualan produk lokal melalui strategi digital yang tepat. Terbuka untuk semua anggota {community.name}!
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">👍 24</span>
+                            <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">💬 12</span>
+                          </div>
+                          <button onClick={() => setActiveSidebarNav('pengumuman')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Detail →</button>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
-                      <div className="flex justify-between items-start">
-                        <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md uppercase">
-                          Diskusi
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-medium">5 jam lalu</span>
-                      </div>
-                      <h4 className="font-extrabold text-sm text-gray-900">
-                        Bagaimana cara mendapatkan supplier kemasan ramah lingkungan?
-                      </h4>
-                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                        Saya sedang mencari rekomendasi supplier kemasan untuk produk makanan. Ada yang punya pengalaman?
-                      </p>
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
-                        <div className="flex items-center gap-4">
-                          <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">👍 18</span>
-                          <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">💬 28</span>
+                    {/* Feed Item 2: Diskusi (shows on 'semua' or 'diskusi') */}
+                    {(feedFilter === 'semua' || feedFilter === 'diskusi') && (
+                      <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 font-extrabold text-[10px] rounded-md uppercase">
+                            Diskusi
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">5 jam lalu</span>
                         </div>
-                        <button onClick={() => setActiveSidebarNav('diskusi')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Diskusi →</button>
+                        <h4 className="font-extrabold text-sm text-gray-900">
+                          Bagaimana cara mendapatkan supplier kemasan ramah lingkungan?
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Saya sedang mencari rekomendasi supplier kemasan untuk produk makanan. Ada yang punya pengalaman?
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">👍 18</span>
+                            <span className="flex items-center gap-1 hover:text-gray-900 cursor-pointer">💬 28</span>
+                          </div>
+                          <button onClick={() => setActiveSidebarNav('diskusi')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Diskusi →</button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Feed Item 3: Event (shows on 'event') */}
+                    {feedFilter === 'event' && (
+                      <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] rounded-md uppercase">
+                            Agenda Event
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">Segera Hadir</span>
+                        </div>
+                        <h4 className="font-extrabold text-sm text-gray-900">
+                          Kopdar & Networking Bisnis Anggota {community.name}
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Pertemuan rutin bulanan untuk berbagi peluang kemitraan, konsultasi bisnis, dan kolaborasi produk UMKM.
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <span className="text-[11px] text-emerald-700 font-bold">📍 Gedung Serbaguna Komunitas</span>
+                          <button onClick={() => setActiveSidebarNav('event')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Buka Event →</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Feed Item 4: Produk (shows on 'produk') */}
+                    {feedFilter === 'produk' && (
+                      <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2.5 py-0.5 bg-purple-50 text-purple-700 font-extrabold text-[10px] rounded-md uppercase">
+                            Produk Unggulan
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">Katalog Komunitas</span>
+                        </div>
+                        <h4 className="font-extrabold text-sm text-gray-900">
+                          Etalase Produk Resmi & Anggota {community.name}
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Temukan berbagai produk berkualitas karya anggota dan merchandise resmi komunitas.
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <span className="text-[11px] text-purple-700 font-bold">🛍️ {communityOfficialProducts.length + products.length} Produk Terdaftar</span>
+                          <button onClick={() => setActiveSidebarNav(filteredContentTabs.some(t => t.id === 'produk_komunitas') ? 'produk_komunitas' : 'marketplace')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Lihat Katalog →</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Feed Item 5: Galeri (shows on 'galeri') */}
+                    {feedFilter === 'galeri' && (
+                      <div className="p-5 bg-white border border-gray-200/80 rounded-2xl shadow-xs space-y-3 hover:border-gray-300 transition-all">
+                        <div className="flex justify-between items-start">
+                          <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 font-extrabold text-[10px] rounded-md uppercase">
+                            Dokumentasi Kegiatan
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-medium">Galeri Foto</span>
+                        </div>
+                        <h4 className="font-extrabold text-sm text-gray-900">
+                          Dokumentasi & Galeri Foto {community.name}
+                        </h4>
+                        <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                          Koleksi momen kebersamaan, pelatihan, workshop, dan pameran komunitas.
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs text-gray-500 font-semibold">
+                          <span className="text-[11px] text-indigo-700 font-bold">🖼️ {communityGallery.length} Foto Tersimpan</span>
+                          <button onClick={() => setActiveSidebarNav('galeri')} className="text-[11px] font-bold text-[#2DB24A] hover:underline cursor-pointer">Buka Galeri →</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="lg:col-span-2 space-y-4">
