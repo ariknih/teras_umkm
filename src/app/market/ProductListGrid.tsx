@@ -195,64 +195,64 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
   }
 
   return (
-    <div id="product-list-section" className="space-y-6 max-w-[1200px]">
+    <div id="product-list-section" className="w-full space-y-3.5 sm:space-y-4 max-w-[1240px]">
       {/* Geolocation Banner & Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-4 rounded-lg shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-start sm:items-center bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            locStatus === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-primary/10 text-primary'
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+            locStatus === 'success' ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-slate-100 text-slate-600'
           }`}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
           </div>
           <div>
-            <h4 className="text-xs font-bold text-text-primary font-sora">
+            <h4 className="text-xs font-bold text-slate-900 font-sora">
               Rekomendasi Berbasis Jarak
             </h4>
-            <p className="text-[10px] text-text-secondary">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               {locStatus === 'success' 
-                ? '✓ Lokasi terdeteksi. Jarak produk diperbarui secara real-time.' 
+                ? '✓ Lokasi aktif. Produk diurutkan berdasarkan jarak terdekat.' 
                 : locStatus === 'loading'
                 ? 'Mencari sinyal GPS...'
-                : 'Izinkan akses lokasi untuk mengurutkan merchant terdekat.'}
+                : 'Aktifkan lokasi untuk menemukan produk & merchant terdekat.'}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end shrink-0 pt-1 sm:pt-0">
           {locStatus !== 'success' && (
             <button
               onClick={requestLocation}
               disabled={locStatus === 'loading'}
-              className="btn-primary disabled:opacity-50 text-xs"
+              className="w-full sm:w-auto px-4 py-2 bg-[#2DB24A] hover:bg-[#24943E] disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
             >
               {locStatus === 'loading' ? 'Mengakses...' : 'Akses Lokasi'}
             </button>
           )}
 
           {locStatus === 'success' && (
-            <label className="flex items-center gap-2 cursor-pointer bg-slate-100 hover:bg-slate-200/60 px-3 py-2 rounded text-xs select-none transition-colors">
+            <label className="flex items-center gap-2 cursor-pointer bg-slate-100 hover:bg-slate-200/70 px-3 py-2 rounded-xl text-xs select-none transition-colors">
               <input
                 type="checkbox"
                 checked={sortBy === 'distance-asc'}
                 onChange={(e) => setSortBy(e.target.checked ? 'distance-asc' : 'default')}
-                className="w-3.5 h-3.5 accent-primary cursor-pointer"
+                className="w-3.5 h-3.5 accent-[#2DB24A] cursor-pointer"
               />
-              <span className="font-geist font-bold text-text-primary">Urutkan Jarak Terdekat</span>
+              <span className="font-bold text-slate-800">Urutkan Terdekat</span>
             </label>
           )}
         </div>
       </div>
 
       {/* ── Search bar + Filter/Sort ── */}
-      <div className="bg-white p-4 rounded-xl shadow-sm">
-        <div className="flex gap-3 items-center">
+      <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="flex gap-2.5 items-center">
 
           {/* Search */}
-          <div className="relative flex-1 flex items-center">
-            <span className="absolute left-3 text-text-secondary pointer-events-none">
+          <div className="relative flex-1 flex items-center min-w-0">
+            <span className="absolute left-3 text-slate-400 pointer-events-none">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
               </svg>
@@ -262,10 +262,10 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
               placeholder="Cari produk, jasa, atau merchant..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-9 py-2.5 bg-surface-dark/80 border border-border-subtle rounded-lg text-sm text-text-primary placeholder-text-secondary/60 focus:outline-none focus:border-primary/50 focus:shadow-[0_0_12px_rgba(250,204,21,0.12)] transition-all font-geist"
+              className="w-full pl-9 pr-9 py-2 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#2DB24A] rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#2DB24A]/20 transition-all font-medium"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 text-text-secondary hover:text-primary transition-colors">
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 text-slate-400 hover:text-slate-600 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -276,16 +276,16 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
             <button
               id="filter-dropdown-btn"
               onClick={() => setFilterOpen(v => !v)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-xs font-bold font-geist transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 filterOpen || activeFilterCount > 0
-                  ? 'bg-primary/10 border-primary text-primary'
-                  : 'bg-white border-slate-200 text-text-secondary hover:border-primary/40 hover:text-text-primary'
+                  ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#2DB24A]'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
               }`}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span>Filter</span>
               {activeFilterCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-primary text-black text-[9px] font-black flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-[#2DB24A] text-white text-[9px] font-black flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -437,35 +437,35 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
 
         {/* Active filters chip bar */}
         {isFilterActive && (
-          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border-subtle/50">
-            <span className="text-[10px] text-text-secondary font-geist">Aktif:</span>
+          <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+            <span className="text-[10px] text-slate-500 font-medium">Aktif:</span>
             {searchQuery && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 border border-slate-200 rounded-full text-[11px] font-bold text-slate-800">
                 &quot;{searchQuery}&quot;
-                <button onClick={() => setSearchQuery('')}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
+                <button onClick={() => setSearchQuery('')}><X className="w-3 h-3 text-slate-400 hover:text-rose-500" /></button>
               </span>
             )}
             {sortBy !== 'default' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 border border-slate-200 rounded-full text-[11px] font-bold text-slate-800">
                 {sortBy === 'price-asc' ? 'Harga ↑' : sortBy === 'price-desc' ? 'Harga ↓' : 'Terdekat'}
-                <button onClick={() => setSortBy('default')}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
+                <button onClick={() => setSortBy('default')}><X className="w-3 h-3 text-slate-400 hover:text-rose-500" /></button>
               </span>
             )}
             {(minPrice !== '' || maxPrice !== '') && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 border border-slate-200 rounded-full text-[11px] font-bold text-slate-800">
                 Rp {minPrice || '0'} – {maxPrice || '∞'}
-                <button onClick={() => { setMinPrice(''); setMaxPrice('') }}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
+                <button onClick={() => { setMinPrice(''); setMaxPrice('') }}><X className="w-3 h-3 text-slate-400 hover:text-rose-500" /></button>
               </span>
             )}
             {inStockOnly && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface-container border border-border-subtle rounded-full text-[10px] font-bold text-text-primary">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 border border-slate-200 rounded-full text-[11px] font-bold text-slate-800">
                 Tersedia
-                <button onClick={() => setInStockOnly(false)}><X className="w-2.5 h-2.5 text-text-secondary hover:text-red-400" /></button>
+                <button onClick={() => setInStockOnly(false)}><X className="w-3 h-3 text-slate-400 hover:text-rose-500" /></button>
               </span>
             )}
             <button
               onClick={handleResetFilters}
-              className="ml-auto text-[10px] text-red-400 hover:text-red-300 font-bold font-geist transition-colors"
+              className="ml-auto text-[11px] text-rose-500 hover:text-rose-600 font-bold transition-colors cursor-pointer"
             >
               Hapus semua
             </button>
@@ -482,7 +482,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
         </div>
       ) : (
         <div className="space-y-6">
-          <div id="card-container" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 m-0">
+          <div id="card-container" className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3.5 w-full">
             {filteredProducts.slice(0, visibleCount).map((product) => {
               const dist = (product as any).distance
               const productId = product.id || ''
@@ -498,7 +498,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
               const isOfficial = idNum % 2 === 0
               const isAffiliate = currentUser?.role === 'AFFILIATE'
               return (
-                <div key={productId} className="group flex flex-col bg-white border border-slate-200/90 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-[0_2px_8px_0_rgba(49,53,59,0.12)] hover:border-[#006E24]/40 h-full relative">
+                <div key={productId} className="group flex flex-col bg-white border border-slate-200/90 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-[0_4px_16px_0_rgba(45,178,74,0.12)] hover:border-[#2DB24A]/50 h-full relative">
                   {/* Share button overlay for AFFILIATE only */}
                   {isAffiliate && (
                     <button
@@ -516,8 +516,8 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                       title="Salin Link Affiliate"
                       className={`absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all duration-200 ${
                         copiedId === productId
-                          ? 'bg-green-500 text-white scale-105'
-                          : 'bg-white/90 hover:bg-primary text-gray-600 hover:text-white backdrop-blur-sm'
+                          ? 'bg-[#2DB24A] text-white scale-105'
+                          : 'bg-white/90 hover:bg-[#2DB24A] text-gray-600 hover:text-white backdrop-blur-sm'
                       }`}
                     >
                       {copiedId === productId
@@ -530,7 +530,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     className="flex flex-col h-full"
                   >
                   {/* Square image */}
-                  <div className="aspect-square w-full bg-slate-100 relative overflow-hidden">
+                  <div className="aspect-square w-full bg-slate-100 relative overflow-hidden shrink-0">
                     {product.imageUrl ? (
                       <img
                         src={product.imageUrl}
@@ -544,7 +544,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                       </div>
                     )}
                     {discount > 0 && (
-                      <div className="absolute top-2 left-2 bg-[#E8F5E9] text-[#006E24] font-extrabold text-[10px] px-1.5 py-0.5 rounded border border-[#C8E6C9] shadow-2xs">
+                      <div className="absolute top-2 left-2 bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-[10px] px-1.5 py-0.5 rounded-md border border-[#C8E6C9] shadow-2xs">
                         {discount}%
                       </div>
                     )}
@@ -566,48 +566,48 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                   </div>
 
                   {/* Content — matching screenshot standard */}
-                  <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
+                  <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between space-y-1.5 sm:space-y-2">
                     <div>
-                      <h3 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#006E24] transition-colors">
+                      <h3 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#2DB24A] transition-colors">
                         {product.title}
                       </h3>
                       
                       <div className="pt-1">
-                        <p className="text-sm font-extrabold text-slate-900 leading-tight">
+                        <p className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight">
                           {product.price === 0 ? 'Gratis' : `Rp ${product.price.toLocaleString('id-ID')}`}
                         </p>
 
                         {discount > 0 && (
                           <div className="flex items-center gap-1.5 pt-0.5">
-                            <span className="text-[11px] text-slate-400 line-through">
+                            <span className="text-[10px] sm:text-[11px] text-slate-400 line-through">
                               Rp {originalPrice.toLocaleString('id-ID')}
                             </span>
-                            <span className="bg-[#E8F5E9] text-[#006E24] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
+                            <span className="bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-[9px] px-1 py-0.2 rounded border border-[#C8E6C9]">
                               {discount}%
                             </span>
                           </div>
                         )}
 
                         {dist !== undefined && (
-                          <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-semibold text-[#006E24] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
+                          <span className="inline-flex items-center gap-1 mt-1 text-[9px] sm:text-[10px] font-semibold text-[#2DB24A] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
                             📍 {dist.toFixed(1)} km
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                    <div className="pt-1.5 border-t border-slate-100 space-y-1">
                       <div className="flex items-center gap-1 text-[10px] text-slate-500">
                         <span className="text-amber-500 font-bold">★ {rating}</span>
                         <span>•</span>
                         <span>{sold}+ terjual</span>
                       </div>
                       <div className="flex items-center justify-between gap-1">
-                        <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate flex-1">
-                          <span className="text-[#006E24] font-bold text-xs">✔</span>
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate flex-1 min-w-0">
+                          <span className="text-[#2DB24A] font-bold text-xs shrink-0">✔</span>
                           <span className="truncate font-medium text-slate-600">{product.merchant?.name || storeName}</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded bg-[#006E24] hover:bg-[#005a1d] text-white text-[10px] font-bold flex items-center gap-0.5 shadow-2xs shrink-0">
+                        <span className="px-2 py-0.5 rounded-lg bg-[#2DB24A] hover:bg-[#24943E] text-white text-[9px] sm:text-[10px] font-bold flex items-center gap-0.5 shadow-2xs shrink-0 cursor-pointer">
                           + Keranjang
                         </span>
                       </div>

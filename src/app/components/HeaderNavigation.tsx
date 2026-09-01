@@ -737,11 +737,11 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 <AuthDialog
                   defaultTab="register"
                   trigger={
-                    <button className="px-3 sm:px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] font-bold hover:bg-[#2DB24A]/10 rounded-full transition-all text-xs cursor-pointer outline-none whitespace-nowrap">
+                    <button className="hidden sm:inline-flex px-3 sm:px-5 py-1.5 bg-transparent border border-[#2DB24A] text-[#2DB24A] font-bold hover:bg-[#2DB24A]/10 rounded-full transition-all text-xs cursor-pointer outline-none whitespace-nowrap">
                       Daftar
                     </button>
                   }

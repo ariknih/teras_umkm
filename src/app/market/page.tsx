@@ -69,7 +69,7 @@ export default async function MarketPage({ searchParams }: PageProps) {
   ]);
 
   return (
-    <div id="body-container" className="relative min-h-screen bg-[#F5F7FA] pb-0 flex flex-col items-center">
+    <div id="body-container" className="relative min-h-screen bg-[#F5F7FA] pb-12 flex flex-col items-center">
       {/* Structured JSON-LD Schema for Marketplace */}
       <Script
         id="json-ld-market"
@@ -79,25 +79,25 @@ export default async function MarketPage({ searchParams }: PageProps) {
             "@context": "https://schema.org",
             "@type": "WebSite",
             "name": "Saloka.id",
-            "url": "https://Saloka.id.id",
+            "url": "https://saloka.id",
           })
         }}
       />
 
-      <div id="content-container" className="max-w-[1440px] mx-auto p-0">
+      <div id="content-container" className="w-full max-w-[1240px] mx-auto px-3.5 sm:px-6 py-2 sm:py-4">
         {/* ─── Compact header ──────────────────────────────────── */}
-        <div id="header-section" className="mb-4 max-w-[1200px]">
-          <h1 className="text-base font-bold text-gray-800 mb-0.5">Marketplace</h1>
-          <p className="text-xs text-gray-400">
-            Beli produk UMKM, temukan jasa terdekat, atau lowongan kerja mandiri.
+        <div id="header-section" className="mb-3 sm:mb-4">
+          <h1 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Marketplace UMKM</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Beli produk UMKM pilihan, temukan jasa terdekat, dan dukung usaha lokal Indonesia.
           </p>
         </div>
 
         {/* ─── Horizontal Scrollable Category Pill Bar ─────────── */}
-        <div id="category-bar" className="mb-4 relative max-w-[1200px]">
+        <div id="category-bar" className="mb-4 relative">
           <div
             id="category-scroll"
-            className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
+            className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-hide -mx-1 px-1"
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {ALL_CATEGORIES.map((cat) => {
@@ -107,10 +107,10 @@ export default async function MarketPage({ searchParams }: PageProps) {
                   id={`cat-tab-${cat.value || "all"}`}
                   key={cat.value}
                   href={cat.value ? `/market?category=${cat.value}${queryParam ? `&query=${encodeURIComponent(queryParam)}` : ''}` : "/market"}
-                  className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-200 whitespace-nowrap ${
+                  className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? "bg-primary text-white shadow-sm"
-                      : "bg-white hover:bg-slate-50 text-gray-500 hover:text-gray-800 border border-gray-200"
+                      ? "bg-[#2DB24A] text-white shadow-sm font-bold"
+                      : "bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200"
                   }`}
                 >
                   {cat.name}
@@ -118,7 +118,6 @@ export default async function MarketPage({ searchParams }: PageProps) {
               );
             })}
           </div>
-          <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-[#F5F7FA] to-transparent pointer-events-none" />
         </div>
 
         {/* Product List Grid */}

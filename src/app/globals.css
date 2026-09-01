@@ -128,22 +128,22 @@
 @layer components {
   .btn-primary {
     @apply inline-flex items-center justify-center text-white font-poppins font-semibold transition-colors duration-200;
-    background-color: var(--color-market-green-500);
+    background-color: #2DB24A;
     border-radius: var(--radius-brand);
-    padding: 12px 24px; /* Standardized balanced padding */
+    padding: 10px 20px;
   }
   .btn-primary:hover {
-    background-color: var(--color-market-green-600);
+    background-color: #24943E;
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center bg-white font-poppins font-semibold border-2 transition-colors duration-200;
-    color: var(--color-market-green-500);
-    border-color: var(--color-market-green-500);
+    color: #2DB24A;
+    border-color: #2DB24A;
     border-radius: var(--radius-brand);
-    padding: 10px 22px; /* Accounting for border width */
+    padding: 8px 18px;
   }
   .btn-secondary:hover {
-    background-color: #f0fdf4; /* A light green for hover, equivalent to market-green-50 approx */
+    background-color: #f0fdf4;
   }
 
   .glass-card {
@@ -174,10 +174,15 @@
   --background: #F8FAFC;
   --foreground: #0F172A;
 
-  --primary: var(--color-market-green-500);
-  --primary-hover: var(--color-market-green-600);
-  --primary-soft: var(--color-market-green-50);
-  --inverse-primary: var(--color-market-green-400);
+  --color-market-green-50: #EEF8E9;
+  --color-market-green-500: #2DB24A;
+  --color-market-green-600: #24943E;
+  --color-market-green-700: #1B7A32;
+
+  --primary: #2DB24A;
+  --primary-hover: #24943E;
+  --primary-soft: #EEF8E9;
+  --inverse-primary: #76BD4D;
   --primary-container: #E8F5E9;
   --on-primary-container: #006E24;
   --secondary: #0F5132;
@@ -208,7 +213,7 @@
   --outline-variant: #CBD5E1;
   --error: #ba1a1a;
   --error-container: #ffdad6;
-  --glow-primary: rgba(84, 173, 33, 0.06);
+  --glow-primary: rgba(45, 178, 74, 0.08);
 }
 
 .dark {
