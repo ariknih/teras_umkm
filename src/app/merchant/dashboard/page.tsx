@@ -3103,61 +3103,74 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       </div>
                     </div>
 
-                    {/* Right Column: Custom scripts header/footers */}
-                    <div className="space-y-6">
-                      <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Custom Head & Footer Scripts</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Header Script - Desktop (Facebook Pixel, GTM, CSS Kustom)</label>
-                          <textarea
-                            name="headDesktop"
-                            defaultValue={editingPage.headDesktop}
-                            rows={3}
-                            placeholder="<script>...</script> atau <style>...</style>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                          />
+                    {/* Right Column: Custom scripts header/footers (Collapsible & Friendly) */}
+                    <div className="border border-slate-200 bg-slate-50/60 rounded-2xl p-4 sm:p-5 space-y-3">
+                      <details className="group">
+                        <summary className="font-sora text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center justify-between cursor-pointer list-none select-none">
+                          <span className="flex items-center gap-2">
+                            <span>⚙️</span>
+                            <span>Skrip Lanjutan & Tracking Pixel (Opsional)</span>
+                          </span>
+                          <span className="text-emerald-600 text-xs font-bold transition-transform group-open:rotate-180">▼</span>
+                        </summary>
+                        
+                        <div className="pt-3 mt-3 border-t border-slate-200 space-y-4">
+                          <p className="text-[11px] text-slate-600 leading-relaxed bg-white p-3 rounded-xl border border-slate-200/80">
+                            💡 <strong>Catatan:</strong> Bagian ini khusus untuk pengguna yang ingin memasang tracking iklan (seperti <em>Facebook Pixel</em>, <em>TikTok Pixel</em>, <em>Google Analytics</em>, atau widget chat). <strong>Jika Anda tidak menggunakannya, biarkan kosong.</strong>
+                          </p>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">Header Script - Desktop (FB Pixel, GTM, CSS)</label>
+                            <textarea
+                              name="headDesktop"
+                              defaultValue={editingPage.headDesktop}
+                              rows={2}
+                              placeholder="<script>...</script> atau <style>...</style>"
+                              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">Header Script - Mobile Only</label>
+                            <textarea
+                              name="headMobile"
+                              defaultValue={editingPage.headMobile}
+                              rows={2}
+                              placeholder="<script>...</script>"
+                              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">Footer Script - All Devices (Chat Widget, Analytics)</label>
+                            <textarea
+                              name="footerAny"
+                              defaultValue={editingPage.footerAny}
+                              rows={2}
+                              placeholder="<script>...</script>"
+                              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">Footer Script - Desktop Only</label>
+                            <textarea
+                              name="footerDesktop"
+                              defaultValue={editingPage.footerDesktop}
+                              rows={2}
+                              placeholder="<script>...</script>"
+                              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-1.5">Footer Script - Mobile Only</label>
+                            <textarea
+                              name="footerMobile"
+                              defaultValue={editingPage.footerMobile}
+                              rows={2}
+                              placeholder="<script>...</script>"
+                              className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Header Script - Mobile Only</label>
-                          <textarea
-                            name="headMobile"
-                            defaultValue={editingPage.headMobile}
-                            rows={3}
-                            placeholder="<script>...</script>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer Script - All Devices (Chat Widget, Analytics)</label>
-                          <textarea
-                            name="footerAny"
-                            defaultValue={editingPage.footerAny}
-                            rows={3}
-                            placeholder="<script>...</script>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer Script - Desktop Only</label>
-                          <textarea
-                            name="footerDesktop"
-                            defaultValue={editingPage.footerDesktop}
-                            rows={3}
-                            placeholder="<script>...</script>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Footer - Mobile Only</label>
-                          <textarea
-                            name="footerMobile"
-                            defaultValue={editingPage.footerMobile}
-                            rows={3}
-                            placeholder="<script>...</script>"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary font-mono focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                          />
-                        </div>
-                      </div>
+                      </details>
                     </div>
                   </div>
 
@@ -3172,7 +3185,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                     <button
                       type="submit"
                       disabled={isPending}
-                      className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
                     >
                       {isPending ? 'Menyimpan...' : 'Simpan Pengaturan Halaman'}
                     </button>
@@ -3202,29 +3215,29 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   </div>
                   <div className="bg-white p-5 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between">
                     <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Diarsipkan</span>
-                    <h3 className="font-sora text-2xl font-black text-text-secondary mt-2">
+                    <h3 className="font-sora text-2xl font-black text-slate-400 mt-2">
                       {pagesList.filter((p: any) => p.status === 'ARCHIVED').length}
                     </h3>
                   </div>
                 </div>
 
-                {/* Toolbar options */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 flex-grow max-w-md">
-                    <div className="relative flex-grow">
+                {/* Filter and action bar */}
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 bg-white p-4 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+                  <div className="flex flex-wrap items-center gap-3 flex-1">
+                    <div className="relative flex-1 min-w-[200px]">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" size={14} />
                       <input
                         type="text"
                         placeholder="Cari nama atau slug halaman..."
                         value={searchPageQuery}
                         onChange={(e) => setSearchPageQuery(e.target.value)}
-                        className="w-full h-10 pl-10 pr-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
                       />
-                      <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary" />
                     </div>
                     <select
                       value={filterStatus}
                       onChange={(e) => setFilterStatus(e.target.value)}
-                      className="h-10 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer"
+                      className="px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs text-text-secondary font-medium focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all cursor-pointer"
                     >
                       <option value="all">Semua Status</option>
                       <option value="PUBLISHED">Diterbitkan</option>
@@ -3232,7 +3245,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       <option value="ARCHIVED">Diarsipkan</option>
                     </select>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <button
                       onClick={() => {
                         try {
@@ -3241,7 +3254,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         } catch (e) {}
                         setShowDomainModal(true)
                       }}
-                      className="btn-primary border border-primary text-primary hover:bg-primary/5 text-xs flex items-center gap-1.5 cursor-pointer outline-none"
+                      className="flex-1 sm:flex-initial px-4 py-2.5 bg-white hover:bg-emerald-50 text-emerald-700 font-bold border border-emerald-600 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all outline-none"
                     >
                       <Globe size={14} />
                       Hubungkan Domain
@@ -3252,7 +3265,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         setCreatePageTemplate('template1')
                         setShowCreateModal(true)
                       }}
-                      className="btn-primary text-xs flex items-center gap-1.5 cursor-pointer outline-none shadow-sm"
+                      className="flex-1 sm:flex-initial px-4 py-2.5 bg-[#2DB24A] hover:bg-[#24943E] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm transition-all outline-none"
                     >
                       <Plus size={14} />
                       Buat Halaman Baru

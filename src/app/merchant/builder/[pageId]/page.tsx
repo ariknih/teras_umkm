@@ -1489,6 +1489,7 @@ export default function BuilderPage() {
   const [profile, setProfile] = useState<any>(null)
   const [pageName, setPageName] = useState('Halaman Saya')
   const [merchantProducts, setMerchantProducts] = useState<any[]>([])
+  const [mobileTab, setMobileTab] = useState<'canvas' | 'components' | 'settings'>('canvas')
 
   // Style & AI Theme States
   const [canvasBg, setCanvasBg] = useState('#FFFFFF')
@@ -1788,7 +1789,7 @@ export default function BuilderPage() {
 
   const addComp=(type:string)=>{
     const c:BuilderComponent={id:`c-${Date.now()}-${Math.random().toString(36).slice(2)}`,type,content:defaultContent(type),style:defaultStyle(),advance:defaultAdvance()}
-    const next=[...comps,c];setComps(next);push(next);setSelId(c.id)
+    const next=[...comps,c];setComps(next);push(next);setSelId(c.id);setMobileTab('canvas')
   }
   const updComp=(u:BuilderComponent)=>{const next=comps.map(c=>c.id===u.id?u:c);setComps(next);push(next)}
   const delComp=(id:string)=>{const next=comps.filter(c=>c.id!==id);setComps(next);push(next);setSelId(null)}
@@ -1866,14 +1867,16 @@ export default function BuilderPage() {
       `}</style>
 
       {/* ══ TOP BAR ════════════════════════════════════════════════════════════ */}
-      <header className="h-[50px] bg-white border-b border-[#e4e6ea] flex items-center px-4 gap-3 flex-shrink-0 z-50" style={{boxShadow:'0 1px 0 rgba(0,0,0,0.04)'}}>
+      <header className="h-[52px] bg-white border-b border-[#e4e6ea] flex items-center justify-between px-3 sm:px-4 gap-2 flex-shrink-0 z-50 shadow-sm">
         {/* Left */}
         <div className="flex items-center gap-2 min-w-0">
-          <button onClick={()=>router.push('/merchant/dashboard')} className="flex items-center gap-1.5 text-[12px] font-medium text-gray-500 hover:text-gray-900 border border-[#e4e6ea] rounded-lg px-3 h-8 transition-colors hover:bg-gray-50 flex-shrink-0">
+          <button onClick={()=>router.push('/merchant/dashboard')} className="flex items-center gap-1.5 text-[11px] sm:text-[12px] font-medium text-gray-500 hover:text-gray-900 border border-[#e4e6ea] rounded-lg px-2.5 sm:px-3 h-8 transition-colors hover:bg-gray-50 flex-shrink-0">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-            Page List
+            <span className="hidden xs:inline sm:inline">Daftar Halaman</span>
           </button>
-          <div className="relative flex-shrink-0">
+
+          {/* Desktop Canvas Selector */}
+          <div className="relative flex-shrink-0 hidden md:block">
             <button onClick={()=>setShowCanvasMenu(p=>!p)} className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600 border border-[#e4e6ea] rounded-lg px-3 h-8 hover:bg-gray-50 transition-colors">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
               Canvas: {canvasW}
@@ -1888,20 +1891,21 @@ export default function BuilderPage() {
             )}
           </div>
 
+          {/* Style & AI Menu */}
           <div className="relative flex-shrink-0">
             <button
               onClick={() => setShowStyleMenu(p => !p)}
-              className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600 border border-[#e4e6ea] rounded-lg px-3 h-8 hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-1 text-[11px] sm:text-[12px] font-medium text-gray-600 border border-[#e4e6ea] rounded-lg px-2 sm:px-3 h-8 hover:bg-gray-50 transition-colors"
             >
               <Sparkles size={11} className="text-primary" />
-              Style & AI
+              <span className="hidden xs:inline">Style & AI</span>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
             {showStyleMenu && (
               <div
-                className="absolute top-full left-0 mt-1 bg-[#1a1f2e] border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden z-50 w-[300px] text-white p-4 space-y-4 font-sans"
+                className="absolute top-full left-0 mt-1 bg-[#1a1f2e] border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden z-50 w-[290px] sm:w-[320px] text-white p-4 space-y-4 font-sans"
                 onClick={e => e.stopPropagation()}
               >
                 {/* Tabs */}
@@ -2119,41 +2123,51 @@ export default function BuilderPage() {
           </div>
         </div>
 
-        {/* Center */}
-        <div className="flex-1 flex items-center justify-center gap-2">
-          <span className="text-[11px] text-gray-400 hidden sm:inline">Preview on</span>
+        {/* Center: Desktop Device Preview Tabs */}
+        <div className="hidden md:flex flex-1 items-center justify-center gap-2">
+          <span className="text-[11px] text-gray-400 hidden lg:inline">Preview on</span>
           <div className="flex bg-[#f1f3f5] rounded-xl p-0.5">
             {([['desktop','Desktop'],['tablet','Tablet'],['mobile','Mobile']] as const).map(([d,lbl])=>(
-              <button key={d} onClick={()=>setDevice(d)} className={`px-4 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all ${device===d?'bg-white text-gray-900 shadow-sm':'text-gray-400 hover:text-gray-600'}`}>{lbl}</button>
+              <button key={d} onClick={()=>setDevice(d)} className={`px-3 lg:px-4 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all ${device===d?'bg-white text-gray-900 shadow-sm':'text-gray-400 hover:text-gray-600'}`}>{lbl}</button>
             ))}
           </div>
         </div>
 
-        {/* Right */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button onClick={doUndo} disabled={histIdx<=0} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 transition-all" title="Undo (Ctrl+Z)">
+        {/* Center: Mobile Page Title */}
+        <div className="md:hidden flex-1 text-center truncate px-1">
+          <span className="text-xs font-bold text-slate-800 truncate block">{pageName}</span>
+        </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button onClick={doUndo} disabled={histIdx<=0} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 transition-all" title="Undo (Ctrl+Z)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 010 16H3"/><path strokeLinecap="round" strokeLinejoin="round" d="M3 10l4-4-4-4"/></svg>
           </button>
-          <button onClick={doRedo} disabled={histIdx>=hist.length-1} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 transition-all" title="Redo (Ctrl+Shift+Z)">
+          <button onClick={doRedo} disabled={histIdx>=hist.length-1} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 transition-all" title="Redo (Ctrl+Shift+Z)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M21 10H11a8 8 0 000 16h10"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 10l-4-4 4-4"/></svg>
           </button>
-          <div className="w-px h-5 bg-[#e4e6ea] mx-1"/>
-          <button onClick={handleSave} disabled={saving} className={`h-8 px-5 rounded-xl text-[12px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${saved?'bg-emerald-500 text-white':'bg-primary hover:bg-[#0F5132] text-white'} disabled:opacity-70`}>
-            {saving?<><svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 12a8 8 0 018-8"/></svg>Saving...</>:saved?<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>Saved!</>:'Save'}
+          <div className="w-px h-5 bg-[#e4e6ea] mx-0.5 sm:mx-1"/>
+          <button onClick={handleSave} disabled={saving} className={`h-8 px-3.5 sm:px-5 rounded-xl text-[11px] sm:text-[12px] font-bold transition-all flex items-center gap-1.5 shadow-sm ${saved?'bg-emerald-500 text-white':'bg-[#2DB24A] hover:bg-[#24943E] text-white'} disabled:opacity-70 cursor-pointer`}>
+            {saving?<><svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 12a8 8 0 018-8"/></svg><span className="hidden xs:inline">Menyimpan...</span></>:saved?<><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>Tersimpan!</>:'Simpan'}
           </button>
         </div>
       </header>
 
-      {/* ══ BODY ════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* ══ BODY ════════════════════════════════════════════════════════════ */}
+      <div className="flex flex-1 overflow-hidden relative">
 
         {/* ── LEFT SIDEBAR — Component Library ────────────────────────────── */}
-        <aside className="w-[210px] flex-shrink-0 flex flex-col overflow-hidden border-r border-[rgba(255,255,255,0.06)]" style={{background:'#1a1f2e'}}>
+        <aside className={`${mobileTab === 'components' ? 'flex w-full absolute inset-0 z-40' : 'hidden md:flex md:w-[210px]'} flex-shrink-0 flex-col overflow-hidden border-r border-[rgba(255,255,255,0.06)]`} style={{background:'#1a1f2e'}}>
           {/* Search */}
           <div className="px-3 pt-4 pb-3 flex-shrink-0" style={{borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-white text-[13px] font-semibold">Komponen</span>
-              <span className="text-[10px] text-white/30 font-medium">{comps.length} aktif</span>
+              <span className="text-white text-[13px] font-semibold">Pilih Komponen</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-white/40 font-medium">{comps.length} aktif</span>
+                {mobileTab === 'components' && (
+                  <button onClick={()=>setMobileTab('canvas')} className="md:hidden text-white/80 hover:text-white text-xs bg-white/10 px-2 py-0.5 rounded-md">✕ Tutup</button>
+                )}
+              </div>
             </div>
             <div className="relative">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"><circle cx="11" cy="11" r="8"/><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35"/></svg>
@@ -2162,14 +2176,16 @@ export default function BuilderPage() {
           </div>
 
           {/* Component list */}
-          <div className="flex-1 overflow-y-auto py-2 scrollbar-none">
+          <div className="flex-1 overflow-y-auto py-2 scrollbar-none pb-20 md:pb-2">
             {filtered.map(cat=>(
               <div key={cat.category} className="px-2 mb-2">
                 <div className="px-2 pt-2 pb-1 text-[9px] font-bold uppercase tracking-[0.12em]" style={{color:'rgba(255,255,255,0.22)'}}>{cat.category}</div>
                 {cat.items.map(item=>(
                   <button
                     key={item.type}
-                    onClick={()=>addComp(item.type)}
+                    onClick={()=>{
+                      addComp(item.type)
+                    }}
                     draggable
                     onDragStart={e=>{e.dataTransfer.setData('component-type',item.type)}}
                     className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-all text-left group cursor-pointer"
@@ -2194,7 +2210,7 @@ export default function BuilderPage() {
 
         {/* ── CANVAS ─────────────────────────────────────────────────────── */}
         <main
-          className="flex-1 overflow-y-auto overflow-x-hidden"
+          className={`flex-1 overflow-y-auto overflow-x-hidden ${mobileTab === 'canvas' ? 'flex flex-col' : 'hidden md:flex md:flex-col'} pb-24 md:pb-8`}
           style={{background:'#e8eaed'}}
           onClick={()=>setSelId(null)}
           onDragOver={e=>{e.preventDefault()}}
@@ -2203,7 +2219,7 @@ export default function BuilderPage() {
             if(type){addComp(type)}
           }}
         >
-          <div className="min-h-full flex flex-col items-center py-8 px-4">
+          <div className="min-h-full flex flex-col items-center py-4 md:py-8 px-2 sm:px-4">
             <div
               className="w-full shadow-xl transition-all duration-300"
               style={{
@@ -2216,7 +2232,7 @@ export default function BuilderPage() {
             >
               {comps.length===0?(
                 <div
-                  className="min-h-[600px] flex flex-col items-center justify-center gap-4 cursor-default"
+                  className="min-h-[600px] flex flex-col items-center justify-center gap-4 cursor-default p-6"
                   style={{border:'2px dashed #e4e6ea',borderRadius:4}}
                   onDragOver={e=>{e.preventDefault()}}
                   onDrop={e=>{
@@ -2228,8 +2244,14 @@ export default function BuilderPage() {
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2DB24A" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14"/></svg>
                   </div>
                   <div className="text-center">
-                    <p className="text-[15px] font-semibold text-gray-500">Klik komponen di sidebar atau</p>
-                    <p className="text-[13px] text-gray-400 mt-1">drag komponen ke sini untuk mulai</p>
+                    <p className="text-[15px] font-semibold text-gray-700">Mulai Bangun Landing Page</p>
+                    <p className="text-[13px] text-gray-400 mt-1">Pilih komponen di menu Komponen untuk menambahkan blok konten.</p>
+                    <button
+                      onClick={()=>setMobileTab('components')}
+                      className="md:hidden mt-4 px-5 py-2.5 bg-[#2DB24A] text-white rounded-xl text-xs font-bold shadow-md cursor-pointer"
+                    >
+                      ➕ Tambah Komponen Pertama
+                    </button>
                   </div>
                 </div>
               ):(
@@ -2263,7 +2285,10 @@ export default function BuilderPage() {
                       onDragOver={e=>handleDragOver(e,idx)}
                       onDrop={e=>handleDrop(e,idx)}
                       onDragEnd={handleDragEnd}
-                      onClick={e=>{e.stopPropagation();setSelId(comp.id)}}
+                      onClick={e=>{
+                        e.stopPropagation();
+                        setSelId(comp.id);
+                      }}
                     >
                       {/* Hover outline for non-selected */}
                       {comp.id!==selId&&(
@@ -2284,9 +2309,9 @@ export default function BuilderPage() {
 
                       {/* Selected blue top action bar */}
                       {comp.id === selId && (
-                        <div className="absolute top-0 left-0 right-0 -translate-y-full bg-blue-600 text-white h-9 px-3 flex items-center justify-between z-35 rounded-t-lg select-none shadow-md">
+                        <div className="absolute top-0 left-0 right-0 -translate-y-full bg-blue-600 text-white h-9 px-2 sm:px-3 flex items-center justify-between z-35 rounded-t-lg select-none shadow-md">
                           {/* Left actions: Trash, Copy, Bookmark */}
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
                             <button 
                               onClick={e=>{e.stopPropagation();delComp(comp.id)}} 
                               className="w-5 h-5 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-white/10 transition-all cursor-pointer" 
@@ -2311,44 +2336,19 @@ export default function BuilderPage() {
                           </div>
                           
                           {/* Right actions: AI Rewrite, Quick Edit, Full Edit */}
-                          <div className="flex items-center gap-1.5 relative">
+                          <div className="flex items-center gap-1 sm:gap-1.5 relative">
                             {/* AI Rewrite Button */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setShowAiRewriteMenu(p => p === comp.id ? null : comp.id);
                               }}
-                              className="flex items-center gap-1 px-3 py-1 bg-blue-750 hover:bg-blue-800 border border-blue-500/20 text-white rounded text-[10px] font-bold tracking-wider uppercase transition-colors cursor-pointer"
+                              className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-blue-750 hover:bg-blue-800 border border-blue-500/20 text-white rounded text-[10px] font-bold tracking-wider uppercase transition-colors cursor-pointer"
                             >
                               <Sparkles size={9} />
                               AI Rewrite
                             </button>
 
-                            {/* Quick Edit */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Open style tab custom
-                                setShowStyleMenu(true);
-                                setStyleTab('custom');
-                              }}
-                              className="flex items-center gap-1 px-3 py-1 bg-blue-750 hover:bg-blue-800 border border-blue-500/20 text-white rounded text-[10px] font-bold tracking-wider uppercase transition-colors cursor-pointer"
-                            >
-                              <Pencil size={9} />
-                              Quick Edit
-                            </button>
-
-                            {/* Full Edit */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Clicked full edit
-                              }}
-                              className="flex items-center gap-1 px-3 py-1 bg-blue-750 hover:bg-blue-800 border border-blue-500/20 text-white rounded text-[10px] font-bold tracking-wider uppercase transition-colors cursor-pointer"
-                            >
-                              <Settings size={9} />
-                              Full Edit
-                            </button>
 
                             {/* AI Rewrite Menu Dropdown Popover */}
                             {showAiRewriteMenu === comp.id && (
@@ -2491,11 +2491,14 @@ export default function BuilderPage() {
                       if(type){addComp(type)}
                       else handleDrop(e,comps.length)
                     }}
-                    onClick={()=>{setSelId(null)}}
+                    onClick={()=>{
+                      setSelId(null)
+                      setMobileTab('components')
+                    }}
                   >
                     <div className="flex items-center gap-2" style={{color:'#9ca3af'}}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14"/></svg>
-                      <span className="text-[12px]">Klik komponen di sidebar atau drag ke sini</span>
+                      <span className="text-[12px]">➕ Tambah Komponen Baru</span>
                     </div>
                   </div>
                 </div>
@@ -2503,40 +2506,86 @@ export default function BuilderPage() {
             </div>
 
             {comps.length>0&&(
-              <p className="mt-4 text-[11px]" style={{color:'#9ca3af'}}>{comps.length} komponen • {pageName} • Tekan Delete untuk hapus komponen terpilih</p>
+              <p className="mt-4 text-[11px]" style={{color:'#9ca3af'}}>{comps.length} komponen • {pageName}</p>
             )}
           </div>
         </main>
 
         {/* ── RIGHT SIDEBAR — Settings Panel ────────────────────────────── */}
-        {selComp?(
-          <aside className="w-[272px] flex-shrink-0 flex flex-col overflow-hidden border-l border-[#e4e6ea]">
+        {selComp ? (
+          <aside className={`${mobileTab === 'settings' ? 'flex w-full fixed md:absolute inset-0 z-50 bg-white' : 'hidden lg:flex lg:w-[272px]'} flex-shrink-0 flex-col overflow-hidden border-l border-[#e4e6ea]`}>
+            {mobileTab === 'settings' && (
+              <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Edit: {selComp.type}</span>
+                </div>
+                <button onClick={()=>setMobileTab('canvas')} className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm">
+                  Selesai ✓
+                </button>
+              </div>
+            )}
             <SettingsPanel
               comp={selComp}
               onChange={updComp}
-              onDelete={()=>delComp(selComp.id)}
+              onDelete={()=>{delComp(selComp.id); setMobileTab('canvas')}}
               onDuplicate={()=>dupComp(selComp.id)}
               merchantProducts={merchantProducts}
             />
           </aside>
-        ):(
-          <aside className="w-[272px] flex-shrink-0 flex flex-col overflow-hidden border-l border-[#e4e6ea] bg-white">
+        ) : (
+          <aside className={`${mobileTab === 'settings' ? 'flex w-full fixed md:absolute inset-0 z-50 bg-white' : 'hidden lg:flex lg:w-[272px]'} flex-shrink-0 flex-col overflow-hidden border-l border-[#e4e6ea] bg-white`}>
+            {mobileTab === 'settings' && (
+              <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 flex-shrink-0">
+                <span className="text-xs font-bold text-slate-300">Pengaturan</span>
+                <button onClick={()=>setMobileTab('canvas')} className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold">
+                  ✕ Tutup
+                </button>
+              </div>
+            )}
             <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6 text-center">
               <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="1.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
               </div>
               <div>
                 <p className="text-[13px] font-semibold text-gray-600 mb-1">Pilih Komponen</p>
-                <p className="text-[12px] text-gray-400">Klik komponen di canvas untuk edit konten dan gaya</p>
-              </div>
-              <div className="mt-2 text-[11px] text-gray-300 space-y-1">
-                <p>Ctrl+Z = Undo</p>
-                <p>Ctrl+Shift+Z = Redo</p>
-                <p>Delete = Hapus terpilih</p>
+                <p className="text-[12px] text-gray-400">Klik salah satu komponen di kanvas untuk mengedit teks, gambar, dan warnanya.</p>
               </div>
             </div>
           </aside>
         )}
+      </div>
+
+      {/* ══ MOBILE BOTTOM NAVIGATION BAR ════════════════════════════════════ */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 flex items-center justify-around px-2 shadow-lg">
+        <button
+          onClick={() => setMobileTab('canvas')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 gap-0.5 text-[10px] font-bold transition-all ${
+            mobileTab === 'canvas' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <span className="text-base">📱</span>
+          <span>Kanvas ({comps.length})</span>
+        </button>
+
+        <button
+          onClick={() => setMobileTab('components')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 gap-0.5 text-[10px] font-bold transition-all ${
+            mobileTab === 'components' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <span className="text-base">➕</span>
+          <span>Komponen</span>
+        </button>
+
+        <button
+          onClick={() => setMobileTab('settings')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 gap-0.5 text-[10px] font-bold transition-all ${
+            mobileTab === 'settings' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <span className="text-base">⚙️</span>
+          <span>{selComp ? `Edit (${selComp.type})` : 'Pengaturan'}</span>
+        </button>
       </div>
     </div>
   )
