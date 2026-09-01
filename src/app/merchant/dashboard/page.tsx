@@ -11,8 +11,29 @@ import { getMerchantAnalytics } from '@/app/actions/analytics'
 import { getCourses, getUserProgress } from '@/app/actions/lms'
 import { joinBootcampAction } from '@/app/actions/bootcamp'
 import { createLevelRequestAction } from '@/app/actions/admin'
-import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info } from 'lucide-react'
+import { 
+  getServicesAction, 
+  createServiceAction, 
+  updateServiceAction, 
+  deleteServiceAction, 
+  getMerchantServiceBookingsAction, 
+  updateServiceBookingStatusAction 
+} from '@/app/actions/services'
+import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info, Briefcase, Wrench, CalendarCheck, Clock, MapPin, CheckCircle2, UserCheck } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
+
+export const SERVICE_CATEGORIES = [
+  'Desain & Multimedia',
+  'Teknologi & IT',
+  'Konsultasi Bisnis',
+  'Kerajinan & Seni',
+  'Reparasi & Perawatan',
+  'Fotografi & Video',
+  'Pendidikan & Kursus Privat',
+  'Katering & Boga',
+  'Kecantikan & Rias',
+  'Lainnya'
+]
 
 interface Product {
   id: string
@@ -98,8 +119,17 @@ export default function MerchantDashboardPage() {
   const [createPageTemplate, setCreatePageTemplate] = useState('template1')
   const [createPagePreview, setCreatePagePreview] = useState<'mobile' | 'desktop'>('mobile')
   
-  // Tabs: 'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy' | 'leveling'
-  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy' | 'leveling'>('overview')
+  // Tabs: 'overview' | 'catalog' | 'add' | 'services' | 'bookings' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy' | 'leveling'
+  const [activeTab, setActiveTab] = useState<'overview' | 'catalog' | 'add' | 'services' | 'bookings' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy' | 'leveling'>('overview')
+  
+  // Services & Bookings State
+  const [services, setServices] = useState<any[]>([])
+  const [serviceBookings, setServiceBookings] = useState<any[]>([])
+  const [editingService, setEditingService] = useState<any | null>(null)
+  const [showCreateServiceModal, setShowCreateServiceModal] = useState(false)
+  const [serviceBookingFilter, setServiceBookingFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('ALL')
+  const [createServiceImageUrl, setCreateServiceImageUrl] = useState<string>('')
+  const [editServiceImageUrl, setEditServiceImageUrl] = useState<string>('')
   
   // LMS Academy state
   const [courses, setCourses] = useState<any[]>([])
@@ -424,6 +454,12 @@ export default function MerchantDashboardPage() {
           setCourses(lmsCourses)
           const progress = await getUserProgress()
           setUserProgress(progress)
+
+          // Load services & service bookings
+          const myServices = await getServicesAction({ merchantId: u.id })
+          setServices(myServices || [])
+          const myBookings = await getMerchantServiceBookingsAction()
+          setServiceBookings(myBookings || [])
         }
       }
     } catch (err) {
@@ -438,7 +474,7 @@ export default function MerchantDashboardPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const tabParam = params.get('tab')
-      if (tabParam && ['overview', 'catalog', 'add', 'orders', 'analytics', 'pages', 'customization', 'academy', 'leveling'].includes(tabParam)) {
+      if (tabParam && ['overview', 'catalog', 'add', 'services', 'bookings', 'orders', 'analytics', 'pages', 'customization', 'academy', 'leveling'].includes(tabParam)) {
         setActiveTab(tabParam as any)
       }
     }
@@ -826,6 +862,88 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
     })
   }
 
+  // ─── JASA & LAYANAN HANDLERS ──────────────────────────────────────────
+  const handleCreateService = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+
+    const form = e.currentTarget
+    const formData = new FormData(form)
+    if (createServiceImageUrl) {
+      formData.set('images', JSON.stringify([createServiceImageUrl]))
+    }
+
+    startTransition(async () => {
+      const res = await createServiceAction(formData)
+      if (!res.success) {
+        setError(res.error || 'Gagal menambahkan layanan jasa.')
+      } else {
+        setSuccess('Layanan jasa baru berhasil ditambahkan!')
+        setShowCreateServiceModal(false)
+        setCreateServiceImageUrl('')
+        form.reset()
+        setActiveTab('services')
+        await loadData()
+      }
+    })
+  }
+
+  const handleUpdateService = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+
+    if (!editingService) return
+    const formData = new FormData(e.currentTarget)
+    if (editServiceImageUrl) {
+      formData.set('images', JSON.stringify([editServiceImageUrl]))
+    }
+
+    startTransition(async () => {
+      const res = await updateServiceAction(editingService.id, formData)
+      if (!res.success) {
+        setError(res.error || 'Gagal memperbarui layanan jasa.')
+      } else {
+        setSuccess('Detail layanan jasa berhasil diperbarui!')
+        setEditingService(null)
+        setEditServiceImageUrl('')
+        await loadData()
+      }
+    })
+  }
+
+  const handleDeleteService = (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus layanan jasa ini secara permanen?')) return
+    setError(null)
+    setSuccess(null)
+
+    startTransition(async () => {
+      const res = await deleteServiceAction(id)
+      if (!res.success) {
+        setError(res.error || 'Gagal menghapus layanan jasa.')
+      } else {
+        setSuccess('Layanan jasa berhasil dihapus.')
+        await loadData()
+      }
+    })
+  }
+
+  const handleUpdateBookingStatus = (bookingId: string, status: string) => {
+    setError(null)
+    setSuccess(null)
+
+    startTransition(async () => {
+      const res = await updateServiceBookingStatusAction(bookingId, status)
+      if (!res.success) {
+        setError(res.error || 'Gagal mengubah status booking.')
+      } else {
+        setSuccess(`Status pesanan booking berhasil diubah menjadi: ${status}`)
+        await loadData()
+      }
+    })
+  }
+
   const handleGenerateAiText = async () => {
     setGeneratingAiText(true)
     setError(null)
@@ -1029,6 +1147,9 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
     const lastTracking = o.tracking && o.tracking.length > 0 ? o.tracking[o.tracking.length - 1].status : 'CONFIRMED';
     return lastTracking !== 'DELIVERED' && lastTracking !== 'CANCELLED';
   }).length
+  const pendingBookingsCount = serviceBookings.filter(b => b.status === 'PENDING').length
+  const confirmedBookingsCount = serviceBookings.filter(b => b.status === 'CONFIRMED').length
+  const completedBookingsCount = serviceBookings.filter(b => b.status === 'COMPLETED').length
 
   // Pages management helpers
   const pagesList = (() => {
@@ -1104,6 +1225,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
             { id: 'overview', label: 'Ringkasan Toko' },
             { id: 'catalog', label: `Katalog Produk (${totalItems})` },
             { id: 'add', label: 'Tambah Produk' },
+            { id: 'services', label: `Layanan Jasa (${services.length})` },
+            { id: 'bookings', label: `Booking Jasa (${serviceBookings.length})` },
             { id: 'orders', label: `Pesanan Masuk (${orders.length})` },
             { id: 'analytics', label: 'Analitik Bisnis' },
             { id: 'pages', label: 'Daftar Halaman & Domain' },
@@ -1129,8 +1252,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Quick Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100/80">
                 <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
                   Saldo Penjualan Merchant
                 </span>
@@ -1148,9 +1271,9 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </Link>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100/80">
                 <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
-                  Jumlah Produk Aktif
+                  Produk Fisik Aktif
                 </span>
                 <h2 className="font-sora text-2xl font-black text-text-primary mb-4">
                   {totalItems} Item
@@ -1165,7 +1288,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
               <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-amber-100/70">
                 <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
-                  Pesanan Baru / Diproses
+                  Pesanan Fisik Diproses
                 </span>
                 <h2 className={`font-sora text-2xl font-black mb-4 ${pendingOrdersCount > 0 ? 'text-amber-600 animate-pulse' : 'text-text-primary'}`}>
                   {pendingOrdersCount} Pesanan
@@ -1178,15 +1301,49 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </button>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+              {/* Layanan Jasa Card */}
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-emerald-100/70">
+                <span className="block text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Briefcase size={13} className="text-primary" />
+                  Layanan Jasa & Keahlian
+                </span>
+                <h2 className="font-sora text-2xl font-black text-text-primary mb-4">
+                  {services.length} Layanan
+                </h2>
+                <button
+                  onClick={() => setActiveTab('services')}
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  Kelola Layanan Jasa
+                </button>
+              </div>
+
+              {/* Booking Jasa Card */}
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-blue-100/70">
+                <span className="block text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <CalendarCheck size={13} className="text-blue-600" />
+                  Pesanan Booking Jasa
+                </span>
+                <h2 className={`font-sora text-2xl font-black mb-4 ${pendingBookingsCount > 0 ? 'text-amber-600 animate-pulse' : 'text-text-primary'}`}>
+                  {pendingBookingsCount > 0 ? `${pendingBookingsCount} Perlu Konfirmasi` : `${serviceBookings.length} Booking`}
+                </h2>
+                <button
+                  onClick={() => setActiveTab('bookings')}
+                  className="text-[10px] font-bold text-[#0F5132] hover:text-primary uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  Lihat Jadwal Booking
+                </button>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100/80">
                 <span className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">
-                  Stok Menipis / Habis
+                  Stok Produk Menipis
                 </span>
                 <h2 className={`font-sora text-2xl font-black mb-4 ${outOfStockItems > 0 ? 'text-red-500 animate-pulse' : 'text-text-primary'}`}>
                   {outOfStockItems} Item
                 </h2>
                 <span className="text-[10px] text-text-secondary">
-                  Lakukan pembaruan inventaris secara berkala.
+                  Inventaris produk fisik terpantau.
                 </span>
               </div>
             </div>
@@ -2101,6 +2258,539 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 {isPending ? 'Menerbitkan...' : 'Terbitkan Produk Sekarang'}
               </button>
             </form>
+          </div>
+        )}
+
+        {/* ─── SERVICES (JASA & LAYANAN) TAB ─── */}
+        {activeTab === 'services' && (
+          <div className="space-y-6">
+            {/* Edit Service Drawer/Form */}
+            {editingService && (
+              <div className="border border-primary/30 bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] mb-8 space-y-6">
+                <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                  <div>
+                    <h3 className="font-sora text-base font-bold text-text-primary">
+                      Edit Layanan Jasa: {editingService.title}
+                    </h3>
+                    <p className="text-xs text-text-secondary mt-0.5">Perbarui tarif per sesi, harian, deskripsi, atau portofolio keahlian Anda.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setEditingService(null); setEditServiceImageUrl(''); }}
+                    className="text-xs font-bold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 cursor-pointer"
+                  >
+                    Batal Edit
+                  </button>
+                </div>
+
+                <form onSubmit={handleUpdateService} className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="edit-service-title" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Nama Layanan / Keahlian
+                      </label>
+                      <input
+                        id="edit-service-title"
+                        type="text"
+                        name="title"
+                        defaultValue={editingService.title}
+                        required
+                        placeholder="Contoh: Jasa Desain Branding & Logo UMKM"
+                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="edit-service-category" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Kategori Jasa
+                      </label>
+                      <select
+                        id="edit-service-category"
+                        name="category"
+                        defaultValue={editingService.category || 'Desain & Multimedia'}
+                        required
+                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                      >
+                        {SERVICE_CATEGORIES.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div>
+                      <label htmlFor="edit-service-priceSession" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Tarif Per Sesi (Rp)
+                      </label>
+                      <input
+                        id="edit-service-priceSession"
+                        type="number"
+                        name="pricePerSession"
+                        defaultValue={editingService.pricePerSession || 0}
+                        placeholder="e.g. 150000"
+                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                      <span className="text-[9px] text-slate-400 mt-1 block">Isi 0 jika tidak melayani per sesi</span>
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-service-sessionDuration" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Durasi Sesi (Menit)
+                      </label>
+                      <input
+                        id="edit-service-sessionDuration"
+                        type="number"
+                        name="sessionDurationMinutes"
+                        defaultValue={editingService.sessionDurationMinutes || 60}
+                        placeholder="60"
+                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                      <span className="text-[9px] text-slate-400 mt-1 block">Standar: 60 menit per sesi</span>
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-service-priceDay" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Tarif Per Hari (Rp)
+                      </label>
+                      <input
+                        id="edit-service-priceDay"
+                        type="number"
+                        name="pricePerDay"
+                        defaultValue={editingService.pricePerDay || 0}
+                        placeholder="e.g. 750000"
+                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                      <span className="text-[9px] text-slate-400 mt-1 block">Maksimal 8 jam kerja per hari</span>
+                    </div>
+
+                    <div>
+                      <label htmlFor="edit-service-maxHours" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Max Jam Kerja / Hari
+                      </label>
+                      <input
+                        id="edit-service-maxHours"
+                        type="number"
+                        name="maxWorkHoursPerDay"
+                        defaultValue={editingService.maxWorkHoursPerDay || 8}
+                        max={8}
+                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                      <span className="text-[9px] text-slate-400 mt-1 block">Maksimal 8 jam kerja reguler</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="edit-service-location" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Cakupan Lokasi / Wilayah
+                      </label>
+                      <input
+                        id="edit-service-location"
+                        type="text"
+                        name="location"
+                        defaultValue={editingService.location || 'Online / Seluruh Indonesia'}
+                        placeholder="Contoh: Jakarta Selatan, Surabaya, atau Online"
+                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="edit-service-image-url" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        URL Foto / Banner Jasa (Opsional)
+                      </label>
+                      <input
+                        id="edit-service-image-url"
+                        type="text"
+                        placeholder="https://..."
+                        value={editServiceImageUrl || (editingService.images && editingService.images[0]) || ''}
+                        onChange={(e) => setEditServiceImageUrl(e.target.value)}
+                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="edit-service-desc" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                      Deskripsi & Keahlian Layanan
+                    </label>
+                    <textarea
+                      id="edit-service-desc"
+                      name="description"
+                      defaultValue={editingService.description || ''}
+                      rows={4}
+                      placeholder="Jelaskan detail lingkup kerja, portofolio, dan syarat pengerjaan..."
+                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setEditingService(null); setEditServiceImageUrl(''); }}
+                      className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="px-6 py-2.5 bg-primary hover:bg-[#23923d] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-md disabled:opacity-50"
+                    >
+                      {isPending ? 'Menyimpan...' : 'Simpan Perubahan Jasa'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Services Header & Action Bar */}
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2">
+                  <Wrench size={12} />
+                  <span>Modul Layanan Jasa & Konsultasi</span>
+                </div>
+                <h3 className="font-sora text-lg font-extrabold text-[#0F5132]">Katalog Layanan Jasa Saya</h3>
+                <p className="text-xs text-text-secondary max-w-xl mt-1">
+                  Klien dapat memesan jasa Anda langsung dengan sistem booking tanggal transparan, tarif per sesi atau per hari (maks. 8 jam kerja), dan pembayaran aman.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/jasa"
+                  target="_blank"
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5"
+                >
+                  <Globe size={14} />
+                  Lihat Pasar Jasa
+                </Link>
+                <button
+                  type="button"
+                  id="btn-add-service"
+                  onClick={() => setShowCreateServiceModal(true)}
+                  className="px-5 py-2.5 bg-primary hover:bg-[#23923d] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus size={16} />
+                  + Tambah Jasa Baru
+                </button>
+              </div>
+            </div>
+
+            {/* Services List Grid */}
+            {services.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-200 shadow-xs space-y-4">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold">
+                  🛠️
+                </div>
+                <h4 className="font-sora text-base font-bold text-slate-800">Belum Ada Layanan Jasa</h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Tawarkan keahlian, desain, servis, atau konsultasi bisnis Anda ke ribuan pengguna platform Saloka.
+                </p>
+                <button
+                  onClick={() => setShowCreateServiceModal(true)}
+                  className="px-6 py-3 bg-primary hover:bg-[#23923d] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  Buka Layanan Jasa Pertama
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {services.map((svc) => (
+                  <div
+                    key={svc.id}
+                    className="bg-white rounded-2xl border border-slate-100/90 shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col justify-between group"
+                  >
+                    <div>
+                      {/* Image / Thumbnail */}
+                      <div className="aspect-[16/9] w-full bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                        {svc.images && svc.images.length > 0 && svc.images[0] ? (
+                          <img
+                            src={svc.images[0]}
+                            alt={svc.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-slate-400 gap-1.5 p-4 text-center">
+                            <Wrench size={28} className="text-emerald-600/50" />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">{svc.category}</span>
+                          </div>
+                        )}
+                        <span className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 backdrop-blur-xs rounded-lg text-[9px] font-bold text-emerald-800 uppercase tracking-wider shadow-xs">
+                          {svc.category}
+                        </span>
+                      </div>
+
+                      {/* Content Info */}
+                      <div className="p-5 space-y-3">
+                        <h4 className="font-sora text-sm font-bold text-slate-900 line-clamp-2 group-hover:text-primary transition-colors">
+                          {svc.title}
+                        </h4>
+                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                          {svc.description || 'Tidak ada deskripsi layanan.'}
+                        </p>
+
+                        {/* Pricing Specs */}
+                        <div className="p-3 bg-slate-50 rounded-xl space-y-1.5 border border-slate-100 text-xs">
+                          {(svc.pricePerSession || 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                                <Clock size={12} className="text-slate-400" />
+                                Per Sesi ({svc.sessionDurationMinutes || 60} mnt):
+                              </span>
+                              <span className="font-bold text-emerald-700">
+                                Rp {(svc.pricePerSession).toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                          )}
+                          {(svc.pricePerDay || 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                                <Calendar size={12} className="text-slate-400" />
+                                Per Hari (Max {svc.maxWorkHoursPerDay || 8} Jam):
+                              </span>
+                              <span className="font-bold text-emerald-700">
+                                Rp {(svc.pricePerDay).toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {svc.location && (
+                          <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                            <MapPin size={12} className="text-slate-400" />
+                            <span>{svc.location}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions Footer */}
+                    <div className="p-5 pt-0 border-t border-slate-100/60 mt-2 flex items-center justify-between gap-2">
+                      <Link
+                        href={`/jasa/${svc.id}`}
+                        target="_blank"
+                        className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
+                        title="Lihat Tampilan Booking"
+                      >
+                        <Eye size={14} />
+                        <span className="hidden sm:inline">Preview</span>
+                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingService(svc)
+                            setEditServiceImageUrl((svc.images && svc.images[0]) || '')
+                            window.scrollTo({ top: 150, behavior: 'smooth' })
+                          }}
+                          className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteService(svc.id)}
+                          className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                          title="Hapus Layanan"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── SERVICE BOOKINGS (PESANAN JASA MASUK) TAB ─── */}
+        {activeTab === 'bookings' && (
+          <div className="space-y-6">
+            {/* Header & Filter Pills */}
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] border border-slate-100 space-y-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-[10px] font-bold uppercase tracking-wider mb-2">
+                    <CalendarCheck size={12} />
+                    <span>Jadwal Booking & Layanan Masuk</span>
+                  </div>
+                  <h3 className="font-sora text-lg font-extrabold text-slate-900">Pesanan Booking Jasa Klien</h3>
+                  <p className="text-xs text-text-secondary mt-1">
+                    Konfirmasi kesiapan jadwal kerja, pantau sesi konsultasi aktif, dan selesaikan pesanan jasa klien Anda.
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Filter Badges */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                {[
+                  { id: 'ALL', label: `Semua (${serviceBookings.length})` },
+                  { id: 'PENDING', label: `Menunggu Konfirmasi (${pendingBookingsCount})` },
+                  { id: 'CONFIRMED', label: `Dikonfirmasi (${confirmedBookingsCount})` },
+                  { id: 'COMPLETED', label: `Selesai (${completedBookingsCount})` },
+                  { id: 'CANCELLED', label: 'Dibatalkan' },
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setServiceBookingFilter(f.id as any)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      serviceBookingFilter === f.id
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Bookings List */}
+            {(() => {
+              const filtered = serviceBookings.filter(b => {
+                if (serviceBookingFilter === 'ALL') return true
+                return b.status === serviceBookingFilter
+              })
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-200 shadow-xs space-y-4">
+                    <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold">
+                      📅
+                    </div>
+                    <h4 className="font-sora text-base font-bold text-slate-800">Belum Ada Pesanan Booking</h4>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                      Belum ada klien yang melakukan booking dengan filter status ini.
+                    </p>
+                  </div>
+                )
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filtered.map((b) => {
+                    const bookingDateObj = new Date(b.bookingDate)
+                    const formattedDate = !isNaN(bookingDateObj.getTime())
+                      ? bookingDateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                      : b.bookingDate
+
+                    return (
+                      <div
+                        key={b.id}
+                        className="bg-white p-6 rounded-2xl border border-slate-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+                      >
+                        <div className="space-y-3 flex-1">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="font-mono text-xs font-bold text-slate-400">
+                              #{b.id.slice(-8).toUpperCase()}
+                            </span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              b.status === 'PENDING'
+                                ? 'bg-amber-100 text-amber-800 animate-pulse'
+                                : b.status === 'CONFIRMED'
+                                ? 'bg-blue-100 text-blue-800'
+                                : b.status === 'COMPLETED'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {b.status === 'PENDING' ? '⏳ Menunggu Konfirmasi' : b.status === 'CONFIRMED' ? '✓ Jadwal Dikonfirmasi' : b.status === 'COMPLETED' ? '✓ Selesai' : '✕ Dibatalkan'}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-mono">
+                              Dipesan: {new Date(b.createdAt || Date.now()).toLocaleDateString('id-ID')}
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="font-sora text-base font-bold text-slate-900">
+                              {b.service?.title || 'Layanan Jasa'}
+                            </h4>
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 mt-1">
+                              <span className="flex items-center gap-1 font-semibold text-primary">
+                                <CalendarCheck size={13} />
+                                Jadwal: {formattedDate}
+                              </span>
+                              <span className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md font-mono text-[11px]">
+                                <Clock size={11} />
+                                Paket: {b.pricingType === 'DAILY' ? 'Per Hari (Max 8 Jam)' : 'Per Sesi'}
+                              </span>
+                              <span className="font-bold text-slate-900">
+                                Total: Rp {(b.totalPrice || 0).toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                          </div>
+
+                          {b.notes && (
+                            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600">
+                              <strong className="text-slate-800">Catatan Klien:</strong> "{b.notes}"
+                            </div>
+                          )}
+
+                          <div className="text-[11px] text-slate-500">
+                            <strong>Klien:</strong> {b.customer?.name || 'Customer'} {b.customer?.phone ? `(${b.customer.phone})` : ''}
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap md:flex-col items-center md:items-end gap-2 shrink-0 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                          {b.status === 'PENDING' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBookingStatus(b.id, 'CONFIRMED')}
+                                disabled={isPending}
+                                className="w-full md:w-auto px-5 py-2.5 bg-primary hover:bg-[#23923d] text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                              >
+                                ✓ Terima & Konfirmasi Jadwal
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm('Apakah Anda yakin ingin menolak / membatalkan pesanan booking ini?')) {
+                                    handleUpdateBookingStatus(b.id, 'CANCELLED')
+                                  }
+                                }}
+                                disabled={isPending}
+                                className="w-full md:w-auto px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                              >
+                                ✕ Tolak Booking
+                              </button>
+                            </>
+                          )}
+
+                          {b.status === 'CONFIRMED' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm('Apakah sesi / pekerjaan jasa ini telah selesai dikerjakan secara tuntas?')) {
+                                  handleUpdateBookingStatus(b.id, 'COMPLETED')
+                                }
+                              }}
+                              disabled={isPending}
+                              className="w-full md:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              ✓ Tandai Jasa Selesai
+                            </button>
+                          )}
+
+                          {b.status === 'COMPLETED' && (
+                            <span className="px-4 py-2 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold">
+                              ✓ Transaksi Selesai
+                            </span>
+                          )}
+
+                          {b.status === 'CANCELLED' && (
+                            <span className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl text-xs font-semibold">
+                              Booking Dibatalkan
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </div>
         )}
 
@@ -4116,6 +4806,192 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 Batal
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Service Modal */}
+      {showCreateServiceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 space-y-6 shadow-2xl text-text-primary max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="font-sora text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Wrench size={18} className="text-primary" />
+                  Tambah Layanan Jasa Baru
+                </h3>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Publikasikan jasa Anda untuk langsung dapat di-booking klien di platform Saloka.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowCreateServiceModal(false); setCreateServiceImageUrl(''); }}
+                className="p-1.5 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateService} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="create-service-title" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                    Nama Layanan / Keahlian *
+                  </label>
+                  <input
+                    id="create-service-title"
+                    type="text"
+                    name="title"
+                    required
+                    placeholder="Contoh: Jasa Pembuatan Website & Aplikasi"
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="create-service-category" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                    Kategori Jasa *
+                  </label>
+                  <select
+                    id="create-service-category"
+                    name="category"
+                    defaultValue="Desain & Multimedia"
+                    required
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                  >
+                    {SERVICE_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Pricing Box */}
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-3">
+                <span className="block text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                  Pengaturan Tarif Booking (Isi salah satu atau keduanya)
+                </span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div>
+                      <label htmlFor="create-service-priceSession" className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                        Tarif Per Sesi (Rp)
+                      </label>
+                      <input
+                        id="create-service-priceSession"
+                        type="number"
+                        name="pricePerSession"
+                        placeholder="Contoh: 150000"
+                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="create-service-sessionDuration" className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                        Durasi Sesi (Menit)
+                      </label>
+                      <input
+                        id="create-service-sessionDuration"
+                        type="number"
+                        name="sessionDurationMinutes"
+                        defaultValue={60}
+                        placeholder="60"
+                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div>
+                      <label htmlFor="create-service-priceDay" className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                        Tarif Per Hari (Rp)
+                      </label>
+                      <input
+                        id="create-service-priceDay"
+                        type="number"
+                        name="pricePerDay"
+                        placeholder="Contoh: 850000"
+                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="create-service-maxHours" className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                        Max Jam Kerja / Hari
+                      </label>
+                      <input
+                        id="create-service-maxHours"
+                        type="number"
+                        name="maxWorkHoursPerDay"
+                        defaultValue={8}
+                        max={8}
+                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-xs text-text-primary focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="create-service-location" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                    Cakupan Lokasi / Wilayah
+                  </label>
+                  <input
+                    id="create-service-location"
+                    type="text"
+                    name="location"
+                    defaultValue="Online / Seluruh Indonesia"
+                    placeholder="Contoh: Jakarta Selatan, Surabaya, atau Online"
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="create-service-image" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                    URL Foto / Banner Jasa (Opsional)
+                  </label>
+                  <input
+                    id="create-service-image"
+                    type="text"
+                    placeholder="https://..."
+                    value={createServiceImageUrl}
+                    onChange={(e) => setCreateServiceImageUrl(e.target.value)}
+                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="create-service-description" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                  Deskripsi Layanan & Portofolio
+                </label>
+                <textarea
+                  id="create-service-description"
+                  name="description"
+                  rows={4}
+                  placeholder="Jelaskan detail keahlian, garansi, lingkup pekerjaan, atau tools yang Anda gunakan..."
+                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => { setShowCreateServiceModal(false); setCreateServiceImageUrl(''); }}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="px-6 py-2.5 bg-primary hover:bg-[#23923d] text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  {isPending ? 'Menerbitkan...' : 'Terbitkan Layanan Jasa'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
