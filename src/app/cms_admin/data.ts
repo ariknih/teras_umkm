@@ -59,20 +59,6 @@ export const getCmsAdminData = unstable_cache(
       DataStore.getServiceBookings()
     ])
 
-    // Announcement/CooperativeReport are per-community models with no
-    // platform-wide flag, so the cross-community admin view is an
-    // aggregation across every community rather than a single query.
-    const [announcementsByCommunity, reportsByCommunity] = await Promise.all([
-      Promise.all(allCommunities.map((c: any) => DataStore.getAnnouncements(c.id))),
-      Promise.all(allCommunities.map((c: any) => DataStore.getCooperativeReports(c.id)))
-    ])
-    const allAnnouncements = allCommunities.flatMap((c: any, i: number) =>
-      (announcementsByCommunity[i] || []).map((a: any) => ({ ...a, communityName: c.name }))
-    )
-    const allCooperativeReports = allCommunities.flatMap((c: any, i: number) =>
-      (reportsByCommunity[i] || []).map((r: any) => ({ ...r, communityName: c.name }))
-    )
-
     return {
       allUsers,
       allProducts,
@@ -92,11 +78,26 @@ export const getCmsAdminData = unstable_cache(
       auditLogs,
       landingBanners,
       allServices,
-      allServiceBookings,
-      allAnnouncements,
-      allCooperativeReports
+      allServiceBookings
     }
   },
   ['cms-admin-data'],
   { tags: ['cms-admin-data'], revalidate: 30 }
 )
+
+/**
+ * Announcement/CooperativeReport are per-community models with no
+ * platform-wide flag, so the cross-community admin view means fanning out
+ * one query per community. That's too expensive to run on every navigation
+ * as part of the shared cache above — it only belongs to two tabs, so it's
+ * fetched lazily by the page itself instead (see [menu]/[[...tab]]/page.tsx).
+ */
+export async function getAllAnnouncements(communities: { id: string; name: string }[]) {
+  const byCommunity = await Promise.all(communities.map((c) => DataStore.getAnnouncements(c.id)))
+  return communities.flatMap((c, i) => (byCommunity[i] || []).map((a: any) => ({ ...a, communityName: c.name })))
+}
+
+export async function getAllCooperativeReports(communities: { id: string; name: string }[]) {
+  const byCommunity = await Promise.all(communities.map((c) => DataStore.getCooperativeReports(c.id)))
+  return communities.flatMap((c, i) => (byCommunity[i] || []).map((r: any) => ({ ...r, communityName: c.name })))
+}

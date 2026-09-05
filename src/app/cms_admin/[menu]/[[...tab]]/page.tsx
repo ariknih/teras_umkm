@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { menuByKey, resolveTab } from '../../nav.config'
 import { getAdminSession, canAccess } from '../../rbac'
-import { getCmsAdminData } from '../../data'
+import { getCmsAdminData, getAllAnnouncements, getAllCooperativeReports } from '../../data'
 import { DataStore } from '@/lib/data-store'
 import AdminTabs from '../../components/AdminTabs'
 import CsDashboardClient from '../../../cs/CsDashboardClient'
@@ -91,14 +91,16 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
     auditLogs,
     landingBanners,
     allServices,
-    allServiceBookings,
-    allAnnouncements,
-    allCooperativeReports
+    allServiceBookings
   } = await getCmsAdminData()
 
-  // Scoped fetch outside the shared cache — only needed for this one menu,
-  // and support tickets are too volatile to sit behind a 30s cache anyway.
+  // Scoped fetches outside the shared cache — each only needed for one menu.
+  // Support tickets are too volatile to sit behind a 30s cache anyway;
+  // announcements/reports fan out one query per community, which is too
+  // expensive to run on every navigation just for two tabs.
   const supportTickets = menu.key === 'support' ? await DataStore.getSupportTickets() : []
+  const allAnnouncements = menu.key === 'content' && activeTab === 'pengumuman' ? await getAllAnnouncements(allCommunities) : []
+  const allCooperativeReports = menu.key === 'communities' && activeTab === 'laporan' ? await getAllCooperativeReports(allCommunities) : []
 
   // Extracted per-menu components (Phase 3). Everything else still routes
   // through the legacy bridge below until it gets its own extraction. Keyed
