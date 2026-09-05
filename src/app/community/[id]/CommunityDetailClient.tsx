@@ -687,8 +687,11 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         } else {
           goeyToast.success('Produk anggota berhasil diperbarui!')
           setIsMemberProductModalOpen(false)
+          if (res.product) {
+            setProducts((prev: any[]) => prev.map((p: any) => p.id === editingMemberProduct.id ? { ...p, ...res.product } : p))
+          }
           setEditingMemberProduct(null)
-          loadData()
+          loadData(true)
         }
       } else {
         const res = await createMemberProductAction(fd)
@@ -697,7 +700,10 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         } else {
           goeyToast.success('Produk anggota baru berhasil ditambahkan!')
           setIsMemberProductModalOpen(false)
-          loadData()
+          if (res.product) {
+            setProducts((prev: any[]) => [res.product, ...(prev || [])])
+          }
+          loadData(true)
         }
       }
     } catch (err: any) {
@@ -1520,6 +1526,12 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
       // Fetch products targeted strictly to members of this community
       const memberIds = memberList.map((m: any) => m.userId)
+      if (commDetail?.ketuaId && !memberIds.includes(commDetail.ketuaId)) {
+        memberIds.push(commDetail.ketuaId)
+      }
+      if (currentUser?.id && !memberIds.includes(currentUser.id)) {
+        memberIds.push(currentUser.id)
+      }
       if (memberIds.length > 0) {
         getProductsByMerchantIdsAction(memberIds)
           .then((communityProducts) => setProducts(communityProducts || []))
@@ -1902,7 +1914,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     }
   }
 
-  const handleAddToCart = async (product: any) => {
+  const handleAddToCart = async (product: any, qty: number = 1) => {
     if (!user) {
       goeyToast.error('Silakan login terlebih dahulu untuk menambahkan produk ke keranjang.')
       router.push('/auth?tab=login')
@@ -1921,19 +1933,20 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       }
 
       const existingIndex = currentCart.findIndex((item: any) => item.productId === product.id)
+      const maxStock = product.stock !== undefined ? product.stock : 10
       if (existingIndex > -1) {
-        const newQty = currentCart[existingIndex].quantity + 1
-        if (newQty > product.stock) {
-          goeyToast.error(`Stok produk tidak mencukupi. Maksimum tersedia: ${product.stock}`)
+        const newQty = currentCart[existingIndex].quantity + qty
+        if (newQty > maxStock) {
+          goeyToast.error(`Stok produk tidak mencukupi. Maksimum tersedia: ${maxStock}`)
           return
         }
         currentCart[existingIndex].quantity = newQty
       } else {
-        if (product.stock < 1) {
+        if (maxStock < qty) {
           goeyToast.error('Stok produk habis.')
           return
         }
-        currentCart.push({ productId: product.id, quantity: 1 })
+        currentCart.push({ productId: product.id, quantity: qty })
       }
 
       localStorage.setItem(cartKey, JSON.stringify(currentCart))
@@ -1941,7 +1954,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       // Notify badge components in real-time
       window.dispatchEvent(new Event('storage'))
 
-      goeyToast.success(`"${product.name || product.title}" ditambahkan ke keranjang!`)
+      goeyToast.success(`"${product.name || product.title}" ${qty > 1 ? `(${qty} unit)` : ''} ditambahkan ke keranjang!`)
 
       // Create database notification
       await createUserNotificationAction(
@@ -9274,6 +9287,357 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODAL TAMBAH / EDIT PRODUK ANGGOTA ───────────────────────────── */}
+      <AnimatePresence>
+        {isMemberProductModalOpen && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[92vh] my-auto"
+            >
+              <div className="p-5 sm:p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-emerald-50/70 via-emerald-50/20 to-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#2DB24A]/10 text-[#0F5132] flex items-center justify-center border border-[#2DB24A]/20 shadow-xs">
+                    <ShoppingBag className="w-5 h-5 text-[#2DB24A]" />
+                  </div>
+                  <div>
+                    <h3 className="font-sora text-base font-black text-gray-900">
+                      {editingMemberProduct ? 'Edit Produk Anggota' : 'Tambah Produk Anggota Baru'}
+                    </h3>
+                    <p className="text-xs text-gray-500 font-medium">
+                      Katalog produk UMKM resmi anggota komunitas {community?.name || ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMemberProductModalOpen(false)}
+                  className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveMemberProduct} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                {/* Nama Produk */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                    Nama Produk / Jasa <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={memberProdTitle}
+                    onChange={(e) => setMemberProdTitle(e.target.value)}
+                    placeholder="Contoh: Kopi Robusta Premium 250gr"
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                  />
+                </div>
+
+                {/* Kategori & Merchant/Pemilik (if Admin) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
+                      Kategori Produk
+                    </label>
+                    <select
+                      value={memberProdCategory}
+                      onChange={(e) => setMemberProdCategory(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all cursor-pointer"
+                    >
+                      <option value="Makanan & Minuman">Makanan & Minuman</option>
+                      <option value="Pakaian & Fashion">Pakaian & Fashion</option>
+                      <option value="Kerajinan & Kriya">Kerajinan & Kriya</option>
+                      <option value="Kecantikan & Herbal">Kecantikan & Herbal</option>
+                      <option value="Elektronik & Gadget">Elektronik & Gadget</option>
+                      <option value="Jasa & Lainnya">Jasa & Lainnya</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                  </div>
+
+                  {isCanManageCoop && members && members.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
+                        Pemilik / Anggota UMKM
+                      </label>
+                      <select
+                        value={memberProdMerchantId || user?.id || ''}
+                        onChange={(e) => setMemberProdMerchantId(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-bold text-gray-800 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all cursor-pointer"
+                      >
+                        <option value={user?.id || ''}>Saya Sendiri ({user?.name || 'Pengurus'})</option>
+                        {members.map((m: any) => (
+                          <option key={m.id || m.userId} value={m.userId}>
+                            {m.name || m.user?.name || m.email || m.userId}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
+                        Toko / Penjual
+                      </label>
+                      <div className="w-full px-3.5 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 truncate flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-gray-400" />
+                        {user?.name || 'Saya (Anggota Komunitas)'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Harga & Stok */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                      Harga Satuan (Rp) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">
+                        Rp
+                      </span>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        value={memberProdPrice}
+                        onChange={(e) => setMemberProdPrice(e.target.value)}
+                        placeholder="Contoh: 35000"
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1">
+                      Jumlah Stok (Unit) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      value={memberProdStock}
+                      onChange={(e) => setMemberProdStock(e.target.value)}
+                      placeholder="10"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Foto Produk */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
+                    Foto Produk
+                  </label>
+                  
+                  {memberProdImageUrl && (
+                    <div className="relative w-full h-36 bg-gray-100 rounded-2xl overflow-hidden border border-gray-200">
+                      <Image
+                        src={memberProdImageUrl}
+                        alt="Preview Produk"
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMemberProdImageUrl('')}
+                        className="absolute top-2 right-2 px-2 py-1 bg-black/60 hover:bg-black/80 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <X className="w-3 h-3" /> Hapus Foto
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={memberProdImageUrl}
+                      onChange={(e) => setMemberProdImageUrl(e.target.value)}
+                      placeholder="https://... URL gambar produk atau unggah"
+                      className="flex-1 px-3.5 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-semibold text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all"
+                    />
+                    <label className="px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-[#0F5132] border border-[#2DB24A]/30 font-extrabold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5 shrink-0">
+                      {isUploadingMemberProdImage ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2DB24A]" />
+                      ) : (
+                        <Upload className="w-3.5 h-3.5 text-[#2DB24A]" />
+                      )}
+                      <span>Unggah</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploadingMemberProdImage}
+                        onChange={handleMemberProductImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {/* Deskripsi Produk */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider">
+                    Deskripsi Lengkap Produk
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={memberProdDesc}
+                    onChange={(e) => setMemberProdDesc(e.target.value)}
+                    placeholder="Jelaskan keunggulan, varian rasa/ukuran, komposisi, atau cara pemesanan produk..."
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-250 rounded-xl text-xs font-medium text-gray-900 focus:bg-white focus:outline-none focus:border-[#2DB24A] transition-all resize-none"
+                  />
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex justify-end items-center gap-3 pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsMemberProductModalOpen(false)}
+                    className="px-4 py-2.5 border border-gray-250 text-gray-600 hover:bg-gray-50 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingMemberProduct || isUploadingMemberProdImage}
+                    className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSavingMemberProduct ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                      </>
+                    ) : (
+                      editingMemberProduct ? 'Simpan Perubahan' : 'Tambah Produk Sekarang'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODAL DETAIL PRODUK ANGGOTA ─────────────────────────────────── */}
+      <AnimatePresence>
+        {isMemberProductDetailModalOpen && selectedMemberProductDetail && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[92vh] my-auto"
+            >
+              {/* Header with image */}
+              <div className="relative w-full h-56 bg-gray-100 shrink-0">
+                <Image
+                  src={selectedMemberProductDetail.imageUrl || selectedMemberProductDetail.img || 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&h=400&fit=crop&q=80'}
+                  alt={selectedMemberProductDetail.title || selectedMemberProductDetail.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                <button
+                  type="button"
+                  onClick={() => setIsMemberProductDetailModalOpen(false)}
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-gray-700 flex items-center justify-center transition-all cursor-pointer shadow-md"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
+                  <span className="px-2.5 py-1 bg-[#2DB24A] font-extrabold text-[10px] rounded-lg uppercase tracking-wider shadow-xs">
+                    {selectedMemberProductDetail.category || 'Produk UMKM'}
+                  </span>
+                  <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md font-extrabold text-[10px] rounded-lg">
+                    Stok: {selectedMemberProductDetail.stock !== undefined ? selectedMemberProductDetail.stock : 10} unit
+                  </span>
+                </div>
+              </div>
+
+              {/* Body Content */}
+              <div className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+                <div>
+                  <span className="text-xs text-gray-400 font-bold block mb-1">
+                    Toko / Anggota UMKM: <strong className="text-gray-800">{selectedMemberProductDetail.merchant?.name || selectedMemberProductDetail.merchantName || selectedMemberProductDetail.merchant || 'Merchant Saloka'}</strong>
+                  </span>
+                  <h3 className="font-sora text-lg font-black text-gray-900">
+                    {selectedMemberProductDetail.title || selectedMemberProductDetail.name}
+                  </h3>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-xl font-black text-[#0F5132]">
+                      Rp {Number(selectedMemberProductDetail.price || 0).toLocaleString('id-ID')}
+                    </span>
+                    <span className="text-xs text-amber-600 font-bold">⭐ 5.0 Rating</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 border-t border-gray-100 pt-3">
+                  <h5 className="text-[11px] font-extrabold text-gray-500 uppercase tracking-wider">
+                    Deskripsi Produk
+                  </h5>
+                  <p className="text-xs text-gray-600 leading-relaxed font-normal whitespace-pre-line">
+                    {selectedMemberProductDetail.description || 'Tidak ada keterangan tambahan mengenai produk ini.'}
+                  </p>
+                </div>
+
+                {/* Quantity selector */}
+                <div className="flex items-center justify-between border-t border-gray-100 pt-3">
+                  <span className="text-xs font-bold text-gray-700">Jumlah Pesanan:</span>
+                  <div className="flex items-center gap-3 bg-gray-100 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setMemberProductDetailQty((prev) => Math.max(1, prev - 1))}
+                      className="w-7 h-7 rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-extrabold text-sm flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <span className="w-8 text-center text-xs font-black text-gray-800">
+                      {memberProductDetailQty}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const max = selectedMemberProductDetail.stock !== undefined ? selectedMemberProductDetail.stock : 99
+                        setMemberProductDetailQty((prev) => Math.min(max, prev + 1))
+                      }}
+                      className="w-7 h-7 rounded-lg bg-white hover:bg-gray-200 text-gray-700 font-extrabold text-sm flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsMemberProductDetailModalOpen(false)}
+                    className="px-4 py-2.5 border border-gray-250 text-gray-600 hover:bg-gray-50 font-extrabold text-xs rounded-xl transition-colors cursor-pointer text-center"
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleAddToCart(selectedMemberProductDetail, memberProductDetailQty)
+                      setIsMemberProductDetailModalOpen(false)
+                    }}
+                    disabled={Number(selectedMemberProductDetail.stock !== undefined ? selectedMemberProductDetail.stock : 10) <= 0}
+                    className="flex-1 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] disabled:bg-gray-200 disabled:text-gray-400 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    + Masukkan ke Keranjang
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

@@ -102,6 +102,12 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
 
   const memberList = memberListRes || []
   const memberIds = memberList.map((m: any) => m.userId)
+  if (commDetail?.ketuaId && !memberIds.includes(commDetail.ketuaId)) {
+    memberIds.push(commDetail.ketuaId)
+  }
+  if (currentUser?.id && !memberIds.includes(currentUser.id)) {
+    memberIds.push(currentUser.id)
+  }
   const products = memberIds.length > 0 ? await getProductsByMerchantIdsAction(memberIds).catch(() => []) : []
 
   const mem = currentUser ? memberList.find((m: any) => m.userId === currentUser.id) : null
