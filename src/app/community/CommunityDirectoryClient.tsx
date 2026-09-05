@@ -353,22 +353,23 @@ export default function CommunityDirectoryClient({
                       {myCommunities.map((mc: any) => {
                         const matchedComm = communities.find((c: any) => c.id === mc.communityId || c.name === mc.communityName)
                         const effectiveAvatar = mc.avatarUrl || matchedComm?.avatarUrl || null
-                        const isPrimary = Boolean(mc.isPrimary || (user?.indukCommunityId && user.indukCommunityId === mc.communityId))
+                        
+                        // Strict rule: Exactly 1 primary community
+                        const activePrimaryId = user?.indukCommunityId || myCommunities.find((c: any) => c.isPrimary)?.communityId || myCommunities[0]?.communityId
+                        const isPrimary = mc.communityId === activePrimaryId
 
                         return (
                           <div
                             key={mc.communityId}
                             className={`p-4 rounded-2xl flex items-center justify-between gap-3 transition-all relative ${
                               isPrimary
-                                ? 'bg-gradient-to-r from-emerald-50/95 via-[#F4FBF6] to-white border-2 border-[#2DB24A] shadow-md shadow-emerald-600/10 ring-1 ring-[#2DB24A]/20'
-                                : 'bg-gray-50/80 hover:bg-[#E8F8EE]/30 border border-gray-200/80 hover:border-[#2DB24A]/40'
+                                ? 'bg-[#E8F8EE] border border-[#2DB24A]'
+                                : 'bg-white border border-gray-200/90 hover:border-gray-300'
                             }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className={`w-12 h-12 rounded-full bg-white p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden transition-all ${
-                                isPrimary 
-                                  ? 'border-2 border-[#2DB24A] ring-2 ring-[#2DB24A]/20' 
-                                  : 'border border-gray-150'
+                              <div className={`w-12 h-12 rounded-full bg-white p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden ${
+                                isPrimary ? 'border border-[#2DB24A]' : 'border border-gray-150'
                               }`}>
                                 {renderCommunityLogo(mc.communityName, effectiveAvatar)}
                               </div>
@@ -378,9 +379,8 @@ export default function CommunityDirectoryClient({
                                     {mc.communityName}
                                   </h4>
                                   {isPrimary && (
-                                    <span className="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide bg-[#2DB24A] text-white flex items-center gap-1 shadow-2xs">
-                                      <Star className="w-2.5 h-2.5 fill-white text-white" />
-                                      Utama
+                                    <span className="shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wide bg-[#2DB24A] text-white flex items-center gap-1 shadow-2xs">
+                                      Komunitas Utama
                                     </span>
                                   )}
                                 </div>
@@ -410,7 +410,7 @@ export default function CommunityDirectoryClient({
                                 Buka
                               </Link>
 
-                              {/* Dropdown Menu Titik Tiga */}
+                              {/* Tombol menu (⋮) di sebelah kanan tombol Buka */}
                               <div className="relative">
                                 <button
                                   type="button"
@@ -420,19 +420,17 @@ export default function CommunityDirectoryClient({
                                   }}
                                   className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
                                     openDropdownId === mc.communityId
-                                      ? 'bg-emerald-100/80 border-[#2DB24A] text-[#0F5132]'
-                                      : isPrimary
-                                        ? 'bg-white border-emerald-300 text-[#0F5132] hover:bg-emerald-50'
-                                        : 'bg-white border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 hover:bg-gray-100/80'
+                                      ? 'bg-emerald-50 border-[#2DB24A] text-[#0F5132]'
+                                      : 'bg-white border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300'
                                   }`}
-                                  title="Opsi Komunitas"
+                                  title="Menu opsi komunitas"
                                 >
-                                  <MoreVertical className="w-4 h-4" />
+                                  <span className="text-base font-bold leading-none select-none">⋮</span>
                                 </button>
 
                                 {openDropdownId === mc.communityId && (
                                   <>
-                                    {/* Transparent backdrop for outside click */}
+                                    {/* Backdrop for click outside */}
                                     <div
                                       className="fixed inset-0 z-40"
                                       onClick={(e) => {
@@ -441,22 +439,22 @@ export default function CommunityDirectoryClient({
                                       }}
                                     />
                                     <div
-                                      className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-2xl border border-gray-150 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                      className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-xl border border-gray-150 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       {isPrimary ? (
-                                        <div className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-emerald-700 bg-emerald-50/80 rounded-lg cursor-default select-none">
-                                          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                                          <span>Komunitas Utama Saat Ini</span>
+                                        <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50/80 rounded-lg cursor-default select-none">
+                                          <Check className="w-3.5 h-3.5 text-[#2DB24A] shrink-0" />
+                                          <span>Komunitas Utama</span>
                                         </div>
                                       ) : (
                                         <button
                                           type="button"
                                           disabled={isSwitchingPrimary}
                                           onClick={() => handleSetPrimaryCommunity(mc.communityId, mc.communityName)}
-                                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-gray-700 hover:text-[#0F5132] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer text-left disabled:opacity-50"
+                                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-gray-700 hover:text-[#0F5132] hover:bg-[#E8F8EE] rounded-lg transition-colors cursor-pointer text-left disabled:opacity-50"
                                         >
-                                          <Star className="w-4 h-4 text-amber-500 shrink-0 fill-amber-400" />
+                                          <span className="text-amber-500 text-sm leading-none">★</span>
                                           <span>Jadikan Komunitas Utama</span>
                                         </button>
                                       )}
