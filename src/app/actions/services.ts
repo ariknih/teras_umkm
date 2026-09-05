@@ -184,6 +184,8 @@ import { sendEmail } from '@/lib/maileroo'
 export async function createServiceBookingAction(data: {
   serviceId: string
   bookingDate: string
+  endDate?: string
+  totalDays?: number
   timeSlot?: string
   pricingType: 'SESSION' | 'DAILY'
   customerNote?: string
@@ -196,9 +198,19 @@ export async function createServiceBookingAction(data: {
     if (!service) return { success: false, error: 'Layanan jasa tidak ditemukan.' }
 
     const bookingDate = new Date(data.bookingDate)
-    const basePrice = data.pricingType === 'DAILY' ? (service.pricePerDay || 0) : (service.pricePerSession || 0)
-    if (basePrice <= 0) return { success: false, error: 'Tarif untuk opsi ini belum ditentukan oleh penyedia jasa.' }
+    
+    // Calculate total days for DAILY package with range
+    let totalDays = 1
+    if (data.pricingType === 'DAILY' && data.endDate) {
+      const end = new Date(data.endDate)
+      const diffTime = end.getTime() - bookingDate.getTime()
+      totalDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1)
+    }
 
+    const rate = data.pricingType === 'DAILY' ? (service.pricePerDay || 0) : (service.pricePerSession || 0)
+    if (rate <= 0) return { success: false, error: 'Tarif untuk opsi ini belum ditentukan oleh penyedia jasa.' }
+
+    const basePrice = rate * totalDays
     const adminFee = 2500
     const totalPrice = basePrice + adminFee
 
@@ -207,6 +219,8 @@ export async function createServiceBookingAction(data: {
       customerId: user.id,
       merchantId: service.merchantId,
       bookingDate,
+      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      totalDays,
       timeSlot: data.timeSlot || null,
       pricingType: data.pricingType,
       basePrice,
@@ -215,6 +229,10 @@ export async function createServiceBookingAction(data: {
       status: 'PENDING',
       notes: data.customerNote || null
     })
+
+    const dateDisplay = data.endDate && totalDays > 1
+      ? `${bookingDate.toLocaleDateString('id-ID')} s/d ${new Date(data.endDate).toLocaleDateString('id-ID')} (${totalDays} Hari)`
+      : `${bookingDate.toLocaleDateString('id-ID')}`
 
     // Notify Merchant via Maileroo Email (Non-blocking)
     try {
@@ -232,8 +250,8 @@ export async function createServiceBookingAction(data: {
               <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; margin: 20px 0; font-size: 14px;">
                 <p style="margin: 4px 0;"><strong>Layanan:</strong> ${service.title}</p>
                 <p style="margin: 4px 0;"><strong>Klien:</strong> ${user.name} (${user.email})</p>
-                <p style="margin: 4px 0;"><strong>Jadwal:</strong> ${bookingDate.toLocaleDateString('id-ID')} ${data.timeSlot ? `(${data.timeSlot})` : ''}</p>
-                <p style="margin: 4px 0;"><strong>Paket:</strong> ${data.pricingType === 'DAILY' ? 'Per Hari (Maks 8 Jam)' : 'Per Sesi'}</p>
+                <p style="margin: 4px 0;"><strong>Jadwal:</strong> ${dateDisplay} ${data.timeSlot ? `(${data.timeSlot})` : ''}</p>
+                <p style="margin: 4px 0;"><strong>Paket:</strong> ${data.pricingType === 'DAILY' ? `Per Hari (${totalDays} Hari @ Rp ${rate.toLocaleString('id-ID')})` : 'Per Sesi'}</p>
                 <p style="margin: 4px 0;"><strong>Total Nilai:</strong> Rp ${totalPrice.toLocaleString('id-ID')}</p>
                 ${data.customerNote ? `<p style="margin: 4px 0;"><strong>Catatan Klien:</strong> "${data.customerNote}"</p>` : ''}
               </div>
@@ -260,7 +278,7 @@ export async function createServiceBookingAction(data: {
       module: 'JASA',
       targetId: booking.id,
       targetType: 'BOOKING',
-      detail: `Booking jasa "${service.title}" (${data.pricingType}${data.timeSlot ? ` - ${data.timeSlot}` : ''}) tgl ${bookingDate.toLocaleDateString('id-ID')}`
+      detail: `Booking jasa "${service.title}" (${data.pricingType}${data.timeSlot ? ` - ${data.timeSlot}` : ''}) ${dateDisplay}`
     })
 
     revalidatePath('/jasa')

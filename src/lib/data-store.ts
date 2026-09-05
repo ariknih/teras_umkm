@@ -8127,25 +8127,67 @@ export const DataStore = {
   // Service Booking
   async createServiceBooking(data: any) {
     // Check availability
-        const avails = await this.getServiceAvailability(data.serviceId)
-        const dateBooking = new Date(data.bookingDate)
-        const avail = avails.find((a: any) => new Date(a.date).toDateString() === dateBooking.toDateString())
-        if (avail && !avail.isAvailable) {
-          throw new Error('Penyedia jasa tidak tersedia pada tanggal tersebut.')
-        }
+    const avails = await this.getServiceAvailability(data.serviceId)
+    const dateBooking = new Date(data.bookingDate)
+    const avail = avails.find((a: any) => new Date(a.date).toDateString() === dateBooking.toDateString())
+    if (avail && !avail.isAvailable) {
+      throw new Error('Penyedia jasa tidak tersedia pada tanggal tersebut.')
+    }
     return withMutationFallback(
       async () => {
-        const booking = await db.serviceBooking.create({ data: { ...data, adminFee: 2500 } })
-                // Mark date as unavailable
-                await this.setServiceAvailability(data.serviceId, dateBooking, false)
-                return booking
+        const rangeText = data.endDate 
+          ? `[Rentang: ${dateBooking.toLocaleDateString('id-ID')} s/d ${new Date(data.endDate).toLocaleDateString('id-ID')} (${data.totalDays || 1} Hari)]`
+          : ''
+        const combinedNotes = [rangeText, data.notes].filter(Boolean).join(' - ')
+
+        const booking = await db.serviceBooking.create({ 
+          data: { 
+            serviceId: data.serviceId,
+            customerId: data.customerId,
+            merchantId: data.merchantId,
+            bookingDate: dateBooking,
+            sessionType: data.pricingType === 'DAILY' ? 'PER_HARI' : 'PER_SESI',
+            totalAmount: data.totalPrice || data.basePrice || 0,
+            adminFee: data.adminFee || 2500,
+            status: data.status || 'PENDING',
+            notes: combinedNotes || null
+          } 
+        })
+        // Mark date(s) as unavailable
+        if (data.endDate) {
+          const cur = new Date(dateBooking)
+          const end = new Date(data.endDate)
+          while (cur <= end) {
+            await this.setServiceAvailability(data.serviceId, new Date(cur), false)
+            cur.setDate(cur.getDate() + 1)
+          }
+        } else {
+          await this.setServiceAvailability(data.serviceId, dateBooking, false)
+        }
+        return booking
       },
       async () => {
         if (!(globalThis as any).__mockServiceBookings) (globalThis as any).__mockServiceBookings = [...mockServiceBookings]
-            const booking = { id: `sb-${Date.now()}`, ...data, adminFee: 2500, status: 'PENDING', createdAt: new Date(), updatedAt: new Date() }
-            ;(globalThis as any).__mockServiceBookings.push(booking)
-            await this.setServiceAvailability(data.serviceId, dateBooking, false)
-            return booking
+        const booking = { 
+          id: `sb-${Date.now()}`, 
+          ...data, 
+          adminFee: 2500, 
+          status: 'PENDING', 
+          createdAt: new Date(), 
+          updatedAt: new Date() 
+        }
+        ;(globalThis as any).__mockServiceBookings.push(booking)
+        if (data.endDate) {
+          const cur = new Date(dateBooking)
+          const end = new Date(data.endDate)
+          while (cur <= end) {
+            await this.setServiceAvailability(data.serviceId, new Date(cur), false)
+            cur.setDate(cur.getDate() + 1)
+          }
+        } else {
+          await this.setServiceAvailability(data.serviceId, dateBooking, false)
+        }
+        return booking
       }
     )
   },

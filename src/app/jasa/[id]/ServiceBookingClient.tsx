@@ -20,7 +20,11 @@ import {
   ShieldCheck,
   ArrowRight,
   Store,
-  CalendarCheck
+  CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  CalendarRange
 } from 'lucide-react'
 
 interface ServiceBookingClientProps {
@@ -38,6 +42,8 @@ const TIME_SLOTS = [
   '19:00 - 20:00'
 ]
 
+const DAY_NAMES = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+
 export default function ServiceBookingClient({
   service,
   initialAvailability,
@@ -49,7 +55,17 @@ export default function ServiceBookingClient({
   const [selectedPricingType, setSelectedPricingType] = useState<'SESSION' | 'DAILY'>(
     service.pricePerSession ? 'SESSION' : 'DAILY'
   )
+  
+  // Booking mode: SINGLE (1 hari/sesi) or RANGE (rentang hari)
+  const [bookingMode, setBookingMode] = useState<'SINGLE' | 'RANGE'>('SINGLE')
+
+  // Calendar view state (Year & Month: 0-indexed)
+  const today = new Date()
+  const [viewYear, setViewYear] = useState<number>(today.getFullYear())
+  const [viewMonth, setViewMonth] = useState<number>(today.getMonth())
+
   const [selectedDate, setSelectedDate] = useState<string>('')
+  const [selectedEndDate, setSelectedEndDate] = useState<string>('')
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:00 - 10:00')
   const [notes, setNotes] = useState('')
   const [availability, setAvailability] = useState<any[]>(initialAvailability)
@@ -65,12 +81,52 @@ export default function ServiceBookingClient({
 
   const isOwner = currentUser && currentUser.id === service.merchantId
 
-  // Generate next 14 days calendar
-  const nextDays = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() + i + 1)
-    return d.toISOString().split('T')[0]
-  })
+  // Month navigation restrictions (cannot navigate to past months)
+  const canGoPrev = viewYear > today.getFullYear() || (viewYear === today.getFullYear() && viewMonth > today.getMonth())
+
+  const handlePrevMonth = () => {
+    if (canGoPrev) {
+      if (viewMonth === 0) {
+        setViewYear((prev) => prev - 1)
+        setViewMonth(11)
+      } else {
+        setViewMonth((prev) => prev - 1)
+      }
+    }
+  }
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewYear((prev) => prev + 1)
+      setViewMonth(0)
+    } else {
+      setViewMonth((prev) => prev + 1)
+    }
+  }
+
+  const handleResetToCurrentMonth = () => {
+    setViewYear(today.getFullYear())
+    setViewMonth(today.getMonth())
+  }
+
+  // Calendar days calculation
+  const daysInCurrentMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  // Monday = 0, Sunday = 6
+  const firstDayOfMonth = new Date(viewYear, viewMonth, 1).getDay()
+  const firstDayOffset = (firstDayOfMonth + 6) % 7
+
+  const isPastDate = (year: number, month: number, day: number) => {
+    const target = new Date(year, month, day)
+    target.setHours(23, 59, 59, 999)
+    const now = new Date()
+    return target < now
+  }
+
+  const formatDateKey = (year: number, month: number, day: number) => {
+    const m = String(month + 1).padStart(2, '0')
+    const d = String(day).padStart(2, '0')
+    return `${year}-${m}-${d}`
+  }
 
   const isDateAvailable = (dateStr: string) => {
     const found = availability.find((a) => {
@@ -97,6 +153,86 @@ export default function ServiceBookingClient({
     })
   }
 
+  // Handle calendar day clicks with Range support
+  const handleDateClick = (dateStr: string, isAvail: boolean) => {
+    if (isOwner) {
+      handleToggleMyAvailability(dateStr, isAvail)
+      return
+    }
+
+    if (!isAvail) {
+      setErrorMessage('Tanggal ini tidak tersedia untuk booking.')
+      return
+    }
+
+    if (selectedPricingType === 'DAILY' && bookingMode === 'RANGE') {
+      if (!selectedDate || (selectedDate && selectedEndDate)) {
+        // 1st click: Set start date
+        setSelectedDate(dateStr)
+        setSelectedEndDate('')
+        setErrorMessage(null)
+      } else {
+        // 2nd click: End date
+        if (dateStr < selectedDate) {
+          // If clicked date is earlier than start date, treat as new start date
+          setSelectedDate(dateStr)
+          setSelectedEndDate('')
+          setErrorMessage(null)
+        } else if (dateStr === selectedDate) {
+          setSelectedEndDate(dateStr)
+          setErrorMessage(null)
+        } else {
+          // Check if any date inside the range is unavailable
+          let hasUnavailable = false
+          const cur = new Date(selectedDate)
+          const end = new Date(dateStr)
+          while (cur <= end) {
+            const curStr = cur.toISOString().split('T')[0]
+            if (!isDateAvailable(curStr)) {
+              hasUnavailable = true
+              break
+            }
+            cur.setDate(cur.getDate() + 1)
+          }
+
+          if (hasUnavailable) {
+            setErrorMessage('Terdapat tanggal yang tidak tersedia di dalam rentang yang Anda pilih.')
+            return
+          }
+
+          setSelectedEndDate(dateStr)
+          setErrorMessage(null)
+        }
+      }
+    } else {
+      // Single date click
+      setSelectedDate(dateStr)
+      setSelectedEndDate('')
+      setErrorMessage(null)
+    }
+  }
+
+  // Total Days Calculation
+  const totalDays =
+    selectedPricingType === 'DAILY' && selectedDate && selectedEndDate
+      ? Math.max(
+          1,
+          Math.round(
+            (new Date(selectedEndDate).getTime() - new Date(selectedDate).getTime()) /
+              (1000 * 60 * 60 * 24)
+          ) + 1
+        )
+      : 1
+
+  const baseRate =
+    selectedPricingType === 'DAILY'
+      ? service.pricePerDay || 0
+      : service.pricePerSession || 0
+
+  const basePrice = baseRate * totalDays
+  const adminFee = 2500
+  const totalPrice = basePrice + adminFee
+
   const handleBookingSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentUser) {
@@ -109,11 +245,18 @@ export default function ServiceBookingClient({
       return
     }
 
+    if (selectedPricingType === 'DAILY' && bookingMode === 'RANGE' && !selectedEndDate) {
+      setErrorMessage('Silakan pilih tanggal selesai rentang booking pada kalender.')
+      return
+    }
+
     setErrorMessage(null)
     startTransition(async () => {
       const res = await createServiceBookingAction({
         serviceId: service.id,
         bookingDate: selectedDate,
+        endDate: selectedPricingType === 'DAILY' && bookingMode === 'RANGE' && selectedEndDate ? selectedEndDate : undefined,
+        totalDays,
         timeSlot: selectedPricingType === 'SESSION' ? selectedTimeSlot : undefined,
         pricingType: selectedPricingType,
         customerNote: notes
@@ -127,12 +270,10 @@ export default function ServiceBookingClient({
     })
   }
 
-  const basePrice =
-    selectedPricingType === 'DAILY'
-      ? service.pricePerDay || 0
-      : service.pricePerSession || 0
-  const adminFee = 2500
-  const totalPrice = basePrice + adminFee
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString('id-ID', {
+    month: 'long',
+    year: 'numeric'
+  })
 
   const images = service.images && service.images.length > 0
     ? service.images
@@ -174,7 +315,7 @@ export default function ServiceBookingClient({
             </p>
           </div>
 
-          {/* Pricing Options Overview - Clean & Consistent Typography */}
+          {/* Pricing Options Overview */}
           <div className="border-t border-slate-100 pt-6 space-y-3">
             <h3 className="font-bold text-slate-800 text-base">Opsi & Skema Tarif</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -211,19 +352,19 @@ export default function ServiceBookingClient({
                     Rp {service.pricePerDay.toLocaleString('id-ID')}
                   </h4>
                   <p className="text-xs text-slate-500 mt-1">
-                    Pengerjaan penuh satu hari kerja di lokasi atau remote.
+                    Pengerjaan penuh per hari, bisa booking beberapa hari (multi-day).
                   </p>
                 </div>
               ) : null}
             </div>
           </div>
 
-          {/* Availability Calendar */}
+          {/* Interactive Monthly Calendar & Range Picker */}
           <div className="border-t border-slate-100 pt-6 space-y-4">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
               <div>
                 <h3 className="font-bold text-slate-800 text-base">Jadwal & Ketersediaan Tanggal</h3>
-                <p className="text-xs text-slate-500">Pilih tanggal pengerjaan yang tersedia di bawah.</p>
+                <p className="text-xs text-slate-500">Pilih tanggal atau rentang hari di kalender. Bisa navigasi ke bulan-bulan berikutnya.</p>
               </div>
               {isOwner && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 text-[11px] font-semibold rounded-lg border border-amber-200">
@@ -233,45 +374,215 @@ export default function ServiceBookingClient({
               )}
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
-              {nextDays.map((dStr) => {
-                const dateObj = new Date(dStr)
-                const isAvail = isDateAvailable(dStr)
-                const isSelected = selectedDate === dStr
-                const dayName = dateObj.toLocaleDateString('id-ID', { weekday: 'short' })
-                const dayNum = dateObj.getDate()
-                const monthName = dateObj.toLocaleDateString('id-ID', { month: 'short' })
-
-                return (
+            {/* Range Booking Mode Switcher (For DAILY) */}
+            {selectedPricingType === 'DAILY' && !isOwner && (
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-2xl border border-slate-200/80">
+                <div className="flex items-center gap-1 text-xs font-semibold text-slate-700">
+                  <CalendarRange className="w-4 h-4 text-[#006E24]" />
+                  <span>Pilihan Durasi Booking:</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200">
                   <button
-                    key={dStr}
                     type="button"
-                    disabled={!isOwner && !isAvail}
                     onClick={() => {
-                      if (isOwner) {
-                        handleToggleMyAvailability(dStr, isAvail)
-                      } else if (isAvail) {
-                        setSelectedDate(dStr)
-                        setErrorMessage(null)
-                      }
+                      setBookingMode('SINGLE')
+                      setSelectedEndDate('')
                     }}
-                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
-                      isSelected
-                        ? 'border-[#006E24] bg-[#006E24] text-white shadow-sm'
-                        : isAvail
-                        ? 'border-slate-200 bg-white text-slate-800 hover:border-emerald-300 hover:bg-emerald-50/30'
-                        : 'border-slate-200/60 bg-slate-100 text-slate-400 opacity-50 cursor-not-allowed'
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      bookingMode === 'SINGLE'
+                        ? 'bg-[#006E24] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <p className="text-[10px] font-semibold uppercase">{dayName}</p>
-                    <p className="text-base font-extrabold my-0.5">{dayNum}</p>
-                    <p className="text-[10px] font-medium">{monthName}</p>
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full mt-1.5 ${
-                      isSelected ? 'bg-white' : isAvail ? 'bg-[#006E24]' : 'bg-slate-300'
-                    }`} />
+                    1 Hari Saja
                   </button>
-                )
-              })}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingMode('RANGE')
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      bookingMode === 'RANGE'
+                        ? 'bg-[#006E24] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Rentang Hari (Multi-Day)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Range Selection Status Banner */}
+            {bookingMode === 'RANGE' && selectedPricingType === 'DAILY' && (
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <CalendarCheck className="w-4 h-4 text-[#006E24] shrink-0" />
+                  <div>
+                    {!selectedDate ? (
+                      <span className="text-slate-600 font-medium">Langkah 1: Klik tanggal <strong>Mulai</strong> di kalender.</span>
+                    ) : !selectedEndDate ? (
+                      <span className="text-slate-700 font-medium">
+                        Mulai: <strong className="text-[#006E24]">{new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</strong> &rarr; Sekarang klik tanggal <strong>Selesai</strong>.
+                      </span>
+                    ) : (
+                      <span className="text-emerald-900 font-bold">
+                        Rentang: {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} s/d {new Date(selectedEndDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} ({totalDays} Hari)
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {(selectedDate || selectedEndDate) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate('')
+                      setSelectedEndDate('')
+                      setErrorMessage(null)
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-white transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Calendar Card Container */}
+            <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-white shadow-xs space-y-4">
+              {/* Calendar Month & Year Navigation Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-900 capitalize">
+                    {monthLabel}
+                  </h4>
+                  {(!canGoPrev || viewMonth !== today.getMonth() || viewYear !== today.getFullYear()) && (
+                    <button
+                      type="button"
+                      onClick={handleResetToCurrentMonth}
+                      className="text-[11px] font-semibold text-[#006E24] hover:underline px-2 py-0.5 bg-emerald-50 rounded-md"
+                    >
+                      Bulan Ini
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    disabled={!canGoPrev}
+                    aria-label="Bulan Sebelumnya"
+                    className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    aria-label="Bulan Berikutnya"
+                    className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Weekdays Row */}
+              <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center">
+                {DAY_NAMES.map((dName) => (
+                  <div key={dName} className="text-[11px] font-bold text-slate-400 uppercase py-1">
+                    {dName}
+                  </div>
+                ))}
+              </div>
+
+              {/* Days Grid */}
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                {/* Empty cells for offset */}
+                {Array.from({ length: firstDayOffset }).map((_, i) => (
+                  <div key={`offset-${i}`} className="h-12 sm:h-14 rounded-xl bg-slate-50/40" />
+                ))}
+
+                {/* Month Days */}
+                {Array.from({ length: daysInCurrentMonth }).map((_, i) => {
+                  const dayNum = i + 1
+                  const dStr = formatDateKey(viewYear, viewMonth, dayNum)
+                  const isPast = isPastDate(viewYear, viewMonth, dayNum)
+                  const isAvail = isDateAvailable(dStr)
+
+                  const isStart = selectedDate === dStr
+                  const isEnd = selectedEndDate === dStr
+                  const isInRange = selectedDate && selectedEndDate && dStr > selectedDate && dStr < selectedEndDate
+
+                  const isClickable = isOwner || (!isPast && isAvail)
+
+                  return (
+                    <button
+                      key={dStr}
+                      type="button"
+                      disabled={!isClickable}
+                      onClick={() => handleDateClick(dStr, isAvail)}
+                      className={`h-12 sm:h-14 p-1 flex flex-col items-center justify-between border transition-all text-center relative ${
+                        isStart && isEnd
+                          ? 'border-[#006E24] bg-[#006E24] text-white rounded-xl shadow-xs font-bold z-10'
+                          : isStart && selectedEndDate
+                          ? 'border-[#006E24] bg-[#006E24] text-white rounded-l-xl rounded-r-none shadow-xs font-bold z-10'
+                          : isEnd
+                          ? 'border-[#006E24] bg-[#006E24] text-white rounded-r-xl rounded-l-none shadow-xs font-bold z-10'
+                          : isStart
+                          ? 'border-[#006E24] bg-[#006E24] text-white rounded-xl shadow-xs font-bold z-10'
+                          : isInRange
+                          ? 'border-y border-emerald-300 bg-emerald-100 text-emerald-950 font-bold rounded-none z-0'
+                          : isPast
+                          ? 'border-slate-100 bg-slate-50 text-slate-300 opacity-40 cursor-not-allowed rounded-xl'
+                          : isAvail
+                          ? 'border-slate-200 bg-white text-slate-800 hover:border-emerald-400 hover:bg-emerald-50/40 cursor-pointer rounded-xl'
+                          : isOwner
+                          ? 'border-amber-200 bg-amber-50/50 text-amber-900 cursor-pointer rounded-xl'
+                          : 'border-slate-200/60 bg-slate-100 text-slate-400 opacity-60 cursor-not-allowed rounded-xl'
+                      }`}
+                    >
+                      <span className="text-xs sm:text-sm font-extrabold leading-tight mt-1">
+                        {dayNum}
+                      </span>
+                      <span className="mb-1">
+                        {isStart || isEnd ? (
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-white" />
+                        ) : isInRange ? (
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                        ) : isPast ? null : (
+                          <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+                            isAvail ? 'bg-[#006E24]' : 'bg-rose-400'
+                          }`} />
+                        )}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+                <div className="flex items-center gap-4">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#006E24]" />
+                    <span>Tersedia</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-400" />
+                    <span>Penuh / Libur</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-[#006E24]" />
+                    <span>Terpilih</span>
+                  </span>
+                </div>
+                <span className="text-slate-400 text-[10px]">
+                  *Klik &apos;Bulan Berikutnya&apos; untuk reservasi bulan depan
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -336,15 +647,39 @@ export default function ServiceBookingClient({
                 <p className="text-xs text-slate-600 mt-1">
                   ID Booking: <span className="font-bold text-slate-800">#{bookingSuccess.id.slice(-8).toUpperCase()}</span>
                 </p>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  Tanggal: <strong>{new Date(bookingSuccess.bookingDate).toLocaleDateString('id-ID')}</strong>
+                <p className="text-xs text-slate-600 mt-1">
+                  Jadwal: <strong>
+                    {new Date(bookingSuccess.bookingDate).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric'
+                    })}
+                    {bookingSuccess.endDate && (
+                      <> s/d {new Date(bookingSuccess.endDate).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                      })} ({bookingSuccess.totalDays || totalDays} Hari)</>
+                    )}
+                  </strong>
                   {bookingSuccess.timeSlot ? ` (${bookingSuccess.timeSlot})` : ''}
+                </p>
+                <p className="text-xs text-emerald-700 font-semibold mt-1">
+                  Total Pembayaran: Rp {(bookingSuccess.totalPrice || totalPrice).toLocaleString('id-ID')}
                 </p>
               </div>
 
               <div className="space-y-2 pt-2">
                 <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`Halo, saya telah membuat pesanan booking jasa "${service.title}" untuk tanggal ${new Date(bookingSuccess.bookingDate).toLocaleDateString('id-ID')} ${bookingSuccess.timeSlot || ''}. Mohon konfirmasi jadwalnya ya!`)}`}
+                  href={`https://wa.me/?text=${encodeURIComponent(
+                    `Halo, saya telah membuat pesanan booking jasa "${service.title}" untuk jadwal ${
+                      new Date(bookingSuccess.bookingDate).toLocaleDateString('id-ID')
+                    }${
+                      bookingSuccess.endDate
+                        ? ` s/d ${new Date(bookingSuccess.endDate).toLocaleDateString('id-ID')} (${bookingSuccess.totalDays || totalDays} Hari)`
+                        : ''
+                    } ${bookingSuccess.timeSlot || ''}. Mohon konfirmasi jadwalnya ya!`
+                  )}`}
                   target="_blank"
                   rel="noreferrer"
                   className="w-full py-2.5 bg-[#006E24] hover:bg-[#00551c] text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
@@ -379,7 +714,11 @@ export default function ServiceBookingClient({
                   {service.pricePerSession ? (
                     <button
                       type="button"
-                      onClick={() => setSelectedPricingType('SESSION')}
+                      onClick={() => {
+                        setSelectedPricingType('SESSION')
+                        setBookingMode('SINGLE')
+                        setSelectedEndDate('')
+                      }}
                       className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                         selectedPricingType === 'SESSION'
                           ? 'border-[#006E24] bg-emerald-50/40 text-slate-900 shadow-xs'
@@ -418,27 +757,69 @@ export default function ServiceBookingClient({
                 </div>
               </div>
 
-              {/* Selected Date Indicator */}
+              {/* Selected Date / Range Indicator */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Tanggal Booking Terpilih
+                  {bookingMode === 'RANGE' && selectedPricingType === 'DAILY' ? 'Rentang Tanggal Booking' : 'Tanggal Booking Terpilih'}
                 </label>
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-800">
-                    {selectedDate
-                      ? new Date(selectedDate).toLocaleDateString('id-ID', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })
-                      : 'Belum memilih tanggal (klik di kalender)'}
-                  </span>
-                  {selectedDate && (
-                    <span className="inline-flex items-center gap-1 text-[#006E24] font-bold text-xs">
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Tersedia</span>
-                    </span>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
+                  {selectedPricingType === 'DAILY' && bookingMode === 'RANGE' ? (
+                    selectedDate && selectedEndDate ? (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Mulai:</span>
+                          <span className="font-bold text-slate-800">
+                            {new Date(selectedDate).toLocaleDateString('id-ID', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Selesai:</span>
+                          <span className="font-bold text-slate-800">
+                            {new Date(selectedEndDate).toLocaleDateString('id-ID', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-[#006E24] font-bold">
+                          <span>Durasi Pengerjaan:</span>
+                          <span className="px-2 py-0.5 bg-emerald-100 rounded-md text-xs">{totalDays} Hari</span>
+                        </div>
+                      </div>
+                    ) : selectedDate ? (
+                      <div className="flex items-center justify-between text-amber-700 font-medium">
+                        <span>Mulai: {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                        <span className="text-[11px] bg-amber-100 px-2 py-0.5 rounded-md font-bold">Pilih Tgl Selesai</span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">Belum memilih rentang (klik tanggal mulai di kalender)</span>
+                    )
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-800">
+                        {selectedDate
+                          ? new Date(selectedDate).toLocaleDateString('id-ID', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })
+                          : 'Belum memilih tanggal (klik di kalender)'}
+                      </span>
+                      {selectedDate && (
+                        <span className="inline-flex items-center gap-1 text-[#006E24] font-bold text-xs">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Tersedia</span>
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -486,7 +867,14 @@ export default function ServiceBookingClient({
               {/* Cost Calculation */}
               <div className="bg-slate-50 border border-slate-200/80 p-4 rounded-2xl space-y-2 text-xs">
                 <div className="flex justify-between text-slate-600">
-                  <span>Biaya Layanan Jasa ({selectedPricingType === 'DAILY' ? 'Per Hari' : 'Per Sesi'})</span>
+                  <span>
+                    Biaya Layanan Jasa{' '}
+                    {selectedPricingType === 'DAILY'
+                      ? totalDays > 1
+                        ? `(${totalDays} Hari @ Rp ${baseRate.toLocaleString('id-ID')})`
+                        : 'Per Hari'
+                      : 'Per Sesi'}
+                  </span>
                   <span className="font-bold text-slate-900">Rp {basePrice.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
@@ -502,7 +890,11 @@ export default function ServiceBookingClient({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isPending || !selectedDate}
+                disabled={
+                  isPending ||
+                  !selectedDate ||
+                  (selectedPricingType === 'DAILY' && bookingMode === 'RANGE' && !selectedEndDate)
+                }
                 className="w-full py-3 bg-[#006E24] hover:bg-[#00551c] text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isPending ? (
@@ -510,7 +902,11 @@ export default function ServiceBookingClient({
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Konfirmasi & Booking Sekarang</span>
+                    <span>
+                      {selectedPricingType === 'DAILY' && totalDays > 1
+                        ? `Konfirmasi Booking (${totalDays} Hari)`
+                        : 'Konfirmasi & Booking Sekarang'}
+                    </span>
                   </>
                 )}
               </button>
