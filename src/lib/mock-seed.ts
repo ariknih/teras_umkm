@@ -1932,3 +1932,304 @@ export const mockReferrals = [
     updatedAt: new Date(Date.now() - 3600000 * 1),
   }
 ]
+
+export const mockServices = [
+  {
+    id: 'svc-desain-kemasan',
+    merchantId: 'user-merchant-1',
+    title: 'Desain Kemasan & Label Produk Makanan UMKM',
+    description: 'Layanan desain kemasan standing pouch, box kue, label stiker toples, dan mock-up 3D profesional siap cetak. Gratis revisi 3x dan file master vector (AI/PDF/PNG).',
+    category: 'Desain & Multimedia',
+    pricePerSession: 150000,
+    pricePerDay: 850000,
+    sessionDurationMinutes: 90,
+    maxWorkHoursPerDay: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=800&auto=format&fit=crop&q=80'
+    ],
+    location: 'Jakarta Selatan',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'svc-foto-produk',
+    merchantId: 'user-merchant-2',
+    title: 'Foto Produk Katalog & Pembuatan Video Reels Estetik',
+    description: 'Sesi foto produk studio atau on-location dengan lighting profesional, props estetik, dan editing warna tone komersial. Termasuk 15 foto high-res & 2 video reels siap posting.',
+    category: 'Fotografi & Video',
+    pricePerSession: 250000,
+    pricePerDay: 1500000,
+    sessionDurationMinutes: 120,
+    maxWorkHoursPerDay: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&auto=format&fit=crop&q=80'
+    ],
+    location: 'Yogyakarta',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'svc-legalitas-halal',
+    merchantId: 'user-merchant-1',
+    title: 'Pendampingan Sertifikasi Halal & Izin Usaha NIB',
+    description: 'Bimbingan intensif pengurusan izin edar P-IRT, pendaftaran NIB melalui OSS RBA, dan sertifikasi Halal BPJPH (Self Declare & Reguler) hingga terbit sertifikat resmi.',
+    category: 'Konsultasi Bisnis',
+    pricePerSession: 125000,
+    pricePerDay: 750000,
+    sessionDurationMinutes: 60,
+    maxWorkHoursPerDay: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80'
+    ],
+    location: 'Jakarta Pusat',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'svc-website-landing',
+    merchantId: 'user-merchant-3',
+    title: 'Pembuatan Website Toko Online & Landing Page Express',
+    description: 'Website responsif modern terintegrasi katalog produk, tombol WhatsApp order, Google Analytics, dan SEO friendly. Proses pengerjaan kilat 2-3 hari kerja.',
+    category: 'Teknologi & IT',
+    pricePerSession: 300000,
+    pricePerDay: 1800000,
+    sessionDurationMinutes: 60,
+    maxWorkHoursPerDay: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80'
+    ],
+    location: 'Bandung',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'svc-servis-mesin-kopi',
+    merchantId: 'user-merchant-1',
+    title: 'Servis & Kalibrasi Mesin Kopi Espresso Kedai',
+    description: 'Jasa panggilan teknisi mesin espresso komersial / manual: descaling kerak air, perbaikan pompa pressure, ganti seal gasket boiler, dan kalibrasi grinder kopi.',
+    category: 'Reparasi & Perawatan',
+    pricePerSession: 200000,
+    pricePerDay: 950000,
+    sessionDurationMinutes: 120,
+    maxWorkHoursPerDay: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=800&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800&auto=format&fit=crop&q=80'
+    ],
+    location: 'Jabodetabek',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'svc-kursus-marketing',
+    merchantId: 'user-merchant-1',
+    title: 'Mentoring Privat Iklan Meta Ads & TikTok Shop',
+    description: 'Pendampingan 1-on-1 praktik pasang iklan berbayar (Meta Ads / TikTok Ads), riset audiens tertarget, copywriting penawaran, dan optimasi ROAS anti boncos.',
+    category: 'Pendidikan & Kursus Privat',
+    pricePerSession: 175000,
+    pricePerDay: 1100000,
+    sessionDurationMinutes: 90,
+    maxWorkHoursPerDay: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop&q=80'
+    ],
+    location: 'Online via Google Meet',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 'svc-kriya-souvenir',
+    merchantId: 'user-merchant-2',
+    title: 'Kriya Kayu Custom & Desain Souvenir Event',
+    description: 'Pembuatan cinderamata kayu laser cutting, plakat penghargaan grafir, gantungan kunci batik, dan giftset eksklusif untuk acara korporat atau pernikahan.',
+    category: 'Kerajinan & Seni',
+    pricePerSession: 120000,
+    pricePerDay: 650000,
+    sessionDurationMinutes: 60,
+    maxWorkHoursPerDay: 8,
+    imageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop&q=80'
+    ],
+    location: 'Yogyakarta & Solo',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+]
+
+export const mockServiceBookings = [
+  {
+    id: 'sb-sample-1',
+    serviceId: 'svc-desain-kemasan',
+    customerId: 'user-customer-1',
+    merchantId: 'user-merchant-1',
+    bookingDate: new Date(Date.now() + 86400000 * 2),
+    timeSlot: '10:30 - 11:30',
+    pricingType: 'SESSION',
+    sessionType: 'PER_SESI',
+    basePrice: 150000,
+    adminFee: 2500,
+    totalPrice: 152500,
+    totalAmount: 152500,
+    status: 'PENDING',
+    notes: 'Mau konsultasi desain standing pouch kripik pisang coklat lumer kemasan 150g.',
+    createdAt: new Date(Date.now() - 3600000 * 4),
+    updatedAt: new Date(Date.now() - 3600000 * 4),
+    service: {
+      id: 'svc-desain-kemasan',
+      title: 'Desain Kemasan & Label Produk Makanan UMKM',
+      category: 'Desain & Multimedia',
+      pricePerSession: 150000,
+      pricePerDay: 850000
+    },
+    customer: {
+      id: 'user-customer-1',
+      name: 'Andi Pembeli',
+      email: 'customer@saloka.com',
+      phone: '081234567890'
+    }
+  },
+  {
+    id: 'sb-sample-2',
+    serviceId: 'svc-servis-mesin-kopi',
+    customerId: 'user-customer-1',
+    merchantId: 'user-merchant-1',
+    bookingDate: new Date(Date.now() + 86400000 * 4),
+    timeSlot: '13:00 - 14:00',
+    pricingType: 'DAILY',
+    sessionType: 'PER_HARI',
+    basePrice: 950000,
+    adminFee: 2500,
+    totalPrice: 952500,
+    totalAmount: 952500,
+    status: 'CONFIRMED',
+    notes: 'Perawatan rutin mesin 2 group di outlet Tebet.',
+    createdAt: new Date(Date.now() - 86400000),
+    updatedAt: new Date(Date.now() - 3600000 * 12),
+    service: {
+      id: 'svc-servis-mesin-kopi',
+      title: 'Servis & Kalibrasi Mesin Kopi Espresso Kedai',
+      category: 'Reparasi & Perawatan',
+      pricePerSession: 200000,
+      pricePerDay: 950000
+    },
+    customer: {
+      id: 'user-customer-1',
+      name: 'Andi Pembeli',
+      email: 'customer@saloka.com',
+      phone: '081234567890'
+    }
+  },
+  {
+    id: 'sb-sample-3',
+    serviceId: 'svc-legalitas-halal',
+    customerId: 'user-customer-1',
+    merchantId: 'user-merchant-1',
+    bookingDate: new Date(Date.now() - 86400000 * 3),
+    timeSlot: '09:00 - 10:00',
+    pricingType: 'SESSION',
+    sessionType: 'PER_SESI',
+    basePrice: 125000,
+    adminFee: 2500,
+    totalPrice: 127500,
+    totalAmount: 127500,
+    status: 'COMPLETED',
+    notes: 'Konsultasi berkas NIB dan sertifikasi halal self-declare sudah tuntas disubmit.',
+    createdAt: new Date(Date.now() - 86400000 * 5),
+    updatedAt: new Date(Date.now() - 86400000 * 2),
+    service: {
+      id: 'svc-legalitas-halal',
+      title: 'Pendampingan Sertifikasi Halal & Izin Usaha NIB',
+      category: 'Konsultasi Bisnis',
+      pricePerSession: 125000,
+      pricePerDay: 750000
+    },
+    customer: {
+      id: 'user-customer-1',
+      name: 'Andi Pembeli',
+      email: 'customer@saloka.com',
+      phone: '081234567890'
+    }
+  }
+]
+
+export const mockServiceAvailability = [
+  {
+    id: 'sa-1',
+    serviceId: 'svc-desain-kemasan',
+    date: new Date(Date.now() + 86400000 * 1),
+    isAvailable: true,
+    createdAt: new Date()
+  },
+  {
+    id: 'sa-2',
+    serviceId: 'svc-desain-kemasan',
+    date: new Date(Date.now() + 86400000 * 2),
+    isAvailable: false,
+    createdAt: new Date()
+  },
+  {
+    id: 'sa-3',
+    serviceId: 'svc-desain-kemasan',
+    date: new Date(Date.now() + 86400000 * 3),
+    isAvailable: true,
+    createdAt: new Date()
+  }
+]
+
+export const mockServiceReviews = [
+  {
+    id: 'rev-1',
+    serviceId: 'svc-desain-kemasan',
+    userId: 'user-customer-1',
+    userName: 'Rina Bakery',
+    rating: 5,
+    comment: 'Hasil desain packaging standing pouch sangat memuaskan, warnanya eye-catching dan revisi cepat!',
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString()
+  },
+  {
+    id: 'rev-2',
+    serviceId: 'svc-desain-kemasan',
+    userId: 'user-merchant-2',
+    userName: 'Dimas Snack Solo',
+    rating: 5,
+    comment: 'Sangat recommended untuk UMKM baru. Sabar menjelaskan ukuran bleed cetakan dan spek warna CMYK.',
+    createdAt: new Date(Date.now() - 86400000 * 7).toISOString()
+  },
+  {
+    id: 'rev-3',
+    serviceId: 'svc-servis-mesin-kopi',
+    userId: 'user-customer-1',
+    userName: 'Kopi Kenangan Senja',
+    rating: 5,
+    comment: 'Teknisi sangat paham mesin La Marzocco dan Simonelli. Pressure langsung stabil dan rasa espresso kembali presisi.',
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString()
+  },
+  {
+    id: 'rev-4',
+    serviceId: 'svc-legalitas-halal',
+    userId: 'user-customer-1',
+    userName: 'Dapur Sambal Bu Sri',
+    rating: 5,
+    comment: 'Pendampingan halal sangat jelas tahap demi tahap. NIB dan nomor sertifikat halal langsung keluar tanpa kendala.',
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString()
+  }
+]
+

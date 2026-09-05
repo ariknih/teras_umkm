@@ -18,7 +18,11 @@ import {
   mockComments,
   mockWallets,
   mockWalletTransactions,
-  mockReferrals
+  mockReferrals,
+  mockServices,
+  mockServiceBookings,
+  mockServiceAvailability,
+  mockServiceReviews
 } from './mock-seed'
 
 // ─── Filesystem Persistence for Mock DB (survives HMR / process restarts) ────
@@ -7971,11 +7975,14 @@ export const DataStore = {
                 return await db.service.findMany({ where, orderBy: { createdAt: 'desc' } })
       },
       async () => {
+        if (!(globalThis as any).__mockServices) {
+          (globalThis as any).__mockServices = [...mockServices]
+        }
         let services = (globalThis as any).__mockServices || []
-            if (filters?.merchantId) services = services.filter((s: any) => s.merchantId === filters.merchantId)
-            if (filters?.category) services = services.filter((s: any) => s.category === filters.category)
-            if (filters?.isActive !== undefined) services = services.filter((s: any) => s.isActive === filters.isActive)
-            return services
+        if (filters?.merchantId) services = services.filter((s: any) => s.merchantId === filters.merchantId)
+        if (filters?.category) services = services.filter((s: any) => s.category === filters.category)
+        if (filters?.isActive !== undefined) services = services.filter((s: any) => s.isActive === filters.isActive)
+        return services
       }
     )
   },
@@ -7986,10 +7993,10 @@ export const DataStore = {
         return await db.service.create({ data })
       },
       async () => {
-        if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = []
-            const service = { id: `svc-${Date.now()}`, ...data, isActive: true, createdAt: new Date(), updatedAt: new Date() }
-            ;(globalThis as any).__mockServices.push(service)
-            return service
+        if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
+        const service = { id: `svc-${Date.now()}`, ...data, isActive: true, createdAt: new Date(), updatedAt: new Date() }
+        ;(globalThis as any).__mockServices.push(service)
+        return service
       }
     )
   },
@@ -8000,10 +8007,11 @@ export const DataStore = {
         return await db.service.update({ where: { id }, data })
       },
       async () => {
+        if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
         const services = (globalThis as any).__mockServices || []
-            const s = services.find((x: any) => x.id === id)
-            if (s) Object.assign(s, data, { updatedAt: new Date() })
-            return s
+        const s = services.find((x: any) => x.id === id)
+        if (s) Object.assign(s, data, { updatedAt: new Date() })
+        return s
       }
     )
   },
@@ -8014,10 +8022,11 @@ export const DataStore = {
         return await db.service.delete({ where: { id } })
       },
       async () => {
+        if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
         const services = (globalThis as any).__mockServices || []
-            const idx = services.findIndex((x: any) => x.id === id)
-            if (idx >= 0) services.splice(idx, 1)
-            return { success: true }
+        const idx = services.findIndex((x: any) => x.id === id)
+        if (idx >= 0) services.splice(idx, 1)
+        return { success: true }
       }
     )
   },
@@ -8029,9 +8038,14 @@ export const DataStore = {
           where: { serviceId, date: { gte: new Date() } },
           orderBy: { date: 'asc' }
         }),
-      () => ((globalThis as any).__mockServiceAvailability || [])
-      .filter((a: any) => a.serviceId === serviceId && new Date(a.date) >= new Date())
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      () => {
+        if (!(globalThis as any).__mockServiceAvailability) {
+          (globalThis as any).__mockServiceAvailability = [...mockServiceAvailability]
+        }
+        return ((globalThis as any).__mockServiceAvailability || [])
+          .filter((a: any) => a.serviceId === serviceId && new Date(a.date) >= new Date())
+          .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      }
     )
   },
 
@@ -8045,15 +8059,15 @@ export const DataStore = {
                 })
       },
       async () => {
-        if (!(globalThis as any).__mockServiceAvailability) (globalThis as any).__mockServiceAvailability = []
-            const avails = (globalThis as any).__mockServiceAvailability
-            const existing = avails.find((a: any) => a.serviceId === serviceId && new Date(a.date).toDateString() === date.toDateString())
-            if (existing) {
-              existing.isAvailable = isAvailable
-            } else {
-              avails.push({ id: `sa-${Date.now()}`, serviceId, date, isAvailable, createdAt: new Date() })
-            }
-            return { success: true }
+        if (!(globalThis as any).__mockServiceAvailability) (globalThis as any).__mockServiceAvailability = [...mockServiceAvailability]
+        const avails = (globalThis as any).__mockServiceAvailability
+        const existing = avails.find((a: any) => a.serviceId === serviceId && new Date(a.date).toDateString() === date.toDateString())
+        if (existing) {
+          existing.isAvailable = isAvailable
+        } else {
+          avails.push({ id: `sa-${Date.now()}`, serviceId, date, isAvailable, createdAt: new Date() })
+        }
+        return { success: true }
       }
     )
   },
@@ -8075,7 +8089,7 @@ export const DataStore = {
                 return booking
       },
       async () => {
-        if (!(globalThis as any).__mockServiceBookings) (globalThis as any).__mockServiceBookings = []
+        if (!(globalThis as any).__mockServiceBookings) (globalThis as any).__mockServiceBookings = [...mockServiceBookings]
             const booking = { id: `sb-${Date.now()}`, ...data, adminFee: 2500, status: 'PENDING', createdAt: new Date(), updatedAt: new Date() }
             ;(globalThis as any).__mockServiceBookings.push(booking)
             await this.setServiceAvailability(data.serviceId, dateBooking, false)
@@ -8094,11 +8108,14 @@ export const DataStore = {
                 return await db.serviceBooking.findMany({ where, orderBy: { createdAt: 'desc' }, include: { service: true } })
       },
       async () => {
+        if (!(globalThis as any).__mockServiceBookings) {
+          (globalThis as any).__mockServiceBookings = [...mockServiceBookings]
+        }
         let bookings = (globalThis as any).__mockServiceBookings || []
-            if (filters?.merchantId) bookings = bookings.filter((b: any) => b.merchantId === filters.merchantId)
-            if (filters?.customerId) bookings = bookings.filter((b: any) => b.customerId === filters.customerId)
-            if (filters?.serviceId) bookings = bookings.filter((b: any) => b.serviceId === filters.serviceId)
-            return bookings
+        if (filters?.merchantId) bookings = bookings.filter((b: any) => b.merchantId === filters.merchantId)
+        if (filters?.customerId) bookings = bookings.filter((b: any) => b.customerId === filters.customerId)
+        if (filters?.serviceId) bookings = bookings.filter((b: any) => b.serviceId === filters.serviceId)
+        return bookings
       }
     )
   },

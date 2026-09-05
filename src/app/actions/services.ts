@@ -336,6 +336,10 @@ export async function updateServiceBookingStatusAction(bookingId: string, status
 // ─── SERVICE REVIEWS & RATINGS ──────────────────────────────────────────
 export async function getServiceReviewsAction(serviceId: string) {
   try {
+    if (!(globalThis as any).__mockServiceReviews) {
+      const { mockServiceReviews } = await import('@/lib/mock-seed')
+      ;(globalThis as any).__mockServiceReviews = [...mockServiceReviews]
+    }
     const reviews = (globalThis as any).__mockServiceReviews || []
     return reviews.filter((r: any) => r.serviceId === serviceId)
   } catch (e) {
