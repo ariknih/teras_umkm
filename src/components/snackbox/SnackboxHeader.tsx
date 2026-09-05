@@ -1,11 +1,17 @@
-'use client'
-
 import React from 'react'
-import { MapPin, ShoppingBag, ChevronRight, PawPrint } from 'lucide-react'
+import { MapPin, ShoppingBag, ChevronRight, PawPrint, Loader2 } from 'lucide-react'
 import { useSnackbox } from '@/context/SnackboxContext'
 
 export default function SnackboxHeader() {
-  const { kelurahan, setIsKelurahanModalOpen, setIsCartOpen, totalItemTypesCount, summary } = useSnackbox()
+  const {
+    kelurahan,
+    setIsKelurahanModalOpen,
+    setIsCartOpen,
+    totalItemTypesCount,
+    summary,
+    isDetectingLocation,
+    locationSource
+  } = useSnackbox()
 
   return (
     <div id="snackbox-header-bar" className="w-full max-w-[1200px] mx-auto mb-6">
@@ -31,10 +37,24 @@ export default function SnackboxHeader() {
             onClick={() => setIsKelurahanModalOpen(true)}
             className="flex items-center gap-1.5 text-xs bg-white border border-slate-200 pl-3 pr-2.5 py-2 rounded-lg cursor-pointer hover:border-market-green-500/40"
           >
-            <MapPin className="w-3.5 h-3.5 text-market-green-600 shrink-0" />
+            {isDetectingLocation ? (
+              <Loader2 className="w-3.5 h-3.5 text-market-green-600 animate-spin shrink-0" />
+            ) : (
+              <MapPin className="w-3.5 h-3.5 text-market-green-600 shrink-0" />
+            )}
             <span className="font-semibold text-slate-800 truncate max-w-[150px] sm:max-w-[200px]">
-              Kel. {kelurahan.name}, {kelurahan.kota}
+              {isDetectingLocation ? 'Mendeteksi lokasi...' : `Kel. ${kelurahan.name}, ${kelurahan.kota}`}
             </span>
+            {locationSource === 'gps' && (
+              <span className="text-[9px] font-bold text-[#006E24] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                GPS
+              </span>
+            )}
+            {locationSource === 'ip' && (
+              <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                IP
+              </span>
+            )}
             <span className="ml-1 font-extrabold text-market-green-600">Ganti</span>
           </button>
 

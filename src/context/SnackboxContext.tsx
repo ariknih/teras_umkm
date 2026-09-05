@@ -16,6 +16,9 @@ interface SnackboxContextValue {
   setKelurahan: (kel: Kelurahan) => void
   isKelurahanModalOpen: boolean
   setIsKelurahanModalOpen: (open: boolean) => void
+  isDetectingLocation: boolean
+  locationSource: 'gps' | 'ip' | 'manual' | 'saved'
+  detectLocation: () => Promise<Kelurahan | null>
   
   cart: SnackboxCart
   isCartOpen: boolean
@@ -55,6 +58,9 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [cartBumpTick, setCartBumpTick] = useState(0)
 
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false)
+  const [locationSource, setLocationSource] = useState<'gps' | 'ip' | 'manual' | 'saved'>('saved')
+
   const [cart, setCart] = useState<SnackboxCart>({
     items: [],
     boxType: 'reguler',
@@ -68,16 +74,100 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
   const [promoCode, setPromoCode] = useState('')
   const [discountAmount, setDiscountAmount] = useState(0)
 
-  // 1. Hydrate from localStorage on client mount
+  // 1. Set Kelurahan and sync with cart & localStorage
+  const setKelurahan = (newKel: Kelurahan) => {
+    setKelurahanState(newKel)
+    try {
+      localStorage.setItem(KELURAHAN_STORAGE_KEY, JSON.stringify(newKel))
+    } catch (e) {}
+    
+    setCart((prevCart) => {
+      const updated = {
+        ...prevCart,
+        kelurahanId: newKel.id,
+        kelurahanName: newKel.name
+      }
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(updated))
+        window.dispatchEvent(new Event('storage'))
+      } catch (e) {}
+      return updated
+    })
+  }
+
+  // 2. Automated Location Detection (IP + GPS)
+  const detectLocation = async (): Promise<Kelurahan | null> => {
+    setIsDetectingLocation(true)
+    try {
+      // Step A: Fast IP Geolocation Lookup
+      let detectedByIp: Kelurahan | null = null
+      try {
+        const ipRes = await fetch('/api/geolocation/detect')
+        if (ipRes.ok) {
+          const json = await ipRes.json()
+          if (json.success && json.kelurahan) {
+            const kel = json.kelurahan as Kelurahan
+            detectedByIp = kel
+            setKelurahan(kel)
+            setLocationSource('ip')
+          }
+        }
+      } catch (e) {
+        console.warn('IP location detection error:', e)
+      }
+
+      // Step B: Browser GPS Geolocation (High Precision Upgrade)
+      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            try {
+              const { latitude, longitude } = pos.coords
+              const revRes = await fetch(`/api/geolocation/reverse?lat=${latitude}&lng=${longitude}`)
+              if (revRes.ok) {
+                const revJson = await revRes.json()
+                if (revJson.success && revJson.kelurahan) {
+                  setKelurahan(revJson.kelurahan as Kelurahan)
+                  setLocationSource('gps')
+                }
+              }
+            } catch (err) {
+              console.warn('GPS reverse geocode error:', err)
+            } finally {
+              setIsDetectingLocation(false)
+            }
+          },
+          (geoErr) => {
+            console.log('GPS permission status:', geoErr.message)
+            setIsDetectingLocation(false)
+          },
+          { timeout: 8000, enableHighAccuracy: true }
+        )
+      } else {
+        setIsDetectingLocation(false)
+      }
+
+      return detectedByIp
+    } catch (err) {
+      console.error('Location detection failed:', err)
+      setIsDetectingLocation(false)
+      return null
+    }
+  }
+
+  // 3. Hydrate from localStorage or trigger auto-detection on client mount
   useEffect(() => {
+    let hasSavedKel = false
     try {
       const savedKel = localStorage.getItem(KELURAHAN_STORAGE_KEY)
       if (savedKel) {
         const parsed = JSON.parse(savedKel)
-        // Discard stale entries from an old dataset (e.g. a kelurahan that no longer exists)
-        const isValid = parsed?.id && mockKelurahans.some(k => k.id === parsed.id)
-        if (isValid) setKelurahanState(parsed)
-        else localStorage.removeItem(KELURAHAN_STORAGE_KEY)
+        // Accept any valid Kelurahan object from all of Indonesia
+        if (parsed?.id && parsed?.name && (parsed?.kota || parsed?.province)) {
+          setKelurahanState(parsed)
+          hasSavedKel = true
+        } else {
+          localStorage.removeItem(KELURAHAN_STORAGE_KEY)
+        }
       }
 
       const savedCart = localStorage.getItem(CART_STORAGE_KEY)
@@ -88,30 +178,20 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       console.warn('Failed to load snackbox storage:', e)
     }
+
+    // If no previous location saved, immediately detect location via IP & GPS
+    if (!hasSavedKel) {
+      detectLocation()
+    }
   }, [])
 
-  // 2. Persist cart changes
+  // 4. Persist cart changes helper
   const saveCartToStorage = (newCart: SnackboxCart) => {
     setCart(newCart)
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart))
       window.dispatchEvent(new Event('storage'))
     } catch (e) {}
-  }
-
-  // 3. Set Kelurahan and sync with cart
-  const setKelurahan = (newKel: Kelurahan) => {
-    setKelurahanState(newKel)
-    try {
-      localStorage.setItem(KELURAHAN_STORAGE_KEY, JSON.stringify(newKel))
-    } catch (e) {}
-    
-    // If cart has items from different kelurahan, we can update metadata
-    saveCartToStorage({
-      ...cart,
-      kelurahanId: newKel.id,
-      kelurahanName: newKel.name
-    })
   }
 
   // 4. Cart Operations
@@ -286,6 +366,9 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
         setKelurahan,
         isKelurahanModalOpen,
         setIsKelurahanModalOpen,
+        isDetectingLocation,
+        locationSource,
+        detectLocation,
         cart,
         isCartOpen,
         setIsCartOpen,

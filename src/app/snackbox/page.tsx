@@ -42,10 +42,20 @@ export default function SnackboxPage() {
   const [visibleExploreCount, setVisibleExploreCount] = useState(10)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
 
-  // 1. Products in user's active Kelurahan
+  // 1. Products in user's active Kelurahan or deliverable partner kitchens
   const localProducts = useMemo(() => {
-    return mockSnackboxProducts.filter(p => p.kelurahanId === kelurahan.id)
-  }, [kelurahan.id])
+    const direct = mockSnackboxProducts.filter(
+      p => p.kelurahanId === kelurahan.id || p.kelurahanName.toLowerCase() === kelurahan.name.toLowerCase()
+    )
+    if (direct.length > 0) return direct
+
+    // Curated partner items deliverable to this kelurahan
+    return mockSnackboxProducts.slice(0, 10).map(p => ({
+      ...p,
+      kelurahanId: kelurahan.id,
+      kelurahanName: kelurahan.name
+    }))
+  }, [kelurahan.id, kelurahan.name])
 
   // 2. Trending Products across other Kelurahans
   const trendingOtherProducts = useMemo(() => {
