@@ -7,6 +7,22 @@ import { MENUS } from '../nav.config'
 import { useToast, Toast } from './Toast'
 
 const ALL_ADMIN_PERMISSIONS = MENUS.map((m) => ({ key: m.key, label: m.label, desc: m.desc }))
+const ALL_PERMISSION_KEYS = ALL_ADMIN_PERMISSIONS.map((p) => p.key)
+
+function parseAdminPermissions(adm: any): string[] {
+  try {
+    const perms = adm.adminPermissions ? JSON.parse(adm.adminPermissions) : ALL_PERMISSION_KEYS
+    return Array.isArray(perms) && perms.length > 0 ? perms : ALL_PERMISSION_KEYS
+  } catch {
+    return ALL_PERMISSION_KEYS
+  }
+}
+
+function sameKeys(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const sorted = [...b].sort()
+  return [...a].sort().every((k, i) => k === sorted[i])
+}
 
 type Props = {
   initialAdmins: any[]
@@ -24,15 +40,27 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isSuper, setIsSuper] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [currentPasswordError, setCurrentPasswordError] = useState('')
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>(ALL_ADMIN_PERMISSIONS.map((p) => p.key))
+
+  const isSelfEdit = !!editingAdmin && editingAdmin.id === currentUser.id
+
+  const permissionsChanged = !!editingAdmin && !editingAdmin.isSuperAdmin && !sameKeys(selectedPermissions, parseAdminPermissions(editingAdmin))
+  const canSubmit = !editingAdmin || (
+    name !== (editingAdmin.name || '') ||
+    email !== (editingAdmin.email || '') ||
+    !!password ||
+    permissionsChanged
+  )
 
   const openCreateModal = () => {
     setEditingAdmin(null)
     setName('')
     setEmail('')
     setPassword('')
-    setIsSuper(false)
+    setCurrentPassword('')
+    setCurrentPasswordError('')
     setSelectedPermissions(ALL_ADMIN_PERMISSIONS.map((p) => p.key))
     setIsModalOpen(true)
   }
@@ -42,19 +70,15 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
     setName(adm.name || '')
     setEmail(adm.email || '')
     setPassword('')
-    setIsSuper(!!adm.isSuperAdmin)
-    let perms: string[] = []
-    try {
-      perms = adm.adminPermissions ? JSON.parse(adm.adminPermissions) : ALL_ADMIN_PERMISSIONS.map((p) => p.key)
-    } catch {
-      perms = ALL_ADMIN_PERMISSIONS.map((p) => p.key)
-    }
-    setSelectedPermissions(Array.isArray(perms) && perms.length > 0 ? perms : ALL_ADMIN_PERMISSIONS.map((p) => p.key))
+    setCurrentPassword('')
+    setCurrentPasswordError('')
+    setSelectedPermissions(parseAdminPermissions(adm))
     setIsModalOpen(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setCurrentPasswordError('')
     if (!name || !email) {
       alert('Nama dan email wajib diisi.')
       return
@@ -63,13 +87,17 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
       alert('Kata sandi wajib diisi untuk admin baru.')
       return
     }
+    if (isSelfEdit && password && !currentPassword) {
+      alert('Masukkan kata sandi Anda saat ini untuk mengubah ke kata sandi baru.')
+      return
+    }
 
     const formData = new FormData()
     if (editingAdmin) formData.append('id', editingAdmin.id)
     formData.append('name', name)
     formData.append('email', email)
     if (password) formData.append('password', password)
-    formData.append('isSuperAdmin', String(isSuper))
+    if (isSelfEdit && currentPassword) formData.append('currentPassword', currentPassword)
     formData.append('adminPermissions', JSON.stringify(selectedPermissions))
 
     startTransition(async () => {
@@ -77,13 +105,15 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
       if (res.success) {
         showToast(editingAdmin ? 'Data admin dan hak akses berhasil diperbarui.' : 'Admin baru berhasil ditambahkan.')
         if (editingAdmin) {
-          setAdmins((prev) => prev.map((a) => (a.id === editingAdmin.id ? { ...a, ...res.admin, isSuperAdmin: isSuper, adminPermissions: JSON.stringify(selectedPermissions) } : a)))
+          setAdmins((prev) => prev.map((a) => (a.id === editingAdmin.id ? { ...a, ...res.admin, adminPermissions: JSON.stringify(selectedPermissions) } : a)))
         } else {
           setAdmins((prev) => [...prev, res.admin])
         }
         setIsModalOpen(false)
         setEditingAdmin(null)
         router.refresh()
+      } else if (res.error === 'Kata sandi saat ini salah.') {
+        setCurrentPasswordError(res.error)
       } else {
         showToast(res.error || 'Gagal menyimpan data admin.', 'error')
       }
@@ -178,21 +208,27 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => openEditModal(adm)}
-                            className="px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] border border-[#A5D6A7] rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                          >
-                            ⚙️ Edit Hak Akses
-                          </button>
-                          {adm.id === currentUser.id ? (
-                            <span className="text-[10px] text-slate-400 italic px-2">Akun Anda</span>
+                          {admIsSuper && adm.id !== currentUser.id ? (
+                            <span className="text-[10px] text-slate-400 italic px-2">Superadmin lain</span>
                           ) : (
-                            <button
-                              onClick={() => handleDelete(adm.id)}
-                              className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
-                            >
-                              Hapus
-                            </button>
+                            <>
+                              <button
+                                onClick={() => openEditModal(adm)}
+                                className="px-3 py-1.5 bg-[#E8F5E9] hover:bg-[#C8E6C9] text-[#006E24] border border-[#A5D6A7] rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                              >
+                                ⚙️ Edit Hak Akses
+                              </button>
+                              {adm.id === currentUser.id ? (
+                                <span className="text-[10px] text-slate-400 italic px-2">Akun Anda</span>
+                              ) : (
+                                <button
+                                  onClick={() => handleDelete(adm.id)}
+                                  className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                                >
+                                  Hapus
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
@@ -229,6 +265,12 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
+              {editingAdmin?.isSuperAdmin && (
+                <p className="text-[11px] text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                  ⭐ Akun ini adalah Superadmin. Status superadmin tidak dapat diubah lewat form ini.
+                </p>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">Nama Lengkap</label>
@@ -255,9 +297,33 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
                 </div>
               </div>
 
+              {isSelfEdit && (
+                <div>
+                  <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">
+                    Kata Sandi Saat Ini (Current Password) {password && <span className="text-red-500 font-normal lowercase">(wajib diisi untuk mengubah sandi)</span>}
+                  </label>
+                  <input
+                    type="password"
+                    required={!!password}
+                    value={currentPassword}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value)
+                      setCurrentPasswordError('')
+                    }}
+                    placeholder="Masukkan kata sandi Anda saat ini"
+                    className={`w-full bg-white border rounded-[var(--radius-brand)] px-3.5 py-2.5 text-slate-800 placeholder-[#94a3b8] outline-none ${
+                      currentPasswordError ? 'border-red-400 focus:border-red-500' : 'border-[#cbd5e1] focus:border-[#0F5132]'
+                    }`}
+                  />
+                  {currentPasswordError && (
+                    <p className="text-[11px] text-red-600 mt-1">{currentPasswordError}</p>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-[10px] font-bold text-[#64748b] uppercase tracking-wider mb-1.5">
-                  Kata Sandi (Password) {editingAdmin && <span className="text-slate-400 font-normal lowercase">(kosongkan jika tidak ingin mengubah)</span>}
+                  {isSelfEdit ? 'Kata Sandi Baru (New Password)' : 'Kata Sandi (Password)'} {editingAdmin && <span className="text-slate-400 font-normal lowercase">(kosongkan jika tidak ingin mengubah)</span>}
                 </label>
                 <input
                   type="password"
@@ -269,27 +335,8 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
                 />
               </div>
 
-              {/* Super Admin Switcher */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="isSuperModal"
-                    checked={isSuper}
-                    onChange={(e) => setIsSuper(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#0F5132] focus:ring-[#0F5132] cursor-pointer"
-                  />
-                  <label htmlFor="isSuperModal" className="text-xs text-slate-800 font-bold cursor-pointer flex items-center gap-1.5">
-                    <span>⭐ Jadikan Superadmin (Akses Penuh Semua Modul & Distribusi Koin)</span>
-                  </label>
-                </div>
-                <p className="text-[11px] text-slate-500 pl-7">
-                  Superadmin otomatis memiliki akses ke semua modul dan dapat mengelola staf admin lainnya.
-                </p>
-              </div>
-
-              {/* Module Permission Checklist (RBAC) */}
-              {!isSuper ? (
+              {/* Module Permission Checklist (RBAC) — superadmin always has full access, nothing to configure */}
+              {!editingAdmin?.isSuperAdmin && (
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
                     <div>
@@ -349,11 +396,6 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
                     })}
                   </div>
                 </div>
-              ) : (
-                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2.5 text-emerald-800 text-xs">
-                  <span className="text-base">🛡️</span>
-                  <span className="font-semibold">Akun Superadmin memiliki akses otomatis ke seluruh modul sidebar tanpa batasan.</span>
-                </div>
               )}
 
               <div className="pt-4 flex gap-3 shrink-0 border-t border-slate-100">
@@ -369,8 +411,8 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
                 </button>
                 <button
                   type="submit"
-                  disabled={isPending}
-                  className="flex-1 py-2.5 bg-[#006E24] hover:bg-[#084e1b] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 shadow-sm"
+                  disabled={isPending || !canSubmit}
+                  className="flex-1 py-2.5 bg-[#006E24] hover:bg-[#084e1b] text-white font-bold rounded-[var(--radius-brand)] uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
                   {isPending ? 'Menyimpan...' : editingAdmin ? 'Simpan Perubahan Hak Akses' : 'Tambah Administrator'}
                 </button>

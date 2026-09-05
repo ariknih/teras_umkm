@@ -283,7 +283,6 @@ export default function UsersTab({ initialUsers, communities }: Props) {
                     onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
                     className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   >
-                    <option value="ADMIN">ADMIN</option>
                     <option value="MERCHANT">MERCHANT</option>
                     <option value="AFFILIATE">AFFILIATE</option>
                     <option value="CUSTOMER">CUSTOMER</option>

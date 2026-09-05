@@ -2,6 +2,7 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { ensureSuperAdmin } from './admin'
 import { revalidatePath } from 'next/cache'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -295,19 +296,10 @@ export async function getCoinSupplyConfigAction() {
 }
 
 export async function updateCoinSupplyAction(totalSupply: number) {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN') {
-    return { error: 'Unauthorized.' }
-  }
-  const emailLower = (user.email || '').toLowerCase()
-  const nameLower = (user.name || '').toLowerCase()
-  const isSuper = user.isSuperAdmin === true ||
-                  user.role === 'ADMIN' ||
-                  emailLower === 'admin@saloka.com' ||
-                  emailLower === 'admin@teras.com' ||
-                  emailLower.includes('admin') ||
-                  nameLower.includes('super')
-  if (!isSuper) {
+  let user
+  try {
+    user = await ensureSuperAdmin()
+  } catch (e: any) {
     return { error: 'Hanya Super Admin yang bisa mengubah total supply.' }
   }
   try {
@@ -320,19 +312,10 @@ export async function updateCoinSupplyAction(totalSupply: number) {
 }
 
 export async function distributeCoinFromSupplyAction(formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user || user.role !== 'ADMIN') {
-    return { error: 'Unauthorized.' }
-  }
-  const emailLower = (user.email || '').toLowerCase()
-  const nameLower = (user.name || '').toLowerCase()
-  const isSuper = user.isSuperAdmin === true ||
-                  user.role === 'ADMIN' ||
-                  emailLower === 'admin@saloka.com' ||
-                  emailLower === 'admin@teras.com' ||
-                  emailLower.includes('admin') ||
-                  nameLower.includes('super')
-  if (!isSuper) {
+  let user
+  try {
+    user = await ensureSuperAdmin()
+  } catch (e: any) {
     return { error: 'Hanya Super Admin yang bisa mendistribusikan coin dari supply.' }
   }
 

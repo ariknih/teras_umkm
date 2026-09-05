@@ -6700,28 +6700,15 @@ export const DataStore = {
                   select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, adminPermissions: true, createdAt: true }
                 })
                 return admins.map(a => {
-                  const emailLower = (a.email || '').toLowerCase()
-                  const nameLower = (a.name || '').toLowerCase()
-                  const isSuper = a.isSuperAdmin === true || 
-                                  emailLower === 'admin@saloka.com' || 
-                                  emailLower === 'admin@teras.com' || 
-                                  nameLower.includes('super') ||
-                                  a.isSuperAdmin !== false
                   return {
                     ...a,
-                    isSuperAdmin: isSuper
+                    isSuperAdmin: a.isSuperAdmin === true
                   }
                 })
       },
       async () => {
         return globalMockUsers.filter(u => u.role === 'ADMIN').map(u => {
-              const emailLower = (u.email || '').toLowerCase()
-              const nameLower = (u.name || '').toLowerCase()
-              const isSuper = (u as any).isSuperAdmin === true || 
-                              emailLower === 'admin@saloka.com' || 
-                              emailLower === 'admin@teras.com' || 
-                              nameLower.includes('super') ||
-                              (u as any).isSuperAdmin !== false
+              const isSuper = (u as any).isSuperAdmin === true
               return {
                 id: u.id,
                 name: u.name,

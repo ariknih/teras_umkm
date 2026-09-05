@@ -34,14 +34,7 @@ export async function login(formData: FormData) {
     return { error: 'Email/username atau password salah' }
   }
   
-  const emailLower = (user.email || '').toLowerCase()
-  const nameLower = (user.name || '').toLowerCase()
-  const isSuper = user.isSuperAdmin === true || 
-                  user.role === 'ADMIN' || 
-                  emailLower === 'admin@saloka.com' || 
-                  emailLower === 'admin@teras.com' || 
-                  emailLower.includes('admin') ||
-                  nameLower.includes('super')
+  const isSuper = user.isSuperAdmin === true
 
   // Create Session JWT
   const token = await new SignJWT({
@@ -244,24 +237,19 @@ export async function getCurrentUser() {
     let adminPermissions = (payload as any).adminPermissions
 
     if (payload.role === 'ADMIN') {
-      const emailLower = ((payload.email as string) || '').toLowerCase()
-      if (emailLower === 'admin@saloka.com' || emailLower === 'admin@teras.com' || emailLower.includes('admin') || emailLower.includes('super')) {
-        isSuperAdmin = true
-      }
+      // Fail closed: only an explicit `true` on the DB row counts. A missing
+      // row, a DB error, or a null/undefined value must never grant
+      // superadmin — the superadmin count is fixed and this is the shared
+      // accessor every admin-only check reads from.
+      isSuperAdmin = false
       try {
         const dbUser = await DataStore.findUserById(payload.id as string)
         if (dbUser) {
-          if (emailLower === 'admin@saloka.com' || emailLower === 'admin@teras.com' || emailLower.includes('admin')) {
-            isSuperAdmin = true
-          } else {
-            isSuperAdmin = dbUser.isSuperAdmin ?? true
-          }
+          isSuperAdmin = dbUser.isSuperAdmin === true
           adminPermissions = dbUser.adminPermissions ?? null
-        } else {
-          isSuperAdmin = true
         }
       } catch (_) {
-        isSuperAdmin = true
+        isSuperAdmin = false
       }
     }
 
@@ -270,7 +258,7 @@ export async function getCurrentUser() {
       email: payload.email as string,
       role: payload.role as string,
       name: payload.name as string,
-      isSuperAdmin: isSuperAdmin ?? (payload.role === 'ADMIN'),
+      isSuperAdmin: isSuperAdmin === true,
       adminPermissions: adminPermissions ?? null
     }
   } catch (e) {

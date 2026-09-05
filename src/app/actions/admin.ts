@@ -15,24 +15,31 @@ async function ensureAdmin() {
   return user
 }
 
-// Helper to check Superadmin access
-async function ensureSuperAdmin() {
+// Helper to check Superadmin access. Re-derives from the DB rather than
+// trusting the session, and requires an explicit `true` — no email/name
+// heuristics, no "any ADMIN counts" fallback. Superadmin count is fixed;
+// this must never pass for anyone whose row doesn't already have the flag.
+export async function ensureSuperAdmin() {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
     throw new Error('Unauthorized: Akses khusus Superadmin.')
   }
-  const emailLower = (user.email || '').toLowerCase()
-  const nameLower = (user.name || '').toLowerCase()
-  const isSuper = user.isSuperAdmin === true ||
-                  user.role === 'ADMIN' ||
-                  emailLower === 'admin@saloka.com' ||
-                  emailLower === 'admin@teras.com' ||
-                  emailLower.includes('admin') ||
-                  nameLower.includes('super')
-  if (!isSuper) {
+  const dbUser: any = await DataStore.findUserById(user.id)
+  if (!dbUser || dbUser.isSuperAdmin !== true) {
     throw new Error('Unauthorized: Akses khusus Superadmin.')
   }
-  return user
+  return dbUser
+}
+
+// Throws unless `targetId` is the caller's own account or a non-superadmin.
+// A superadmin's account can only be changed by itself; nobody else — not
+// even another superadmin — can edit or delete it via the app.
+async function ensureNotEditingOtherSuperAdmin(currentUserId: string, targetId: string) {
+  if (targetId === currentUserId) return
+  const target: any = await DataStore.findUserById(targetId)
+  if (target?.isSuperAdmin === true) {
+    throw new Error('Unauthorized: Tidak dapat mengubah atau menghapus akun superadmin lain.')
+  }
 }
 
 // ─── USER MANAGEMENT ACTIONS ────────────────────────────────────────────────
@@ -47,6 +54,10 @@ export async function updateUserRoleAndLevelAction(
 ) {
   await ensureAdmin()
   try {
+    const target: any = await DataStore.findUserById(userId)
+    if (role === 'ADMIN' || target?.role === 'ADMIN') {
+      throw new Error('Akun admin dikelola lewat menu Admins, bukan lewat menu Users.')
+    }
     await DataStore.updateUserRoleAndLevel(userId, role, level, xp, membershipLevel, membershipAccess, bootcampStatus)
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
@@ -184,7 +195,6 @@ export async function createAdminAction(formData: FormData) {
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const isSuper = formData.get('isSuperAdmin') === 'true'
   const adminPermissions = formData.get('adminPermissions') as string || null
 
   if (!name || !email || !password) {
@@ -194,11 +204,13 @@ export async function createAdminAction(formData: FormData) {
   const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
 
   try {
+    // isSuperAdmin is never accepted from the client: the superadmin count is
+    // fixed and no app code path may ever create another one.
     const admin = await DataStore.createAdmin({
       name,
       email,
       passwordHash,
-      isSuperAdmin: isSuper,
+      isSuperAdmin: false,
       adminPermissions
     })
     revalidatePath('/cms_admin', 'layout')
@@ -209,30 +221,42 @@ export async function createAdminAction(formData: FormData) {
 }
 
 export async function updateAdminAction(formData: FormData) {
-  await ensureSuperAdmin()
+  const currentUser = await ensureSuperAdmin()
   const id = formData.get('id') as string
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const isSuper = formData.get('isSuperAdmin') === 'true'
+  const currentPassword = formData.get('currentPassword') as string
   const adminPermissions = formData.get('adminPermissions') as string || null
 
   if (!id || !name || !email) {
     return { error: 'ID, nama, dan email wajib diisi.' }
   }
 
-  const updateData: any = {
-    name,
-    email,
-    isSuperAdmin: isSuper,
-    adminPermissions
-  }
-
-  if (password && password.trim().length > 0) {
-    updateData.passwordHash = crypto.createHash('sha256').update(password).digest('hex')
-  }
-
   try {
+    await ensureNotEditingOtherSuperAdmin(currentUser.id, id)
+
+    // isSuperAdmin is intentionally never written here: this action can
+    // neither promote a new superadmin nor demote an existing one.
+    const updateData: any = {
+      name,
+      email,
+      adminPermissions
+    }
+
+    if (password && password.trim().length > 0) {
+      // Changing your own password requires proving you know the current
+      // one — this is the one field an authenticated session alone must
+      // not be enough to change on its own account.
+      if (id === currentUser.id) {
+        const currentHash = crypto.createHash('sha256').update(currentPassword || '').digest('hex')
+        if (!currentPassword || currentHash !== currentUser.passwordHash) {
+          return { error: 'Kata sandi saat ini salah.' }
+        }
+      }
+      updateData.passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+    }
+
     const admin = await DataStore.updateAdmin(id, updateData)
     revalidatePath('/cms_admin', 'layout')
     return { success: true, admin }
@@ -247,6 +271,7 @@ export async function deleteAdminAction(id: string) {
     return { error: 'Anda tidak dapat menghapus akun Anda sendiri.' }
   }
   try {
+    await ensureNotEditingOtherSuperAdmin(currentUser.id, id)
     await DataStore.deleteAdmin(id)
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
@@ -496,10 +521,12 @@ export async function kickMemberFromCommunityAdminAction(userId: string, communi
   }
 }
 
-export async function updateAdminPermissionsAction(adminId: string, permissions: string[], isSuperAdmin: boolean) {
-  await ensureSuperAdmin()
+export async function updateAdminPermissionsAction(adminId: string, permissions: string[]) {
+  const currentUser = await ensureSuperAdmin()
   try {
-    await DataStore.updateUserAdminPermissions(adminId, permissions, isSuperAdmin)
+    await ensureNotEditingOtherSuperAdmin(currentUser.id, adminId)
+    // isSuperAdmin is never written here — permission grants can't touch it.
+    await DataStore.updateUserAdminPermissions(adminId, permissions, false)
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -509,8 +536,9 @@ export async function updateAdminPermissionsAction(adminId: string, permissions:
 
 // ─── ADMIN ACCOUNT UPDATE ───────────────────────────────────────────────────
 export async function updateAdminAccountAction(adminId: string, data: { name?: string; email?: string; password?: string }) {
-  await ensureSuperAdmin()
+  const currentUser = await ensureSuperAdmin()
   try {
+    await ensureNotEditingOtherSuperAdmin(currentUser.id, adminId)
     const updateData: any = {}
     if (data.name) updateData.name = data.name
     if (data.email) updateData.email = data.email
@@ -534,6 +562,9 @@ export async function createUserAction(formData: FormData) {
 
   if (!name || !email || !password) {
     return { error: 'Nama, email, dan password wajib diisi.' }
+  }
+  if (!['CUSTOMER', 'MERCHANT', 'AFFILIATE', 'CUSTOMER_SERVICE'].includes(role)) {
+    return { error: 'Role tidak valid. Akun admin dibuat lewat menu Admins.' }
   }
 
   const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
