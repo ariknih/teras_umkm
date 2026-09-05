@@ -59,6 +59,8 @@ function loadMockDb(): {
   cooperativeReports?: any[];
   discussions?: any[];
   discussionReplies?: any[];
+  communityGallery?: any[];
+  communityOfficialProducts?: any[];
 } {
   try {
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -143,6 +145,12 @@ function loadMockDb(): {
       if (parsed.merchantFundingProjects) {
         parsed.merchantFundingProjects = parsed.merchantFundingProjects.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
       }
+      if (parsed.communityGallery) {
+        parsed.communityGallery = parsed.communityGallery.map((g: any) => ({ ...g, createdAt: new Date(g.createdAt), updatedAt: new Date(g.updatedAt) }))
+      }
+      if (parsed.communityOfficialProducts) {
+        parsed.communityOfficialProducts = parsed.communityOfficialProducts.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
+      }
       // Load global KYC setting at startup
       if (parsed.globalKycRequired !== undefined) {
         ;(globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
@@ -204,7 +212,8 @@ function saveMockDb() {
       cooperativeReports: (globalThis as any).__mockCooperativeReports,
       discussions: (globalThis as any).__mockDiscussions,
       discussionReplies: (globalThis as any).__mockDiscussionReplies,
-      communityGallery: (globalThis as any).__mockCommunityGallery
+      communityGallery: (globalThis as any).__mockCommunityGallery,
+      communityOfficialProducts: (globalThis as any).__mockCommunityOfficialProducts
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -383,6 +392,13 @@ function syncMockDb() {
           updatedAt: new Date(g.updatedAt)
         }))
       }
+      if (parsed.communityOfficialProducts) {
+        (globalThis as any).__mockCommunityOfficialProducts = parsed.communityOfficialProducts.map((p: any) => ({
+          ...p,
+          createdAt: new Date(p.createdAt),
+          updatedAt: new Date(p.updatedAt)
+        }))
+      }
       if (parsed.globalKycRequired !== undefined) {
         (globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
       }
@@ -408,6 +424,7 @@ const _persistedDb = loadMockDb()
 ;(globalThis as any).__mockCooperativeReports = _persistedDb.cooperativeReports || []
 ;(globalThis as any).__mockDiscussions = _persistedDb.discussions || []
 ;(globalThis as any).__mockDiscussionReplies = _persistedDb.discussionReplies || []
+;(globalThis as any).__mockCommunityOfficialProducts = _persistedDb.communityOfficialProducts || []
 
 // Global state in-memory database helpers for local updates in sandbox mode
 let globalMockProducts: any[] = mergeMockData(mockProducts, _persistedDb.products).map((p: any) => ({
@@ -1156,31 +1173,91 @@ export const DataStore = {
 
   async getProductsByMerchantIds(merchantIds: string[]) {
     if (!merchantIds || merchantIds.length === 0) return []
+    syncMockDb()
     return withFallback(
       async () => {
-        return await db.product.findMany({
-          where: { merchantId: { in: merchantIds } },
-          include: { merchant: { select: { id: true, name: true, image: true, role: true } } },
-          orderBy: { createdAt: 'desc' }
-        })
+        let dbList: any[] = []
+        try {
+          dbList = await db.product.findMany({
+            where: { merchantId: { in: merchantIds } },
+            include: { merchant: { select: { id: true, name: true, image: true, role: true } } },
+            orderBy: { createdAt: 'desc' }
+          })
+        } catch (_) {}
+
+        let customList: any[] = []
+        try {
+          const setting = await db.systemSetting.findUnique({ where: { key: 'custom_member_products' } })
+          if (setting?.value) {
+            const parsed = JSON.parse(setting.value)
+            if (Array.isArray(parsed)) {
+              customList = parsed.filter((p: any) => merchantIds.includes(p.merchantId))
+            }
+          }
+        } catch (_) {}
+
+        const mockList = globalMockProducts.filter((p: any) => merchantIds.includes(p.merchantId)).map((p: any) => ({
+          ...p,
+          merchant: p.merchant || globalMockUsers.find((u: any) => u.id === p.merchantId) || null
+        }))
+
+        // Merge all without duplicate by id:
+        const map = new Map<string, any>()
+        for (const p of dbList) map.set(p.id, p)
+        for (const p of customList) {
+          if (!map.has(p.id)) {
+            map.set(p.id, {
+              ...p,
+              merchant: p.merchant || globalMockUsers.find((u: any) => u.id === p.merchantId) || null
+            })
+          }
+        }
+        for (const p of mockList) {
+          if (!map.has(p.id)) map.set(p.id, p)
+        }
+
+        return Array.from(map.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       },
       async () => {
         const list = globalMockProducts.filter(p => merchantIds.includes(p.merchantId))
         return list.map(p => ({
           ...p,
           merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
-        })).sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime())
+        })).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       }
     )
   },
 
   async getProductById(id: string) {
+    syncMockDb()
     return withFallback(
       async () => {
-        return await db.product.findUnique({
+        const dbProd = await db.product.findUnique({
           where: { id },
           include: { merchant: true }
-        })
+        }).catch(() => null)
+        if (dbProd) return dbProd
+
+        try {
+          const setting = await db.systemSetting.findUnique({ where: { key: 'custom_member_products' } })
+          if (setting?.value) {
+            const list = JSON.parse(setting.value)
+            const item = Array.isArray(list) ? list.find((p: any) => p.id === id) : null
+            if (item) {
+              return {
+                ...item,
+                merchant: item.merchant || globalMockUsers.find((u: any) => u.id === item.merchantId) || null
+              }
+            }
+          }
+        } catch (_) {}
+
+        const p = globalMockProducts.find(prod => prod.id === id) || null
+        if (!p) return null
+        return {
+          ...p,
+          merchant: globalMockUsers.find(u => u.id === p.merchantId) || null
+        }
       },
       async () => {
         const p = globalMockProducts.find(prod => prod.id === id) || null
@@ -1212,13 +1289,60 @@ export const DataStore = {
     snackboxRevenueShare?: number;
     snackboxPortionWeight?: string;
   }) {
+    syncMockDb()
+    const validCategories = [
+      'TOKO', 'KAFE', 'JASA', 'KERJAAN', 'ELEKTRONIK', 'MAKANAN_MINUMAN',
+      'KOMPUTER_AKSESORIS', 'PERAWATAN_KECANTIKAN', 'HANDPHONE_AKSESORIS',
+      'PERLENGKAPAN_RUMAH', 'PAKAIAN_PRIA', 'PAKAIAN_WANITA', 'SEPATU_PRIA',
+      'FASHION_MUSLIM', 'TAS_PRIA', 'FASHION_BAYI_ANAK', 'AKSESORIS_FASHION',
+      'IBU_BAYI', 'JAM_TANGAN', 'SEPATU_WANITA', 'KESEHATAN', 'TAS_WANITA',
+      'HOBI_KOLEKSI', 'OTOMOTIF', 'OLAHRAGA_OUTDOOR', 'BUKU_ALAT_TULIS',
+      'SOUVENIR_PERLENGKAPAN_PESTA', 'FOTOGRAFI', 'VOUCHER', 'DEALS_SEKITAR'
+    ]
+    let safeCategory = 'TOKO'
+    const catStr = String(data.category || '')
+    if (validCategories.includes(catStr.toUpperCase())) {
+      safeCategory = catStr.toUpperCase()
+    } else if (catStr.toLowerCase().includes('makan') || catStr.toLowerCase().includes('kuliner')) {
+      safeCategory = 'MAKANAN_MINUMAN'
+    } else if (catStr.toLowerCase().includes('pakaian') || catStr.toLowerCase().includes('fashion')) {
+      safeCategory = 'PAKAIAN_PRIA'
+    } else if (catStr.toLowerCase().includes('elektronik') || catStr.toLowerCase().includes('gadget')) {
+      safeCategory = 'ELEKTRONIK'
+    } else if (catStr.toLowerCase().includes('cantik') || catStr.toLowerCase().includes('herbal')) {
+      safeCategory = 'PERAWATAN_KECANTIKAN'
+    } else if (catStr.toLowerCase().includes('jasa')) {
+      safeCategory = 'JASA'
+    } else if (catStr.toLowerCase().includes('kriya') || catStr.toLowerCase().includes('kerajinan')) {
+      safeCategory = 'SOUVENIR_PERLENGKAPAN_PESTA'
+    }
+
     return withMutationFallback(
       async () => {
-        return await db.product.create({ data: data as any })
-      },
-      async () => {
-        const newProd = {
-          id: `prod-${Date.now()}`,
+        let dbProd: any = null
+        try {
+          dbProd = await db.product.create({
+            data: {
+              title: data.title,
+              description: data.description,
+              price: data.price,
+              category: safeCategory as any,
+              stock: data.stock,
+              imageUrl: data.imageUrl || null,
+              merchantId: data.merchantId,
+              latitude: data.latitude || -6.2088,
+              longitude: data.longitude || 106.8456,
+              jvPartnerId: data.jvPartnerId || null,
+              jvSharePercent: data.jvSharePercent || null,
+              isAffiliateEnabled: data.isAffiliateEnabled || false,
+              affiliateCommissionType: data.affiliateCommissionType || 'PERCENT',
+              affiliateCommissionValue: data.affiliateCommissionValue || 0.0
+            }
+          })
+        } catch (_) {}
+
+        const newProd = dbProd || {
+          id: `prod-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           title: data.title,
           description: data.description,
           price: data.price,
@@ -1236,10 +1360,52 @@ export const DataStore = {
           isSnackboxEnabled: data.isSnackboxEnabled || false,
           snackboxRevenueShare: data.snackboxRevenueShare || 15,
           snackboxPortionWeight: data.snackboxPortionWeight || null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }
-        globalMockProducts.push(newProd)
+
+        // Persist to PostgreSQL SystemSetting backup
+        try {
+          const setting = await db.systemSetting.findUnique({ where: { key: 'custom_member_products' } })
+          const existingList = setting?.value ? JSON.parse(setting.value) : []
+          const updatedList = [newProd, ...(Array.isArray(existingList) ? existingList : []).filter((p: any) => p.id !== newProd.id)]
+          await db.systemSetting.upsert({
+            where: { key: 'custom_member_products' },
+            update: { value: JSON.stringify(updatedList) },
+            create: { key: 'custom_member_products', value: JSON.stringify(updatedList) }
+          })
+        } catch (_) {}
+
+        // Persist to mock data and disk file
+        globalMockProducts = [newProd, ...globalMockProducts.filter((p: any) => p.id !== newProd.id)]
+        saveMockDb()
+        return newProd
+      },
+      async () => {
+        const newProd = {
+          id: `prod-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          category: data.category,
+          stock: data.stock,
+          imageUrl: data.imageUrl || null,
+          merchantId: data.merchantId,
+          latitude: data.latitude || null,
+          longitude: data.longitude || null,
+          jvPartnerId: data.jvPartnerId || null,
+          jvSharePercent: data.jvSharePercent || null,
+          isAffiliateEnabled: data.isAffiliateEnabled || false,
+          affiliateCommissionType: data.affiliateCommissionType || 'PERCENT',
+          affiliateCommissionValue: data.affiliateCommissionValue || 0.0,
+          isSnackboxEnabled: data.isSnackboxEnabled || false,
+          snackboxRevenueShare: data.snackboxRevenueShare || 15,
+          snackboxPortionWeight: data.snackboxPortionWeight || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }
+        globalMockProducts = [newProd, ...globalMockProducts.filter((p: any) => p.id !== newProd.id)]
+        saveMockDb()
         return newProd
       }
     )
@@ -1265,12 +1431,46 @@ export const DataStore = {
       snackboxPortionWeight?: string;
     }>
   ) {
+    syncMockDb()
     return withMutationFallback(
       async () => {
-        return await db.product.update({
-          where: { id, merchantId },
-          data: data as any
-        })
+        let updatedDb: any = null
+        try {
+          updatedDb = await db.product.update({
+            where: { id, merchantId },
+            data: data as any
+          })
+        } catch (_) {}
+
+        try {
+          const setting = await db.systemSetting.findUnique({ where: { key: 'custom_member_products' } })
+          if (setting?.value) {
+            const list = JSON.parse(setting.value)
+            if (Array.isArray(list)) {
+              const idx = list.findIndex((p: any) => p.id === id)
+              if (idx !== -1) {
+                list[idx] = { ...list[idx], ...data, updatedAt: new Date().toISOString() }
+                await db.systemSetting.upsert({
+                  where: { key: 'custom_member_products' },
+                  update: { value: JSON.stringify(list) },
+                  create: { key: 'custom_member_products', value: JSON.stringify(list) }
+                })
+              }
+            }
+          }
+        } catch (_) {}
+
+        const idx = globalMockProducts.findIndex(p => p.id === id && p.merchantId === merchantId)
+        if (idx !== -1) {
+          globalMockProducts[idx] = {
+            ...globalMockProducts[idx],
+            ...data,
+            updatedAt: new Date().toISOString()
+          }
+          saveMockDb()
+          return updatedDb || globalMockProducts[idx]
+        }
+        return updatedDb || { id, merchantId, ...data }
       },
       async () => {
         const idx = globalMockProducts.findIndex(p => p.id === id && p.merchantId === merchantId)
@@ -1278,9 +1478,10 @@ export const DataStore = {
         const updated = {
           ...globalMockProducts[idx],
           ...data,
-          updatedAt: new Date()
+          updatedAt: new Date().toISOString()
         }
         globalMockProducts[idx] = updated
+        saveMockDb()
         return updated
       }
     )
@@ -1292,45 +1493,78 @@ export const DataStore = {
     affiliateCommissionType: string, 
     affiliateCommissionValue: number
   ) {
+    syncMockDb()
     return withMutationFallback(
       async () => {
-        await db.product.updateMany({
-                  where: { merchantId },
-                  data: {
-                    isAffiliateEnabled,
-                    affiliateCommissionType,
-                    affiliateCommissionValue
-                  }
-                })
-                return true
+        try {
+          await db.product.updateMany({
+            where: { merchantId },
+            data: {
+              isAffiliateEnabled,
+              affiliateCommissionType,
+              affiliateCommissionValue
+            }
+          })
+        } catch (_) {}
+        globalMockProducts.forEach(p => {
+          if (p.merchantId === merchantId) {
+            p.isAffiliateEnabled = isAffiliateEnabled
+            p.affiliateCommissionType = affiliateCommissionType
+            p.affiliateCommissionValue = affiliateCommissionValue
+            p.updatedAt = new Date().toISOString()
+          }
+        })
+        saveMockDb()
+        return true
       },
       async () => {
-        // In-memory simulation
-            globalMockProducts.forEach(p => {
-              if (p.merchantId === merchantId) {
-                p.isAffiliateEnabled = isAffiliateEnabled
-                p.affiliateCommissionType = affiliateCommissionType
-                p.affiliateCommissionValue = affiliateCommissionValue
-                p.updatedAt = new Date()
-              }
-            })
-            return true
+        globalMockProducts.forEach(p => {
+          if (p.merchantId === merchantId) {
+            p.isAffiliateEnabled = isAffiliateEnabled
+            p.affiliateCommissionType = affiliateCommissionType
+            p.affiliateCommissionValue = affiliateCommissionValue
+            p.updatedAt = new Date().toISOString()
+          }
+        })
+        saveMockDb()
+        return true
       }
     )
   },
 
   async deleteProduct(id: string, merchantId: string) {
+    syncMockDb()
     return withMutationFallback(
       async () => {
-        return await db.product.delete({
-                  where: { id, merchantId }
-                })
+        try {
+          await db.product.delete({
+            where: { id, merchantId }
+          })
+        } catch (_) {}
+
+        try {
+          const setting = await db.systemSetting.findUnique({ where: { key: 'custom_member_products' } })
+          if (setting?.value) {
+            const list = JSON.parse(setting.value)
+            if (Array.isArray(list)) {
+              const filtered = list.filter((p: any) => p.id !== id)
+              await db.systemSetting.upsert({
+                where: { key: 'custom_member_products' },
+                update: { value: JSON.stringify(filtered) },
+                create: { key: 'custom_member_products', value: JSON.stringify(filtered) }
+              })
+            }
+          }
+        } catch (_) {}
+
+        globalMockProducts = globalMockProducts.filter(p => !(p.id === id && p.merchantId === merchantId))
+        saveMockDb()
+        return true
       },
       async () => {
-        const idx = globalMockProducts.findIndex(p => p.id === id && p.merchantId === merchantId)
-            if (idx === -1) throw new Error('Product not found or unauthorized')
-            globalMockProducts.splice(idx, 1)
-            return true
+        globalMockProducts = globalMockProducts.filter(p => !(p.id === id && p.merchantId === merchantId))
+        saveMockDb()
+        return true
       }
     )
   },
@@ -8695,8 +8929,8 @@ export const DataStore = {
         imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
         sku: 'COMM-TSHIRT-01',
         isOfficial: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date('2026-07-01').toISOString(),
+        updatedAt: new Date('2026-07-01').toISOString()
       },
       {
         id: `comm-prod-2-${communityId}`,
@@ -8710,8 +8944,8 @@ export const DataStore = {
         imageUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=500&auto=format&fit=crop&q=80',
         sku: 'COMM-RAW-02',
         isOfficial: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date('2026-07-05').toISOString(),
+        updatedAt: new Date('2026-07-05').toISOString()
       },
       {
         id: `comm-prod-3-${communityId}`,
@@ -8725,43 +8959,60 @@ export const DataStore = {
         imageUrl: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=500&auto=format&fit=crop&q=80',
         sku: 'COMM-SET-03',
         isOfficial: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date('2026-07-10').toISOString(),
+        updatedAt: new Date('2026-07-10').toISOString()
       }
     ]
 
     return withFallback(
       async () => {
+        // 1. Try PostgreSQL persistence via SystemSetting
         try {
-          const list = await (db as any).communityProduct?.findMany({
-            where: { communityId },
-            orderBy: { createdAt: 'desc' }
+          const setting = await db.systemSetting.findUnique({
+            where: { key: `community_official_products_${communityId}` }
           })
-          if (list && list.length > 0) return list
+          if (setting?.value) {
+            const parsed = JSON.parse(setting.value)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed
+            }
+          }
         } catch (_) {}
-        // Fallback to mock/seed
+
+        // 2. Check local mock storage
         if (!(globalThis as any).__mockCommunityOfficialProducts) {
           (globalThis as any).__mockCommunityOfficialProducts = []
         }
         const existing = (globalThis as any).__mockCommunityOfficialProducts.filter((p: any) => p.communityId === communityId)
-        if (existing.length === 0) {
-          (globalThis as any).__mockCommunityOfficialProducts.push(...seedCommunityProducts)
-          saveMockDb()
-          return seedCommunityProducts
+        if (existing.length > 0) {
+          return existing
         }
-        return existing
+
+        // 3. Initialize with seed data on very first run and persist
+        try {
+          await db.systemSetting.upsert({
+            where: { key: `community_official_products_${communityId}` },
+            update: { value: JSON.stringify(seedCommunityProducts) },
+            create: { key: `community_official_products_${communityId}`, value: JSON.stringify(seedCommunityProducts) }
+          })
+        } catch (_) {}
+
+        ;(globalThis as any).__mockCommunityOfficialProducts.push(...seedCommunityProducts)
+        saveMockDb()
+        return seedCommunityProducts
       },
       async () => {
         if (!(globalThis as any).__mockCommunityOfficialProducts) {
           (globalThis as any).__mockCommunityOfficialProducts = []
         }
         const existing = (globalThis as any).__mockCommunityOfficialProducts.filter((p: any) => p.communityId === communityId)
-        if (existing.length === 0) {
-          (globalThis as any).__mockCommunityOfficialProducts.push(...seedCommunityProducts)
-          saveMockDb()
-          return seedCommunityProducts
+        if (existing.length > 0) {
+          return existing
         }
-        return existing
+
+        ;(globalThis as any).__mockCommunityOfficialProducts.push(...seedCommunityProducts)
+        saveMockDb()
+        return seedCommunityProducts
       }
     )
   },
@@ -8778,66 +9029,57 @@ export const DataStore = {
     sku?: string
   }) {
     syncMockDb()
+    const newProd = {
+      id: `comm-prod-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      communityId: data.communityId,
+      name: data.name,
+      description: data.description || '',
+      price: Number(data.price || 0),
+      stock: Number(data.stock || 0),
+      category: data.category || 'Merchandise & Seragam',
+      imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
+      status: data.status || 'TERSEDIA',
+      sku: data.sku || `COMM-${Date.now().toString().slice(-6)}`,
+      isOfficial: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
     return withMutationFallback(
       async () => {
+        // Load current products
+        const currentProducts = await DataStore.getCommunityOfficialProducts(data.communityId)
+        const updatedList = [newProd, ...(Array.isArray(currentProducts) ? currentProducts : []).filter((p: any) => p.id !== newProd.id)]
+
+        // Persist to PostgreSQL SystemSetting
         try {
-          return await (db as any).communityProduct?.create({
-            data: {
-              communityId: data.communityId,
-              name: data.name,
-              description: data.description || '',
-              price: Number(data.price || 0),
-              stock: Number(data.stock || 0),
-              category: data.category || 'Merchandise & Seragam',
-              imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
-              status: data.status || 'TERSEDIA',
-              sku: data.sku || `COMM-${Date.now()}`,
-              isOfficial: true
-            }
+          await db.systemSetting.upsert({
+            where: { key: `community_official_products_${data.communityId}` },
+            update: { value: JSON.stringify(updatedList) },
+            create: { key: `community_official_products_${data.communityId}`, value: JSON.stringify(updatedList) }
           })
         } catch (_) {}
-        const newProd = {
-          id: `comm-prod-${Date.now()}`,
-          communityId: data.communityId,
-          name: data.name,
-          description: data.description || '',
-          price: Number(data.price || 0),
-          stock: Number(data.stock || 0),
-          category: data.category || 'Merchandise & Seragam',
-          imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
-          status: data.status || 'TERSEDIA',
-          sku: data.sku || `COMM-${Date.now()}`,
-          isOfficial: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
+
+        // Persist to mock store & disk
         if (!(globalThis as any).__mockCommunityOfficialProducts) {
           (globalThis as any).__mockCommunityOfficialProducts = []
         }
-        ;(globalThis as any).__mockCommunityOfficialProducts.unshift(newProd)
+        ;(globalThis as any).__mockCommunityOfficialProducts = [
+          newProd,
+          ...(globalThis as any).__mockCommunityOfficialProducts.filter((x: any) => x.id !== newProd.id)
+        ]
         saveMockDb()
+
         return newProd
       },
       async () => {
-        const newProd = {
-          id: `comm-prod-${Date.now()}`,
-          communityId: data.communityId,
-          name: data.name,
-          description: data.description || '',
-          price: Number(data.price || 0),
-          stock: Number(data.stock || 0),
-          category: data.category || 'Merchandise & Seragam',
-          imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
-          status: data.status || 'TERSEDIA',
-          sku: data.sku || `COMM-${Date.now()}`,
-          isOfficial: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
         if (!(globalThis as any).__mockCommunityOfficialProducts) {
           (globalThis as any).__mockCommunityOfficialProducts = []
         }
-        ;(globalThis as any).__mockCommunityOfficialProducts.unshift(newProd)
+        ;(globalThis as any).__mockCommunityOfficialProducts = [
+          newProd,
+          ...(globalThis as any).__mockCommunityOfficialProducts.filter((x: any) => x.id !== newProd.id)
+        ]
         saveMockDb()
         return newProd
       }
@@ -8853,25 +9095,41 @@ export const DataStore = {
     imageUrl?: string
     status?: string
     sku?: string
-  }) {
+  }, communityId?: string) {
     syncMockDb()
     return withMutationFallback(
       async () => {
-        try {
-          return await (db as any).communityProduct?.update({
-            where: { id },
-            data: {
-              ...(data.name ? { name: data.name } : {}),
-              ...(data.description !== undefined ? { description: data.description } : {}),
-              ...(data.price !== undefined ? { price: Number(data.price) } : {}),
-              ...(data.stock !== undefined ? { stock: Number(data.stock) } : {}),
-              ...(data.category ? { category: data.category } : {}),
-              ...(data.imageUrl ? { imageUrl: data.imageUrl } : {}),
-              ...(data.status ? { status: data.status } : {}),
-              ...(data.sku ? { sku: data.sku } : {})
-            }
-          })
-        } catch (_) {}
+        let updatedProd: any = null
+        if (communityId) {
+          try {
+            const currentList = await DataStore.getCommunityOfficialProducts(communityId)
+            const updatedList = (Array.isArray(currentList) ? currentList : []).map((p: any) => {
+              if (p.id === id) {
+                updatedProd = {
+                  ...p,
+                  ...(data.name ? { name: data.name } : {}),
+                  ...(data.description !== undefined ? { description: data.description } : {}),
+                  ...(data.price !== undefined ? { price: Number(data.price) } : {}),
+                  ...(data.stock !== undefined ? { stock: Number(data.stock) } : {}),
+                  ...(data.category ? { category: data.category } : {}),
+                  ...(data.imageUrl ? { imageUrl: data.imageUrl } : {}),
+                  ...(data.status ? { status: data.status } : {}),
+                  ...(data.sku ? { sku: data.sku } : {}),
+                  updatedAt: new Date().toISOString()
+                }
+                return updatedProd
+              }
+              return p
+            })
+
+            await db.systemSetting.upsert({
+              where: { key: `community_official_products_${communityId}` },
+              update: { value: JSON.stringify(updatedList) },
+              create: { key: `community_official_products_${communityId}`, value: JSON.stringify(updatedList) }
+            })
+          } catch (_) {}
+        }
+
         const list = (globalThis as any).__mockCommunityOfficialProducts || []
         const p = list.find((x: any) => x.id === id)
         if (p) {
@@ -8883,11 +9141,11 @@ export const DataStore = {
           if (data.imageUrl) p.imageUrl = data.imageUrl
           if (data.status) p.status = data.status
           if (data.sku) p.sku = data.sku
-          p.updatedAt = new Date()
+          p.updatedAt = new Date().toISOString()
           saveMockDb()
-          return p
+          return updatedProd || p
         }
-        return null
+        return updatedProd || null
       },
       async () => {
         const list = (globalThis as any).__mockCommunityOfficialProducts || []
@@ -8901,7 +9159,7 @@ export const DataStore = {
           if (data.imageUrl) p.imageUrl = data.imageUrl
           if (data.status) p.status = data.status
           if (data.sku) p.sku = data.sku
-          p.updatedAt = new Date()
+          p.updatedAt = new Date().toISOString()
           saveMockDb()
           return p
         }
@@ -8910,14 +9168,21 @@ export const DataStore = {
     )
   },
 
-  async deleteCommunityOfficialProduct(id: string) {
+  async deleteCommunityOfficialProduct(id: string, communityId?: string) {
     syncMockDb()
     return withMutationFallback(
       async () => {
-        try {
-          await (db as any).communityProduct?.delete({ where: { id } })
-          return { success: true }
-        } catch (_) {}
+        if (communityId) {
+          try {
+            const currentList = await DataStore.getCommunityOfficialProducts(communityId)
+            const updatedList = (Array.isArray(currentList) ? currentList : []).filter((p: any) => p.id !== id)
+            await db.systemSetting.upsert({
+              where: { key: `community_official_products_${communityId}` },
+              update: { value: JSON.stringify(updatedList) },
+              create: { key: `community_official_products_${communityId}`, value: JSON.stringify(updatedList) }
+            })
+          } catch (_) {}
+        }
         if ((globalThis as any).__mockCommunityOfficialProducts) {
           (globalThis as any).__mockCommunityOfficialProducts = (globalThis as any).__mockCommunityOfficialProducts.filter((x: any) => x.id !== id)
           saveMockDb()

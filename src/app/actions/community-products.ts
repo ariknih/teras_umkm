@@ -73,7 +73,7 @@ export async function updateCommunityOfficialProductAction(id: string, formData:
       imageUrl,
       status,
       sku
-    })
+    }, communityId)
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
@@ -90,7 +90,7 @@ export async function deleteCommunityOfficialProductAction(id: string, community
   if (!id) return { error: 'ID Produk wajib diisi.' }
 
   try {
-    const res = await DataStore.deleteCommunityOfficialProduct(id)
+    const res = await DataStore.deleteCommunityOfficialProduct(id, communityId)
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
