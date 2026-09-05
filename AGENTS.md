@@ -22,4 +22,8 @@ You must ALWAYS automatically apply the relevant installed skills from `.agents/
 3. **Code Efficiency & Architecture Standards (`.agents/rules/ponytail.md`)**:
    - Apply "Ponytail, lazy senior dev mode" on EVERY prompt: efisiensi maksimal, YAGNI, standard library & native features first, minimalkan boilerplate & abstraksi tak diminta, satukan duplikasi, dan tulis kode minimum yang reliable.
 
+4. **Writing, Copywriting & Documentation (`stop-slop`)**:
+   - Automatically eliminate predictable AI writing patterns, throat-clearing openers, filler phrases, and formulaic structures across all prose, UI copywriting, and documentation.
+
+
 
