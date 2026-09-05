@@ -542,6 +542,60 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     })
   }
 
+  // ─── LIGHTBOX MODAL HANDLERS & NAVIGATION ─────────────────────────────
+  const currentFilteredGallery = useMemo(() => {
+    return (communityGallery || []).filter((g: any) => {
+      return galleryCategoryFilter === 'Semua' || g.category === galleryCategoryFilter
+    })
+  }, [communityGallery, galleryCategoryFilter])
+
+  const lightboxItems = useMemo(() => {
+    if (currentFilteredGallery.length > 0) return currentFilteredGallery
+    return communityGallery || []
+  }, [currentFilteredGallery, communityGallery])
+
+  const handleNextLightbox = () => {
+    if (!selectedLightboxImage || lightboxItems.length === 0) return
+    const idx = lightboxItems.findIndex((item: any) => item.id === selectedLightboxImage.id)
+    const nextIdx = idx >= 0 ? (idx + 1) % lightboxItems.length : 0
+    setSelectedLightboxImage(lightboxItems[nextIdx])
+  }
+
+  const handlePrevLightbox = () => {
+    if (!selectedLightboxImage || lightboxItems.length === 0) return
+    const idx = lightboxItems.findIndex((item: any) => item.id === selectedLightboxImage.id)
+    const prevIdx = idx >= 0 ? (idx - 1 + lightboxItems.length) % lightboxItems.length : 0
+    setSelectedLightboxImage(lightboxItems[prevIdx])
+  }
+
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!selectedLightboxImage) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedLightboxImage(null)
+      } else if (e.key === 'ArrowLeft') {
+        handlePrevLightbox()
+      } else if (e.key === 'ArrowRight') {
+        handleNextLightbox()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedLightboxImage, lightboxItems])
+
+  useEffect(() => {
+    if (selectedLightboxImage && thumbnailContainerRef.current) {
+      const activeEl = thumbnailContainerRef.current.querySelector('[data-active="true"]') as HTMLElement
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      }
+    }
+  }, [selectedLightboxImage])
+
   const handleOpenMemberDetail = (mem: any) => {
     setSelectedMemberDetail(mem)
     setIsMemberDetailModalOpen(true)
@@ -3725,8 +3779,15 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                     {communityGallery && communityGallery.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2">
                         {communityGallery.slice(0, 3).map((item: any) => (
-                          <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-                            <Image src={item.imageUrl} alt={item.title} fill sizes="150px" className="object-cover" />
+                          <div
+                            key={item.id}
+                            onClick={() => setSelectedLightboxImage(item)}
+                            className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200 cursor-pointer group"
+                          >
+                            <Image src={item.imageUrl} alt={item.title} fill sizes="150px" className="object-cover group-hover:scale-105 transition-transform" />
+                            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Eye className="w-4 h-4 text-white drop-shadow" />
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -4883,7 +4944,10 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                             </div>
 
                             <div className="p-4 space-y-2">
-                              <h4 className="text-xs font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1 font-sora">
+                              <h4 
+                                onClick={() => setSelectedLightboxImage(item)}
+                                className="text-xs font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1 font-sora cursor-pointer"
+                              >
                                 {item.title}
                               </h4>
                               <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed font-medium">
@@ -9039,6 +9103,146 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── LIGHTBOX MODAL DETAIL FOTO KEGIATAN ───────────────────────────── */}
+      <AnimatePresence>
+        {selectedLightboxImage && (
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-5 md:p-6"
+            onClick={() => setSelectedLightboxImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-4xl lg:max-w-5xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col"
+            >
+              {/* Header */}
+              <div className="px-5 sm:px-7 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
+                <div className="flex items-center gap-2.5 min-w-0 pr-4">
+                  <h3 className="text-base sm:text-lg font-black text-gray-900 font-sora truncate">
+                    {selectedLightboxImage.title}
+                  </h3>
+                  {selectedLightboxImage.category && (
+                    <span className="px-2.5 py-0.5 bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-[11px] rounded-md border border-[#2DB24A]/25 whitespace-nowrap shrink-0">
+                      {selectedLightboxImage.category}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedLightboxImage(null)}
+                  className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                  title="Tutup (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Main Photo Area with Left/Right arrows */}
+              <div className="relative w-full bg-neutral-950 flex items-center justify-center overflow-hidden aspect-[16/10] sm:aspect-[16/9] max-h-[64vh] select-none">
+                <Image
+                  src={selectedLightboxImage.imageUrl}
+                  alt={selectedLightboxImage.title}
+                  fill
+                  priority
+                  sizes="(max-width: 1200px) 100vw, 1200px"
+                  className="object-contain"
+                />
+
+                {/* Previous Arrow Button on Main Image */}
+                {lightboxItems.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handlePrevLightbox()
+                    }}
+                    className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/90 hover:bg-white text-gray-800 shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-xs"
+                    title="Foto sebelumnya (Panah Kiri)"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-gray-800" strokeWidth={2.5} />
+                  </button>
+                )}
+
+                {/* Next Arrow Button on Main Image */}
+                {lightboxItems.length > 1 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleNextLightbox()
+                    }}
+                    className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/90 hover:bg-white text-gray-800 shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-xs"
+                    title="Foto selanjutnya (Panah Kanan)"
+                  >
+                    <ChevronRight className="w-5 h-5 text-gray-800" strokeWidth={2.5} />
+                  </button>
+                )}
+              </div>
+
+              {/* Bottom Thumbnail Strip with navigation arrows */}
+              <div className="px-4 sm:px-6 py-3.5 bg-white border-t border-gray-100 flex items-center gap-2 sm:gap-3">
+                {/* Scroll Thumbnails Left */}
+                {lightboxItems.length > 1 && (
+                  <button
+                    onClick={() => {
+                      thumbnailContainerRef.current?.scrollBy({ left: -180, behavior: 'smooth' })
+                    }}
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    title="Geser thumbnail ke kiri"
+                  >
+                    <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                )}
+
+                {/* Thumbnails Container */}
+                <div
+                  ref={thumbnailContainerRef}
+                  className="flex-1 flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth"
+                >
+                  {lightboxItems.map((item: any) => {
+                    const isActive = item.id === selectedLightboxImage.id
+                    return (
+                      <button
+                        key={item.id}
+                        data-active={isActive}
+                        onClick={() => setSelectedLightboxImage(item)}
+                        className={`relative w-14 h-10 sm:w-18 sm:h-12 md:w-20 md:h-14 rounded-lg overflow-hidden shrink-0 cursor-pointer transition-all duration-200 ${
+                          isActive
+                            ? 'border-2 border-[#2DB24A] ring-2 ring-[#2DB24A]/25 scale-105 shadow-sm opacity-100'
+                            : 'border border-gray-200 opacity-60 hover:opacity-100 hover:border-gray-300'
+                        }`}
+                        title={item.title}
+                      >
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.title}
+                          fill
+                          sizes="80px"
+                          className="object-cover"
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Scroll Thumbnails Right */}
+                {lightboxItems.length > 1 && (
+                  <button
+                    onClick={() => {
+                      thumbnailContainerRef.current?.scrollBy({ left: 180, behavior: 'smooth' })
+                    }}
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                    title="Geser thumbnail ke kanan"
+                  >
+                    <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </button>
+                )}
+              </div>
             </motion.div>
           </div>
         )}
