@@ -254,7 +254,7 @@ export default function CommunityDirectoryClient({
                   <Link
                     key={mc.communityId}
                     href={`/community/${mc.communityId}`}
-                    className={`w-[130px] sm:w-[155px] md:w-[180px] shrink-0 snap-start rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer select-none relative ${
+                    className={`w-[140px] sm:w-[165px] md:w-[185px] shrink-0 snap-start rounded-2xl sm:rounded-3xl p-3.5 sm:p-4 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer select-none relative ${
                       isPrimary
                         ? 'bg-gradient-to-b from-emerald-50/90 via-white to-white border-2 border-[#2DB24A] ring-1 ring-[#2DB24A]/30'
                         : 'bg-white border border-gray-200/90 hover:border-[#2DB24A]/60'
@@ -268,16 +268,18 @@ export default function CommunityDirectoryClient({
                     )}
 
                     {/* Top: Circular Community Logo Avatar */}
-                    <div className={`w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-white p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300 ${
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300 ${
                       isPrimary ? 'border-2 border-[#2DB24A] ring-2 ring-[#2DB24A]/20' : 'border border-gray-150'
                     }`}>
                       {renderCommunityLogo(mc.communityName, effectiveAvatar)}
                     </div>
 
-                  {/* Middle: Community Name (max 2 lines) */}
-                  <h4 className="font-sora text-[11px] sm:text-xs md:text-sm font-black text-slate-900 group-hover:text-[#2DB24A] transition-colors line-clamp-2 h-8 sm:h-10 flex items-center justify-center mt-2 leading-tight px-0.5">
-                    {mc.communityName}
-                  </h4>
+                    {/* Middle: Community Name (Proper line-clamp without top/bottom cutoff) */}
+                    <div className="w-full min-h-[44px] sm:min-h-[48px] flex items-center justify-center my-2 px-1">
+                      <h4 className="font-sora text-[11px] sm:text-xs md:text-[13px] font-black text-slate-900 group-hover:text-[#2DB24A] transition-colors line-clamp-2 leading-snug text-center break-words">
+                        {mc.communityName}
+                      </h4>
+                    </div>
 
                   {/* Bottom: Role Badge & Active Status */}
                   <div className="w-full mt-2.5 space-y-1">
