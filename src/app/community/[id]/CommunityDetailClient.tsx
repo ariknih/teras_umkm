@@ -4923,30 +4923,38 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         {filteredGallery.map((item: any) => (
                           <div
                             key={item.id}
-                            className="bg-white border border-gray-200/80 rounded-2xl overflow-hidden shadow-xs hover:border-[#2DB24A]/40 hover:shadow-md transition-all flex flex-col justify-between group"
+                            onClick={() => setSelectedLightboxImage(item)}
+                            className="bg-white border border-gray-200/80 rounded-2xl overflow-hidden shadow-xs hover:border-[#2DB24A]/50 hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer"
                           >
-                            <div className="relative h-48 bg-gray-100 overflow-hidden cursor-pointer" onClick={() => setSelectedLightboxImage(item)}>
+                            <div className="relative h-48 bg-gray-100 overflow-hidden">
                               <Image
                                 src={item.imageUrl}
                                 alt={item.title}
                                 fill
+                                unoptimized
                                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                               />
-                              <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs">
+                              <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 bg-[#2DB24A] text-white font-extrabold text-[9px] rounded-md uppercase tracking-wider shadow-xs pointer-events-none">
                                 {item.category || 'Dokumentasi'}
                               </span>
-                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-xs font-black text-gray-900 flex items-center gap-1.5 shadow-md">
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-auto">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setSelectedLightboxImage(item)
+                                  }}
+                                  className="px-3.5 py-2 bg-white/95 hover:bg-white backdrop-blur-md rounded-xl text-xs font-black text-gray-900 flex items-center gap-1.5 shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                                >
                                   <Eye className="w-3.5 h-3.5 text-[#2DB24A]" /> Lihat Foto
-                                </span>
+                                </button>
                               </div>
                             </div>
 
                             <div className="p-4 space-y-2">
                               <h4 
-                                onClick={() => setSelectedLightboxImage(item)}
-                                className="text-xs font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1 font-sora cursor-pointer"
+                                className="text-xs font-extrabold text-gray-900 group-hover:text-[#2DB24A] transition-colors line-clamp-1 font-sora"
                               >
                                 {item.title}
                               </h4>
@@ -4957,7 +4965,10 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                 <span>📅 {item.date || 'Juli 2026'}</span>
                                 {isCanManageCoop && (
                                   <button
-                                    onClick={() => handleDeleteGallery(item.id, item.title)}
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleDeleteGallery(item.id, item.title)
+                                    }}
                                     className="text-rose-500 hover:text-rose-700 font-bold hover:underline cursor-pointer"
                                   >
                                     Hapus
@@ -9111,20 +9122,23 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       {/* ── LIGHTBOX MODAL DETAIL FOTO KEGIATAN ───────────────────────────── */}
       <AnimatePresence>
         {selectedLightboxImage && (
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-xs p-3 sm:p-5 md:p-6"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-5 md:p-6"
             onClick={() => setSelectedLightboxImage(null)}
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0, y: 12 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 12 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-4xl lg:max-w-5xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col"
+              className="w-full max-w-4xl lg:max-w-5xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[95vh]"
             >
               {/* Header */}
-              <div className="px-5 sm:px-7 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
+              <div className="px-5 sm:px-7 py-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0 pr-4">
                   <h3 className="text-base sm:text-lg font-black text-gray-900 font-sora truncate">
                     {selectedLightboxImage.title}
@@ -9136,6 +9150,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   )}
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSelectedLightboxImage(null)}
                   className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                   title="Tutup (Esc)"
@@ -9145,12 +9160,13 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               </div>
 
               {/* Main Photo Area with Left/Right arrows */}
-              <div className="relative w-full bg-neutral-950 flex items-center justify-center overflow-hidden aspect-[16/10] sm:aspect-[16/9] max-h-[64vh] select-none">
+              <div className="relative w-full h-[320px] sm:h-[440px] md:h-[500px] bg-neutral-950 flex items-center justify-center overflow-hidden select-none">
                 <Image
                   src={selectedLightboxImage.imageUrl}
-                  alt={selectedLightboxImage.title}
+                  alt={selectedLightboxImage.title || 'Foto Galeri'}
                   fill
                   priority
+                  unoptimized
                   sizes="(max-width: 1200px) 100vw, 1200px"
                   className="object-contain"
                 />
@@ -9158,6 +9174,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                 {/* Previous Arrow Button on Main Image */}
                 {lightboxItems.length > 1 && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation()
                       handlePrevLightbox()
@@ -9172,6 +9189,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                 {/* Next Arrow Button on Main Image */}
                 {lightboxItems.length > 1 && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleNextLightbox()
@@ -9185,10 +9203,11 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               </div>
 
               {/* Bottom Thumbnail Strip with navigation arrows */}
-              <div className="px-4 sm:px-6 py-3.5 bg-white border-t border-gray-100 flex items-center gap-2 sm:gap-3">
+              <div className="px-4 sm:px-6 py-3.5 bg-white border-t border-gray-100 flex items-center gap-2 sm:gap-3 shrink-0">
                 {/* Scroll Thumbnails Left */}
                 {lightboxItems.length > 1 && (
                   <button
+                    type="button"
                     onClick={() => {
                       thumbnailContainerRef.current?.scrollBy({ left: -180, behavior: 'smooth' })
                     }}
@@ -9204,11 +9223,12 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   ref={thumbnailContainerRef}
                   className="flex-1 flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar py-1 scroll-smooth"
                 >
-                  {lightboxItems.map((item: any) => {
-                    const isActive = item.id === selectedLightboxImage.id
+                  {lightboxItems.map((item: any, idx: number) => {
+                    const isActive = (item.id || item.imageUrl) === (selectedLightboxImage.id || selectedLightboxImage.imageUrl)
                     return (
                       <button
-                        key={item.id}
+                        key={item.id || idx}
+                        type="button"
                         data-active={isActive}
                         onClick={() => setSelectedLightboxImage(item)}
                         className={`relative w-14 h-10 sm:w-18 sm:h-12 md:w-20 md:h-14 rounded-lg overflow-hidden shrink-0 cursor-pointer transition-all duration-200 ${
@@ -9220,8 +9240,9 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       >
                         <Image
                           src={item.imageUrl}
-                          alt={item.title}
+                          alt={item.title || 'Thumbnail'}
                           fill
+                          unoptimized
                           sizes="80px"
                           className="object-cover"
                         />
@@ -9233,6 +9254,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                 {/* Scroll Thumbnails Right */}
                 {lightboxItems.length > 1 && (
                   <button
+                    type="button"
                     onClick={() => {
                       thumbnailContainerRef.current?.scrollBy({ left: 180, behavior: 'smooth' })
                     }}
@@ -9244,7 +9266,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                 )}
               </div>
             </motion.div>
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
 
