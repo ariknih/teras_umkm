@@ -943,15 +943,25 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     setProductModalOpen(true)
   }
 
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus produk simpanan ini?')) return
-    startTransition(async () => {
-      const res = await deleteCooperativeProductAction(productId, id)
-      if (res.success) {
-        setCoopProducts(prev => prev.filter(p => p.id !== productId))
-        goeyToast.success('Produk simpanan berhasil dihapus!')
-      } else {
-        alert(res.error || 'Gagal menghapus produk simpanan.')
+  const handleDeleteProduct = (productId: string, productName?: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hapus Produk Simpanan',
+      message: `Apakah Anda yakin ingin menghapus produk simpanan ${productName ? `"${productName}" ` : ''}ini?`,
+      confirmText: 'Ya, Hapus Produk',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await deleteCooperativeProductAction(productId, id)
+          if (res.success) {
+            setCoopProducts(prev => prev.filter(p => p.id !== productId))
+            goeyToast.success('Produk simpanan berhasil dihapus!')
+          } else {
+            goeyToast.error(res.error || 'Gagal menghapus produk simpanan.')
+          }
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Gagal menghapus produk simpanan.')
+        }
       }
     })
   }
@@ -1736,20 +1746,27 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     }
   }
 
-  const handleDeleteAnnouncement = async (annId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus pengumuman ini?')) return
-
-    try {
-      const res: any = await deleteAnnouncementAction(annId, id)
-      if (res.success) {
-        goeyToast.success('Pengumuman dihapus!')
-        setAnnouncements(prev => prev.filter(x => x.id !== annId))
-      } else {
-        goeyToast.error(res.error || 'Gagal menghapus pengumuman.')
+  const handleDeleteAnnouncement = (annId: string, title?: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hapus Pengumuman',
+      message: `Apakah Anda yakin ingin menghapus pengumuman ${title ? `"${title}" ` : ''}ini?`,
+      confirmText: 'Ya, Hapus Pengumuman',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res: any = await deleteAnnouncementAction(annId, id)
+          if (res.success) {
+            goeyToast.success('Pengumuman berhasil dihapus!')
+            setAnnouncements(prev => prev.filter(x => x.id !== annId))
+          } else {
+            goeyToast.error(res.error || 'Gagal menghapus pengumuman.')
+          }
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+        }
       }
-    } catch (err: any) {
-      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
-    }
+    })
   }
 
   const handleTogglePublishAnnouncement = async (ann: any) => {
@@ -1887,20 +1904,27 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     }
   }
 
-  const handleDeleteReport = async (repId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus laporan ini?')) return
-
-    try {
-      const res: any = await deleteCooperativeReportAction(repId, id)
-      if (res.success) {
-        goeyToast.success('Laporan dihapus!')
-        setReports(prev => prev.filter(x => x.id !== repId))
-      } else {
-        goeyToast.error(res.error || 'Gagal menghapus laporan.')
+  const handleDeleteReport = (repId: string, title?: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hapus Laporan',
+      message: `Apakah Anda yakin ingin menghapus laporan ${title ? `"${title}" ` : ''}ini?`,
+      confirmText: 'Ya, Hapus Laporan',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res: any = await deleteCooperativeReportAction(repId, id)
+          if (res.success) {
+            goeyToast.success('Laporan berhasil dihapus!')
+            setReports(prev => prev.filter(x => x.id !== repId))
+          } else {
+            goeyToast.error(res.error || 'Gagal menghapus laporan.')
+          }
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
+        }
       }
-    } catch (err: any) {
-      goeyToast.error(err.message || 'Terjadi kesalahan sistem.')
-    }
+    })
   }
 
   const handleTogglePublishReport = async (rep: any) => {
@@ -3493,7 +3517,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                   <div className="flex items-center gap-1 text-[10px] shrink-0">
                                     <button onClick={() => handleOpenEditProduct(p)} className="text-gray-500 hover:text-[#2DB24A] font-bold cursor-pointer">Edit</button>
                                     <span className="text-gray-300">|</span>
-                                    <button onClick={() => handleDeleteProduct(p.id)} className="text-gray-500 hover:text-red-500 font-bold cursor-pointer">Hapus</button>
+                                    <button onClick={() => handleDeleteProduct(p.id, p.name)} className="text-gray-500 hover:text-red-500 font-bold cursor-pointer">Hapus</button>
                                   </div>
                                 )}
                               </div>
@@ -5088,7 +5112,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
                                   <button
-                                    onClick={() => handleDeleteAnnouncement(p.id)}
+                                    onClick={() => handleDeleteAnnouncement(p.id, p.title)}
                                     title="Hapus Pengumuman"
                                     className="p-1.5 text-gray-500 hover:text-red-600 bg-white border border-gray-200 rounded-lg hover:border-red-300 transition-all cursor-pointer"
                                   >
@@ -5948,7 +5972,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                         <div className="flex items-center gap-1.5 mr-2">
                                           <button onClick={() => handleOpenEditProduct(p)} className="text-[10px] text-gray-500 hover:text-emerald-600 font-bold cursor-pointer">Edit</button>
                                           <span className="text-gray-200 text-[10px]">|</span>
-                                          <button onClick={() => handleDeleteProduct(p.id)} className="text-[10px] text-gray-500 hover:text-red-500 font-bold cursor-pointer">Hapus</button>
+                                          <button onClick={() => handleDeleteProduct(p.id, p.name)} className="text-[10px] text-gray-500 hover:text-red-500 font-bold cursor-pointer">Hapus</button>
                                         </div>
                                       )}
                                       <button onClick={() => handleOpenPaySavings({ name: p.name, amount: p.amount || 50000, type: p.type })} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer">
@@ -6785,7 +6809,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                       <Edit3 className="w-3.5 h-3.5" />
                                     </button>
                                     <button
-                                      onClick={() => handleDeleteReport(rep.id)}
+                                      onClick={() => handleDeleteReport(rep.id, rep.title)}
                                       title="Hapus Laporan"
                                       className="p-1.5 text-gray-500 hover:text-red-600 bg-white border border-gray-200 rounded-lg hover:border-red-300 transition-all cursor-pointer"
                                     >

@@ -14,6 +14,7 @@ import {
   selectBestReplyAction, toggleLikeDiscussionAction 
 } from '@/app/actions/discussion'
 import { ForumPostSkeleton } from '@/components/ui/GhostSkeleton'
+import { motion } from 'framer-motion'
 
 interface DiscussionForumProps {
   communityId: string
@@ -59,6 +60,23 @@ export default function DiscussionForum({
   // Reply state
   const [replyContent, setReplyContent] = useState('')
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+
+  // Custom confirm modal state (matching community standard)
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    confirmText: string
+    variant?: 'danger' | 'success' | 'warning'
+    onConfirm: () => Promise<void> | void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Ya, Hapus',
+    variant: 'danger',
+    onConfirm: () => { }
+  })
 
   // Load discussions
   const loadDiscussions = async () => {
@@ -186,19 +204,29 @@ export default function DiscussionForum({
   }
 
   // Handle delete
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus diskusi ini? Semua balasan juga akan terhapus.')) return
-    startTransition(async () => {
-      const res = await deleteDiscussionAction(id, communityId) as any
-      if (res.error) {
-        goeyToast.error(res.error)
-      } else {
-        goeyToast.success('Diskusi berhasil dihapus!')
-        if (selectedDiscussion && selectedDiscussion.id === id) {
-          setSelectedDiscussion(null)
-          setView('list')
+  const handleDelete = (id: string, title?: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hapus Diskusi',
+      message: `Apakah Anda yakin ingin menghapus diskusi ${title ? `"${title}" ` : ''}? Semua balasan juga akan terhapus secara permanen.`,
+      confirmText: 'Ya, Hapus Diskusi',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await deleteDiscussionAction(id, communityId) as any
+          if (res.error) {
+            goeyToast.error(res.error)
+          } else {
+            goeyToast.success('Diskusi berhasil dihapus!')
+            if (selectedDiscussion && selectedDiscussion.id === id) {
+              setSelectedDiscussion(null)
+              setView('list')
+            }
+            loadDiscussions()
+          }
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Gagal menghapus diskusi.')
         }
-        loadDiscussions()
       }
     })
   }
@@ -258,18 +286,28 @@ export default function DiscussionForum({
   }
 
   // Handle delete reply
-  const handleDeleteReply = async (replyId: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus balasan ini?')) return
-    startTransition(async () => {
-      const res = await deleteDiscussionReplyAction(replyId, communityId) as any
-      if (res.error) {
-        goeyToast.error(res.error)
-      } else {
-        goeyToast.success('Balasan berhasil dihapus!')
-        const updatedDiscussions = await getDiscussionsAction(communityId)
-        setDiscussions(updatedDiscussions)
-        const updated = updatedDiscussions.find((d: any) => d.id === selectedDiscussion.id)
-        if (updated) setSelectedDiscussion(updated)
+  const handleDeleteReply = (replyId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Hapus Balasan',
+      message: 'Apakah Anda yakin ingin menghapus balasan ini secara permanen?',
+      confirmText: 'Ya, Hapus Balasan',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await deleteDiscussionReplyAction(replyId, communityId) as any
+          if (res.error) {
+            goeyToast.error(res.error)
+          } else {
+            goeyToast.success('Balasan berhasil dihapus!')
+            const updatedDiscussions = await getDiscussionsAction(communityId)
+            setDiscussions(updatedDiscussions)
+            const updated = updatedDiscussions.find((d: any) => d.id === selectedDiscussion?.id)
+            if (updated) setSelectedDiscussion(updated)
+          }
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Gagal menghapus balasan.')
+        }
       }
     })
   }
@@ -665,7 +703,7 @@ export default function DiscussionForum({
                                     {(isCanManageCoop || (currentUser && currentUser.id === disc.authorId)) && (
                                       <button
                                         onClick={() => {
-                                          handleDelete(disc.id)
+                                          handleDelete(disc.id, disc.title)
                                           setActiveMenuId(null)
                                         }}
                                         className="w-full px-3 py-1.5 hover:bg-gray-50 font-bold text-xs text-rose-600 flex items-center gap-2 cursor-pointer"
@@ -945,7 +983,7 @@ export default function DiscussionForum({
                     </>
                   )}
                   <button
-                    onClick={() => handleDelete(selectedDiscussion.id)}
+                    onClick={() => handleDelete(selectedDiscussion.id, selectedDiscussion.title)}
                     className="p-2 border border-rose-150 hover:bg-rose-50 text-rose-600 rounded-xl transition-all cursor-pointer"
                     title="Hapus Diskusi"
                   >
@@ -1183,6 +1221,62 @@ export default function DiscussionForum({
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* MODAL KONFIRMASI (CUSTOM ALERT / CONFIRMATION DIALOG) */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-gray-100"
+          >
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto ${confirmModal.variant === 'danger' ? 'bg-red-100 text-red-600' :
+                confirmModal.variant === 'success' ? 'bg-emerald-100 text-emerald-600' :
+                  'bg-amber-100 text-amber-600'
+              }`}>
+              {confirmModal.variant === 'danger' ? <Trash2 className="w-6 h-6" /> :
+                confirmModal.variant === 'success' ? <Check className="w-6 h-6" /> :
+                  <AlertCircle className="w-6 h-6" />}
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="font-sora text-base font-bold text-gray-900">
+                {confirmModal.title}
+              </h3>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                {confirmModal.message}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                className="flex-1 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  startTransition(async () => {
+                    await confirmModal.onConfirm()
+                    setConfirmModal(prev => ({ ...prev, isOpen: false }))
+                  })
+                }}
+                disabled={isPending}
+                className={`flex-1 py-2.5 text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer ${confirmModal.variant === 'danger' ? 'bg-red-600 hover:bg-red-700' :
+                    confirmModal.variant === 'success' ? 'bg-[#0F5132] hover:bg-emerald-900' :
+                      'bg-amber-600 hover:bg-amber-700'
+                  }`}
+              >
+                {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : confirmModal.confirmText}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>
