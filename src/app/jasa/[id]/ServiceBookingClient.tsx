@@ -153,7 +153,7 @@ export default function ServiceBookingClient({
     })
   }
 
-  // Handle calendar day clicks with Range support
+  // Handle calendar day clicks with intuitive Range support
   const handleDateClick = (dateStr: string, isAvail: boolean) => {
     if (isOwner) {
       handleToggleMyAvailability(dateStr, isAvail)
@@ -165,56 +165,53 @@ export default function ServiceBookingClient({
       return
     }
 
-    if (selectedPricingType === 'DAILY' && bookingMode === 'RANGE') {
-      if (!selectedDate || (selectedDate && selectedEndDate)) {
-        // 1st click: Set start date
-        setSelectedDate(dateStr)
-        setSelectedEndDate('')
-        setErrorMessage(null)
-      } else {
-        // 2nd click: End date
-        if (dateStr < selectedDate) {
-          // If clicked date is earlier than start date, treat as new start date
-          setSelectedDate(dateStr)
-          setSelectedEndDate('')
-          setErrorMessage(null)
-        } else if (dateStr === selectedDate) {
-          setSelectedEndDate(dateStr)
-          setErrorMessage(null)
-        } else {
-          // Check if any date inside the range is unavailable
-          let hasUnavailable = false
-          const cur = new Date(selectedDate)
-          const end = new Date(dateStr)
-          while (cur <= end) {
-            const curStr = cur.toISOString().split('T')[0]
-            if (!isDateAvailable(curStr)) {
-              hasUnavailable = true
-              break
-            }
-            cur.setDate(cur.getDate() + 1)
-          }
+    // If no start date selected, or both start & end dates already selected:
+    if (!selectedDate || (selectedDate && selectedEndDate)) {
+      setSelectedDate(dateStr)
+      setSelectedEndDate('')
+      setErrorMessage(null)
+      return
+    }
 
-          if (hasUnavailable) {
-            setErrorMessage('Terdapat tanggal yang tidak tersedia di dalam rentang yang Anda pilih.')
-            return
-          }
-
-          setSelectedEndDate(dateStr)
-          setErrorMessage(null)
+    // When a start date is already selected and user clicks another date:
+    if (dateStr > selectedDate) {
+      // Check if all dates in range are available
+      let hasUnavailable = false
+      const cur = new Date(selectedDate)
+      const end = new Date(dateStr)
+      while (cur <= end) {
+        const curStr = cur.toISOString().split('T')[0]
+        if (!isDateAvailable(curStr)) {
+          hasUnavailable = true
+          break
         }
+        cur.setDate(cur.getDate() + 1)
       }
+
+      if (hasUnavailable) {
+        setErrorMessage('Terdapat tanggal yang tidak tersedia/tutup di dalam rentang yang Anda pilih.')
+        return
+      }
+
+      setSelectedEndDate(dateStr)
+      setBookingMode('RANGE')
+      setErrorMessage(null)
+    } else if (dateStr === selectedDate) {
+      // Clicked same date again, keep as 1 day/sesi
+      setSelectedEndDate('')
+      setBookingMode('SINGLE')
+      setErrorMessage(null)
     } else {
-      // Single date click
+      // Clicked an earlier date, make it the new start date
       setSelectedDate(dateStr)
       setSelectedEndDate('')
       setErrorMessage(null)
     }
   }
 
-  // Total Days Calculation
+  // Total Days Calculation (works for both DAILY and SESSION packages)
   const totalDays =
-    selectedPricingType === 'DAILY' && selectedDate && selectedEndDate
+    selectedDate && selectedEndDate
       ? Math.max(
           1,
           Math.round(
@@ -245,17 +242,12 @@ export default function ServiceBookingClient({
       return
     }
 
-    if (selectedPricingType === 'DAILY' && bookingMode === 'RANGE' && !selectedEndDate) {
-      setErrorMessage('Silakan pilih tanggal selesai rentang booking pada kalender.')
-      return
-    }
-
     setErrorMessage(null)
     startTransition(async () => {
       const res = await createServiceBookingAction({
         serviceId: service.id,
         bookingDate: selectedDate,
-        endDate: selectedPricingType === 'DAILY' && bookingMode === 'RANGE' && selectedEndDate ? selectedEndDate : undefined,
+        endDate: selectedEndDate ? selectedEndDate : undefined,
         totalDays,
         timeSlot: selectedPricingType === 'SESSION' ? selectedTimeSlot : undefined,
         pricingType: selectedPricingType,
@@ -374,12 +366,12 @@ export default function ServiceBookingClient({
               )}
             </div>
 
-            {/* Range Booking Mode Switcher (For DAILY) */}
-            {selectedPricingType === 'DAILY' && !isOwner && (
+            {/* Range Booking Mode Switcher - Always Visible */}
+            {!isOwner && (
               <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-2xl border border-slate-200/80">
-                <div className="flex items-center gap-1 text-xs font-semibold text-slate-700">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
                   <CalendarRange className="w-4 h-4 text-[#006E24]" />
-                  <span>Pilihan Durasi Booking:</span>
+                  <span>Pilihan Durasi Jadwal:</span>
                 </div>
                 <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200">
                   <button
@@ -389,12 +381,12 @@ export default function ServiceBookingClient({
                       setSelectedEndDate('')
                     }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      bookingMode === 'SINGLE'
+                      bookingMode === 'SINGLE' && !selectedEndDate
                         ? 'bg-[#006E24] text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    1 Hari Saja
+                    1 Hari / Sesi
                   </button>
                   <button
                     type="button"
@@ -402,50 +394,77 @@ export default function ServiceBookingClient({
                       setBookingMode('RANGE')
                     }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      bookingMode === 'RANGE'
+                      bookingMode === 'RANGE' || !!selectedEndDate
                         ? 'bg-[#006E24] text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Rentang Hari (Multi-Day)
+                    Rentang Tanggal (Multi-Day)
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Range Selection Status Banner */}
-            {bookingMode === 'RANGE' && selectedPricingType === 'DAILY' && (
-              <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between text-xs">
+            {/* Date Selection Status & Helper Banner */}
+            {!isOwner && (
+              <div className={`p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs transition-all ${
+                selectedDate && selectedEndDate
+                  ? 'bg-emerald-50/80 border-emerald-300 text-emerald-900'
+                  : selectedDate
+                  ? 'bg-emerald-50/40 border-emerald-200 text-slate-800'
+                  : 'bg-slate-50 border-slate-200 text-slate-600'
+              }`}>
                 <div className="flex items-center gap-2">
-                  <CalendarCheck className="w-4 h-4 text-[#006E24] shrink-0" />
+                  <CalendarCheck className={`w-4 h-4 shrink-0 ${
+                    selectedDate ? 'text-[#006E24]' : 'text-slate-400'
+                  }`} />
                   <div>
                     {!selectedDate ? (
-                      <span className="text-slate-600 font-medium">Langkah 1: Klik tanggal <strong>Mulai</strong> di kalender.</span>
+                      <span className="text-slate-600">
+                        Klik tanggal di kalender (klik tanggal kedua untuk memilih rentang, contoh: <strong>13 s/d 15</strong>).
+                      </span>
                     ) : !selectedEndDate ? (
-                      <span className="text-slate-700 font-medium">
-                        Mulai: <strong className="text-[#006E24]">{new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</strong> &rarr; Sekarang klik tanggal <strong>Selesai</strong>.
+                      <span>
+                        Mulai: <strong className="text-[#006E24]">{new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+                        <span className="text-slate-500 font-normal"> &bull; Sekarang klik tanggal selesai (contoh: <strong>15</strong>) untuk rentang tanggal, atau langsung checkout untuk 1 hari.</span>
                       </span>
                     ) : (
-                      <span className="text-emerald-900 font-bold">
-                        Rentang: {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} s/d {new Date(selectedEndDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} ({totalDays} Hari)
+                      <span className="font-bold text-emerald-900">
+                        Rentang Terpilih: {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} s/d {new Date(selectedEndDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} ({totalDays} {selectedPricingType === 'DAILY' ? 'Hari' : 'Sesi'})
                       </span>
                     )}
                   </div>
                 </div>
-                {(selectedDate || selectedEndDate) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedDate('')
-                      setSelectedEndDate('')
-                      setErrorMessage(null)
-                    }}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-white transition-colors cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Reset</span>
-                  </button>
-                )}
+
+                <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                  {selectedDate && selectedEndDate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEndDate('')
+                        setBookingMode('SINGLE')
+                      }}
+                      className="px-2.5 py-1 bg-white border border-emerald-200 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Hanya 1 Hari
+                    </button>
+                  )}
+                  {selectedDate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate('')
+                        setSelectedEndDate('')
+                        setBookingMode('SINGLE')
+                        setErrorMessage(null)
+                      }}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-white transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reset</span>
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -789,8 +808,10 @@ export default function ServiceBookingClient({
                           </span>
                         </div>
                         <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-[#006E24] font-bold">
-                          <span>Durasi Pengerjaan:</span>
-                          <span className="px-2 py-0.5 bg-emerald-100 rounded-md text-xs">{totalDays} Hari</span>
+                          <span>Durasi Pemesanan:</span>
+                          <span className="px-2 py-0.5 bg-emerald-100 rounded-md text-xs">
+                            {totalDays} {selectedPricingType === 'DAILY' ? 'Hari' : 'Sesi'}
+                          </span>
                         </div>
                       </div>
                     ) : selectedDate ? (
@@ -869,10 +890,10 @@ export default function ServiceBookingClient({
                 <div className="flex justify-between text-slate-600">
                   <span>
                     Biaya Layanan Jasa{' '}
-                    {selectedPricingType === 'DAILY'
-                      ? totalDays > 1
-                        ? `(${totalDays} Hari @ Rp ${baseRate.toLocaleString('id-ID')})`
-                        : 'Per Hari'
+                    {totalDays > 1
+                      ? `(${totalDays} ${selectedPricingType === 'DAILY' ? 'Hari' : 'Sesi'} @ Rp ${baseRate.toLocaleString('id-ID')})`
+                      : selectedPricingType === 'DAILY'
+                      ? 'Per Hari'
                       : 'Per Sesi'}
                   </span>
                   <span className="font-bold text-slate-900">Rp {basePrice.toLocaleString('id-ID')}</span>
@@ -893,7 +914,7 @@ export default function ServiceBookingClient({
                 disabled={
                   isPending ||
                   !selectedDate ||
-                  (selectedPricingType === 'DAILY' && bookingMode === 'RANGE' && !selectedEndDate)
+                  (bookingMode === 'RANGE' && !selectedEndDate)
                 }
                 className="w-full py-3 bg-[#006E24] hover:bg-[#00551c] text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
@@ -903,8 +924,8 @@ export default function ServiceBookingClient({
                   <>
                     <ShieldCheck className="w-4 h-4" />
                     <span>
-                      {selectedPricingType === 'DAILY' && totalDays > 1
-                        ? `Konfirmasi Booking (${totalDays} Hari)`
+                      {totalDays > 1
+                        ? `Konfirmasi Booking (${totalDays} ${selectedPricingType === 'DAILY' ? 'Hari' : 'Sesi'})`
                         : 'Konfirmasi & Booking Sekarang'}
                     </span>
                   </>

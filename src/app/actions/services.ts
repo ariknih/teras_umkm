@@ -199,9 +199,9 @@ export async function createServiceBookingAction(data: {
 
     const bookingDate = new Date(data.bookingDate)
     
-    // Calculate total days for DAILY package with range
+    // Calculate total days/sessions for booking with range
     let totalDays = 1
-    if (data.pricingType === 'DAILY' && data.endDate) {
+    if (data.endDate) {
       const end = new Date(data.endDate)
       const diffTime = end.getTime() - bookingDate.getTime()
       totalDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1)
@@ -230,8 +230,9 @@ export async function createServiceBookingAction(data: {
       notes: data.customerNote || null
     })
 
+    const unitLabel = data.pricingType === 'DAILY' ? 'Hari' : 'Sesi'
     const dateDisplay = data.endDate && totalDays > 1
-      ? `${bookingDate.toLocaleDateString('id-ID')} s/d ${new Date(data.endDate).toLocaleDateString('id-ID')} (${totalDays} Hari)`
+      ? `${bookingDate.toLocaleDateString('id-ID')} s/d ${new Date(data.endDate).toLocaleDateString('id-ID')} (${totalDays} ${unitLabel})`
       : `${bookingDate.toLocaleDateString('id-ID')}`
 
     // Notify Merchant via Maileroo Email (Non-blocking)
@@ -251,7 +252,7 @@ export async function createServiceBookingAction(data: {
                 <p style="margin: 4px 0;"><strong>Layanan:</strong> ${service.title}</p>
                 <p style="margin: 4px 0;"><strong>Klien:</strong> ${user.name} (${user.email})</p>
                 <p style="margin: 4px 0;"><strong>Jadwal:</strong> ${dateDisplay} ${data.timeSlot ? `(${data.timeSlot})` : ''}</p>
-                <p style="margin: 4px 0;"><strong>Paket:</strong> ${data.pricingType === 'DAILY' ? `Per Hari (${totalDays} Hari @ Rp ${rate.toLocaleString('id-ID')})` : 'Per Sesi'}</p>
+                <p style="margin: 4px 0;"><strong>Paket:</strong> ${data.pricingType === 'DAILY' ? 'Per Hari' : 'Per Sesi'} (${totalDays} ${unitLabel} @ Rp ${rate.toLocaleString('id-ID')})</p>
                 <p style="margin: 4px 0;"><strong>Total Nilai:</strong> Rp ${totalPrice.toLocaleString('id-ID')}</p>
                 ${data.customerNote ? `<p style="margin: 4px 0;"><strong>Catatan Klien:</strong> "${data.customerNote}"</p>` : ''}
               </div>
