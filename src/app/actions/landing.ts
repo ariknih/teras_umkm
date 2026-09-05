@@ -46,7 +46,7 @@ export async function createBannerAction(formData: FormData) {
     const banner = await DataStore.createBanner({ title, imageUrl, linkUrl, sortOrder })
     await deleteCache('banners:active')
     revalidatePath('/')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, banner }
   } catch (e: any) {
     return { error: e.message || 'Gagal menambah banner.' }
@@ -69,7 +69,7 @@ export async function updateBannerAction(id: string, formData: FormData) {
     const banner = await DataStore.updateBanner(id, { title, imageUrl, linkUrl, isActive, sortOrder })
     await deleteCache('banners:active')
     revalidatePath('/')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, banner }
   } catch (e: any) {
     return { error: e.message || 'Gagal mengedit banner.' }
@@ -86,7 +86,7 @@ export async function deleteBannerAction(id: string) {
     await DataStore.deleteBanner(id)
     await deleteCache('banners:active')
     revalidatePath('/')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menghapus banner.' }
@@ -103,7 +103,7 @@ export async function toggleBannerActiveAction(id: string, isActive: boolean) {
     await DataStore.updateBanner(id, { isActive })
     await deleteCache('banners:active')
     revalidatePath('/')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal mengubah status banner.' }

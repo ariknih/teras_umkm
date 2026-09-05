@@ -31,7 +31,7 @@ export default function ClientLayoutWrapper({
   children
 }: ClientLayoutWrapperProps) {
   const pathname = usePathname() || ''
-  const isAdminRoute = pathname.startsWith('/admin')
+  const isAdminRoute = pathname.startsWith('/cms_admin')
   const isBuilderRoute = pathname.startsWith('/merchant/builder')
 
   if (isAdminRoute || isBuilderRoute) {

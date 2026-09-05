@@ -170,7 +170,7 @@ export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
         } else {
           setOpen(false);
           if (result.user?.role === "ADMIN") {
-            router.push("/admin");
+            router.push("/cms_admin/overview");
           } else if (result.user?.role === "CUSTOMER_SERVICE") {
             router.push("/cs");
           } else {

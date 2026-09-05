@@ -50,7 +50,7 @@ export async function calculateAndSaveShuAction(formData: FormData) {
   })
 
   if (res.success) {
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath(`/community/${communityId}`)
     return { success: true, data: res.result }
   } else {

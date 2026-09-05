@@ -162,7 +162,7 @@ function AuthContent() {
           setError(result.error)
         } else {
           if (result.user?.role === 'ADMIN') {
-            router.push('/admin')
+            router.push('/cms_admin/overview')
           } else if (result.user?.role === 'CUSTOMER_SERVICE') {
             router.push('/cs')
           } else {

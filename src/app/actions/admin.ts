@@ -48,7 +48,7 @@ export async function updateUserRoleAndLevelAction(
   await ensureAdmin()
   try {
     await DataStore.updateUserRoleAndLevel(userId, role, level, xp, membershipLevel, membershipAccess, bootcampStatus)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal memperbarui user.' }
@@ -60,7 +60,7 @@ export async function addCourseAction(title: string, description: string, coverI
   await ensureAdmin()
   try {
     const course = await DataStore.addCourse(title, description, coverImage, accessRequired)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath('/academy')
     return { success: true, course }
   } catch (e: any) {
@@ -72,7 +72,7 @@ export async function updateCourseAction(id: string, title: string, description:
   await ensureAdmin()
   try {
     await DataStore.updateCourse(id, title, description, coverImage, accessRequired)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath('/academy')
     revalidatePath(`/academy/course/${id}`)
     return { success: true }
@@ -85,7 +85,7 @@ export async function deleteCourseAction(id: string) {
   await ensureAdmin()
   try {
     await DataStore.deleteCourse(id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath('/academy')
     return { success: true }
   } catch (e: any) {
@@ -105,7 +105,7 @@ export async function addLessonAction(
   await ensureAdmin()
   try {
     const lesson = await DataStore.addLesson(courseId, title, content, videoUrl, duration, orderIndex)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath(`/academy/course/${courseId}`)
     return { success: true, lesson }
   } catch (e: any) {
@@ -125,7 +125,7 @@ export async function updateLessonAction(
   await ensureAdmin()
   try {
     await DataStore.updateLesson(id, title, content, videoUrl, duration, orderIndex)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath(`/academy/course/${courseId}`)
     return { success: true }
   } catch (e: any) {
@@ -137,7 +137,7 @@ export async function deleteLessonAction(id: string, courseId: string) {
   await ensureAdmin()
   try {
     await DataStore.deleteLesson(id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath(`/academy/course/${courseId}`)
     return { success: true }
   } catch (e: any) {
@@ -163,7 +163,7 @@ export async function generateDummyAffiliatesAction(count: number = 10) {
   await ensureAdmin()
   try {
     await DataStore.generateDummyAffiliates(count)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal membuat dummy affiliate.' }
@@ -201,7 +201,7 @@ export async function createAdminAction(formData: FormData) {
       isSuperAdmin: isSuper,
       adminPermissions
     })
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, admin }
   } catch (e: any) {
     return { error: e.message || 'Gagal menambahkan admin.' }
@@ -234,7 +234,7 @@ export async function updateAdminAction(formData: FormData) {
 
   try {
     const admin = await DataStore.updateAdmin(id, updateData)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, admin }
   } catch (e: any) {
     return { error: e.message || 'Gagal memperbarui admin.' }
@@ -248,7 +248,7 @@ export async function deleteAdminAction(id: string) {
   }
   try {
     await DataStore.deleteAdmin(id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menghapus admin.' }
@@ -268,7 +268,7 @@ export async function verifyInvoiceMembershipAction(membershipId: string) {
   const admin = await ensureAdmin()
   try {
     const res = await DataStore.verifyInvoiceMembership(membershipId, admin.id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
     return res
   } catch (e: any) {
@@ -303,7 +303,7 @@ export async function injectCoinAction(formData: FormData) {
 
   try {
     await DataStore.injectCoin(targetId, targetType, amount, reason, admin.id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
     revalidatePath('/wallet')
     return { success: true }
@@ -325,7 +325,7 @@ export async function approveLevelRequestAction(requestId: string) {
   const admin = await ensureSuperAdmin()
   try {
     await DataStore.approveLevelRequest(requestId, admin.id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menyetujui pengajuan level.' }
@@ -336,7 +336,7 @@ export async function rejectLevelRequestAction(requestId: string, note: string) 
   const admin = await ensureSuperAdmin()
   try {
     await DataStore.rejectLevelRequest(requestId, note, admin.id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menolak pengajuan level.' }
@@ -371,7 +371,7 @@ export async function createLevelRequestAction(formData: FormData) {
       catatan
     })
     revalidatePath('/merchant/dashboard')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal membuat pengajuan level.' }
@@ -417,7 +417,7 @@ export async function updateGlobalKycSettingAction(required: boolean) {
   await ensureAdminPermission('community')
   try {
     await DataStore.setGlobalKycRequirementToCreateCommunity(required)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
     return { success: true, required }
   } catch (e: any) {
@@ -440,7 +440,7 @@ export async function createCommunityAdminAction(data: any) {
   await ensureAdminPermission('community')
   try {
     const community = await DataStore.createCommunityAdmin(data)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, community }
   } catch (e: any) {
     return { error: e.message || 'Gagal membuat komunitas baru.' }
@@ -451,7 +451,7 @@ export async function updateCommunityAdminAction(communityId: string, data: any)
   await ensureAdminPermission('community')
   try {
     const community = await DataStore.updateCommunityAdmin(communityId, data)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, community }
   } catch (e: any) {
     return { error: e.message || 'Gagal mengedit komunitas.' }
@@ -462,7 +462,7 @@ export async function deleteCommunityAdminAction(communityId: string) {
   await ensureAdminPermission('community')
   try {
     await DataStore.deleteCommunityAdmin(communityId)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menghapus komunitas.' }
@@ -473,7 +473,7 @@ export async function updateUserIndukCommunityAction(userId: string, communityId
   await ensureAdminPermission('users')
   try {
     await DataStore.setIndukCommunity(userId, communityId)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menetapkan Induk Komunitas.' }
@@ -488,7 +488,7 @@ export async function kickMemberFromCommunityAdminAction(userId: string, communi
   if (!userId || !communityId) return { error: 'userId dan communityId wajib diisi.' }
   try {
     await DataStore.removeCommunityMembership(userId, communityId)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath(`/community/${communityId}`)
     return { success: true }
   } catch (e: any) {
@@ -500,7 +500,7 @@ export async function updateAdminPermissionsAction(adminId: string, permissions:
   await ensureSuperAdmin()
   try {
     await DataStore.updateUserAdminPermissions(adminId, permissions, isSuperAdmin)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal meng-update hak akses admin.' }
@@ -516,7 +516,7 @@ export async function updateAdminAccountAction(adminId: string, data: { name?: s
     if (data.email) updateData.email = data.email
     if (data.password) updateData.passwordHash = crypto.createHash('sha256').update(data.password).digest('hex')
     await DataStore.updateAdminAccount(adminId, updateData)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal update admin.' }
@@ -540,7 +540,7 @@ export async function createUserAction(formData: FormData) {
 
   try {
     const user = await DataStore.createUserAdmin({ name, email, passwordHash, phone, role })
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, user }
   } catch (e: any) {
     return { error: e.message || 'Gagal membuat user.' }
@@ -551,7 +551,7 @@ export async function deleteUserAction(userId: string) {
   await ensureAdminPermission('users')
   try {
     await DataStore.deleteUser(userId)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menghapus user.' }
@@ -564,8 +564,11 @@ export async function updateProductSnackboxAction(productId: string, isSnackbox:
   try {
     const existing = await DataStore.getProductById(productId)
     if (!existing) throw new Error('Produk tidak ditemukan.')
-    
-    await DataStore.updateProduct(productId, admin.id, {
+
+    // updateProduct scopes its update to `where: { id, merchantId }` — the
+    // admin's own id can never match a real product's merchantId, so this
+    // must be the product's actual owner, not the acting admin.
+    await DataStore.updateProduct(productId, (existing as any).merchantId, {
       ...existing,
       isSnackboxEligible: isSnackbox,
       kelurahanName: kelurahanName || (existing as any).kelurahanName || 'Menteng'
@@ -581,7 +584,7 @@ export async function updateProductSnackboxAction(productId: string, isSnackbox:
       detail: `Status Snackbox diubah menjadi ${isSnackbox ? 'AKTIF' : 'NON-AKTIF'}.`
     })
 
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath('/snackbox')
     return { success: true }
   } catch (e: any) {
@@ -615,7 +618,7 @@ export async function updateMerchantSnackboxEligibilityAction(userId: string, is
       detail: `Status Snackbox Eligibility mitra "${user.name || user.email}" menjadi ${isEligible ? 'ELIGIBLE' : 'INELIGIBLE'} di Kel. ${kelurahanName || 'Menteng'}.`
     })
 
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal update kelayakan Snackbox merchant.' }
@@ -635,7 +638,7 @@ export async function updateSnackboxRelayStatusAction(orderId: string, relayStat
       detail: `Status Relay Toko order #${orderId} menjadi "${relayStatus}". Catatan: ${relayNote || '-'}`
     })
 
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal update status relay pesanan.' }
@@ -655,7 +658,7 @@ export async function processSnackboxBatchPayoutAction(batchId: string, totalAmo
       detail: `Payout Batch Snackbox #${batchId} sebesar Rp ${totalAmount.toLocaleString('id-ID')} kepada ${merchantCount} mitra kue.`
     })
 
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal memproses payout batch snackbox.' }

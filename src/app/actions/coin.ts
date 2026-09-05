@@ -82,7 +82,7 @@ export async function topupCommunityCoin(formData: FormData) {
 
     revalidatePath(`/community/${communityId}`)
     revalidatePath('/community')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, ...result }
   } catch (e: any) {
     return { error: e.message || 'Gagal melakukan top up coin.' }
@@ -223,7 +223,7 @@ export async function createCoinVoucherAdmin(formData: FormData) {
       validUntil: validUntilStr ? new Date(validUntilStr) : undefined,
     })
     revalidatePath('/voucher')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, voucher }
   } catch (e: any) {
     return { error: e.message || 'Gagal membuat voucher.' }
@@ -239,7 +239,7 @@ export async function toggleCoinVoucherActive(voucherId: string) {
   try {
     const result = await DataStore.toggleCoinVoucherActive(voucherId)
     revalidatePath('/voucher')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, ...result }
   } catch (e: any) {
     return { error: e.message || 'Gagal mengubah status voucher.' }
@@ -312,7 +312,7 @@ export async function updateCoinSupplyAction(totalSupply: number) {
   }
   try {
     await DataStore.updateCoinSupply(totalSupply, user.id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal mengubah total supply.' }
@@ -352,7 +352,7 @@ export async function distributeCoinFromSupplyAction(formData: FormData) {
 
   try {
     await DataStore.distributeCoinFromSupply(targetId, targetType, amount, reason, user.id)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
     revalidatePath('/wallet')
     return { success: true }

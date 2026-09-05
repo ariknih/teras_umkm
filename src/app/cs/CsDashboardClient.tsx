@@ -16,9 +16,11 @@ import {
 interface CsDashboardClientProps {
   currentUser: any
   initialTickets: any[]
+  /** True when mounted inside the CMS shell instead of the standalone /cs page — sizes to its container instead of the true viewport. */
+  embedded?: boolean
 }
 
-export default function CsDashboardClient({ currentUser, initialTickets }: CsDashboardClientProps) {
+export default function CsDashboardClient({ currentUser, initialTickets, embedded }: CsDashboardClientProps) {
   const router = useRouter()
   const [tickets, setTickets] = useState<any[]>(initialTickets)
   const [activeTicket, setActiveTicket] = useState<any>(null)
@@ -164,7 +166,7 @@ export default function CsDashboardClient({ currentUser, initialTickets }: CsDas
   const filteredTickets = tickets.filter(t => t.status === selectedFilter)
 
   return (
-    <div className="min-h-screen bg-bg-dark text-text-primary flex flex-col font-geist">
+    <div className={`${embedded ? 'h-full' : 'min-h-screen'} bg-bg-dark text-text-primary flex flex-col font-geist`}>
       {/* CS Top Navigation Header */}
       <header className="w-full bg-surface-dark border-b border-border-subtle px-6 py-4 flex items-center justify-between z-10">
         <div className="flex items-center gap-3">
@@ -193,7 +195,7 @@ export default function CsDashboardClient({ currentUser, initialTickets }: CsDas
       </header>
 
       {/* Main Workspace layout */}
-      <div className="flex-1 flex overflow-hidden max-h-[calc(100vh-68px)]">
+      <div className={`flex-1 flex overflow-hidden ${embedded ? 'max-h-full' : 'max-h-[calc(100vh-68px)]'}`}>
         
         {/* Left Sidebar: Tickets queue */}
         <aside className="w-80 border-r border-border-subtle bg-surface-dark/40 flex flex-col justify-between">

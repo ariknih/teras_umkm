@@ -35,7 +35,7 @@ export function proxy(request: NextRequest) {
     '/orders',
     '/cs',
     '/settings',
-    '/admin',
+    '/cms_admin',
     '/affiliate',
     '/privacy',
     '/terms',

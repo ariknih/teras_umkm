@@ -422,7 +422,7 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
 
     await DataStore.removeCommunityMembership(targetUserId, communityId)
     revalidatePath(`/community/${communityId}`)
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal mengeluarkan anggota.' }

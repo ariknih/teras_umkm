@@ -53,6 +53,13 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '50mb',
     },
   },
+  async redirects() {
+    // The admin CMS moved from /admin to /cms_admin. Keep old bookmarks alive.
+    return [
+      { source: '/admin', destination: '/cms_admin/overview', permanent: true },
+      { source: '/admin/:path*', destination: '/cms_admin/:path*', permanent: true }
+    ]
+  },
   async headers() {
     return [
       {

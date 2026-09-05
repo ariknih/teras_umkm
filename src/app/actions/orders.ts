@@ -131,7 +131,7 @@ export async function updateOrderTracking(orderId: string, status: string, note?
     revalidatePath(`/orders/${orderId}`)
     revalidatePath('/orders')
     revalidatePath('/merchant/dashboard')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     
     return { success: true, order: updatedOrder }
   } catch (e: any) {

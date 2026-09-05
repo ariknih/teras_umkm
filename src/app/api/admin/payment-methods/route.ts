@@ -9,6 +9,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Admin-only: this returns full bank account numbers. Checkout reads the
+    // active methods through getActivePaymentMethods() instead.
+    if (!(user as any).isSuperAdmin && user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const methods = await DataStore.getPaymentMethods()
     return NextResponse.json(methods)
   } catch (error) {

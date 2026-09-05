@@ -31,7 +31,7 @@ export async function joinBootcampAction() {
   try {
     await DataStore.joinBootcamp(user.id)
     revalidatePath('/merchant/dashboard')
-    revalidatePath('/admin')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal bergabung ke bootcamp.' }

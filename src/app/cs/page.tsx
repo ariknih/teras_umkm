@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic'
 export default async function CsDashboard() {
   const user = await getCurrentUser()
 
-  // Guard: only CUSTOMER_SERVICE can access
-  if (!user || user.role !== 'CUSTOMER_SERVICE') {
+  // Guard: CS staff, plus admins — the CMS links here for the Tiket CS menu.
+  if (!user || (user.role !== 'CUSTOMER_SERVICE' && user.role !== 'ADMIN')) {
     redirect('/')
   }
 

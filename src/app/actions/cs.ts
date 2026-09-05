@@ -29,7 +29,7 @@ export async function getAgentTickets(status?: string, agentId?: string) {
 
 export async function assignTicketAction(ticketId: string) {
   const user = await getCurrentUser()
-  if (!user || user.role !== 'CUSTOMER_SERVICE') {
+  if (!user || (user.role !== 'CUSTOMER_SERVICE' && user.role !== 'ADMIN')) {
     return { error: 'Hanya petugas Customer Service yang bisa mengambil tiket.' }
   }
   try {
@@ -66,7 +66,7 @@ export async function getCsChatHistory(ticketId: string) {
 
 export async function resolveTicketAction(ticketId: string) {
   const user = await getCurrentUser()
-  if (!user || user.role !== 'CUSTOMER_SERVICE') {
+  if (!user || (user.role !== 'CUSTOMER_SERVICE' && user.role !== 'ADMIN')) {
     return { error: 'Hanya petugas Customer Service yang dapat menyelesaikan tiket.' }
   }
   try {
@@ -80,7 +80,7 @@ export async function resolveTicketAction(ticketId: string) {
 
 export async function escalateTicketAction(ticketId: string) {
   const user = await getCurrentUser()
-  if (!user || user.role !== 'CUSTOMER_SERVICE') {
+  if (!user || (user.role !== 'CUSTOMER_SERVICE' && user.role !== 'ADMIN')) {
     return { error: 'Hanya petugas Customer Service yang dapat melakukan eskalasi.' }
   }
   try {
@@ -94,7 +94,7 @@ export async function escalateTicketAction(ticketId: string) {
 
 export async function getCsAnalytics() {
   const user = await getCurrentUser()
-  if (!user || user.role !== 'CUSTOMER_SERVICE') {
+  if (!user || (user.role !== 'CUSTOMER_SERVICE' && user.role !== 'ADMIN')) {
     return null
   }
   try {

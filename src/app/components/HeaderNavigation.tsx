@@ -681,7 +681,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                         )}
 
                         {user.role === 'ADMIN' && (
-                          <Link href="/admin" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
+                          <Link href="/cms_admin/overview" onClick={() => setIsOpenProfile(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-text-primary hover:bg-surface-container-low transition-colors">
                             <Shield size={14} className="text-red-500" />
                             <span>Admin Panel</span>
                           </Link>
@@ -832,7 +832,7 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
                   )}
                   {user.role === 'ADMIN' && (
                     <Link
-                      href="/admin"
+                      href="/cms_admin/overview"
                       onClick={() => setIsOpenMobile(false)}
                       className="w-full py-2.5 px-4 bg-red-600 text-white text-center font-geist font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
                     >

@@ -74,7 +74,10 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
       const savedKel = localStorage.getItem(KELURAHAN_STORAGE_KEY)
       if (savedKel) {
         const parsed = JSON.parse(savedKel)
-        setKelurahanState(parsed)
+        // Discard stale entries from an old dataset (e.g. a kelurahan that no longer exists)
+        const isValid = parsed?.id && mockKelurahans.some(k => k.id === parsed.id)
+        if (isValid) setKelurahanState(parsed)
+        else localStorage.removeItem(KELURAHAN_STORAGE_KEY)
       }
 
       const savedCart = localStorage.getItem(CART_STORAGE_KEY)

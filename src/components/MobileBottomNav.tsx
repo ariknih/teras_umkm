@@ -9,7 +9,7 @@ export default function MobileBottomNav({ isLoggedIn, user }: { isLoggedIn?: boo
   const pathname = usePathname() || ''
 
   // Hide on admin routes or chat view
-  if (pathname.startsWith('/admin') || pathname.startsWith('/chat') || pathname.startsWith('/merchant/builder')) {
+  if (pathname.startsWith('/cms_admin') || pathname.startsWith('/chat') || pathname.startsWith('/merchant/builder')) {
     return null
   }
 

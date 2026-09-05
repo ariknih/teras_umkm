@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     // Redirect to home/dashboard with cookie set
     const destinationUrl = isNewUser 
       ? '/auth/select-role' 
-      : (user.role === 'ADMIN' ? '/admin' : user.role === 'CUSTOMER_SERVICE' ? '/cs' : '/')
+      : (user.role === 'ADMIN' ? '/cms_admin/overview' : user.role === 'CUSTOMER_SERVICE' ? '/cs' : '/')
       
     const response = NextResponse.redirect(new URL(destinationUrl, request.url))
     const cookieDomain = getCookieDomain(requestUrl.host)
