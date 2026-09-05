@@ -7,7 +7,7 @@ import { cacheWrap, deleteCache } from '@/lib/cache'
 
 export async function getCommunityGalleryAction(communityId: string) {
   if (!communityId) return []
-  return await cacheWrap(`community:gallery:${communityId}`, () => DataStore.getCommunityGallery(communityId), 60)
+  return await cacheWrap(`community:gallery:${communityId}`, () => DataStore.getCommunityGallery(communityId), 15)
 }
 
 export async function createCommunityGalleryItemAction(formData: FormData) {
@@ -36,6 +36,7 @@ export async function createCommunityGalleryItemAction(formData: FormData) {
       authorId: user.id,
       authorName: user.name || 'Anggota Komunitas'
     })
+    await deleteCache(`community:gallery:${communityId}`)
     revalidatePath(`/community/${communityId}`)
     return { success: true, item }
   } catch (e: any) {
@@ -50,8 +51,9 @@ export async function deleteCommunityGalleryItemAction(id: string, communityId: 
   if (!id) return { error: 'ID Foto Galeri wajib diisi.' }
 
   try {
-    const res = await DataStore.deleteCommunityGalleryItem(id)
+    const res = await DataStore.deleteCommunityGalleryItem(id, communityId)
     if (communityId) {
+      await deleteCache(`community:gallery:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return res

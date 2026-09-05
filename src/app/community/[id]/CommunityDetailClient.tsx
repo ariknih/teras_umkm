@@ -508,8 +508,15 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       if (res.error) {
         goeyToast.error(res.error)
       } else {
+        if (res.item) {
+          setCommunityGallery(prev => [res.item, ...prev.filter((g: any) => g.id !== res.item.id)])
+        }
         goeyToast.success('Foto kegiatan berhasil ditambahkan ke galeri!')
         setIsGalleryModalOpen(false)
+        setGalleryTitle('')
+        setGalleryCaption('')
+        setGalleryImageUrl('')
+        setGalleryDate('')
         loadData()
       }
     } catch (err: any) {

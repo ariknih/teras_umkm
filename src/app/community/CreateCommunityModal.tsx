@@ -111,7 +111,6 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
   const handleCreateCommunity = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     setFormError(null)
-
     if (!name || !description) {
       setFormError('Nama dan Deskripsi wajib diisi.')
       setModalStep('FORM')

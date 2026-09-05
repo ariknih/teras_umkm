@@ -203,7 +203,8 @@ function saveMockDb() {
       announcements: (globalThis as any).__mockAnnouncements,
       cooperativeReports: (globalThis as any).__mockCooperativeReports,
       discussions: (globalThis as any).__mockDiscussions,
-      discussionReplies: (globalThis as any).__mockDiscussionReplies
+      discussionReplies: (globalThis as any).__mockDiscussionReplies,
+      communityGallery: (globalThis as any).__mockCommunityGallery
     }
     fs.writeFileSync(MOCK_DB_FILE, JSON.stringify(data, null, 2), 'utf-8')
     if (fs.existsSync(MOCK_DB_FILE)) {
@@ -373,6 +374,13 @@ function syncMockDb() {
           ...r,
           createdAt: new Date(r.createdAt),
           updatedAt: new Date(r.updatedAt)
+        }))
+      }
+      if (parsed.communityGallery) {
+        (globalThis as any).__mockCommunityGallery = parsed.communityGallery.map((g: any) => ({
+          ...g,
+          createdAt: new Date(g.createdAt),
+          updatedAt: new Date(g.updatedAt)
         }))
       }
       if (parsed.globalKycRequired !== undefined) {
@@ -9204,8 +9212,8 @@ export const DataStore = {
         imageUrl: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?w=800&auto=format&fit=crop&q=80',
         date: '20 Juli 2026',
         authorName: 'Admin Komunitas',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date('2026-07-20').toISOString(),
+        updatedAt: new Date('2026-07-20').toISOString()
       },
       {
         id: `gal-2-${communityId}`,
@@ -9216,8 +9224,8 @@ export const DataStore = {
         imageUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80',
         date: '15 Juli 2026',
         authorName: 'Admin Komunitas',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date('2026-07-15').toISOString(),
+        updatedAt: new Date('2026-07-15').toISOString()
       },
       {
         id: `gal-3-${communityId}`,
@@ -9228,8 +9236,8 @@ export const DataStore = {
         imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
         date: '08 Juli 2026',
         authorName: 'Admin Komunitas',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date('2026-07-08').toISOString(),
+        updatedAt: new Date('2026-07-08').toISOString()
       },
       {
         id: `gal-4-${communityId}`,
@@ -9240,42 +9248,60 @@ export const DataStore = {
         imageUrl: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=800&auto=format&fit=crop&q=80',
         date: '01 Juli 2026',
         authorName: 'Admin Komunitas',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date('2026-07-01').toISOString(),
+        updatedAt: new Date('2026-07-01').toISOString()
       }
     ]
 
     return withFallback(
       async () => {
+        // 1. Try PostgreSQL persistence via SystemSetting
         try {
-          const list = await (db as any).communityGallery?.findMany({
-            where: { communityId },
-            orderBy: { createdAt: 'desc' }
+          const setting = await db.systemSetting.findUnique({
+            where: { key: `community_gallery_${communityId}` }
           })
-          if (list && list.length > 0) return list
+          if (setting?.value) {
+            const parsed = JSON.parse(setting.value)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed
+            }
+          }
         } catch (_) {}
+
+        // 2. Check local mock storage
         if (!(globalThis as any).__mockCommunityGallery) {
           (globalThis as any).__mockCommunityGallery = []
         }
         const existing = (globalThis as any).__mockCommunityGallery.filter((g: any) => g.communityId === communityId)
-        if (existing.length === 0) {
-          (globalThis as any).__mockCommunityGallery.push(...seedGallery)
-          saveMockDb()
-          return seedGallery
+        if (existing.length > 0) {
+          return existing
         }
-        return existing
+
+        // 3. Initialize with seed data on very first run and persist
+        try {
+          await db.systemSetting.upsert({
+            where: { key: `community_gallery_${communityId}` },
+            update: { value: JSON.stringify(seedGallery) },
+            create: { key: `community_gallery_${communityId}`, value: JSON.stringify(seedGallery) }
+          })
+        } catch (_) {}
+
+        ;(globalThis as any).__mockCommunityGallery.push(...seedGallery)
+        saveMockDb()
+        return seedGallery
       },
       async () => {
         if (!(globalThis as any).__mockCommunityGallery) {
           (globalThis as any).__mockCommunityGallery = []
         }
         const existing = (globalThis as any).__mockCommunityGallery.filter((g: any) => g.communityId === communityId)
-        if (existing.length === 0) {
-          (globalThis as any).__mockCommunityGallery.push(...seedGallery)
-          saveMockDb()
-          return seedGallery
+        if (existing.length > 0) {
+          return existing
         }
-        return existing
+
+        ;(globalThis as any).__mockCommunityGallery.push(...seedGallery)
+        saveMockDb()
+        return seedGallery
       }
     )
   },
@@ -9291,56 +9317,48 @@ export const DataStore = {
     authorName?: string
   }) {
     syncMockDb()
+    const newGal = {
+      id: `gal-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      communityId: data.communityId,
+      title: data.title,
+      imageUrl: data.imageUrl,
+      caption: data.caption || '',
+      category: data.category || 'Kopdar & Networking',
+      date: data.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      authorId: data.authorId || '',
+      authorName: data.authorName || 'Anggota Komunitas',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
     return withMutationFallback(
       async () => {
+        // Load current gallery (ensuring existing items are retained)
+        const currentGallery = await DataStore.getCommunityGallery(data.communityId)
+        const updatedList = [newGal, ...(Array.isArray(currentGallery) ? currentGallery : []).filter((g: any) => g.id !== newGal.id)]
+
+        // Persist to database
         try {
-          return await (db as any).communityGallery?.create({
-            data: {
-              communityId: data.communityId,
-              title: data.title,
-              imageUrl: data.imageUrl,
-              caption: data.caption || '',
-              category: data.category || 'Kopdar & Networking',
-              date: data.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-              authorId: data.authorId || '',
-              authorName: data.authorName || 'Anggota Komunitas'
-            }
+          await db.systemSetting.upsert({
+            where: { key: `community_gallery_${data.communityId}` },
+            update: { value: JSON.stringify(updatedList) },
+            create: { key: `community_gallery_${data.communityId}`, value: JSON.stringify(updatedList) }
           })
         } catch (_) {}
-        const newGal = {
-          id: `gal-${Date.now()}`,
-          communityId: data.communityId,
-          title: data.title,
-          imageUrl: data.imageUrl,
-          caption: data.caption || '',
-          category: data.category || 'Kopdar & Networking',
-          date: data.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-          authorId: data.authorId || '',
-          authorName: data.authorName || 'Anggota Komunitas',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
+
+        // Persist to mock store
         if (!(globalThis as any).__mockCommunityGallery) {
           (globalThis as any).__mockCommunityGallery = []
         }
-        ;(globalThis as any).__mockCommunityGallery.unshift(newGal)
+        ;(globalThis as any).__mockCommunityGallery = [
+          newGal,
+          ...(globalThis as any).__mockCommunityGallery.filter((x: any) => x.id !== newGal.id)
+        ]
         saveMockDb()
+
         return newGal
       },
       async () => {
-        const newGal = {
-          id: `gal-${Date.now()}`,
-          communityId: data.communityId,
-          title: data.title,
-          imageUrl: data.imageUrl,
-          caption: data.caption || '',
-          category: data.category || 'Kopdar & Networking',
-          date: data.date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-          authorId: data.authorId || '',
-          authorName: data.authorName || 'Anggota Komunitas',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
         if (!(globalThis as any).__mockCommunityGallery) {
           (globalThis as any).__mockCommunityGallery = []
         }
@@ -9351,14 +9369,22 @@ export const DataStore = {
     )
   },
 
-  async deleteCommunityGalleryItem(id: string) {
+  async deleteCommunityGalleryItem(id: string, communityId?: string) {
     syncMockDb()
     return withMutationFallback(
       async () => {
-        try {
-          await (db as any).communityGallery?.delete({ where: { id } })
-          return { success: true }
-        } catch (_) {}
+        if (communityId) {
+          try {
+            const currentGallery = await DataStore.getCommunityGallery(communityId)
+            const updatedList = (Array.isArray(currentGallery) ? currentGallery : []).filter((g: any) => g.id !== id)
+            await db.systemSetting.upsert({
+              where: { key: `community_gallery_${communityId}` },
+              update: { value: JSON.stringify(updatedList) },
+              create: { key: `community_gallery_${communityId}`, value: JSON.stringify(updatedList) }
+            })
+          } catch (_) {}
+        }
+
         if ((globalThis as any).__mockCommunityGallery) {
           (globalThis as any).__mockCommunityGallery = (globalThis as any).__mockCommunityGallery.filter((x: any) => x.id !== id)
           saveMockDb()
