@@ -4,12 +4,13 @@ import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getIndukCommunities, getUserCommunitiesWithRolesAction } from '@/app/actions/community'
+import { getIndukCommunities, getUserCommunitiesWithRolesAction, switchActiveIndukCommunityAction } from '@/app/actions/community'
 import { getGlobalKycSettingAction } from '@/app/actions/admin'
 import { getCurrentUser } from '@/app/actions/auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GridSkeleton } from '@/components/ui/GhostSkeleton'
-import { Shield, Users, PlusCircle, Search, ChevronRight, X, Loader2 } from 'lucide-react'
+import { Shield, Users, PlusCircle, Search, ChevronRight, X, Loader2, MoreVertical, Star, Check } from 'lucide-react'
+import { goeyToast } from 'goey-toast'
 
 const CreateCommunityModal = dynamic(() => import('./CreateCommunityModal'), {
   loading: () => (
@@ -89,6 +90,34 @@ export default function CommunityDirectoryClient({
 
   const [myCommunities, setMyCommunities] = useState<any[]>(initialMyCommunities)
   const [allRolesModalOpen, setAllRolesModalOpen] = useState(false)
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null)
+  const [isSwitchingPrimary, setIsSwitchingPrimary] = useState(false)
+
+  const handleSetPrimaryCommunity = async (communityId: string, communityName: string) => {
+    setIsSwitchingPrimary(true)
+    setOpenDropdownId(null)
+    try {
+      const res = await switchActiveIndukCommunityAction(communityId) as any
+      if (res?.error) {
+        goeyToast.error(res.error)
+      } else {
+        goeyToast.success(`"${communityName}" sekarang menjadi Komunitas Utama Anda! ⭐`)
+        setUser((prev: any) => ({ ...prev, indukCommunityId: communityId }))
+        setMyCommunities(prev => {
+          const updated = prev.map((c: any) => ({
+            ...c,
+            isPrimary: c.communityId === communityId
+          }))
+          return [...updated].sort((a: any, b: any) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0))
+        })
+        loadData(true)
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal mengubah komunitas utama.')
+    } finally {
+      setIsSwitchingPrimary(false)
+    }
+  }
 
   async function loadData(isBackgroundSync: boolean = false) {
     try {
@@ -219,15 +248,29 @@ export default function CommunityDirectoryClient({
               {myCommunities.map((mc: any) => {
                 const matchedComm = communities.find((c: any) => c.id === mc.communityId || c.name === mc.communityName)
                 const effectiveAvatar = mc.avatarUrl || matchedComm?.avatarUrl || null
+                const isPrimary = Boolean(mc.isPrimary || (user?.indukCommunityId && user.indukCommunityId === mc.communityId))
 
                 return (
                   <Link
                     key={mc.communityId}
                     href={`/community/${mc.communityId}`}
-                    className="w-[130px] sm:w-[155px] md:w-[180px] shrink-0 snap-start bg-white border border-gray-200/90 hover:border-[#2DB24A]/60 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer select-none"
+                    className={`w-[130px] sm:w-[155px] md:w-[180px] shrink-0 snap-start rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center group cursor-pointer select-none relative ${
+                      isPrimary
+                        ? 'bg-gradient-to-b from-emerald-50/90 via-white to-white border-2 border-[#2DB24A] ring-1 ring-[#2DB24A]/30'
+                        : 'bg-white border border-gray-200/90 hover:border-[#2DB24A]/60'
+                    }`}
                   >
+                    {isPrimary && (
+                      <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-full text-[7px] sm:text-[8px] font-black bg-[#2DB24A] text-white flex items-center gap-0.5 shadow-2xs">
+                        <Star className="w-2 h-2 fill-white text-white" />
+                        Utama
+                      </span>
+                    )}
+
                     {/* Top: Circular Community Logo Avatar */}
-                    <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300">
+                    <div className={`w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-white p-1 flex items-center justify-center overflow-hidden shadow-xs shrink-0 group-hover:scale-105 transition-transform duration-300 ${
+                      isPrimary ? 'border-2 border-[#2DB24A] ring-2 ring-[#2DB24A]/20' : 'border border-gray-150'
+                    }`}>
                       {renderCommunityLogo(mc.communityName, effectiveAvatar)}
                     </div>
 
@@ -310,46 +353,121 @@ export default function CommunityDirectoryClient({
                       {myCommunities.map((mc: any) => {
                         const matchedComm = communities.find((c: any) => c.id === mc.communityId || c.name === mc.communityName)
                         const effectiveAvatar = mc.avatarUrl || matchedComm?.avatarUrl || null
+                        const isPrimary = Boolean(mc.isPrimary || (user?.indukCommunityId && user.indukCommunityId === mc.communityId))
 
                         return (
                           <div
                             key={mc.communityId}
-                            className="p-4 bg-gray-50/80 hover:bg-[#E8F8EE]/40 border border-gray-200/80 hover:border-[#2DB24A]/40 rounded-2xl flex items-center justify-between gap-3 transition-all"
+                            className={`p-4 rounded-2xl flex items-center justify-between gap-3 transition-all relative ${
+                              isPrimary
+                                ? 'bg-gradient-to-r from-emerald-50/95 via-[#F4FBF6] to-white border-2 border-[#2DB24A] shadow-md shadow-emerald-600/10 ring-1 ring-[#2DB24A]/20'
+                                : 'bg-gray-50/80 hover:bg-[#E8F8EE]/30 border border-gray-200/80 hover:border-[#2DB24A]/40'
+                            }`}
                           >
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-12 h-12 rounded-full bg-white border border-gray-150 p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                              <div className={`w-12 h-12 rounded-full bg-white p-1 flex items-center justify-center shrink-0 shadow-xs overflow-hidden transition-all ${
+                                isPrimary 
+                                  ? 'border-2 border-[#2DB24A] ring-2 ring-[#2DB24A]/20' 
+                                  : 'border border-gray-150'
+                              }`}>
                                 {renderCommunityLogo(mc.communityName, effectiveAvatar)}
                               </div>
-                            <div className="min-w-0">
-                              <h4 className="font-sora text-xs sm:text-sm font-black text-gray-900 truncate">
-                                {mc.communityName}
-                              </h4>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                                  mc.role === 'KETUA'
-                                    ? 'bg-purple-100 text-purple-800'
-                                    : mc.role === 'PEMBUAT_PENDING'
-                                      ? 'bg-amber-100 text-amber-900'
-                                      : 'bg-emerald-100 text-[#0F5132]'
-                                }`}>
-                                  {mc.role === 'KETUA' ? '👑 KETUA' : mc.role === 'PEMBUAT_PENDING' ? '⏳ CALON KETUA' : '👤 ANGGOTA'}
-                                </span>
-                                <span className="text-[10px] font-semibold text-gray-400">
-                                  {mc.isVerified ? '✓ Aktif' : '⏳ Pending'}
-                                </span>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h4 className="font-sora text-xs sm:text-sm font-black text-gray-900 truncate">
+                                    {mc.communityName}
+                                  </h4>
+                                  {isPrimary && (
+                                    <span className="shrink-0 px-2 py-0.5 rounded-full text-[9px] font-black tracking-wide bg-[#2DB24A] text-white flex items-center gap-1 shadow-2xs">
+                                      <Star className="w-2.5 h-2.5 fill-white text-white" />
+                                      Utama
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                                    mc.role === 'KETUA'
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : mc.role === 'PEMBUAT_PENDING'
+                                        ? 'bg-amber-100 text-amber-900'
+                                        : 'bg-emerald-100 text-[#0F5132]'
+                                  }`}>
+                                    {mc.role === 'KETUA' ? '👑 KETUA' : mc.role === 'PEMBUAT_PENDING' ? '⏳ CALON KETUA' : '👤 ANGGOTA'}
+                                  </span>
+                                  <span className="text-[10px] font-semibold text-gray-400">
+                                    {mc.isVerified ? '✓ Aktif' : '⏳ Pending'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Link
+                                href={`/community/${mc.communityId}`}
+                                onClick={() => setAllRolesModalOpen(false)}
+                                className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[11px] rounded-xl shadow-xs transition-colors shrink-0"
+                              >
+                                Buka
+                              </Link>
+
+                              {/* Dropdown Menu Titik Tiga */}
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setOpenDropdownId(openDropdownId === mc.communityId ? null : mc.communityId)
+                                  }}
+                                  className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                                    openDropdownId === mc.communityId
+                                      ? 'bg-emerald-100/80 border-[#2DB24A] text-[#0F5132]'
+                                      : isPrimary
+                                        ? 'bg-white border-emerald-300 text-[#0F5132] hover:bg-emerald-50'
+                                        : 'bg-white border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 hover:bg-gray-100/80'
+                                  }`}
+                                  title="Opsi Komunitas"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+
+                                {openDropdownId === mc.communityId && (
+                                  <>
+                                    {/* Transparent backdrop for outside click */}
+                                    <div
+                                      className="fixed inset-0 z-40"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        setOpenDropdownId(null)
+                                      }}
+                                    />
+                                    <div
+                                      className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-xl shadow-2xl border border-gray-150 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {isPrimary ? (
+                                        <div className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-emerald-700 bg-emerald-50/80 rounded-lg cursor-default select-none">
+                                          <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                                          <span>Komunitas Utama Saat Ini</span>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          disabled={isSwitchingPrimary}
+                                          onClick={() => handleSetPrimaryCommunity(mc.communityId, mc.communityName)}
+                                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-gray-700 hover:text-[#0F5132] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer text-left disabled:opacity-50"
+                                        >
+                                          <Star className="w-4 h-4 text-amber-500 shrink-0 fill-amber-400" />
+                                          <span>Jadikan Komunitas Utama</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
-
-                          <Link
-                            href={`/community/${mc.communityId}`}
-                            onClick={() => setAllRolesModalOpen(false)}
-                            className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[11px] rounded-xl shadow-xs transition-colors shrink-0"
-                          >
-                            Buka
-                          </Link>
-                        </div>
-                      )})}
+                        )
+                      })}
                     </div>
                   </motion.div>
                 </div>

@@ -4754,7 +4754,21 @@ export const DataStore = {
       }
     }
 
-    return result
+    const user = await this.findUserById(userId)
+    const primaryCommunityId = (user as any)?.indukCommunityId || null
+
+    const finalResult = result.map(item => ({
+      ...item,
+      isPrimary: primaryCommunityId ? item.communityId === primaryCommunityId : false
+    }))
+
+    // If no primary community is explicitly set yet, default the first one to primary
+    if (!finalResult.some(r => r.isPrimary) && finalResult.length > 0) {
+      finalResult[0].isPrimary = true
+    }
+
+    // Sort so the primary community is always first
+    return finalResult.sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0))
   },
 
   async getCommunityById(id: string) {
@@ -5388,100 +5402,69 @@ export const DataStore = {
     const targetCommunityId = communityId || null
     return withMutationFallback(
       async () => {
-        const existingUser = await db.user.findUnique({
-                  where: { id: userId },
-                  select: { indukCommunityId: true }
-                })
-        
-                const oldCommunityId = existingUser?.indukCommunityId
-        
-                if (oldCommunityId !== targetCommunityId) {
-                  // Delete old membership
-                  if (oldCommunityId) {
-                    try {
-                      await db.communityMembership.deleteMany({
-                        where: {
-                          userId,
-                          communityId: oldCommunityId
-                        }
-                      })
-                    } catch (err) {
-                      console.error('Failed to delete old community membership:', err)
-                    }
-                  }
-        
-                  // Create new membership
-                  if (targetCommunityId) {
-                    const membershipExists = await db.communityMembership.findUnique({
-                      where: {
-                        communityId_userId: {
-                          communityId: targetCommunityId,
-                          userId
-                        }
-                      }
-                    })
-        
-                    if (!membershipExists) {
-                      await db.communityMembership.create({
-                        data: {
-                          communityId: targetCommunityId,
-                          userId,
-                          isInduk: false,
-                          isPaid: true,
-                          invoiceStatus: 'VERIFIED'
-                        }
-                      })
-                    }
-                  }
+        if (targetCommunityId) {
+          try {
+            const membershipExists = await db.communityMembership.findUnique({
+              where: {
+                communityId_userId: {
+                  communityId: targetCommunityId,
+                  userId
                 }
-        
-                return await db.user.update({
-                  where: { id: userId },
-                  data: { indukCommunityId: targetCommunityId }
-                })
+              }
+            })
+
+            if (!membershipExists) {
+              await db.communityMembership.create({
+                data: {
+                  communityId: targetCommunityId,
+                  userId,
+                  isInduk: true,
+                  isPaid: true,
+                  invoiceStatus: 'VERIFIED'
+                }
+              })
+            }
+          } catch (err) {
+            console.error('Failed to ensure community membership on setIndukCommunity:', err)
+          }
+        }
+
+        return await db.user.update({
+          where: { id: userId },
+          data: { indukCommunityId: targetCommunityId }
+        })
       },
       async () => {
         // Mock DB logic
-            const user = globalMockUsers.find(u => u.id === userId)
-            if (user) {
-              const oldCommunityId = (user as any).indukCommunityId
-        
-              if (oldCommunityId !== targetCommunityId) {
-                // Delete old
-                if (oldCommunityId && (globalThis as any).__mockCommunityMemberships) {
-                  (globalThis as any).__mockCommunityMemberships = (globalThis as any).__mockCommunityMemberships.filter(
-                    (m: any) => !(m.userId === userId && m.communityId === oldCommunityId)
-                  )
-                }
-        
-                // Add new
-                if (targetCommunityId) {
-                  if (!(globalThis as any).__mockCommunityMemberships) {
-                    (globalThis as any).__mockCommunityMemberships = []
-                  }
-                  const exists = (globalThis as any).__mockCommunityMemberships.some(
-                    (m: any) => m.userId === userId && m.communityId === targetCommunityId
-                  )
-                  if (!exists) {
-                    (globalThis as any).__mockCommunityMemberships.push({
-                      id: `membership-${Date.now()}-${Math.random()}`,
-                      communityId: targetCommunityId,
-                      userId,
-                      isInduk: false,
-                      isPaid: true,
-                      invoiceStatus: 'VERIFIED',
-                      createdAt: new Date(),
-                      updatedAt: new Date()
-                    })
-                  }
-                }
-              }
-        
-              (user as any).indukCommunityId = targetCommunityId
-              user.updatedAt = new Date()
-              return user
+        const user = globalMockUsers.find(u => u.id === userId)
+        if (user) {
+          if (targetCommunityId) {
+            if (!(globalThis as any).__mockCommunityMemberships) {
+              (globalThis as any).__mockCommunityMemberships = []
             }
-            return null
+            const exists = (globalThis as any).__mockCommunityMemberships.some(
+              (m: any) => m.userId === userId && m.communityId === targetCommunityId
+            )
+            if (!exists) {
+              (globalThis as any).__mockCommunityMemberships.push({
+                id: `membership-${Date.now()}-${Math.random()}`,
+                communityId: targetCommunityId,
+                userId,
+                isInduk: true,
+                isPaid: true,
+                invoiceStatus: 'VERIFIED',
+                createdAt: new Date(),
+                updatedAt: new Date()
+              })
+            }
+          }
+
+          (user as any).indukCommunityId = targetCommunityId
+          user.updatedAt = new Date()
+          saveMockDb()
+          return user
+        }
+        return null
       }
     )
   },
