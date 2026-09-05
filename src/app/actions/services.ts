@@ -7,12 +7,22 @@ import { cacheWrap, invalidateCachePattern } from '@/lib/cache'
 
 export async function getServicesAction(filters?: { category?: string; search?: string; merchantId?: string }) {
   try {
-    const cacheKey = `services:${filters?.category || 'all'}:${filters?.merchantId || 'all'}`
-    const services = await cacheWrap(cacheKey, () => DataStore.getServices({
+    let services = await DataStore.getServices({
       category: filters?.category,
       merchantId: filters?.merchantId,
       isActive: true
-    }), 120)
+    })
+    
+    if (!services || services.length === 0) {
+      const { mockServices } = await import('@/lib/mock-seed')
+      services = [...mockServices]
+      if (filters?.category && filters.category !== 'Semua Kategori') {
+        services = services.filter((s: any) => s.category === filters.category)
+      }
+      if (filters?.merchantId) {
+        services = services.filter((s: any) => s.merchantId === filters.merchantId)
+      }
+    }
     
     if (filters?.search) {
       const q = filters.search.toLowerCase()
@@ -24,7 +34,12 @@ export async function getServicesAction(filters?: { category?: string; search?: 
     }
     return services
   } catch (error: any) {
-    return []
+    try {
+      const { mockServices } = await import('@/lib/mock-seed')
+      return mockServices || []
+    } catch {
+      return []
+    }
   }
 }
 
@@ -32,9 +47,17 @@ export async function getServiceByIdAction(id: string) {
   try {
     const services = await DataStore.getServices()
     const svc = services.find((s: any) => s.id === id)
-    return svc || null
+    if (svc) return svc
+
+    const { mockServices } = await import('@/lib/mock-seed')
+    return mockServices.find((s: any) => s.id === id) || null
   } catch (error: any) {
-    return null
+    try {
+      const { mockServices } = await import('@/lib/mock-seed')
+      return mockServices.find((s: any) => s.id === id) || null
+    } catch {
+      return null
+    }
   }
 }
 

@@ -7969,10 +7969,54 @@ export const DataStore = {
     return withFallback(
       async () => {
         const where: any = {}
-                if (filters?.merchantId) where.merchantId = filters.merchantId
-                if (filters?.category) where.category = filters.category
-                if (filters?.isActive !== undefined) where.isActive = filters.isActive
-                return await db.service.findMany({ where, orderBy: { createdAt: 'desc' } })
+        if (filters?.merchantId) where.merchantId = filters.merchantId
+        if (filters?.category) where.category = filters.category
+        if (filters?.isActive !== undefined) where.isActive = filters.isActive
+        let dbServices = await db.service.findMany({ where, orderBy: { createdAt: 'desc' } })
+        
+        if (!dbServices || dbServices.length === 0) {
+          try {
+            for (const s of mockServices) {
+              await db.service.upsert({
+                where: { id: s.id },
+                create: {
+                  id: s.id,
+                  merchantId: s.merchantId,
+                  title: s.title,
+                  description: s.description,
+                  category: s.category,
+                  pricePerSession: s.pricePerSession,
+                  pricePerDay: s.pricePerDay,
+                  imageUrl: s.imageUrl,
+                  isActive: s.isActive
+                },
+                update: {}
+              })
+            }
+            dbServices = await db.service.findMany({ where, orderBy: { createdAt: 'desc' } })
+          } catch (seedErr) {
+            console.warn('[DataStore] Auto-seeding db.service note:', seedErr)
+          }
+        }
+
+        if (!dbServices || dbServices.length === 0) {
+          let list = [...mockServices]
+          if (filters?.merchantId) list = list.filter((s: any) => s.merchantId === filters.merchantId)
+          if (filters?.category) list = list.filter((s: any) => s.category === filters.category)
+          if (filters?.isActive !== undefined) list = list.filter((s: any) => s.isActive === filters.isActive)
+          return list
+        }
+
+        return dbServices.map(s => {
+          const matchingMock = mockServices.find(m => m.id === s.id)
+          return {
+            ...s,
+            images: (s as any).images || matchingMock?.images || (s.imageUrl ? [s.imageUrl] : []),
+            location: (s as any).location || matchingMock?.location || 'Indonesia',
+            sessionDurationMinutes: (s as any).sessionDurationMinutes || matchingMock?.sessionDurationMinutes || 60,
+            maxWorkHoursPerDay: (s as any).maxWorkHoursPerDay || matchingMock?.maxWorkHoursPerDay || 8
+          }
+        })
       },
       async () => {
         if (!(globalThis as any).__mockServices) {
