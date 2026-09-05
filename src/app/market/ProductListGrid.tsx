@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { SlidersHorizontal, X, ChevronDown, ArrowUpDown, DollarSign, Package, Share2, Check } from 'lucide-react'
+import { SlidersHorizontal, X, ChevronDown, ArrowUpDown, DollarSign, Package, Share2, Check, Search, MapPin, Star, Store } from 'lucide-react'
 import { formatCategoryName, calculateDistance as getDistance } from '@/lib/utils'
 import { ProductCardSkeleton } from '@/components/ui/GhostSkeleton'
 
@@ -475,10 +475,10 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
 
       {/* Grid */}
       {filteredProducts.length === 0 ? (
-        <div className="text-center py-20 rounded-lg bg-white">
-          <div className="text-4xl mb-3">🔍</div>
+        <div className="text-center py-20 rounded-2xl bg-white border border-slate-200/80">
+          <Search className="w-10 h-10 text-slate-300 mx-auto mb-2" />
           <h3 className="font-semibold text-sm text-gray-700 mb-1">Produk Tidak Ditemukan</h3>
-          <p className="text-xs text-gray-400 max-w-xs mx-auto">Coba kata kunci lain atau ganti kategori.</p>
+          <p className="text-xs text-gray-400 max-w-xs mx-auto">Coba kata kunci lain atau ganti kategori filter.</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -565,7 +565,7 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                     )}
                   </div>
 
-                  {/* Content — matching screenshot standard */}
+                  {/* Content */}
                   <div className="p-2.5 sm:p-3 flex-1 flex flex-col justify-between space-y-1.5 sm:space-y-2">
                     <div>
                       <h3 className="text-xs font-medium text-slate-800 line-clamp-2 min-h-[32px] leading-snug group-hover:text-[#2DB24A] transition-colors">
@@ -589,8 +589,9 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
                         )}
 
                         {dist !== undefined && (
-                          <span className="inline-flex items-center gap-1 mt-1 text-[9px] sm:text-[10px] font-semibold text-[#2DB24A] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
-                            📍 {dist.toFixed(1)} km
+                          <span className="inline-flex items-center gap-1 mt-1 text-[9px] sm:text-[10px] font-semibold text-[#006E24] bg-emerald-50 rounded-md px-1.5 py-0.5 border border-emerald-100">
+                            <MapPin className="w-2.5 h-2.5" />
+                            <span>{dist.toFixed(1)} km</span>
                           </span>
                         )}
                       </div>
@@ -598,16 +599,17 @@ export default function ProductListGrid({ initialProducts, currentUser: initialU
 
                     <div className="pt-1.5 border-t border-slate-100 space-y-1">
                       <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                        <span className="text-amber-500 font-bold">★ {rating}</span>
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
+                        <span className="font-semibold text-slate-700">{rating}</span>
                         <span>•</span>
                         <span>{sold}+ terjual</span>
                       </div>
                       <div className="flex items-center justify-between gap-1">
                         <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate flex-1 min-w-0">
-                          <span className="text-[#2DB24A] font-bold text-xs shrink-0">✔</span>
+                          <Store className="w-3 h-3 text-slate-400 shrink-0" />
                           <span className="truncate font-medium text-slate-600">{product.merchant?.name || storeName}</span>
                         </div>
-                        <span className="px-2 py-0.5 rounded-lg bg-[#2DB24A] hover:bg-[#24943E] text-white text-[9px] sm:text-[10px] font-bold flex items-center gap-0.5 shadow-2xs shrink-0 cursor-pointer">
+                        <span className="px-2 py-0.5 rounded-lg bg-[#006E24] hover:bg-[#00551c] text-white text-[9px] sm:text-[10px] font-bold flex items-center gap-0.5 shadow-xs shrink-0 cursor-pointer">
                           + Keranjang
                         </span>
                       </div>

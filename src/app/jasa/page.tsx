@@ -2,6 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { getServicesAction } from '@/app/actions/services'
 import { getCurrentUser } from '@/app/actions/auth'
+import { Wrench } from 'lucide-react'
 import JasaClient from './JasaClient'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +18,8 @@ export default async function JasaPage() {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 md:px-16 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-[#006E24] border border-emerald-200/60 rounded-full text-[11px] font-bold mb-1">
-              <span>🛠️ Saloka Service & Talent</span>
+              <Wrench className="w-3.5 h-3.5 text-[#006E24]" />
+              <span>Saloka Service & Talent</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Layanan Jasa & Keahlian UMKM

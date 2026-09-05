@@ -400,7 +400,8 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
                     </div>
 
                     <div className="pt-2 border-t border-slate-100 flex items-center gap-1 text-[9px] text-slate-500">
-                      <span className="text-amber-500 font-bold">★ 4.9</span>
+                      <Star className="w-3 h-3 text-amber-500 fill-amber-400" />
+                      <span className="font-bold text-slate-700">4.9</span>
                       <span>•</span>
                       <span>Terjual {rel.stock ? `${rel.stock}+` : '30+'}</span>
                     </div>

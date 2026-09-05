@@ -11,6 +11,28 @@ import { checkoutCart, getWalletDetails, getActivePaymentMethods } from '@/app/a
 import { getCurrentUser, getCurrentUserProfile } from '@/app/actions/auth'
 import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api'
 import { calculateDistance as getDistance } from '@/lib/utils'
+import {
+  Package,
+  Store,
+  MapPin,
+  ShieldCheck,
+  Building2,
+  Smartphone,
+  Zap,
+  Check,
+  CheckCircle2,
+  AlertCircle,
+  AlertTriangle,
+  Pencil,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Gift,
+  Lock,
+  ArrowRight,
+  Trash2,
+  Info
+} from 'lucide-react'
 
 interface CartItem {
   productId: string
@@ -865,29 +887,29 @@ export default function CartPage() {
     return (
       <div className="relative min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F5F7F9] py-12 px-6">
         <div className="relative z-10 w-full max-w-md text-center border border-slate-100 bg-white shadow-xl p-8 rounded-3xl">
-          <div className="w-16 h-16 bg-emerald-50 text-primary flex items-center justify-center mx-auto rounded-full mb-6 text-2xl font-bold">
-            ✓
+          <div className="w-14 h-14 bg-emerald-50 text-[#006E24] flex items-center justify-center mx-auto rounded-full mb-4">
+            <Check className="w-7 h-7 stroke-[3]" />
           </div>
-          <h2 className="font-sora text-2xl font-bold text-slate-900 mb-3">Pesanan Berhasil dibuat!</h2>
+          <h2 className="font-sora text-2xl font-bold text-slate-900 mb-2">Pesanan Berhasil Dibuat</h2>
           <p className="text-xs text-slate-500 leading-relaxed mb-6">
-            Pesanan Anda telah berhasil tercatat di sistem Saloka UMKM.
+            Pesanan Anda telah tercatat dan sedang dipersiapkan oleh mitra UMKM.
           </p>
-          <div className="bg-slate-50 border border-slate-100 p-4 mb-8 rounded-2xl text-left text-xs text-slate-600 space-y-2">
-            <div className="flex justify-between"><span>Poin Diperoleh (1%):</span><span className="text-primary font-bold">+{Math.round(total * 0.01)} Poin</span></div>
-            <div className="flex justify-between"><span>Cashback Dompet (5%):</span><span className="text-primary font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span></div>
+          <div className="bg-slate-50 border border-slate-100 p-4 mb-6 rounded-2xl text-left text-xs text-slate-600 space-y-2">
+            <div className="flex justify-between"><span>Poin Diperoleh (1%):</span><span className="text-[#006E24] font-bold">+{Math.round(total * 0.01)} Poin</span></div>
+            <div className="flex justify-between"><span>Cashback Dompet (5%):</span><span className="text-[#006E24] font-bold">Rp {Math.round(total * 0.05).toLocaleString('id-ID')}</span></div>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2.5">
             <Link
               href="/orders"
-              className="py-3.5 bg-primary hover:bg-[#259a3f] text-white font-bold text-xs rounded-xl text-center transition-all shadow-md"
+              className="py-3 bg-[#006E24] hover:bg-[#00551c] text-white font-bold text-xs rounded-xl text-center transition-all shadow-xs"
             >
-              Lihat Detail Tagihan & Status Pesanan
+              Lihat Status Pesanan
             </Link>
             <Link
               href="/market"
-              className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl text-center transition-colors"
+              className="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl text-center transition-colors"
             >
-              Kembali Belanja
+              Kembali ke Marketplace
             </Link>
           </div>
         </div>
@@ -902,24 +924,26 @@ export default function CartPage() {
       <div className="relative z-10 max-w-[1160px] mx-auto space-y-6">
         {error && (
           <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600 font-medium flex items-center gap-2">
-            ⚠️ <span>{error}</span>
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+            <span>{error}</span>
           </div>
         )}
         {successMessage && (
           <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 font-medium flex items-center gap-2">
-            ✓ <span>{successMessage}</span>
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+            <span>{successMessage}</span>
           </div>
         )}
 
         {!currentUser && (
           <div className="p-4 rounded-2xl bg-gradient-to-r from-[#E8F5E9] to-emerald-50 border border-[#C8E6C9] text-xs text-[#006E24] font-medium flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-2.5">
-              <span className="text-lg">🔒</span>
-              <span>Anda belum masuk. Silakan <strong>login</strong> agar transaksi dan status pengiriman tersimpan aman di akun Anda.</span>
+              <Lock className="w-4 h-4 text-[#006E24] shrink-0" />
+              <span>Silakan masuk ke akun Anda agar pesanan dan riwayat belanja tersimpan secara aman.</span>
             </div>
             <Link
               href="/auth?redirect=/cart"
-              className="px-4 py-2 bg-[#006E24] hover:bg-[#084e1b] text-white font-extrabold rounded-xl text-xs shrink-0 transition-colors shadow-xs"
+              className="px-4 py-2 bg-[#006E24] hover:bg-[#00551c] text-white font-bold rounded-xl text-xs shrink-0 transition-colors shadow-xs"
             >
               Masuk / Daftar Akun
             </Link>
@@ -927,53 +951,49 @@ export default function CartPage() {
         )}
 
         {cartDetails.length === 0 && (!snackboxCart || !snackboxCart.items || snackboxCart.items.length === 0) ? (
-          /* EMPTY CART VIEW (Screenshot 2) */
+          /* EMPTY CART VIEW */
           <div className="space-y-10">
             <div className="text-center py-16 px-6 bg-white rounded-2xl border border-slate-200/80 shadow-xs max-w-lg mx-auto">
-              <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-10 h-10 text-primary">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                </svg>
+              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 text-slate-400">
+                <Package className="w-8 h-8" />
               </div>
-              <h3 className="font-bold text-lg text-slate-800 mb-1">Keranjangmu kosong nih</h3>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto mb-6 leading-relaxed">
-                Yuk jelajahi produk-produk yang ada lalu tambahkan ke keranjang!
+              <h3 className="font-bold text-base text-slate-800 mb-1">Keranjang Belanja Kosong</h3>
+              <p className="text-xs text-slate-500 max-w-xs mx-auto mb-6 leading-relaxed">
+                Belum ada produk pilihan Anda di keranjang. Jelajahi katalog UMKM kami.
               </p>
               <Link
                 href="/market"
-                className="px-7 py-2.5 bg-primary hover:bg-[#259a3f] text-white font-bold text-xs rounded-full transition-colors shadow-xs inline-block cursor-pointer"
+                className="px-6 py-2.5 bg-[#006E24] hover:bg-[#00551c] text-white font-bold text-xs rounded-xl transition-colors shadow-xs inline-block cursor-pointer"
               >
-                Cari produk lagi
+                Mulai Belanja
               </Link>
             </div>
 
             {/* Rekomendasi produk untuk kamu */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm text-slate-800">Rekomendasi produk untuk kamu</h3>
-                <Link href="/market" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
-                  Pindah ke marketplace &gt;
+                <h3 className="font-bold text-sm text-slate-800">Rekomendasi Produk</h3>
+                <Link href="/market" className="text-xs font-bold text-[#006E24] hover:underline flex items-center gap-1">
+                  <span>Lihat semua</span>
+                  <ArrowRight className="w-3 h-3" />
                 </Link>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {products.slice(0, 8).map(prod => (
-                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-primary transition-all group">
+                  <Link key={prod.id} href={`/products/${prod.id}`} className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-[#006E24] transition-all group">
                     <div className="aspect-square bg-slate-50 relative overflow-hidden">
                       {prod.imageUrl ? (
                         <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <Package className="w-8 h-8" />
+                        </div>
                       )}
                     </div>
                     <div className="p-3 space-y-1">
-                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-primary transition-colors">{prod.title}</h4>
+                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-[#006E24] transition-colors">{prod.title}</h4>
                       <p className="font-bold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
-                        <span>⭐ 4.9</span>
-                        <span>•</span>
-                        <span>Bandung</span>
-                      </div>
                     </div>
                   </Link>
                 ))}
@@ -981,20 +1001,20 @@ export default function CartPage() {
             </div>
           </div>
         ) : viewMode === 'cart' ? (
-          /* STAGE 1: KERANJANG BELANJAMU VIEW (Screenshot 3) */
+          /* STAGE 1: KERANJANG BELANJAMU VIEW */
           <div className="space-y-5">
             <div>
-              <h1 className="text-xl font-bold text-slate-900">Keranjang Belanjamu</h1>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Kamu punya {cartDetails.length + (snackboxCart?.items?.length ? 1 : 0)} pesanan di keranjangmu
+              <h1 className="text-xl font-bold text-slate-900">Keranjang Belanja</h1>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Total {cartDetails.length + (snackboxCart?.items?.length ? 1 : 0)} pesanan siap dicheckout
               </p>
             </div>
 
             {/* Same-Day Dispatch Notice Banner */}
             <div className="bg-[#E8F5E9] border border-[#C8E6C9] rounded-xl p-3 flex items-center gap-2.5 text-xs text-[#006E24]">
-              <span className="text-base">⚡</span>
-              <p className="font-semibold leading-relaxed">
-                <strong>Pengiriman Cepat Hari Ini:</strong> Pesanan yang dibayar sebelum pukul 15.00 WIB akan langsung diproses & dikirim hari ini oleh mitra UMKM.
+              <Zap className="w-4 h-4 shrink-0 text-[#006E24]" />
+              <p className="font-medium leading-relaxed">
+                <strong>Pengiriman Cepat:</strong> Pesanan terkonfirmasi sebelum pukul 15.00 WIB akan langsung diproses hari kerja ini.
               </p>
             </div>
 
@@ -1129,15 +1149,13 @@ export default function CartPage() {
                         className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-market-green-500 bg-market-green-25 cursor-pointer"
                       >
                         <div className="flex items-center gap-2.5">
-                          <span className="w-8 h-8 rounded-lg bg-market-green-500 flex items-center justify-center text-base shrink-0">
-                            {snackboxCart.boxType === 'borongan' ? '🎁' : '📦'}
+                          <span className="w-8 h-8 rounded-lg bg-[#006E24] text-white flex items-center justify-center shrink-0">
+                            {snackboxCart.boxType === 'borongan' ? <Gift className="w-4 h-4" /> : <Package className="w-4 h-4" />}
                           </span>
                           <span className="font-bold text-sm text-slate-900">
                             {snackboxCart.boxType === 'borongan' ? 'Box Borongan' : 'Box Reguler'}
                           </span>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className={`text-slate-500 transition-transform ${isBoxTypeDropdownOpen ? 'rotate-180' : ''}`}>
-                            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
+                          <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isBoxTypeDropdownOpen ? 'rotate-180' : ''}`} />
                         </div>
 
                         {snackboxCart.boxType === 'borongan' ? (
@@ -1183,12 +1201,13 @@ export default function CartPage() {
                               }}
                               className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer ${
                                 (snackboxCart.boxType || 'reguler') === 'reguler'
-                                  ? 'bg-market-green-50 border border-market-green-500'
+                                  ? 'bg-emerald-50 border border-[#006E24]'
                                   : 'border border-transparent hover:bg-slate-50'
                               }`}
                             >
-                              <span className="flex items-center gap-1.5 text-sm font-bold text-slate-900">
-                                📦 Box Reguler
+                              <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                                <Package className="w-4 h-4 text-slate-600" />
+                                <span>Box Reguler</span>
                               </span>
                               <span className="text-xs font-bold text-slate-500">1 Box</span>
                             </button>
@@ -1204,12 +1223,13 @@ export default function CartPage() {
                               }}
                               className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer ${
                                 snackboxCart.boxType === 'borongan'
-                                  ? 'bg-market-green-50 border border-market-green-500'
+                                  ? 'bg-emerald-50 border border-[#006E24]'
                                   : 'border border-transparent hover:bg-slate-50'
                               }`}
                             >
-                              <span className="flex items-center gap-1.5 text-sm font-bold text-slate-900">
-                                🎁 Box Borongan
+                              <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                                <Gift className="w-4 h-4 text-slate-600" />
+                                <span>Box Borongan</span>
                               </span>
                               <span className="text-xs font-bold text-slate-500">
                                 {snackboxCart.boxType === 'borongan' ? (snackboxCart.boxCount || 1) : 1} Box
@@ -1234,8 +1254,8 @@ export default function CartPage() {
                   return Object.entries(groups).map(([mId, items]) => {
                     const shopName = items[0]?.merchant?.name || 'Toko Mitra Saloka';
                     return (
-                      <div key={mId} className="bg-white rounded-2xl p-5 border border-market-green-200 shadow-xs space-y-4">
-                        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                      <div key={mId} className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+                        <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
                           <input
                             type="checkbox"
                             checked={items.every(i => selectedItemIds.has(i.id))}
@@ -1247,9 +1267,9 @@ export default function CartPage() {
                               })
                               setSelectedItemIds(next)
                             }}
-                            className="w-4 h-4 text-market-green-600 accent-market-green-600 rounded cursor-pointer"
+                            className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
                           />
-                          <span className="w-2 h-2 rounded-full bg-market-green-500" />
+                          <Store className="w-4 h-4 text-slate-500 shrink-0" />
                           <span className="font-bold text-sm text-slate-900">{shopName}</span>
                         </div>
 
@@ -1270,13 +1290,13 @@ export default function CartPage() {
                                       else next.delete(item.id)
                                       setSelectedItemIds(next)
                                     }}
-                                    className="w-4 h-4 shrink-0 text-market-green-600 accent-market-green-600 rounded cursor-pointer"
+                                    className="w-4 h-4 shrink-0 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
                                   />
-                                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 relative">
+                                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
                                     {item.imageUrl ? (
                                       <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
                                     ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
+                                      <Package className="w-6 h-6 text-slate-300" />
                                     )}
                                   </div>
 
@@ -1323,13 +1343,13 @@ export default function CartPage() {
                                         type="text"
                                         value={itemNotes[item.id] || ''}
                                         onChange={(e) => setItemNotes(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                        placeholder="Tulis catatan khusus untuk penjual (warna, ukuran, packing)..."
-                                        className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-market-green-500"
+                                        placeholder="Tulis catatan khusus untuk penjual..."
+                                        className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-[#006E24]"
                                       />
                                       <button
                                         type="button"
                                         onClick={() => setActiveNoteInput(prev => ({ ...prev, [item.id]: false }))}
-                                        className="text-[11px] font-bold text-market-green-600 hover:underline"
+                                        className="text-[11px] font-bold text-[#006E24] hover:underline"
                                       >
                                         Simpan
                                       </button>
@@ -1338,9 +1358,10 @@ export default function CartPage() {
                                     <button
                                       type="button"
                                       onClick={() => setActiveNoteInput(prev => ({ ...prev, [item.id]: true }))}
-                                      className="text-[11px] text-slate-500 hover:text-market-green-600 font-medium flex items-center gap-1 cursor-pointer"
+                                      className="text-[11px] text-slate-500 hover:text-[#006E24] font-medium flex items-center gap-1.5 cursor-pointer"
                                     >
-                                      <span>✏️ {itemNotes[item.id] ? `Catatan: "${itemNotes[item.id]}"` : '+ Tulis Catatan untuk Penjual'}</span>
+                                      <Pencil className="w-3 h-3 text-slate-400" />
+                                      <span>{itemNotes[item.id] ? `Catatan: "${itemNotes[item.id]}"` : 'Tulis Catatan untuk Penjual'}</span>
                                     </button>
                                   )}
                                 </div>
@@ -1404,17 +1425,14 @@ export default function CartPage() {
                       {prod.imageUrl ? (
                         <img src={prod.imageUrl} alt={prod.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <Package className="w-8 h-8" />
+                        </div>
                       )}
                     </div>
                     <div className="p-3 space-y-1">
-                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-primary transition-colors">{prod.title}</h4>
+                      <h4 className="font-medium text-slate-800 text-xs line-clamp-2 group-hover:text-[#006E24] transition-colors">{prod.title}</h4>
                       <p className="font-bold text-slate-900 text-sm">Rp {prod.price.toLocaleString('id-ID')}</p>
-                      <div className="flex items-center gap-1 text-[10px] text-slate-400 pt-0.5">
-                        <span>⭐ 4.9</span>
-                        <span>•</span>
-                        <span>Bandung</span>
-                      </div>
                     </div>
                   </Link>
                 ))}
@@ -1450,13 +1468,14 @@ export default function CartPage() {
                     return activeAddress ? (
                       <div>
                         <div className="flex items-center justify-between gap-4 mb-1">
-                          <span className="px-2.5 py-0.5 bg-[#E8F7EC] text-primary font-bold text-[11px] rounded-full flex items-center gap-1">
-                            📍 {activeAddress.label || 'Alamat 1'}
+                          <span className="px-2.5 py-0.5 bg-emerald-50 text-[#006E24] font-bold text-[11px] rounded-full inline-flex items-center gap-1 border border-emerald-200/60">
+                            <MapPin className="w-3 h-3 text-[#006E24]" />
+                            <span>{activeAddress.label || 'Alamat 1'}</span>
                           </span>
                           <button
                             type="button"
                             onClick={() => setShowAddressModal(true)}
-                            className="text-slate-400 font-medium text-xs hover:text-primary underline cursor-pointer"
+                            className="text-slate-400 font-medium text-xs hover:text-[#006E24] underline cursor-pointer"
                           >
                             Ganti Alamat
                           </button>
@@ -1471,7 +1490,7 @@ export default function CartPage() {
                         <button
                           type="button"
                           onClick={() => setShowAddAddressModal(true)}
-                          className="text-primary hover:underline font-bold"
+                          className="text-[#006E24] hover:underline font-bold"
                         >
                           + Tambah Alamat
                         </button>
@@ -1482,9 +1501,10 @@ export default function CartPage() {
 
                 {/* 2. Snackbox Saloka (only if selected in cart) */}
                 {snackboxCart && isSnackboxSelected && snackboxCart.items?.length > 0 && (
-                  <div className="bg-white rounded-2xl p-5 border border-market-green-200 shadow-xs space-y-4">
-                    <div className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2.5">
-                      Snackbox Saloka
+                  <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+                    <div className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2.5 flex items-center gap-2">
+                      <Gift className="w-4 h-4 text-[#006E24]" />
+                      <span>Snackbox Saloka</span>
                     </div>
 
                     <div className="space-y-3">
@@ -1509,11 +1529,11 @@ export default function CartPage() {
                       })}
                     </div>
 
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-market-green-25 border border-market-green-200 text-xs">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs">
                       <span className="font-bold text-slate-800">
                         {snackboxCart.boxType === 'borongan' ? 'Box Borongan' : 'Box Reguler'} • {snackboxCart.boxCount || 1} Box
                       </span>
-                      <span className="font-extrabold text-market-green-700 text-sm">
+                      <span className="font-extrabold text-[#006E24] text-sm">
                         Rp {snackboxSubtotal.toLocaleString('id-ID')}
                       </span>
                     </div>
@@ -1530,11 +1550,12 @@ export default function CartPage() {
                   });
 
                   return Object.entries(groups).map(([mId, items]) => {
-                    const shopName = items[0]?.merchant?.name || '[Nama Merchant]';
+                    const shopName = items[0]?.merchant?.name || 'Toko Mitra';
                     return (
                       <div key={mId} className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-4">
-                        <div className="font-bold text-xs text-slate-800 border-b border-slate-100 pb-2">
-                          {shopName}
+                        <div className="font-bold text-xs text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                          <Store className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span>{shopName}</span>
                         </div>
 
                         <div className="space-y-3">
@@ -1543,16 +1564,16 @@ export default function CartPage() {
                             return (
                               <div key={item.id} className="flex items-center justify-between gap-4 pb-3 border-b border-slate-50 last:border-b-0 text-xs">
                                 <div className="flex gap-3 items-center">
-                                  <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden shrink-0">
+                                  <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
                                     {item.imageUrl ? (
                                       <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
                                     ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-xl bg-slate-100">📦</div>
+                                      <Package className="w-6 h-6 text-slate-300" />
                                     )}
                                   </div>
                                   <div>
                                     <h4 className="font-bold text-slate-800 text-xs">{item.title}</h4>
-                                    <p className="text-[11px] text-slate-400">Color: Oatmeal White</p>
+                                    <p className="text-[11px] text-slate-400">Rp {wholesalePrice.toLocaleString('id-ID')} / pcs</p>
                                   </div>
                                 </div>
 
@@ -1565,7 +1586,7 @@ export default function CartPage() {
                           })}
                         </div>
 
-                        {/* Shipping selector per merchant (Matching Figma State Ekspedisi) */}
+                        {/* Shipping selector per merchant */}
                         <div className="pt-2 border-t border-slate-100">
                           <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden">
                             {/* Selected Header Row */}
@@ -1582,27 +1603,27 @@ export default function CartPage() {
                                    'Ekonomi (Rp9.000)'}
                                 </div>
                                 <div className="text-[11px] text-slate-400 mt-0.5">
-                                  {selectedCourier === 'pickup' ? 'Silakan datang ke lokasi merchant' : 'Estimasi tiba 28 - 31 Jul'}
+                                  {selectedCourier === 'pickup' ? 'Silakan datang ke lokasi merchant' : 'Estimasi tiba 1 - 3 hari kerja'}
                                 </div>
                               </div>
-                              <span className="text-slate-400 text-[10px] font-bold">
-                                {isShippingDropdownOpen[mId] ? '▲' : '▼'}
+                              <span className="text-slate-400">
+                                {isShippingDropdownOpen[mId] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                               </span>
                             </div>
 
                             {/* Expanded Dropdown Panel */}
                             {isShippingDropdownOpen[mId] && (
-                              <div className="p-3 bg-[#F9FAFB] border-t border-slate-100 space-y-2">
-                                <div className="p-2.5 bg-white border border-slate-200/60 rounded-lg text-[11px] text-slate-500 font-medium flex items-center gap-1.5">
-                                  <span>🏬</span>
-                                  <span>Dikirim dari Kab. Bekasi | Berat 1.9kg</span>
+                              <div className="p-3 bg-slate-50 border-t border-slate-100 space-y-2">
+                                <div className="p-2.5 bg-white border border-slate-200/60 rounded-lg text-[11px] text-slate-600 font-medium flex items-center gap-1.5">
+                                  <Store className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span>Pengiriman langsung dari mitra {shopName}</span>
                                 </div>
                                 <div className="space-y-1">
                                   {[
-                                    { id: 'ekonomi', name: 'Ekonomi (Rp7.000)', etd: 'Estimasi tiba 3 - 15 Aug' },
-                                    { id: 'standard', name: 'Standard (Rp12.000)', etd: 'Estimasi tiba 3 - 15 Aug' },
-                                    { id: 'nextday', name: 'Next Day (Rp24.000)', etd: 'Estimasi tiba 3 - 15 Aug' },
-                                    { id: 'instant', name: 'Instant (Rp40.000)', etd: 'Estimasi tiba 3 - 15 Aug' },
+                                    { id: 'ekonomi', name: 'Ekonomi (Rp7.000)', etd: 'Estimasi tiba 2 - 4 hari' },
+                                    { id: 'standard', name: 'Standard (Rp12.000)', etd: 'Estimasi tiba 1 - 2 hari' },
+                                    { id: 'nextday', name: 'Next Day (Rp24.000)', etd: 'Estimasi tiba besok' },
+                                    { id: 'instant', name: 'Instant (Rp40.000)', etd: 'Tiba dalam beberapa jam' },
                                     { id: 'pickup', name: 'Ambil di lokasi merchant', etd: 'Silakan datang ke lokasi merchant' }
                                   ].map(opt => (
                                     <div
@@ -1615,7 +1636,7 @@ export default function CartPage() {
                                       }}
                                       className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between ${
                                         selectedCourier === opt.id
-                                          ? 'bg-[#F0FDF4] border-primary text-primary font-bold'
+                                          ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24] font-bold'
                                           : 'bg-white border-slate-200/60 text-slate-700 hover:bg-slate-50'
                                       }`}
                                     >
@@ -1630,15 +1651,15 @@ export default function CartPage() {
                             {/* Insurance Checkbox Row */}
                             <div className="px-3.5 py-2.5 border-t border-slate-100 bg-white flex items-center justify-between text-[11px]">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-slate-400">🛡️</span>
-                                <span className="text-primary font-medium underline cursor-pointer">Pakai Asuransi Pengiriman</span>
-                                <span className="text-slate-400">(Rp.2.000)</span>
+                                <ShieldCheck className="w-3.5 h-3.5 text-[#006E24]" />
+                                <span className="text-slate-700 font-medium">Asuransi Pengiriman</span>
+                                <span className="text-slate-400">(Rp2.000)</span>
                               </div>
                               <input
                                 type="checkbox"
                                 checked={useInsurance[mId] !== false}
                                 onChange={(e) => setUseInsurance(prev => ({ ...prev, [mId]: e.target.checked }))}
-                                className="w-4 h-4 text-primary accent-primary rounded cursor-pointer"
+                                className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
                               />
                             </div>
                           </div>
@@ -1655,20 +1676,20 @@ export default function CartPage() {
                 
                 {/* 1. Metode Pembayaran Card */}
                 <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-3">
-                  <h3 className="font-bold text-xs text-slate-800">Metode pembayaran</h3>
+                  <h3 className="font-bold text-xs text-slate-800">Metode Pembayaran</h3>
 
                   <div className="space-y-2">
                     {[
-                      { id: 'MIDTRANS_BANK', label: 'BRI Virtual Account', icon: '🏦' },
-                      { id: 'MIDTRANS_BANK_BCA', label: 'BCA Virtual Account', icon: '🏦' },
-                      { id: 'MIDTRANS_QRIS', label: 'QRIS', icon: '📱' },
-                      { id: 'COD', label: 'Alfamart', icon: '🏬' },
-                      { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, icon: '⚡' },
+                      { id: 'MIDTRANS_BANK', label: 'BRI Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-500" /> },
+                      { id: 'MIDTRANS_BANK_BCA', label: 'BCA Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-500" /> },
+                      { id: 'MIDTRANS_QRIS', label: 'QRIS', icon: <Smartphone className="w-4 h-4 text-slate-500" /> },
+                      { id: 'COD', label: 'Alfamart / Gerai Retail', icon: <Store className="w-4 h-4 text-slate-500" /> },
+                      { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, icon: <Zap className="w-4 h-4 text-[#006E24]" /> },
                       ...dynamicPaymentMethods.map(m => ({
                         id: m.id,
                         label: m.providerName + (m.accountName ? ` (${m.accountName})` : ''),
                         isManual: true,
-                        icon: '🏦',
+                        icon: <Building2 className="w-4 h-4 text-slate-500" />,
                         original: m
                       }))
                     ].map(opt => {
@@ -1698,16 +1719,16 @@ export default function CartPage() {
                           }}
                           className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
-                              ? 'bg-[#F0FDF4] border-primary text-primary'
+                              ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24]'
                               : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300'
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <span>{opt.icon}</span>
+                          <div className="flex items-center gap-2.5">
+                            {opt.icon}
                             <span>{opt.label}</span>
                           </div>
-                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-primary' : 'border-slate-300'}`}>
-                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
+                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
                           </div>
                         </div>
                       );
@@ -1728,24 +1749,29 @@ export default function CartPage() {
                       onChange={e => setCouponCode(e.target.value.toUpperCase())}
                       placeholder="Masukkan kode promo"
                       className={`bg-slate-50 border rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none flex-1 ${
-                        couponSuccess ? 'border-primary bg-[#F0FDF4]' : couponError ? 'border-red-400 bg-red-50' : 'border-slate-200 focus:border-primary'
+                        couponSuccess ? 'border-[#006E24] bg-[#F0FDF4]' : couponError ? 'border-red-400 bg-red-50' : 'border-slate-200 focus:border-[#006E24]'
                       }`}
                     />
                     <button
                       type="button"
                       onClick={() => handleApplyCoupon(couponCode)}
-                      className="bg-primary hover:bg-[#259a3f] text-white text-xs font-bold rounded-lg px-4 py-2 transition-colors cursor-pointer shrink-0"
+                      className="bg-[#006E24] hover:bg-[#00551c] text-white text-xs font-bold rounded-lg px-4 py-2 transition-colors cursor-pointer shrink-0"
                     >
                       Gunakan
                     </button>
                   </div>
-                  {couponSuccess && <p className="text-[11px] text-primary font-bold">✔ Kode promo berhasil dipasang!</p>}
+                  {couponSuccess && (
+                    <p className="text-[11px] text-[#006E24] font-bold flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Kode promo berhasil dipasang</span>
+                    </p>
+                  )}
                   {couponError && <p className="text-[11px] text-red-500 font-medium">Kode promo tidak ditemukan, pastikan kode promo sudah benar</p>}
                 </div>
 
-                {/* 3. Cek ringkasan transaksi dulu ya! Card */}
+                {/* 3. Ringkasan Pembayaran Card */}
                 <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-3">
-                  <h3 className="font-bold text-xs text-slate-800">Cek ringkasan transaksi dulu ya!</h3>
+                  <h3 className="font-bold text-xs text-slate-800">Ringkasan Pembayaran</h3>
 
                   <div className="space-y-2 text-xs text-slate-600 pt-1">
                     <div className="flex justify-between items-center">
@@ -1754,12 +1780,12 @@ export default function CartPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Biaya Pengiriman</span>
-                      <span className="font-semibold text-[#006E24] font-bold">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
+                      <span className="font-bold text-[#006E24]">{shippingFee === 0 ? 'Gratis' : `Rp ${shippingFee.toLocaleString('id-ID')}`}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="flex items-center gap-1">
                         <span>Biaya Layanan Aplikasi</span>
-                        <span className="text-[10px] text-slate-400">ⓘ</span>
+                        <Info className="w-3 h-3 text-slate-400" />
                       </span>
                       <span className="font-semibold text-slate-800">Rp {serviceFee.toLocaleString('id-ID')}</span>
                     </div>
@@ -1787,7 +1813,7 @@ export default function CartPage() {
 
                     <div className="border-t border-slate-100 pt-2.5 flex justify-between items-center">
                       <span className="font-bold text-xs text-slate-800">Total Tagihan</span>
-                      <span className="font-extrabold text-slate-900 text-lg font-mono">
+                      <span className="font-extrabold text-slate-900 text-lg">
                         Rp {total.toLocaleString('id-ID')}
                       </span>
                     </div>
@@ -1797,11 +1823,9 @@ export default function CartPage() {
                     <button
                       id="cart-checkout-login"
                       onClick={() => router.push('/auth?redirect=/cart')}
-                      className="w-full py-3.5 bg-[#006E24] hover:bg-[#084e1b] text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer mt-1"
+                      className="w-full py-3.5 bg-[#006E24] hover:bg-[#00551c] text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer mt-1"
                     >
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                      </svg>
+                      <Lock className="w-3.5 h-3.5" />
                       <span>Masuk Akun untuk Melanjutkan Pembayaran</span>
                     </button>
                   ) : (
@@ -1816,7 +1840,7 @@ export default function CartPage() {
                         hasOwnProduct ||
                         (paymentMethod === 'WALLET' && (walletBalance === null || walletBalance < total))
                       }
-                      className="w-full py-3.5 bg-[#006E24] hover:bg-[#084e1b] text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                      className="w-full py-3.5 bg-[#006E24] hover:bg-[#00551c] text-white font-bold text-xs rounded-xl transition-colors shadow-xs cursor-pointer text-center disabled:opacity-50 disabled:cursor-not-allowed mt-1"
                     >
                       {isPendingCheckout 
                         ? 'Memproses Transaksi...' 
@@ -1825,14 +1849,15 @@ export default function CartPage() {
                         : paymentMethod === 'WALLET' 
                         ? (walletBalance === null || walletBalance < total) 
                           ? 'Saldo Dompet Tidak Mencukupi' 
-                          : '⚡ Bayar Sekarang (Dompet)' 
+                          : 'Bayar Sekarang (Saldo Dompet)' 
                         : 'Bayar Sekarang'}
                     </button>
                   )}
 
                   {hasOwnProduct && (
-                    <p className="text-[10px] text-red-500 font-semibold text-center mt-1">
-                      ⚠️ Hapus produk toko Anda sendiri untuk membuat pesanan.
+                    <p className="text-[10px] text-red-500 font-semibold text-center mt-1 flex items-center justify-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
+                      <span>Hapus produk toko Anda sendiri untuk membuat pesanan.</span>
                     </p>
                   )}
                 </div>
@@ -1854,9 +1879,9 @@ export default function CartPage() {
               <button 
                 type="button" 
                 onClick={() => setShowAddressModal(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
             
@@ -1929,9 +1954,9 @@ export default function CartPage() {
               <button 
                 type="button" 
                 onClick={() => setShowAddAddressModal(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -1944,7 +1969,7 @@ export default function CartPage() {
                     value={formName}
                     onChange={e => setFormName(e.target.value)}
                     placeholder="Nama Lengkap"
-                    className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#006E24] bg-[#FDFDFD]"
                   />
                 </div>
                 <div>
@@ -1954,7 +1979,7 @@ export default function CartPage() {
                     value={formPhone}
                     onChange={e => setFormPhone(e.target.value)}
                     placeholder="Nomor Telepon"
-                    className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
+                    className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#006E24] bg-[#FDFDFD]"
                   />
                 </div>
               </div>
@@ -1966,7 +1991,7 @@ export default function CartPage() {
                   value={formProvinceCity}
                   onChange={e => setFormProvinceCity(e.target.value)}
                   placeholder="Provinsi, Kota, Kecamatan, Kode Pos"
-                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
+                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#006E24] bg-[#FDFDFD]"
                 />
               </div>
 
@@ -1977,7 +2002,7 @@ export default function CartPage() {
                   value={formStreetName}
                   onChange={e => setFormStreetName(e.target.value)}
                   placeholder="Nama Jalan, Gedung, No. Rumah"
-                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
+                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#006E24] bg-[#FDFDFD]"
                 />
               </div>
 
@@ -1988,7 +2013,7 @@ export default function CartPage() {
                   value={formDetails}
                   onChange={e => setFormDetails(e.target.value)}
                   placeholder="Detail Lainnya (Cth: Blok / Unit No., Patokan)"
-                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary bg-[#FDFDFD]"
+                  className="w-full h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#006E24] bg-[#FDFDFD]"
                 />
               </div>
 
@@ -2003,12 +2028,12 @@ export default function CartPage() {
                     onChange={e => setAddressSearchQuery(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handleGeocodeSearch() }}
                     placeholder="Cari kelurahan/kecamatan/jalan untuk dipin..."
-                    className="flex-grow h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-primary"
+                    className="flex-grow h-10 px-3 border border-slate-200 rounded focus:outline-none focus:border-[#006E24]"
                   />
                   <button
                     type="button"
                     onClick={handleGeocodeSearch}
-                    className="px-4 h-10 bg-primary hover:bg-primary/90 text-white font-bold rounded cursor-pointer"
+                    className="px-4 h-10 bg-[#006E24] hover:bg-[#00551c] text-white font-bold rounded cursor-pointer"
                   >
                     Cari Pin
                   </button>
@@ -2035,19 +2060,19 @@ export default function CartPage() {
                   ) : (
                     <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center text-slate-400 relative">
                       <div className="text-center p-4">
-                        <span className="text-2xl block mb-1">🗺️</span>
-                        <span className="text-[10px] text-slate-400">Peta Offline - Pilih Lokasi Menggunakan Form di Atas</span>
+                        <MapPin className="w-6 h-6 text-slate-300 mx-auto mb-1" />
+                        <span className="text-[10px] text-slate-400">Peta Offline - Masukkan detail alamat pada form di atas</span>
                       </div>
                     </div>
                   )}
 
-                  {/* Overlapping button "+ Tambah Lokasi" / GPS to request GPS permission or configure location */}
                   <button
                     type="button"
                     onClick={handleRequestGps}
-                    className="absolute top-2 right-2 bg-white/95 border border-slate-200 text-primary hover:bg-slate-50 px-2.5 py-1 text-[10px] font-bold rounded shadow-sm flex items-center gap-1 cursor-pointer z-10"
+                    className="absolute top-2 right-2 bg-white/95 border border-slate-200 text-[#006E24] hover:bg-slate-50 px-2.5 py-1 text-[10px] font-bold rounded shadow-xs flex items-center gap-1 cursor-pointer z-10"
                   >
-                    📍 GPS Saya
+                    <MapPin className="w-3 h-3 text-[#006E24]" />
+                    <span>GPS Saya</span>
                   </button>
                 </div>
               </div>
