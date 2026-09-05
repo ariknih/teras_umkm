@@ -8388,7 +8388,7 @@ export const DataStore = {
             bookingDate: dateBooking,
             sessionType: data.pricingType === 'DAILY' ? 'PER_HARI' : 'PER_SESI',
             totalAmount: data.totalPrice || data.basePrice || 0,
-            adminFee: data.adminFee || 2500,
+            adminFee: data.adminFee !== undefined ? data.adminFee : 2500 * (data.totalDays || 1),
             status: data.status || 'PENDING',
             notes: combinedNotes || null
           } 
@@ -8411,7 +8411,7 @@ export const DataStore = {
         const booking = { 
           id: `sb-${Date.now()}`, 
           ...data, 
-          adminFee: 2500, 
+          adminFee: data.adminFee !== undefined ? data.adminFee : 2500 * (data.totalDays || 1), 
           status: 'PENDING', 
           createdAt: new Date(), 
           updatedAt: new Date() 

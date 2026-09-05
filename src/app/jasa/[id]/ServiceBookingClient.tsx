@@ -227,7 +227,8 @@ export default function ServiceBookingClient({
       : service.pricePerSession || 0
 
   const basePrice = baseRate * totalDays
-  const adminFee = 2500
+  const adminFeePerUnit = 2500
+  const adminFee = adminFeePerUnit * totalDays
   const totalPrice = basePrice + adminFee
 
   const handleBookingSubmit = (e: React.FormEvent) => {
@@ -899,7 +900,12 @@ export default function ServiceBookingClient({
                   <span className="font-bold text-slate-900">Rp {basePrice.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="flex justify-between text-slate-600">
-                  <span>Biaya Layanan Platform Saloka</span>
+                  <span>
+                    Biaya Layanan Platform Saloka{' '}
+                    {totalDays > 1
+                      ? `(${totalDays} ${selectedPricingType === 'DAILY' ? 'Hari' : 'Sesi'} @ Rp ${adminFeePerUnit.toLocaleString('id-ID')})`
+                      : ''}
+                  </span>
                   <span className="font-bold text-[#006E24]">Rp {adminFee.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="border-t border-slate-200 pt-2 flex justify-between items-center text-sm font-extrabold text-slate-900">

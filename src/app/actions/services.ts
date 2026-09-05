@@ -211,7 +211,7 @@ export async function createServiceBookingAction(data: {
     if (rate <= 0) return { success: false, error: 'Tarif untuk opsi ini belum ditentukan oleh penyedia jasa.' }
 
     const basePrice = rate * totalDays
-    const adminFee = 2500
+    const adminFee = 2500 * totalDays
     const totalPrice = basePrice + adminFee
 
     const booking = await DataStore.createServiceBooking({
