@@ -151,6 +151,12 @@ function loadMockDb(): {
       if (parsed.communityOfficialProducts) {
         parsed.communityOfficialProducts = parsed.communityOfficialProducts.map((p: any) => ({ ...p, createdAt: new Date(p.createdAt), updatedAt: new Date(p.updatedAt) }))
       }
+      if (parsed.discussions) {
+        parsed.discussions = parsed.discussions.map((d: any) => ({ ...d, createdAt: new Date(d.createdAt), updatedAt: new Date(d.updatedAt) }))
+      }
+      if (parsed.discussionReplies) {
+        parsed.discussionReplies = parsed.discussionReplies.map((r: any) => ({ ...r, createdAt: new Date(r.createdAt), updatedAt: new Date(r.updatedAt) }))
+      }
       // Load global KYC setting at startup
       if (parsed.globalKycRequired !== undefined) {
         ;(globalThis as any).__isKycRequiredToCreateCommunity = Boolean(parsed.globalKycRequired)
@@ -9708,39 +9714,88 @@ export const DataStore = {
     )
   },
 
-  // ─── DISCUSSION FORUM CRUD ────────────────────────────────────────
+  // ─── DISCUSSION FORUM CRUD (PERSISTENT VIA POSTGRESQL & SYSTEMSETTING) ──
+  async _saveDiscussionsForCommunity(communityId: string, discussions: any[]) {
+    try {
+      await db.systemSetting.upsert({
+        where: { key: `community_discussions_${communityId}` },
+        update: { value: JSON.stringify(discussions) },
+        create: { key: `community_discussions_${communityId}`, value: JSON.stringify(discussions) }
+      })
+    } catch (_) {}
+  },
+
   async getDiscussions(communityId: string) {
     syncMockDb()
 
     return withFallback(
       async () => {
+        // 1. Check PostgreSQL database persistence via SystemSetting
         try {
-          const list = await (db as any).discussion.findMany({
-            where: { communityId },
-            include: {
-              author: {
-                select: { id: true, name: true, image: true }
-              },
-              replies: {
-                include: {
-                  author: {
-                    select: { id: true, name: true, image: true }
+          const setting = await db.systemSetting.findUnique({
+            where: { key: `community_discussions_${communityId}` }
+          })
+          if (setting?.value) {
+            const parsed = JSON.parse(setting.value)
+            if (Array.isArray(parsed)) {
+              // Enrich authors
+              const enriched = await Promise.all(parsed.map(async (d: any) => {
+                let author = d.author
+                if (!author || !author.name) {
+                  const u = await DataStore.findUserById(d.authorId)
+                  author = {
+                    id: d.authorId,
+                    name: u?.name || d.authorName || 'Anggota Komunitas',
+                    image: u?.image || null
                   }
                 }
-              }
-            },
-            orderBy: [
-              { isPinned: 'desc' },
-              { createdAt: 'desc' }
-            ]
-          })
-          if (list && list.length > 0) return list
+                const replies = Array.isArray(d.replies) ? await Promise.all(d.replies.map(async (r: any) => {
+                  let replyAuthor = r.author
+                  if (!replyAuthor || !replyAuthor.name) {
+                    const ru = await DataStore.findUserById(r.authorId)
+                    replyAuthor = {
+                      id: r.authorId,
+                      name: ru?.name || r.authorName || 'Anggota Komunitas',
+                      image: ru?.image || null
+                    }
+                  }
+                  return {
+                    ...r,
+                    author: replyAuthor,
+                    helpfulVotes: Array.isArray(r.helpfulVotes) ? r.helpfulVotes : (typeof r.helpfulVotes === 'string' ? JSON.parse(r.helpfulVotes || '[]') : []),
+                    helpfulCount: Array.isArray(r.helpfulVotes) ? r.helpfulVotes.length : (r.helpfulCount || 0)
+                  }
+                })) : []
+
+                return {
+                  ...d,
+                  author,
+                  replies,
+                  repliesCount: replies.length,
+                  likes: Array.isArray(d.likes) ? d.likes : [],
+                  likesCount: Array.isArray(d.likes) ? d.likes.length : (d.likesCount || 0)
+                }
+              }))
+
+              // Sync with local memory cache
+              if (!(globalThis as any).__mockDiscussions) (globalThis as any).__mockDiscussions = []
+              ;(globalThis as any).__mockDiscussions = [
+                ...(globalThis as any).__mockDiscussions.filter((d: any) => d.communityId !== communityId),
+                ...enriched
+              ]
+
+              return enriched.sort((a: any, b: any) => {
+                if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+              })
+            }
+          }
         } catch (_) {}
 
+        // 2. Check local mock storage if not yet in SystemSetting
         if (!(globalThis as any).__mockDiscussions) {
           (globalThis as any).__mockDiscussions = []
         }
-        // Only return discussions actually created for this community
         const listForComm = (globalThis as any).__mockDiscussions.filter(
           (d: any) => d.communityId === communityId && !d.id?.startsWith('disc-dummy-') && !d.id?.startsWith('disc-1-') && !d.id?.startsWith('disc-2-') && !d.id?.startsWith('disc-3-') && !d.id?.startsWith('disc-4-') && !d.id?.startsWith('disc-5-')
         )
@@ -9755,30 +9810,44 @@ export const DataStore = {
         }
 
         const replies = (globalThis as any).__mockDiscussionReplies || []
-        return listForComm.map((d: any) => {
-          const discReplies = replies
+        const enrichedList = listForComm.map((d: any) => {
+          const discReplies = (Array.isArray(d.replies) && d.replies.length > 0) ? d.replies : replies
             .filter((r: any) => r.discussionId === d.id)
             .map((r: any) => ({
               ...r,
-              author: enrichUser(r.authorId, r.authorName)
+              author: enrichUser(r.authorId, r.authorName),
+              helpfulVotes: Array.isArray(r.helpfulVotes) ? r.helpfulVotes : (typeof r.helpfulVotes === 'string' ? JSON.parse(r.helpfulVotes || '[]') : []),
+              helpfulCount: Array.isArray(r.helpfulVotes) ? r.helpfulVotes.length : (r.helpfulCount || 0)
             }))
           return {
             ...d,
             author: enrichUser(d.authorId, d.authorName),
             replies: discReplies,
-            repliesCount: d.repliesCount || discReplies.length,
-            likesCount: d.likesCount || 0
+            repliesCount: discReplies.length,
+            likes: Array.isArray(d.likes) ? d.likes : [],
+            likesCount: Array.isArray(d.likes) ? d.likes.length : (d.likesCount || 0)
           }
         }).sort((a: any, b: any) => {
           if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         })
+
+        if (enrichedList.length > 0) {
+          try {
+            await db.systemSetting.upsert({
+              where: { key: `community_discussions_${communityId}` },
+              update: { value: JSON.stringify(enrichedList) },
+              create: { key: `community_discussions_${communityId}`, value: JSON.stringify(enrichedList) }
+            })
+          } catch (_) {}
+        }
+
+        return enrichedList
       },
       async () => {
         if (!(globalThis as any).__mockDiscussions) {
           (globalThis as any).__mockDiscussions = []
         }
-        // Only return discussions actually created for this community
         const listForComm = (globalThis as any).__mockDiscussions.filter(
           (d: any) => d.communityId === communityId && !d.id?.startsWith('disc-dummy-') && !d.id?.startsWith('disc-1-') && !d.id?.startsWith('disc-2-') && !d.id?.startsWith('disc-3-') && !d.id?.startsWith('disc-4-') && !d.id?.startsWith('disc-5-')
         )
@@ -9794,18 +9863,21 @@ export const DataStore = {
 
         const replies = (globalThis as any).__mockDiscussionReplies || []
         return listForComm.map((d: any) => {
-          const discReplies = replies
+          const discReplies = (Array.isArray(d.replies) && d.replies.length > 0) ? d.replies : replies
             .filter((r: any) => r.discussionId === d.id)
             .map((r: any) => ({
               ...r,
-              author: enrichUser(r.authorId, r.authorName)
+              author: enrichUser(r.authorId, r.authorName),
+              helpfulVotes: Array.isArray(r.helpfulVotes) ? r.helpfulVotes : (typeof r.helpfulVotes === 'string' ? JSON.parse(r.helpfulVotes || '[]') : []),
+              helpfulCount: Array.isArray(r.helpfulVotes) ? r.helpfulVotes.length : (r.helpfulCount || 0)
             }))
           return {
             ...d,
             author: enrichUser(d.authorId, d.authorName),
             replies: discReplies,
-            repliesCount: d.repliesCount || discReplies.length,
-            likesCount: d.likesCount || 0
+            repliesCount: discReplies.length,
+            likes: Array.isArray(d.likes) ? d.likes : [],
+            likesCount: Array.isArray(d.likes) ? d.likes.length : (d.likesCount || 0)
           }
         }).sort((a: any, b: any) => {
           if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1
@@ -9823,164 +9895,51 @@ export const DataStore = {
     tags: string
   }) {
     syncMockDb()
-    let createdDisc: any = null
     const authorUser = await DataStore.findUserById(authorId)
     const authorName = authorUser ? authorUser.name : 'Anggota Komunitas'
+    const authorImage = authorUser ? authorUser.image : null
+
+    const newDisc = {
+      id: `disc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      communityId: data.communityId,
+      title: data.title,
+      category: data.category,
+      content: data.content,
+      tags: data.tags || '',
+      authorId,
+      authorName,
+      author: {
+        id: authorId,
+        name: authorName,
+        image: authorImage
+      },
+      isPinned: false,
+      isClosed: false,
+      bestReplyId: null,
+      likes: [],
+      likesCount: 0,
+      replies: [],
+      repliesCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
 
     return withMutationFallback(
       async () => {
-        try {
-          createdDisc = await (db as any).discussion.create({
-            data: {
-              communityId: data.communityId,
-              title: data.title,
-              category: data.category,
-              content: data.content,
-              tags: data.tags,
-              authorId
-            },
-            include: {
-              author: { select: { id: true, name: true, image: true } }
-            }
-          })
-        } catch (_) {}
+        const current = await DataStore.getDiscussions(data.communityId)
+        const updatedList = [newDisc, ...(Array.isArray(current) ? current : []).filter((d: any) => d.id !== newDisc.id)]
+        await DataStore._saveDiscussionsForCommunity(data.communityId, updatedList)
 
-        if (!createdDisc) {
-          const newDisc = {
-            id: `disc-${Date.now()}`,
-            communityId: data.communityId,
-            title: data.title,
-            category: data.category,
-            content: data.content,
-            tags: data.tags,
-            authorId,
-            authorName,
-            isPinned: false,
-            isClosed: false,
-            bestReplyId: null,
-            likesCount: 0,
-            repliesCount: 0,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
-          if (!(globalThis as any).__mockDiscussions) {
-            (globalThis as any).__mockDiscussions = []
-          }
-          ;(globalThis as any).__mockDiscussions.unshift(newDisc)
-          saveMockDb()
-
-          createdDisc = {
-            ...newDisc,
-            author: {
-              id: authorId,
-              name: authorName,
-              image: authorUser?.image || null
-            },
-            replies: []
-          }
-        }
-        return createdDisc
-      },
-      async () => {
-        const newDisc = {
-          id: `disc-${Date.now()}`,
-          communityId: data.communityId,
-          title: data.title,
-          category: data.category,
-          content: data.content,
-          tags: data.tags,
-          authorId,
-          authorName,
-          isPinned: false,
-          isClosed: false,
-          bestReplyId: null,
-          likesCount: 0,
-          repliesCount: 0,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-        if (!(globalThis as any).__mockDiscussions) {
-          (globalThis as any).__mockDiscussions = []
-        }
+        if (!(globalThis as any).__mockDiscussions) (globalThis as any).__mockDiscussions = []
         ;(globalThis as any).__mockDiscussions.unshift(newDisc)
         saveMockDb()
-
-        return {
-          ...newDisc,
-          author: {
-            id: authorId,
-            name: authorName,
-            image: authorUser?.image || null
-          },
-          replies: []
-        }
-      }
-    )
-  },
-
-  async toggleLikeDiscussion(userId: string, discussionId: string) {
-    syncMockDb()
-    return withMutationFallback(
-      async () => {
-        try {
-          const d = await (db as any).discussion.findUnique({ where: { id: discussionId } })
-          if (d) {
-            let currentLikes: string[] = []
-            if (d.tags && d.tags.includes('__LIKES__:')) {
-              try { currentLikes = JSON.parse(d.tags.split('__LIKES__:')[1] || '[]') } catch(_) {}
-            }
-            const exists = currentLikes.includes(userId)
-            const updatedLikes = exists ? currentLikes.filter((x: string) => x !== userId) : [...currentLikes, userId]
-            const cleanTags = (d.tags || '').split('__LIKES__:')[0].trim()
-            const newTags = `${cleanTags} __LIKES__:${JSON.stringify(updatedLikes)}`
-
-            const updated = await (db as any).discussion.update({
-              where: { id: discussionId },
-              data: { tags: newTags },
-              include: { author: { select: { id: true, name: true, image: true } }, replies: true }
-            })
-            return {
-              ...updated,
-              likes: updatedLikes,
-              likesCount: updatedLikes.length
-            }
-          }
-        } catch (_) {}
-
-        const list = (globalThis as any).__mockDiscussions || []
-        const disc = list.find((x: any) => x.id === discussionId)
-        if (disc) {
-          if (!Array.isArray(disc.likes)) disc.likes = []
-          const idx = disc.likes.indexOf(userId)
-          if (idx !== -1) {
-            disc.likes.splice(idx, 1)
-          } else {
-            disc.likes.push(userId)
-          }
-          disc.likesCount = disc.likes.length
-          disc.updatedAt = new Date()
-          saveMockDb()
-          return disc
-        }
-        return null
+        return newDisc
       },
       async () => {
-        const list = (globalThis as any).__mockDiscussions || []
-        const disc = list.find((x: any) => x.id === discussionId)
-        if (disc) {
-          if (!Array.isArray(disc.likes)) disc.likes = []
-          const idx = disc.likes.indexOf(userId)
-          if (idx !== -1) {
-            disc.likes.splice(idx, 1)
-          } else {
-            disc.likes.push(userId)
-          }
-          disc.likesCount = disc.likes.length
-          disc.updatedAt = new Date()
-          saveMockDb()
-          return disc
-        }
-        return null
+        if (!(globalThis as any).__mockDiscussions) (globalThis as any).__mockDiscussions = []
+        ;(globalThis as any).__mockDiscussions.unshift(newDisc)
+        saveMockDb()
+        return newDisc
       }
     )
   },
@@ -9990,38 +9949,209 @@ export const DataStore = {
     category?: string
     content?: string
     tags?: string
-  }) {
+  }, communityId?: string) {
     syncMockDb()
     return withMutationFallback(
       async () => {
-        try {
-          return await (db as any).discussion.update({
-            where: { id },
-            data: {
-              ...(data.title ? { title: data.title } : {}),
-              ...(data.category ? { category: data.category } : {}),
-              ...(data.content ? { content: data.content } : {}),
-              ...(data.tags !== undefined ? { tags: data.tags } : {})
-            },
-            include: {
-              author: { select: { id: true, name: true, image: true } }
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.id === id)?.communityId
+        let updatedItem: any = null
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          const target = current.find((d: any) => d.id === id)
+          if (target) {
+            if (data.title !== undefined) target.title = data.title
+            if (data.category !== undefined) target.category = data.category
+            if (data.content !== undefined) target.content = data.content
+            if (data.tags !== undefined) target.tags = data.tags
+            target.updatedAt = new Date().toISOString()
+            await DataStore._saveDiscussionsForCommunity(commId, current)
+            updatedItem = target
+          }
+        }
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          Object.assign(disc, data, { updatedAt: new Date() })
+          saveMockDb()
+          if (!updatedItem) updatedItem = disc
+        }
+        return updatedItem
+      },
+      async () => {
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          Object.assign(disc, data, { updatedAt: new Date() })
+          saveMockDb()
+          return disc
+        }
+        return null
+      }
+    )
+  },
+
+  async deleteDiscussion(id: string, communityId?: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.id === id)?.communityId
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          const updatedList = current.filter((d: any) => d.id !== id)
+          await DataStore._saveDiscussionsForCommunity(commId, updatedList)
+        }
+        if ((globalThis as any).__mockDiscussions) {
+          (globalThis as any).__mockDiscussions = (globalThis as any).__mockDiscussions.filter((x: any) => x.id !== id)
+        }
+        if ((globalThis as any).__mockDiscussionReplies) {
+          (globalThis as any).__mockDiscussionReplies = (globalThis as any).__mockDiscussionReplies.filter((r: any) => r.discussionId !== id)
+        }
+        saveMockDb()
+        return { success: true }
+      },
+      async () => {
+        if ((globalThis as any).__mockDiscussions) {
+          (globalThis as any).__mockDiscussions = (globalThis as any).__mockDiscussions.filter((x: any) => x.id !== id)
+        }
+        if ((globalThis as any).__mockDiscussionReplies) {
+          (globalThis as any).__mockDiscussionReplies = (globalThis as any).__mockDiscussionReplies.filter((r: any) => r.discussionId !== id)
+        }
+        saveMockDb()
+        return { success: true }
+      }
+    )
+  },
+
+  async togglePinDiscussion(id: string, communityId?: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.id === id)?.communityId
+        let target: any = null
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          target = current.find((d: any) => d.id === id)
+          if (target) {
+            target.isPinned = !target.isPinned
+            target.updatedAt = new Date().toISOString()
+            await DataStore._saveDiscussionsForCommunity(commId, current)
+          }
+        }
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          disc.isPinned = !disc.isPinned
+          disc.updatedAt = new Date()
+          saveMockDb()
+          if (!target) target = disc
+        }
+        return target
+      },
+      async () => {
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          disc.isPinned = !disc.isPinned
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
+      }
+    )
+  },
+
+  async toggleCloseDiscussion(id: string, communityId?: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.id === id)?.communityId
+        let target: any = null
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          target = current.find((d: any) => d.id === id)
+          if (target) {
+            target.isClosed = !target.isClosed
+            target.updatedAt = new Date().toISOString()
+            await DataStore._saveDiscussionsForCommunity(commId, current)
+          }
+        }
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          disc.isClosed = !disc.isClosed
+          disc.updatedAt = new Date()
+          saveMockDb()
+          if (!target) target = disc
+        }
+        return target
+      },
+      async () => {
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === id)
+        if (disc) {
+          disc.isClosed = !disc.isClosed
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
+      }
+    )
+  },
+
+  async toggleLikeDiscussion(userId: string, discussionId: string, communityId?: string) {
+    syncMockDb()
+    return withMutationFallback(
+      async () => {
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.id === discussionId)?.communityId
+        let target: any = null
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          target = current.find((d: any) => d.id === discussionId)
+          if (target) {
+            if (!Array.isArray(target.likes)) target.likes = []
+            const idx = target.likes.indexOf(userId)
+            if (idx !== -1) {
+              target.likes.splice(idx, 1)
+            } else {
+              target.likes.push(userId)
             }
-          })
-        } catch (_) {}
-        const list = (globalThis as any).__mockDiscussions || []
-        const disc = list.find((x: any) => x.id === id)
-        if (disc) {
-          Object.assign(disc, data, { updatedAt: new Date() })
-          saveMockDb()
-          return disc
+            target.likesCount = target.likes.length
+            target.updatedAt = new Date().toISOString()
+            await DataStore._saveDiscussionsForCommunity(commId, current)
+          }
         }
-        return null
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          if (!Array.isArray(disc.likes)) disc.likes = []
+          const idx = disc.likes.indexOf(userId)
+          if (idx !== -1) {
+            disc.likes.splice(idx, 1)
+          } else {
+            disc.likes.push(userId)
+          }
+          disc.likesCount = disc.likes.length
+          disc.updatedAt = new Date()
+          saveMockDb()
+          if (!target) target = disc
+        }
+        return target
       },
       async () => {
         const list = (globalThis as any).__mockDiscussions || []
-        const disc = list.find((x: any) => x.id === id)
+        const disc = list.find((x: any) => x.id === discussionId)
         if (disc) {
-          Object.assign(disc, data, { updatedAt: new Date() })
+          if (!Array.isArray(disc.likes)) disc.likes = []
+          const idx = disc.likes.indexOf(userId)
+          if (idx !== -1) {
+            disc.likes.splice(idx, 1)
+          } else {
+            disc.likes.push(userId)
+          }
+          disc.likesCount = disc.likes.length
+          disc.updatedAt = new Date()
           saveMockDb()
           return disc
         }
@@ -10030,314 +10160,283 @@ export const DataStore = {
     )
   },
 
-  async deleteDiscussion(id: string) {
+  async createDiscussionReply(authorId: string, discussionId: string, content: string, communityId?: string) {
+    syncMockDb()
+    const authorUser = await DataStore.findUserById(authorId)
+    const authorName = authorUser ? authorUser.name : 'Anggota Komunitas'
+    const authorImage = authorUser ? authorUser.image : null
+
+    const newReply = {
+      id: `reply-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      discussionId,
+      authorId,
+      authorName,
+      author: {
+        id: authorId,
+        name: authorName,
+        image: authorImage
+      },
+      content,
+      helpfulCount: 0,
+      helpfulVotes: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    return withMutationFallback(
+      async () => {
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.id === discussionId)?.communityId
+        let targetDisc: any = null
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          targetDisc = current.find((d: any) => d.id === discussionId)
+          if (targetDisc) {
+            if (!Array.isArray(targetDisc.replies)) targetDisc.replies = []
+            targetDisc.replies.push(newReply)
+            targetDisc.repliesCount = targetDisc.replies.length
+            targetDisc.updatedAt = new Date().toISOString()
+            await DataStore._saveDiscussionsForCommunity(commId, current)
+          }
+        }
+
+        if (!(globalThis as any).__mockDiscussionReplies) {
+          (globalThis as any).__mockDiscussionReplies = []
+        }
+        ;(globalThis as any).__mockDiscussionReplies.push(newReply)
+
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          if (!Array.isArray(disc.replies)) disc.replies = []
+          disc.replies.push(newReply)
+          disc.repliesCount = disc.replies.length
+          disc.updatedAt = new Date()
+          if (!targetDisc) targetDisc = disc
+        }
+        saveMockDb()
+
+        // Send notification to discussion owner if reply is by another user
+        try {
+          if (targetDisc && targetDisc.authorId !== authorId) {
+            await DataStore.createNotification(
+              targetDisc.authorId,
+              'DISCUSSION_REPLY',
+              'Balasan Baru pada Diskusi Anda',
+              `${authorName} menanggapi diskusi Anda: "${targetDisc.title}"`,
+              `/community/${targetDisc.communityId}?tab=diskusi&topic=${discussionId}`
+            )
+          }
+        } catch (err) {
+          console.error("Error creating discussion reply notification:", err)
+        }
+
+        return newReply
+      },
+      async () => {
+        if (!(globalThis as any).__mockDiscussionReplies) {
+          (globalThis as any).__mockDiscussionReplies = []
+        }
+        ;(globalThis as any).__mockDiscussionReplies.push(newReply)
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          if (!Array.isArray(disc.replies)) disc.replies = []
+          disc.replies.push(newReply)
+          disc.repliesCount = disc.replies.length
+          disc.updatedAt = new Date()
+        }
+        saveMockDb()
+        return newReply
+      }
+    )
+  },
+
+  async deleteDiscussionReply(id: string, communityId?: string) {
     syncMockDb()
     return withMutationFallback(
       async () => {
-        try {
-          await (db as any).discussion.delete({ where: { id } })
-          return { success: true }
-        } catch (_) {}
-        if ((globalThis as any).__mockDiscussions) {
-          (globalThis as any).__mockDiscussions = (globalThis as any).__mockDiscussions.filter((x: any) => x.id !== id)
-          saveMockDb()
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.replies?.some((r: any) => r.id === id))?.communityId
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          let modified = false
+          for (const d of current) {
+            if (Array.isArray(d.replies) && d.replies.some((r: any) => r.id === id)) {
+              d.replies = d.replies.filter((r: any) => r.id !== id)
+              d.repliesCount = d.replies.length
+              d.updatedAt = new Date().toISOString()
+              modified = true
+            }
+          }
+          if (modified) {
+            await DataStore._saveDiscussionsForCommunity(commId, current)
+          }
         }
+
+        if ((globalThis as any).__mockDiscussionReplies) {
+          (globalThis as any).__mockDiscussionReplies = (globalThis as any).__mockDiscussionReplies.filter((x: any) => x.id !== id)
+        }
+        const list = (globalThis as any).__mockDiscussions || []
+        for (const d of list) {
+          if (Array.isArray(d.replies) && d.replies.some((r: any) => r.id === id)) {
+            d.replies = d.replies.filter((r: any) => r.id !== id)
+            d.repliesCount = d.replies.length
+            d.updatedAt = new Date()
+          }
+        }
+        saveMockDb()
         return { success: true }
-      },
-      async () => {
-        if ((globalThis as any).__mockDiscussions) {
-          (globalThis as any).__mockDiscussions = (globalThis as any).__mockDiscussions.filter((x: any) => x.id !== id)
-          saveMockDb()
-        }
-        return { success: true }
-      }
-    )
-  },
-
-  async togglePinDiscussion(id: string) {
-    syncMockDb()
-    return withMutationFallback(
-      async () => {
-        try {
-          const d = await (db as any).discussion.findUnique({ where: { id } })
-          if (d) {
-            return await (db as any).discussion.update({
-              where: { id },
-              data: { isPinned: !d.isPinned },
-              include: { author: { select: { id: true, name: true, image: true } } }
-            })
-          }
-        } catch (_) {}
-        const list = (globalThis as any).__mockDiscussions || []
-        const disc = list.find((x: any) => x.id === id)
-        if (disc) {
-          disc.isPinned = !disc.isPinned
-          disc.updatedAt = new Date()
-          saveMockDb()
-          return disc
-        }
-        return null
-      },
-      async () => {
-        const list = (globalThis as any).__mockDiscussions || []
-        const disc = list.find((x: any) => x.id === id)
-        if (disc) {
-          disc.isPinned = !disc.isPinned
-          disc.updatedAt = new Date()
-          saveMockDb()
-          return disc
-        }
-        return null
-      }
-    )
-  },
-
-  async toggleCloseDiscussion(id: string) {
-    syncMockDb()
-    return withMutationFallback(
-      async () => {
-        try {
-          const d = await (db as any).discussion.findUnique({ where: { id } })
-          if (d) {
-            return await (db as any).discussion.update({
-              where: { id },
-              data: { isClosed: !d.isClosed },
-              include: { author: { select: { id: true, name: true, image: true } } }
-            })
-          }
-        } catch (_) {}
-        const list = (globalThis as any).__mockDiscussions || []
-        const disc = list.find((x: any) => x.id === id)
-        if (disc) {
-          disc.isClosed = !disc.isClosed
-          disc.updatedAt = new Date()
-          saveMockDb()
-          return disc
-        }
-        return null
-      },
-      async () => {
-        const list = (globalThis as any).__mockDiscussions || []
-        const disc = list.find((x: any) => x.id === id)
-        if (disc) {
-          disc.isClosed = !disc.isClosed
-          disc.updatedAt = new Date()
-          saveMockDb()
-          return disc
-        }
-        return null
-      }
-    )
-  },
-
-  async createDiscussionReply(authorId: string, discussionId: string, content: string) {
-    syncMockDb()
-    let createdReply: any = null
-
-    if (await isDbConnected()) {
-      try {
-        createdReply = await (db as any).discussionReply.create({
-          data: {
-            discussionId,
-            authorId,
-            content
-          },
-          include: {
-            author: { select: { id: true, name: true, image: true } }
-          }
-        })
-      } catch (_) {}
-    }
-
-    if (!createdReply) {
-      const newReply = {
-        id: `reply-${Date.now()}`,
-        discussionId,
-        authorId,
-        content,
-        helpfulCount: 0,
-        helpfulVotes: '[]',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-      if (!(globalThis as any).__mockDiscussionReplies) {
-        (globalThis as any).__mockDiscussionReplies = []
-      }
-      ;(globalThis as any).__mockDiscussionReplies.push(newReply)
-      saveMockDb()
-
-      const u = globalMockUsers.find(x => x.id === authorId)
-      createdReply = {
-        ...newReply,
-        author: {
-          id: authorId,
-          name: u ? u.name : 'Anggota Komunitas',
-          image: u ? u.image : null
-        }
-      }
-    }
-
-    // Trigger Notification Dispatch to discussion owner
-    try {
-      let discussion: any = null
-      if (await isDbConnected()) {
-        try {
-          discussion = await (db as any).discussion.findUnique({
-            where: { id: discussionId }
-          })
-        } catch (_) {}
-      }
-      if (!discussion) {
-        const list = (globalThis as any).__mockDiscussions || []
-        discussion = list.find((x: any) => x.id === discussionId)
-      }
-
-      if (discussion && discussion.authorId !== authorId) {
-        const replier = await DataStore.findUserById(authorId)
-        const replierName = replier ? replier.name : 'Seseorang'
-        
-        await DataStore.createNotification(
-          discussion.authorId,
-          'DISCUSSION_REPLY',
-          'Balasan Baru pada Diskusi Anda',
-          `${replierName} menanggapi diskusi Anda: "${discussion.title}"`,
-          `/community/${discussion.communityId}?tab=diskusi&topic=${discussionId}`
-        )
-      }
-    } catch (err) {
-      console.error("Error creating discussion reply notification:", err)
-    }
-
-    return createdReply
-  },
-
-  async deleteDiscussionReply(id: string) {
-    return withMutationFallback(
-      async () => {
-        await (db as any).discussionReply.delete({ where: { id } })
-                return { success: true }
       },
       async () => {
         if ((globalThis as any).__mockDiscussionReplies) {
-              ;(globalThis as any).__mockDiscussionReplies = (globalThis as any).__mockDiscussionReplies.filter((x: any) => x.id !== id)
-              }
-            return { success: true }
+          (globalThis as any).__mockDiscussionReplies = (globalThis as any).__mockDiscussionReplies.filter((x: any) => x.id !== id)
+        }
+        saveMockDb()
+        return { success: true }
       }
     )
   },
 
-  async toggleHelpfulReply(userId: string, id: string) {
+  async toggleHelpfulReply(userId: string, id: string, communityId?: string) {
+    syncMockDb()
     return withMutationFallback(
       async () => {
-        const reply = await (db as any).discussionReply.findUnique({ where: { id } })
-                if (reply) {
-                  let votes: string[] = []
-                  try {
-                    votes = JSON.parse(reply.helpfulVotes)
-                  } catch (_) {}
-                  
-                  if (votes.includes(userId)) {
-                    votes = votes.filter(x => x !== userId)
-                  } else {
-                    votes.push(userId)
-                  }
-                  return await (db as any).discussionReply.update({
-                    where: { id },
-                    data: {
-                      helpfulCount: votes.length,
-                      helpfulVotes: JSON.stringify(votes)
-                    }
-                  })
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.replies?.some((r: any) => r.id === id))?.communityId
+        let targetReply: any = null
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          for (const d of current) {
+            if (Array.isArray(d.replies)) {
+              const r = d.replies.find((rep: any) => rep.id === id)
+              if (r) {
+                let votes: string[] = Array.isArray(r.helpfulVotes) ? r.helpfulVotes : []
+                if (typeof r.helpfulVotes === 'string') {
+                  try { votes = JSON.parse(r.helpfulVotes) } catch (_) {}
                 }
+                if (votes.includes(userId)) {
+                  votes = votes.filter((x: string) => x !== userId)
+                } else {
+                  votes.push(userId)
+                }
+                r.helpfulVotes = votes
+                r.helpfulCount = votes.length
+                r.updatedAt = new Date().toISOString()
+                targetReply = r
+              }
+            }
+          }
+          if (targetReply) {
+            await DataStore._saveDiscussionsForCommunity(commId, current)
+          }
+        }
+
+        const repList = (globalThis as any).__mockDiscussionReplies || []
+        const r = repList.find((x: any) => x.id === id)
+        if (r) {
+          let votes: string[] = Array.isArray(r.helpfulVotes) ? r.helpfulVotes : []
+          if (typeof r.helpfulVotes === 'string') {
+            try { votes = JSON.parse(r.helpfulVotes) } catch (_) {}
+          }
+          if (votes.includes(userId)) {
+            votes = votes.filter((x: string) => x !== userId)
+          } else {
+            votes.push(userId)
+          }
+          r.helpfulVotes = votes
+          r.helpfulCount = votes.length
+          r.updatedAt = new Date()
+          if (!targetReply) targetReply = r
+        }
+        saveMockDb()
+        return targetReply
       },
       async () => {
-        const list = (globalThis as any).__mockDiscussionReplies || []
-            const r = list.find((x: any) => x.id === id)
-            if (r) {
-              let votes: string[] = []
-              try {
-                votes = typeof r.helpfulVotes === 'string' ? JSON.parse(r.helpfulVotes) : (r.helpfulVotes || [])
-              } catch (_) {}
-              
-              if (votes.includes(userId)) {
-                votes = votes.filter(x => x !== userId)
-              } else {
-                votes.push(userId)
-              }
-              r.helpfulVotes = JSON.stringify(votes)
-              r.helpfulCount = votes.length
-              r.updatedAt = new Date()
-              return r
-            }
-            return null
+        const repList = (globalThis as any).__mockDiscussionReplies || []
+        const r = repList.find((x: any) => x.id === id)
+        if (r) {
+          let votes: string[] = Array.isArray(r.helpfulVotes) ? r.helpfulVotes : []
+          if (typeof r.helpfulVotes === 'string') {
+            try { votes = JSON.parse(r.helpfulVotes) } catch (_) {}
+          }
+          if (votes.includes(userId)) {
+            votes = votes.filter((x: string) => x !== userId)
+          } else {
+            votes.push(userId)
+          }
+          r.helpfulVotes = votes
+          r.helpfulCount = votes.length
+          r.updatedAt = new Date()
+          saveMockDb()
+          return r
+        }
+        return null
       }
     )
   },
 
-  async selectBestReply(discussionId: string, replyId: string) {
+  async selectBestReply(discussionId: string, replyId: string, communityId?: string) {
     syncMockDb()
-    let updatedDisc: any = null
+    return withMutationFallback(
+      async () => {
+        const commId = communityId || ((globalThis as any).__mockDiscussions || []).find((d: any) => d.id === discussionId)?.communityId
+        let targetDisc: any = null
+        let replyObj: any = null
+        if (commId) {
+          const current = await DataStore.getDiscussions(commId)
+          targetDisc = current.find((d: any) => d.id === discussionId)
+          if (targetDisc) {
+            const wasBest = targetDisc.bestReplyId === replyId
+            targetDisc.bestReplyId = wasBest ? null : replyId
+            targetDisc.updatedAt = new Date().toISOString()
+            await DataStore._saveDiscussionsForCommunity(commId, current)
 
-    // Find reply & discussion details first for notification context
-    let reply: any = null
-    let discussion: any = null
-    try {
-      if (await isDbConnected()) {
-        try {
-          reply = await (db as any).discussionReply.findUnique({ where: { id: replyId } })
-          discussion = await (db as any).discussion.findUnique({ where: { id: discussionId } })
-        } catch (_) {}
-      }
-      if (!reply) {
-        const list = (globalThis as any).__mockDiscussionReplies || []
-        reply = list.find((x: any) => x.id === replyId)
-      }
-      if (!discussion) {
-        const list = (globalThis as any).__mockDiscussions || []
-        discussion = list.find((x: any) => x.id === discussionId)
-      }
-    } catch (_) {}
-
-    if (await isDbConnected()) {
-      try {
-        updatedDisc = await (db as any).discussion.update({
-          where: { id: discussionId },
-          data: { bestReplyId: replyId }
-        })
-      } catch (_) {}
-    }
-
-
-    if (!updatedDisc) {
-      const list = (globalThis as any).__mockDiscussions || []
-      const d = list.find((x: any) => x.id === discussionId)
-      if (d) {
-        d.bestReplyId = d.bestReplyId === replyId ? null : replyId
-        d.updatedAt = new Date()
-        saveMockDb()
-        updatedDisc = d
-      }
-    }
-
-    // Trigger Notification if best reply is selected (not removed)
-    try {
-      if (reply && discussion && reply.authorId !== discussion.authorId) {
-        const isCurrentlyBest = discussion.bestReplyId === replyId
-        if (!isCurrentlyBest) {
-          await DataStore.createNotification(
-            reply.authorId,
-            'BEST_REPLY_SELECTED',
-            'Jawaban Terbaik Terpilih! 🌟',
-            `Selamat! Jawaban Anda terpilih sebagai Jawaban Terbaik di diskusi: "${discussion.title}"`,
-            `/community/${discussion.communityId}?tab=diskusi&topic=${discussionId}`
-          )
+            if (!wasBest && Array.isArray(targetDisc.replies)) {
+              replyObj = targetDisc.replies.find((r: any) => r.id === replyId)
+            }
+          }
         }
-      }
-    } catch (err) {
-      console.error("Error creating best reply notification:", err)
-    }
 
-    return updatedDisc
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          const wasBest = disc.bestReplyId === replyId
+          disc.bestReplyId = wasBest ? null : replyId
+          disc.updatedAt = new Date()
+          saveMockDb()
+          if (!targetDisc) targetDisc = disc
+          if (!replyObj && !wasBest && Array.isArray(disc.replies)) {
+            replyObj = disc.replies.find((r: any) => r.id === replyId)
+          }
+        }
+
+        // Trigger Notification if best reply is newly selected
+        try {
+          if (replyObj && targetDisc && replyObj.authorId !== targetDisc.authorId) {
+            await DataStore.createNotification(
+              replyObj.authorId,
+              'BEST_REPLY_SELECTED',
+              'Jawaban Terbaik Terpilih! 🌟',
+              `Selamat! Jawaban Anda terpilih sebagai Jawaban Terbaik di diskusi: "${targetDisc.title}"`,
+              `/community/${targetDisc.communityId}?tab=diskusi&topic=${discussionId}`
+            )
+          }
+        } catch (err) {
+          console.error("Error creating best reply notification:", err)
+        }
+
+        return targetDisc
+      },
+      async () => {
+        const list = (globalThis as any).__mockDiscussions || []
+        const disc = list.find((x: any) => x.id === discussionId)
+        if (disc) {
+          disc.bestReplyId = disc.bestReplyId === replyId ? null : replyId
+          disc.updatedAt = new Date()
+          saveMockDb()
+          return disc
+        }
+        return null
+      }
+    )
   }
 }
 

@@ -58,7 +58,7 @@ export async function updateDiscussionAction(id: string, communityId: string, fo
       category,
       content,
       tags
-    })
+    }, communityId)
     revalidatePath(`/community/${communityId}`)
     return { success: true, discussion }
   } catch (e: any) {
@@ -71,7 +71,7 @@ export async function deleteDiscussionAction(id: string, communityId: string) {
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const res = await DataStore.deleteDiscussion(id)
+    const res = await DataStore.deleteDiscussion(id, communityId)
     revalidatePath(`/community/${communityId}`)
     return res
   } catch (e: any) {
@@ -84,7 +84,7 @@ export async function togglePinDiscussionAction(id: string, communityId: string)
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const discussion = await DataStore.togglePinDiscussion(id)
+    const discussion = await DataStore.togglePinDiscussion(id, communityId)
     revalidatePath(`/community/${communityId}`)
     return { success: true, discussion }
   } catch (e: any) {
@@ -97,7 +97,7 @@ export async function toggleCloseDiscussionAction(id: string, communityId: strin
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const discussion = await DataStore.toggleCloseDiscussion(id)
+    const discussion = await DataStore.toggleCloseDiscussion(id, communityId)
     revalidatePath(`/community/${communityId}`)
     return { success: true, discussion }
   } catch (e: any) {
@@ -111,7 +111,7 @@ export async function createDiscussionReplyAction(discussionId: string, communit
   if (!content) return { error: 'Isi balasan wajib diisi.' }
 
   try {
-    const reply = await DataStore.createDiscussionReply(user.id, discussionId, content)
+    const reply = await DataStore.createDiscussionReply(user.id, discussionId, content, communityId)
     revalidatePath(`/community/${communityId}`)
     return { success: true, reply }
   } catch (e: any) {
@@ -124,7 +124,7 @@ export async function deleteDiscussionReplyAction(id: string, communityId: strin
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const res = await DataStore.deleteDiscussionReply(id)
+    const res = await DataStore.deleteDiscussionReply(id, communityId)
     revalidatePath(`/community/${communityId}`)
     return res
   } catch (e: any) {
@@ -137,7 +137,7 @@ export async function toggleHelpfulReplyAction(id: string, communityId: string) 
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const reply = await DataStore.toggleHelpfulReply(user.id, id)
+    const reply = await DataStore.toggleHelpfulReply(user.id, id, communityId)
     revalidatePath(`/community/${communityId}`)
     return { success: true, reply }
   } catch (e: any) {
@@ -150,7 +150,7 @@ export async function selectBestReplyAction(discussionId: string, replyId: strin
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const discussion = await DataStore.selectBestReply(discussionId, replyId)
+    const discussion = await DataStore.selectBestReply(discussionId, replyId, communityId)
     revalidatePath(`/community/${communityId}`)
     return { success: true, discussion }
   } catch (e: any) {
@@ -163,10 +163,11 @@ export async function toggleLikeDiscussionAction(discussionId: string, community
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const discussion = await DataStore.toggleLikeDiscussion(user.id, discussionId)
+    const discussion = await DataStore.toggleLikeDiscussion(user.id, discussionId, communityId)
     revalidatePath(`/community/${communityId}`)
     return { success: true, discussion }
   } catch (e: any) {
     return { error: e.message || 'Gagal menyukai diskusi.' }
   }
 }
+
