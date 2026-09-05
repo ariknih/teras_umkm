@@ -11,6 +11,22 @@ function slugify(text: string) {
     .trim()
 }
 
+function formatRegency(city: string): string {
+  if (!city) return 'Kota'
+  let formatted = city.trim()
+  if (formatted.startsWith('Administrasi ')) {
+    formatted = formatted.replace('Administrasi ', '').trim()
+  }
+  if (formatted.includes('Kota') || formatted.includes('Kabupaten')) {
+    return formatted
+  }
+  // Check common special cases like Jakarta Pusat/Selatan/dll
+  if (/^(Jakarta|Kepulauan Seribu)/i.test(formatted)) {
+    return formatted
+  }
+  return `Kota ${formatted}`
+}
+
 export async function GET(req: NextRequest) {
   const lat = req.nextUrl.searchParams.get('lat')
   const lng = req.nextUrl.searchParams.get('lng')
@@ -20,8 +36,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    // 1. Query Nominatim OpenStreetMap for reverse geocoding
-    const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&addressdetails=1`
+    // 1. Direct High-Precision GPS Reverse Geocoding via OpenStreetMap Nominatim (Same engine as onboarding)
+    const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1`
     const geoRes = await fetch(nominatimUrl, {
       headers: {
         'User-Agent': 'SalokaUMKMApp/1.0 (contact@saloka.id)'
@@ -36,17 +52,42 @@ export async function GET(req: NextRequest) {
     const geoData = await geoRes.json()
     const address = geoData.address || {}
 
-    const village = address.village || address.suburb || address.quarter || address.neighbourhood || ''
-    const district = address.district || address.subdistrict || address.city_district || address.suburb || ''
-    const city = address.city || address.county || address.town || address.municipality || 'Jakarta Pusat'
-    const province = address.state || address.province || 'DKI Jakarta'
-    const postalCode = address.postcode || ''
+    // Extract exact Indonesian administrative hierarchy
+    const village =
+      address.suburb ||
+      address.village ||
+      address.quarter ||
+      address.neighbourhood ||
+      address.residential ||
+      address.city_district ||
+      address.district ||
+      ''
 
-    // 2. Resolve to official Indonesian Kelurahan data via kodepos
-    const searchQuery = village || postalCode || district || city
-    if (searchQuery) {
+    const district =
+      address.district ||
+      address.city_district ||
+      address.subdistrict ||
+      address.county ||
+      village
+
+    const rawCity =
+      address.city ||
+      address.town ||
+      address.municipality ||
+      address.county ||
+      address.regency ||
+      'Kota Bandung'
+
+    const province = address.state || address.province || 'Jawa Barat'
+    const postalCode = address.postcode || ''
+    const kota = formatRegency(rawCity)
+
+    // 2. Validate against kodepos only with strict city/province filtering to prevent cross-province mismatch
+    let matchedKelurahan: Kelurahan | null = null
+
+    if (village) {
       try {
-        const kodeposRes = await fetch(`https://kodepos.vercel.app/search?q=${encodeURIComponent(searchQuery)}`, {
+        const kodeposRes = await fetch(`https://kodepos.vercel.app/search?q=${encodeURIComponent(village)}`, {
           headers: { 'Accept': 'application/json' },
           next: { revalidate: 86400 }
         })
@@ -55,26 +96,33 @@ export async function GET(req: NextRequest) {
           const kdData = await kodeposRes.json()
           const list = kdData?.data || []
           if (Array.isArray(list) && list.length > 0) {
-            // Find best match
-            const match = list.find((item: any) => 
-              (village && item.village.toLowerCase() === village.toLowerCase()) ||
-              (postalCode && String(item.code) === postalCode)
-            ) || list[0]
+            const cleanCity = rawCity.toLowerCase().replace(/^(kota|kabupaten)\s+/, '').trim()
+            const cleanProv = province.toLowerCase().replace(/^provinsi\s+/, '').trim()
 
-            const kel: Kelurahan = {
-              id: `kel-${match.code}-${slugify(match.village)}`,
-              name: match.village,
-              kecamatan: match.district,
-              kota: match.regency.startsWith('Administrasi ') 
-                ? match.regency.replace('Administrasi ', '') 
-                : match.regency.includes('Kota') || match.regency.includes('Kabupaten') 
-                ? match.regency 
-                : `Kota ${match.regency}`,
-              province: match.province,
-              postalCode: String(match.code),
-              itemCount: 18
+            // Strict match: village MUST match AND (regency matches city OR province matches)
+            const strictMatch = list.find((item: any) => {
+              const itemVillage = (item.village || '').toLowerCase()
+              const itemRegency = (item.regency || '').toLowerCase()
+              const itemProvince = (item.province || '').toLowerCase()
+
+              const isSameVillage = itemVillage === village.toLowerCase() || itemVillage.includes(village.toLowerCase())
+              const isSameCity = cleanCity && (itemRegency.includes(cleanCity) || cleanCity.includes(itemRegency))
+              const isSameProv = cleanProv && (itemProvince.includes(cleanProv) || cleanProv.includes(itemProvince))
+
+              return isSameVillage && (isSameCity || isSameProv)
+            })
+
+            if (strictMatch) {
+              matchedKelurahan = {
+                id: `kel-${strictMatch.code}-${slugify(strictMatch.village)}`,
+                name: strictMatch.village,
+                kecamatan: strictMatch.district,
+                kota: formatRegency(strictMatch.regency),
+                province: strictMatch.province,
+                postalCode: String(strictMatch.code),
+                itemCount: 18
+              }
             }
-            return NextResponse.json({ success: true, kelurahan: kel, source: 'gps' })
           }
         }
       } catch (err) {
@@ -82,18 +130,23 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Direct fallback from OSM address details
-    const directKel: Kelurahan = {
-      id: `kel-${postalCode || slugify(village || city)}`,
-      name: village || district || city,
-      kecamatan: district || city,
-      kota: city,
+    // 3. Fallback to direct Nominatim ground truth (accurate to GPS coordinates)
+    const finalKelurahan: Kelurahan = matchedKelurahan || {
+      id: `kel-${postalCode || slugify(village || rawCity)}`,
+      name: village || district || rawCity,
+      kecamatan: district,
+      kota: kota,
       province: province,
-      postalCode: postalCode || '10110',
-      itemCount: 15
+      postalCode: postalCode || '40111',
+      itemCount: 16
     }
 
-    return NextResponse.json({ success: true, kelurahan: directKel, source: 'gps-direct' })
+    return NextResponse.json({
+      success: true,
+      kelurahan: finalKelurahan,
+      source: 'gps',
+      coordinates: { lat, lng }
+    })
   } catch (error: any) {
     console.error('Reverse geocode error:', error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
