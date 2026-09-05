@@ -270,6 +270,21 @@ body {
   scrollbar-width: none;
 }
 
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--outline-variant) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--outline-variant);
+  border-radius: 9999px;
+}
+
 /* Modern clean card shadow */
 .glow-card {
   box-shadow: 0px 4px 12px rgba(11, 28, 48, 0.03);

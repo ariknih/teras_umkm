@@ -11,7 +11,7 @@ export default async function CmsAdminLayout({ children }: { children: React.Rea
   return (
     <AdminShell
       allowedKeys={visibleMenus(session).map((m) => m.key)}
-      currentUser={{ name: session.user.name, email: session.user.email }}
+      currentUser={{ name: session.user.name, email: session.user.email, isSuperAdmin: session.isSuperAdmin }}
     >
       {children}
     </AdminShell>
