@@ -19,6 +19,10 @@ import {
   Megaphone,
   LifeBuoy,
   ScrollText,
+  Briefcase,
+  LayoutGrid,
+  FolderOpen,
+  MonitorCheck,
   type LucideIcon
 } from 'lucide-react'
 
@@ -67,6 +71,17 @@ export const CATEGORIES = [
   'KONTEN & EDUKASI',
   'SISTEM'
 ] as const
+
+/** Icon shown on each category's sidebar header. */
+export const CATEGORY_ICONS: Record<(typeof CATEGORIES)[number], LucideIcon> = {
+  'PENGGUNA & MERCHANT': Users,
+  KATALOG: Briefcase,
+  SNACKBOX: LayoutGrid,
+  KEUANGAN: Coins,
+  KOMUNITAS: Building2,
+  'KONTEN & EDUKASI': FolderOpen,
+  SISTEM: MonitorCheck
+}
 
 export const MENUS: Menu[] = [
   {
