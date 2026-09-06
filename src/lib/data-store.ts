@@ -5167,10 +5167,10 @@ export const DataStore = {
                 
                 const community = await db.community.findUnique({ where: { id: communityId } })
                 if (!community) return { error: 'Komunitas tidak ditemukan.' }
+                const userObj = await db.user.findUnique({ where: { id: userId } })
         
                 // KYC check if community requires KYC
                 if ((community as any).isKycRequired) {
-                  const userObj = await db.user.findUnique({ where: { id: userId } })
                   const isKycOk = userObj && (userObj.kycStatus === 'VERIFIED' || userObj.kycStatus === 'APPROVED')
                   if (!isKycOk) {
                     return { error: 'Komunitas ini mewajibkan verifikasi KYC (KTP/Selfie) untuk bergabung.', needsKyc: true }
