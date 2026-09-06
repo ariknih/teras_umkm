@@ -432,15 +432,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             {(() => {
               const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (config?.perkumpulanTier === 'PREMIUM' || (config?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
               const coopTier = config?.coopTier || (isKoperasi ? 'PRO' : 'BASIC')
-              let effectiveFee = Number(community?.joinFee || 0)
-              if (effectiveFee === 0) {
-                if (isKoperasi) {
-                  effectiveFee = coopTier === 'PRO' ? 399000 : coopTier === 'PLUS' ? 199000 : 99000
-                } else if (isPerkumpulanPrem) {
-                  effectiveFee = 200000
-                }
-              }
-              const isFree = community?.type === 'PERKUMPULAN' && !isPerkumpulanPrem && effectiveFee === 0
+              const joinFee = Number(community?.joinFee || 0)
 
               return (
                 <>
@@ -463,13 +455,13 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                           : 'PERKUMPULAN REGULER'
                     )}
                   </span>
-                  {isFree ? (
+                  {joinFee === 0 ? (
                     <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-emerald-200/80 shadow-2xs font-sora">
                       Gratis
                     </span>
                   ) : (
                     <span className="inline-block px-3 py-1 bg-amber-50 text-amber-900 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-amber-300 shadow-2xs font-sora">
-                      Berbayar • Rp{effectiveFee.toLocaleString('id-ID')}
+                      Berbayar • Rp{joinFee.toLocaleString('id-ID')}
                     </span>
                   )}
                 </>

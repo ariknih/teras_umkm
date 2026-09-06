@@ -576,16 +576,7 @@ export default function CommunityDirectoryClient({
                               const parsedConfig = c.landingPageConfig ? (typeof c.landingPageConfig === 'string' ? (() => { try { return JSON.parse(c.landingPageConfig) } catch(_) { return {} } })() : c.landingPageConfig) : {}
                               const isPerkumpulanPrem = c.type === 'PERKUMPULAN' && (parsedConfig?.perkumpulanTier === 'PREMIUM' || (parsedConfig?.activationFeePaid ?? 0) > 0 || c.category === 'PAID')
                               const itemCoopTier = parsedConfig?.coopTier || 'BASIC'
-
-                              let effectiveJoinFee = Number(c.joinFee || 0)
-                              if (effectiveJoinFee === 0) {
-                                if (c.type === 'KOPERASI') {
-                                  effectiveJoinFee = itemCoopTier === 'PRO' ? 399000 : itemCoopTier === 'PLUS' ? 199000 : 99000
-                                } else if (isPerkumpulanPrem) {
-                                  effectiveJoinFee = 200000
-                                }
-                              }
-                              const isFree = c.type === 'PERKUMPULAN' && !isPerkumpulanPrem && effectiveJoinFee === 0
+                              const joinFee = Number(c.joinFee || 0)
 
                               return (
                                 <>
@@ -608,13 +599,13 @@ export default function CommunityDirectoryClient({
                                   </span>
 
                                   {/* Price Badge */}
-                                  {isFree ? (
+                                  {joinFee === 0 ? (
                                     <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-emerald-500/10 border-emerald-500/35 text-emerald-600">
                                       Gratis
                                     </span>
                                   ) : (
                                     <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-amber-500/10 border-amber-500/35 text-amber-700">
-                                      Berbayar • Rp{effectiveJoinFee.toLocaleString('id-ID')}
+                                      Berbayar • Rp{joinFee.toLocaleString('id-ID')}
                                     </span>
                                   )}
                                 </>
