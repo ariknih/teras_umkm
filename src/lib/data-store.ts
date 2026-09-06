@@ -4993,6 +4993,7 @@ export const DataStore = {
                   data: {
                     name: data.name,
                     type: data.type as any,
+                    category: data.type === 'KOPERASI' ? 'KOPERASI' : (Number(data.joinFee || 0) > 0 ? 'PAID' : 'FREE'),
                     description: data.description || '',
                     aktaNotaris: data.aktaNotaris || null,
                     nomorAhu: data.nomorAhu || null,
@@ -5035,6 +5036,7 @@ export const DataStore = {
               id: `community-${Date.now()}`,
               name: data.name,
               type: data.type,
+              category: data.type === 'KOPERASI' ? 'KOPERASI' : (Number(data.joinFee || 0) > 0 ? 'PAID' : 'FREE'),
               description: data.description || '',
               aktaNotaris: data.aktaNotaris || null,
               nomorAhu: data.nomorAhu || null,
