@@ -573,41 +573,53 @@ export default function CommunityDirectoryClient({
                           <h3 className="font-sora text-sm font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
                           <div className="flex items-center gap-1.5 flex-wrap mt-1">
                             {(() => {
-                              const parsedConfig = c.landingPageConfig ? (typeof c.landingPageConfig === 'string' ? JSON.parse(c.landingPageConfig) : c.landingPageConfig) : {}
+                              const parsedConfig = c.landingPageConfig ? (typeof c.landingPageConfig === 'string' ? (() => { try { return JSON.parse(c.landingPageConfig) } catch(_) { return {} } })() : c.landingPageConfig) : {}
                               const isPerkumpulanPrem = c.type === 'PERKUMPULAN' && (parsedConfig?.perkumpulanTier === 'PREMIUM' || (parsedConfig?.activationFeePaid ?? 0) > 0 || c.category === 'PAID')
                               const itemCoopTier = parsedConfig?.coopTier || 'BASIC'
 
+                              let effectiveJoinFee = Number(c.joinFee || 0)
+                              if (effectiveJoinFee === 0) {
+                                if (c.type === 'KOPERASI') {
+                                  effectiveJoinFee = itemCoopTier === 'PRO' ? 399000 : itemCoopTier === 'PLUS' ? 199000 : 99000
+                                } else if (isPerkumpulanPrem) {
+                                  effectiveJoinFee = 200000
+                                }
+                              }
+                              const isFree = c.type === 'PERKUMPULAN' && !isPerkumpulanPrem && effectiveJoinFee === 0
+
                               return (
-                                <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider ${
-                                  c.type === 'KOPERASI'
-                                    ? itemCoopTier === 'PRO'
-                                      ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                                      : itemCoopTier === 'PLUS'
-                                        ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
+                                <>
+                                  <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider ${
+                                    c.type === 'KOPERASI'
+                                      ? itemCoopTier === 'PRO'
+                                        ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
+                                        : itemCoopTier === 'PLUS'
+                                          ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
+                                          : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
+                                      : isPerkumpulanPrem
+                                        ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
                                         : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
-                                    : isPerkumpulanPrem
-                                      ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                                      : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
-                                }`}>
-                                  {c.type === 'KOPERASI'
-                                    ? `KOPERASI ${itemCoopTier}`
-                                    : isPerkumpulanPrem
-                                      ? 'PERKUMPULAN PREMIUM'
-                                      : 'PERKUMPULAN REGULER'}
-                                </span>
+                                  }`}>
+                                    {c.type === 'KOPERASI'
+                                      ? `KOPERASI ${itemCoopTier}`
+                                      : isPerkumpulanPrem
+                                        ? 'PERKUMPULAN PREMIUM'
+                                        : 'PERKUMPULAN REGULER'}
+                                  </span>
+
+                                  {/* Price Badge */}
+                                  {isFree ? (
+                                    <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-emerald-500/10 border-emerald-500/35 text-emerald-600">
+                                      Gratis
+                                    </span>
+                                  ) : (
+                                    <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-amber-500/10 border-amber-500/35 text-amber-700">
+                                      Berbayar • Rp{effectiveJoinFee.toLocaleString('id-ID')}
+                                    </span>
+                                  )}
+                                </>
                               )
                             })()}
-
-                            {/* Price Badge */}
-                            {Number(c.joinFee || 0) === 0 ? (
-                              <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-emerald-500/10 border-emerald-500/35 text-emerald-600">
-                                Gratis
-                              </span>
-                            ) : (
-                              <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-amber-500/10 border-amber-500/35 text-amber-700">
-                                Berbayar • Rp{Number(c.joinFee || 0).toLocaleString('id-ID')}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>

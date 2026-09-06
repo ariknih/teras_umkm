@@ -2078,19 +2078,38 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     }
   }
 
+  const getEffectiveJoinFee = () => {
+    const isKop = community?.type === 'KOPERASI'
+    const isPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
+    const coopTier = parsedCommunityConfig?.coopTier || 'BASIC'
+    let fee = Number(community?.joinFee || 0)
+    if (fee === 0) {
+      if (isKop) {
+        fee = coopTier === 'PRO' ? 399000 : coopTier === 'PLUS' ? 199000 : 99000
+      } else if (isPrem) {
+        fee = 200000
+      }
+    }
+    return fee
+  }
+
   const handleJoin = async () => {
     if (!user) {
       router.push('/auth?tab=register')
       return
     }
 
-    const joinFee = Number(community?.joinFee || 0)
-    if (joinFee > 0 && !isMember) {
+    const effectiveFee = getEffectiveJoinFee()
+    const isKop = community?.type === 'KOPERASI'
+    const isPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
+    const isFree = community?.type === 'PERKUMPULAN' && !isPrem && effectiveFee === 0
+
+    if (!isFree && !isMember) {
       setPaymentModalOpen(true)
       return
     }
 
-    // Free community join (joinFee === 0)
+    // Free community join (joinFee === 0 / Perkumpulan Reguler)
     startTransition(async () => {
       const res = await joinIndukCommunity(id, true)
       if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
@@ -2795,7 +2814,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-bold text-gray-700">Harga Masuk Komunitas</span>
                     <span className="text-base font-black text-[#0F5132] font-sora">
-                      Rp {Number(community?.joinFee || 0).toLocaleString('id-ID')}
+                      Rp {getEffectiveJoinFee().toLocaleString('id-ID')}
                     </span>
                   </div>
                   <p className="text-[10px] text-gray-500 font-medium">
