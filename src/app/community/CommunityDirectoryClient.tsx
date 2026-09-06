@@ -1,3 +1,18 @@
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
+import Image from 'next/image'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { GridSkeleton } from '@/components/ui/GhostSkeleton'
+import {
+  getIndukCommunities,
+  switchActiveIndukCommunityAction,
+  getGlobalKycSettingAction,
+  getUserCommunitiesWithRolesAction
+} from '@/app/actions/community'
+import { getCurrentUser } from '@/app/actions/auth'
 import { Shield, Users, PlusCircle, Search, ChevronRight, X, Loader2, MoreVertical, Star, Check } from 'lucide-react'
 import { goeyToast } from 'goey-toast'
 
