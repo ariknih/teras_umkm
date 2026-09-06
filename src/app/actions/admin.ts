@@ -4,6 +4,8 @@ import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { logAudit } from './audit'
 import { revalidatePath } from 'next/cache'
+import { invalidateCachePattern } from '@/lib/cache'
+import { extractYouTubeId, CERTIFICATE_TEMPLATE_TYPES, PROTECTED_CERTIFICATE_TEMPLATE_NAME } from '@/lib/lms-rules'
 import crypto from 'crypto'
 
 // Helper to check admin access
@@ -67,28 +69,60 @@ export async function updateUserRoleAndLevelAction(
 }
 
 // ─── COURSE ACTIONS ────────────────────────────────────────────────────────
-export async function addCourseAction(title: string, description: string, coverImage: string, accessRequired: string) {
-  await ensureAdmin()
-  try {
-    const course = await DataStore.addCourse(title, description, coverImage, accessRequired)
-    revalidatePath('/cms_admin', 'layout')
-    revalidatePath('/academy')
-    return { success: true, course }
-  } catch (e: any) {
-    return { error: e.message || 'Gagal menambahkan kelas.' }
+// Every academy mutation clears the `lms:` cache. The public course reads are
+// wrapped in a 300s cache that revalidatePath does not touch, so without this
+// a CMS edit stayed invisible on /academy for up to five minutes.
+async function revalidateAcademy(courseId?: string) {
+  await invalidateCachePattern('lms:')
+  revalidatePath('/cms_admin', 'layout')
+  revalidatePath('/academy')
+  if (courseId) revalidatePath(`/academy/course/${courseId}`)
+}
+
+function cleanCourseInput(title: string, description: string, price: number) {
+  const cleanTitle = (title || '').trim()
+  if (!cleanTitle) throw new Error('Judul kursus wajib diisi.')
+  return {
+    title: cleanTitle,
+    description: (description || '').trim(),
+    price: Math.max(0, Math.floor(Number(price) || 0)),
   }
 }
 
-export async function updateCourseAction(id: string, title: string, description: string, coverImage: string, accessRequired: string) {
+export async function addCourseAction(title: string, description: string, coverImage: string, accessRequired: string, price: number = 0, certificateTemplateId?: string | null, isPublished: boolean = true) {
   await ensureAdmin()
   try {
-    await DataStore.updateCourse(id, title, description, coverImage, accessRequired)
-    revalidatePath('/cms_admin', 'layout')
-    revalidatePath('/academy')
-    revalidatePath(`/academy/course/${id}`)
+    const clean = cleanCourseInput(title, description, price)
+    const course = await DataStore.addCourse(clean.title, clean.description, coverImage, accessRequired, clean.price, certificateTemplateId, isPublished)
+    await revalidateAcademy()
+    return { success: true, course }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menambahkan kursus.' }
+  }
+}
+
+// "Pasarkan" / "Tarik dari Pasar" — a standalone, immediate toggle in the CMS,
+// deliberately separate from updateCourseAction's staged edit-form save.
+export async function setCoursePublishedAction(id: string, isPublished: boolean) {
+  await ensureAdmin()
+  try {
+    await DataStore.setCoursePublished(id, isPublished)
+    await revalidateAcademy(id)
     return { success: true }
   } catch (e: any) {
-    return { error: e.message || 'Gagal memperbarui kelas.' }
+    return { error: e.message || 'Gagal mengubah status pemasaran kursus.' }
+  }
+}
+
+export async function updateCourseAction(id: string, title: string, description: string, coverImage: string, accessRequired: string, price: number = 0, certificateTemplateId?: string | null) {
+  await ensureAdmin()
+  try {
+    const clean = cleanCourseInput(title, description, price)
+    await DataStore.updateCourse(id, clean.title, clean.description, coverImage, accessRequired, clean.price, certificateTemplateId)
+    await revalidateAcademy(id)
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal memperbarui kursus.' }
   }
 }
 
@@ -96,51 +130,147 @@ export async function deleteCourseAction(id: string) {
   await ensureAdmin()
   try {
     await DataStore.deleteCourse(id)
-    revalidatePath('/cms_admin', 'layout')
-    revalidatePath('/academy')
+    await revalidateAcademy()
     return { success: true }
   } catch (e: any) {
-    return { error: e.message || 'Gagal menghapus kelas.' }
+    return { error: e.message || 'Gagal menghapus kursus.' }
   }
 }
 
-// ─── LESSON ACTIONS ────────────────────────────────────────────────────────
-export async function addLessonAction(
-  courseId: string,
-  title: string,
-  content: string,
-  videoUrl: string,
-  duration: number,
-  orderIndex: number
-) {
+// ─── CERTIFICATE TEMPLATE ACTIONS ──────────────────────────────────────────
+// Trust-boundary validation for `backgroundImage`: the CMS form already
+// crops/resizes/converts it client-side, but a caller bypassing the client
+// could send anything, so the server re-checks shape and caps the size.
+const MAX_TEMPLATE_IMAGE_BASE64_LENGTH = 3 * 1024 * 1024
+
+function cleanCertificateTemplateInput(name: string, type: string, backgroundImage: string) {
+  const cleanName = (name || '').trim()
+  if (!cleanName) throw new Error('Nama sertifikat wajib diisi.')
+  if (!CERTIFICATE_TEMPLATE_TYPES.includes(type as any)) throw new Error('Tipe sertifikat tidak valid.')
+  if (!backgroundImage || !backgroundImage.startsWith('data:image/')) throw new Error('Gambar sertifikat wajib diunggah.')
+  if (backgroundImage.length > MAX_TEMPLATE_IMAGE_BASE64_LENGTH) throw new Error('Ukuran gambar sertifikat terlalu besar.')
+  return { name: cleanName, type, backgroundImage }
+}
+
+export async function addCertificateTemplateAction(name: string, type: string, backgroundImage: string) {
   await ensureAdmin()
   try {
-    const lesson = await DataStore.addLesson(courseId, title, content, videoUrl, duration, orderIndex)
-    revalidatePath('/cms_admin', 'layout')
-    revalidatePath(`/academy/course/${courseId}`)
+    const clean = cleanCertificateTemplateInput(name, type, backgroundImage)
+    const template = await DataStore.addCertificateTemplate(clean.name, clean.type, clean.backgroundImage)
+    await revalidateAcademy()
+    return { success: true, template }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menambahkan template sertifikat.' }
+  }
+}
+
+export async function updateCertificateTemplateAction(id: string, name: string, type: string, backgroundImage: string) {
+  await ensureAdmin()
+  try {
+    const existing: any = await DataStore.getCertificateTemplateById(id)
+    if (existing?.name === PROTECTED_CERTIFICATE_TEMPLATE_NAME) {
+      await ensureSuperAdmin()
+    }
+    const clean = cleanCertificateTemplateInput(name, type, backgroundImage)
+    await DataStore.updateCertificateTemplate(id, clean.name, clean.type, clean.backgroundImage)
+    await revalidateAcademy()
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal memperbarui template sertifikat.' }
+  }
+}
+
+export async function deleteCertificateTemplateAction(id: string) {
+  await ensureAdmin()
+  try {
+    const existing: any = await DataStore.getCertificateTemplateById(id)
+    if (existing?.name === PROTECTED_CERTIFICATE_TEMPLATE_NAME) {
+      throw new Error('Template bawaan Saloka tidak dapat dihapus.')
+    }
+    await DataStore.deleteCertificateTemplate(id)
+    await revalidateAcademy()
+    return { success: true }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal menghapus template sertifikat.' }
+  }
+}
+
+// ─── LESSON (MODULE) ACTIONS ───────────────────────────────────────────────
+// Single object param rather than positional args: the CMS reorder handler
+// re-sends every field on each swap, so a field missed at one call site used to
+// be silently wiped.
+export type LessonActionInput = {
+  title: string
+  content: string
+  videoUrl: string
+  type?: string
+  duration: number
+  orderIndex: number
+}
+
+function cleanLessonInput(input: LessonActionInput) {
+  const title = (input.title || '').trim()
+  if (!title) throw new Error('Judul modul wajib diisi.')
+  return {
+    title,
+    content: (input.content || '').trim(),
+    videoUrl: input.videoUrl || '',
+    type: input.type || 'VIDEO',
+    duration: Math.max(0, Math.floor(Number(input.duration) || 0)),
+    orderIndex: Math.max(0, Math.floor(Number(input.orderIndex) || 0)),
+  }
+}
+
+export async function addLessonAction(courseId: string, input: LessonActionInput) {
+  await ensureAdmin()
+  try {
+    const lesson = await DataStore.addLesson({ courseId, ...cleanLessonInput(input) })
+    await revalidateAcademy(courseId)
     return { success: true, lesson }
   } catch (e: any) {
-    return { error: e.message || 'Gagal menambahkan materi pelajaran.' }
+    return { error: e.message || 'Gagal menambahkan modul.' }
   }
 }
 
-export async function updateLessonAction(
-  id: string,
-  courseId: string,
-  title: string,
-  content: string,
-  videoUrl: string,
-  duration: number,
-  orderIndex: number
-) {
+export async function updateLessonAction(id: string, courseId: string, input: LessonActionInput) {
   await ensureAdmin()
   try {
-    await DataStore.updateLesson(id, title, content, videoUrl, duration, orderIndex)
-    revalidatePath('/cms_admin', 'layout')
-    revalidatePath(`/academy/course/${courseId}`)
+    await DataStore.updateLesson(id, cleanLessonInput(input))
+    await revalidateAcademy(courseId)
     return { success: true }
   } catch (e: any) {
-    return { error: e.message || 'Gagal memperbarui materi pelajaran.' }
+    return { error: e.message || 'Gagal memperbarui modul.' }
+  }
+}
+
+/**
+ * Reads the true length of a YouTube video so the CMS never has to rely on a
+ * hand-typed duration. The 90% completion rule divides by this number: too
+ * high and the module can never be finished, too low and it completes early.
+ *
+ * ponytail: parses `lengthSeconds` out of the watch page rather than using the
+ * YouTube Data API, which would need a key and a quota. Swap to the API if this
+ * ever starts failing — the caller already treats failure as "leave it alone".
+ */
+export async function fetchYouTubeDurationAction(url: string) {
+  await ensureAdmin()
+  const id = extractYouTubeId(url)
+  if (!id) return { error: 'Bukan tautan YouTube.' }
+
+  try {
+    const res = await fetch(`https://www.youtube.com/watch?v=${id}`, {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+    })
+    if (!res.ok) return { error: `YouTube membalas ${res.status}.` }
+    const m = (await res.text()).match(/"lengthSeconds":"(\d+)"/)
+    if (!m) return { error: 'Durasi tidak ditemukan pada halaman video.' }
+    return { success: true, duration: Number(m[1]) }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal membaca durasi video.' }
   }
 }
 
@@ -148,11 +278,10 @@ export async function deleteLessonAction(id: string, courseId: string) {
   await ensureAdmin()
   try {
     await DataStore.deleteLesson(id)
-    revalidatePath('/cms_admin', 'layout')
-    revalidatePath(`/academy/course/${courseId}`)
+    await revalidateAcademy(courseId)
     return { success: true }
   } catch (e: any) {
-    return { error: e.message || 'Gagal menghapus materi pelajaran.' }
+    return { error: e.message || 'Gagal menghapus modul.' }
   }
 }
 

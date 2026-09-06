@@ -201,6 +201,7 @@ model User {
   products     Product[]     @relation("MerchantProducts")
   orders       Order[]       @relation("BuyerOrders")
   progress     Progress[]
+  certificates Certificate[]
   posts        Post[]
   comments     Comment[]
   postLikes    PostLike[]
@@ -301,11 +302,17 @@ model Course {
   title       String
   description String
   coverImage  String?
-  accessRequired String   @default("Gold") // "Gold", "Platinum", "Diamond"
+  accessRequired String   @default("Gold") // "Gold", "Platinum", "Diamond", "Bootcamp"
+  price       Int      @default(0) // Rupiah. Source of truth for purchases — never trust a client-sent amount.
+  isPublished Boolean  @default(true) // "Pasarkan" toggle. false = hidden from /academy and blocked for direct links, except for superadmin.
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  lessons     Lesson[]
+
+  lessons      Lesson[]
+  certificates Certificate[]
+
+  certificateTemplateId String?
+  certificateTemplate   CertificateTemplate? @relation(fields: [certificateTemplateId], references: [id], onDelete: SetNull)
 }
 
 model Lesson {
@@ -313,11 +320,12 @@ model Lesson {
   title      String
   content    String
   videoUrl   String?
-  duration   Int        @default(0) // In seconds
+  type       String     @default("VIDEO") // Module type. Only VIDEO exists today.
+  duration   Int        @default(0) // In seconds. Auto-derived from the uploaded file; denominator for the 90% completion rule.
   orderIndex Int
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
-  
+
   // Relations
   courseId   String
   course     Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
@@ -327,16 +335,51 @@ model Lesson {
 model Progress {
   id        String   @id @default(uuid())
   completed Boolean  @default(false)
+  // Furthest point the user has actually reached, in seconds. Drives both the
+  // forward-seek clamp and cross-device resume. Only ever moves forward.
+  watchedSeconds Int      @default(0)
+  completedAt    DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   lessonId  String
   lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, lessonId])
+}
+
+// Issued once a user completes every module in a course. This is the course
+// reward — there is no separate reward entity.
+model Certificate {
+  id       String   @id @default(uuid())
+  serial   String   @unique // Public, human-readable verification code
+  issuedAt DateTime @default(now())
+
+  // Relations
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId]) // Makes issuance idempotent
+}
+
+// Reusable certificate designs an admin can build once and assign to any
+// number of courses. Logo, signature, and job title all live inside the
+// uploaded background image itself — only the truly per-recipient values
+// (name, course, date, serial) are overlaid dynamically at render time.
+model CertificateTemplate {
+  id              String   @id @default(uuid())
+  name            String   // Internal label shown in the CMS list, not printed on the certificate.
+  type            String   // e.g. "Kelulusan" — printed as the certificate's subtitle.
+  backgroundImage String   // Base64 data URL, pre-cropped to US Letter Landscape (11:8.5) and WebP-encoded client-side.
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  courses Course[]
 }
 
 model Post {

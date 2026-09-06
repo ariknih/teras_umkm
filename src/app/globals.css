@@ -26,6 +26,91 @@
   --color-market-green-900: #112307;
   --color-market-green-950: #081103;
 
+  /* Cherry Red Color Palette */
+  --color-cherry-red-25: #FEF6F6;
+  --color-cherry-red-50: #FDF2F2;
+  --color-cherry-red-100: #FBE5E5;
+  --color-cherry-red-200: #F8D0D0;
+  --color-cherry-red-300: #F3AEAE;
+  --color-cherry-red-400: #E98080;
+  --color-cherry-red-500: #DA4A4A;
+  --color-cherry-red-600: #C83A3A;
+  --color-cherry-red-700: #A82D2D;
+  --color-cherry-red-800: #8B2929;
+  --color-cherry-red-900: #742828;
+  --color-cherry-red-950: #3F1010;
+
+  /* Royal Purple Color Palette */
+  --color-royal-purple-25: #FCFAFF;
+  --color-royal-purple-50: #F9F5FF;
+  --color-royal-purple-100: #F4EBFF;
+  --color-royal-purple-200: #E9D7FE;
+  --color-royal-purple-300: #D6BBFB;
+  --color-royal-purple-400: #B692F6;
+  --color-royal-purple-500: #9E77ED;
+  --color-royal-purple-600: #7F56D9;
+  --color-royal-purple-700: #6941C6;
+  --color-royal-purple-800: #53389E;
+  --color-royal-purple-900: #42307D;
+  --color-royal-purple-950: #2C1C5F;
+
+  /* Bank Blue Color Palette */
+  --color-bank-blue-25: #F5F9FF;
+  --color-bank-blue-50: #F0F5FE;
+  --color-bank-blue-100: #DEE8FB;
+  --color-bank-blue-200: #C5D9F8;
+  --color-bank-blue-300: #9DC1F3;
+  --color-bank-blue-400: #6E9EEC;
+  --color-bank-blue-500: #4C7CE5;
+  --color-bank-blue-600: #3760D9;
+  --color-bank-blue-700: #2E4CC7;
+  --color-bank-blue-800: #2B40A2;
+  --color-bank-blue-900: #283980;
+  --color-bank-blue-950: #1F2855;
+
+  /* Safe Green Color Palette */
+  --color-safe-green-25: #F1FEF8;
+  --color-safe-green-50: #ECFDF5;
+  --color-safe-green-100: #D1FAE5;
+  --color-safe-green-200: #A7F3D0;
+  --color-safe-green-300: #6EE7B7;
+  --color-safe-green-400: #34D399;
+  --color-safe-green-500: #10B981;
+  --color-safe-green-600: #059669;
+  --color-safe-green-700: #047857;
+  --color-safe-green-800: #065F46;
+  --color-safe-green-900: #064E3B;
+  --color-safe-green-950: #083D2F;
+
+  /* Bee Yellow Color Palette */
+  --color-bee-yellow-25: #FFF9E6;
+  --color-bee-yellow-50: #FFF3CD;
+  --color-bee-yellow-100: #FFE69C;
+  --color-bee-yellow-200: #FFDA6A;
+  --color-bee-yellow-300: #FFCD39;
+  --color-bee-yellow-400: #FFC107;
+  --color-bee-yellow-500: #FFAC07;
+  --color-bee-yellow-600: #B38705;
+  --color-bee-yellow-700: #806104;
+  --color-bee-yellow-800: #594402;
+  --color-bee-yellow-900: #332701;
+  --color-bee-yellow-950: #1A1301;
+
+  /* Neutral Shade Color Palette */
+  --color-neutral-shade-0: #FFFFFF;
+  --color-neutral-shade-25: #F7F7F7;
+  --color-neutral-shade-50: #EAEAEA;
+  --color-neutral-shade-100: #D4D4D4;
+  --color-neutral-shade-200: #BFBFBF;
+  --color-neutral-shade-300: #A9A9A9;
+  --color-neutral-shade-400: #949494;
+  --color-neutral-shade-500: #7E7E7E;
+  --color-neutral-shade-600: #696969;
+  --color-neutral-shade-700: #535353;
+  --color-neutral-shade-800: #3E3E3E;
+  --color-neutral-shade-900: #282828;
+  --color-neutral-shade-950: #1C1C1C;
+
   --color-bg-dark: var(--bg-dark);
   --color-background: var(--bg-dark);
   --color-surface: var(--surface-dark);

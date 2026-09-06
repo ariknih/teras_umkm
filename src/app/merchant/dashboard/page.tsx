@@ -4335,6 +4335,18 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
         {activeTab === 'academy' && (
           <div className="space-y-6">
+            {/* This grid renders the catalog inline rather than routing through
+                /academy, so the maintenance gate in academy/layout.tsx does not
+                cover it. Superadmins keep the real thing for debugging. */}
+            {user?.isSuperAdmin !== true ? (
+              <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] mb-6">
+                <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Saloka Academy sedang meningkatkan kemampuannya</h3>
+                <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
+                  Kami sedang menyiapkan pengalaman belajar yang jauh lebih baik: materi yang terstruktur bertahap, progres belajar yang tersimpan otomatis di akun Anda, dan sertifikat kelulusan yang bisa dibagikan. Terima kasih sudah menunggu.
+                </p>
+              </div>
+            ) : (
+            <>
             <div className="bg-white p-6 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.03)] mb-6">
               <h3 className="font-sora text-sm font-bold text-[#0F5132] mb-2">Saloka Premium LMS Academy</h3>
               <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
@@ -4426,6 +4438,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 );
               })}
             </div>
+            </>
+            )}
           </div>
         )}
 

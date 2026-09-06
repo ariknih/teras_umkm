@@ -85,9 +85,26 @@ export default async function RootLayout({
       role: user.role
     });
   }
-  const userSetupCompleted = dbUser 
+  const userSetupCompleted = dbUser
     ? (dbUser.role === 'MERCHANT' ? dbUser.landingPageSetup : true)
     : true;
+
+  // Every prop of a client component is serialized into the RSC payload that
+  // ships to the browser. The full Prisma user row carries passwordHash, KYC
+  // fields and last-known location, so hand over only what the header and
+  // guards actually render.
+  const clientUser = user ? { id: user.id } : null;
+  const clientDbUser = dbUser
+    ? {
+        id: dbUser.id,
+        name: dbUser.name,
+        email: dbUser.email,
+        image: dbUser.image,
+        role: dbUser.role,
+        level: dbUser.level,
+        coinBalance: dbUser.coinBalance,
+      }
+    : null;
 
   return (
     <html
@@ -129,8 +146,8 @@ export default async function RootLayout({
         />
         <GoeyToastProvider />
         <ClientLayoutWrapper
-          user={user}
-          dbUser={dbUser}
+          user={clientUser}
+          dbUser={clientDbUser}
           wallet={wallet}
           userSetupCompleted={!!userSetupCompleted}
           logoutAction={logout}

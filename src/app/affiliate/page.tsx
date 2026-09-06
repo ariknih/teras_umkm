@@ -1504,6 +1504,18 @@ export default function AffiliatePage() {
 
         {activeTab === 'academy' && (
           <div className="space-y-6 animate-fadeIn">
+            {/* This grid renders the catalog inline rather than routing through
+                /academy, so the maintenance gate in academy/layout.tsx does not
+                cover it. Superadmins keep the real thing for debugging. */}
+            {user?.isSuperAdmin !== true ? (
+              <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg mb-6">
+                <h3 className="font-sora text-sm font-bold text-primary mb-2">Saloka Academy sedang meningkatkan kemampuannya</h3>
+                <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
+                  Kami sedang menyiapkan pengalaman belajar yang jauh lebih baik: materi yang terstruktur bertahap, progres belajar yang tersimpan otomatis di akun Anda, dan sertifikat kelulusan yang bisa dibagikan. Terima kasih sudah menunggu.
+                </p>
+              </div>
+            ) : (
+            <>
             <div className="border border-border-subtle bg-surface-dark p-6 rounded-lg mb-6">
               <h3 className="font-sora text-sm font-bold text-primary mb-2">Saloka Premium LMS Academy</h3>
               <p className="text-xs text-text-secondary leading-relaxed max-w-2xl">
@@ -1595,6 +1607,8 @@ export default function AffiliatePage() {
                 );
               })}
             </div>
+            </>
+            )}
           </div>
         )}
       </div>

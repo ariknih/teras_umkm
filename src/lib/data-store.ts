@@ -1,6 +1,7 @@
 
 import { calculateDistance } from './utils'
 import { db } from './db'
+import { PROTECTED_CERTIFICATE_TEMPLATE_NAME } from './lms-rules'
 import crypto from 'crypto'
 import { ProductCategory } from '@prisma/client'
 import fs from 'fs'
@@ -492,6 +493,18 @@ let globalMockOrders: any[] = _persistedDb.orders && _persistedDb.orders.length 
 ]
 let globalMockCustomLinks: any[] = []
 let globalMockClickLogs: any[] = []
+let globalMockCertificates: any[] = []
+let globalMockCertificateTemplates: any[] = []
+
+export interface LessonInput {
+  courseId: string
+  title: string
+  content: string
+  videoUrl: string
+  type: string
+  duration: number
+  orderIndex: number
+}
 let globalMockWaLogs: any[] = []
 let globalMockReviews: any[] = _persistedDb.reviews || []
 let globalMockNotifications: any[] = _persistedDb.notifications || []
@@ -576,7 +589,12 @@ async function withFallback<T = any, M = any>(
       if (res !== null && res !== undefined) {
         return res
       }
-    } catch (_) {}
+    } catch (e) {
+      // Falling back silently here used to hide real bugs (e.g. a schema
+      // field the running process's Prisma Client predates) behind what
+      // looked like a successful read from a completely different store.
+      console.error('[DataStore] DB query failed, falling back to mock:', e)
+    }
   }
   return await mockFallback()
 }
@@ -595,7 +613,12 @@ async function withMutationFallback<T = any, M = any>(
       if (res !== null && res !== undefined) {
         return res
       }
-    } catch (_) {}
+    } catch (e) {
+      // Same reasoning as withFallback above — a swallowed error here means a
+      // write that looked like it succeeded never actually reached the real
+      // database, only a scratch in-memory copy nothing else reads from.
+      console.error('[DataStore] DB mutation failed, falling back to mock:', e)
+    }
   }
   const result = await mockMutation()
   saveMockDb()
@@ -839,13 +862,16 @@ export const DataStore = {
   },
 
   // Course Management
-  async addCourse(title: string, description: string, coverImage: string, accessRequired: string) {
+  async addCourse(title: string, description: string, coverImage: string, accessRequired: string, price: number = 0, certificateTemplateId?: string | null, isPublished: boolean = true) {
     const newCourse = {
           id: `course-${Date.now()}`,
           title,
           description,
           coverImage,
           accessRequired,
+          price,
+          certificateTemplateId: certificateTemplateId ?? null,
+          isPublished,
           createdAt: new Date(),
           updatedAt: new Date()
         }
@@ -857,7 +883,10 @@ export const DataStore = {
                     title,
                     description,
                     coverImage,
-                    accessRequired
+                    accessRequired,
+                    price,
+                    certificateTemplateId: certificateTemplateId ?? null,
+                    isPublished
                   }
                 })
       },
@@ -868,12 +897,29 @@ export const DataStore = {
     )
   },
 
-  async updateCourse(id: string, title: string, description: string, coverImage: string, accessRequired: string) {
+  // Standalone from updateCourse — "Pasarkan"/"Tarik dari Pasar" is a distinct,
+  // immediate action in the CMS, not part of the general edit-form save.
+  async setCoursePublished(id: string, isPublished: boolean) {
+    return withMutationFallback(
+      async () => {
+        await db.course.update({ where: { id }, data: { isPublished } })
+      },
+      async () => {
+        const idx = globalMockCourses.findIndex(c => c.id === id)
+            if (idx !== -1) {
+              globalMockCourses[idx] = { ...globalMockCourses[idx], isPublished, updatedAt: new Date() }
+            }
+            return true
+      }
+    )
+  },
+
+  async updateCourse(id: string, title: string, description: string, coverImage: string, accessRequired: string, price: number = 0, certificateTemplateId?: string | null) {
     return withMutationFallback(
       async () => {
         await db.course.update({
                   where: { id },
-                  data: { title, description, coverImage, accessRequired }
+                  data: { title, description, coverImage, accessRequired, price, certificateTemplateId: certificateTemplateId ?? null }
                 })
       },
       async () => {
@@ -885,6 +931,8 @@ export const DataStore = {
                 description,
                 coverImage,
                 accessRequired,
+                price,
+                certificateTemplateId: certificateTemplateId ?? null,
                 updatedAt: new Date()
               }
             }
@@ -906,31 +954,23 @@ export const DataStore = {
     )
   },
 
-  // Lesson Management
-  async addLesson(courseId: string, title: string, content: string, videoUrl: string, duration: number, orderIndex: number) {
+  // Lesson (Module) Management
+  //
+  // These take a single object rather than positional args on purpose: the CMS
+  // reorder handler re-sends every field on each swap, and with positional args
+  // any newly added field that a call site forgot to thread through got
+  // silently blanked on reorder.
+  async addLesson(input: LessonInput) {
     const newLesson = {
           id: `lesson-${Date.now()}`,
-          courseId,
-          title,
-          content,
-          videoUrl,
-          duration,
-          orderIndex,
+          ...input,
           createdAt: new Date(),
           updatedAt: new Date()
         }
     return withMutationFallback(
       async () => {
         await db.lesson.create({
-                  data: {
-                    id: newLesson.id,
-                    courseId,
-                    title,
-                    content,
-                    videoUrl,
-                    duration,
-                    orderIndex
-                  }
+                  data: { id: newLesson.id, ...input }
                 })
       },
       async () => {
@@ -940,12 +980,12 @@ export const DataStore = {
     )
   },
 
-  async updateLesson(id: string, title: string, content: string, videoUrl: string, duration: number, orderIndex: number) {
+  async updateLesson(id: string, input: Omit<LessonInput, 'courseId'>) {
     return withMutationFallback(
       async () => {
         await db.lesson.update({
                   where: { id },
-                  data: { title, content, videoUrl, duration, orderIndex }
+                  data: { ...input }
                 })
       },
       async () => {
@@ -953,16 +993,19 @@ export const DataStore = {
             if (idx !== -1) {
               globalMockLessons[idx] = {
                 ...globalMockLessons[idx],
-                title,
-                content,
-                videoUrl,
-                duration,
-                orderIndex,
+                ...input,
                 updatedAt: new Date()
               }
             }
             return true
       }
+    )
+  },
+
+  async findLessonById(id: string) {
+    return withFallback(
+      () => db.lesson.findUnique({ where: { id } }),
+      () => globalMockLessons.find(l => l.id === id) || null
     )
   },
 
@@ -1578,11 +1621,12 @@ export const DataStore = {
   async getCourses() {
     return withFallback(
       () => db.course.findMany({
-          include: { lessons: { orderBy: { orderIndex: 'asc' } } }
+          include: { lessons: { orderBy: { orderIndex: 'asc' } }, certificateTemplate: true }
         }),
       () => globalMockCourses.map(c => ({
       ...c,
-      lessons: globalMockLessons.filter(l => l.courseId === c.id).sort((a,b) => a.orderIndex - b.orderIndex)
+      lessons: globalMockLessons.filter(l => l.courseId === c.id).sort((a,b) => a.orderIndex - b.orderIndex),
+      certificateTemplate: globalMockCertificateTemplates.find(t => t.id === c.certificateTemplateId) || null
     }))
     )
   },
@@ -1592,7 +1636,7 @@ export const DataStore = {
       async () => {
         return await db.course.findUnique({
                   where: { id },
-                  include: { lessons: { orderBy: { orderIndex: 'asc' } } }
+                  include: { lessons: { orderBy: { orderIndex: 'asc' } }, certificateTemplate: true }
                 })
       },
       async () => {
@@ -1600,7 +1644,8 @@ export const DataStore = {
             if (!course) return null
             return {
               ...course,
-              lessons: globalMockLessons.filter(l => l.courseId === course.id).sort((a,b) => a.orderIndex - b.orderIndex)
+              lessons: globalMockLessons.filter(l => l.courseId === course.id).sort((a,b) => a.orderIndex - b.orderIndex),
+              certificateTemplate: globalMockCertificateTemplates.find(t => t.id === course.certificateTemplateId) || null
             }
       }
     )
@@ -1613,25 +1658,168 @@ export const DataStore = {
     )
   },
 
-  async toggleLessonProgress(userId: string, lessonId: string, completed: boolean) {
+  // Every row, across every user — one query the CMS academy list uses to
+  // derive Terkunci/Berjalan/Selesai participation for every course at once,
+  // instead of a per-course fan-out. See computeCourseParticipation.
+  async getAllProgress() {
+    return withFallback(
+      () => db.progress.findMany({ select: { userId: true, lessonId: true, completed: true } }),
+      () => globalMockProgress.map((p: any) => ({ userId: p.userId, lessonId: p.lessonId, completed: p.completed }))
+    )
+  },
+
+  // Completion is decided by the caller in actions/lms.ts, never by the browser.
+  async upsertLessonProgress(
+    userId: string,
+    lessonId: string,
+    data: { watchedSeconds: number; completed: boolean; completedAt: Date | null }
+  ) {
     return withMutationFallback(
       async () => {
         return await db.progress.upsert({
                   where: { userId_lessonId: { userId, lessonId } },
-                  create: { userId, lessonId, completed },
-                  update: { completed }
+                  create: { userId, lessonId, ...data },
+                  update: data
                 })
       },
       async () => {
-        const idx = globalMockProgress.findIndex(p => p.userId === userId && p.lessonId === lessonId)
+        const idx = globalMockProgress.findIndex((p: any) => p.userId === userId && p.lessonId === lessonId)
             if (idx !== -1) {
-              globalMockProgress[idx].completed = completed
+              globalMockProgress[idx] = { ...globalMockProgress[idx], ...data }
               return globalMockProgress[idx]
             } else {
-              const newProgress = { userId, lessonId, completed }
-              globalMockProgress.push(newProgress)
+              const newProgress = { userId, lessonId, ...data }
+              globalMockProgress.push(newProgress as any)
               return newProgress
             }
+      }
+    )
+  },
+
+  // Idempotent: the @@unique([userId, courseId]) means a second call keeps the
+  // certificate already issued rather than minting a new serial.
+  async issueCertificate(userId: string, courseId: string, serial: string) {
+    return withMutationFallback(
+      async () => {
+        return await db.certificate.upsert({
+                  where: { userId_courseId: { userId, courseId } },
+                  create: { userId, courseId, serial },
+                  update: {}
+                })
+      },
+      async () => {
+        const existing = globalMockCertificates.find(c => c.userId === userId && c.courseId === courseId)
+            if (existing) return existing
+            const created = { id: `cert-${Date.now()}`, serial, userId, courseId, issuedAt: new Date() }
+            globalMockCertificates.push(created)
+            return created
+      }
+    )
+  },
+
+  async findCertificateBySerial(serial: string) {
+    return withFallback(
+      () => db.certificate.findUnique({
+          where: { serial },
+          include: { user: true, course: { include: { certificateTemplate: true } } }
+        }),
+      () => {
+        const cert = globalMockCertificates.find(c => c.serial === serial)
+        if (!cert) return null
+        const course = globalMockCourses.find(c => c.id === cert.courseId) || null
+        return {
+          ...cert,
+          user: globalMockUsers.find(u => u.id === cert.userId) || null,
+          course: course && {
+            ...course,
+            certificateTemplate: globalMockCertificateTemplates.find(t => t.id === course.certificateTemplateId) || null
+          }
+        }
+      }
+    )
+  },
+
+  async getUserCertificates(userId: string) {
+    return withFallback(
+      () => db.certificate.findMany({ where: { userId } }),
+      () => globalMockCertificates.filter(c => c.userId === userId)
+    )
+  },
+
+  // Certificate Template Management
+
+  // The platform-wide fallback for any course with no template of its own —
+  // see PROTECTED_CERTIFICATE_TEMPLATE_NAME. Returns null only if that row
+  // was never created (e.g. a fresh environment), in which case the caller
+  // falls back further to the original hardcoded certificate design.
+  async getDefaultCertificateTemplate() {
+    return withFallback(
+      () => db.certificateTemplate.findFirst({ where: { name: PROTECTED_CERTIFICATE_TEMPLATE_NAME } }),
+      () => globalMockCertificateTemplates.find(t => t.name === PROTECTED_CERTIFICATE_TEMPLATE_NAME) || null
+    )
+  },
+
+  async getCertificateTemplates() {
+    return withFallback(
+      () => db.certificateTemplate.findMany({ include: { courses: { select: { id: true } } }, orderBy: { createdAt: 'asc' } }),
+      () => globalMockCertificateTemplates.map(t => ({
+        ...t,
+        courses: globalMockCourses.filter(c => c.certificateTemplateId === t.id).map(c => ({ id: c.id }))
+      }))
+    )
+  },
+
+  async getCertificateTemplateById(id: string) {
+    return withFallback(
+      () => db.certificateTemplate.findUnique({ where: { id } }),
+      () => globalMockCertificateTemplates.find(t => t.id === id) || null
+    )
+  },
+
+  async addCertificateTemplate(name: string, type: string, backgroundImage: string) {
+    const newTemplate = {
+      id: `cert-template-${Date.now()}`,
+      name,
+      type,
+      backgroundImage,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    return withMutationFallback(
+      async () => {
+        return await db.certificateTemplate.create({ data: { id: newTemplate.id, name, type, backgroundImage } })
+      },
+      async () => {
+        globalMockCertificateTemplates.push(newTemplate)
+        return newTemplate
+      }
+    )
+  },
+
+  async updateCertificateTemplate(id: string, name: string, type: string, backgroundImage: string) {
+    return withMutationFallback(
+      async () => {
+        await db.certificateTemplate.update({ where: { id }, data: { name, type, backgroundImage } })
+      },
+      async () => {
+        const idx = globalMockCertificateTemplates.findIndex(t => t.id === id)
+        if (idx !== -1) {
+          globalMockCertificateTemplates[idx] = { ...globalMockCertificateTemplates[idx], name, type, backgroundImage, updatedAt: new Date() }
+        }
+        return true
+      }
+    )
+  },
+
+  async deleteCertificateTemplate(id: string) {
+    return withMutationFallback(
+      async () => {
+        await db.certificateTemplate.delete({ where: { id } })
+      },
+      async () => {
+        globalMockCertificateTemplates = globalMockCertificateTemplates.filter(t => t.id !== id)
+        globalMockCourses.forEach(c => { if (c.certificateTemplateId === id) c.certificateTemplateId = null })
+        return true
       }
     )
   },

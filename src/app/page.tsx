@@ -1,6 +1,5 @@
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
-import { getCourses } from '@/app/actions/lms'
 import { getActiveBanners } from '@/app/actions/landing'
 import { getServicesAction } from '@/app/actions/services'
 import { getIndukCommunities } from '@/app/actions/community'
@@ -10,11 +9,10 @@ import HomeExplorer from '@/app/components/HomeExplorer'
 
 export default async function HomePage() {
   const user = await getCurrentUser()
-  const [allProducts, services, activeBanners, courses, communities] = await Promise.all([
+  const [allProducts, services, activeBanners, communities] = await Promise.all([
     getProducts(),
     getServicesAction(),
     getActiveBanners(),
-    getCourses(),
     getIndukCommunities()
   ])
 

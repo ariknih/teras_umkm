@@ -274,7 +274,11 @@ export const MENUS: Menu[] = [
     title: 'LMS Management',
     desc: 'Kelola materi kursus dan edukasi UMKM',
     icon: GraduationCap,
-    category: 'KONTEN & EDUKASI'
+    category: 'KONTEN & EDUKASI',
+    tabs: [
+      { key: 'kursus', label: 'Kursus' },
+      { key: 'sertifikat', label: 'Sertifikat' }
+    ]
   },
   {
     key: 'content',

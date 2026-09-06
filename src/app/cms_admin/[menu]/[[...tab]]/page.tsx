@@ -20,6 +20,11 @@ import UsersTab from '../../components/UsersTab'
 import CertificationTab from '../../components/CertificationTab'
 import CoinsTab from '../../components/CoinsTab'
 import AcademyTab from '../../components/AcademyTab'
+import SertifikatTab from '../../components/SertifikatTab'
+import RincianKursusView from '../../components/academy/RincianKursusView'
+import SuntingKursusView from '../../components/academy/SuntingKursusView'
+import RincianTemplateView from '../../components/academy/RincianTemplateView'
+import { computeCourseParticipation } from '@/lib/lms-rules'
 import TransactionsTab from '../../components/TransactionsTab'
 import CommunityTab from '../../components/CommunityTab'
 import ServicesTab from '../../components/ServicesTab'
@@ -57,10 +62,23 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
   // Reject unknown tab segments rather than silently falling back, so a typo
   // in a shared link is visible instead of landing on the wrong data.
   const requestedTab = tabSegments?.[0]
-  if (tabSegments && tabSegments.length > 1) notFound()
-  if (requestedTab && !menu.tabs?.some((t) => t.key === requestedTab)) notFound()
 
-  const activeTab = resolveTab(menu, requestedTab)
+  // Academy is the sole carve-out from the flat one-segment tab contract:
+  // its Rincian/Sunting/Template views need a record id after the sub-view
+  // key (/cms_admin/academy/rincian/<id>). Every other menu keeps the strict
+  // single-segment rule below untouched.
+  const ACADEMY_SUBVIEWS = ['rincian', 'sunting', 'template'] as const
+  const isAcademySubview =
+    menu.key === 'academy' && !!requestedTab && (ACADEMY_SUBVIEWS as readonly string[]).includes(requestedTab)
+
+  if (isAcademySubview) {
+    if (tabSegments!.length !== 2 || !tabSegments![1]) notFound()
+  } else {
+    if (tabSegments && tabSegments.length > 1) notFound()
+    if (requestedTab && !menu.tabs?.some((t) => t.key === requestedTab)) notFound()
+  }
+
+  const activeTab = isAcademySubview ? requestedTab! : resolveTab(menu, requestedTab)
 
   const notBuilt = NOT_BUILT[`${menu.key}/${activeTab}`] ?? NOT_BUILT[menu.key]
   if (notBuilt) {
@@ -102,6 +120,46 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
   const allAnnouncements = menu.key === 'content' && activeTab === 'pengumuman' ? await getAllAnnouncements(allCommunities) : []
   const allCooperativeReports = menu.key === 'communities' && activeTab === 'laporan' ? await getAllCooperativeReports(allCommunities) : []
 
+  // One query across every progress row, independent of how many courses
+  // exist — computeCourseParticipation buckets it into Berjalan/Selesai per
+  // course. Powers both the Peserta column on the list and the Rincian view.
+  const academyParticipation =
+    menu.key === 'academy'
+      ? computeCourseParticipation(allCourses, await DataStore.getAllProgress())
+      : {}
+
+  // Scoped to the academy menu only — Kursus needs it for the template picker,
+  // Sertifikat needs it for the list itself.
+  const allCertificateTemplates =
+    menu.key === 'academy' ? await DataStore.getCertificateTemplates() : []
+
+  if (isAcademySubview) {
+    if (requestedTab === 'template') {
+      const templateId = tabSegments![1]
+      const template = allCertificateTemplates.find((t: any) => t.id === templateId)
+      if (!template) notFound()
+      return <RincianTemplateView template={template} courses={allCourses} />
+    }
+
+    const courseId = tabSegments![1]
+    const course = allCourses.find((c: any) => c.id === courseId)
+    if (!course) notFound()
+
+    return (
+      <>
+        {requestedTab === 'sunting' ? (
+          <SuntingKursusView course={course} templates={allCertificateTemplates} />
+        ) : (
+          <RincianKursusView
+            course={course}
+            participation={academyParticipation[course.id] || { berjalan: 0, selesai: 0 }}
+            templates={allCertificateTemplates}
+          />
+        )}
+      </>
+    )
+  }
+
   // Extracted per-menu components (Phase 3). Everything else still routes
   // through the legacy bridge below until it gets its own extraction. Keyed
   // by `menu` or `menu/tab` — Kurasi & Eligibility's "Produk Snackbox" tab
@@ -137,7 +195,8 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
         initialCoinSupplyLogs={coinSupplyLogs}
       />
     ),
-    academy: <AcademyTab initialCourses={allCourses} />,
+    'academy/kursus': <AcademyTab initialCourses={allCourses} participation={academyParticipation} templates={allCertificateTemplates} />,
+    'academy/sertifikat': <SertifikatTab initialTemplates={allCertificateTemplates} courses={allCourses} isSuperAdmin={session.isSuperAdmin} />,
     transactions: <TransactionsTab orders={allOrders} users={allUsers} />,
     'snackbox-order': <TransactionsTab orders={allOrders} users={allUsers} snackboxOnly relayTab={activeTab} />,
     communities: <CommunityTab tab={activeTab!} users={allUsers} posts={allPosts} initialCommunities={allCommunities} initialInvoices={allInvoices} />,
