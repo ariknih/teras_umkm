@@ -428,9 +428,46 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
       <section className="py-16 md:py-24 px-4 md:px-8 max-w-[1280px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
         {/* Left column info */}
         <div className="space-y-6">
-          <span className="inline-block px-3 py-1 bg-emerald-100/80 text-emerald-800 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-emerald-200/50 shadow-2xs font-sora">
-            {hero.badge || (isKoperasi ? 'KOPERASI PRO' : 'KOMUNITAS UMKM')}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {(() => {
+              const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (config?.perkumpulanTier === 'PREMIUM' || (config?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
+              const coopTier = config?.coopTier || (isKoperasi ? 'PRO' : 'BASIC')
+              const joinFee = Number(community?.joinFee || 0)
+
+              return (
+                <>
+                  <span className={`inline-block px-3 py-1 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border shadow-2xs font-sora ${
+                    isKoperasi
+                      ? coopTier === 'PRO'
+                        ? 'bg-purple-100/80 text-purple-800 border-purple-200/50'
+                        : coopTier === 'PLUS'
+                          ? 'bg-blue-100/80 text-blue-800 border-blue-200/50'
+                          : 'bg-emerald-100/80 text-emerald-800 border-emerald-200/50'
+                      : isPerkumpulanPrem
+                        ? 'bg-purple-100/80 text-purple-800 border-purple-200/50'
+                        : 'bg-emerald-100/80 text-emerald-800 border-emerald-200/50'
+                  }`}>
+                    {hero.badge || (
+                      isKoperasi
+                        ? `KOPERASI ${coopTier}`
+                        : isPerkumpulanPrem
+                          ? 'PERKUMPULAN PREMIUM'
+                          : 'PERKUMPULAN REGULER'
+                    )}
+                  </span>
+                  {joinFee === 0 ? (
+                    <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-emerald-200/80 shadow-2xs font-sora">
+                      Gratis
+                    </span>
+                  ) : (
+                    <span className="inline-block px-3 py-1 bg-amber-50 text-amber-900 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-amber-300 shadow-2xs font-sora">
+                      Berbayar • Rp{joinFee.toLocaleString('id-ID')}
+                    </span>
+                  )}
+                </>
+              )
+            })()}
+          </div>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-sora tracking-tight text-slate-900 leading-tight">
             {hero.title || community?.name}
           </h1>

@@ -455,7 +455,27 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                     </div>
                   </div>
 
-                  {/* BAGIAN 3: FINANSIAL KOPERASI & PAKET */}
+                  {/* BAGIAN 3: FINANSIAL / BIAYA MASUK KOMUNITAS */}
+                  {type === 'PERKUMPULAN' && (
+                    <div className="space-y-3 pt-1 border-t border-black/5">
+                      <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <h4 className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-wider">Harga Masuk Komunitas</h4>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Harga Masuk Komunitas (Rp)</label>
+                        <input
+                          type="number"
+                          value={joinFee}
+                          onChange={(e) => setJoinFee(e.target.value)}
+                          placeholder="0 (Gratis) atau nominal, e.g. 50000"
+                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs text-[#111111] focus:outline-none focus:border-primary/50 transition-all"
+                        />
+                        <p className="text-[9px] text-gray-500 font-medium">Beri nilai 0 untuk komunitas gratis atau isi nominal harga pendaftaran.</p>
+                      </div>
+                    </div>
+                  )}
+
                   {type === 'KOPERASI' && (
                     <div className="space-y-3 pt-1 border-t border-black/5">
                       <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">

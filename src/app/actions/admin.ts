@@ -4,7 +4,7 @@ import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { logAudit } from './audit'
 import { revalidatePath } from 'next/cache'
-import { invalidateCachePattern } from '@/lib/cache'
+import { deleteCache, invalidateCachePattern } from '@/lib/cache'
 import { extractYouTubeId, CERTIFICATE_TEMPLATE_TYPES, PROTECTED_CERTIFICATE_TEMPLATE_NAME } from '@/lib/lms-rules'
 import crypto from 'crypto'
 
@@ -642,6 +642,12 @@ export async function kickMemberFromCommunityAdminAction(userId: string, communi
   if (!userId || !communityId) return { error: 'userId dan communityId wajib diisi.' }
   try {
     await DataStore.removeCommunityMembership(userId, communityId)
+    deleteCache(`community:members:${communityId}`)
+    invalidateCachePattern(`community:members:${communityId}*`)
+    deleteCache(`user:communities:roles:${userId}`)
+    invalidateCachePattern('user:communities:roles:*')
+    deleteCache('community:induk:all')
+    invalidateCachePattern('community:induk:*')
     revalidatePath('/cms_admin', 'layout')
     revalidatePath(`/community/${communityId}`)
     return { success: true }
