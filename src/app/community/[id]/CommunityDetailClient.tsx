@@ -22,7 +22,8 @@ import {
   deleteMerchantFundingProjectAction,
   upgradeCommunityTierAction,
   kickCommunityMemberAction,
-  updateIndukCommunity
+  updateIndukCommunity,
+  payCommunityJoinFeeAction
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts, getProductsByMerchantIdsAction, createMemberProductAction, updateMemberProductAction, deleteMemberProductAction } from '@/app/actions/products'
@@ -2083,12 +2084,13 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       return
     }
 
-    if (community?.type === 'KOPERASI' && !isMember) {
+    const joinFee = Number(community?.joinFee || 0)
+    if (joinFee > 0 && !isMember) {
       setPaymentModalOpen(true)
       return
     }
 
-    // Free Perkumpulan join
+    // Free community join (joinFee === 0)
     startTransition(async () => {
       const res = await joinIndukCommunity(id, true)
       if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
@@ -2098,41 +2100,41 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       if (res.error) {
         goeyToast.error(res.error)
       } else {
-        goeyToast.success('Berhasil bergabung ke Komunitas!')
+        goeyToast.success(`Berhasil bergabung ke ${community?.name || 'Komunitas'}!`)
+        setIsMember(true)
         loadData()
       }
     })
   }
 
-  const handleConfirmPayment = () => {
+  const handleConfirmPayment = async () => {
     setIsVerifying(true)
-    setTimeout(async () => {
-      try {
-        const res = await joinIndukCommunity(id, true)
-        if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
-          setIsVerifying(false)
-          setPaymentModalOpen(false)
-          setKycWarningModalOpen(true)
-          return
-        }
-        if (res.error) {
-          goeyToast.error(res.error)
-          setIsVerifying(false)
-        } else {
-          setPaymentSuccess(true)
-          setIsVerifying(false)
-          setTimeout(() => {
-            setPaymentModalOpen(false)
-            setPaymentSuccess(false)
-            setIsMember(true)
-            loadData()
-          }, 2000)
-        }
-      } catch (e) {
-        console.error(e)
+    try {
+      const res = await payCommunityJoinFeeAction(id, paymentMethod)
+      if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
         setIsVerifying(false)
+        setPaymentModalOpen(false)
+        setKycWarningModalOpen(true)
+        return
       }
-    }, 2000)
+      if (res.error) {
+        goeyToast.error(res.error)
+        setIsVerifying(false)
+      } else {
+        setPaymentSuccess(true)
+        setIsVerifying(false)
+        goeyToast.success(`Pembayaran berhasil! Selamat bergabung di ${community?.name || 'Komunitas'}.`)
+        setTimeout(() => {
+          setPaymentModalOpen(false)
+          setPaymentSuccess(false)
+          setIsMember(true)
+          loadData()
+        }, 1500)
+      }
+    } catch (e: any) {
+      goeyToast.error(e.message || 'Gagal memproses pembayaran.')
+      setIsVerifying(false)
+    }
   }
 
 
@@ -7610,88 +7612,134 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         )}
       </AnimatePresence>
 
-      {/* ── PAYMENT MODAL (Simulated Midtrans/Saloka QRIS) ──────────────── */}
+      {/* ── MODAL KOMUNITAS BERBAYAR ──────────────── */}
       <AnimatePresence>
         {paymentModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md border border-gray-100 bg-white p-6 rounded-3xl shadow-2xl space-y-4"
+              className="w-full max-w-md border border-gray-150 bg-white p-6 rounded-3xl shadow-2xl space-y-4"
             >
               <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                <h3 className="font-sora text-sm font-bold text-gray-900 uppercase tracking-wider">
-                  Pembayaran Upgrade Premium Koperasi
-                </h3>
-                <button onClick={() => setPaymentModalOpen(false)} className="text-gray-400 hover:text-gray-700 text-sm font-bold">✕</button>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-bold shadow-2xs">
+                    ★
+                  </div>
+                  <h3 className="font-sora text-sm font-black text-gray-900 tracking-tight">
+                    Komunitas Berbayar
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPaymentModalOpen(false)}
+                  className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
               </div>
 
               {paymentSuccess ? (
-                <div className="p-6 text-center space-y-2">
-                  <div className="w-12 h-12 bg-[#E8F8EE] border border-[#2DB24A]/20 rounded-full flex items-center justify-center text-[#2DB24A] mx-auto text-xl font-bold">✓</div>
-                  <h4 className="font-bold text-gray-900 text-sm">Pembayaran Sukses!</h4>
-                  <p className="text-xs text-gray-500">Selamat! Status keanggotaan Anda kini resmi menjadi PREMIUM.</p>
+                <div className="p-6 text-center space-y-3">
+                  <div className="w-14 h-14 bg-emerald-100 border-2 border-[#2DB24A] rounded-full flex items-center justify-center text-[#2DB24A] mx-auto text-2xl font-black shadow-sm">
+                    ✓
+                  </div>
+                  <h4 className="font-sora font-black text-gray-900 text-base">Pembayaran Berhasil!</h4>
+                  <p className="text-xs text-gray-500">
+                    Status keanggotaan Anda kini resmi menjadi <strong className="text-emerald-700 font-bold">Anggota</strong> di {community?.name}.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                    <span className="text-xs font-bold text-gray-800">Biaya Simpanan Pokok & Upgrade</span>
-                    <span className="text-sm font-extrabold text-[#2DB24A]">Rp {community.joinFee ? community.joinFee.toLocaleString('id-ID') : '150.000'}</span>
+                  <div className="p-4 bg-emerald-50/70 rounded-2xl border border-[#2DB24A]/25 space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-gray-700">Harga Masuk Komunitas</span>
+                      <span className="text-base font-black text-[#0F5132] font-sora">
+                        Rp {Number(community?.joinFee || 0).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      Biaya keanggotaan resmi yang ditentukan oleh pengurus {community?.name}.
+                    </p>
                   </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setPaymentMethod('QRIS')}
-                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${paymentMethod === 'QRIS'
-                          ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#2DB24A]'
-                          : 'bg-gray-50 border-gray-200 text-gray-500'
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 block font-sora">
+                      Pilih Metode Pembayaran:
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('QRIS')}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          paymentMethod === 'QRIS'
+                            ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132] ring-1 ring-[#2DB24A]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
                         }`}
-                    >
-                      QRIS Auto-Verify
-                    </button>
-                    <button
-                      onClick={() => setPaymentMethod('BANK')}
-                      className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${paymentMethod === 'BANK'
-                          ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#2DB24A]'
-                          : 'bg-gray-50 border-gray-200 text-gray-500'
+                      >
+                        <span className="text-xs font-black block font-sora">QRIS Instant</span>
+                        <span className="text-[9px] text-gray-500 block">Auto-Verify</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod('BANK')}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          paymentMethod === 'BANK'
+                            ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132] ring-1 ring-[#2DB24A]'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
                         }`}
-                    >
-                      Transfer Bank Saloka
-                    </button>
+                      >
+                        <span className="text-xs font-black block font-sora">Transfer Bank</span>
+                        <span className="text-[9px] text-gray-500 block">BCA / Saloka</span>
+                      </button>
+                    </div>
                   </div>
 
                   {paymentMethod === 'QRIS' ? (
-                    <div className="flex flex-col items-center py-5 bg-white rounded-2xl border border-gray-100">
-                      <svg width="110" height="110" viewBox="0 0 24 24" fill="none" className="text-gray-900">
+                    <div className="flex flex-col items-center py-4 px-2 bg-slate-50 rounded-2xl border border-gray-150 text-center space-y-2">
+                      <svg width="100" height="100" viewBox="0 0 24 24" fill="none" className="text-gray-900">
                         <rect width="24" height="24" fill="white" />
                         <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm1 1h2v2H5V5zm9-3h8v8h-8V2zm2 2v4h4V4h-4zm1 1h2v2h-2V5zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm1 1h2v2H5v-2zm12-3h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm-2-2h2v2h-2v-2zm0 4h2v2h-2v-2zm4 0h2v2h-2v-2zm-8-4h2v2H9v-2zm2 2h2v2h-2v-2zm2-2h2v2h-2v-2z" fill="currentColor" />
                         <rect x="9.5" y="9.5" width="5" height="5" fill="#2DB24A" />
                       </svg>
-                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-2">Saloka Instant QRIS Verification</span>
+                      <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">
+                        Scan QRIS untuk verifikasi pembayaran otomatis
+                      </span>
                     </div>
                   ) : (
-                    <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl space-y-1 text-center">
-                      <span className="text-[10px] text-gray-400 block font-bold">Kirim ke Rekening Bersama Saloka:</span>
+                    <div className="p-4 bg-slate-50 border border-gray-150 rounded-2xl space-y-1 text-center">
+                      <span className="text-[10px] text-gray-400 block font-bold uppercase">Rekening Transfer Saloka:</span>
                       <span className="text-sm font-black text-gray-900 block font-mono">BCA: 712-094-1182</span>
-                      <span className="text-[9px] text-gray-500 block">a/n PT Saloka Digital Indonesia</span>
+                      <span className="text-[10px] text-gray-500 block font-semibold">a/n PT Saloka Digital Indonesia</span>
                     </div>
                   )}
 
-                  <button
-                    onClick={handleConfirmPayment}
-                    disabled={isVerifying}
-                    className="w-full py-3 bg-[#2DB24A] hover:bg-[#228e3b] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-md"
-                  >
-                    {isVerifying ? (
-                      <>
-                        <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
-                        Memverifikasi Pembayaran...
-                      </>
-                    ) : (
-                      'Konfirmasi Pembayaran Selesai'
-                    )}
-                  </button>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentModalOpen(false)}
+                      disabled={isVerifying}
+                      className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmPayment}
+                      disabled={isVerifying}
+                      className="flex-1 py-3 bg-[#2DB24A] hover:bg-[#24943E] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer font-sora"
+                    >
+                      {isVerifying ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Memproses Pembayaran...
+                        </>
+                      ) : (
+                        'Lanjut Pembayaran'
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </motion.div>

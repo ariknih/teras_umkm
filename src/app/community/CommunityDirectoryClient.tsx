@@ -1,14 +1,3 @@
-'use client'
-
-import React, { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
-import Link from 'next/link'
-import Image from 'next/image'
-import { getIndukCommunities, getUserCommunitiesWithRolesAction, switchActiveIndukCommunityAction } from '@/app/actions/community'
-import { getGlobalKycSettingAction } from '@/app/actions/admin'
-import { getCurrentUser } from '@/app/actions/auth'
-import { motion, AnimatePresence } from 'framer-motion'
-import { GridSkeleton } from '@/components/ui/GhostSkeleton'
 import { Shield, Users, PlusCircle, Search, ChevronRight, X, Loader2, MoreVertical, Star, Check } from 'lucide-react'
 import { goeyToast } from 'goey-toast'
 
@@ -567,31 +556,44 @@ export default function CommunityDirectoryClient({
 
                         <div>
                           <h3 className="font-sora text-sm font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
-                          {(() => {
-                            const parsedConfig = c.landingPageConfig ? (typeof c.landingPageConfig === 'string' ? JSON.parse(c.landingPageConfig) : c.landingPageConfig) : {}
-                            const isPerkumpulanPrem = c.type === 'PERKUMPULAN' && (parsedConfig?.perkumpulanTier === 'PREMIUM' || (parsedConfig?.activationFeePaid ?? 0) > 0 || c.category === 'PAID')
-                            const itemCoopTier = parsedConfig?.coopTier || 'BASIC'
+                          <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                            {(() => {
+                              const parsedConfig = c.landingPageConfig ? (typeof c.landingPageConfig === 'string' ? JSON.parse(c.landingPageConfig) : c.landingPageConfig) : {}
+                              const isPerkumpulanPrem = c.type === 'PERKUMPULAN' && (parsedConfig?.perkumpulanTier === 'PREMIUM' || (parsedConfig?.activationFeePaid ?? 0) > 0 || c.category === 'PAID')
+                              const itemCoopTier = parsedConfig?.coopTier || 'BASIC'
 
-                            return (
-                              <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider mt-1 ${
-                                c.type === 'KOPERASI'
-                                  ? itemCoopTier === 'PRO'
-                                    ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                                    : itemCoopTier === 'PLUS'
-                                      ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
+                              return (
+                                <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider ${
+                                  c.type === 'KOPERASI'
+                                    ? itemCoopTier === 'PRO'
+                                      ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
+                                      : itemCoopTier === 'PLUS'
+                                        ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
+                                        : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
+                                    : isPerkumpulanPrem
+                                      ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
                                       : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
-                                  : isPerkumpulanPrem
-                                    ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                                    : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
-                              }`}>
-                                {c.type === 'KOPERASI'
-                                  ? `KOPERASI ${itemCoopTier}`
-                                  : isPerkumpulanPrem
-                                    ? 'PERKUMPULAN PREMIUM'
-                                    : 'PERKUMPULAN REGULER'}
+                                }`}>
+                                  {c.type === 'KOPERASI'
+                                    ? `KOPERASI ${itemCoopTier}`
+                                    : isPerkumpulanPrem
+                                      ? 'PERKUMPULAN PREMIUM'
+                                      : 'PERKUMPULAN REGULER'}
+                                </span>
+                              )
+                            })()}
+
+                            {/* Price Badge */}
+                            {Number(c.joinFee || 0) === 0 ? (
+                              <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-emerald-500/10 border-emerald-500/35 text-emerald-600">
+                                Gratis
                               </span>
-                            )
-                          })()}
+                            ) : (
+                              <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-amber-500/10 border-amber-500/35 text-amber-700">
+                                Berbayar • Rp{Number(c.joinFee || 0).toLocaleString('id-ID')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 

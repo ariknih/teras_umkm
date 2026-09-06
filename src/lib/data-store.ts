@@ -593,6 +593,10 @@ async function withMutationFallback<T = any, M = any>(
     try {
       const res = await dbMutation()
       if (res !== null && res !== undefined) {
+        try {
+          await mockMutation()
+          saveMockDb()
+        } catch (_) {}
         return res
       }
     } catch (_) {}
@@ -4739,6 +4743,10 @@ export const DataStore = {
 
       const comm = m.community || allCommunities.find((c: any) => c.id === commId)
       if (comm) {
+        const isFree = (comm.joinFee || 0) === 0
+        const hasPaid = m.isPaid === true || m.invoiceStatus === 'PAID' || m.invoiceStatus === 'VERIFIED'
+        if (!isFree && !hasPaid) continue
+
         result.push({
           communityId: comm.id,
           communityName: comm.name,
@@ -4749,7 +4757,7 @@ export const DataStore = {
           isVerified: Boolean(comm.isVerified),
           role: 'ANGGOTA',
           roleLabel: 'Anggota',
-          statusLabel: m.isPaid || m.invoiceStatus === 'PAID' || m.invoiceStatus === 'VERIFIED' ? 'Aktif' : 'Unpaid'
+          statusLabel: 'Aktif'
         })
       }
     }
@@ -5178,69 +5186,26 @@ export const DataStore = {
                   return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
                 }
         
-                const needsPayment = (community.type === 'KOPERASI' || community.category === 'PAID' || community.category === 'KOPERASI') && (community.joinFee || 0) > 0
-        
+                const needsPayment = (community.joinFee || 0) > 0
+
                 const membership = await db.communityMembership.create({
                   data: {
                     communityId,
                     userId,
                     isInduk: asInduk,
                     isPaid: !needsPayment,
-                    invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED'
+                    invoiceStatus: needsPayment ? 'UNPAID' : 'PAID'
                   }
                 })
-        
-                await db.user.update({
-                  where: { id: userId },
-                  data: { indukCommunityId: communityId }
-                })
-        
-                // If joined immediately (no payment needed) and it's a paid community/koperasi, trigger 3-coin referral
-                if (!needsPayment && (community.type === 'KOPERASI' || community.category === 'PAID')) {
-                  const userObj = await db.user.findUnique({ where: { id: userId } })
-                  if (userObj && userObj.parentAffiliateId && community.coinBalance >= 3) {
-                    const referrerId = userObj.parentAffiliateId
-                    
-                    // Deduct from community
-                    await db.community.update({
-                      where: { id: communityId },
-                      data: { 
-                        coinBalance: { decrement: 3 },
-                        isRecruitmentLocked: community.coinBalance - 3 <= 0 ? true : (community as any).isRecruitmentLocked
-                      } as any
-                    })
-                    
-                    // Add to referrer
-                    await db.user.update({
-                      where: { id: referrerId },
-                      data: { coinBalance: { increment: 3 } }
-                    })
-                    
-                    // Record logs
-                    await db.coinTransaction.create({
-                      data: {
-                        type: 'REFERRAL_COMMISSION',
-                        amount: 3,
-                        description: `Komisi referral cross-community dari pendaftaran ${userObj.name} ke ${community.name}`,
-                        userId: referrerId,
-                        relatedUserId: userId
-                      }
-                    })
-                    
-                    await db.coinTransaction.create({
-                      data: {
-                        type: 'REFERRAL_COMMISSION',
-                        amount: -3,
-                        description: `Biaya komisi referral untuk anggota baru ${userObj.name}`,
-                        userId: community.ketuaId,
-                        communityId: communityId,
-                        relatedUserId: userId
-                      }
-                    })
-                  }
+
+                if (!needsPayment && !userObj?.indukCommunityId) {
+                  await db.user.update({
+                    where: { id: userId },
+                    data: { indukCommunityId: communityId }
+                  })
                 }
-        
-                return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED' }
+
+                return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'PAID' }
       },
       async () => {
         // Mock DB
@@ -5250,6 +5215,7 @@ export const DataStore = {
             if (existing) {
               if (existing.invoiceStatus === 'UNPAID') {
                 existing.invoiceStatus = 'PAID'
+                existing.isPaid = true
                 return { joined: true, statusUpdated: true, invoiceStatus: 'PAID' }
               }
               return { joined: true, alreadyMember: true }
@@ -5277,7 +5243,7 @@ export const DataStore = {
               return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
             }
         
-            const needsPayment = (community.type === 'KOPERASI' || community.category === 'PAID') && (community.joinFee || 0) > 0
+            const needsPayment = (community.joinFee || 0) > 0
         
             const newMembership = {
               id: `cm-${Date.now()}`,
@@ -5285,50 +5251,116 @@ export const DataStore = {
               userId,
               isInduk: asInduk,
               isPaid: !needsPayment,
-              invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED',
+              invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
               joinedAt: new Date()
             }
             memberships.push(newMembership)
         
             const user = globalMockUsers.find(u => u.id === userId)
-            if (user) (user as any).indukCommunityId = communityId
-        
-            // Trigger mock referral commission if joined immediately
-            if (!needsPayment && (community.type === 'KOPERASI' || community.category === 'PAID')) {
-              const userObj = globalMockUsers.find(u => u.id === userId)
-              if (userObj && userObj.parentAffiliateId && (community.coinBalance || 0) >= 3) {
-                const referrerId = userObj.parentAffiliateId
-                community.coinBalance = (community.coinBalance || 0) - 3
-                if (community.coinBalance <= 0) community.isRecruitmentLocked = true
-                
-                const referrer = globalMockUsers.find(u => u.id === referrerId)
-                if (referrer) {
-                  referrer.coinBalance = (referrer.coinBalance || 0) + 3
-                }
-        
-                if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
-                ;(globalThis as any).__mockCoinTransactions.push({
-                  id: `ctx-${Date.now()}-1`,
-                  type: 'REFERRAL_COMMISSION',
-                  amount: 3,
-                  description: `Komisi referral cross-community dari pendaftaran ${userObj.name} ke ${community.name}`,
-                  userId: referrerId,
-                  relatedUserId: userId,
-                  createdAt: new Date()
-                }, {
-                  id: `ctx-${Date.now()}-2`,
-                  type: 'REFERRAL_COMMISSION',
-                  amount: -3,
-                  description: `Biaya komisi referral untuk anggota baru ${userObj.name}`,
-                  userId: community.ketuaId,
-                  communityId: communityId,
-                  relatedUserId: userId,
-                  createdAt: new Date()
-                })
-              }
+            if (user && !needsPayment && !(user as any).indukCommunityId) {
+              (user as any).indukCommunityId = communityId
             }
         
-            return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED' }
+            return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'PAID' }
+      }
+    )
+  },
+
+  async payCommunityJoinFee(userId: string, communityId: string, paymentMethod: string = 'QRIS') {
+    return withMutationFallback(
+      async () => {
+        const community = await db.community.findUnique({ where: { id: communityId } })
+        if (!community) return { error: 'Komunitas tidak ditemukan.' }
+        const userObj = await db.user.findUnique({ where: { id: userId }, include: { wallet: true } })
+        if (!userObj) return { error: 'Pengguna tidak ditemukan.' }
+
+        const fee = Number(community.joinFee || 0)
+
+        // If payment method is WALLET, check and deduct wallet balance
+        if (paymentMethod === 'WALLET' && fee > 0) {
+          const currentBalance = userObj.wallet?.balance || 0
+          if (currentBalance < fee) {
+            return { error: `Saldo Saloka Pay Anda tidak mencukupi (Rp ${currentBalance.toLocaleString('id-ID')}). Silakan pilih metode pembayaran lain.` }
+          }
+          await db.wallet.update({
+            where: { userId },
+            data: { balance: { decrement: fee } }
+          })
+          await db.transaction.create({
+            data: {
+              walletId: userObj.wallet!.id,
+              amount: fee,
+              type: 'WITHDRAWAL',
+              status: 'COMPLETED',
+              description: `Pembayaran masuk keanggotaan komunitas ${community.name}`
+            } as any
+          })
+        }
+
+        const existing = await db.communityMembership.findUnique({
+          where: { communityId_userId: { communityId, userId } }
+        })
+
+        if (existing) {
+          await db.communityMembership.update({
+            where: { id: existing.id },
+            data: {
+              isPaid: true,
+              invoiceStatus: 'PAID',
+              invoiceVerifiedAt: new Date()
+            }
+          })
+        } else {
+          await db.communityMembership.create({
+            data: {
+              communityId,
+              userId,
+              isInduk: !userObj.indukCommunityId,
+              isPaid: true,
+              invoiceStatus: 'PAID',
+              invoiceVerifiedAt: new Date()
+            }
+          })
+        }
+
+        if (!userObj.indukCommunityId) {
+          await db.user.update({
+            where: { id: userId },
+            data: { indukCommunityId: communityId }
+          })
+        }
+
+        return { success: true, isPaid: true, invoiceStatus: 'PAID' }
+      },
+      async () => {
+        if (!(globalThis as any).__mockCommunityMemberships) (globalThis as any).__mockCommunityMemberships = []
+        const memberships = (globalThis as any).__mockCommunityMemberships as any[]
+        const communities = (globalThis as any).__mockCommunities || []
+        const community = communities.find((c: any) => c.id === communityId)
+        if (!community) return { error: 'Komunitas tidak ditemukan.' }
+
+        let m = memberships.find(m => m.communityId === communityId && m.userId === userId)
+        if (m) {
+          m.isPaid = true
+          m.invoiceStatus = 'PAID'
+          m.invoiceVerifiedAt = new Date()
+        } else {
+          m = {
+            id: `cm-${Date.now()}`,
+            communityId,
+            userId,
+            isInduk: true,
+            isPaid: true,
+            invoiceStatus: 'PAID',
+            joinedAt: new Date()
+          }
+          memberships.push(m)
+        }
+
+        const user = globalMockUsers.find(u => u.id === userId)
+        if (user && !(user as any).indukCommunityId) (user as any).indukCommunityId = communityId
+
+        return { success: true, isPaid: true, invoiceStatus: 'PAID' }
       }
     )
   },
@@ -5647,14 +5679,27 @@ export const DataStore = {
   async isCommunityMember(userId: string, communityId: string) {
     return withFallback(
       async () => {
-        const m = await db.communityMembership.findUnique({
-                  where: { communityId_userId: { communityId, userId } }
-                })
-                return !!m
+        const community = await db.community.findUnique({ where: { id: communityId } })
+        if (!community) return false
+        if (community.ketuaId === userId) return true
+
+        const m = await db.communityMembership.findFirst({
+          where: { communityId, userId }
+        })
+        if (!m) return false
+        if ((community.joinFee || 0) === 0) return true
+        return m.isPaid === true || m.invoiceStatus === 'PAID' || m.invoiceStatus === 'VERIFIED'
       },
       async () => {
+        const communities = (globalThis as any).__mockCommunities || []
+        const community = communities.find((c: any) => c.id === communityId)
+        if (community && community.ketuaId === userId) return true
+
         const memberships = (globalThis as any).__mockCommunityMemberships || []
-            return memberships.some((m: any) => m.communityId === communityId && m.userId === userId)
+        const m = memberships.find((m: any) => m.communityId === communityId && m.userId === userId)
+        if (!m) return false
+        if (!community || (community.joinFee || 0) === 0) return true
+        return m.isPaid === true || m.invoiceStatus === 'PAID' || m.invoiceStatus === 'VERIFIED'
       }
     )
   },

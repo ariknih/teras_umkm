@@ -366,11 +366,30 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
     deleteCache('community:induk:all')
     invalidateCachePattern('community:induk:*')
     invalidateCachePattern('user:communities:roles:*')
+    revalidatePath(`/community/${communityId}`)
     revalidatePath('/community')
     revalidatePath('/merchant/dashboard')
     return { success: true, ...result }
   } catch (e: any) {
     return { error: e.message || 'Gagal bergabung ke komunitas.' }
+  }
+}
+
+export async function payCommunityJoinFeeAction(communityId: string, paymentMethod: string = 'QRIS') {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  try {
+    const result = await DataStore.payCommunityJoinFee(user.id, communityId, paymentMethod)
+    deleteCache('community:induk:all')
+    invalidateCachePattern('community:induk:*')
+    invalidateCachePattern('user:communities:roles:*')
+    revalidatePath(`/community/${communityId}`)
+    revalidatePath('/community')
+    revalidatePath('/merchant/dashboard')
+    return result
+  } catch (e: any) {
+    return { error: e.message || 'Gagal memproses pembayaran keanggotaan.' }
   }
 }
 
@@ -406,7 +425,19 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const community = await DataStore.getCommunityById(communityId)
+    let actualCommunityId = communityId
+    let actualTargetUserId = targetUserId
+
+    let community = await DataStore.getCommunityById(actualCommunityId)
+    if (!community) {
+      const swappedComm = await DataStore.getCommunityById(actualTargetUserId)
+      if (swappedComm) {
+        actualCommunityId = targetUserId
+        actualTargetUserId = communityId
+        community = swappedComm
+      }
+    }
+
     if (!community) return { error: 'Komunitas tidak ditemukan.' }
 
     const isSuperAdmin = user.role === 'ADMIN'
@@ -416,12 +447,23 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
       return { error: 'Anda tidak memiliki akses untuk mengeluarkan anggota dari komunitas ini.' }
     }
 
-    if (targetUserId === community.ketuaId) {
+    if (actualTargetUserId === community.ketuaId) {
       return { error: 'Ketua komunitas tidak dapat dikeluarkan.' }
     }
 
-    await DataStore.removeCommunityMembership(targetUserId, communityId)
-    revalidatePath(`/community/${communityId}`)
+    await DataStore.removeCommunityMembership(actualTargetUserId, actualCommunityId)
+
+    // Clear server-side caches so all members and the kicked user see the change immediately
+    deleteCache(`community:members:${actualCommunityId}`)
+    invalidateCachePattern(`community:members:${actualCommunityId}*`)
+    deleteCache(`user:communities:roles:${actualTargetUserId}`)
+    invalidateCachePattern('user:communities:roles:*')
+    deleteCache('community:induk:all')
+    invalidateCachePattern('community:induk:*')
+
+    revalidatePath(`/community/${actualCommunityId}`)
+    revalidatePath(`/community/${actualCommunityId}?view=dashboard&tab=anggota`)
+    revalidatePath('/community')
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
