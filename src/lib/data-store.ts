@@ -5271,31 +5271,8 @@ export const DataStore = {
       async () => {
         const community = await db.community.findUnique({ where: { id: communityId } })
         if (!community) return { error: 'Komunitas tidak ditemukan.' }
-        const userObj = await db.user.findUnique({ where: { id: userId }, include: { wallet: true } })
+        const userObj = await db.user.findUnique({ where: { id: userId } })
         if (!userObj) return { error: 'Pengguna tidak ditemukan.' }
-
-        const fee = Number(community.joinFee || 0)
-
-        // If payment method is WALLET, check and deduct wallet balance
-        if (paymentMethod === 'WALLET' && fee > 0) {
-          const currentBalance = userObj.wallet?.balance || 0
-          if (currentBalance < fee) {
-            return { error: `Saldo Saloka Pay Anda tidak mencukupi (Rp ${currentBalance.toLocaleString('id-ID')}). Silakan pilih metode pembayaran lain.` }
-          }
-          await db.wallet.update({
-            where: { userId },
-            data: { balance: { decrement: fee } }
-          })
-          await db.transaction.create({
-            data: {
-              walletId: userObj.wallet!.id,
-              amount: fee,
-              type: 'WITHDRAWAL',
-              status: 'COMPLETED',
-              description: `Pembayaran masuk keanggotaan komunitas ${community.name}`
-            } as any
-          })
-        }
 
         const existing = await db.communityMembership.findUnique({
           where: { communityId_userId: { communityId, userId } }
