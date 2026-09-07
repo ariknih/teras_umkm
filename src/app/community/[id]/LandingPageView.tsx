@@ -432,7 +432,15 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
             {(() => {
               const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (config?.perkumpulanTier === 'PREMIUM' || (config?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
               const coopTier = config?.coopTier || (isKoperasi ? 'PRO' : 'BASIC')
-              const joinFee = Number(community?.joinFee || 0)
+              const rawJoinFee = Number(community?.joinFee || 0)
+
+              const joinFee = isKoperasi
+                ? (rawJoinFee > 0 ? rawJoinFee : (coopTier === 'PRO' ? 150000 : coopTier === 'PLUS' ? 100000 : 50000))
+                : isPerkumpulanPrem
+                  ? (rawJoinFee > 0 ? rawJoinFee : 100000)
+                  : rawJoinFee
+
+              const isFree = !isKoperasi && !isPerkumpulanPrem && joinFee === 0
 
               return (
                 <>
@@ -455,7 +463,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
                           : 'PERKUMPULAN REGULER'
                     )}
                   </span>
-                  {joinFee === 0 ? (
+                  {isFree ? (
                     <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-emerald-200/80 shadow-2xs font-sora">
                       Gratis
                     </span>

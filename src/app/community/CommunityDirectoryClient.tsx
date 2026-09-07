@@ -576,7 +576,16 @@ export default function CommunityDirectoryClient({
                               const parsedConfig = c.landingPageConfig ? (typeof c.landingPageConfig === 'string' ? (() => { try { return JSON.parse(c.landingPageConfig) } catch(_) { return {} } })() : c.landingPageConfig) : {}
                               const isPerkumpulanPrem = c.type === 'PERKUMPULAN' && (parsedConfig?.perkumpulanTier === 'PREMIUM' || (parsedConfig?.activationFeePaid ?? 0) > 0 || c.category === 'PAID')
                               const itemCoopTier = parsedConfig?.coopTier || 'BASIC'
-                              const joinFee = Number(c.joinFee || 0)
+                              const isKoperasi = c.type === 'KOPERASI'
+                              const rawJoinFee = Number(c.joinFee || 0)
+
+                              const joinFee = isKoperasi
+                                ? (rawJoinFee > 0 ? rawJoinFee : (itemCoopTier === 'PRO' ? 150000 : itemCoopTier === 'PLUS' ? 100000 : 50000))
+                                : isPerkumpulanPrem
+                                  ? (rawJoinFee > 0 ? rawJoinFee : 100000)
+                                  : rawJoinFee
+
+                              const isFree = !isKoperasi && !isPerkumpulanPrem && joinFee === 0
 
                               return (
                                 <>
@@ -599,7 +608,7 @@ export default function CommunityDirectoryClient({
                                   </span>
 
                                   {/* Price Badge */}
-                                  {joinFee === 0 ? (
+                                  {isFree ? (
                                     <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-emerald-500/10 border-emerald-500/35 text-emerald-600">
                                       Gratis
                                     </span>

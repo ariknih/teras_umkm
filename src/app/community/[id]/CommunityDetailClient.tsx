@@ -2084,13 +2084,22 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       return
     }
 
-    const joinFee = Number(community?.joinFee || 0)
-    if (joinFee > 0 && !isMember) {
+    const rawJoinFee = Number(community?.joinFee || 0)
+    const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
+    const effectiveJoinFee = isKoperasi
+      ? (rawJoinFee > 0 ? rawJoinFee : (coopTier === 'PRO' ? 150000 : coopTier === 'PLUS' ? 100000 : 50000))
+      : isPerkumpulanPrem
+        ? (rawJoinFee > 0 ? rawJoinFee : 100000)
+        : rawJoinFee
+
+    const isFree = !isKoperasi && !isPerkumpulanPrem && effectiveJoinFee === 0
+
+    if (!isFree && !isMember) {
       setPaymentModalOpen(true)
       return
     }
 
-    // Free community join (joinFee === 0)
+    // Free community join (joinFee === 0 on Perkumpulan Reguler)
     startTransition(async () => {
       const res = await joinIndukCommunity(id, true)
       if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
@@ -2751,57 +2760,66 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     }
   }
 
-  const renderPaidCommunityModal = () => (
-    <AnimatePresence>
-      {paymentModalOpen && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="w-full max-w-md border border-gray-150 bg-white p-6 rounded-3xl shadow-2xl space-y-4"
-          >
-            <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-bold shadow-2xs">
-                  ★
-                </div>
-                <h3 className="font-sora text-sm font-black text-gray-900 tracking-tight">
-                  Komunitas Berbayar
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPaymentModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+  const renderPaidCommunityModal = () => {
+    const rawJoinFee = Number(community?.joinFee || 0)
+    const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
+    const effectiveJoinFee = isKoperasi
+      ? (rawJoinFee > 0 ? rawJoinFee : (coopTier === 'PRO' ? 150000 : coopTier === 'PLUS' ? 100000 : 50000))
+      : isPerkumpulanPrem
+        ? (rawJoinFee > 0 ? rawJoinFee : 100000)
+        : rawJoinFee
 
-            {paymentSuccess ? (
-              <div className="p-6 text-center space-y-3">
-                <div className="w-14 h-14 bg-emerald-100 border-2 border-[#2DB24A] rounded-full flex items-center justify-center text-[#2DB24A] mx-auto text-2xl font-black shadow-sm">
-                  ✓
-                </div>
-                <h4 className="font-sora font-black text-gray-900 text-base">Pembayaran Berhasil!</h4>
-                <p className="text-xs text-gray-500">
-                  Status keanggotaan Anda kini resmi menjadi <strong className="text-emerald-700 font-bold">Anggota</strong> di {community?.name}.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-4 bg-emerald-50/70 rounded-2xl border border-[#2DB24A]/25 space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-gray-700">Harga Masuk Komunitas</span>
-                    <span className="text-base font-black text-[#0F5132] font-sora">
-                      Rp {Number(community?.joinFee || 0).toLocaleString('id-ID')}
-                    </span>
+    return (
+      <AnimatePresence>
+        {paymentModalOpen && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md border border-gray-150 bg-white p-6 rounded-3xl shadow-2xl space-y-4"
+            >
+              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-bold shadow-2xs">
+                    ★
                   </div>
-                  <p className="text-[10px] text-gray-500 font-medium">
-                    Biaya keanggotaan resmi yang ditentukan oleh pengurus {community?.name}.
+                  <h3 className="font-sora text-sm font-black text-gray-900 tracking-tight">
+                    Komunitas Berbayar
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPaymentModalOpen(false)}
+                  className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {paymentSuccess ? (
+                <div className="p-6 text-center space-y-3">
+                  <div className="w-14 h-14 bg-emerald-100 border-2 border-[#2DB24A] rounded-full flex items-center justify-center text-[#2DB24A] mx-auto text-2xl font-black shadow-sm">
+                    ✓
+                  </div>
+                  <h4 className="font-sora font-black text-gray-900 text-base">Pembayaran Berhasil!</h4>
+                  <p className="text-xs text-gray-500">
+                    Status keanggotaan Anda kini resmi menjadi <strong className="text-emerald-700 font-bold">Anggota</strong> di {community?.name}.
                   </p>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-emerald-50/70 rounded-2xl border border-[#2DB24A]/25 space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-gray-700">Harga Masuk Komunitas</span>
+                      <span className="text-base font-black text-[#0F5132] font-sora">
+                        Rp {effectiveJoinFee.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 font-medium">
+                      Biaya keanggotaan resmi yang ditentukan oleh pengurus {community?.name}.
+                    </p>
+                  </div>
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 block font-sora">
@@ -2885,7 +2903,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         </div>
       )}
     </AnimatePresence>
-  )
+    )
+  }
 
   const renderKycModal = () => (
     kycWarningModalOpen ? (
