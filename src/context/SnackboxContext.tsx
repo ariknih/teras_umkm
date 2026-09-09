@@ -10,6 +10,7 @@ import {
   CheckoutSummary
 } from '@/types/snackbox'
 import { mockKelurahans, defaultKelurahan } from '@/lib/mock-snackbox'
+import { calculateDistance } from '@/lib/utils'
 
 interface SnackboxContextValue {
   kelurahan: Kelurahan
@@ -51,6 +52,16 @@ const SnackboxContext = createContext<SnackboxContextValue | undefined>(undefine
 
 const CART_STORAGE_KEY = 'saloka_snackbox_cart_v1'
 const KELURAHAN_STORAGE_KEY = 'saloka_snackbox_kelurahan_v1'
+const LOCATION_META_STORAGE_KEY = 'saloka_snackbox_location_meta_v1'
+// ponytail: kelurahan boundaries aren't modeled, so "still the same location" is a flat-radius
+// guess rather than a real polygon check — fine for deciding whether to re-detect, not for
+// precise geofencing. Upgrade to real kelurahan boundary polygons if that precision matters later.
+const SAME_LOCATION_RADIUS_KM = 1.5
+
+type LocationMeta = {
+  source: 'gps' | 'ip' | 'manual'
+  coords: { latitude: number; longitude: number } | null
+}
 
 export function SnackboxProvider({ children }: { children: ReactNode }) {
   const [kelurahan, setKelurahanState] = useState<Kelurahan>(defaultKelurahan)
@@ -74,13 +85,22 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
   const [promoCode, setPromoCode] = useState('')
   const [discountAmount, setDiscountAmount] = useState(0)
 
+  const persistLocationMeta = (meta: LocationMeta) => {
+    try {
+      localStorage.setItem(LOCATION_META_STORAGE_KEY, JSON.stringify(meta))
+    } catch (e) {}
+  }
+
   // 1. Set Kelurahan and sync with cart & localStorage
+  // Manual selection (e.g. the switcher modal) — auto-detection re-checks are skipped for
+  // this until the user is detected somewhere else, since they picked this on purpose.
   const setKelurahan = (newKel: Kelurahan) => {
     setKelurahanState(newKel)
     try {
       localStorage.setItem(KELURAHAN_STORAGE_KEY, JSON.stringify(newKel))
     } catch (e) {}
-    
+    persistLocationMeta({ source: 'manual', coords: null })
+
     setCart((prevCart) => {
       const updated = {
         ...prevCart,
@@ -110,6 +130,7 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
             detectedByIp = kel
             setKelurahan(kel)
             setLocationSource('ip')
+            persistLocationMeta({ source: 'ip', coords: json.coords || null })
           }
         }
       } catch (e) {
@@ -128,6 +149,7 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
                 if (revJson.success && revJson.kelurahan) {
                   setKelurahan(revJson.kelurahan as Kelurahan)
                   setLocationSource('gps')
+                  persistLocationMeta({ source: 'gps', coords: { latitude, longitude } })
                 }
               }
             } catch (err) {
@@ -179,10 +201,42 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
       console.warn('Failed to load snackbox storage:', e)
     }
 
-    // If no previous location saved, immediately detect location via IP & GPS
     if (!hasSavedKel) {
+      // No previous location saved — detect immediately via IP & GPS.
       detectLocation()
+      return
     }
+
+    // A location was saved. A manual pick sticks until the user is auto-detected
+    // somewhere else — never silently override a deliberate choice.
+    let meta: LocationMeta | null = null
+    try {
+      const savedMeta = localStorage.getItem(LOCATION_META_STORAGE_KEY)
+      if (savedMeta) meta = JSON.parse(savedMeta)
+    } catch (e) {}
+
+    if (meta?.source === 'manual') return
+
+    if (meta?.coords && typeof window !== 'undefined' && 'geolocation' in navigator) {
+      // Cheap re-check: is the user still roughly where we last detected them?
+      // Only re-run full detection (IP + GPS + reverse geocode) if they've moved.
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const dist = calculateDistance(
+            pos.coords.latitude, pos.coords.longitude,
+            meta!.coords!.latitude, meta!.coords!.longitude
+          )
+          if (dist > SAME_LOCATION_RADIUS_KM) detectLocation()
+        },
+        () => detectLocation(), // GPS denied/unavailable — can't confirm cheaply, just re-detect
+        { timeout: 5000 }
+      )
+      return
+    }
+
+    // No coords on record (legacy saved value, or IP-only fallback with no coords) —
+    // can't confirm "still the same" cheaply, so refresh once.
+    detectLocation()
   }, [])
 
   // 4. Persist cart changes helper

@@ -2,16 +2,32 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
-import { logAudit } from './audit'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { deleteCache, invalidateCachePattern } from '@/lib/cache'
 import { extractYouTubeId, CERTIFICATE_TEMPLATE_TYPES, PROTECTED_CERTIFICATE_TEMPLATE_NAME } from '@/lib/lms-rules'
-import crypto from 'crypto'
+import { hashPassword, verifyPassword } from '@/lib/password'
+import { deleteUploadedFile } from '@/lib/delete-upload'
+
+// Logs a denied privilege check. Fires only on the throw path — access that
+// succeeds is not logged here, only the specific mutations that matter are
+// (see call sites below), so this stays cheap and doesn't drown the log.
+async function logAccessDenied(action: string, user: { id: string; name?: string | null; email?: string | null; role?: string } | null, detail?: string) {
+  await logAudit({
+    actor: 'MEMBER',
+    actorId: user?.id || 'anonymous',
+    actorName: user?.name || user?.email || undefined,
+    action,
+    module: 'AUTH',
+    detail
+  })
+}
 
 // Helper to check admin access
 async function ensureAdmin() {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
+    await logAccessDenied('ADMIN_ACCESS_DENIED', user, 'Bukan administrator.')
     throw new Error('Unauthorized: Hanya untuk Administrator.')
   }
   return user
@@ -24,10 +40,12 @@ async function ensureAdmin() {
 export async function ensureSuperAdmin() {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
+    await logAccessDenied('SUPERADMIN_ACCESS_DENIED', user, 'Bukan administrator.')
     throw new Error('Unauthorized: Akses khusus Superadmin.')
   }
   const dbUser: any = await DataStore.findUserById(user.id)
   if (!dbUser || dbUser.isSuperAdmin !== true) {
+    await logAccessDenied('SUPERADMIN_ACCESS_DENIED', user, 'Bukan superadmin.')
     throw new Error('Unauthorized: Akses khusus Superadmin.')
   }
   return dbUser
@@ -54,13 +72,23 @@ export async function updateUserRoleAndLevelAction(
   membershipAccess: string,
   bootcampStatus?: string
 ) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     const target: any = await DataStore.findUserById(userId)
     if (role === 'ADMIN' || target?.role === 'ADMIN') {
       throw new Error('Akun admin dikelola lewat menu Admins, bukan lewat menu Users.')
     }
     await DataStore.updateUserRoleAndLevel(userId, role, level, xp, membershipLevel, membershipAccess, bootcampStatus)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'UPDATE_USER_ROLE',
+      module: 'USERS',
+      targetId: userId,
+      targetType: 'USER',
+      detail: `Role: ${target?.role || '-'} → ${role}. Level: ${target?.level ?? '-'} → ${level}.`
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -90,10 +118,20 @@ function cleanCourseInput(title: string, description: string, price: number) {
 }
 
 export async function addCourseAction(title: string, description: string, coverImage: string, accessRequired: string, price: number = 0, certificateTemplateId?: string | null, isPublished: boolean = true) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     const clean = cleanCourseInput(title, description, price)
     const course = await DataStore.addCourse(clean.title, clean.description, coverImage, accessRequired, clean.price, certificateTemplateId, isPublished)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'CREATE_COURSE',
+      module: 'ACADEMY',
+      targetId: course.id,
+      targetType: 'COURSE',
+      detail: `Kelas "${clean.title}".`
+    })
     await revalidateAcademy()
     return { success: true, course }
   } catch (e: any) {
@@ -104,9 +142,19 @@ export async function addCourseAction(title: string, description: string, coverI
 // "Pasarkan" / "Tarik dari Pasar" — a standalone, immediate toggle in the CMS,
 // deliberately separate from updateCourseAction's staged edit-form save.
 export async function setCoursePublishedAction(id: string, isPublished: boolean) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     await DataStore.setCoursePublished(id, isPublished)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'SET_COURSE_PUBLISHED',
+      module: 'ACADEMY',
+      targetId: id,
+      targetType: 'COURSE',
+      detail: isPublished ? 'Dipasarkan.' : 'Ditarik dari pasar.'
+    })
     await revalidateAcademy(id)
     return { success: true }
   } catch (e: any) {
@@ -115,10 +163,19 @@ export async function setCoursePublishedAction(id: string, isPublished: boolean)
 }
 
 export async function updateCourseAction(id: string, title: string, description: string, coverImage: string, accessRequired: string, price: number = 0, certificateTemplateId?: string | null) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     const clean = cleanCourseInput(title, description, price)
     await DataStore.updateCourse(id, clean.title, clean.description, coverImage, accessRequired, clean.price, certificateTemplateId)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'UPDATE_COURSE',
+      module: 'ACADEMY',
+      targetId: id,
+      targetType: 'COURSE'
+    })
     await revalidateAcademy(id)
     return { success: true }
   } catch (e: any) {
@@ -127,9 +184,18 @@ export async function updateCourseAction(id: string, title: string, description:
 }
 
 export async function deleteCourseAction(id: string) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     await DataStore.deleteCourse(id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'DELETE_COURSE',
+      module: 'ACADEMY',
+      targetId: id,
+      targetType: 'COURSE'
+    })
     await revalidateAcademy()
     return { success: true }
   } catch (e: any) {
@@ -153,10 +219,20 @@ function cleanCertificateTemplateInput(name: string, type: string, backgroundIma
 }
 
 export async function addCertificateTemplateAction(name: string, type: string, backgroundImage: string) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     const clean = cleanCertificateTemplateInput(name, type, backgroundImage)
     const template = await DataStore.addCertificateTemplate(clean.name, clean.type, clean.backgroundImage)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'CREATE_CERTIFICATE_TEMPLATE',
+      module: 'ACADEMY',
+      targetId: template.id,
+      targetType: 'CERTIFICATE_TEMPLATE',
+      detail: `Template "${clean.name}" (${clean.type}).`
+    })
     await revalidateAcademy()
     return { success: true, template }
   } catch (e: any) {
@@ -165,7 +241,7 @@ export async function addCertificateTemplateAction(name: string, type: string, b
 }
 
 export async function updateCertificateTemplateAction(id: string, name: string, type: string, backgroundImage: string) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     const existing: any = await DataStore.getCertificateTemplateById(id)
     if (existing?.name === PROTECTED_CERTIFICATE_TEMPLATE_NAME) {
@@ -173,6 +249,15 @@ export async function updateCertificateTemplateAction(id: string, name: string, 
     }
     const clean = cleanCertificateTemplateInput(name, type, backgroundImage)
     await DataStore.updateCertificateTemplate(id, clean.name, clean.type, clean.backgroundImage)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'UPDATE_CERTIFICATE_TEMPLATE',
+      module: 'ACADEMY',
+      targetId: id,
+      targetType: 'CERTIFICATE_TEMPLATE'
+    })
     await revalidateAcademy()
     return { success: true }
   } catch (e: any) {
@@ -181,13 +266,22 @@ export async function updateCertificateTemplateAction(id: string, name: string, 
 }
 
 export async function deleteCertificateTemplateAction(id: string) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     const existing: any = await DataStore.getCertificateTemplateById(id)
     if (existing?.name === PROTECTED_CERTIFICATE_TEMPLATE_NAME) {
       throw new Error('Template bawaan Saloka tidak dapat dihapus.')
     }
     await DataStore.deleteCertificateTemplate(id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'DELETE_CERTIFICATE_TEMPLATE',
+      module: 'ACADEMY',
+      targetId: id,
+      targetType: 'CERTIFICATE_TEMPLATE'
+    })
     await revalidateAcademy()
     return { success: true }
   } catch (e: any) {
@@ -222,9 +316,19 @@ function cleanLessonInput(input: LessonActionInput) {
 }
 
 export async function addLessonAction(courseId: string, input: LessonActionInput) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     const lesson = await DataStore.addLesson({ courseId, ...cleanLessonInput(input) })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'CREATE_LESSON',
+      module: 'ACADEMY',
+      targetId: lesson.id,
+      targetType: 'LESSON',
+      detail: `Modul untuk kelas #${courseId}.`
+    })
     await revalidateAcademy(courseId)
     return { success: true, lesson }
   } catch (e: any) {
@@ -233,9 +337,18 @@ export async function addLessonAction(courseId: string, input: LessonActionInput
 }
 
 export async function updateLessonAction(id: string, courseId: string, input: LessonActionInput) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     await DataStore.updateLesson(id, cleanLessonInput(input))
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'UPDATE_LESSON',
+      module: 'ACADEMY',
+      targetId: id,
+      targetType: 'LESSON'
+    })
     await revalidateAcademy(courseId)
     return { success: true }
   } catch (e: any) {
@@ -275,9 +388,18 @@ export async function fetchYouTubeDurationAction(url: string) {
 }
 
 export async function deleteLessonAction(id: string, courseId: string) {
-  await ensureAdmin()
+  const admin = await ensureAdmin()
   try {
     await DataStore.deleteLesson(id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'DELETE_LESSON',
+      module: 'ACADEMY',
+      targetId: id,
+      targetType: 'LESSON'
+    })
     await revalidateAcademy(courseId)
     return { success: true }
   } catch (e: any) {
@@ -320,7 +442,7 @@ export async function getAdminsAction() {
 }
 
 export async function createAdminAction(formData: FormData) {
-  await ensureSuperAdmin()
+  const currentUser = await ensureSuperAdmin()
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -330,7 +452,7 @@ export async function createAdminAction(formData: FormData) {
     return { error: 'Nama, email, dan password wajib diisi.' }
   }
 
-  const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+  const passwordHash = await hashPassword(password)
 
   try {
     // isSuperAdmin is never accepted from the client: the superadmin count is
@@ -341,6 +463,16 @@ export async function createAdminAction(formData: FormData) {
       passwordHash,
       isSuperAdmin: false,
       adminPermissions
+    })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'CREATE_ADMIN',
+      module: 'ADMINS',
+      targetId: admin.id,
+      targetType: 'USER',
+      detail: `Admin baru "${name}" (${email}) dibuat.`
     })
     revalidatePath('/cms_admin', 'layout')
     return { success: true, admin }
@@ -378,15 +510,24 @@ export async function updateAdminAction(formData: FormData) {
       // one — this is the one field an authenticated session alone must
       // not be enough to change on its own account.
       if (id === currentUser.id) {
-        const currentHash = crypto.createHash('sha256').update(currentPassword || '').digest('hex')
-        if (!currentPassword || currentHash !== currentUser.passwordHash) {
+        if (!currentPassword || !(await verifyPassword(currentPassword, currentUser.passwordHash))) {
           return { error: 'Kata sandi saat ini salah.' }
         }
       }
-      updateData.passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+      updateData.passwordHash = await hashPassword(password)
     }
 
     const admin = await DataStore.updateAdmin(id, updateData)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'UPDATE_ADMIN',
+      module: 'ADMINS',
+      targetId: id,
+      targetType: 'USER',
+      detail: `Admin "${name}" (${email}) diperbarui.${updateData.passwordHash ? ' Password diubah.' : ''}`
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true, admin }
   } catch (e: any) {
@@ -402,6 +543,15 @@ export async function deleteAdminAction(id: string) {
   try {
     await ensureNotEditingOtherSuperAdmin(currentUser.id, id)
     await DataStore.deleteAdmin(id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'DELETE_ADMIN',
+      module: 'ADMINS',
+      targetId: id,
+      targetType: 'USER'
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -421,7 +571,18 @@ export async function getInvoiceMembershipsAction(status?: string) {
 export async function verifyInvoiceMembershipAction(membershipId: string) {
   const admin = await ensureAdmin()
   try {
-    const res = await DataStore.verifyInvoiceMembership(membershipId, admin.id)
+    const res: any = await DataStore.verifyInvoiceMembership(membershipId, admin.id)
+    if (res?.success) {
+      await logAudit({
+        actor: 'ADMIN',
+        actorId: admin.id,
+        actorName: admin.name || admin.email,
+        action: 'VERIFY_INVOICE_MEMBERSHIP',
+        module: 'COOPERATIVE',
+        targetId: membershipId,
+        targetType: 'COMMUNITY_MEMBERSHIP'
+      })
+    }
     revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
     return res
@@ -457,6 +618,16 @@ export async function injectCoinAction(formData: FormData) {
 
   try {
     await DataStore.injectCoin(targetId, targetType, amount, reason, admin.id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'INJECT_COIN',
+      module: 'COINS',
+      targetId,
+      targetType,
+      detail: `Inject ${amount} koin ke ${targetType} #${targetId}. Alasan: ${reason}`
+    })
     revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
     revalidatePath('/wallet')
@@ -479,6 +650,15 @@ export async function approveLevelRequestAction(requestId: string) {
   const admin = await ensureSuperAdmin()
   try {
     await DataStore.approveLevelRequest(requestId, admin.id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'APPROVE_LEVEL_REQUEST',
+      module: 'USERS',
+      targetId: requestId,
+      targetType: 'LEVEL_REQUEST'
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -490,6 +670,16 @@ export async function rejectLevelRequestAction(requestId: string, note: string) 
   const admin = await ensureSuperAdmin()
   try {
     await DataStore.rejectLevelRequest(requestId, note, admin.id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'REJECT_LEVEL_REQUEST',
+      module: 'USERS',
+      targetId: requestId,
+      targetType: 'LEVEL_REQUEST',
+      detail: note || undefined
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -536,6 +726,7 @@ export async function createLevelRequestAction(formData: FormData) {
 export async function ensureAdminPermission(permissionKey: string) {
   const user = await getCurrentUser()
   if (!user || user.role !== 'ADMIN') {
+    await logAccessDenied('ADMIN_ACCESS_DENIED', user, `Modul: ${permissionKey}.`)
     throw new Error('Unauthorized: Hanya untuk Administrator.')
   }
   const dbUser = await DataStore.findUserById(user.id)
@@ -552,6 +743,7 @@ export async function ensureAdminPermission(permissionKey: string) {
   }
 
   if (!permissions.includes(permissionKey)) {
+    await logAccessDenied('ADMIN_PERMISSION_DENIED', user, `Modul: ${permissionKey}.`)
     throw new Error(`Unauthorized: Anda tidak memiliki akses ke modul ${permissionKey}.`)
   }
   return dbUser
@@ -568,9 +760,17 @@ export async function getGlobalKycSettingAction() {
 }
 
 export async function updateGlobalKycSettingAction(required: boolean) {
-  await ensureAdminPermission('community')
+  const admin = await ensureAdminPermission('community')
   try {
     await DataStore.setGlobalKycRequirementToCreateCommunity(required)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'UPDATE_KYC_SETTING',
+      module: 'COMMUNITY',
+      detail: `Wajib KYC untuk membuat komunitas: ${required ? 'AKTIF' : 'NON-AKTIF'}.`
+    })
     revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
     return { success: true, required }
@@ -624,9 +824,19 @@ export async function deleteCommunityAdminAction(communityId: string) {
 }
 
 export async function updateUserIndukCommunityAction(userId: string, communityId: string | null) {
-  await ensureAdminPermission('users')
+  const admin = await ensureAdminPermission('users')
   try {
     await DataStore.setIndukCommunity(userId, communityId)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'UPDATE_USER_INDUK_COMMUNITY',
+      module: 'USERS',
+      targetId: userId,
+      targetType: 'USER',
+      detail: communityId ? `Set induk komunitas menjadi #${communityId}.` : 'Hapus induk komunitas.'
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -638,10 +848,20 @@ export async function updateUserIndukCommunityAction(userId: string, communityId
 // Directly removes the CommunityMembership record for (userId, communityId)
 // without relying on indukCommunityId matching. Fixes the refresh-persistence bug.
 export async function kickMemberFromCommunityAdminAction(userId: string, communityId: string) {
-  await ensureAdminPermission('users')
+  const admin = await ensureAdminPermission('users')
   if (!userId || !communityId) return { error: 'userId dan communityId wajib diisi.' }
   try {
     await DataStore.removeCommunityMembership(userId, communityId)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'KICK_COMMUNITY_MEMBER_ADMIN',
+      module: 'USERS',
+      targetId: userId,
+      targetType: 'USER',
+      detail: `Keluarkan anggota dari komunitas #${communityId}.`
+    })
     deleteCache(`community:members:${communityId}`)
     invalidateCachePattern(`community:members:${communityId}*`)
     deleteCache(`user:communities:roles:${userId}`)
@@ -662,6 +882,16 @@ export async function updateAdminPermissionsAction(adminId: string, permissions:
     await ensureNotEditingOtherSuperAdmin(currentUser.id, adminId)
     // isSuperAdmin is never written here — permission grants can't touch it.
     await DataStore.updateUserAdminPermissions(adminId, permissions, false)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'UPDATE_ADMIN_PERMISSIONS',
+      module: 'ADMINS',
+      targetId: adminId,
+      targetType: 'USER',
+      detail: `Hak akses diubah menjadi: ${permissions.join(', ')}.`
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -677,8 +907,18 @@ export async function updateAdminAccountAction(adminId: string, data: { name?: s
     const updateData: any = {}
     if (data.name) updateData.name = data.name
     if (data.email) updateData.email = data.email
-    if (data.password) updateData.passwordHash = crypto.createHash('sha256').update(data.password).digest('hex')
+    if (data.password) updateData.passwordHash = await hashPassword(data.password)
     await DataStore.updateAdminAccount(adminId, updateData)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'UPDATE_ADMIN_ACCOUNT',
+      module: 'ADMINS',
+      targetId: adminId,
+      targetType: 'USER',
+      detail: `Field diubah: ${Object.keys(updateData).join(', ') || '-'}.`
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -688,7 +928,7 @@ export async function updateAdminAccountAction(adminId: string, data: { name?: s
 
 // ─── USER CRUD (Create / Delete) ──────────────────────────────────────────
 export async function createUserAction(formData: FormData) {
-  await ensureAdminPermission('users')
+  const admin = await ensureAdminPermission('users')
   const name = formData.get('name') as string
   const email = formData.get('email') as string
   const password = formData.get('password') as string
@@ -702,10 +942,20 @@ export async function createUserAction(formData: FormData) {
     return { error: 'Role tidak valid. Akun admin dibuat lewat menu Admins.' }
   }
 
-  const passwordHash = crypto.createHash('sha256').update(password).digest('hex')
+  const passwordHash = await hashPassword(password)
 
   try {
     const user = await DataStore.createUserAdmin({ name, email, passwordHash, phone, role })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'CREATE_USER',
+      module: 'USERS',
+      targetId: user.id,
+      targetType: 'USER',
+      detail: `User "${name}" (${email}) dibuat dengan role ${role}.`
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true, user }
   } catch (e: any) {
@@ -714,9 +964,29 @@ export async function createUserAction(formData: FormData) {
 }
 
 export async function deleteUserAction(userId: string) {
-  await ensureAdminPermission('users')
+  const admin = await ensureAdminPermission('users')
   try {
+    const target: any = await DataStore.findUserById(userId)
     await DataStore.deleteUser(userId)
+    // Best-effort: the DB row is the source of truth and is already gone;
+    // don't let a storage-cleanup failure surface as a failed deletion.
+    if (target) {
+      await Promise.all([
+        deleteUploadedFile(target.image),
+        deleteUploadedFile(target.kycKtpUrl),
+        deleteUploadedFile(target.kycSelfieUrl),
+      ]).catch(() => {})
+    }
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'DELETE_USER',
+      module: 'USERS',
+      targetId: userId,
+      targetType: 'USER',
+      detail: target ? `User "${target.name}" (${target.email}) dihapus.` : undefined
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -750,6 +1020,7 @@ export async function updateProductSnackboxAction(productId: string, isSnackbox:
       detail: `Status Snackbox diubah menjadi ${isSnackbox ? 'AKTIF' : 'NON-AKTIF'}.`
     })
 
+    await invalidateCachePattern('snackbox-products:')
     revalidatePath('/cms_admin', 'layout')
     revalidatePath('/snackbox')
     return { success: true }
@@ -791,19 +1062,14 @@ export async function updateMerchantSnackboxEligibilityAction(userId: string, is
   }
 }
 
+// ponytail: Snackbox relay status is a seeded UI fixture (see TransactionsTab.tsx),
+// no real Order.relayStatus field exists yet — no audit log until there's a real mutation to log.
 export async function updateSnackboxRelayStatusAction(orderId: string, relayStatus: string, relayNote?: string) {
-  const admin = await ensureAdmin()
+  await ensureAdmin()
   try {
-    await logAudit({
-      actor: 'ADMIN',
-      actorId: admin.id,
-      actorName: admin.name || admin.email,
-      action: 'UPDATE_SNACKBOX_RELAY_STATUS',
-      module: 'TRANSACTIONS',
-      targetId: orderId,
-      detail: `Status Relay Toko order #${orderId} menjadi "${relayStatus}". Catatan: ${relayNote || '-'}`
-    })
-
+    void orderId
+    void relayStatus
+    void relayNote
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -811,19 +1077,14 @@ export async function updateSnackboxRelayStatusAction(orderId: string, relayStat
   }
 }
 
+// ponytail: Snackbox batch payout is fully mock (see SnackboxPayoutTab.tsx),
+// no real payout/escrow backend exists yet — no audit log until there's a real mutation to log.
 export async function processSnackboxBatchPayoutAction(batchId: string, totalAmount: number, merchantCount: number) {
-  const admin = await ensureAdmin()
+  await ensureAdmin()
   try {
-    await logAudit({
-      actor: 'ADMIN',
-      actorId: admin.id,
-      actorName: admin.name || admin.email,
-      action: 'PROCESS_SNACKBOX_BATCH_PAYOUT',
-      module: 'WITHDRAWALS',
-      targetId: batchId,
-      detail: `Payout Batch Snackbox #${batchId} sebesar Rp ${totalAmount.toLocaleString('id-ID')} kepada ${merchantCount} mitra kue.`
-    })
-
+    void batchId
+    void totalAmount
+    void merchantCount
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {

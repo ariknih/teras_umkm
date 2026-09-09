@@ -438,7 +438,11 @@ export default function CartPage() {
         const storedAff = localStorage.getItem('teras_affiliate_id')
         if (storedCart) {
           try {
-            setCart(JSON.parse(storedCart))
+            const parsedCart: CartItem[] = JSON.parse(storedCart)
+            setCart(parsedCart)
+            // Everything starts selected — avoids the old "empty Set means select-all"
+            // sentinel, which made the very first deselect a no-op.
+            setSelectedItemIds(new Set(parsedCart.map((i) => i.productId)))
           } catch (e) {}
         }
         if (storedAff) {
@@ -688,32 +692,36 @@ export default function CartPage() {
     setSuccessMessage(null)
     setIsPendingCheckout(true)
 
-    const hasSnackboxSelected = !!(snackboxCart && isSnackboxSelected && snackboxCart.items?.length > 0)
-
     if (selectedCartDetails.length === 0 && !hasSnackboxSelected) {
       setError('Pilih minimal 1 produk yang ingin dibeli.')
       setIsPendingCheckout(false)
       return
     }
 
-    // Snackbox-only checkout (no real products selected): simulate, since
-    // there's no backend product record to create a real order against.
-    if (selectedCartDetails.length === 0 && hasSnackboxSelected) {
-      setTimeout(() => {
-        clearSnackboxCartIfSelected()
-        setSuccessMessage('Pesanan Snackbox berhasil dibuat!')
-        setCheckoutSuccess(true)
-        setIsPendingCheckout(false)
-      }, 900)
+    if (deliveryMethod === 'DELIVERY' && !shippingAddress) {
+      setError('Alamat pengiriman wajib diisi.')
+      setIsPendingCheckout(false)
       return
     }
 
-    // Build items payload
-    const itemsPayload = selectedCartDetails.map((item) => ({
-      productId: item.id,
-      quantity: item.quantity,
-      note: itemNotes[item.id] || undefined
-    }))
+    // Build items payload — merges regular products with real, DB-backed
+    // Snackbox products (boxCount multiplied in here since createOrder has
+    // no concept of "boxes", only per-item quantity).
+    const itemsPayload = [
+      ...selectedCartDetails.map((item) => ({
+        productId: item.id,
+        quantity: item.quantity,
+        note: itemNotes[item.id] || undefined
+      })),
+      ...(hasSnackboxSelected
+        ? snackboxCart!.items
+            .filter((i: any) => i.selected)
+            .map((i: any) => ({
+              productId: i.product.id,
+              quantity: i.quantity * (snackboxCart!.boxCount || 1)
+            }))
+        : [])
+    ]
 
     const merchantObj = cartDetails[0]?.merchant;
     let merchantAddress = '';
@@ -781,7 +789,7 @@ export default function CartPage() {
     // Direct COD checkout (Simulation)
     if (paymentMethod === 'COD') {
       try {
-        const res = await checkoutCart(itemsPayload, affiliateId || undefined, 'MIDTRANS', {
+        const res = await checkoutCart(itemsPayload, affiliateId || undefined, 'COD', {
           ...shippingDetails,
           bumpSales: 'COD' // tag as COD
         })
@@ -836,9 +844,8 @@ export default function CartPage() {
     return basePrice;
   };
 
-  const selectedCartDetails = cartDetails.filter((item) =>
-    selectedItemIds.size === 0 ? true : selectedItemIds.has(item.id)
-  );
+  const selectedCartDetails = cartDetails.filter((item) => selectedItemIds.has(item.id));
+  const hasSnackboxSelected = !!(snackboxCart && isSnackboxSelected && snackboxCart.items?.length > 0);
 
   const snackboxItemsTotal = snackboxCart?.items
     ? snackboxCart.items.reduce((acc: number, item: any) => acc + ((item.product?.price || item.price || 0) * (item.quantity || 1)), 0)
@@ -1276,7 +1283,7 @@ export default function CartPage() {
                         <div className="space-y-4">
                           {items.map(item => {
                             const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
-                            const isChecked = selectedItemIds.has(item.id) || selectedItemIds.size === 0;
+                            const isChecked = selectedItemIds.has(item.id);
 
                             return (
                               <div key={item.id} className="pb-4 border-b border-slate-100 last:border-b-0 last:pb-0 space-y-2">
@@ -1836,7 +1843,7 @@ export default function CartPage() {
                         isPending ||
                         isPendingCheckout ||
                         isVerifying ||
-                        cart.length === 0 ||
+                        (cart.length === 0 && !hasSnackboxSelected) ||
                         hasOwnProduct ||
                         (paymentMethod === 'WALLET' && (walletBalance === null || walletBalance < total))
                       }

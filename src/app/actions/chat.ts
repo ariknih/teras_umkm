@@ -25,6 +25,10 @@ export async function getChatHistory(roomId: string) {
   if (!user) {
     return []
   }
+  const room: any = await DataStore.getChatRoomById(roomId)
+  if (!room || (room.buyerId !== user.id && room.sellerId !== user.id && user.role !== 'ADMIN')) {
+    return []
+  }
   try {
     await DataStore.markMessagesAsRead(roomId, user.id)
     return await DataStore.getChatMessages(roomId)
@@ -37,6 +41,10 @@ export async function sendChat(roomId: string, content: string, imageUrl?: strin
   const user = await getCurrentUser()
   if (!user) {
     return { error: 'Anda harus masuk terlebih dahulu.' }
+  }
+  const room: any = await DataStore.getChatRoomById(roomId)
+  if (!room || (room.buyerId !== user.id && room.sellerId !== user.id && user.role !== 'ADMIN')) {
+    return { error: 'Anda bukan peserta percakapan ini.' }
   }
   if (!content.trim() && !imageUrl) {
     return { error: 'Pesan tidak boleh kosong.' }

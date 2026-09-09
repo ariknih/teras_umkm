@@ -55,3 +55,6 @@ next-env.d.ts
 
 
 .vercel
+
+# operational logs (never commit — can accumulate stack traces/internal paths)
+db_error_log.txt

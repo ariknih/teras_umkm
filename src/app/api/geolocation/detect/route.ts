@@ -108,6 +108,7 @@ export async function GET(req: NextRequest) {
             success: true,
             kelurahan: kel,
             source: 'ip',
+            coords: { latitude: lat, longitude: lng },
             ipData: { city, postal, ip: ipData.ip }
           })
         }
@@ -127,7 +128,12 @@ export async function GET(req: NextRequest) {
       itemCount: 14
     }
 
-    return NextResponse.json({ success: true, kelurahan: fallbackKel, source: 'ip-fallback' })
+    return NextResponse.json({
+      success: true,
+      kelurahan: fallbackKel,
+      source: 'ip-fallback',
+      coords: (lat && lng) ? { latitude: lat, longitude: lng } : null
+    })
   } catch (error: any) {
     console.error('Geolocation detect error:', error)
     return NextResponse.json({ success: true, kelurahan: defaultKelurahan, source: 'error-fallback' })

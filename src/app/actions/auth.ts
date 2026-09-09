@@ -4,13 +4,16 @@ import { cookies, headers } from 'next/headers'
 import { SignJWT, jwtVerify } from 'jose'
 import crypto from 'crypto'
 import { DataStore } from '@/lib/data-store'
+import { db } from '@/lib/db'
 import { getCookieDomain } from '@/lib/cookie-domain'
+import { logAudit } from '@/lib/audit-log'
+import { hashPassword, verifyPassword, isLegacyHash } from '@/lib/password'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
-const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key-12345')
-
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex')
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
 }
+const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export async function login(formData: FormData) {
   const emailOrUsername = (formData.get('email') as string || '').trim()
@@ -19,21 +22,60 @@ export async function login(formData: FormData) {
   if (!emailOrUsername || !password) {
     return { error: 'Email/username dan password wajib diisi' }
   }
-  
-  let user = await DataStore.findUserByEmail(emailOrUsername)
-  if (!user) {
-    user = await DataStore.findUserByUsername(emailOrUsername)
+
+  const loginIp = await getClientIp()
+  if (!checkRateLimit(`login:${loginIp}`, 5, 5 * 60 * 1000)) {
+    return { error: 'Terlalu banyak percobaan login. Silakan coba lagi dalam beberapa menit.' }
   }
-  
+
+  // Auth-critical: query the DB directly, bypassing DataStore's mock-seed
+  // fallback. A DB error must fail this login, never fall through to
+  // hardcoded seeded credentials.
+  let user
+  try {
+    user = await db.user.findUnique({ where: { email: emailOrUsername } })
+    if (!user) {
+      user = await db.user.findFirst({ where: { username: emailOrUsername.toLowerCase() } as any })
+    }
+  } catch (e) {
+    console.error('[auth] login lookup failed:', e)
+    return { error: 'Terjadi kesalahan, silakan coba lagi.' }
+  }
+
   if (!user) {
+    await logAudit({
+      actor: 'MEMBER',
+      actorId: emailOrUsername,
+      action: 'LOGIN_FAILED',
+      module: 'AUTH',
+      detail: 'Akun tidak ditemukan.'
+    })
     return { error: 'Email/username atau password salah' }
   }
-  
-  const hash = hashPassword(password)
-  if (user.passwordHash !== hash) {
+
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'LOGIN_FAILED',
+      module: 'AUTH',
+      detail: 'Password salah.'
+    })
     return { error: 'Email/username atau password salah' }
   }
-  
+
+  // Lazy migration: a successful login against a legacy SHA-256 hash
+  // upgrades it to bcrypt in place. Non-blocking — a write failure here
+  // must not fail the login that just succeeded.
+  if (isLegacyHash(user.passwordHash)) {
+    try {
+      await db.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(password) } })
+    } catch (e) {
+      console.error('[auth] legacy password rehash failed:', e)
+    }
+  }
+
   const isSuper = user.isSuperAdmin === true
 
   // Create Session JWT
@@ -64,7 +106,15 @@ export async function login(formData: FormData) {
     maxAge: 60 * 60 * 24 * 7, // 7 days
     domain: cookieDomain
   })
-  
+
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'LOGIN_SUCCESS',
+    module: 'AUTH'
+  })
+
   return { success: true, user: { id: user.id, name: user.name, email: user.email, role: user.role } }
 }
 
@@ -112,7 +162,6 @@ export async function register(formData: FormData) {
   const effectiveReferral = affiliateRefCookie || referralCode
 
   let parentAffiliateId: string | undefined = undefined
-  let referrerId: string | undefined = undefined
   if (effectiveReferral) {
     // Coba lookup by username dulu
     let referrer = await DataStore.findUserByUsername(effectiveReferral)
@@ -126,14 +175,13 @@ export async function register(formData: FormData) {
     }
     if (referrer) {
       parentAffiliateId = referrer.id
-      referrerId = referrer.id
     }
   }
 
   // Community selection (Revisi Pert Keempat)
   const communityId = formData.get('communityId') as string || undefined
 
-  const passwordHash = hashPassword(password)
+  const passwordHash = await hashPassword(password)
   const user = await DataStore.createUser({
     email,
     name,
@@ -152,19 +200,20 @@ export async function register(formData: FormData) {
     }
   }
 
-  // Reward +1 coin ke pengundang (semua role)
-  if (referrerId) {
-    try {
-      await DataStore.rewardUserInviteCoin({
-        referrerId,
-        referredId: user.id,
-        coinAmount: 1.0,
-      })
-    } catch (_) {
-      // Non-blocking: reward gagal tidak halangi registrasi
-    }
-  }
-  
+  // System C (coin-per-signup referral reward) disabled — no longer part of business process.
+  // parentAffiliateId above still feeds Systems A/B (product-sale & community-join commission trees).
+
+  await logAudit({
+    actor: 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'REGISTER',
+    module: 'AUTH',
+    targetId: user.id,
+    targetType: 'USER',
+    detail: `Daftar sebagai ${role}${finalUsername ? ` (@${finalUsername})` : ''}.`
+  })
+
   // Create Session JWT
   const token = await new SignJWT({ id: user.id, email: user.email, role: user.role, name: user.name })
     .setProtectedHeader({ alg: 'HS256' })
@@ -190,6 +239,8 @@ export async function register(formData: FormData) {
 }
 
 export async function logout() {
+  const currentUser = await getCurrentUser()
+
   const cookieStore = await cookies()
   const headerList = await headers()
   const host = headerList.get('host') || ''
@@ -198,6 +249,16 @@ export async function logout() {
 
   // Delete session cookie natively
   cookieStore.delete('session')
+
+  if (currentUser) {
+    await logAudit({
+      actor: currentUser.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'LOGOUT',
+      module: 'AUTH'
+    })
+  }
 
   const domainsToClear = [
     undefined,
@@ -279,7 +340,17 @@ export async function updateUserLandingPage(template: string, configStr: string,
     }
     // Reward 50 XP for landing page setup
     await DataStore.addXp(user.id, 50)
-    
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_LANDING_PAGE',
+      module: 'SETTINGS',
+      targetId: user.id,
+      targetType: 'USER',
+      detail: `Template: ${template}.`
+    })
+
     // Clear layout cache to update userSetupCompleted flag
     revalidatePath('/')
     
@@ -338,6 +409,11 @@ export async function requestPasswordReset(phone: string) {
     return { error: 'Nomor WhatsApp wajib diisi.' }
   }
 
+  const resetIp = await getClientIp()
+  if (!checkRateLimit(`pwreset-req:${resetIp}`, 3, 10 * 60 * 1000)) {
+    return { error: 'Terlalu banyak permintaan OTP. Silakan coba lagi dalam beberapa menit.' }
+  }
+
   const user = await DataStore.findUserByPhoneOrWhatsApp(cleanPhone)
   if (!user) {
     return { error: 'Nomor WhatsApp tidak terdaftar.' }
@@ -359,6 +435,14 @@ export async function requestPasswordReset(phone: string) {
     return { error: err.message || 'Gagal mengirim OTP.' }
   }
 
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'PASSWORD_RESET_REQUESTED',
+    module: 'AUTH'
+  })
+
   return { success: true }
 }
 
@@ -371,19 +455,40 @@ export async function resetPasswordWithOtp(phone: string, otp: string, newPasswo
     return { error: 'Password baru minimal 6 karakter.' }
   }
 
+  const resetVerifyIp = await getClientIp()
+  if (!checkRateLimit(`pwreset-verify:${resetVerifyIp}`, 10, 10 * 60 * 1000)) {
+    return { error: 'Terlalu banyak percobaan. Silakan coba lagi dalam beberapa menit.' }
+  }
+
   const user = await DataStore.findUserByPhoneOrWhatsApp(cleanPhone)
   if (!user || !(user as any).resetOtpCode || !(user as any).resetOtpExpiresAt) {
     return { error: 'Kode OTP tidak valid. Silakan minta kode baru.' }
   }
   if ((user as any).resetOtpCode !== otp) {
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'PASSWORD_RESET_FAILED',
+      module: 'AUTH',
+      detail: 'Kode OTP salah.'
+    })
     return { error: 'Kode OTP salah.' }
   }
   if (new Date((user as any).resetOtpExpiresAt).getTime() < Date.now()) {
     return { error: 'Kode OTP sudah kadaluarsa. Silakan minta kode baru.' }
   }
 
-  const passwordHash = hashPassword(newPassword)
+  const passwordHash = await hashPassword(newPassword)
   await DataStore.resetPasswordWithOtp(user.id, passwordHash)
+
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'PASSWORD_RESET_SUCCESS',
+    module: 'AUTH'
+  })
 
   return { success: true }
 }
@@ -404,6 +509,10 @@ export async function sendPhoneVerificationOtp(phone: string) {
 
   const cleanPhone = (phone || '').trim()
   if (!cleanPhone) return { error: 'Nomor WhatsApp wajib diisi.' }
+
+  if (!checkRateLimit(`otp-send:${user.id}`, 3, 10 * 60 * 1000)) {
+    return { error: 'Terlalu banyak permintaan OTP. Silakan coba lagi dalam beberapa menit.' }
+  }
 
   const existing = await DataStore.findUserByWhatsApp(cleanPhone)
   if (existing && existing.id !== user.id) {
@@ -426,12 +535,24 @@ export async function sendPhoneVerificationOtp(phone: string) {
     return { error: err.message || 'Gagal mengirim OTP.' }
   }
 
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'SEND_PHONE_VERIFICATION_OTP',
+    module: 'AUTH'
+  })
+
   return { success: true }
 }
 
 export async function verifyPhoneOtp(phone: string, otp: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  if (!checkRateLimit(`otp-verify:${user.id}`, 10, 10 * 60 * 1000)) {
+    return { error: 'Terlalu banyak percobaan. Silakan coba lagi dalam beberapa menit.' }
+  }
 
   const profile = await DataStore.findUserById(user.id)
   if (!profile || !(profile as any).phoneOtpCode || !(profile as any).phoneOtpExpiresAt) {
@@ -445,12 +566,23 @@ export async function verifyPhoneOtp(phone: string, otp: string) {
   }
 
   await DataStore.confirmPhoneVerified(user.id, (phone || '').trim())
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'VERIFY_PHONE',
+    module: 'AUTH'
+  })
   return { success: true }
 }
 
 export async function sendEmailVerificationOtp() {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  if (!checkRateLimit(`otp-send:${user.id}`, 3, 10 * 60 * 1000)) {
+    return { error: 'Terlalu banyak permintaan OTP. Silakan coba lagi dalam beberapa menit.' }
+  }
 
   const code = generateOtpCode()
   const expiresAt = new Date(Date.now() + VERIFY_OTP_TTL_MS)
@@ -467,12 +599,24 @@ export async function sendEmailVerificationOtp() {
     return { error: result.error || 'Gagal mengirim OTP ke email.' }
   }
 
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'SEND_EMAIL_VERIFICATION_OTP',
+    module: 'AUTH'
+  })
+
   return { success: true }
 }
 
 export async function verifyEmailOtp(otp: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  if (!checkRateLimit(`otp-verify:${user.id}`, 10, 10 * 60 * 1000)) {
+    return { error: 'Terlalu banyak percobaan. Silakan coba lagi dalam beberapa menit.' }
+  }
 
   const profile = await DataStore.findUserById(user.id)
   if (!profile || !(profile as any).emailOtpCode || !(profile as any).emailOtpExpiresAt) {
@@ -486,6 +630,13 @@ export async function verifyEmailOtp(otp: string) {
   }
 
   await DataStore.confirmEmailVerified(user.id)
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'VERIFY_EMAIL',
+    module: 'AUTH'
+  })
   return { success: true }
 }
 
@@ -599,7 +750,17 @@ export async function saveOnboardingData(data: {
     }
 
     await DataStore.addXp(user.id, 100)
-    
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'SAVE_ONBOARDING_DATA',
+      module: 'AUTH',
+      targetId: user.id,
+      targetType: 'USER',
+      detail: `Toko "${data.storeName}", subdomain ${data.subdomain}.`
+    })
+
     revalidatePath('/')
     return { success: true }
   } catch (err: any) {
@@ -654,6 +815,16 @@ export async function updateUsernameAction(username: string) {
 
   try {
     await DataStore.setUsername(user.id, cleaned)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_USERNAME',
+      module: 'AUTH',
+      targetId: user.id,
+      targetType: 'USER',
+      detail: `Username diubah menjadi @${cleaned}.`
+    })
     revalidatePath('/settings')
     revalidatePath('/profile')
     return { success: true, username: cleaned, referralLink: `/ref/${cleaned}` }
@@ -691,6 +862,16 @@ export async function selectUserRole(role: 'CUSTOMER' | 'MERCHANT' | 'AFFILIATE'
   if (!updated) {
     return { error: 'Gagal memperbarui peran pengguna.' }
   }
+  await logAudit({
+    actor: 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'SELECT_USER_ROLE',
+    module: 'AUTH',
+    targetId: user.id,
+    targetType: 'USER',
+    detail: `Pilih peran: ${role}.`
+  })
 
   // Generate a new session token with the updated role
   const cookieStore = await cookies()

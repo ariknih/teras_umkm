@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DataStore, MidtransRegistry } from '@/lib/data-store';
 import { getTransactionStatus, decodeUserIdFromMidtrans } from '@/lib/midtrans';
+import { logAudit } from '@/lib/audit-log';
+import { getCurrentUser } from '@/app/actions/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,10 +26,18 @@ export async function POST(req: NextRequest) {
 
     let status = 'pending';
     let grossAmount = 0;
+    let simulatingUser: { id: string } | null = null;
 
     const isProduction = process.env.NODE_ENV === 'production' || process.env.MIDTRANS_IS_PRODUCTION === 'true';
 
     if (simulate && !isProduction) {
+      // Defense in depth: the NODE_ENV gate alone is a config-away accident.
+      // Simulated settlement must also belong to the caller's own session.
+      simulatingUser = await getCurrentUser();
+      if (!simulatingUser) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
       // Simulate success for local testing
       status = 'settlement';
       
@@ -59,10 +69,23 @@ export async function POST(req: NextRequest) {
       const rawUserId = parts.slice(1, parts.length - 1).join('-');
       const userId = decodeUserIdFromMidtrans(rawUserId);
 
+      if (simulatingUser && simulatingUser.id !== userId) {
+        return NextResponse.json({ error: 'Unauthorized: order tidak dimiliki sesi ini.' }, { status: 403 });
+      }
+
       if (orderId.startsWith('deposit-') || orderId.startsWith('dep-')) {
         // Process deposit
         await DataStore.depositFunds(userId, grossAmount, 'Midtrans Sandbox');
         await DataStore.addXp(userId, 30); // Reward 30 XP for deposit
+        await logAudit({
+          actor: 'MEMBER',
+          actorId: userId,
+          action: 'MIDTRANS_DEPOSIT_SETTLED',
+          module: 'WALLET',
+          targetId: orderId,
+          targetType: 'MIDTRANS_ORDER',
+          detail: `Deposit Rp ${grossAmount.toLocaleString('id-ID')} via Midtrans settlement.`
+        });
 
         return NextResponse.json({
           success: true,
@@ -88,6 +111,15 @@ export async function POST(req: NextRequest) {
           pending.shippingDetails
         );
         await DataStore.addXp(pending.userId, 30); // Reward 30 XP for purchase
+        await logAudit({
+          actor: 'MEMBER',
+          actorId: pending.userId,
+          action: 'MIDTRANS_CHECKOUT_SETTLED',
+          module: 'ORDERS',
+          targetId: order.id,
+          targetType: 'ORDER',
+          detail: `Order #${order.id} sebesar Rp ${order.totalAmount.toLocaleString('id-ID')} lunas via Midtrans.`
+        });
 
         // Create ORDER_CREATED and PAYMENT_SUCCESS database notifications for Midtrans
         await DataStore.createNotification(

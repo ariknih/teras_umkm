@@ -2,6 +2,7 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 
 export async function createCustomAffiliateLink(productId: string, customSlug: string, source: string) {
@@ -42,6 +43,16 @@ export async function upgradeMembershipAccess(targetAccess: 'Platinum' | 'Diamon
   
   try {
     const updatedUser = await DataStore.upgradeMembershipAccess(user.id, targetAccess)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPGRADE_MEMBERSHIP_ACCESS',
+      module: 'WALLET',
+      targetId: user.id,
+      targetType: 'USER',
+      detail: `Upgrade akses keanggotaan menjadi ${targetAccess}.`
+    })
     revalidatePath('/affiliate')
     revalidatePath('/academy')
     return { success: true, user: updatedUser }

@@ -539,7 +539,7 @@ export default function SettingsPage() {
               <div className="p-5 border border-border-subtle rounded-[var(--radius-brand)] space-y-4">
                 <div>
                   <h3 className="text-sm font-bold text-foreground mb-1">Username Referral</h3>
-                  <p className="text-xs text-foreground/60">Username kamu = kode referral kamu. Bagikan link ini ke teman untuk dapat +1 coin per orang yang daftar.</p>
+                  <p className="text-xs text-foreground/60">Username kamu = kode referral kamu. Bagikan link ini ke teman untuk melacak siapa yang kamu ajak bergabung.</p>
                 </div>
 
                 <div className="space-y-2">
@@ -619,7 +619,6 @@ export default function SettingsPage() {
                         {referralCopied ? '✅ Disalin!' : '📋 Salin'}
                       </button>
                     </div>
-                    <p className="text-xs text-foreground/50">Setiap user yang daftar pakai link ini akan memberikan +1 coin untukmu.</p>
                   </div>
                 )}
 
@@ -635,7 +634,6 @@ export default function SettingsPage() {
                 <h4 className="text-sm font-bold text-foreground mb-3">Cara Dapat Coin</h4>
                 <div className="space-y-3">
                   {[
-                    { icon: '👥', label: '+1 coin', desc: 'Setiap user baru yang daftar pakai link referral kamu' },
                     { icon: '🤝', label: '+3 coin', desc: 'Setiap merchant yang berhasil kamu undang ke komunitas PERKUMPULAN' },
                     { icon: '💳', label: 'Saldo wallet', desc: 'Merchant koperasi mengundang merchant → dapat saldo wallet (bukan coin)' },
                   ].map((item, i) => (

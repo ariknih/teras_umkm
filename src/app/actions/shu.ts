@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
+import { logAudit } from '@/lib/audit-log'
 import { calculateAndSaveShuDistribution } from '@/lib/shu-calculator'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap } from '@/lib/cache'
@@ -50,6 +51,16 @@ export async function calculateAndSaveShuAction(formData: FormData) {
   })
 
   if (res.success) {
+    await logAudit({
+      actor: isAdmin ? 'ADMIN' : 'MEMBER',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'CALCULATE_SHU_DISTRIBUTION',
+      module: 'COOPERATIVE',
+      targetId: communityId,
+      targetType: 'COMMUNITY',
+      detail: `SHU ${year} — laba bersih Rp ${totalNetProfit.toLocaleString('id-ID')}.`
+    })
     revalidatePath('/cms_admin', 'layout')
     revalidatePath(`/community/${communityId}`)
     return { success: true, data: res.result }

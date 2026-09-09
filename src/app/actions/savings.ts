@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap } from '@/lib/cache'
 
@@ -44,6 +45,16 @@ export async function recordSavingsTransactionAction(formData: FormData) {
       date,
       notes,
       createdById: currentUser.id
+    })
+    await logAudit({
+      actor: currentUser.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'RECORD_SAVINGS_TRANSACTION',
+      module: 'COOPERATIVE',
+      targetId: userId,
+      targetType: 'SAVINGS_TRANSACTION',
+      detail: `${transactionType} ${type} Rp ${amount.toLocaleString('id-ID')} untuk anggota #${userId}.`
     })
 
     revalidatePath(`/community/${communityId}`)

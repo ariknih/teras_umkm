@@ -1,14 +1,14 @@
+// Matches the real Prisma ProductCategory enum values usable for Snackbox
+// (see SNACKBOX_ELIGIBLE_CATEGORIES in merchant/dashboard/page.tsx), plus 'Semua' as the "all" filter.
 export type SnackboxCategory =
   | 'Semua'
-  | 'Snack Manis'
-  | 'Snack Gurih'
-  | 'Kue Tradisional'
-  | 'Kue Basah'
-  | 'Kue Kering'
-  | 'Makanan Ringan'
-  | 'Jajanan'
-  | 'Cemilan'
-  | 'Snack Kekinian'
+  | 'KUE_TRADISIONAL'
+  | 'SNACK_GURIH'
+  | 'SNACK_MANIS'
+  | 'KUE_KERING'
+  | 'JAJANAN_PASAR'
+  | 'MAKANAN_MINUMAN'
+  | 'KAFE'
 
 export type BoxType = 'reguler' | 'borongan'
 
@@ -30,7 +30,6 @@ export interface SnackboxProduct {
   originalPrice?: number
   imageUrl: string
   category: SnackboxCategory
-  kelurahanId: string
   kelurahanName: string
   rating: number
   reviewCount: number
@@ -41,6 +40,7 @@ export interface SnackboxProduct {
   minOrder?: number
   stock: number
   portionWeight?: string // e.g. "65g"
+  merchantId?: string
 }
 
 export interface SnackboxCartItem {

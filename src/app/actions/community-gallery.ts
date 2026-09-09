@@ -2,8 +2,10 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, deleteCache } from '@/lib/cache'
+import { requireCommunityManager } from '@/lib/auth-guards'
 
 export async function getCommunityGalleryAction(communityId: string) {
   if (!communityId) return []
@@ -26,6 +28,12 @@ export async function createCommunityGalleryItemAction(formData: FormData) {
   if (!imageUrl) return { error: 'Foto kegiatan wajib diunggah.' }
 
   try {
+    await requireCommunityManager(user, communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
+  try {
     const item = await DataStore.createCommunityGalleryItem({
       communityId,
       title,
@@ -35,6 +43,16 @@ export async function createCommunityGalleryItemAction(formData: FormData) {
       date,
       authorId: user.id,
       authorName: user.name || 'Anggota Komunitas'
+    })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_COMMUNITY_GALLERY_ITEM',
+      module: 'COOPERATIVE',
+      targetId: item.id,
+      targetType: 'GALLERY_ITEM',
+      detail: `"${title}".`
     })
     await deleteCache(`community:gallery:${communityId}`)
     revalidatePath(`/community/${communityId}`)
@@ -49,9 +67,24 @@ export async function deleteCommunityGalleryItemAction(id: string, communityId: 
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   if (!id) return { error: 'ID Foto Galeri wajib diisi.' }
+  if (!communityId) return { error: 'ID Komunitas tidak ditemukan.' }
+  try {
+    await requireCommunityManager(user, communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
 
   try {
     const res = await DataStore.deleteCommunityGalleryItem(id, communityId)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'DELETE_COMMUNITY_GALLERY_ITEM',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'GALLERY_ITEM'
+    })
     if (communityId) {
       await deleteCache(`community:gallery:${communityId}`)
       revalidatePath(`/community/${communityId}`)

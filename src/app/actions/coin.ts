@@ -3,6 +3,7 @@
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { ensureSuperAdmin } from './admin'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -80,6 +81,16 @@ export async function topupCommunityCoin(formData: FormData) {
       totalBiaya,
       description: `Top up ${jumlahCoin} coin oleh Ketua — Biaya Rp ${totalBiaya.toLocaleString('id-ID')}`
     })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'TOPUP_COMMUNITY_COIN',
+      module: 'COINS',
+      targetId: communityId,
+      targetType: 'COMMUNITY',
+      detail: `Top up ${jumlahCoin} coin — biaya Rp ${totalBiaya.toLocaleString('id-ID')}.`
+    })
 
     revalidatePath(`/community/${communityId}`)
     revalidatePath('/community')
@@ -87,24 +98,6 @@ export async function topupCommunityCoin(formData: FormData) {
     return { success: true, ...result }
   } catch (e: any) {
     return { error: e.message || 'Gagal melakukan top up coin.' }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Reward Undangan User Baru (+1 coin otomatis untuk pengundang)
-// Dipanggil internal setelah registrasi berhasil
-// ═══════════════════════════════════════════════════════════════════════════
-
-export async function rewardUserInvite(referrerId: string, referredId: string) {
-  try {
-    const result = await DataStore.rewardUserInviteCoin({
-      referrerId,
-      referredId,
-      coinAmount: 1.0,
-    })
-    return { success: true, ...result }
-  } catch (e: any) {
-    return { error: e.message || 'Gagal memberikan reward coin.' }
   }
 }
 
@@ -125,11 +118,26 @@ export async function rewardMerchantInvite(formData: FormData) {
     return { error: 'Data tidak lengkap.' }
   }
 
+  const isMember = await DataStore.isCommunityMember(user.id, communityId)
+  if (!isMember && user.role !== 'ADMIN') {
+    return { error: 'Anda bukan anggota komunitas ini.' }
+  }
+
   try {
     const result = await DataStore.rewardMerchantInvite({
       inviterId: user.id,
       inviteeId,
       communityId,
+    })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'REWARD_MERCHANT_INVITE',
+      module: 'COINS',
+      targetId: communityId,
+      targetType: 'COMMUNITY',
+      detail: `Reward invite merchant #${inviteeId}.`
     })
 
     revalidatePath('/wallet/coin')
@@ -172,6 +180,16 @@ export async function redeemCoinVoucher(voucherId: string) {
       coinSpent: voucher.coinCost,
       voucherType: voucher.type,
       externalCode: voucher.code || undefined,
+    })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'REDEEM_COIN_VOUCHER',
+      module: 'COINS',
+      targetId: voucherId,
+      targetType: 'COIN_VOUCHER',
+      detail: `Tukar ${voucher.coinCost} coin dengan voucher "${voucher.name}".`
     })
 
     revalidatePath('/wallet/coin')
@@ -223,6 +241,16 @@ export async function createCoinVoucherAdmin(formData: FormData) {
       maxRedemption,
       validUntil: validUntilStr ? new Date(validUntilStr) : undefined,
     })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_COIN_VOUCHER',
+      module: 'COINS',
+      targetId: voucher.id,
+      targetType: 'COIN_VOUCHER',
+      detail: `Voucher "${name}" — ${coinCost} coin → nilai Rp ${value.toLocaleString('id-ID')}.`
+    })
     revalidatePath('/voucher')
     revalidatePath('/cms_admin', 'layout')
     return { success: true, voucher }
@@ -239,6 +267,15 @@ export async function toggleCoinVoucherActive(voucherId: string) {
 
   try {
     const result = await DataStore.toggleCoinVoucherActive(voucherId)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'TOGGLE_COIN_VOUCHER_ACTIVE',
+      module: 'COINS',
+      targetId: voucherId,
+      targetType: 'COIN_VOUCHER'
+    })
     revalidatePath('/voucher')
     revalidatePath('/cms_admin', 'layout')
     return { success: true, ...result }
@@ -304,6 +341,14 @@ export async function updateCoinSupplyAction(totalSupply: number) {
   }
   try {
     await DataStore.updateCoinSupply(totalSupply, user.id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_COIN_SUPPLY',
+      module: 'COINS',
+      detail: `Total supply diubah menjadi ${totalSupply.toLocaleString('id-ID')} coin.`
+    })
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -335,6 +380,16 @@ export async function distributeCoinFromSupplyAction(formData: FormData) {
 
   try {
     await DataStore.distributeCoinFromSupply(targetId, targetType, amount, reason, user.id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'DISTRIBUTE_COIN_FROM_SUPPLY',
+      module: 'COINS',
+      targetId,
+      targetType,
+      detail: `Distribusi ${amount.toLocaleString('id-ID')} coin dari supply. Alasan: ${reason}`
+    })
     revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
     revalidatePath('/wallet')

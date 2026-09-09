@@ -3,8 +3,13 @@ import { SignJWT } from 'jose'
 import crypto from 'crypto'
 import { DataStore } from '@/lib/data-store'
 import { getCookieDomain } from '@/lib/cookie-domain'
+import { logAudit } from '@/lib/audit-log'
+import { hashPassword } from '@/lib/password'
 
-const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key-12345')
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required')
+}
+const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -78,7 +83,7 @@ export async function GET(request: NextRequest) {
       isNewUser = true
       // Create a new user with google details
       const randomPassword = crypto.randomBytes(16).toString('hex')
-      const passwordHash = crypto.createHash('sha256').update(randomPassword).digest('hex')
+      const passwordHash = await hashPassword(randomPassword)
       
       // Generate a unique username for Google OAuth
       let baseUsername = (name || email.split('@')[0]).toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -97,6 +102,19 @@ export async function GET(request: NextRequest) {
         passwordHash,
         role
       })
+      if (!user) {
+        return NextResponse.redirect(new URL('/auth?error=Gagal+membuat+akun', request.url))
+      }
+      await logAudit({
+        actor: 'MEMBER',
+        actorId: user.id,
+        actorName: user.name || user.email,
+        action: 'REGISTER_GOOGLE',
+        module: 'AUTH',
+        targetId: user.id,
+        targetType: 'USER',
+        detail: `Daftar via Google OAuth sebagai ${role} (@${username}).`
+      })
     } else {
       // If user exists, but has a different role and the selected role is valid, update it!
       // This allows existing sandbox Google accounts to switch roles during Google Login.
@@ -104,8 +122,31 @@ export async function GET(request: NextRequest) {
         const updated = await DataStore.updateUserRole(user.id, role)
         if (updated) {
           user = updated
+          await logAudit({
+            actor: 'MEMBER',
+            actorId: updated.id,
+            actorName: updated.name || updated.email,
+            action: 'SELECT_USER_ROLE',
+            module: 'AUTH',
+            targetId: updated.id,
+            targetType: 'USER',
+            detail: `Ganti peran menjadi ${role} via Google login.`
+          })
         }
+      } else {
+        await logAudit({
+          actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+          actorId: user.id,
+          actorName: user.name || user.email,
+          action: 'LOGIN_SUCCESS',
+          module: 'AUTH',
+          detail: 'Login via Google OAuth.'
+        })
       }
+    }
+
+    if (!user) {
+      return NextResponse.redirect(new URL('/auth?error=Gagal+memuat+akun', request.url))
     }
 
     // Create our app session JWT

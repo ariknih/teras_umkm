@@ -47,12 +47,12 @@ export default function SnackboxHeader() {
                 {isDetectingLocation ? 'Mendeteksi...' : `Kel. ${kelurahan.name}, ${kelurahan.kota}`}
               </span>
               {locationSource === 'gps' && (
-                <span className="text-[9px] font-bold text-[#006E24] bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 shrink-0">
+                <span className="text-[9px] font-bold text-market-green-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
                   GPS
                 </span>
               )}
               {locationSource === 'ip' && (
-                <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 shrink-0">
+                <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
                   IP
                 </span>
               )}

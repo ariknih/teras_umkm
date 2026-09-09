@@ -2,6 +2,7 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, deleteCache } from '@/lib/cache'
 
@@ -44,6 +45,16 @@ export async function createBannerAction(formData: FormData) {
 
   try {
     const banner = await DataStore.createBanner({ title, imageUrl, linkUrl, sortOrder })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_BANNER',
+      module: 'SETTINGS',
+      targetId: banner.id,
+      targetType: 'BANNER',
+      detail: title ? `"${title}".` : undefined
+    })
     await deleteCache('banners:active')
     revalidatePath('/')
     revalidatePath('/cms_admin', 'layout')
@@ -67,6 +78,15 @@ export async function updateBannerAction(id: string, formData: FormData) {
 
   try {
     const banner = await DataStore.updateBanner(id, { title, imageUrl, linkUrl, isActive, sortOrder })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_BANNER',
+      module: 'SETTINGS',
+      targetId: id,
+      targetType: 'BANNER'
+    })
     await deleteCache('banners:active')
     revalidatePath('/')
     revalidatePath('/cms_admin', 'layout')
@@ -84,6 +104,15 @@ export async function deleteBannerAction(id: string) {
 
   try {
     await DataStore.deleteBanner(id)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'DELETE_BANNER',
+      module: 'SETTINGS',
+      targetId: id,
+      targetType: 'BANNER'
+    })
     await deleteCache('banners:active')
     revalidatePath('/')
     revalidatePath('/cms_admin', 'layout')
@@ -101,6 +130,16 @@ export async function toggleBannerActiveAction(id: string, isActive: boolean) {
 
   try {
     await DataStore.updateBanner(id, { isActive })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'TOGGLE_BANNER_ACTIVE',
+      module: 'SETTINGS',
+      targetId: id,
+      targetType: 'BANNER',
+      detail: isActive ? 'Diaktifkan.' : 'Dinonaktifkan.'
+    })
     await deleteCache('banners:active')
     revalidatePath('/')
     revalidatePath('/cms_admin', 'layout')

@@ -43,8 +43,12 @@ export async function sendWhatsAppMessage({
   const kirimiDeviceId = process.env.KIRIMI_DEVICE_ID
 
   const activeKey = gatewayKey || kirimiUserCode || process.env.TWILIO_ACCOUNT_SID || process.env.FONNTE_API_TOKEN || 'TERAS_DEFAULT_GATEWAY_KEY'
-  
-  console.log(`[WA Gateway API - ${activeKey}] Mengirim ke ${recipientPhone} (${recipientName}): ${message}`)
+
+  // Recipient phone/name and the message body (which can carry an OTP code
+  // in plaintext) don't belong in a lower-trust log tier — log only that a
+  // send was attempted, with the phone masked.
+  const maskedPhone = recipientPhone ? recipientPhone.replace(/.(?=.{4})/g, '*') : recipientPhone
+  console.log(`[WA Gateway API - ${activeKey}] Mengirim pesan ke ${maskedPhone}`)
 
   let success = false
 

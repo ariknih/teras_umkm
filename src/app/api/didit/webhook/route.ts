@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DataStore } from '@/lib/data-store'
+import { logAudit } from '@/lib/audit-log'
 import crypto from 'crypto'
 
 /**
@@ -83,10 +84,11 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = JSON.parse(rawBody)
-    console.log('[Didit Webhook] Received:', JSON.stringify(payload, null, 2))
-
     const { event_id, session_id, status, vendor_data } = payload
     const userId = vendor_data
+    // Log only identifiers/status — the full payload carries PII (name, NIK,
+    // DOB, document images) that doesn't belong in a lower-trust log tier.
+    console.log('[Didit Webhook] Received:', { event_id, session_id, status, userId })
 
     if (!userId) {
       console.warn('[Didit Webhook] No vendor_data (userId) in payload')
@@ -94,13 +96,34 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Dispatch on status — case-sensitive literals (V3 spec)
+    // Only terminal outcomes (Approved/Declined/Expired) are audit-logged —
+    // the in-progress statuses (In Review, Resubmitted, ...) can fire many
+    // times per session and aren't a real state change worth a log row.
     switch (status) {
       case 'Approved':
         await DataStore.updateKycStatus(userId, 'VERIFIED', session_id)
+        await logAudit({
+          actor: 'MEMBER',
+          actorId: userId,
+          action: 'KYC_STATUS_SYNCED',
+          module: 'KYC',
+          targetId: userId,
+          targetType: 'USER',
+          detail: `Didit webhook: status menjadi VERIFIED (session ${session_id}).`
+        })
         console.log(`[Didit Webhook] User ${userId} KYC VERIFIED`)
         break
       case 'Declined':
         await DataStore.updateKycStatus(userId, 'REJECTED', session_id)
+        await logAudit({
+          actor: 'MEMBER',
+          actorId: userId,
+          action: 'KYC_STATUS_SYNCED',
+          module: 'KYC',
+          targetId: userId,
+          targetType: 'USER',
+          detail: `Didit webhook: status menjadi REJECTED (session ${session_id}).`
+        })
         console.log(`[Didit Webhook] User ${userId} KYC DECLINED`)
         break
       case 'In Review':
@@ -113,6 +136,15 @@ export async function POST(req: NextRequest) {
         break
       case 'Kyc Expired':
         await DataStore.updateKycStatus(userId, 'NOT_SUBMITTED', session_id)
+        await logAudit({
+          actor: 'MEMBER',
+          actorId: userId,
+          action: 'KYC_STATUS_SYNCED',
+          module: 'KYC',
+          targetId: userId,
+          targetType: 'USER',
+          detail: `Didit webhook: sesi kedaluwarsa (session ${session_id}).`
+        })
         console.log(`[Didit Webhook] User ${userId} KYC expired — needs re-verification`)
         break
       case 'Abandoned':

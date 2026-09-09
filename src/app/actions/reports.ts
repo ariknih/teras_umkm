@@ -2,15 +2,10 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap } from '@/lib/cache'
-
-async function isCommunityManager(user: { id: string; role: string } | null, communityId: string) {
-  if (!user) return false
-  if (user.role === 'ADMIN') return true
-  const community = await DataStore.getCommunityById(communityId)
-  return community?.ketuaId === user.id
-}
+import { isCommunityManager } from '@/lib/auth-guards'
 
 export async function getCooperativeReportsAction(
   communityId: string,
@@ -69,6 +64,16 @@ export async function createCooperativeReportAction(formData: FormData) {
       publishedAt,
       status
     })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_COOPERATIVE_REPORT',
+      module: 'COOPERATIVE',
+      targetId: rep.id,
+      targetType: 'COOPERATIVE_REPORT',
+      detail: `"${title}" (${type}, ${year}).`
+    })
     revalidatePath(`/community/${communityId}`)
     return { success: true, report: rep }
   } catch (e: any) {
@@ -80,7 +85,6 @@ export async function updateCooperativeReportAction(id: string, formData: FormDa
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
-  const communityId = formData.get('communityId') as string
   const title = formData.get('title') as string
   const type = formData.get('type') as string
   const yearStr = formData.get('year') as string
@@ -91,7 +95,11 @@ export async function updateCooperativeReportAction(id: string, formData: FormDa
   if (!title || !type || !yearStr || !fileUrl) {
     return { error: 'Judul, jenis laporan, tahun buku, dan file laporan wajib diisi.' }
   }
-  if (!communityId || !(await isCommunityManager(user, communityId))) {
+
+  const existing: any = await DataStore.getCooperativeReportById(id)
+  if (!existing) return { error: 'Laporan tidak ditemukan.' }
+  const communityId = existing.communityId
+  if (!(await isCommunityManager(user, communityId))) {
     return { error: 'Anda tidak memiliki akses untuk mengelola laporan komunitas ini.' }
   }
 
@@ -101,13 +109,22 @@ export async function updateCooperativeReportAction(id: string, formData: FormDa
   const publishedAt = publishedAtStr ? new Date(publishedAtStr) : undefined
 
   try {
-    const rep = await DataStore.updateCooperativeReport(id, {
+    const rep = await DataStore.updateCooperativeReport(id, communityId, {
       title,
       type,
       year,
       fileUrl,
       publishedAt,
       status
+    })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_COOPERATIVE_REPORT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'COOPERATIVE_REPORT'
     })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
@@ -118,15 +135,28 @@ export async function updateCooperativeReportAction(id: string, formData: FormDa
   }
 }
 
-export async function deleteCooperativeReportAction(id: string, communityId?: string) {
+export async function deleteCooperativeReportAction(id: string, _communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
-  if (!communityId || !(await isCommunityManager(user, communityId))) {
+
+  const existing: any = await DataStore.getCooperativeReportById(id)
+  if (!existing) return { error: 'Laporan tidak ditemukan.' }
+  const communityId = existing.communityId
+  if (!(await isCommunityManager(user, communityId))) {
     return { error: 'Anda tidak memiliki akses untuk mengelola laporan komunitas ini.' }
   }
 
   try {
-    const res = await DataStore.deleteCooperativeReport(id)
+    const res = await DataStore.deleteCooperativeReport(id, communityId)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'DELETE_COOPERATIVE_REPORT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'COOPERATIVE_REPORT'
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
@@ -136,16 +166,30 @@ export async function deleteCooperativeReportAction(id: string, communityId?: st
   }
 }
 
-export async function togglePublishReportAction(id: string, currentStatus: string, communityId?: string) {
+export async function togglePublishReportAction(id: string, currentStatus: string, _communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
-  if (!communityId || !(await isCommunityManager(user, communityId))) {
+
+  const existing: any = await DataStore.getCooperativeReportById(id)
+  if (!existing) return { error: 'Laporan tidak ditemukan.' }
+  const communityId = existing.communityId
+  if (!(await isCommunityManager(user, communityId))) {
     return { error: 'Anda tidak memiliki akses untuk mengelola laporan komunitas ini.' }
   }
 
   const newStatus = currentStatus === 'DRAFT' ? 'PUBLISHED' : 'DRAFT'
   try {
-    const rep = await DataStore.updateCooperativeReport(id, { status: newStatus })
+    const rep = await DataStore.updateCooperativeReport(id, communityId, { status: newStatus })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'TOGGLE_PUBLISH_REPORT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'COOPERATIVE_REPORT',
+      detail: `Status → ${newStatus}.`
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }

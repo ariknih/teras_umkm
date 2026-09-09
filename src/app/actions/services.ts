@@ -2,6 +2,7 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, invalidateCachePattern } from '@/lib/cache'
 
@@ -94,6 +95,16 @@ export async function createServiceAction(formData: FormData) {
       location,
       isActive: true
     })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_SERVICE',
+      module: 'SERVICES',
+      targetId: service.id,
+      targetType: 'SERVICE',
+      detail: `Jasa "${title}".`
+    })
 
     revalidatePath('/jasa')
     revalidatePath('/merchant/dashboard')
@@ -108,6 +119,12 @@ export async function updateServiceAction(id: string, formData: FormData) {
   const user = await getCurrentUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
+  const existingService: any = await DataStore.getServiceById(id)
+  if (!existingService) return { success: false, error: 'Jasa tidak ditemukan.' }
+  if (existingService.merchantId !== user.id && user.role !== 'ADMIN') {
+    return { success: false, error: 'Anda tidak memiliki wewenang untuk jasa ini.' }
+  }
+
   try {
     const title = formData.get('title') as string
     const description = formData.get('description') as string
@@ -120,7 +137,7 @@ export async function updateServiceAction(id: string, formData: FormData) {
     const images = imagesRaw ? JSON.parse(imagesRaw) : undefined
     const location = formData.get('location') as string
 
-    const updated = await DataStore.updateService(id, {
+    const updated = await DataStore.updateService(id, existingService.merchantId, {
       title,
       description,
       category,
@@ -130,6 +147,15 @@ export async function updateServiceAction(id: string, formData: FormData) {
       maxWorkHoursPerDay,
       images,
       location
+    })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_SERVICE',
+      module: 'SERVICES',
+      targetId: id,
+      targetType: 'SERVICE'
     })
 
     revalidatePath('/jasa')
@@ -145,8 +171,23 @@ export async function deleteServiceAction(id: string) {
   const user = await getCurrentUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
+  const existingService: any = await DataStore.getServiceById(id)
+  if (!existingService) return { success: false, error: 'Jasa tidak ditemukan.' }
+  if (existingService.merchantId !== user.id && user.role !== 'ADMIN') {
+    return { success: false, error: 'Anda tidak memiliki wewenang untuk jasa ini.' }
+  }
+
   try {
-    await DataStore.deleteService(id)
+    await DataStore.deleteService(id, existingService.merchantId)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'DELETE_SERVICE',
+      module: 'SERVICES',
+      targetId: id,
+      targetType: 'SERVICE'
+    })
     revalidatePath('/jasa')
     revalidatePath('/merchant/dashboard')
     await invalidateCachePattern('services:')
@@ -169,9 +210,25 @@ export async function setServiceAvailabilityAction(serviceId: string, dateStr: s
   const user = await getCurrentUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
+  const existingService: any = await DataStore.getServiceById(serviceId)
+  if (!existingService) return { success: false, error: 'Jasa tidak ditemukan.' }
+  if (existingService.merchantId !== user.id && user.role !== 'ADMIN') {
+    return { success: false, error: 'Anda tidak memiliki wewenang untuk jasa ini.' }
+  }
+
   try {
     const date = new Date(dateStr)
     await DataStore.setServiceAvailability(serviceId, date, isAvailable)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'SET_SERVICE_AVAILABILITY',
+      module: 'SERVICES',
+      targetId: serviceId,
+      targetType: 'SERVICE',
+      detail: `${dateStr} → ${isAvailable ? 'tersedia' : 'tidak tersedia'}.`
+    })
     revalidatePath(`/jasa/${serviceId}`)
     return { success: true }
   } catch (error: any) {
@@ -313,6 +370,12 @@ export async function getMerchantServiceBookingsAction() {
 export async function updateServiceBookingStatusAction(bookingId: string, status: string) {
   const user = await getCurrentUser()
   if (!user) return { success: false, error: 'Unauthorized' }
+
+  const booking = await DataStore.getServiceBookingById(bookingId)
+  if (!booking) return { success: false, error: 'Booking tidak ditemukan.' }
+  if (booking.merchantId !== user.id && booking.customerId !== user.id && user.role !== 'ADMIN') {
+    return { success: false, error: 'Anda tidak memiliki wewenang untuk booking ini.' }
+  }
 
   try {
     const updated = await DataStore.updateServiceBookingStatus(bookingId, status)

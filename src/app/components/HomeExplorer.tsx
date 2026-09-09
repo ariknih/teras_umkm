@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Coins,
@@ -11,7 +11,8 @@ import {
 } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
 import { useSnackbox } from '@/context/SnackboxContext'
-import { mockSnackboxProducts } from '@/lib/mock-snackbox'
+import { getSnackboxProducts } from '@/app/actions/products'
+import { SnackboxProduct } from '@/types/snackbox'
 
 interface Product {
   id: string
@@ -108,9 +109,17 @@ export default function HomeExplorer({ products = [], services = [], communities
     return list.slice(0, 12)
   }, [services, selectedCategory])
 
-  const localSnackboxProducts = useMemo(() => {
-    return mockSnackboxProducts.filter(p => p.kelurahanId === kelurahan.id).slice(0, 6)
-  }, [kelurahan.id])
+  const [snackboxProducts, setSnackboxProducts] = useState<SnackboxProduct[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    getSnackboxProducts({ kelurahanName: kelurahan.name }).then(products => {
+      if (!cancelled) setSnackboxProducts(products as SnackboxProduct[])
+    })
+    return () => { cancelled = true }
+  }, [kelurahan.name])
+
+  const localSnackboxProducts = useMemo(() => snackboxProducts.slice(0, 6), [snackboxProducts])
 
   const displayCommunities = useMemo(() => {
     if (communities && communities.length > 0) {
@@ -226,13 +235,15 @@ export default function HomeExplorer({ products = [], services = [], communities
                   className="group flex flex-col bg-white border border-slate-200/90 rounded-2xl overflow-hidden transition-all duration-200 hover:shadow-[0_4px_16px_0_rgba(45,178,74,0.12)] hover:border-[#2DB24A]/50 h-full relative cursor-pointer"
                 >
                   <div className="aspect-square w-full bg-slate-100 relative overflow-hidden">
-                    <img
-                      src={product.imageUrl}
-                      alt={product.title}
-                      loading="lazy"
-                      decoding="async"
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                    />
+                    {product.imageUrl && (
+                      <img
+                        src={product.imageUrl}
+                        alt={product.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                      />
+                    )}
                     {discountPct !== null && (
                       <div className="absolute top-2 left-2 bg-[#E8F8EE] text-[#2DB24A] font-extrabold text-[10px] px-1.5 py-0.5 rounded-md border border-[#C8E6C9] shadow-2xs">
                         {discountPct}%
@@ -268,11 +279,13 @@ export default function HomeExplorer({ products = [], services = [], communities
                     </div>
 
                     <div className="pt-1.5 border-t border-slate-100 space-y-1">
-                      <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                        <span className="text-amber-500 font-bold">★ {product.rating}</span>
-                        <span>•</span>
-                        <span>{product.soldCount} terjual</span>
-                      </div>
+                      {(product.reviewCount > 0 || product.soldCount > 0) && (
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                          {product.reviewCount > 0 && <span className="text-amber-500 font-bold">★ {product.rating.toFixed(1)}</span>}
+                          {product.reviewCount > 0 && product.soldCount > 0 && <span>•</span>}
+                          {product.soldCount > 0 && <span>{product.soldCount} terjual</span>}
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 text-[10px] text-slate-500 truncate">
                         <span className="text-[#2DB24A] font-bold">✔</span>
                         <span className="truncate">{product.kelurahanName}</span>

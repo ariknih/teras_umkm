@@ -25,6 +25,25 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=()',
   },
+  {
+    // Report-Only for now: the app loads Midtrans Snap.js, merchant-configured
+    // iframe embeds, and images from several allowlisted hosts (see
+    // remotePatterns above) — start by observing violations in the browser
+    // console before switching this to an enforcing Content-Security-Policy.
+    key: 'Content-Security-Policy-Report-Only',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https:",
+      "frame-src 'self' https:",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "frame-ancestors 'self'",
+    ].join('; '),
+  },
 ];
 
 const nextConfig: NextConfig = {

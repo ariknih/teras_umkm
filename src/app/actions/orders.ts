@@ -2,6 +2,7 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { sendWhatsAppMessage } from '@/lib/whatsapp'
 
@@ -39,11 +40,16 @@ export async function getOrderDetail(id: string) {
     return null
   }
   try {
-    const order = await DataStore.findOrderById(id)
+    const order: any = await DataStore.findOrderById(id)
     if (!order) return null
-    
-    // Guard: only buyer, merchant of the products, or admin can view
-    // Since order.items contains products, we can check if merchant owns any
+
+    // Guard: only the buyer, a merchant of one of the ordered products, or
+    // an admin can view this order's detail.
+    const isOwnMerchant = Array.isArray(order.items) && order.items.some((item: any) => item.product?.merchantId === user.id)
+    if (order.buyerId !== user.id && !isOwnMerchant && user.role !== 'ADMIN') {
+      return null
+    }
+
     const tracking = await DataStore.getOrderTracking(id)
     return {
       ...order,
@@ -96,7 +102,17 @@ export async function updateOrderTracking(orderId: string, status: string, note?
 
   try {
     const updatedOrder = await DataStore.updateOrderTracking(orderId, status, defaultNote)
-    
+    await logAudit({
+      actor: isAdmin ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_ORDER_TRACKING',
+      module: 'ORDERS',
+      targetId: orderId,
+      targetType: 'ORDER',
+      detail: `Status → ${status}. ${defaultNote}`
+    })
+
     // Send notification to buyer
     const title = `Status Pesanan Update: ${status}`
     const body = `Pesanan #${orderId} Anda kini berstatus: ${status}. ${defaultNote}`
@@ -161,6 +177,16 @@ export async function updateShippingLabel(orderId: string, label: string) {
     await DataStore.updateOrderShippingLabel(orderId, label)
     // Otomatis update tracking jadi SHIPPED
     const updatedOrder = await DataStore.updateOrderTracking(orderId, 'SHIPPED', `Resi Ekspedisi Diinput: ${label}. Menunggu kurir melakukan penjemputan/pengiriman.`)
+    await logAudit({
+      actor: 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_SHIPPING_LABEL',
+      module: 'ORDERS',
+      targetId: orderId,
+      targetType: 'ORDER',
+      detail: `Resi: ${label}.`
+    })
     revalidatePath(`/orders/${orderId}`)
     revalidatePath('/orders')
     revalidatePath('/merchant/dashboard')

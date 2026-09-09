@@ -2,6 +2,7 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, invalidateCachePattern, deleteCache } from '@/lib/cache'
 import { isModuleUnlocked, computeWatchState } from '@/lib/lms-rules'
@@ -83,6 +84,8 @@ export async function saveWatchProgress(
   await deleteCache(`lms:progress:${user.id}`)
 
   // Finishing the last remaining module issues the certificate — the reward.
+  // ponytail: saveWatchProgress fires on every playback tick, so only the
+  // certificate-issuing completion is audit-logged, not every progress save.
   let certificateSerial: string | null = null
   if (completed && lessons.length > 0) {
     const finished = new Set(completedIds)
@@ -91,6 +94,16 @@ export async function saveWatchProgress(
       try {
         const cert: any = await DataStore.issueCertificate(user.id, lesson.courseId, makeSerial())
         certificateSerial = cert?.serial ?? null
+        await logAudit({
+          actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+          actorId: user.id,
+          actorName: user.name || user.email,
+          action: 'COMPLETE_COURSE',
+          module: 'ACADEMY',
+          targetId: lesson.courseId,
+          targetType: 'COURSE',
+          detail: `Sertifikat #${certificateSerial} diterbitkan.`
+        })
       } catch (e) {
         // A certificate failure must never lose the watch progress just saved.
         console.error('[LMS] Gagal menerbitkan sertifikat:', e)
@@ -132,6 +145,16 @@ export async function purchaseCourseAction(courseId: string) {
 
   try {
     await DataStore.purchaseCourse(user.id, courseId, price, course.title)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'PURCHASE_COURSE',
+      module: 'ACADEMY',
+      targetId: courseId,
+      targetType: 'COURSE',
+      detail: `Beli kelas "${course.title}" seharga Rp ${price.toLocaleString('id-ID')}.`
+    })
     revalidatePath('/academy')
     revalidatePath(`/academy/course/${courseId}`)
     revalidatePath('/affiliate')

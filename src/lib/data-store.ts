@@ -632,6 +632,10 @@ async function withMutationFallback<T = any, M = any>(
 // Unified Store functions with fallback logic
 export const DataStore = {
   // USER OPERATIONS
+  // Note: password/session identity resolution does NOT use these — see
+  // login() and getCurrentUser() in auth.ts, which query the DB directly
+  // and fail closed instead of falling back to mock-seed.ts on a DB error.
+  // These stay fallback-resilient for the ~30 other (non-auth) callers.
   async findUserByEmail(email: string) {
     return withFallback(
       () => db.user.findUnique({ where: { email } }),
@@ -1199,6 +1203,60 @@ export const DataStore = {
   },
 
   // PRODUCT OPERATIONS
+  async getSnackboxProducts(opts: { category?: string; kelurahanName?: string; search?: string } = {}) {
+    // Maps a real Product row (plus computed rating/reviewCount) to the SnackboxProduct UI shape.
+    const toSnackboxProduct = (p: any) => ({
+      id: p.id,
+      title: p.title,
+      description: p.description,
+      price: p.price,
+      imageUrl: p.imageUrl || '',
+      category: p.category,
+      kelurahanName: p.kelurahanName || '',
+      rating: p.rating || 0,
+      reviewCount: p.reviewCount || 0,
+      soldCount: 0,
+      stock: p.stock,
+      portionWeight: p.snackboxPortionWeight || undefined,
+      merchantId: p.merchantId
+    })
+
+    return withFallback(
+      async () => {
+        const where: any = { isSnackboxEnabled: true, isSnackboxEligible: true }
+        if (opts.category) where.category = opts.category as ProductCategory
+        if (opts.kelurahanName) where.kelurahanName = { equals: opts.kelurahanName, mode: 'insensitive' }
+        if (opts.search?.trim()) {
+          const q = opts.search.trim()
+          where.OR = [
+            { title: { contains: q, mode: 'insensitive' } },
+            { description: { contains: q, mode: 'insensitive' } }
+          ]
+        }
+        const products = await db.product.findMany({
+          where,
+          include: { reviews: { select: { rating: true } } },
+          orderBy: { createdAt: 'desc' }
+        })
+        return products.map(p => {
+          const reviewCount = p.reviews.length
+          const rating = reviewCount > 0 ? p.reviews.reduce((s, r) => s + r.rating, 0) / reviewCount : 0
+          return toSnackboxProduct({ ...p, rating, reviewCount })
+        })
+      },
+      async () => {
+        let list = globalMockProducts.filter((p: any) => p.isSnackboxEnabled && p.isSnackboxEligible !== false)
+        if (opts.category) list = list.filter((p: any) => p.category === opts.category)
+        if (opts.kelurahanName) list = list.filter((p: any) => (p.kelurahanName || '').toLowerCase() === opts.kelurahanName!.toLowerCase())
+        if (opts.search?.trim()) {
+          const q = opts.search.trim().toLowerCase()
+          list = list.filter((p: any) => p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
+        }
+        return list.map((p: any) => toSnackboxProduct(p))
+      }
+    )
+  },
+
   async getProducts(category?: string) {
     return withFallback(
       async () => {
@@ -1350,7 +1408,8 @@ export const DataStore = {
       'FASHION_MUSLIM', 'TAS_PRIA', 'FASHION_BAYI_ANAK', 'AKSESORIS_FASHION',
       'IBU_BAYI', 'JAM_TANGAN', 'SEPATU_WANITA', 'KESEHATAN', 'TAS_WANITA',
       'HOBI_KOLEKSI', 'OTOMOTIF', 'OLAHRAGA_OUTDOOR', 'BUKU_ALAT_TULIS',
-      'SOUVENIR_PERLENGKAPAN_PESTA', 'FOTOGRAFI', 'VOUCHER', 'DEALS_SEKITAR'
+      'SOUVENIR_PERLENGKAPAN_PESTA', 'FOTOGRAFI', 'VOUCHER', 'DEALS_SEKITAR',
+      'KUE_TRADISIONAL', 'SNACK_GURIH', 'SNACK_MANIS', 'KUE_KERING', 'JAJANAN_PASAR'
     ]
     let safeCategory = 'TOKO'
     const catStr = String(data.category || '')
@@ -1389,7 +1448,10 @@ export const DataStore = {
               jvSharePercent: data.jvSharePercent || null,
               isAffiliateEnabled: data.isAffiliateEnabled || false,
               affiliateCommissionType: data.affiliateCommissionType || 'PERCENT',
-              affiliateCommissionValue: data.affiliateCommissionValue || 0.0
+              affiliateCommissionValue: data.affiliateCommissionValue || 0.0,
+              isSnackboxEnabled: data.isSnackboxEnabled || false,
+              snackboxRevenueShare: data.snackboxRevenueShare ?? 15,
+              snackboxPortionWeight: data.snackboxPortionWeight || null
             }
           })
         } catch (_) {}
@@ -1480,8 +1542,10 @@ export const DataStore = {
       affiliateCommissionType?: string;
       affiliateCommissionValue?: number;
       isSnackboxEnabled?: boolean;
+      isSnackboxEligible?: boolean;
       snackboxRevenueShare?: number;
       snackboxPortionWeight?: string;
+      kelurahanName?: string;
     }>
   ) {
     syncMockDb()
@@ -2144,7 +2208,9 @@ export const DataStore = {
                     orderItemsData.push({
                       productId: item.productId,
                       quantity: item.quantity,
-                      price: finalPrice
+                      price: finalPrice,
+                      isSnackboxItem: product.isSnackboxEnabled,
+                      snackboxRevenueSharePercent: product.isSnackboxEnabled ? product.snackboxRevenueShare : null
                     })
         
                     productsWithQuantities.push({ product, quantity: item.quantity, itemPrice })
@@ -2227,13 +2293,19 @@ export const DataStore = {
                     })
                   }
         
+                  // Order status: only WALLET (deducted synchronously above) and MIDTRANS
+                  // (this function is only called from /api/midtrans/verify after Midtrans
+                  // confirms settlement/capture) represent a payment that's actually confirmed
+                  // by this point. Everything else (MANUAL_*, COD, direct-bypass) is unconfirmed.
+                  const orderStatus = (paymentMethod === 'WALLET' || paymentMethod === 'MIDTRANS') ? 'COMPLETED' : 'PENDING'
+
                   // Create order
                   const order = await tx.order.create({
                     data: {
                       id: orderId,
                       buyerId,
                       totalAmount: finalTotal,
-                      status: 'COMPLETED',
+                      status: orderStatus,
                       shippingFee,
                       courier: shippingDetails?.courier || null,
                       shippingAddress: shippingDetails?.shippingAddress || null,
@@ -4134,6 +4206,13 @@ export const DataStore = {
     )
   },
 
+  async getChatRoomById(roomId: string) {
+    return withFallback(
+      async () => await db.chatRoom.findUnique({ where: { id: roomId } }),
+      async () => globalMockChatRooms.find(r => r.id === roomId) || null
+    )
+  },
+
   async sendChatMessage(roomId: string, senderId: string, content: string, imageUrl?: string) {
     return withMutationFallback(
       async () => {
@@ -4269,6 +4348,13 @@ export const DataStore = {
               })
               .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
       }
+    )
+  },
+
+  async getSupportTicketById(ticketId: string) {
+    return withFallback(
+      async () => await db.supportTicket.findUnique({ where: { id: ticketId } }),
+      async () => globalMockSupportTickets.find(t => t.id === ticketId) || null
     )
   },
 
@@ -5467,6 +5553,7 @@ export const DataStore = {
         const existing = await db.communityMembership.findUnique({
           where: { communityId_userId: { communityId, userId } }
         })
+        const alreadyPaid = existing?.isPaid === true
 
         if (existing) {
           await db.communityMembership.update({
@@ -5497,6 +5584,17 @@ export const DataStore = {
           })
         }
 
+        // Trigger multi-tier referral distribution (was previously only wired
+        // into the admin manual-invoice-verify path, so this instant-pay path
+        // never paid the affiliate tree)
+        if (!alreadyPaid) {
+          await this.processMultiTierCommunityReferral({
+            communityId,
+            buyerId: userId,
+            totalFee: community.joinFee || 0
+          })
+        }
+
         return { success: true, isPaid: true, invoiceStatus: 'PAID' }
       },
       async () => {
@@ -5507,6 +5605,7 @@ export const DataStore = {
         if (!community) return { error: 'Komunitas tidak ditemukan.' }
 
         let m = memberships.find(m => m.communityId === communityId && m.userId === userId)
+        const alreadyPaid = m?.isPaid === true
         if (m) {
           m.isPaid = true
           m.invoiceStatus = 'PAID'
@@ -5526,6 +5625,14 @@ export const DataStore = {
 
         const user = globalMockUsers.find(u => u.id === userId)
         if (user && !(user as any).indukCommunityId) (user as any).indukCommunityId = communityId
+
+        if (!alreadyPaid) {
+          await this.processMultiTierCommunityReferral({
+            communityId,
+            buyerId: userId,
+            totalFee: community.joinFee || 0
+          })
+        }
 
         return { success: true, isPaid: true, invoiceStatus: 'PAID' }
       }
@@ -6606,6 +6713,7 @@ export const DataStore = {
   },
 
   // Username methods
+  // Note: see findUserByEmail — login() queries the DB directly for identity resolution.
   async findUserByUsername(username: string): Promise<any | null> {
     syncMockDb()
     if (await isDbConnected()) {
@@ -7665,6 +7773,16 @@ export const DataStore = {
     )
   },
 
+  async getCooperativeProductById(id: string) {
+    return withFallback(
+      async () => await db.cooperativeProduct.findUnique({ where: { id } }),
+      async () => {
+        const products = (globalThis as any).__mockCooperativeProducts || []
+        return products.find((x: any) => x.id === id) || null
+      }
+    )
+  },
+
   async updateCooperativeProduct(id: string, data: any) {
     return withMutationFallback(
       async () => {
@@ -7786,6 +7904,16 @@ export const DataStore = {
               return proj
             }
             return null
+      }
+    )
+  },
+
+  async getMerchantFundingProjectById(id: string) {
+    return withFallback(
+      async () => await db.merchantFundingProject.findUnique({ where: { id } }),
+      async () => {
+        const list = (globalThis as any).__mockMerchantFundingProjects || []
+        return list.find((x: any) => x.id === id) || null
       }
     )
   },
@@ -8251,6 +8379,25 @@ export const DataStore = {
     )
   },
 
+  // Deletes audit log rows older than `retentionDays`. Meant to be called
+  // from a scheduled job (see /api/cron/purge-audit-logs), not from request
+  // handlers — retention is a periodic housekeeping concern, not a user action.
+  async purgeExpiredAuditLogs(retentionDays: number) {
+    const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000)
+    return withMutationFallback(
+      async () => {
+        return await db.auditLog.deleteMany({ where: { createdAt: { lt: cutoff } } })
+      },
+      async () => {
+        const logs = (globalThis as any).__mockAuditLogs || []
+        const kept = logs.filter((l: any) => new Date(l.createdAt).getTime() >= cutoff.getTime())
+        const count = logs.length - kept.length
+        ;(globalThis as any).__mockAuditLogs = kept
+        return { count }
+      }
+    )
+  },
+
   // ═══════════════════════════════════════════════════════════════════════════
   // LANDING BANNER CRUD
   // ═══════════════════════════════════════════════════════════════════════════
@@ -8475,30 +8622,43 @@ export const DataStore = {
     )
   },
 
-  async updateService(id: string, data: any) {
+  async getServiceById(id: string) {
+    return withFallback(
+      async () => await db.service.findUnique({ where: { id } }),
+      async () => {
+        if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
+        const services = (globalThis as any).__mockServices || []
+        return services.find((x: any) => x.id === id) || null
+      }
+    )
+  },
+
+  // merchantId scopes the write at the DB layer too — matches the products
+  // pattern, since this is independently reachable via a 'use server' export.
+  async updateService(id: string, merchantId: string, data: any) {
     return withMutationFallback(
       async () => {
-        return await db.service.update({ where: { id }, data })
+        return await db.service.update({ where: { id, merchantId }, data })
       },
       async () => {
         if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
         const services = (globalThis as any).__mockServices || []
-        const s = services.find((x: any) => x.id === id)
+        const s = services.find((x: any) => x.id === id && x.merchantId === merchantId)
         if (s) Object.assign(s, data, { updatedAt: new Date() })
         return s
       }
     )
   },
 
-  async deleteService(id: string) {
+  async deleteService(id: string, merchantId: string) {
     return withMutationFallback(
       async () => {
-        return await db.service.delete({ where: { id } })
+        return await db.service.delete({ where: { id, merchantId } })
       },
       async () => {
         if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
         const services = (globalThis as any).__mockServices || []
-        const idx = services.findIndex((x: any) => x.id === id)
+        const idx = services.findIndex((x: any) => x.id === id && x.merchantId === merchantId)
         if (idx >= 0) services.splice(idx, 1)
         return { success: true }
       }
@@ -8632,6 +8792,16 @@ export const DataStore = {
         if (filters?.customerId) bookings = bookings.filter((b: any) => b.customerId === filters.customerId)
         if (filters?.serviceId) bookings = bookings.filter((b: any) => b.serviceId === filters.serviceId)
         return bookings
+      }
+    )
+  },
+
+  async getServiceBookingById(id: string) {
+    return withFallback(
+      async () => await db.serviceBooking.findUnique({ where: { id } }),
+      async () => {
+        const bookings = (globalThis as any).__mockServiceBookings || []
+        return bookings.find((b: any) => b.id === id) || null
       }
     )
   },
@@ -8940,7 +9110,19 @@ export const DataStore = {
     )
   },
 
-  async updateAnnouncement(id: string, data: {
+  async getAnnouncementById(id: string) {
+    return withFallback(
+      async () => await db.announcement.findUnique({ where: { id } }),
+      async () => {
+        const list = (globalThis as any).__mockAnnouncements || []
+        return list.find((x: any) => x.id === id) || null
+      }
+    )
+  },
+
+  // communityId scopes the write at the DB layer too — the action layer
+  // derives it from the announcement's own record, never from client input.
+  async updateAnnouncement(id: string, communityId: string, data: {
     title?: string
     content?: string
     publishedAt?: Date
@@ -8950,7 +9132,7 @@ export const DataStore = {
     return withMutationFallback(
       async () => {
         return await db.announcement.update({
-                  where: { id },
+                  where: { id, communityId },
                   data: {
                     title: data.title,
                     content: data.content,
@@ -8962,7 +9144,7 @@ export const DataStore = {
       },
       async () => {
         const list = (globalThis as any).__mockAnnouncements || []
-            const ann = list.find((x: any) => x.id === id)
+            const ann = list.find((x: any) => x.id === id && x.communityId === communityId)
             if (ann) {
               Object.assign(ann, data, { updatedAt: new Date() })
               return ann
@@ -8972,15 +9154,15 @@ export const DataStore = {
     )
   },
 
-  async deleteAnnouncement(id: string) {
+  async deleteAnnouncement(id: string, communityId: string) {
     return withMutationFallback(
       async () => {
-        await db.announcement.delete({ where: { id } })
+        await db.announcement.delete({ where: { id, communityId } })
                 return { success: true }
       },
       async () => {
         if ((globalThis as any).__mockAnnouncements) {
-              ;(globalThis as any).__mockAnnouncements = (globalThis as any).__mockAnnouncements.filter((x: any) => x.id !== id)
+              ;(globalThis as any).__mockAnnouncements = (globalThis as any).__mockAnnouncements.filter((x: any) => !(x.id === id && x.communityId === communityId))
               }
             return { success: true }
       }
@@ -9050,7 +9232,19 @@ export const DataStore = {
     )
   },
 
-  async updateCooperativeReport(id: string, data: {
+  async getCooperativeReportById(id: string) {
+    return withFallback(
+      async () => await db.cooperativeReport.findUnique({ where: { id } }),
+      async () => {
+        const list = (globalThis as any).__mockCooperativeReports || []
+        return list.find((x: any) => x.id === id) || null
+      }
+    )
+  },
+
+  // communityId scopes the write at the DB layer too — the action layer
+  // derives it from the report's own record, never from client input.
+  async updateCooperativeReport(id: string, communityId: string, data: {
     title?: string
     type?: string
     year?: number
@@ -9061,7 +9255,7 @@ export const DataStore = {
     return withMutationFallback(
       async () => {
         return await db.cooperativeReport.update({
-                  where: { id },
+                  where: { id, communityId },
                   data: {
                     title: data.title,
                     type: data.type,
@@ -9074,7 +9268,7 @@ export const DataStore = {
       },
       async () => {
         const list = (globalThis as any).__mockCooperativeReports || []
-            const rep = list.find((x: any) => x.id === id)
+            const rep = list.find((x: any) => x.id === id && x.communityId === communityId)
             if (rep) {
               if (data.year !== undefined) data.year = Number(data.year)
               Object.assign(rep, data, { updatedAt: new Date() })
@@ -9085,15 +9279,15 @@ export const DataStore = {
     )
   },
 
-  async deleteCooperativeReport(id: string) {
+  async deleteCooperativeReport(id: string, communityId: string) {
     return withMutationFallback(
       async () => {
-        await db.cooperativeReport.delete({ where: { id } })
+        await db.cooperativeReport.delete({ where: { id, communityId } })
                 return { success: true }
       },
       async () => {
         if ((globalThis as any).__mockCooperativeReports) {
-              ;(globalThis as any).__mockCooperativeReports = (globalThis as any).__mockCooperativeReports.filter((x: any) => x.id !== id)
+              ;(globalThis as any).__mockCooperativeReports = (globalThis as any).__mockCooperativeReports.filter((x: any) => !(x.id === id && x.communityId === communityId))
               }
             return { success: true }
       }
@@ -9568,6 +9762,20 @@ export const DataStore = {
         ;(globalThis as any).__mockCommunityEvents.unshift(newEv)
         saveMockDb()
         return newEv
+      }
+    )
+  },
+
+  async getCommunityEventById(id: string) {
+    return withFallback(
+      async () => {
+        try {
+          return await (db as any).communityEvent?.findUnique({ where: { id } })
+        } catch (_) { return null }
+      },
+      async () => {
+        const list = (globalThis as any).__mockCommunityEvents || []
+        return list.find((x: any) => x.id === id) || null
       }
     )
   },

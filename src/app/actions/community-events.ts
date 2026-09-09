@@ -2,8 +2,10 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, deleteCache } from '@/lib/cache'
+import { requireCommunityManager } from '@/lib/auth-guards'
 
 export async function getCommunityEventsAction(communityId: string) {
   if (!communityId) return []
@@ -31,6 +33,12 @@ export async function createCommunityEventAction(formData: FormData) {
   if (!eventDate) return { error: 'Tanggal event wajib diisi.' }
 
   try {
+    await requireCommunityManager(user, communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
+  try {
     const event = await DataStore.createCommunityEvent({
       communityId,
       title,
@@ -44,6 +52,16 @@ export async function createCommunityEventAction(formData: FormData) {
       price,
       organizer
     })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_COMMUNITY_EVENT',
+      module: 'COOPERATIVE',
+      targetId: event.id,
+      targetType: 'COMMUNITY_EVENT',
+      detail: `"${title}" — ${eventDate}.`
+    })
     revalidatePath(`/community/${communityId}`)
     return { success: true, event }
   } catch (e: any) {
@@ -54,6 +72,15 @@ export async function createCommunityEventAction(formData: FormData) {
 export async function updateCommunityEventAction(id: string, formData: FormData) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  if (!id) return { error: 'ID Event wajib diisi.' }
+  const existingEvent: any = await DataStore.getCommunityEventById(id)
+  if (!existingEvent) return { error: 'Event tidak ditemukan.' }
+  try {
+    await requireCommunityManager(user, existingEvent.communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
 
   const communityId = formData.get('communityId') as string
   const title = formData.get('title') as string
@@ -67,8 +94,6 @@ export async function updateCommunityEventAction(id: string, formData: FormData)
   const price = formData.get('price') ? Number(formData.get('price')) : undefined
   const status = formData.get('status') as string
   const organizer = formData.get('organizer') as string
-
-  if (!id) return { error: 'ID Event wajib diisi.' }
 
   try {
     const event = await DataStore.updateCommunityEvent(id, {
@@ -84,6 +109,15 @@ export async function updateCommunityEventAction(id: string, formData: FormData)
       status,
       organizer
     })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_COMMUNITY_EVENT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'COMMUNITY_EVENT'
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
@@ -98,9 +132,25 @@ export async function deleteCommunityEventAction(id: string, communityId: string
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   if (!id) return { error: 'ID Event wajib diisi.' }
+  const existingEvent: any = await DataStore.getCommunityEventById(id)
+  if (!existingEvent) return { error: 'Event tidak ditemukan.' }
+  try {
+    await requireCommunityManager(user, existingEvent.communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
 
   try {
     const res = await DataStore.deleteCommunityEvent(id)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'DELETE_COMMUNITY_EVENT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'COMMUNITY_EVENT'
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }

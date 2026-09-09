@@ -110,25 +110,25 @@ export default function KelurahanSwitcherModal() {
           >
             <div className="flex items-center gap-2">
               {isDetectingLocation ? (
-                <Loader2 className="w-4 h-4 text-[#006E24] animate-spin" />
+                <Loader2 className="w-4 h-4 text-on-primary-container animate-spin" />
               ) : (
-                <Navigation className="w-4 h-4 text-[#006E24] fill-[#006E24]" />
+                <Navigation className="w-4 h-4 text-on-primary-container fill-on-primary-container" />
               )}
               <span>
                 {isDetectingLocation ? 'Mendeteksi Lokasi Anda (GPS & IP)...' : 'Gunakan Lokasi Saya Saat Ini'}
               </span>
             </div>
-            <span className="text-[10px] font-semibold text-[#006E24] bg-white px-2 py-0.5 rounded-md border border-emerald-200/80">
+            <span className="text-[10px] font-semibold text-on-primary-container bg-white px-2 py-0.5 rounded-md border border-emerald-200/80">
               Otomatis
             </span>
           </button>
         </div>
 
         {/* Search Input */}
-        <div className="p-4 border-b border-slate-100 bg-[#F5F7FA] shrink-0 space-y-2.5">
+        <div className="p-4 border-b border-slate-100 bg-slate-50 shrink-0 space-y-2.5">
           <div className="relative">
             {isSearching ? (
-              <Loader2 className="w-4 h-4 text-[#006E24] animate-spin absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Loader2 className="w-4 h-4 text-on-primary-container animate-spin absolute left-3.5 top-1/2 -translate-y-1/2" />
             ) : (
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             )}
@@ -137,7 +137,7 @@ export default function KelurahanSwitcherModal() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Ketik nama kelurahan, kecamatan, atau kota di Indonesia..."
-              className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#006E24] focus:ring-1 focus:ring-[#006E24]/20 transition-all"
+              className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-on-primary-container focus:ring-1 focus:ring-on-primary-container/20 transition-all"
               autoFocus
             />
             {searchQuery && (
@@ -159,7 +159,7 @@ export default function KelurahanSwitcherModal() {
                 key={s.name}
                 type="button"
                 onClick={() => setSearchQuery(s.name)}
-                className="text-[11px] px-2.5 py-0.5 rounded-full border bg-white border-slate-200 text-slate-600 hover:border-[#006E24]/40 hover:text-slate-900 transition-all cursor-pointer"
+                className="text-[11px] px-2.5 py-0.5 rounded-full border bg-white border-slate-200 text-slate-600 hover:border-on-primary-container/40 hover:text-slate-900 transition-all cursor-pointer"
               >
                 {s.name}
               </button>
@@ -185,14 +185,14 @@ export default function KelurahanSwitcherModal() {
                   onClick={() => handleSelectKelurahan(item)}
                   className={`w-full p-3 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                     isSelected
-                      ? 'bg-[#E8F5E9]/80 border-[#006E24] shadow-xs'
+                      ? 'bg-primary-container/80 border-on-primary-container shadow-xs'
                       : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                        isSelected ? 'bg-[#006E24] text-white' : 'bg-slate-100 text-slate-500'
+                        isSelected ? 'bg-on-primary-container text-white' : 'bg-slate-100 text-slate-500'
                       }`}
                     >
                       <MapPin className="w-4 h-4" />
@@ -216,7 +216,7 @@ export default function KelurahanSwitcherModal() {
 
                   <div className="flex items-center gap-2">
                     {isSelected ? (
-                      <div className="w-5 h-5 rounded-full bg-[#006E24] text-white flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-on-primary-container text-white flex items-center justify-center">
                         <Check className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
                     ) : (

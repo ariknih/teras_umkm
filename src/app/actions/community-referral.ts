@@ -2,6 +2,9 @@
 
 import { DataStore } from '@/lib/data-store'
 import { db } from '@/lib/db'
+import { ensureSuperAdmin } from './admin'
+import { logAudit } from '@/lib/audit-log'
+import { getCurrentUser } from './auth'
 
 export async function getCommunityReferralConfig(communityId: string) {
   try {
@@ -44,10 +47,20 @@ export async function updateCommunityReferralConfig(data: {
   isKycRequired?: boolean
   commissionMethod?: 'PERCENTAGE' | 'NOMINAL'
 }) {
+  // ponytail: was previously reachable with no auth check at all — anyone
+  // could rewrite any community's referral commission split. Gated to the
+  // same ketua-or-admin rule used by updateIndukCommunity.
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
   try {
     // Enforce max 2 tier untuk KOPERASI
     const community = await DataStore.getCommunityById(data.communityId)
-    if (community && (community as any).category === 'KOPERASI') {
+    if (!community) return { error: 'Komunitas tidak ditemukan.' }
+    if (community.ketuaId !== user.id && user.role !== 'ADMIN') {
+      return { error: 'Anda tidak memiliki wewenang untuk mengubah komunitas ini.' }
+    }
+    if ((community as any).category === 'KOPERASI') {
       if (data.maxTiers > 2) {
         return { error: 'Koperasi hanya bisa memiliki maksimal 2 tier referral.' }
       }
@@ -88,6 +101,16 @@ export async function updateCommunityReferralConfig(data: {
         ...((data.commissionMethod !== undefined) ? { commissionMethod: data.commissionMethod } as any : {})
       })
     }
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_COMMUNITY_REFERRAL_CONFIG',
+      module: 'COOPERATIVE',
+      targetId: data.communityId,
+      targetType: 'COMMUNITY',
+      detail: `Join fee Rp ${data.joinFee.toLocaleString('id-ID')}, ${data.maxTiers} tier.`
+    })
 
     return { success: true, updated }
   } catch (e: any) {
@@ -104,9 +127,23 @@ export async function getCommunityReferralHistory(communityId: string) {
   }
 }
 
+// ponytail: was previously exported with no auth check at all — every referral
+// payout in normal flow already happens inside payCommunityJoinFee/createOrder,
+// this manual trigger is for a super admin to reprocess one, not for client use.
 export async function processMultiTierReferralPayout(communityId: string, buyerId: string, totalFee: number) {
+  const admin = await ensureSuperAdmin()
   try {
     const res = await DataStore.processMultiTierCommunityReferral({ communityId, buyerId, totalFee })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'PROCESS_MULTI_TIER_REFERRAL_PAYOUT',
+      module: 'WALLET',
+      targetId: communityId,
+      targetType: 'COMMUNITY',
+      detail: `Reprocess komisi referral untuk pembeli #${buyerId}, total fee Rp ${totalFee.toLocaleString('id-ID')}.`
+    })
     return { success: true, res }
   } catch (e: any) {
     return { error: e.message || 'Gagal memproses pembagian komisi referral.' }

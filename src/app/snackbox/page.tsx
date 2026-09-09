@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   Package,
   MapPin,
@@ -11,8 +11,8 @@ import {
   ChefHat
 } from 'lucide-react'
 import { useSnackbox } from '@/context/SnackboxContext'
-import { mockSnackboxProducts } from '@/lib/mock-snackbox'
-import { SnackboxCategory } from '@/types/snackbox'
+import { getSnackboxProducts } from '@/app/actions/products'
+import { SnackboxCategory, SnackboxProduct } from '@/types/snackbox'
 import SnackboxHeader from '@/components/snackbox/SnackboxHeader'
 import SnackboxProductCard from '@/components/snackbox/SnackboxProductCard'
 import SnackboxCategoryTabs from '@/components/snackbox/SnackboxCategoryTabs'
@@ -24,15 +24,13 @@ import { ProductCardSkeleton } from '@/components/ui/GhostSkeleton'
 
 const CATEGORIES: SnackboxCategory[] = [
   'Semua',
-  'Snack Manis',
-  'Snack Gurih',
-  'Kue Tradisional',
-  'Kue Basah',
-  'Kue Kering',
-  'Makanan Ringan',
-  'Jajanan',
-  'Cemilan',
-  'Snack Kekinian'
+  'KUE_TRADISIONAL',
+  'SNACK_GURIH',
+  'SNACK_MANIS',
+  'KUE_KERING',
+  'JAJANAN_PASAR',
+  'MAKANAN_MINUMAN',
+  'KAFE'
 ]
 
 export default function SnackboxPage() {
@@ -41,32 +39,41 @@ export default function SnackboxPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [visibleExploreCount, setVisibleExploreCount] = useState(10)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [allProducts, setAllProducts] = useState<SnackboxProduct[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // 1. Products in user's active Kelurahan or deliverable partner kitchens
+  useEffect(() => {
+    let cancelled = false
+    setIsLoading(true)
+    getSnackboxProducts({}).then(products => {
+      if (!cancelled) {
+        setAllProducts(products as SnackboxProduct[])
+        setIsLoading(false)
+      }
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  // 1. Products in user's active Kelurahan (ponytail: plain string match on kelurahanName,
+  // fine at current merchant counts — upgrade to a real kelurahanId FK once there's a real
+  // kelurahan reference table backing merchant products, not mock Kelurahan fixtures)
   const localProducts = useMemo(() => {
-    const direct = mockSnackboxProducts.filter(
-      p => p.kelurahanId === kelurahan.id || p.kelurahanName.toLowerCase() === kelurahan.name.toLowerCase()
-    )
+    const direct = allProducts.filter(p => p.kelurahanName.toLowerCase() === kelurahan.name.toLowerCase())
     if (direct.length > 0) return direct
+    // Curated fallback: show a few items from elsewhere, deliverable to this kelurahan
+    return allProducts.slice(0, 10)
+  }, [allProducts, kelurahan.name])
 
-    // Curated partner items deliverable to this kelurahan
-    return mockSnackboxProducts.slice(0, 10).map(p => ({
-      ...p,
-      kelurahanId: kelurahan.id,
-      kelurahanName: kelurahan.name
-    }))
-  }, [kelurahan.id, kelurahan.name])
-
-  // 2. Trending Products across other Kelurahans
+  // 2. Trending Products across other Kelurahans (no real trending signal yet — always empty for real data)
   const trendingOtherProducts = useMemo(() => {
-    return mockSnackboxProducts
-      .filter(p => p.kelurahanId !== kelurahan.id && (p.isTrending || p.isBestSeller))
+    return allProducts
+      .filter(p => p.kelurahanName.toLowerCase() !== kelurahan.name.toLowerCase() && (p.isTrending || p.isBestSeller))
       .slice(0, 5)
-  }, [kelurahan.id])
+  }, [allProducts, kelurahan.name])
 
   // 3. Explore all items with category and search filter
   const exploreFilteredProducts = useMemo(() => {
-    let list = mockSnackboxProducts
+    let list = allProducts
     if (activeCategory !== 'Semua') {
       list = list.filter(p => p.category === activeCategory)
     }
@@ -81,19 +88,19 @@ export default function SnackboxPage() {
       )
     }
     return list
-  }, [activeCategory, searchQuery])
+  }, [allProducts, activeCategory, searchQuery])
 
   // Item counts for category pills
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { Semua: mockSnackboxProducts.length }
-    mockSnackboxProducts.forEach(p => {
+    const counts: Record<string, number> = { Semua: allProducts.length }
+    allProducts.forEach(p => {
       counts[p.category] = (counts[p.category] || 0) + 1
     })
     return counts
-  }, [])
+  }, [allProducts])
 
   return (
-    <div className="relative min-h-screen bg-[#F5F7FA] font-inter pb-32">
+    <div className="relative min-h-screen bg-slate-50 font-inter pb-32">
       {/* ── 1. HEADER BAR: LOKASI KELURAHAN & KERANJANG BOX ── */}
       <SnackboxHeader />
 
@@ -103,7 +110,7 @@ export default function SnackboxPage() {
         <div id="page-title" className="pb-1 border-b border-slate-200/60">
           <h1 className="text-base sm:text-lg font-bold text-gray-800 mb-0.5 flex items-center gap-2">
             <span>Snackbox Kelurahan</span>
-            <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9]">
+            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container border border-slate-200">
               Kel. {kelurahan.name}
             </span>
           </h1>
@@ -113,10 +120,10 @@ export default function SnackboxPage() {
         </div>
 
         {/* ── 2. SECTION: SNACK DI SEKITAR KELURAHAN AKTIF ── */}
-        <section id="nearby-snacks" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-[#EAEAEA] bg-white">
+        <section id="nearby-snacks" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-neutral-shade-50 bg-white">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-[#006E24]" />
+              <MapPin className="w-4 h-4 text-on-primary-container" />
               <h2 className="text-sm font-bold text-slate-900">
                 Snack di Sekitar Kelurahan {kelurahan.name}
               </h2>
@@ -126,7 +133,11 @@ export default function SnackboxPage() {
             </span>
           </div>
 
-          {localProducts.length === 0 ? (
+          {isLoading ? (
+            <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+              {Array.from({ length: 6 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+            </div>
+          ) : localProducts.length === 0 ? (
             <div className="w-full text-center py-12 rounded-xl bg-white border border-slate-200/80">
               <ChefHat className="w-8 h-8 text-slate-400 mx-auto mb-2" />
               <h3 className="font-bold text-xs text-slate-700 mb-0.5">
@@ -138,7 +149,7 @@ export default function SnackboxPage() {
               <button
                 type="button"
                 onClick={() => setIsKelurahanModalOpen(true)}
-                className="px-4 py-1.5 rounded-lg bg-[#006E24] hover:bg-[#005a1d] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                className="px-4 py-1.5 rounded-lg bg-on-primary-container hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 Pilih Kelurahan Lain
               </button>
@@ -154,7 +165,7 @@ export default function SnackboxPage() {
 
         {/* ── 3. SECTION: TRENDING DI KELURAHAN LAIN ── */}
         {trendingOtherProducts.length > 0 && (
-          <section id="trending-other-kelurahan" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-[#EAEAEA] bg-white">
+          <section id="trending-other-kelurahan" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-neutral-shade-50 bg-white">
             <div className="flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-amber-600" />
               <h2 className="text-sm font-bold text-slate-900">
@@ -171,9 +182,9 @@ export default function SnackboxPage() {
         )}
 
         {/* ── 4. SECTION: JELAJAH DI KELURAHAN LAIN (KATEGORI & KATALOG) ── */}
-        <section id="explore-catalog" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-[#EAEAEA] bg-white">
+        <section id="explore-catalog" className="flex flex-col items-start gap-5 self-stretch p-5 rounded-2xl border border-neutral-shade-50 bg-white">
           <div className="flex items-center gap-1.5">
-            <Compass className="w-4 h-4 text-[#006E24]" />
+            <Compass className="w-4 h-4 text-on-primary-container" />
             <h2 className="text-sm font-bold text-slate-900">
               Jelajah Seluruh Katalog Snackbox
             </h2>
@@ -189,7 +200,7 @@ export default function SnackboxPage() {
               placeholder="Cari kue, snack, atau rasa..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-9 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#006E24] focus:ring-1 focus:ring-[#006E24]/20 transition-all font-medium"
+              className="w-full pl-9 pr-9 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-on-primary-container focus:ring-1 focus:ring-on-primary-container/20 transition-all font-medium"
             />
             {searchQuery && (
               <button
@@ -210,7 +221,11 @@ export default function SnackboxPage() {
           />
 
           {/* Grid Products */}
-          {exploreFilteredProducts.length === 0 ? (
+          {isLoading ? (
+            <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
+              {Array.from({ length: 12 }).map((_, i) => <ProductCardSkeleton key={i} />)}
+            </div>
+          ) : exploreFilteredProducts.length === 0 ? (
             <div className="w-full text-center py-16 rounded-xl bg-white border border-slate-200">
               <Package className="w-8 h-8 text-slate-300 mx-auto mb-2" />
               <h3 className="font-bold text-xs text-slate-700 mb-0.5">Produk Tidak Ditemukan</h3>

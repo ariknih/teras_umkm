@@ -2,8 +2,10 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, invalidateCachePattern, deleteCache } from '@/lib/cache'
+import { requireCommunityManager } from '@/lib/auth-guards'
 
 export async function getPosts(groupId?: string) {
   const key = `community:posts:${groupId || 'all'}`
@@ -97,6 +99,16 @@ export async function createGroup(formData: FormData) {
 
   try {
     const group = await DataStore.createGroup(user.id, name, description, avatarUrl, coverUrl)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_GROUP',
+      module: 'COOPERATIVE',
+      targetId: group.id,
+      targetType: 'COMMUNITY',
+      detail: `Komunitas "${name}".`
+    })
     await invalidateCachePattern('community:groups:')
     revalidatePath('/community')
     return { success: true, group }
@@ -110,7 +122,17 @@ export async function toggleJoinGroup(groupId: string) {
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const res = await DataStore.toggleJoinGroup(user.id, groupId)
+    const res: any = await DataStore.toggleJoinGroup(user.id, groupId)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'TOGGLE_JOIN_GROUP',
+      module: 'COOPERATIVE',
+      targetId: groupId,
+      targetType: 'COMMUNITY',
+      detail: res?.joined ? 'Bergabung.' : 'Keluar.'
+    })
     revalidatePath('/community')
     revalidatePath(`/community?groupId=${groupId}`)
     return { success: true, ...res }
@@ -132,7 +154,17 @@ export async function toggleSuspendGroup(groupId: string) {
   }
 
   try {
-    const res = await DataStore.toggleSuspendGroup(groupId)
+    const res: any = await DataStore.toggleSuspendGroup(groupId)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'TOGGLE_SUSPEND_GROUP',
+      module: 'COOPERATIVE',
+      targetId: groupId,
+      targetType: 'COMMUNITY',
+      detail: `Status suspend komunitas menjadi ${res?.isSuspended ? 'DISUSPEND' : 'AKTIF'}.`
+    })
     revalidatePath('/community')
     revalidatePath(`/community?groupId=${groupId}`)
     return { success: true, group: res }
@@ -162,6 +194,19 @@ export async function deletePostAction(postId: string) {
 
   try {
     await DataStore.deletePost(postId)
+    if (post.authorId !== user.id) {
+      // Only a moderation deletion (not the author cleaning up their own post) is audit-worthy.
+      await logAudit({
+        actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+        actorId: user.id,
+        actorName: user.name || user.email,
+        action: 'DELETE_POST_MODERATION',
+        module: 'COOPERATIVE',
+        targetId: postId,
+        targetType: 'POST',
+        detail: `Hapus postingan milik #${post.authorId}.`
+      })
+    }
     revalidatePath('/community')
     if (post.groupId) {
       revalidatePath(`/community?groupId=${post.groupId}`)
@@ -196,6 +241,19 @@ export async function deleteCommentAction(commentId: string, postId: string) {
 
   try {
     await DataStore.deleteComment(commentId)
+    if (comment.authorId !== user.id) {
+      // Only a moderation deletion (not the author cleaning up their own comment) is audit-worthy.
+      await logAudit({
+        actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+        actorId: user.id,
+        actorName: user.name || user.email,
+        action: 'DELETE_COMMENT_MODERATION',
+        module: 'COOPERATIVE',
+        targetId: commentId,
+        targetType: 'COMMENT',
+        detail: `Hapus komentar milik #${comment.authorId}.`
+      })
+    }
     revalidatePath('/community')
     revalidatePath(`/community/post/${postId}`)
     if (post.groupId) {
@@ -338,6 +396,16 @@ export async function createIndukCommunity(formData: FormData) {
       coinBalance: initialCoins,
       templateType
     })
+    await logAudit({
+      actor: 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_INDUK_COMMUNITY',
+      module: 'COOPERATIVE',
+      targetId: community.id,
+      targetType: 'COMMUNITY',
+      detail: `Komunitas "${name}" (${type}).`
+    })
     deleteCache('community:induk:all')
     invalidateCachePattern('community:induk:*')
     invalidateCachePattern('user:communities:roles:*')
@@ -363,6 +431,16 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
 
   try {
     const result = await DataStore.joinCommunity(user.id, communityId, effectiveAsInduk)
+    await logAudit({
+      actor: 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'JOIN_INDUK_COMMUNITY',
+      module: 'COOPERATIVE',
+      targetId: communityId,
+      targetType: 'COMMUNITY',
+      detail: effectiveAsInduk ? 'Bergabung sebagai induk.' : 'Bergabung sebagai anggota biasa.'
+    })
     deleteCache('community:induk:all')
     invalidateCachePattern('community:induk:*')
     invalidateCachePattern('user:communities:roles:*')
@@ -380,7 +458,19 @@ export async function payCommunityJoinFeeAction(communityId: string, paymentMeth
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    const result = await DataStore.payCommunityJoinFee(user.id, communityId, paymentMethod)
+    const result: any = await DataStore.payCommunityJoinFee(user.id, communityId, paymentMethod)
+    if (result?.success) {
+      await logAudit({
+        actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+        actorId: user.id,
+        actorName: user.name || user.email,
+        action: 'PAY_COMMUNITY_JOIN_FEE',
+        module: 'COOPERATIVE',
+        targetId: communityId,
+        targetType: 'COMMUNITY',
+        detail: `Bayar biaya keanggotaan via ${paymentMethod}.`
+      })
+    }
     deleteCache('community:induk:all')
     invalidateCachePattern('community:induk:*')
     invalidateCachePattern('user:communities:roles:*')
@@ -452,6 +542,16 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
     }
 
     await DataStore.removeCommunityMembership(actualTargetUserId, actualCommunityId)
+    await logAudit({
+      actor: isSuperAdmin ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'KICK_COMMUNITY_MEMBER',
+      module: 'COOPERATIVE',
+      targetId: actualTargetUserId,
+      targetType: 'USER',
+      detail: `Keluarkan anggota #${actualTargetUserId} dari komunitas #${actualCommunityId}.`
+    })
 
     // Clear server-side caches so all members and the kicked user see the change immediately
     deleteCache(`community:members:${actualCommunityId}`)
@@ -471,6 +571,19 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
   }
 }
 
+// FLAGGED — SECURITY (not yet fixed, pending a decision on the intended KYC
+// business process): this sets kycStatus:'APPROVED' from client-supplied
+// ktpUrl/selfieUrl with no real verification (only a magic-string check for
+// "fail"/"tolak"/"invalid" in the URL) and no environment gate, unlike the
+// sibling /api/kyc/simulate route which had the identical hole and is now
+// locked to non-production. kycStatus APPROVED/VERIFIED gates cooperative
+// loan applications (submitCooperativeLoanAction), community creation, and
+// joining KYC-required communities — so this is a live identity-verification
+// bypass on financially-sensitive actions, reachable directly as a server
+// action regardless of the UI (it's imported but never actually called in
+// settings/page.tsx or ProfileViewerClient.tsx, both of which use the real
+// Didit-based flow instead). Do not delete/fix without confirming whether
+// this stub predates the Didit integration and is safe to remove.
 export async function submitKycAction(formData: FormData) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
@@ -484,6 +597,15 @@ export async function submitKycAction(formData: FormData) {
 
   try {
     const updatedUser = await DataStore.submitKyc(user.id, ktpUrl, selfieUrl)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'SUBMIT_KYC',
+      module: 'KYC',
+      targetId: user.id,
+      targetType: 'USER'
+    })
     revalidatePath('/profile')
     return { success: true, user: updatedUser }
   } catch (e: any) {
@@ -499,6 +621,15 @@ export async function updateKycStatusAction(userId: string, status: 'APPROVED' |
 
   try {
     const updatedUser = await DataStore.updateKycStatus(userId, status)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: status === 'APPROVED' ? 'APPROVE_KYC' : 'REJECT_KYC',
+      module: 'KYC',
+      targetId: userId,
+      targetType: 'USER'
+    })
     return { success: true, user: updatedUser }
   } catch (e: any) {
     return { error: e.message || 'Gagal memperbarui status KYC.' }
@@ -561,6 +692,16 @@ export async function submitCooperativeLoanAction(formData: FormData) {
       amount,
       purpose
     })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'SUBMIT_COOPERATIVE_LOAN',
+      module: 'COOPERATIVE',
+      targetId: loan.id,
+      targetType: 'COOPERATIVE_LOAN',
+      detail: `Ajukan pinjaman Rp ${amount.toLocaleString('id-ID')} — ${purpose}`
+    })
     revalidatePath('/merchant/dashboard')
     revalidatePath(`/community/${communityId}`)
     return { success: true, loan }
@@ -603,6 +744,16 @@ export async function approveCooperativeLoanAction(loanId: string, role: 'KETUA'
         true,
         loan.approvedByAdmin
       )
+      await logAudit({
+        actor: 'MEMBER',
+        actorId: user.id,
+        actorName: user.name || user.email,
+        action: 'APPROVE_COOPERATIVE_LOAN_KETUA',
+        module: 'COOPERATIVE',
+        targetId: loanId,
+        targetType: 'COOPERATIVE_LOAN',
+        detail: `Ketua menyetujui pinjaman Rp ${Number(loan.amount).toLocaleString('id-ID')}.`
+      })
       revalidatePath('/merchant/dashboard')
       return { success: true, loan: updated }
     } catch (e: any) {
@@ -622,6 +773,16 @@ export async function approveCooperativeLoanAction(loanId: string, role: 'KETUA'
         loan.approvedByKetua,
         true
       )
+      await logAudit({
+        actor: 'ADMIN',
+        actorId: user.id,
+        actorName: user.name || user.email,
+        action: 'APPROVE_COOPERATIVE_LOAN_ADMIN',
+        module: 'COOPERATIVE',
+        targetId: loanId,
+        targetType: 'COOPERATIVE_LOAN',
+        detail: `Admin menyetujui pinjaman Rp ${Number(loan.amount).toLocaleString('id-ID')}.`
+      })
       revalidatePath('/merchant/dashboard')
       return { success: true, loan: updated }
     } catch (e: any) {
@@ -654,6 +815,16 @@ export async function rejectCooperativeLoanAction(loanId: string, role: 'KETUA' 
       role === 'KETUA' ? false : loan.approvedByKetua,
       role === 'ADMIN' ? false : loan.approvedByAdmin
     )
+    await logAudit({
+      actor: role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: role === 'ADMIN' ? 'REJECT_COOPERATIVE_LOAN_ADMIN' : 'REJECT_COOPERATIVE_LOAN_KETUA',
+      module: 'COOPERATIVE',
+      targetId: loanId,
+      targetType: 'COOPERATIVE_LOAN',
+      detail: `Pinjaman Rp ${Number(loan.amount).toLocaleString('id-ID')} ditolak oleh ${role === 'ADMIN' ? 'Admin' : 'Ketua'}.`
+    })
     revalidatePath('/merchant/dashboard')
     return { success: true, loan: updated }
   } catch (e: any) {
@@ -705,6 +876,15 @@ export async function updateIndukCommunity(id: string, formData: FormData) {
       joinFee,
       monthlyFee
     })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_INDUK_COMMUNITY',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'COMMUNITY'
+    })
     revalidatePath(`/community/${id}`)
     revalidatePath('/community')
     return { success: true, community: updated }
@@ -740,6 +920,12 @@ export async function createCooperativeProductAction(formData: FormData) {
     return { error: 'Komunitas dan Nama Produk Simpanan wajib diisi.' }
   }
 
+  try {
+    await requireCommunityManager(user, communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
   const p = await DataStore.createCooperativeProduct({
     communityId,
     name,
@@ -749,6 +935,16 @@ export async function createCooperativeProductAction(formData: FormData) {
     isMandatory,
     isPremium,
     description
+  })
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'CREATE_COOPERATIVE_PRODUCT',
+    module: 'COOPERATIVE',
+    targetId: p.id,
+    targetType: 'COOPERATIVE_PRODUCT',
+    detail: `"${name}" (${type}) — Rp ${amount.toLocaleString('id-ID')}.`
   })
 
   revalidatePath(`/community/${communityId}`)
@@ -770,6 +966,13 @@ export async function updateCooperativeProductAction(formData: FormData) {
   const description = formData.get('description') as string
 
   if (!id) return { error: 'ID Produk wajib diisi.' }
+  const existingProduct: any = await DataStore.getCooperativeProductById(id)
+  if (!existingProduct) return { error: 'Produk tidak ditemukan.' }
+  try {
+    await requireCommunityManager(user, existingProduct.communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
 
   const updated = await DataStore.updateCooperativeProduct(id, {
     name,
@@ -780,6 +983,15 @@ export async function updateCooperativeProductAction(formData: FormData) {
     isPremium,
     description
   })
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'UPDATE_COOPERATIVE_PRODUCT',
+    module: 'COOPERATIVE',
+    targetId: id,
+    targetType: 'COOPERATIVE_PRODUCT'
+  })
 
   revalidatePath(`/community/${communityId}`)
   return { success: true, product: updated }
@@ -789,7 +1001,24 @@ export async function deleteCooperativeProductAction(id: string, communityId: st
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
+  const existingProduct: any = await DataStore.getCooperativeProductById(id)
+  if (!existingProduct) return { error: 'Produk tidak ditemukan.' }
+  try {
+    await requireCommunityManager(user, existingProduct.communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
   await DataStore.deleteCooperativeProduct(id)
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'DELETE_COOPERATIVE_PRODUCT',
+    module: 'COOPERATIVE',
+    targetId: id,
+    targetType: 'COOPERATIVE_PRODUCT'
+  })
   revalidatePath(`/community/${communityId}`)
   return { success: true }
 }
@@ -832,6 +1061,12 @@ export async function createMerchantFundingProjectAction(formData: FormData) {
     return { error: 'Judul proyek dan Target Pendanaan wajib diisi.' }
   }
 
+  try {
+    await requireCommunityManager(user, communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
   const proj = await DataStore.createMerchantFundingProject({
     communityId,
     title,
@@ -842,6 +1077,16 @@ export async function createMerchantFundingProjectAction(formData: FormData) {
     durationMonths,
     imageUrl
   })
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'CREATE_MERCHANT_FUNDING_PROJECT',
+    module: 'COOPERATIVE',
+    targetId: proj.id,
+    targetType: 'FUNDING_PROJECT',
+    detail: `"${title}" — target Rp ${targetAmount.toLocaleString('id-ID')}.`
+  })
 
   revalidatePath(`/community/${communityId}`)
   return { success: true, project: proj }
@@ -851,7 +1096,24 @@ export async function deleteMerchantFundingProjectAction(id: string, communityId
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
+  const existingProject: any = await DataStore.getMerchantFundingProjectById(id)
+  if (!existingProject) return { error: 'Proyek tidak ditemukan.' }
+  try {
+    await requireCommunityManager(user, existingProject.communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
   await DataStore.deleteMerchantFundingProject(id)
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'DELETE_MERCHANT_FUNDING_PROJECT',
+    module: 'COOPERATIVE',
+    targetId: id,
+    targetType: 'FUNDING_PROJECT'
+  })
   revalidatePath(`/community/${communityId}`)
   return { success: true }
 }
@@ -873,11 +1135,22 @@ export async function upgradeCommunityTierAction(communityId: string, targetTier
     } catch (_) {}
   }
 
+  const previousTier = currentCfg.coopTier
   currentCfg.coopTier = targetTier
 
   await DataStore.updateCommunity(communityId, {
     name: community.name,
     landingPageConfig: JSON.stringify(currentCfg)
+  })
+  await logAudit({
+    actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    actorId: user.id,
+    actorName: user.name || user.email,
+    action: 'UPGRADE_COMMUNITY_TIER',
+    module: 'COOPERATIVE',
+    targetId: communityId,
+    targetType: 'COMMUNITY',
+    detail: `Tier: ${previousTier || '-'} → ${targetTier}.`
   })
 
   revalidatePath(`/community/${communityId}`)

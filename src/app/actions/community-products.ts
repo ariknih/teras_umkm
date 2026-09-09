@@ -2,8 +2,10 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, deleteCache } from '@/lib/cache'
+import { requireCommunityManager } from '@/lib/auth-guards'
 
 export async function getCommunityOfficialProductsAction(communityId: string) {
   if (!communityId) return []
@@ -29,6 +31,12 @@ export async function createCommunityOfficialProductAction(formData: FormData) {
   if (price <= 0) return { error: 'Harga produk harus lebih besar dari 0.' }
 
   try {
+    await requireCommunityManager(user, communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
+  try {
     const product = await DataStore.createCommunityOfficialProduct({
       communityId,
       name,
@@ -39,6 +47,16 @@ export async function createCommunityOfficialProductAction(formData: FormData) {
       imageUrl,
       status,
       sku
+    })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_COMMUNITY_OFFICIAL_PRODUCT',
+      module: 'PRODUCTS',
+      targetId: product.id,
+      targetType: 'PRODUCT',
+      detail: `"${name}" — Rp ${price.toLocaleString('id-ID')}.`
     })
     revalidatePath(`/community/${communityId}`)
     return { success: true, product }
@@ -62,6 +80,12 @@ export async function updateCommunityOfficialProductAction(id: string, formData:
   const sku = formData.get('sku') as string
 
   if (!id) return { error: 'ID Produk wajib diisi.' }
+  if (!communityId) return { error: 'ID Komunitas tidak ditemukan.' }
+  try {
+    await requireCommunityManager(user, communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
 
   try {
     const product = await DataStore.updateCommunityOfficialProduct(id, {
@@ -74,6 +98,15 @@ export async function updateCommunityOfficialProductAction(id: string, formData:
       status,
       sku
     }, communityId)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_COMMUNITY_OFFICIAL_PRODUCT',
+      module: 'PRODUCTS',
+      targetId: id,
+      targetType: 'PRODUCT'
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
@@ -88,9 +121,24 @@ export async function deleteCommunityOfficialProductAction(id: string, community
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   if (!id) return { error: 'ID Produk wajib diisi.' }
+  if (!communityId) return { error: 'ID Komunitas tidak ditemukan.' }
+  try {
+    await requireCommunityManager(user, communityId)
+  } catch (e: any) {
+    return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
 
   try {
     const res = await DataStore.deleteCommunityOfficialProduct(id, communityId)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'DELETE_COMMUNITY_OFFICIAL_PRODUCT',
+      module: 'PRODUCTS',
+      targetId: id,
+      targetType: 'PRODUCT'
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }

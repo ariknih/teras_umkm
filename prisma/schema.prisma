@@ -48,6 +48,11 @@ enum ProductCategory {
   FOTOGRAFI
   VOUCHER
   DEALS_SEKITAR
+  KUE_TRADISIONAL
+  SNACK_GURIH
+  SNACK_MANIS
+  KUE_KERING
+  JAJANAN_PASAR
 }
 
 enum OrderStatus {
@@ -252,9 +257,14 @@ model Product {
   isAffiliateEnabled      Boolean @default(false)
   affiliateCommissionType String  @default("PERCENT") // "PERCENT" or "FIXED"
   affiliateCommissionValue Float  @default(0.0)
+  isSnackboxEnabled     Boolean @default(false) // merchant opt-in
+  isSnackboxEligible    Boolean @default(true)  // admin approval gate
+  snackboxRevenueShare  Float   @default(15)    // clamped 15-20 server-side
+  snackboxPortionWeight String?
+  kelurahanName         String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-  
+
   // Relations
   merchantId  String
   merchant    User            @relation("MerchantProducts", fields: [merchantId], references: [id], onDelete: Cascade)
@@ -289,7 +299,9 @@ model OrderItem {
   id        String   @id @default(uuid())
   quantity  Int
   price     Float
-  
+  isSnackboxItem              Boolean @default(false)
+  snackboxRevenueSharePercent Float?
+
   // Relations
   orderId   String
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -981,6 +993,12 @@ model CoinSupplyLog {
 // Audit Log (2 pilihan actor: MEMBER dan ADMIN)
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ponytail: no tamper-evidence (hash-chaining) on rows yet — insert-only DB
+// grants (blocked on provisioning a non-owner Postgres role, see Phase 3
+// notes) already cover the "app code edits a row" threat. Add a
+// previousHash/hash column, computed at insert time and verified by a
+// periodic job, only if a specific compliance requirement demands
+// cryptographic proof that no row was altered post-write.
 model AuditLog {
   id          String        @id @default(uuid())
   actor       AuditLogActor

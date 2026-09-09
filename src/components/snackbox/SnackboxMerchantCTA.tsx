@@ -6,7 +6,7 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react'
 
 export default function SnackboxMerchantCTA() {
   return (
-    <div className="bg-[#262626] rounded-2xl p-5 sm:p-6">
+    <div className="bg-slate-900 rounded-2xl p-5 sm:p-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
         <div className="space-y-2 max-w-2xl">
           <h3 className="text-base sm:text-lg font-bold text-white leading-snug">

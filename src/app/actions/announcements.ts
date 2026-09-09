@@ -2,15 +2,10 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap } from '@/lib/cache'
-
-async function isCommunityManager(user: { id: string; role: string } | null, communityId: string) {
-  if (!user) return false
-  if (user.role === 'ADMIN') return true
-  const community = await DataStore.getCommunityById(communityId)
-  return community?.ketuaId === user.id
-}
+import { isCommunityManager } from '@/lib/auth-guards'
 
 export async function getAnnouncementsAction(
   communityId: string,
@@ -54,6 +49,16 @@ export async function createAnnouncementAction(formData: FormData) {
       isPinned,
       status
     })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CREATE_ANNOUNCEMENT',
+      module: 'COOPERATIVE',
+      targetId: ann.id,
+      targetType: 'ANNOUNCEMENT',
+      detail: `"${title}".`
+    })
     revalidatePath(`/community/${communityId}`)
     return { success: true, announcement: ann }
   } catch (e: any) {
@@ -65,7 +70,6 @@ export async function updateAnnouncementAction(id: string, formData: FormData) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
-  const communityId = formData.get('communityId') as string
   const title = formData.get('title') as string
   const content = formData.get('content') as string
   const publishedAtStr = formData.get('publishedAt') as string
@@ -73,19 +77,36 @@ export async function updateAnnouncementAction(id: string, formData: FormData) {
   const isPinned = formData.get('isPinned') === 'true'
 
   if (!title || !content) return { error: 'Judul dan isi pengumuman wajib diisi.' }
-  if (!communityId || !(await isCommunityManager(user, communityId))) {
+
+  // communityId is derived from the announcement's own record, never from
+  // client-supplied form data — otherwise a manager of community A could
+  // pass communityId=A while targeting an announcement that actually
+  // belongs to community B.
+  const existing: any = await DataStore.getAnnouncementById(id)
+  if (!existing) return { error: 'Pengumuman tidak ditemukan.' }
+  const communityId = existing.communityId
+  if (!(await isCommunityManager(user, communityId))) {
     return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
   }
 
   const publishedAt = publishedAtStr ? new Date(publishedAtStr) : undefined
 
   try {
-    const ann = await DataStore.updateAnnouncement(id, {
+    const ann = await DataStore.updateAnnouncement(id, communityId, {
       title,
       content,
       publishedAt,
       isPinned,
       status
+    })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_ANNOUNCEMENT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'ANNOUNCEMENT'
     })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
@@ -96,15 +117,28 @@ export async function updateAnnouncementAction(id: string, formData: FormData) {
   }
 }
 
-export async function deleteAnnouncementAction(id: string, communityId?: string) {
+export async function deleteAnnouncementAction(id: string, _communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
-  if (!communityId || !(await isCommunityManager(user, communityId))) {
+
+  const existing: any = await DataStore.getAnnouncementById(id)
+  if (!existing) return { error: 'Pengumuman tidak ditemukan.' }
+  const communityId = existing.communityId
+  if (!(await isCommunityManager(user, communityId))) {
     return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
   }
 
   try {
-    const res = await DataStore.deleteAnnouncement(id)
+    const res = await DataStore.deleteAnnouncement(id, communityId)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'DELETE_ANNOUNCEMENT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'ANNOUNCEMENT'
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
@@ -114,16 +148,30 @@ export async function deleteAnnouncementAction(id: string, communityId?: string)
   }
 }
 
-export async function togglePublishAnnouncementAction(id: string, currentStatus: string, communityId?: string) {
+export async function togglePublishAnnouncementAction(id: string, currentStatus: string, _communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
-  if (!communityId || !(await isCommunityManager(user, communityId))) {
+
+  const existing: any = await DataStore.getAnnouncementById(id)
+  if (!existing) return { error: 'Pengumuman tidak ditemukan.' }
+  const communityId = existing.communityId
+  if (!(await isCommunityManager(user, communityId))) {
     return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
   }
 
   const newStatus = currentStatus === 'DRAFT' ? 'PUBLISHED' : 'DRAFT'
   try {
-    const ann = await DataStore.updateAnnouncement(id, { status: newStatus })
+    const ann = await DataStore.updateAnnouncement(id, communityId, { status: newStatus })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'TOGGLE_PUBLISH_ANNOUNCEMENT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'ANNOUNCEMENT',
+      detail: `Status → ${newStatus}.`
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
@@ -133,15 +181,29 @@ export async function togglePublishAnnouncementAction(id: string, currentStatus:
   }
 }
 
-export async function togglePinAnnouncementAction(id: string, currentPinned: boolean, communityId?: string) {
+export async function togglePinAnnouncementAction(id: string, currentPinned: boolean, _communityId?: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
-  if (!communityId || !(await isCommunityManager(user, communityId))) {
+
+  const existing: any = await DataStore.getAnnouncementById(id)
+  if (!existing) return { error: 'Pengumuman tidak ditemukan.' }
+  const communityId = existing.communityId
+  if (!(await isCommunityManager(user, communityId))) {
     return { error: 'Anda tidak memiliki akses untuk mengelola pengumuman komunitas ini.' }
   }
 
   try {
-    const ann = await DataStore.updateAnnouncement(id, { isPinned: !currentPinned })
+    const ann = await DataStore.updateAnnouncement(id, communityId, { isPinned: !currentPinned })
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'TOGGLE_PIN_ANNOUNCEMENT',
+      module: 'COOPERATIVE',
+      targetId: id,
+      targetType: 'ANNOUNCEMENT',
+      detail: !currentPinned ? 'Disematkan.' : 'Lepas sematan.'
+    })
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }

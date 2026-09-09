@@ -2,6 +2,7 @@
 
 import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
+import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 
@@ -22,6 +23,14 @@ export async function withdrawFunds(amount: number, method: string, accountNumbe
   try {
     const description = `Tarik ke ${method} (${accountNumber} a/n ${accountName})`
     const wallet = await DataStore.withdrawFunds(user.id, amount, description)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'WITHDRAW_FUNDS',
+      module: 'WITHDRAWALS',
+      detail: `Rp ${amount.toLocaleString('id-ID')} ke ${method} (${accountNumber} a/n ${accountName}).`
+    })
     revalidatePath('/wallet')
     revalidatePath('/merchant/dashboard')
     return { success: true, wallet }
@@ -61,7 +70,17 @@ export async function checkoutCart(
   
   try {
     const order = await DataStore.createOrder(user.id, items, affiliateId, paymentMethod, shippingDetails)
-    
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'CHECKOUT_ORDER',
+      module: 'ORDERS',
+      targetId: order.id,
+      targetType: 'ORDER',
+      detail: `Order #${order.id} sebesar Rp ${order.totalAmount.toLocaleString('id-ID')} via ${paymentMethod}.`
+    })
+
     // Create base ORDER_CREATED notification
     await DataStore.createNotification(
       user.id,
@@ -132,6 +151,15 @@ export async function updateUserSettingsAction(data: {
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
   try {
     const updatedUser = await DataStore.updateUserSettings(user.id, data)
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'UPDATE_USER_SETTINGS',
+      module: 'SETTINGS',
+      targetId: user.id,
+      targetType: 'USER'
+    })
     revalidatePath('/merchant/dashboard')
     revalidatePath('/settings')
     return { success: true, user: updatedUser }
