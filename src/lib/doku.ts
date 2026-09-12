@@ -8,6 +8,7 @@ import crypto from 'crypto';
 const DOKU_IS_PRODUCTION = process.env.DOKU_IS_PRODUCTION === 'true';
 const DOKU_CLIENT_ID = process.env.DOKU_CLIENT_ID || '';
 const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY || '';
+const DOKU_API_KEY = process.env.DOKU_API_KEY || ''; // doku_key_... from dashboard API Keys
 
 const DOKU_BASE_URL = DOKU_IS_PRODUCTION
   ? 'https://api.doku.com'
@@ -92,9 +93,9 @@ export async function createDokuCheckoutPayment(
     paymentDueDateMinutes = 60,
   } = params;
 
-  // Fallback simulator if DOKU credentials are not yet configured in .env
-  if (!DOKU_CLIENT_ID || !DOKU_SECRET_KEY) {
-    console.warn('[DOKU] Kredensial DOKU_CLIENT_ID / DOKU_SECRET_KEY belum diisi di .env. Menggunakan mode simulasi internal.');
+  // Fallback simulator if no credentials configured
+  if (!DOKU_CLIENT_ID && !DOKU_API_KEY) {
+    console.warn('[DOKU] Kredensial belum diisi di .env. Menggunakan mode simulasi internal.');
     return {
       success: true,
       invoiceNumber,
@@ -144,16 +145,28 @@ export async function createDokuCheckoutPayment(
   );
 
   try {
+    // Use API Key (Bearer) if available, otherwise use HMAC-SHA256 signature
+    const requestHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (DOKU_API_KEY) {
+      // Simpler Bearer token auth using doku_key_... from dashboard
+      requestHeaders['Authorization'] = `Bearer ${DOKU_API_KEY}`;
+      console.log('[DOKU] Using Bearer API Key auth');
+    } else {
+      // Legacy HMAC-SHA256 signature auth
+      requestHeaders['Client-Id'] = DOKU_CLIENT_ID;
+      requestHeaders['Request-Id'] = requestId;
+      requestHeaders['Request-Timestamp'] = timestamp;
+      requestHeaders['Signature'] = signature;
+      requestHeaders['Digest'] = digest;
+      console.log('[DOKU] Using HMAC-SHA256 signature auth');
+    }
+
     const resp = await fetch(`${DOKU_BASE_URL}${targetPath}`, {
       method: 'POST',
-      headers: {
-        'Client-Id': DOKU_CLIENT_ID,
-        'Request-Id': requestId,
-        'Request-Timestamp': timestamp,
-        Signature: signature,
-        Digest: digest,
-        'Content-Type': 'application/json',
-      },
+      headers: requestHeaders,
       body: bodyString,
     });
 
