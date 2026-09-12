@@ -9,6 +9,9 @@ const DOKU_IS_PRODUCTION = process.env.DOKU_IS_PRODUCTION === 'true';
 const DOKU_CLIENT_ID = process.env.DOKU_CLIENT_ID || '';
 const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY || '';
 const DOKU_API_KEY = process.env.DOKU_API_KEY || ''; // doku_key_... from dashboard API Keys
+const DOKU_PUBLIC_KEY = (process.env.DOKU_PUBLIC_KEY || '').replace(/\\n/g, '\n') || `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzjWn0sAG4rqk9PuTk9RN6vyDJpj3mAOsl+t1k/WAj30ZqPGAjrXrH60brPrkWNCCM4lVWqP28CYYE79G6YdeZLiobhyTeYQPcakduhmIfpjAqTiGZgB/C2Z9ylUcg1FAwzc7ovgOfkwKTAZtF1obOcuoWCYfbuPNONiQEBmqGGErswVbLarKz8j6qNqmX3s9I0wvsQ6Ue6GGTvxc+Pv15tHI8sDjycdP1kDx4taLvR4DjNpg5gVDu3RgArxdPBOgEf+yCL0ZUgPTLrkRVGj2mBXfUqAfCm4M8wpsQnu9ZCSjU96JqLVT8nROgD5/5/ryfjoMvIGqwDIA+diX7Xw2iwIDAQAB
+-----END PUBLIC KEY-----`;
 
 const DOKU_BASE_URL = DOKU_IS_PRODUCTION
   ? 'https://api.doku.com'
@@ -216,7 +219,7 @@ export function verifyDokuNotification(
   targetPath: string,
   rawBody: string
 ): boolean {
-  if (!DOKU_SECRET_KEY) return true; // In dev/unconfigured environment
+  if (!DOKU_SECRET_KEY && !DOKU_PUBLIC_KEY) return true; // In dev/unconfigured environment
 
   const { clientId, requestId, timestamp, signature } = headers;
   if (!clientId || !requestId || !timestamp || !signature) {
@@ -225,19 +228,53 @@ export function verifyDokuNotification(
 
   try {
     const digest = generateDokuDigest(rawBody);
-    const expectedSig = generateDokuSignature(
-      clientId,
-      requestId,
-      timestamp,
-      targetPath,
-      digest,
-      DOKU_SECRET_KEY
-    );
+    const component = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${timestamp}\nRequest-Target:${targetPath}\nDigest:${digest}`;
 
-    const sigA = Buffer.from(signature);
-    const sigB = Buffer.from(expectedSig);
-    if (sigA.length !== sigB.length) return false;
-    return crypto.timingSafeEqual(sigA, sigB);
+    // 1. RSA-SHA256 Verification using DOKU Public Key (Standard for DOKU Notifications)
+    if (DOKU_PUBLIC_KEY) {
+      try {
+        const cleanPublicKey = DOKU_PUBLIC_KEY.includes('\\n')
+          ? DOKU_PUBLIC_KEY.replace(/\\n/g, '\n')
+          : DOKU_PUBLIC_KEY;
+        const cleanSig = signature.replace(/^RSA=/i, '').replace(/^SHA256withRSA=/i, '').trim();
+        const verifier = crypto.createVerify('RSA-SHA256');
+        verifier.update(component);
+        const isValidRsa = verifier.verify(cleanPublicKey, cleanSig, 'base64');
+        if (isValidRsa) {
+          return true;
+        }
+      } catch (rsaErr) {
+        // Fallback to HMAC
+      }
+    }
+
+    // 2. Fallback to HMAC-SHA256 Verification with DOKU_SECRET_KEY
+    if (DOKU_SECRET_KEY) {
+      const expectedSig = generateDokuSignature(
+        clientId,
+        requestId,
+        timestamp,
+        targetPath,
+        digest,
+        DOKU_SECRET_KEY
+      );
+
+      const cleanSig = signature.trim();
+      const cleanExpected = expectedSig.trim();
+      if (cleanSig === cleanExpected) return true;
+
+      const rawReceivedHmac = cleanSig.replace(/^HMACSHA256=/i, '');
+      const rawExpectedHmac = cleanExpected.replace(/^HMACSHA256=/i, '');
+      if (rawReceivedHmac === rawExpectedHmac) return true;
+
+      const sigA = Buffer.from(cleanSig);
+      const sigB = Buffer.from(cleanExpected);
+      if (sigA.length === sigB.length && crypto.timingSafeEqual(sigA, sigB)) {
+        return true;
+      }
+    }
+
+    return false;
   } catch (err) {
     console.error('[DOKU] Webhook verification error:', err);
     return false;
