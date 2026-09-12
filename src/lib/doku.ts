@@ -13,6 +13,28 @@ const DOKU_PUBLIC_KEY = (process.env.DOKU_PUBLIC_KEY || '').replace(/\\n/g, '\n'
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzjWn0sAG4rqk9PuTk9RN6vyDJpj3mAOsl+t1k/WAj30ZqPGAjrXrH60brPrkWNCCM4lVWqP28CYYE79G6YdeZLiobhyTeYQPcakduhmIfpjAqTiGZgB/C2Z9ylUcg1FAwzc7ovgOfkwKTAZtF1obOcuoWCYfbuPNONiQEBmqGGErswVbLarKz8j6qNqmX3s9I0wvsQ6Ue6GGTvxc+Pv15tHI8sDjycdP1kDx4taLvR4DjNpg5gVDu3RgArxdPBOgEf+yCL0ZUgPTLrkRVGj2mBXfUqAfCm4M8wpsQnu9ZCSjU96JqLVT8nROgD5/5/ryfjoMvIGqwDIA+diX7Xw2iwIDAQAB
 -----END PUBLIC KEY-----`;
 
+// Wallet deposit bounds — the wallet UI's own quick-nominal buttons top out at
+// Rp 1.000.000 and its floor is Rp 10.000; these are the server-side backstop
+// so a direct API call can't open a checkout for Rp 1 or Rp 999.999.999.
+// ponytail: MAX_DEPOSIT_AMOUNT is a placeholder ceiling, not a compliance
+// figure — replace with whatever AML/KYC transaction limit the business sets.
+export const MIN_DEPOSIT_AMOUNT = 10_000;
+export const MAX_DEPOSIT_AMOUNT = 50_000_000;
+
+export function validateDepositAmount(amount: unknown): { amount: number } | { error: string } {
+  const depositAmount = parseFloat(amount as any);
+  if (!Number.isFinite(depositAmount) || depositAmount <= 0) {
+    return { error: 'Jumlah pengisian tidak valid.' };
+  }
+  if (depositAmount < MIN_DEPOSIT_AMOUNT) {
+    return { error: `Minimal pengisian saldo adalah Rp ${MIN_DEPOSIT_AMOUNT.toLocaleString('id-ID')}.` };
+  }
+  if (depositAmount > MAX_DEPOSIT_AMOUNT) {
+    return { error: `Maksimal pengisian saldo adalah Rp ${MAX_DEPOSIT_AMOUNT.toLocaleString('id-ID')}.` };
+  }
+  return { amount: depositAmount };
+}
+
 export function getDokuConfig() {
   const rawClientId = process.env.DOKU_CLIENT_ID || process.env.DOKU_SANDBOX_CLIENT_ID || '';
   const isSandboxKey = rawClientId.startsWith('BRN-0236-') || !rawClientId;

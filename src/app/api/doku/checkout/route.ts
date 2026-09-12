@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/app/actions/auth';
 import { DataStore, PaymentRegistry } from '@/lib/data-store';
-import { createDokuCheckoutPayment } from '@/lib/doku';
+import { createDokuCheckoutPayment, validateDepositAmount } from '@/lib/doku';
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,10 +18,11 @@ export async function POST(req: NextRequest) {
     const { type, amount, items, affiliateId, shippingDetails } = body;
 
     if (type === 'deposit') {
-      const depositAmount = parseFloat(amount);
-      if (isNaN(depositAmount) || depositAmount <= 0) {
-        return NextResponse.json({ error: 'Jumlah pengisian tidak valid.' }, { status: 400 });
+      const check = validateDepositAmount(amount);
+      if ('error' in check) {
+        return NextResponse.json({ error: check.error }, { status: 400 });
       }
+      const depositAmount = check.amount;
 
       const orderId = `dep-doku_${user.id}_${Math.round(depositAmount)}_${Date.now().toString(36)}`;
 

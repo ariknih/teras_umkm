@@ -7,6 +7,7 @@ import {
   getBankPaymentInstructions,
   DokuVaBank,
   getDokuConfig,
+  validateDepositAmount,
 } from '@/lib/doku';
 
 export async function POST(req: NextRequest) {
@@ -33,10 +34,11 @@ export async function POST(req: NextRequest) {
 
     // 1. Calculate & register based on type
     if (type === 'deposit') {
-      totalAmount = parseFloat(amount);
-      if (isNaN(totalAmount) || totalAmount <= 0) {
-        return NextResponse.json({ error: 'Jumlah pengisian tidak valid.' }, { status: 400 });
+      const check = validateDepositAmount(amount);
+      if ('error' in check) {
+        return NextResponse.json({ error: check.error }, { status: 400 });
       }
+      totalAmount = check.amount;
 
       orderId = `dep-doku_${user.id}_${Math.round(totalAmount)}_${Date.now().toString(36)}`;
       PaymentRegistry.savePendingCheckout(orderId, {

@@ -4,7 +4,7 @@
  * Run with:  npx tsx src/lib/doku-order.test.ts
  */
 import assert from 'node:assert/strict'
-import { parseDokuOrderId } from './doku'
+import { parseDokuOrderId, validateDepositAmount, MIN_DEPOSIT_AMOUNT, MAX_DEPOSIT_AMOUNT } from './doku'
 
 const USER = '3f8a1c22-9b0d-4e77-8a10-5c2d9e4b7a61'
 
@@ -54,3 +54,19 @@ assert.equal(parseDokuOrderId(`dep-doku_${USER}_-5000_abc`).amount, 0, 'negative
 assert.equal(parseDokuOrderId(`dep-doku_${USER}_abc_abc`).amount, 0, 'non-numeric amounts are rejected')
 
 console.log('doku-order.test.ts: DOKU order-id trust rule assertions passed')
+
+// ── Server-side deposit bound: the wallet UI's Rp 10.000 floor and any
+// ceiling must hold even if a caller skips the UI entirely ──────────────────
+assert.ok('error' in validateDepositAmount(9999), 'below the floor is rejected')
+assert.ok('error' in validateDepositAmount(0), 'zero is rejected')
+assert.ok('error' in validateDepositAmount(-100000), 'negative is rejected')
+assert.ok('error' in validateDepositAmount(MAX_DEPOSIT_AMOUNT + 1), 'above the ceiling is rejected')
+assert.ok('error' in validateDepositAmount('not-a-number'), 'non-numeric input is rejected')
+assert.ok('error' in validateDepositAmount(undefined), 'missing amount is rejected')
+
+const okMin = validateDepositAmount(MIN_DEPOSIT_AMOUNT)
+assert.ok('amount' in okMin && okMin.amount === MIN_DEPOSIT_AMOUNT, 'the floor itself is accepted')
+const okMax = validateDepositAmount(MAX_DEPOSIT_AMOUNT)
+assert.ok('amount' in okMax && okMax.amount === MAX_DEPOSIT_AMOUNT, 'the ceiling itself is accepted')
+
+console.log('doku-order.test.ts: deposit amount bound assertions passed')
