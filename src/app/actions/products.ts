@@ -64,6 +64,7 @@ export async function createProduct(formData: FormData) {
     const isSnackboxEnabled = formData.get('isSnackboxEnabled') === 'on' || formData.get('isSnackboxEnabled') === 'true'
     const snackboxRevenueShare = Math.min(20, Math.max(15, parseFloat(formData.get('snackboxRevenueShare') as string || '15') || 15))
     const snackboxPortionWeight = (formData.get('snackboxPortionWeight') as string) || ''
+    const variants = (formData.get('variants') as string) || undefined
 
     const product = await DataStore.createProduct({
       title,
@@ -80,7 +81,8 @@ export async function createProduct(formData: FormData) {
       affiliateCommissionValue,
       isSnackboxEnabled,
       snackboxRevenueShare,
-      snackboxPortionWeight
+      snackboxPortionWeight,
+      variants
     })
     
     // Reward 50 XP for posting a product or job request
@@ -158,6 +160,11 @@ export async function updateProduct(id: string, formData: FormData) {
   }
   if (snackboxPortionWeight !== null && snackboxPortionWeight !== undefined) {
     data.snackboxPortionWeight = snackboxPortionWeight
+  }
+
+  const variantsStr = formData.get('variants') as string
+  if (variantsStr !== null && variantsStr !== undefined) {
+    data.variants = variantsStr
   }
   
   try {

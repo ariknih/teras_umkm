@@ -26,6 +26,9 @@ import {
   mockServiceReviews
 } from './mock-seed'
 
+export { type ProductVariant, parseProductVariants, cleanProductDescription } from './product-variants'
+import { type ProductVariant, cleanProductDescription } from './product-variants'
+
 // ─── Filesystem Persistence for Mock DB (survives HMR / process restarts) ────
 const MOCK_DB_FILE = path.join(process.cwd(), '.mock-db.json')
 
@@ -628,6 +631,7 @@ async function withMutationFallback<T = any, M = any>(
   saveMockDb()
   return result
 }
+
 
 // Unified Store functions with fallback logic
 export const DataStore = {
@@ -1399,6 +1403,7 @@ export const DataStore = {
     isSnackboxEnabled?: boolean;
     snackboxRevenueShare?: number;
     snackboxPortionWeight?: string;
+    variants?: ProductVariant[] | string;
   }) {
     syncMockDb()
     const validCategories = [
@@ -1429,6 +1434,21 @@ export const DataStore = {
       safeCategory = 'SOUVENIR_PERLENGKAPAN_PESTA'
     }
 
+    let finalDesc = data.description
+    let variantsList: ProductVariant[] = []
+    if (data.variants) {
+      if (Array.isArray(data.variants)) {
+        variantsList = data.variants
+      } else if (typeof data.variants === 'string') {
+        try {
+          variantsList = JSON.parse(data.variants)
+        } catch {}
+      }
+      if (variantsList.length > 0) {
+        finalDesc = `${cleanProductDescription(data.description)}\n<!-- VARIANTS_JSON:${JSON.stringify(variantsList)} -->`
+      }
+    }
+
     return withMutationFallback(
       async () => {
         let dbProd: any = null
@@ -1436,7 +1456,7 @@ export const DataStore = {
           dbProd = await db.product.create({
             data: {
               title: data.title,
-              description: data.description,
+              description: finalDesc,
               price: data.price,
               category: safeCategory as any,
               stock: data.stock,
@@ -1456,10 +1476,13 @@ export const DataStore = {
           })
         } catch (_) {}
 
-        const newProd = dbProd || {
+        const newProd = dbProd ? {
+          ...dbProd,
+          variants: variantsList.length > 0 ? variantsList : undefined
+        } : {
           id: `prod-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           title: data.title,
-          description: data.description,
+          description: finalDesc,
           price: data.price,
           category: data.category,
           stock: data.stock,
@@ -1475,6 +1498,7 @@ export const DataStore = {
           isSnackboxEnabled: data.isSnackboxEnabled || false,
           snackboxRevenueShare: data.snackboxRevenueShare || 15,
           snackboxPortionWeight: data.snackboxPortionWeight || null,
+          variants: variantsList.length > 0 ? variantsList : undefined,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -1500,7 +1524,7 @@ export const DataStore = {
         const newProd = {
           id: `prod-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           title: data.title,
-          description: data.description,
+          description: finalDesc,
           price: data.price,
           category: data.category,
           stock: data.stock,
@@ -1516,6 +1540,7 @@ export const DataStore = {
           isSnackboxEnabled: data.isSnackboxEnabled || false,
           snackboxRevenueShare: data.snackboxRevenueShare || 15,
           snackboxPortionWeight: data.snackboxPortionWeight || null,
+          variants: variantsList.length > 0 ? variantsList : undefined,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         }
@@ -1546,16 +1571,38 @@ export const DataStore = {
       snackboxRevenueShare?: number;
       snackboxPortionWeight?: string;
       kelurahanName?: string;
+      variants?: ProductVariant[] | string;
     }>
   ) {
     syncMockDb()
+    const updatePayload: any = { ...data }
+    if (data.variants !== undefined) {
+      let variantsList: ProductVariant[] = []
+      if (Array.isArray(data.variants)) {
+        variantsList = data.variants
+      } else if (typeof data.variants === 'string') {
+        try {
+          variantsList = JSON.parse(data.variants)
+        } catch {}
+      }
+      updatePayload.variants = variantsList
+      
+      const existing = globalMockProducts.find(p => p.id === id)
+      const currentDesc = data.description !== undefined ? data.description : (existing?.description || '')
+      const cleaned = cleanProductDescription(currentDesc)
+      updatePayload.description = variantsList.length > 0 
+        ? `${cleaned}\n<!-- VARIANTS_JSON:${JSON.stringify(variantsList)} -->`
+        : cleaned
+    }
+
     return withMutationFallback(
       async () => {
         let updatedDb: any = null
         try {
+          const { variants: _v, ...prismaData } = updatePayload
           updatedDb = await db.product.update({
             where: { id, merchantId },
-            data: data as any
+            data: prismaData as any
           })
         } catch (_) {}
 
@@ -1566,7 +1613,7 @@ export const DataStore = {
             if (Array.isArray(list)) {
               const idx = list.findIndex((p: any) => p.id === id)
               if (idx !== -1) {
-                list[idx] = { ...list[idx], ...data, updatedAt: new Date().toISOString() }
+                list[idx] = { ...list[idx], ...updatePayload, updatedAt: new Date().toISOString() }
                 await db.systemSetting.upsert({
                   where: { key: 'custom_member_products' },
                   update: { value: JSON.stringify(list) },
@@ -1581,20 +1628,20 @@ export const DataStore = {
         if (idx !== -1) {
           globalMockProducts[idx] = {
             ...globalMockProducts[idx],
-            ...data,
+            ...updatePayload,
             updatedAt: new Date().toISOString()
           }
           saveMockDb()
-          return updatedDb || globalMockProducts[idx]
+          return updatedDb ? { ...updatedDb, variants: updatePayload.variants } : globalMockProducts[idx]
         }
-        return updatedDb || { id, merchantId, ...data }
+        return updatedDb || { id, merchantId, ...updatePayload }
       },
       async () => {
         const idx = globalMockProducts.findIndex(p => p.id === id && p.merchantId === merchantId)
         if (idx === -1) throw new Error('Product not found or unauthorized')
         const updated = {
           ...globalMockProducts[idx],
-          ...data,
+          ...updatePayload,
           updatedAt: new Date().toISOString()
         }
         globalMockProducts[idx] = updated

@@ -404,6 +404,81 @@ export const mockUsers = [
 
 export const mockProducts = [
   {
+    id: 'prod-braven-parfum',
+    title: '【Best Seller】Braven Extrait De Parfum Wangi Tahan Lama Mewah',
+    description: `Braven Extrait De Parfum diformulasikan dengan konsentrasi minyak wangi murni tingkat tinggi (Extrait de Parfum), menghadirkan aroma mewah maskulin dan segar yang tahan hingga 12-16 jam.
+
+Keunggulan:
+- Ketahanan aroma: 12-16 jam di pakaian, 8-10 jam di kulit
+- Konsentrasi: Extrait De Parfum (Grade tertinggi)
+- Aman tidak berbekas di pakaian
+- Sudah teregistrasi BPOM
+<!-- VARIANTS_JSON:[{"id":"var-braven-1","name":"Cool Wootah + Aqua Tanpa Box dan Vial","price":140000,"stock":120,"imageUrl":"https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400&auto=format&fm=webp&q=80"},{"id":"var-braven-2","name":"Urban XDP","price":135000,"stock":85,"imageUrl":"https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=400&auto=format&fm=webp&q=80"},{"id":"var-braven-3","name":"Cool Wootah","price":140000,"stock":95,"imageUrl":"https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&auto=format&fm=webp&q=80"},{"id":"var-braven-4","name":"Aqua - Tanpa Box dan Vial","price":130000,"stock":110,"imageUrl":"https://images.unsplash.com/photo-1616949755610-8c9bbc08f138?w=400&auto=format&fm=webp&q=80"},{"id":"var-braven-5","name":"Evangeline Black Musk","price":145000,"stock":75,"imageUrl":"https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=400&auto=format&fm=webp&q=80"},{"id":"var-braven-6","name":"Dark Imagination","price":150000,"stock":65,"imageUrl":"https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?w=400&auto=format&fm=webp&q=80"},{"id":"var-braven-7","name":"Gentleman","price":140000,"stock":50,"imageUrl":"https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400&auto=format&fm=webp&q=80"}] -->`,
+    price: 140000,
+    category: 'PERAWATAN_KECANTIKAN' as const,
+    stock: 617,
+    imageUrl: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=600&auto=format&fm=webp&q=80',
+    merchantId: 'user-merchant-1',
+    latitude: -6.2088,
+    longitude: 106.8456,
+    isAffiliateEnabled: true,
+    affiliateCommissionType: 'PERCENT',
+    affiliateCommissionValue: 10.0,
+    variants: [
+      {
+        id: 'var-braven-1',
+        name: 'Cool Wootah + Aqua Tanpa Box dan Vial',
+        price: 140000,
+        stock: 120,
+        imageUrl: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400&auto=format&fm=webp&q=80'
+      },
+      {
+        id: 'var-braven-2',
+        name: 'Urban XDP',
+        price: 135000,
+        stock: 85,
+        imageUrl: 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?w=400&auto=format&fm=webp&q=80'
+      },
+      {
+        id: 'var-braven-3',
+        name: 'Cool Wootah',
+        price: 140000,
+        stock: 95,
+        imageUrl: 'https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&auto=format&fm=webp&q=80'
+      },
+      {
+        id: 'var-braven-4',
+        name: 'Aqua - Tanpa Box dan Vial',
+        price: 130000,
+        stock: 110,
+        imageUrl: 'https://images.unsplash.com/photo-1616949755610-8c9bbc08f138?w=400&auto=format&fm=webp&q=80'
+      },
+      {
+        id: 'var-braven-5',
+        name: 'Evangeline Black Musk',
+        price: 145000,
+        stock: 75,
+        imageUrl: 'https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=400&auto=format&fm=webp&q=80'
+      },
+      {
+        id: 'var-braven-6',
+        name: 'Dark Imagination',
+        price: 150000,
+        stock: 65,
+        imageUrl: 'https://images.unsplash.com/photo-1588405748880-12d1d2a59f75?w=400&auto=format&fm=webp&q=80'
+      },
+      {
+        id: 'var-braven-7',
+        name: 'Gentleman',
+        price: 140000,
+        stock: 50,
+        imageUrl: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400&auto=format&fm=webp&q=80'
+      }
+    ],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
     id: 'prod-gayo-coffee',
     title: 'Kopi Gayo Organik Premium',
     description: 'Kopi gayo organik dengan proses honey, menghadirkan rasa fruity yang segar dengan body tebal yang lembut.',

@@ -21,6 +21,7 @@ import {
 } from '@/app/actions/services'
 import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info, Briefcase, Wrench, CalendarCheck, Clock, MapPin, CheckCircle2, UserCheck, Download } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
+import { parseProductVariants, cleanProductDescription } from '@/lib/product-variants'
 
 export const SERVICE_CATEGORIES = [
   'Desain & Multimedia',
@@ -194,6 +195,38 @@ export default function MerchantDashboardPage() {
   const [editSnackboxShare, setEditSnackboxShare] = useState(15)
   const [editPortionWeight, setEditPortionWeight] = useState('')
   const [editPriceValue, setEditPriceValue] = useState<number>(0)
+
+  // Product Multi-Variants States
+  const [createHasVariants, setCreateHasVariants] = useState(false)
+  const [createVariants, setCreateVariants] = useState<Array<{ id: string; name: string; price: string; stock: string; imageUrl: string }>>([])
+  const [editHasVariants, setEditHasVariants] = useState(false)
+  const [editVariants, setEditVariants] = useState<Array<{ id: string; name: string; price: string; stock: string; imageUrl: string }>>([])
+
+  const handleAddCreateVariant = () => {
+    setCreateVariants(prev => [
+      ...prev,
+      { id: `var-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: '', price: '', stock: '10', imageUrl: '' }
+    ])
+  }
+  const handleRemoveCreateVariant = (index: number) => {
+    setCreateVariants(prev => prev.filter((_, i) => i !== index))
+  }
+  const handleUpdateCreateVariant = (index: number, field: 'name' | 'price' | 'stock' | 'imageUrl', value: string) => {
+    setCreateVariants(prev => prev.map((v, i) => i === index ? { ...v, [field]: value } : v))
+  }
+
+  const handleAddEditVariant = () => {
+    setEditVariants(prev => [
+      ...prev,
+      { id: `var-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: '', price: '', stock: '10', imageUrl: '' }
+    ])
+  }
+  const handleRemoveEditVariant = (index: number) => {
+    setEditVariants(prev => prev.filter((_, i) => i !== index))
+  }
+  const handleUpdateEditVariant = (index: number, field: 'name' | 'price' | 'stock' | 'imageUrl', value: string) => {
+    setEditVariants(prev => prev.map((v, i) => i === index ? { ...v, [field]: value } : v))
+  }
 
   // Global Affiliate Settings State
   const [globalAffEnabled, setGlobalAffEnabled] = useState(false)
@@ -819,6 +852,20 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
     setSuccess(null)
 
     const formData = new FormData(e.currentTarget)
+    if (createHasVariants && createVariants.length > 0) {
+      const valid = createVariants
+        .filter(v => v.name.trim().length > 0)
+        .map(v => ({
+          id: v.id,
+          name: v.name.trim(),
+          price: v.price ? parseFloat(v.price) : undefined,
+          stock: parseInt(v.stock) || 0,
+          imageUrl: v.imageUrl ? v.imageUrl.trim() : undefined
+        }))
+      if (valid.length > 0) {
+        formData.set('variants', JSON.stringify(valid))
+      }
+    }
     
     startTransition(async () => {
       const res = await createProduct(formData)
@@ -827,6 +874,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
       } else {
         setSuccess('Produk baru berhasil ditambahkan!')
         setCreateImageUrl('')
+        setCreateHasVariants(false)
+        setCreateVariants([])
         setActiveTab('catalog')
         await loadData()
       }
@@ -841,6 +890,20 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
     if (!editingProduct) return
     const formData = new FormData(e.currentTarget)
+    if (editHasVariants && editVariants.length > 0) {
+      const valid = editVariants
+        .filter(v => v.name.trim().length > 0)
+        .map(v => ({
+          id: v.id,
+          name: v.name.trim(),
+          price: v.price ? parseFloat(v.price) : undefined,
+          stock: parseInt(v.stock) || 0,
+          imageUrl: v.imageUrl ? v.imageUrl.trim() : undefined
+        }))
+      formData.set('variants', JSON.stringify(valid))
+    } else {
+      formData.set('variants', JSON.stringify([]))
+    }
 
     startTransition(async () => {
       const res = await updateProduct(editingProduct.id, formData)
@@ -850,6 +913,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
         setSuccess('Detail produk berhasil diperbarui!')
         setEditingProduct(null)
         setEditImageUrl('')
+        setEditHasVariants(false)
+        setEditVariants([])
         await loadData()
       }
     })
@@ -1950,7 +2015,132 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                         Generate dengan AI
                       </button>
                     </div>
-                    <textarea id="edit-description" name="description" defaultValue={editingProduct.description} required rows={4} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
+                    <textarea id="edit-description" name="description" defaultValue={cleanProductDescription(editingProduct.description)} required rows={4} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
+                  </div>
+
+                  {/* ── MULTI-VARIANTS SECTION (EDIT FORM) ── */}
+                  <div className={`border p-4 rounded-xl space-y-3.5 transition-all ${
+                    editHasVariants 
+                      ? 'border-[#2DB24A] bg-[#2DB24A]/5' 
+                      : 'border-border-subtle bg-surface-container/30'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="edit-hasVariants" className="flex items-center gap-2.5 cursor-pointer">
+                        <input
+                          id="edit-hasVariants"
+                          type="checkbox"
+                          checked={editHasVariants}
+                          onChange={(e) => {
+                            setEditHasVariants(e.target.checked)
+                            if (e.target.checked && editVariants.length === 0) {
+                              handleAddEditVariant()
+                            }
+                          }}
+                          className="w-4 h-4 text-[#2DB24A] focus:ring-[#2DB24A] rounded cursor-pointer accent-[#2DB24A]"
+                        />
+                        <span className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                          <Layers size={14} className="text-[#2DB24A]" />
+                          <span>Pilihan Varian Produk (Aroma, Ukuran, Warna, Paket, dll)</span>
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-[#006E24] border border-emerald-300">
+                            Tokopedia Style
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                    <p className="text-[11px] text-text-secondary leading-relaxed">
+                      Kelola daftar varian untuk produk ini. Pembeli dapat memilih varian saat belanja di katalog.
+                    </p>
+
+                    {editHasVariants && (
+                      <div className="space-y-3 pt-3 border-t border-border-subtle animate-in fade-in duration-200">
+                        <div className="space-y-2">
+                          {editVariants.map((variant, vIdx) => (
+                            <div key={variant.id} className="p-3 bg-surface-container rounded-lg border border-border-subtle space-y-2.5">
+                              <div className="flex items-center justify-between text-[11px] font-bold text-text-secondary">
+                                <span className="flex items-center gap-1.5">
+                                  <span className="w-5 h-5 rounded-full bg-[#2DB24A]/20 text-[#2DB24A] flex items-center justify-center text-[10px]">
+                                    {vIdx + 1}
+                                  </span>
+                                  Varian #{vIdx + 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveEditVariant(vIdx)}
+                                  className="text-red-400 hover:text-red-500 text-[10px] flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Trash2 size={12} /> Hapus
+                                </button>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                                <div className="sm:col-span-2">
+                                  <label className="block text-[9px] font-bold text-text-secondary uppercase mb-1">
+                                    Nama Varian *
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={variant.name}
+                                    onChange={(e) => handleUpdateEditVariant(vIdx, 'name', e.target.value)}
+                                    placeholder="cth: Cool Wootah / XL / 50ml"
+                                    className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-[#2DB24A]"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] font-bold text-text-secondary uppercase mb-1">
+                                    Harga Khusus (Opsional)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={variant.price}
+                                    onChange={(e) => handleUpdateEditVariant(vIdx, 'price', e.target.value)}
+                                    placeholder="Ikuti harga produk"
+                                    className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-[#2DB24A]"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[9px] font-bold text-text-secondary uppercase mb-1">
+                                    Stok Varian
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={variant.stock}
+                                    onChange={(e) => handleUpdateEditVariant(vIdx, 'stock', e.target.value)}
+                                    placeholder="10"
+                                    className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-[#2DB24A]"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-[9px] font-bold text-text-secondary uppercase mb-1">
+                                  URL Foto Varian (Opsional)
+                                </label>
+                                <div className="flex gap-2 items-center">
+                                  <input
+                                    type="url"
+                                    value={variant.imageUrl}
+                                    onChange={(e) => handleUpdateEditVariant(vIdx, 'imageUrl', e.target.value)}
+                                    placeholder="https://... (Foto spesifik untuk varian ini)"
+                                    className="flex-1 h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-[#2DB24A]"
+                                  />
+                                  {variant.imageUrl && (
+                                    <img src={variant.imageUrl} alt="preview" className="w-9 h-9 rounded object-cover border border-border-subtle" />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleAddEditVariant}
+                          className="w-full py-2 bg-surface-container hover:bg-surface-container-high border border-dashed border-[#2DB24A]/60 text-[#2DB24A] rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Plus size={14} /> Tambah Varian Baru
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Affiliate Settings */}
@@ -2143,6 +2333,20 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                           setEditSnackboxShare((p as any).snackboxRevenueShare || 15)
                           setEditPortionWeight((p as any).snackboxPortionWeight || '')
                           setEditPriceValue(p.price || 0)
+                          const parsedVars = parseProductVariants(p)
+                          if (parsedVars && parsedVars.length > 0) {
+                            setEditHasVariants(true)
+                            setEditVariants(parsedVars.map(v => ({
+                              id: v.id,
+                              name: v.name,
+                              price: v.price !== undefined ? String(v.price) : '',
+                              stock: String(v.stock),
+                              imageUrl: v.imageUrl || ''
+                            })))
+                          } else {
+                            setEditHasVariants(false)
+                            setEditVariants([])
+                          }
                           setError(null)
                           setSuccess(null)
                         }}
@@ -2439,6 +2643,131 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   </button>
                 </div>
                 <textarea id="create-description" name="description" required placeholder="Jelaskan spesifikasi, material, dan kelebihan premium produk Anda..." rows={5} className="w-full px-4 py-3 bg-surface-container border border-border-subtle rounded text-xs text-text-primary focus:outline-none" />
+              </div>
+
+              {/* ── MULTI-VARIANTS SECTION (CREATE FORM) ── */}
+              <div className={`border p-4 rounded-xl space-y-3.5 transition-all ${
+                createHasVariants 
+                  ? 'border-[#2DB24A] bg-[#2DB24A]/5' 
+                  : 'border-border-subtle bg-surface-container/30'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="create-hasVariants" className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      id="create-hasVariants"
+                      type="checkbox"
+                      checked={createHasVariants}
+                      onChange={(e) => {
+                        setCreateHasVariants(e.target.checked)
+                        if (e.target.checked && createVariants.length === 0) {
+                          handleAddCreateVariant()
+                        }
+                      }}
+                      className="w-4 h-4 text-[#2DB24A] focus:ring-[#2DB24A] rounded cursor-pointer accent-[#2DB24A]"
+                    />
+                    <span className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                      <Layers size={14} className="text-[#2DB24A]" />
+                      <span>Tambahkan Pilihan Varian Produk (Aroma, Ukuran, Warna, Paket, dll)</span>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-[#006E24] border border-emerald-300">
+                        Tokopedia Style
+                      </span>
+                    </span>
+                  </label>
+                </div>
+                <p className="text-[11px] text-text-secondary leading-relaxed">
+                  Aktifkan opsi ini jika produk memiliki varian berbeda (seperti aroma parfum, ukuran pakaian, atau paket bundling). Pembeli dapat memilih varian saat belanja.
+                </p>
+
+                {createHasVariants && (
+                  <div className="space-y-3 pt-3 border-t border-border-subtle animate-in fade-in duration-200">
+                    <div className="space-y-2">
+                      {createVariants.map((variant, vIdx) => (
+                        <div key={variant.id} className="p-3 bg-surface-container rounded-lg border border-border-subtle space-y-2.5">
+                          <div className="flex items-center justify-between text-[11px] font-bold text-text-secondary">
+                            <span className="flex items-center gap-1.5">
+                              <span className="w-5 h-5 rounded-full bg-[#2DB24A]/20 text-[#2DB24A] flex items-center justify-center text-[10px]">
+                                {vIdx + 1}
+                              </span>
+                              Varian #{vIdx + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCreateVariant(vIdx)}
+                              className="text-red-400 hover:text-red-500 text-[10px] flex items-center gap-1 cursor-pointer"
+                            >
+                              <Trash2 size={12} /> Hapus
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            <div className="sm:col-span-2">
+                              <label className="block text-[9px] font-bold text-text-secondary uppercase mb-1">
+                                Nama Varian *
+                              </label>
+                              <input
+                                type="text"
+                                value={variant.name}
+                                onChange={(e) => handleUpdateCreateVariant(vIdx, 'name', e.target.value)}
+                                placeholder="cth: Cool Wootah / XL / 50ml"
+                                className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-[#2DB24A]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-text-secondary uppercase mb-1">
+                                Harga Khusus (Opsional)
+                              </label>
+                              <input
+                                type="number"
+                                value={variant.price}
+                                onChange={(e) => handleUpdateCreateVariant(vIdx, 'price', e.target.value)}
+                                placeholder="Ikuti harga produk"
+                                className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-[#2DB24A]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold text-text-secondary uppercase mb-1">
+                                Stok Varian
+                              </label>
+                              <input
+                                type="number"
+                                value={variant.stock}
+                                onChange={(e) => handleUpdateCreateVariant(vIdx, 'stock', e.target.value)}
+                                placeholder="10"
+                                className="w-full h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-[#2DB24A]"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[9px] font-bold text-text-secondary uppercase mb-1">
+                              URL Foto Varian (Opsional)
+                            </label>
+                            <div className="flex gap-2 items-center">
+                              <input
+                                type="url"
+                                value={variant.imageUrl}
+                                onChange={(e) => handleUpdateCreateVariant(vIdx, 'imageUrl', e.target.value)}
+                                placeholder="https://... (Foto khusus untuk varian ini)"
+                                className="flex-1 h-9 px-3 bg-surface-container-high border border-border-subtle rounded text-xs text-text-primary focus:outline-none focus:border-[#2DB24A]"
+                              />
+                              {variant.imageUrl && (
+                                <img src={variant.imageUrl} alt="preview" className="w-9 h-9 rounded object-cover border border-border-subtle" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAddCreateVariant}
+                      className="w-full py-2 bg-surface-container hover:bg-surface-container-high border border-dashed border-[#2DB24A]/60 text-[#2DB24A] rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Plus size={14} /> Tambah Varian Baru
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Affiliate Settings */}

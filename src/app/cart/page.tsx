@@ -38,6 +38,10 @@ import {
 interface CartItem {
   productId: string
   quantity: number
+  variantId?: string
+  variantName?: string
+  variantPrice?: number
+  variantImage?: string
 }
 
 interface ProductDetails {
@@ -91,9 +95,25 @@ export default function CartPage() {
   const cartDetails = cart
     .map((item) => {
       const prod = products.find((p) => p.id === item.productId)
-      return prod ? { ...prod, quantity: item.quantity } : null
+      if (!prod) return null
+      const cartItemId = `${item.productId}${item.variantId ? `__var__${item.variantId}` : ''}`
+      return {
+        ...prod,
+        originalProductId: prod.id,
+        id: cartItemId,
+        price: item.variantPrice !== undefined ? item.variantPrice : prod.price,
+        imageUrl: item.variantImage || prod.imageUrl,
+        variantId: item.variantId,
+        variantName: item.variantName,
+        quantity: item.quantity
+      }
     })
-    .filter(Boolean) as Array<ProductDetails & { quantity: number }>
+    .filter(Boolean) as Array<ProductDetails & {
+      originalProductId: string
+      variantId?: string
+      variantName?: string
+      quantity: number
+    }>
 
   const [viewMode, setViewMode] = useState<'cart' | 'checkout'>(
     searchParams?.get('step') === 'checkout' ? 'checkout' : 'cart'
@@ -443,7 +463,7 @@ export default function CartPage() {
             setCart(parsedCart)
             // Everything starts selected — avoids the old "empty Set means select-all"
             // sentinel, which made the very first deselect a no-op.
-            setSelectedItemIds(new Set(parsedCart.map((i) => i.productId)))
+            setSelectedItemIds(new Set(parsedCart.map((i) => `${i.productId}${i.variantId ? `__var__${i.variantId}` : ''}`)))
           } catch (e) {}
         }
         if (storedAff) {
@@ -539,15 +559,19 @@ export default function CartPage() {
     window.dispatchEvent(new Event('storage'))
   }
 
-  const handleUpdateQuantity = (productId: string, newQty: number, maxStock: number) => {
+  const handleUpdateQuantity = (id: string, newQty: number, maxStock: number) => {
     if (newQty < 1) return
     if (newQty > maxStock) {
       setError(`Maksimal stok tersedia adalah ${maxStock}`)
       return
     }
     setError(null)
+    const [productId, variantId] = id.split('__var__')
     const updated = cart.map((item) => {
-      if (item.productId === productId) {
+      const match = variantId
+        ? (item.productId === productId && item.variantId === variantId)
+        : (item.productId === productId && !item.variantId)
+      if (match) {
         return { ...item, quantity: newQty }
       }
       return item
@@ -555,8 +579,14 @@ export default function CartPage() {
     saveCart(updated)
   }
 
-  const handleRemoveItem = (productId: string) => {
-    const updated = cart.filter((item) => item.productId !== productId)
+  const handleRemoveItem = (id: string) => {
+    const [productId, variantId] = id.split('__var__')
+    const updated = cart.filter((item) => {
+      if (variantId) {
+        return !(item.productId === productId && item.variantId === variantId)
+      }
+      return !(item.productId === productId && !item.variantId)
+    })
     saveCart(updated)
   }
 
@@ -755,9 +785,11 @@ export default function CartPage() {
     // no concept of "boxes", only per-item quantity).
     const itemsPayload = [
       ...selectedCartDetails.map((item) => ({
-        productId: item.id,
+        productId: item.originalProductId || item.id.split('__var__')[0],
         quantity: item.quantity,
-        note: itemNotes[item.id] || undefined
+        note: item.variantName 
+          ? `[Varian: ${item.variantName}] ${itemNotes[item.id] || ''}`.trim()
+          : (itemNotes[item.id] || undefined)
       })),
       ...(hasSnackboxSelected
         ? snackboxCart!.items
@@ -1397,7 +1429,14 @@ export default function CartPage() {
 
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-2">
-                                      <h4 className="font-bold text-sm text-slate-900 truncate">{item.title}</h4>
+                                      <div>
+                                        <h4 className="font-bold text-sm text-slate-900 truncate">{item.title}</h4>
+                                        {item.variantName && (
+                                          <span className="inline-block text-[10px] font-bold text-[#006E24] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-0.5">
+                                            Varian: {item.variantName}
+                                          </span>
+                                        )}
+                                      </div>
                                       <span className="text-sm font-bold text-slate-900 shrink-0">
                                         Rp {(wholesalePrice * item.quantity).toLocaleString('id-ID')}
                                       </span>
@@ -1409,7 +1448,7 @@ export default function CartPage() {
                                     <div className="flex items-center justify-end gap-4 mt-2">
                                       <button
                                         type="button"
-                                        onClick={() => setPendingRemove({ type: 'regular', id: item.id, title: item.title })}
+                                        onClick={() => setPendingRemove({ type: 'regular', id: item.id, title: item.variantName ? `${item.title} (${item.variantName})` : item.title })}
                                         className="text-xs text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                                       >
                                         Hapus
@@ -1668,6 +1707,11 @@ export default function CartPage() {
                                   </div>
                                   <div>
                                     <h4 className="font-bold text-slate-800 text-xs">{item.title}</h4>
+                                    {item.variantName && (
+                                      <span className="inline-block text-[10px] font-bold text-[#006E24] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-0.5">
+                                        Varian: {item.variantName}
+                                      </span>
+                                    )}
                                     <p className="text-[11px] text-slate-400">Rp {wholesalePrice.toLocaleString('id-ID')} / pcs</p>
                                   </div>
                                 </div>
