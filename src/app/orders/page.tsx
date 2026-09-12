@@ -25,43 +25,46 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-bg-dark">
-        <span className="text-xs font-geist font-bold text-primary tracking-widest uppercase animate-pulse">
-          Memuat Daftar Pesanan...
-        </span>
+      <div className="min-h-[calc(100vh-80px)] flex items-center justify-center bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-slate-200 border-t-[#2DB24A] rounded-full animate-spin" />
+          <span className="text-xs font-bold text-slate-600 tracking-wider uppercase">
+            Memuat Daftar Pesanan...
+          </span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="relative min-h-screen bg-bg-dark pt-28 pb-24 px-6 md:px-10">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[350px] bg-[radial-gradient(circle_at_center,rgba(198,169,107,0.03)_0%,transparent_75%)] pointer-events-none z-0" />
-
-      <div className="relative z-10 max-w-[800px] mx-auto">
-        <div className="mb-10 pb-6 border-b border-border-subtle">
-          <h1 className="font-sora text-2xl font-bold text-text-primary mb-2">
-            Pesanan <span className="text-primary">Saya.</span>
+    <div className="min-h-screen bg-[#F8FAFC] pt-24 pb-24 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-[800px] mx-auto">
+        <div className="mb-8 pb-5 border-b border-slate-200">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 mb-1.5">
+            Pesanan <span className="text-[#2DB24A]">Saya.</span>
           </h1>
-          <p className="text-xs text-text-secondary">
-            Pantau status pengiriman, rincian produk belanjaan, dan berikan ulasan ulasan.
+          <p className="text-xs text-slate-500 font-medium">
+            Pantau status pengiriman, rincian produk belanjaan, dan berikan ulasan pesanan Anda.
           </p>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex border-b border-border-subtle mb-8 gap-2">
+        <div className="flex border-b border-slate-200 mb-8 gap-2 overflow-x-auto no-scrollbar">
           {(['ALL', 'PENDING', 'COMPLETED', 'CANCELLED'] as const).map(tab => {
             const labels = { ALL: 'Semua', PENDING: 'Menunggu', COMPLETED: 'Selesai', CANCELLED: 'Dibatalkan' }
+            const isActive = filter === tab
             return (
               <button
                 key={tab}
+                type="button"
                 onClick={() => setFilter(tab)}
-                className={`pb-3.5 px-4 text-xs font-geist font-bold uppercase tracking-wider transition-all relative cursor-pointer ${
-                  filter === tab ? 'text-primary' : 'text-text-secondary hover:text-text-primary'
+                className={`pb-3 px-4 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors relative cursor-pointer whitespace-nowrap ${
+                  isActive ? 'text-[#2DB24A]' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 {labels[tab]}
-                {filter === tab && (
-                  <span className="btn-primary absolute bottom-0 left-0 right-0" />
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-[#2DB24A] rounded-full" />
                 )}
               </button>
             )
@@ -70,17 +73,17 @@ export default function OrdersPage() {
 
         {/* Orders list */}
         {filteredOrders.length === 0 ? (
-          <div className="text-center py-20 border border-border-subtle rounded-xl bg-surface-dark/40 backdrop-blur-md">
-            <div className="btn-primary w-12 bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary mb-4">
-              <ShoppingBag size={20} />
+          <div className="text-center py-16 px-6 border border-slate-200/80 rounded-2xl bg-white shadow-xs">
+            <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto text-[#2DB24A] mb-4 shadow-inner">
+              <ShoppingBag size={24} />
             </div>
-            <h3 className="font-sora text-sm font-bold text-text-primary mb-1">Belum Ada Transaksi</h3>
-            <p className="text-xs text-text-secondary max-w-xs mx-auto mb-6">
+            <h3 className="text-base font-bold text-slate-900 mb-1">Belum Ada Transaksi</h3>
+            <p className="text-xs text-slate-500 max-w-xs mx-auto mb-6 leading-relaxed">
               Mulai jelajahi produk artisan unggulan di Saloka Marketplace.
             </p>
             <Link
               href="/market"
-              className="btn-primary text-xs inline-block"
+              className="px-6 py-2.5 bg-[#2DB24A] hover:bg-[#24943E] text-white text-xs font-bold rounded-xl shadow-xs transition-colors inline-block"
             >
               Belanja Sekarang
             </Link>
@@ -98,47 +101,47 @@ export default function OrdersPage() {
               return (
                 <div
                   key={order.id}
-                  className="border border-border-subtle hover:border-primary/20 bg-surface-dark/50 hover:bg-surface-dark/80 backdrop-blur-md p-5 rounded-xl transition-all duration-300 group shadow-md"
+                  className="border border-slate-200/80 hover:border-[#2DB24A]/40 bg-white hover:shadow-md p-5 rounded-2xl transition-all duration-200 group"
                 >
-                  <div className="flex flex-wrap justify-between items-center gap-3 border-b border-border-subtle/50 pb-3.5 mb-3.5">
+                  <div className="flex flex-wrap justify-between items-center gap-3 border-b border-slate-100 pb-3 mb-3.5">
                     <div className="flex items-center gap-3">
-                      <span className="px-2 py-0.5 bg-surface-container border border-border-subtle rounded text-[9px] font-geist font-bold text-text-primary">
+                      <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 rounded-md text-[10px] font-mono font-bold text-slate-700">
                         ID: {order.id.replace('order-', '#')}
                       </span>
-                      <span className="text-[10px] text-text-secondary flex items-center gap-1.5">
-                        <Calendar size={11} />
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1.5 font-medium">
+                        <Calendar size={12} />
                         {dateStr}
                       </span>
                     </div>
 
-                    <span className={`px-2 py-0.5 rounded text-[8px] font-geist font-black uppercase tracking-wider border ${
+                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${
                       order.status === 'COMPLETED'
-                        ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                        ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                         : order.status === 'CANCELLED'
-                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400 animate-pulse'
+                        ? 'bg-rose-50 border-rose-200 text-rose-700'
+                        : 'bg-amber-50 border-amber-200 text-amber-700 animate-pulse'
                     }`}>
                       {order.status === 'COMPLETED' ? 'Selesai' : order.status === 'CANCELLED' ? 'Batal' : 'Pending'}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center gap-4">
-                    <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="space-y-2 flex-1">
                       {itemsList.map((item: any, idx: number) => (
                         <div key={item.id || idx} className="flex items-center gap-2">
-                          <Package size={12} className="text-primary" />
-                          <span className="text-xs text-text-primary font-medium line-clamp-1">
+                          <Package size={14} className="text-[#2DB24A] shrink-0" />
+                          <span className="text-xs text-slate-800 font-semibold line-clamp-1">
                             {item.product?.title || item.productTitle || 'Produk Saloka'}
                           </span>
-                          <span className="text-[10px] text-text-secondary whitespace-nowrap">
+                          <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">
                             x{item.quantity}
                           </span>
                         </div>
                       ))}
 
-                      <div className="pt-2 text-xs font-geist text-text-secondary flex items-center gap-1">
-                        Total Bayar: 
-                        <span className="text-primary font-black text-sm ml-1">
+                      <div className="pt-1.5 text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                        <span>Total Tagihan:</span>
+                        <span className="text-[#2DB24A] font-extrabold text-sm">
                           Rp {order.totalAmount.toLocaleString('id-ID')}
                         </span>
                       </div>
@@ -146,10 +149,10 @@ export default function OrdersPage() {
 
                     <Link
                       href={`/orders/${order.id}`}
-                      className="px-4 py-2.5 bg-surface-container hover:bg-surface-container-high border border-border-subtle hover:border-primary/45 rounded-lg text-[10px] font-geist font-bold uppercase tracking-wider text-text-primary transition-all duration-300 flex items-center gap-1 shadow-sm shrink-0"
+                      className="px-4 py-2 bg-slate-50 hover:bg-[#2DB24A] hover:text-white border border-slate-200 hover:border-[#2DB24A] rounded-xl text-xs font-bold text-slate-700 transition-all duration-200 flex items-center gap-1.5 shadow-xs shrink-0 self-end sm:self-auto"
                     >
-                      Lacak Pesanan
-                      <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                      <span>Lacak Pesanan</span>
+                      <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                     </Link>
                   </div>
                 </div>
