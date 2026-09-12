@@ -10868,3 +10868,6 @@ export const MidtransRegistry = {
     processedTransactions[orderId] = true;
   }
 };
+
+export const PaymentRegistry = MidtransRegistry;
+

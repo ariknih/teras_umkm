@@ -33,6 +33,7 @@ export default function WalletPage() {
 
   // Deposit State
   const [depositAmount, setDepositAmount] = useState<string>('')
+  const [depositGateway, setDepositGateway] = useState<'DOKU' | 'MIDTRANS'>('DOKU')
   const [isDepositLoading, setIsDepositLoading] = useState(false)
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
 
@@ -64,6 +65,33 @@ export default function WalletPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  // Auto-verify DOKU deposit callback
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const urlParams = new URLSearchParams(window.location.search)
+    const dokuVerifyId = urlParams.get('doku_verify')
+    if (dokuVerifyId) {
+      setIsVerifying(true)
+      fetch('/api/doku/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: dokuVerifyId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            setSuccess('Top-up saldo via DOKU berhasil diverifikasi!')
+            loadData()
+          } else {
+            setError(data.error || 'Gagal memverifikasi deposit DOKU.')
+          }
+        })
+        .catch(() => setError('Gagal menghubungi server verifikasi DOKU.'))
+        .finally(() => setIsVerifying(false))
+    }
+  }, [])
+
   const handleDeposit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -76,6 +104,36 @@ export default function WalletPage() {
     }
 
     setIsDepositLoading(true)
+
+    // 1. DOKU Payment Gateway
+    if (depositGateway === 'DOKU') {
+      try {
+        const res = await fetch('/api/doku/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'deposit', amount }),
+        })
+        const data = await res.json()
+        if (!res.ok || data.error) {
+          setIsDepositLoading(false)
+          throw new Error(data.error || 'Gagal memproses sesi pembayaran DOKU.')
+        }
+
+        if (data.paymentUrl) {
+          window.location.href = data.paymentUrl
+        } else {
+          setPendingOrderId(data.orderId)
+          setIsDepositLoading(false)
+        }
+        return
+      } catch (err: any) {
+        setError(err.message || 'Gagal terhubung dengan DOKU.')
+        setIsDepositLoading(false)
+        return
+      }
+    }
+
+    // 2. Midtrans Payment Gateway
     try {
       const res = await fetch('/api/midtrans/snap', {
         method: 'POST',
@@ -430,12 +488,41 @@ export default function WalletPage() {
 
             {/* Deposit Box */}
             <div className="border border-[#E5E7EB] bg-white p-6 rounded-2xl">
-              <span className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-4">
+              <span className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-2">
                 Top Up / Isi Saldo
               </span>
               <p className="text-[11px] text-[#6B7280] mb-4 leading-relaxed">
-                Isi saldo instan menggunakan Midtrans Payment Gateway (Virtual Account, E-Wallet, Kartu Kredit).
+                Isi saldo instan menggunakan DOKU Payment Gateway atau Midtrans (QRIS, VA Bank, E-Wallet).
               </p>
+
+              {/* Gateway Selector Tabs */}
+              <div className="grid grid-cols-2 gap-2 mb-4 p-1 bg-slate-100 rounded-lg text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setDepositGateway('DOKU')}
+                  className={`py-2 px-3 rounded-md transition-all text-center cursor-pointer ${
+                    depositGateway === 'DOKU'
+                      ? 'bg-white text-primary shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  DOKU Checkout
+                  <span className="block text-[9px] font-normal text-emerald-600">Rekomendasi</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDepositGateway('MIDTRANS')}
+                  className={`py-2 px-3 rounded-md transition-all text-center cursor-pointer ${
+                    depositGateway === 'MIDTRANS'
+                      ? 'bg-white text-primary shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Midtrans Snap
+                  <span className="block text-[9px] font-normal text-slate-400">Alternatif</span>
+                </button>
+              </div>
+
               <form onSubmit={handleDeposit} className="space-y-4">
                 <div>
                   <label className="block text-[9px] font-bold text-[#6B7280] uppercase tracking-wider mb-1">
@@ -456,7 +543,9 @@ export default function WalletPage() {
                   disabled={isDepositLoading}
                   className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                 >
-                  {isDepositLoading ? 'Menghubungkan Midtrans...' : 'Isi Saldo Sekarang'}
+                  {isDepositLoading
+                    ? `Menghubungkan ${depositGateway === 'DOKU' ? 'DOKU' : 'Midtrans'}...`
+                    : `Isi Saldo via ${depositGateway === 'DOKU' ? 'DOKU' : 'Midtrans'}`}
                 </button>
               </form>
             </div>

@@ -31,7 +31,8 @@ import {
   Lock,
   ArrowRight,
   Trash2,
-  Info
+  Info,
+  CreditCard
 } from 'lucide-react'
 
 interface CartItem {
@@ -124,7 +125,7 @@ export default function CartPage() {
   const [shippingDistKm, setShippingDistKm] = useState(0)
   const [courierRates, setCourierRates] = useState<CourierRate[]>([])
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false)
-  const [shippingSource, setShippingSource] = useState<'komerce' | 'mock'>('mock')
+  const [shippingSource, setShippingSource] = useState<'biteship' | 'komerce' | 'mock'>('mock')
 
   // Address Modals & Lists (Shopee-Style)
   const [addresses, setAddresses] = useState<SavedAddress[]>([])
@@ -166,8 +167,8 @@ export default function CartPage() {
   const [activeNoteInput, setActiveNoteInput] = useState<Record<string, boolean>>({})
 
   // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'MIDTRANS' | 'WALLET' | 'COD' | 'MANUAL'>('MIDTRANS')
-  const [activePaymentSubId, setActivePaymentSubId] = useState<string>('MIDTRANS_QRIS')
+  const [paymentMethod, setPaymentMethod] = useState<'DOKU' | 'MIDTRANS' | 'WALLET' | 'COD' | 'MANUAL'>('DOKU')
+  const [activePaymentSubId, setActivePaymentSubId] = useState<string>('DOKU_CHECKOUT')
   const [dynamicPaymentMethods, setDynamicPaymentMethods] = useState<any[]>([])
 
   // Google Maps state
@@ -411,7 +412,7 @@ export default function CartPage() {
 
       if (data.data && data.data.length > 0) {
         setCourierRates(data.data)
-        setShippingSource(data.source === 'komerce' ? 'komerce' : 'mock')
+        setShippingSource(data.source === 'biteship' ? 'biteship' : data.source === 'komerce' ? 'komerce' : 'mock')
         setShippingDistKm(data.distance_km || 0)
         if (!selectedCourier || !data.data.find((r: CourierRate) => r.courier_code === selectedCourier)) {
           setSelectedCourier(data.data[0].courier_code)
@@ -558,6 +559,51 @@ export default function CartPage() {
     const updated = cart.filter((item) => item.productId !== productId)
     saveCart(updated)
   }
+
+  const verifyDokuCheckout = async (orderId: string) => {
+    setIsVerifying(true)
+    setError(null)
+    setSuccessMessage(null)
+    try {
+      const res = await fetch('/api/doku/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || 'Gagal memverifikasi checkout DOKU.')
+
+      if (data.processed || data.success) {
+        const cartKey = currentUser?.id 
+          ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
+          : 'teras_cart'
+        localStorage.removeItem(cartKey)
+        localStorage.removeItem('teras_affiliate_id')
+        setCart([])
+        window.dispatchEvent(new Event('storage'))
+        setAffiliateId('')
+        setPendingOrderId(null)
+        setCheckoutSuccess(true)
+        if (data.order?.id) {
+          router.push(`/orders/${data.order.id}`)
+        }
+      } else {
+        setError(data.message || 'Pembayaran DOKU belum selesai.')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Gagal memeriksa status pembayaran DOKU.')
+    } finally {
+      setIsVerifying(false)
+    }
+  }
+
+  // Check for returning DOKU or Midtrans payment callback from URL
+  useEffect(() => {
+    const dokuVerifyId = searchParams?.get('doku_verify')
+    if (dokuVerifyId) {
+      verifyDokuCheckout(dokuVerifyId)
+    }
+  }, [searchParams])
 
   const verifyCheckout = async (orderId: string, simulate: boolean = false) => {
     setIsVerifying(true)
@@ -739,6 +785,48 @@ export default function CartPage() {
       shippingAddress: deliveryMethod === 'PICKUP' ? `[PICKUP] Ambil di Toko: ${merchantAddress}` : shippingAddress,
       couponCode: couponSuccess ? couponCode : undefined,
       discountAmount: couponDiscount,
+    }
+
+    // DOKU Checkout Payment (QRIS, VA Bank, E-Wallet, Card)
+    if (paymentMethod === 'DOKU' || activePaymentSubId === 'DOKU_CHECKOUT') {
+      try {
+        const res = await fetch('/api/doku/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'checkout',
+            items: itemsPayload,
+            affiliateId: affiliateId || undefined,
+            shippingDetails,
+          }),
+        })
+
+        const data = await res.json()
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Gagal membuat sesi pembayaran DOKU.')
+        }
+
+        const cartKey = currentUser?.id 
+          ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
+          : 'teras_cart'
+        localStorage.removeItem(cartKey)
+        localStorage.removeItem('teras_affiliate_id')
+        setCart([])
+        window.dispatchEvent(new Event('storage'))
+        setAffiliateId('')
+        clearSnackboxCartIfSelected()
+
+        if (data.paymentUrl) {
+          window.location.href = data.paymentUrl
+        } else if (data.orderId) {
+          router.push(`/orders/${data.orderId}`)
+        }
+        return
+      } catch (err: any) {
+        setError(err.message || 'Pembayaran DOKU gagal.')
+        setIsPendingCheckout(false)
+        return
+      }
     }
 
     // Direct wallet checkout
@@ -1687,6 +1775,7 @@ export default function CartPage() {
 
                   <div className="space-y-2">
                     {[
+                      { id: 'DOKU_CHECKOUT', label: 'DOKU Checkout (QRIS, All Bank VA, E-Wallet)', icon: <CreditCard className="w-4 h-4 text-[#006E24]" /> },
                       { id: 'MIDTRANS_BANK', label: 'BRI Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-500" /> },
                       { id: 'MIDTRANS_BANK_BCA', label: 'BCA Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-500" /> },
                       { id: 'MIDTRANS_QRIS', label: 'QRIS', icon: <Smartphone className="w-4 h-4 text-slate-500" /> },
@@ -1701,6 +1790,7 @@ export default function CartPage() {
                       }))
                     ].map(opt => {
                       const isSelected = 
+                        (opt.id === 'DOKU_CHECKOUT' && (paymentMethod === 'DOKU' || activePaymentSubId === 'DOKU_CHECKOUT')) ||
                         (opt.id === 'WALLET' && paymentMethod === 'WALLET') ||
                         (opt.id === 'COD' && paymentMethod === 'COD') ||
                         (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_BANK_BCA', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
@@ -1710,7 +1800,10 @@ export default function CartPage() {
                         <div
                           key={opt.id}
                           onClick={() => {
-                            if (opt.id === 'WALLET') {
+                            if (opt.id === 'DOKU_CHECKOUT') {
+                              setPaymentMethod('DOKU');
+                              setActivePaymentSubId('DOKU_CHECKOUT');
+                            } else if (opt.id === 'WALLET') {
                               setPaymentMethod('WALLET');
                               setActivePaymentSubId('');
                             } else if (opt.id === 'COD') {
