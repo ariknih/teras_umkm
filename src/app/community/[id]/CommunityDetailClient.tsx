@@ -2522,34 +2522,6 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [hasUnsavedSettings, activeSidebarNav])
 
-  // Auto-verify DOKU community join payment callback
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const urlParams = new URLSearchParams(window.location.search)
-    const dokuVerifyId = urlParams.get('doku_verify')
-    if (dokuVerifyId && dokuVerifyId.startsWith('join-doku')) {
-      setIsVerifying(true)
-      fetch('/api/doku/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: dokuVerifyId }),
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            goeyToast.success(`Pembayaran berhasil diverifikasi! Selamat bergabung di ${community?.name || 'Komunitas'}.`)
-            setIsMember(true)
-            loadData()
-            window.history.replaceState(null, '', window.location.pathname)
-          } else {
-            goeyToast.error(data.error || 'Gagal memverifikasi pembayaran DOKU.')
-          }
-        })
-        .catch(() => goeyToast.error('Gagal menghubungi server verifikasi DOKU.'))
-        .finally(() => setIsVerifying(false))
-    }
-  }, [id, community?.name])
-
   const handleSaveSettings = async () => {
     if (!community) return
     setIsSavingSettings(true)

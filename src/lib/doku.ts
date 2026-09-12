@@ -761,3 +761,38 @@ export function verifyDokuNotification(
     return false;
   }
 }
+
+/**
+ * Parses the identity and amount a DOKU order id carries. The checkout routes
+ * build these ids server-side, so a deposit id names the user it was opened
+ * for — which is what lets /api/doku/verify reject a caller settling somebody
+ * else's order.
+ *
+ * Cart checkout ids only carry a truncated user id, so they intentionally
+ * return no userId: those must be settled from the server-side pending
+ * registry instead. Anything unrecognised returns no userId too, so a caller
+ * cannot get credited by inventing an order id.
+ */
+export function parseDokuOrderId(orderId: string): {
+  kind: 'deposit' | 'checkout' | 'unknown';
+  userId: string;
+  amount: number;
+} {
+  if (typeof orderId !== 'string') return { kind: 'unknown', userId: '', amount: 0 };
+
+  if (orderId.startsWith('dep-doku_')) {
+    const parts = orderId.split('_');
+    const amount = Number(parts[2]);
+    return {
+      kind: 'deposit',
+      userId: parts[1] || '',
+      amount: Number.isFinite(amount) && amount > 0 ? amount : 0,
+    };
+  }
+
+  if (orderId.startsWith('chk-doku-')) {
+    return { kind: 'checkout', userId: '', amount: 0 };
+  }
+
+  return { kind: 'unknown', userId: '', amount: 0 };
+}

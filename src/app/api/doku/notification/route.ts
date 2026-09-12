@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DataStore, PaymentRegistry } from '@/lib/data-store';
-import { verifyDokuNotification } from '@/lib/doku';
+import { verifyDokuNotification, parseDokuOrderId } from '@/lib/doku';
 
 /**
  * DOKU Jokul Webhook / Notification Handler
@@ -53,42 +53,21 @@ export async function POST(req: NextRequest) {
       PaymentRegistry.markTransactionProcessed(invoiceNumber);
 
       const pending = PaymentRegistry.getPendingCheckout(invoiceNumber);
-      let targetUserId = pending?.userId || '';
-      let targetCommunityId = '';
-      let targetCoinAmount = 0;
-      let targetAmount = payload?.order?.amount || pending?.shippingDetails?.shippingFee || 0;
+      const parsed = parseDokuOrderId(invoiceNumber);
+      const targetUserId = parsed.userId || pending?.userId || '';
 
-      if (invoiceNumber.includes('_')) {
-        const parts = invoiceNumber.split('_');
-        if (invoiceNumber.startsWith('dep-doku_')) {
-          targetUserId = parts[1] || targetUserId;
-          targetAmount = parseFloat(parts[2]) || targetAmount;
-        } else if (invoiceNumber.startsWith('join-doku_')) {
-          targetCommunityId = parts[1] || '';
-          targetUserId = parts[2] || targetUserId;
-        } else if (invoiceNumber.startsWith('coin-doku_')) {
-          targetCommunityId = parts[1] || '';
-          targetUserId = parts[2] || targetUserId;
-          targetCoinAmount = parseFloat(parts[3]) || 0;
-        }
-      }
+      // This payload is signature-verified above, so DOKU's own reported amount
+      // is the source of truth; the id-encoded amount is only a fallback for
+      // payloads that omit it.
+      const targetAmount =
+        parseFloat(payload?.order?.amount) || parsed.amount || pending?.shippingDetails?.shippingFee || 0;
 
-      if (invoiceNumber.startsWith('dep-') && targetUserId) {
+      // Community join fee and coin top-up settle through /api/payment/verify,
+      // never here.
+      if (invoiceNumber.startsWith('dep-') && targetUserId && targetAmount > 0) {
         await DataStore.depositFunds(targetUserId, targetAmount, 'Pembayaran Online');
         await DataStore.addXp(targetUserId, 30);
-      } else if (invoiceNumber.startsWith('join-') && targetUserId && targetCommunityId) {
-        await DataStore.payCommunityJoinFee(targetUserId, targetCommunityId, 'Online Payment');
-        await DataStore.addXp(targetUserId, 50);
-      } else if (invoiceNumber.startsWith('coin-') && targetUserId && targetCommunityId && targetCoinAmount > 0) {
-        const totalBiaya = targetCoinAmount * 1500;
-        await DataStore.topupCommunityCoin({
-          communityId: targetCommunityId,
-          ketuaId: targetUserId,
-          jumlahCoin: targetCoinAmount,
-          totalBiaya,
-          description: `Top up ${targetCoinAmount} coin via Pembayaran Online`,
-        });
-      } else if (pending) {
+      } else if (pending && Array.isArray(pending.items) && pending.items.length > 0) {
         const order = await DataStore.createOrder(
           pending.userId,
           pending.items,

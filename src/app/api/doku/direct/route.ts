@@ -24,8 +24,6 @@ export async function POST(req: NextRequest) {
       items,
       affiliateId,
       shippingDetails,
-      communityId,
-      jumlahCoin,
     } = body;
 
     let orderId = '';
@@ -47,51 +45,6 @@ export async function POST(req: NextRequest) {
         shippingDetails: {
           shippingFee: totalAmount,
           courier: 'DOKU_WALLET_DEPOSIT',
-        },
-      });
-    } else if (type === 'community_join') {
-      totalAmount = parseFloat(amount);
-      if (!communityId) {
-        return NextResponse.json({ error: 'ID Komunitas wajib diisi.' }, { status: 400 });
-      }
-      if (isNaN(totalAmount) || totalAmount <= 0) {
-        return NextResponse.json({ error: 'Nominal pendaftaran tidak valid.' }, { status: 400 });
-      }
-
-      const community = await DataStore.getCommunityById(communityId);
-      if (!community) {
-        return NextResponse.json({ error: 'Komunitas tidak ditemukan.' }, { status: 404 });
-      }
-
-      orderId = `join-doku_${communityId}_${user.id}_${Date.now().toString(36)}`;
-      PaymentRegistry.savePendingCheckout(orderId, {
-        userId: user.id,
-        items: [],
-        shippingDetails: {
-          shippingFee: totalAmount,
-          courier: `JOIN_${community.type || 'COMMUNITY'}`,
-        },
-      });
-    } else if (type === 'community_coin') {
-      const coinCount = parseFloat(jumlahCoin);
-      totalAmount = parseFloat(amount) || coinCount * 1500;
-
-      if (!communityId || isNaN(coinCount) || coinCount <= 0 || isNaN(totalAmount) || totalAmount <= 0) {
-        return NextResponse.json({ error: 'Jumlah coin atau biaya top up tidak valid.' }, { status: 400 });
-      }
-
-      const community = await DataStore.getCommunityById(communityId);
-      if (!community) {
-        return NextResponse.json({ error: 'Komunitas tidak ditemukan.' }, { status: 404 });
-      }
-
-      orderId = `coin-doku_${communityId}_${user.id}_${Math.round(coinCount)}_${Date.now().toString(36)}`;
-      PaymentRegistry.savePendingCheckout(orderId, {
-        userId: user.id,
-        items: [],
-        shippingDetails: {
-          shippingFee: totalAmount,
-          courier: `COIN_${coinCount}`,
         },
       });
     } else if (type === 'checkout') {

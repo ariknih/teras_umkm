@@ -353,7 +353,9 @@ export default function DokuDirectPaymentModal({
                     )}
                   </div>
 
-                  {/* Opsi A: Tombol Bypass Pembayaran Langsung (Selalu Aktif untuk Pengujian & Demo) */}
+                  {/* Opsi A: Bypass pembayaran — sandbox/demo saja. Server juga
+                      menolak `simulate` di produksi, ini hanya menyembunyikan UI-nya. */}
+                  {!isProduction && (
                   <div className="w-full max-w-[320px] p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 text-center space-y-2.5">
                     <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
                       💡 <strong>Bypass Pembayaran (Opsi A):</strong> Barcode QRIS dummy pengujian sandbox. Klik tombol di bawah untuk langsung melunasi transaksi tanpa scan:
@@ -377,6 +379,7 @@ export default function DokuDirectPaymentModal({
                       )}
                     </button>
                   </div>
+                  )}
 
                   <p className="text-center text-[11px] text-slate-500 max-w-xs pt-1">
                     Atau scan menggunakan aplikasi m-Banking atau E-Wallet apa saja (GoPay, OVO, Dana, ShopeePay, BCA, Livin, BRImo).
