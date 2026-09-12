@@ -18,6 +18,7 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { goeyToast } from 'goey-toast'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -39,9 +40,9 @@ export default function OrderDetailPage({ params }: PageProps) {
   const [reviewedProductIds, setReviewedProductIds] = useState<Set<string>>(new Set())
   const [completing, setCompleting] = useState(false)
   const [copiedResi, setCopiedResi] = useState(false)
+  const [showConfirmComplete, setShowConfirmComplete] = useState(false)
 
   const handleCompleteOrder = async () => {
-    if (!confirm('Apakah Anda yakin pesanan sudah diterima dengan baik?')) return
     setCompleting(true)
     try {
       const res = await updateOrderTracking(id, 'DELIVERED', 'Pesanan telah diterima oleh pembeli.')
@@ -221,7 +222,7 @@ export default function OrderDetailPage({ params }: PageProps) {
           {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
             <button
               type="button"
-              onClick={handleCompleteOrder}
+              onClick={() => setShowConfirmComplete(true)}
               disabled={completing}
               className="px-5 py-2.5 bg-primary hover:bg-[#084e1b] text-white text-xs font-extrabold rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
             >
@@ -436,6 +437,21 @@ export default function OrderDetailPage({ params }: PageProps) {
             })}
           </div>
         </div>
+
+        {/* ── CUSTOM CONFIRM MODAL (Sama seperti komponen lain) ── */}
+        <ConfirmDialog
+          open={showConfirmComplete}
+          title="Konfirmasi Pesanan Diterima"
+          description="Apakah Anda yakin pesanan sudah diterima dengan baik? Status pesanan akan diselesaikan."
+          confirmLabel="Ya, Selesai"
+          cancelLabel="Batal"
+          variant="success"
+          onCancel={() => setShowConfirmComplete(false)}
+          onConfirm={() => {
+            setShowConfirmComplete(false)
+            handleCompleteOrder()
+          }}
+        />
 
       </div>
     </div>

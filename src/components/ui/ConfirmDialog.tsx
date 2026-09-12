@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -9,6 +9,7 @@ interface ConfirmDialogProps {
   description?: string
   confirmLabel?: string
   cancelLabel?: string
+  variant?: 'danger' | 'success' | 'primary'
   onConfirm: () => void
   onCancel: () => void
 }
@@ -17,27 +18,35 @@ export default function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = 'Hapus',
+  confirmLabel,
   cancelLabel = 'Batal',
+  variant = 'danger',
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
   if (!open) return null
 
+  const isSuccess = variant === 'success' || variant === 'primary'
+  const finalConfirmLabel = confirmLabel || (isSuccess ? 'Ya, Konfirmasi' : 'Hapus')
+
   return (
     <div
-      className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs"
+      className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center"
+        className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center animate-in zoom-in-95 duration-150"
         onClick={e => e.stopPropagation()}
       >
-        <div className="mx-auto mb-3 w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center">
-          <AlertTriangle className="w-6 h-6 text-rose-500" />
+        <div
+          className={`mx-auto mb-3 w-12 h-12 rounded-full flex items-center justify-center ${
+            isSuccess ? 'bg-emerald-50 text-[#2DB24A]' : 'bg-rose-50 text-rose-500'
+          }`}
+        >
+          {isSuccess ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
         </div>
         <h3 className="font-bold text-base text-slate-900">{title}</h3>
-        {description && <p className="text-sm text-slate-500 mt-1">{description}</p>}
+        {description && <p className="text-sm text-slate-500 mt-1 leading-relaxed">{description}</p>}
 
         <div className="flex items-center gap-2.5 pt-5">
           <button
@@ -50,9 +59,11 @@ export default function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold transition-colors cursor-pointer"
+            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold transition-colors cursor-pointer ${
+              isSuccess ? 'bg-[#2DB24A] hover:bg-[#24943E]' : 'bg-rose-500 hover:bg-rose-600'
+            }`}
           >
-            {confirmLabel}
+            {finalConfirmLabel}
           </button>
         </div>
       </div>
