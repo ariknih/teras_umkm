@@ -8,6 +8,8 @@ import { deleteCache, invalidateCachePattern } from '@/lib/cache'
 import { extractYouTubeId, CERTIFICATE_TEMPLATE_TYPES, PROTECTED_CERTIFICATE_TEMPLATE_NAME } from '@/lib/lms-rules'
 import { hashPassword, verifyPassword } from '@/lib/password'
 import { deleteUploadedFile } from '@/lib/delete-upload'
+import { getDisabledModulesForTemplate, normalizeTemplateType } from '@/lib/community-templates'
+import { isValidAdminType, DEFAULT_ADMIN_TYPE } from '@/app/cms_admin/admin-types'
 
 // Logs a denied privilege check. Fires only on the throw path — access that
 // succeeds is not logged here, only the specific mutations that matter are
@@ -447,6 +449,8 @@ export async function createAdminAction(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const adminPermissions = formData.get('adminPermissions') as string || null
+  const adminTypeRaw = formData.get('adminType') as string
+  const adminType = isValidAdminType(adminTypeRaw) ? adminTypeRaw : DEFAULT_ADMIN_TYPE
 
   if (!name || !email || !password) {
     return { error: 'Nama, email, dan password wajib diisi.' }
@@ -462,7 +466,8 @@ export async function createAdminAction(formData: FormData) {
       email,
       passwordHash,
       isSuperAdmin: false,
-      adminPermissions
+      adminPermissions,
+      adminType
     })
     await logAudit({
       actor: 'ADMIN',
@@ -489,6 +494,8 @@ export async function updateAdminAction(formData: FormData) {
   const password = formData.get('password') as string
   const currentPassword = formData.get('currentPassword') as string
   const adminPermissions = formData.get('adminPermissions') as string || null
+  const adminTypeRaw = formData.get('adminType') as string
+  const adminType = isValidAdminType(adminTypeRaw) ? adminTypeRaw : undefined
 
   if (!id || !name || !email) {
     return { error: 'ID, nama, dan email wajib diisi.' }
@@ -502,7 +509,8 @@ export async function updateAdminAction(formData: FormData) {
     const updateData: any = {
       name,
       email,
-      adminPermissions
+      adminPermissions,
+      ...(adminType !== undefined ? { adminType } : {})
     }
 
     if (password && password.trim().length > 0) {
@@ -582,6 +590,13 @@ export async function verifyInvoiceMembershipAction(membershipId: string) {
         targetId: membershipId,
         targetType: 'COMMUNITY_MEMBERSHIP'
       })
+      // Flips this member's isPaid true - the same field the members-list
+      // and membership caches key off of, so without busting them the newly
+      // verified member stays invisible on the front page for the cache's
+      // full TTL.
+      const membership = res.membership
+      if (membership?.community?.id) deleteCache(`community:members:${membership.community.id}`)
+      if (membership?.user?.id) deleteCache(`user:communities:roles:${membership.user.id}`)
     }
     revalidatePath('/cms_admin', 'layout')
     revalidatePath('/community')
@@ -791,10 +806,29 @@ export async function getCommunitiesAdminAction() {
 }
 
 export async function createCommunityAdminAction(data: any) {
-  await ensureAdminPermission('community')
+  const admin = await ensureAdminPermission('community')
   try {
-    const community = await DataStore.createCommunityAdmin(data)
+    const templateType = normalizeTemplateType(data.templateType)
+    // Only Perkumpulan actually has page templates - Koperasi keeps its own
+    // fixed module set, so its landingPageConfig is left untouched here (it
+    // has no template-driven disabledModules concept to compute).
+    const landingPageConfig = data.type === 'PERKUMPULAN'
+      ? JSON.stringify({ disabledModules: getDisabledModulesForTemplate(templateType) })
+      : undefined
+    const community = await DataStore.createCommunityAdmin({ ...data, templateType, landingPageConfig })
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'CREATE_COMMUNITY_ADMIN',
+      module: 'COMMUNITY',
+      targetId: community.id,
+      targetType: 'COMMUNITY',
+      detail: `Komunitas "${data.name}" (${data.type}) dibuat via CMS admin.`
+    })
+    deleteCache('community:induk:all')
     revalidatePath('/cms_admin', 'layout')
+    revalidatePath('/community')
     return { success: true, community }
   } catch (e: any) {
     return { error: e.message || 'Gagal membuat komunitas baru.' }
@@ -802,10 +836,55 @@ export async function createCommunityAdminAction(data: any) {
 }
 
 export async function updateCommunityAdminAction(communityId: string, data: any) {
-  await ensureAdminPermission('community')
+  const admin = await ensureAdminPermission('community')
   try {
-    const community = await DataStore.updateCommunityAdmin(communityId, data)
+    let updateData = data
+    if (data.type === 'PERKUMPULAN' && data.templateType) {
+      // Merge into the existing config (not overwrite) so unrelated saved
+      // keys (perkumpulanTier, activationFeePaid, ...) survive an edit that
+      // only changed the template - resetting disabledModules to the newly
+      // picked template's defaults, same as the Pengaturan tab's own
+      // template switcher.
+      const existing = await DataStore.getCommunityById(communityId)
+      let existingConfig: any = {}
+      if (existing?.landingPageConfig) {
+        try { existingConfig = JSON.parse(existing.landingPageConfig) } catch (_) {}
+      }
+      const templateType = normalizeTemplateType(data.templateType)
+      updateData = {
+        ...data,
+        templateType,
+        landingPageConfig: JSON.stringify({
+          ...existingConfig,
+          disabledModules: getDisabledModulesForTemplate(templateType)
+        })
+      }
+    }
+    const community = await DataStore.updateCommunityAdmin(communityId, updateData)
+    const detail = typeof data.isVerified === 'boolean' || typeof data.isSuspended === 'boolean'
+      ? `Status komunitas "${community?.name}" diubah — Verified: ${!!community?.isVerified}, Suspended: ${!!community?.isSuspended}.`
+      : `Komunitas "${community?.name}" diperbarui via CMS admin.`
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'UPDATE_COMMUNITY_ADMIN',
+      module: 'COMMUNITY',
+      targetId: communityId,
+      targetType: 'COMMUNITY',
+      detail
+    })
+    // This is the CMS's own community-mutation path, separate from the
+    // ketua-facing updateIndukCommunity - it writes the same fields (menu
+    // toggles, verified/suspended status, join fee, etc.) but reads via
+    // getIndukCommunityDetail() go through a cacheWrap('community:induk:${id}')
+    // layer that revalidatePath doesn't reach, so without this the front
+    // page kept serving whatever it cached before this CMS edit.
+    deleteCache(`community:induk:${communityId}`)
+    deleteCache('community:induk:all')
     revalidatePath('/cms_admin', 'layout')
+    revalidatePath(`/community/${communityId}`)
+    revalidatePath('/community')
     return { success: true, community }
   } catch (e: any) {
     return { error: e.message || 'Gagal mengedit komunitas.' }
@@ -813,10 +892,22 @@ export async function updateCommunityAdminAction(communityId: string, data: any)
 }
 
 export async function deleteCommunityAdminAction(communityId: string) {
-  await ensureAdminPermission('community')
+  const admin = await ensureAdminPermission('community')
   try {
     await DataStore.deleteCommunityAdmin(communityId)
+    await logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action: 'DELETE_COMMUNITY_ADMIN',
+      module: 'COMMUNITY',
+      targetId: communityId,
+      targetType: 'COMMUNITY'
+    })
+    deleteCache(`community:induk:${communityId}`)
+    deleteCache('community:induk:all')
     revalidatePath('/cms_admin', 'layout')
+    revalidatePath('/community')
     return { success: true }
   } catch (e: any) {
     return { error: e.message || 'Gagal menghapus komunitas.' }
@@ -837,6 +928,7 @@ export async function updateUserIndukCommunityAction(userId: string, communityId
       targetType: 'USER',
       detail: communityId ? `Set induk komunitas menjadi #${communityId}.` : 'Hapus induk komunitas.'
     })
+    deleteCache(`user:communities:roles:${userId}`)
     revalidatePath('/cms_admin', 'layout')
     return { success: true }
   } catch (e: any) {
@@ -862,6 +954,18 @@ export async function kickMemberFromCommunityAdminAction(userId: string, communi
       targetType: 'USER',
       detail: `Keluarkan anggota dari komunitas #${communityId}.`
     })
+    try {
+      const community = await DataStore.getCommunityById(communityId)
+      await DataStore.createNotification(
+        userId,
+        'KICKED_FROM_COMMUNITY',
+        'Dikeluarkan dari Komunitas',
+        `Anda telah dikeluarkan dari komunitas "${community?.name || communityId}" oleh Admin Saloka.id.`,
+        '/community'
+      )
+    } catch (err) {
+      console.error('Error creating kick notification:', err)
+    }
     deleteCache(`community:members:${communityId}`)
     invalidateCachePattern(`community:members:${communityId}*`)
     deleteCache(`user:communities:roles:${userId}`)
@@ -967,6 +1071,9 @@ export async function deleteUserAction(userId: string) {
   const admin = await ensureAdminPermission('users')
   try {
     const target: any = await DataStore.findUserById(userId)
+    if (target?.role === 'ADMIN') {
+      throw new Error('Akun admin dikelola lewat menu Admin & Hak Akses, bukan lewat menu Users.')
+    }
     await DataStore.deleteUser(userId)
     // Best-effort: the DB row is the source of truth and is already gone;
     // don't let a storage-cleanup failure surface as a failed deletion.

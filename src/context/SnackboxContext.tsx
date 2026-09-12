@@ -115,60 +115,69 @@ export function SnackboxProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  // 2. Automated Location Detection (IP + GPS)
+  // 2. Automated Location Detection — GPS first (most accurate), IP only as a fallback
+  // when GPS is denied, unavailable, or times out.
   const detectLocation = async (): Promise<Kelurahan | null> => {
     setIsDetectingLocation(true)
     try {
-      // Step A: Fast IP Geolocation Lookup
-      let detectedByIp: Kelurahan | null = null
+      // Step A: Ask for GPS permission up front.
+      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
+        const gpsResult = await new Promise<{ kel: Kelurahan; coords: { latitude: number; longitude: number } } | null>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              try {
+                const { latitude, longitude } = pos.coords
+                const revRes = await fetch(`/api/geolocation/reverse?lat=${latitude}&lng=${longitude}`)
+                if (revRes.ok) {
+                  const revJson = await revRes.json()
+                  if (revJson.success && revJson.kelurahan) {
+                    resolve({ kel: revJson.kelurahan as Kelurahan, coords: { latitude, longitude } })
+                    return
+                  }
+                }
+                resolve(null)
+              } catch (err) {
+                console.warn('GPS reverse geocode error:', err)
+                resolve(null)
+              }
+            },
+            (geoErr) => {
+              console.log('GPS permission status:', geoErr.message)
+              resolve(null)
+            },
+            { timeout: 8000, enableHighAccuracy: true }
+          )
+        })
+
+        if (gpsResult) {
+          setKelurahan(gpsResult.kel)
+          setLocationSource('gps')
+          persistLocationMeta({ source: 'gps', coords: gpsResult.coords })
+          setIsDetectingLocation(false)
+          return gpsResult.kel
+        }
+      }
+
+      // Step B: GPS denied/unavailable/failed — fall back to IP geolocation.
       try {
         const ipRes = await fetch('/api/geolocation/detect')
         if (ipRes.ok) {
           const json = await ipRes.json()
           if (json.success && json.kelurahan) {
             const kel = json.kelurahan as Kelurahan
-            detectedByIp = kel
             setKelurahan(kel)
             setLocationSource('ip')
             persistLocationMeta({ source: 'ip', coords: json.coords || null })
+            setIsDetectingLocation(false)
+            return kel
           }
         }
       } catch (e) {
         console.warn('IP location detection error:', e)
       }
 
-      // Step B: Browser GPS Geolocation (High Precision Upgrade)
-      if (typeof window !== 'undefined' && 'geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          async (pos) => {
-            try {
-              const { latitude, longitude } = pos.coords
-              const revRes = await fetch(`/api/geolocation/reverse?lat=${latitude}&lng=${longitude}`)
-              if (revRes.ok) {
-                const revJson = await revRes.json()
-                if (revJson.success && revJson.kelurahan) {
-                  setKelurahan(revJson.kelurahan as Kelurahan)
-                  setLocationSource('gps')
-                  persistLocationMeta({ source: 'gps', coords: { latitude, longitude } })
-                }
-              }
-            } catch (err) {
-              console.warn('GPS reverse geocode error:', err)
-            } finally {
-              setIsDetectingLocation(false)
-            }
-          },
-          (geoErr) => {
-            console.log('GPS permission status:', geoErr.message)
-            setIsDetectingLocation(false)
-          },
-          { timeout: 8000, enableHighAccuracy: true }
-        )
-      } else {
-        setIsDetectingLocation(false)
-      }
-
-      return detectedByIp
+      setIsDetectingLocation(false)
+      return null
     } catch (err) {
       console.error('Location detection failed:', err)
       setIsDetectingLocation(false)

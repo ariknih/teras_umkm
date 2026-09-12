@@ -2,19 +2,21 @@ import { getCurrentUser } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
 import { getActiveBanners } from '@/app/actions/landing'
 import { getServicesAction } from '@/app/actions/services'
-import { getIndukCommunities } from '@/app/actions/community'
+import { getIndukCommunities, getUserCommunitiesWithRolesAction } from '@/app/actions/community'
 import InteractiveFeatures from '@/app/components/InteractiveFeatures'
 import BannerCarousel from '@/app/components/BannerCarousel'
 import HomeExplorer from '@/app/components/HomeExplorer'
 
 export default async function HomePage() {
   const user = await getCurrentUser()
-  const [allProducts, services, activeBanners, communities] = await Promise.all([
+  const [allProducts, services, activeBanners, communities, myCommunities] = await Promise.all([
     getProducts(),
     getServicesAction(),
     getActiveBanners(),
-    getIndukCommunities()
+    getIndukCommunities(),
+    user ? getUserCommunitiesWithRolesAction(user.id) : Promise.resolve([])
   ])
+  const myCommunityIds = (myCommunities || []).map((mc: { communityId: string }) => mc.communityId)
 
   return (
     <div className="min-h-screen bg-background flex flex-col font-poppins overflow-hidden">
@@ -25,7 +27,7 @@ export default async function HomePage() {
       </div>
 
       {/* ── INTERACTIVE EXPLORER: MARKETPLACE & JASA TOGGLE ─────────────── */}
-      <HomeExplorer products={allProducts} services={services} communities={communities} />
+      <HomeExplorer products={allProducts} services={services} communities={communities} myCommunityIds={myCommunityIds} />
 
     </div>
   )

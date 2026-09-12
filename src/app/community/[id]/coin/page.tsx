@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { goeyToast } from 'goey-toast'
-import { getCommunityCoinBalance, topupCommunityCoin, checkCommunityLoanEligibility } from '@/app/actions/coin'
+import { getCommunityCoinBalance, checkCommunityLoanEligibility } from '@/app/actions/coin'
 import { getIndukCommunityDetail } from '@/app/actions/community'
 import { getCurrentUserProfile } from '@/app/actions/auth'
 
-const COIN_RATE = 1500 // 1 coin = Rp 1.500
+const COIN_RATE = 1500 // 1 coin = Rp 1.500 (server-side authoritative rate: CoinSystemConfig.coinRateRupiah)
 
 export default function CommunityCoinPage() {
   const params = useParams()
@@ -37,32 +37,41 @@ export default function CommunityCoinPage() {
 
   useEffect(() => { loadData() }, [communityId])
 
-  // Auto-verify DOKU coin top-up callback
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const urlParams = new URLSearchParams(window.location.search)
-    const dokuVerifyId = urlParams.get('doku_verify')
-    if (dokuVerifyId && dokuVerifyId.startsWith('coin-doku')) {
-      fetch('/api/doku/verify', {
+  const isKetua = currentUser && community && (currentUser.id === community.ketuaId || currentUser.role === 'ADMIN')
+
+  const verifyTopup = async (orderId: string) => {
+    setTopupLoading(true)
+    try {
+      const res = await fetch('/api/payment/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: dokuVerifyId }),
+        body: JSON.stringify({ orderId }),
       })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.success) {
-            goeyToast.success('Top up koin komunitas via DOKU berhasil diverifikasi!')
-            loadData()
-            window.history.replaceState(null, '', window.location.pathname)
-          } else {
-            goeyToast.error(data.error || 'Gagal memverifikasi pembayaran DOKU.')
-          }
-        })
-        .catch(() => goeyToast.error('Gagal menghubungi server verifikasi DOKU.'))
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || 'Gagal memverifikasi top up.')
+      if (data.processed) {
+        goeyToast.success(data.message || 'Top up coin berhasil!')
+        loadData()
+      } else {
+        goeyToast.error(data.message || 'Pembayaran belum selesai.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal memverifikasi pembayaran top up.')
+    } finally {
+      setTopupLoading(false)
     }
-  }, [communityId])
+  }
 
-  const isKetua = currentUser && community && (currentUser.id === community.ketuaId || currentUser.role === 'ADMIN')
+  // Auto-verify when redirected back from the payment gateway.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentUser) {
+      const orderId = new URLSearchParams(window.location.search).get('payment_order')
+      if (orderId && orderId.startsWith('ccoin-')) {
+        verifyTopup(orderId)
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
+  }, [currentUser])
 
   const handleTopup = async () => {
     const n = parseFloat(jumlahCoin)
@@ -70,32 +79,23 @@ export default function CommunityCoinPage() {
       goeyToast.error('Masukkan jumlah coin yang valid.')
       return
     }
-    const totalAmount = n * COIN_RATE
     setTopupLoading(true)
     try {
-      const res = await fetch('/api/doku/checkout', {
+      const res = await fetch('/api/payment/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'community_coin',
+          purpose: 'COIN_TOPUP',
           communityId,
           jumlahCoin: n,
-          amount: totalAmount,
+          returnPath: `/community/${communityId}/coin`,
         }),
       })
       const data = await res.json()
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Gagal membuat sesi pembayaran.')
-      }
-
-      if (data.paymentUrl) {
-        goeyToast.success('Mengalihkan ke pembayaran online...')
-        window.location.href = data.paymentUrl
-      } else {
-        throw new Error('URL pembayaran tidak ditemukan.')
-      }
+      if (!res.ok || data.error) throw new Error(data.error || 'Gagal memproses pembayaran top up.')
+      window.location.href = data.redirectUrl
     } catch (err: any) {
-      goeyToast.error(err.message || 'Gagal memproses pembayaran top up coin.')
+      goeyToast.error(err.message || 'Gagal terhubung dengan gateway pembayaran.')
       setTopupLoading(false)
     }
   }

@@ -6,6 +6,9 @@ import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, invalidateCachePattern, deleteCache } from '@/lib/cache'
 import { requireCommunityManager } from '@/lib/auth-guards'
+import { validateReferralAllocation } from '@/lib/referral-payout'
+import { getDisabledModulesForTemplate } from '@/lib/community-templates'
+import { cookies } from 'next/headers'
 
 export async function getPosts(groupId?: string) {
   const key = `community:posts:${groupId || 'all'}`
@@ -318,7 +321,7 @@ export async function createIndukCommunity(formData: FormData) {
   const monthlyFee = parseFloat(formData.get('monthlyFee') as string) || 0
   const isKycRequired = formData.get('isKycRequired') === 'true' || formData.get('isKycRequired') === 'on'
   const coopTier = (formData.get('coopTier') as string) || 'BASIC'
-  const templateType = (formData.get('templateType') as string) || 'Community'
+  const templateType = (formData.get('templateType') as string) || 'Society'
 
   if (!name || !description) {
     return { error: 'Nama dan deskripsi komunitas wajib diisi.' }
@@ -368,7 +371,10 @@ export async function createIndukCommunity(formData: FormData) {
       perkumpulanTier,
       activationFeePaid: perkumpulanTier === 'PREMIUM' ? 200000 : 0,
       bonusCoins: 0,
-      disabledModules: [],
+      // Only the chosen template's own modules start enabled - otherwise a
+      // fresh community would show every Perkumpulan template's modules at
+      // once regardless of which template was actually picked at creation.
+      disabledModules: getDisabledModulesForTemplate(templateType),
       memberFee: 0,
       memberFeePeriod: 'FREE',
       benefits: ['Diskusi Komunitas', 'Katalog Produk Anggota', 'Event & Galeri']
@@ -429,8 +435,20 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
     }
   }
 
+  // Community-scoped referral (separate from the platform-wide signup
+  // referrer): who this member joined THIS community through, captured via
+  // the community's own share link (?ref=) as a first-touch cookie.
+  let referrerId: string | null = null
+  const communityRefCookie = (await cookies()).get(`cref_${communityId}`)?.value
+  if (communityRefCookie) {
+    // findUserByReferralCode already matches referralCode, username, id, or
+    // email — covers however handleShareReferralLink encoded the link.
+    const referrer = await DataStore.findUserByReferralCode(communityRefCookie)
+    if (referrer) referrerId = referrer.id
+  }
+
   try {
-    const result = await DataStore.joinCommunity(user.id, communityId, effectiveAsInduk)
+    const result = await DataStore.joinCommunity(user.id, communityId, effectiveAsInduk, referrerId)
     await logAudit({
       actor: 'MEMBER',
       actorId: user.id,
@@ -442,6 +460,7 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
       detail: effectiveAsInduk ? 'Bergabung sebagai induk.' : 'Bergabung sebagai anggota biasa.'
     })
     deleteCache('community:induk:all')
+    deleteCache(`community:members:${communityId}`)
     invalidateCachePattern('community:induk:*')
     invalidateCachePattern('user:communities:roles:*')
     revalidatePath(`/community/${communityId}`)
@@ -453,7 +472,13 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
   }
 }
 
-export async function payCommunityJoinFeeAction(communityId: string, paymentMethod: string = 'QRIS') {
+/**
+ * Manual (offline) join-fee settlement — bank transfer only. Gateway-backed
+ * payments do NOT go through here: they run through /api/payment/checkout so
+ * the amount is resolved server-side and confirmed against the gateway before
+ * anything is credited.
+ */
+export async function payCommunityJoinFeeAction(communityId: string, paymentMethod: string = 'BANK') {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
@@ -515,19 +540,10 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    let actualCommunityId = communityId
-    let actualTargetUserId = targetUserId
+    const actualCommunityId = communityId
+    const actualTargetUserId = targetUserId
 
-    let community = await DataStore.getCommunityById(actualCommunityId)
-    if (!community) {
-      const swappedComm = await DataStore.getCommunityById(actualTargetUserId)
-      if (swappedComm) {
-        actualCommunityId = targetUserId
-        actualTargetUserId = communityId
-        community = swappedComm
-      }
-    }
-
+    const community = await DataStore.getCommunityById(actualCommunityId)
     if (!community) return { error: 'Komunitas tidak ditemukan.' }
 
     const isSuperAdmin = user.role === 'ADMIN'
@@ -552,6 +568,17 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
       targetType: 'USER',
       detail: `Keluarkan anggota #${actualTargetUserId} dari komunitas #${actualCommunityId}.`
     })
+    try {
+      await DataStore.createNotification(
+        actualTargetUserId,
+        'KICKED_FROM_COMMUNITY',
+        'Dikeluarkan dari Komunitas',
+        `Anda telah dikeluarkan dari komunitas "${community.name}" oleh pengurus.`,
+        '/community'
+      )
+    } catch (err) {
+      console.error('Error creating kick notification:', err)
+    }
 
     // Clear server-side caches so all members and the kicked user see the change immediately
     deleteCache(`community:members:${actualCommunityId}`)
@@ -630,6 +657,19 @@ export async function updateKycStatusAction(userId: string, status: 'APPROVED' |
       targetId: userId,
       targetType: 'USER'
     })
+    try {
+      await DataStore.createNotification(
+        userId,
+        status === 'APPROVED' ? 'KYC_APPROVED' : 'KYC_REJECTED',
+        status === 'APPROVED' ? 'Verifikasi KYC Disetujui' : 'Verifikasi KYC Ditolak',
+        status === 'APPROVED'
+          ? 'Selamat! Verifikasi KTP/Selfie Anda telah disetujui oleh Admin Saloka.id.'
+          : 'Verifikasi KTP/Selfie Anda ditolak oleh Admin. Silakan ajukan ulang dengan dokumen yang jelas.',
+        '/profile'
+      )
+    } catch (err) {
+      console.error('Error creating KYC status notification:', err)
+    }
     return { success: true, user: updatedUser }
   } catch (e: any) {
     return { error: e.message || 'Gagal memperbarui status KYC.' }
@@ -660,6 +700,19 @@ export async function submitCooperativeLoanAction(formData: FormData) {
   const amount = parseFloat(amountStr)
   if (isNaN(amount) || amount <= 0) {
     return { error: 'Jumlah pinjaman tidak valid.' }
+  }
+
+  // Pendanaan Merchant is a Koperasi Max-only feature.
+  const community: any = await DataStore.getCommunityById(communityId)
+  if (!community) return { error: 'Komunitas tidak ditemukan.' }
+  let coopTier = 'BASIC'
+  if (community.landingPageConfig) {
+    try {
+      coopTier = JSON.parse(community.landingPageConfig).coopTier || 'BASIC'
+    } catch (_) {}
+  }
+  if (coopTier !== 'PRO') {
+    return { error: 'Fitur Pendanaan Merchant hanya tersedia untuk Koperasi Max. Upgrade paket langganan terlebih dahulu.' }
   }
 
   // Enforce cooperative savings requirement: member must have active savings balance > 0
@@ -702,6 +755,7 @@ export async function submitCooperativeLoanAction(formData: FormData) {
       targetType: 'COOPERATIVE_LOAN',
       detail: `Ajukan pinjaman Rp ${amount.toLocaleString('id-ID')} — ${purpose}`
     })
+    deleteCache(`community:loans:${communityId}`)
     revalidatePath('/merchant/dashboard')
     revalidatePath(`/community/${communityId}`)
     return { success: true, loan }
@@ -722,7 +776,10 @@ export async function getCooperativeLoansAction(communityId?: string, preloadedC
   const allLoans = await cacheWrap(`community:loans:${communityId || 'all'}`, () => DataStore.getCooperativeLoans(communityId), 60)
 
   if (user.role === 'ADMIN' || isKetua) return allLoans
-  return (allLoans || []).filter((l: any) => l.userId === user.id)
+  // ponytail: was filtering on l.userId, a field CooperativeLoan doesn't have
+  // (the borrower field is merchantId) — members could never see their own
+  // submitted loan's status.
+  return (allLoans || []).filter((l: any) => l.merchantId === user.id)
 }
 
 export async function approveCooperativeLoanAction(loanId: string, role: 'KETUA' | 'ADMIN') {
@@ -754,6 +811,7 @@ export async function approveCooperativeLoanAction(loanId: string, role: 'KETUA'
         targetType: 'COOPERATIVE_LOAN',
         detail: `Ketua menyetujui pinjaman Rp ${Number(loan.amount).toLocaleString('id-ID')}.`
       })
+      deleteCache(`community:loans:${loan.communityId}`)
       revalidatePath('/merchant/dashboard')
       return { success: true, loan: updated }
     } catch (e: any) {
@@ -783,6 +841,7 @@ export async function approveCooperativeLoanAction(loanId: string, role: 'KETUA'
         targetType: 'COOPERATIVE_LOAN',
         detail: `Admin menyetujui pinjaman Rp ${Number(loan.amount).toLocaleString('id-ID')}.`
       })
+      deleteCache(`community:loans:${loan.communityId}`)
       revalidatePath('/merchant/dashboard')
       return { success: true, loan: updated }
     } catch (e: any) {
@@ -825,6 +884,7 @@ export async function rejectCooperativeLoanAction(loanId: string, role: 'KETUA' 
       targetType: 'COOPERATIVE_LOAN',
       detail: `Pinjaman Rp ${Number(loan.amount).toLocaleString('id-ID')} ditolak oleh ${role === 'ADMIN' ? 'Admin' : 'Ketua'}.`
     })
+    deleteCache(`community:loans:${loan.communityId}`)
     revalidatePath('/merchant/dashboard')
     return { success: true, loan: updated }
   } catch (e: any) {
@@ -853,11 +913,31 @@ export async function updateIndukCommunity(id: string, formData: FormData) {
   const coverUrl = formData.get('coverUrl') as string || undefined
   const waGroupLink = formData.get('waGroupLink') as string || undefined
   const landingPageConfig = formData.get('landingPageConfig') as string || undefined
-  const joinFee = parseFloat(formData.get('joinFee') as string) || 0
-  const monthlyFee = parseFloat(formData.get('monthlyFee') as string) || 0
+  // Unlike every other field above, a missing joinFee/monthlyFee here must
+  // mean "caller isn't touching this" (undefined), not "set it to 0" - the
+  // generic branding/menu-toggle save (handleSaveSettings) doesn't send
+  // these at all, and forcing them to a definite number on every call
+  // silently rewrote joinFee from whatever stale value the client's React
+  // state held, tripping the referral-allocation check below (or worse,
+  // wiping a Perkumpulan Premium's fee back to 0) on saves that were never
+  // about money settings in the first place.
+  const joinFeeRaw = formData.get('joinFee')
+  const monthlyFeeRaw = formData.get('monthlyFee')
+  const joinFee = joinFeeRaw !== null && joinFeeRaw !== '' ? (parseFloat(joinFeeRaw as string) || 0) : undefined
+  const monthlyFee = monthlyFeeRaw !== null && monthlyFeeRaw !== '' ? (parseFloat(monthlyFeeRaw as string) || 0) : undefined
+  const templateType = formData.get('templateType') as string || undefined
 
   if (!name || !description) {
     return { error: 'Nama dan deskripsi komunitas wajib diisi.' }
+  }
+
+  // A ketua could otherwise drop joinFee below the referral budget + kas
+  // share already committed via the separate referral-config tab, leaving
+  // that config over-allocated relative to what the join fee now collects.
+  // Only relevant when this save is actually changing joinFee.
+  if (joinFee !== undefined) {
+    const allocationError = validateReferralAllocation(joinFee, community.referralBudget ?? 0, community.communityProfitShare ?? 0)
+    if (allocationError) return { error: allocationError }
   }
 
   try {
@@ -874,7 +954,8 @@ export async function updateIndukCommunity(id: string, formData: FormData) {
       waGroupLink,
       landingPageConfig,
       joinFee,
-      monthlyFee
+      monthlyFee,
+      templateType
     })
     await logAudit({
       actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
@@ -885,6 +966,13 @@ export async function updateIndukCommunity(id: string, formData: FormData) {
       targetId: id,
       targetType: 'COMMUNITY'
     })
+    // getIndukCommunityDetail() serves this community from a separate
+    // cacheWrap('community:induk:${id}') layer that revalidatePath doesn't
+    // touch (it only clears Next's route cache, not this app-level cache) -
+    // without this, every field changed here (menu toggles, join fee,
+    // branding) keeps serving pre-save values to the next reader for up to
+    // the cache's TTL.
+    deleteCache(`community:induk:${id}`)
     revalidatePath(`/community/${id}`)
     revalidatePath('/community')
     return { success: true, community: updated }
@@ -920,10 +1008,23 @@ export async function createCooperativeProductAction(formData: FormData) {
     return { error: 'Komunitas dan Nama Produk Simpanan wajib diisi.' }
   }
 
+  let community: any
   try {
-    await requireCommunityManager(user, communityId)
+    community = await requireCommunityManager(user, communityId)
   } catch (e: any) {
     return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
+  if (type === 'SUKARELA') {
+    let coopTier = 'BASIC'
+    if (community?.landingPageConfig) {
+      try {
+        coopTier = JSON.parse(community.landingPageConfig).coopTier || 'BASIC'
+      } catch (_) {}
+    }
+    if (coopTier === 'BASIC') {
+      return { error: 'Simpanan Sukarela hanya tersedia untuk Koperasi Premium dan Max. Upgrade paket langganan terlebih dahulu.' }
+    }
   }
 
   const p = await DataStore.createCooperativeProduct({
@@ -947,6 +1048,7 @@ export async function createCooperativeProductAction(formData: FormData) {
     detail: `"${name}" (${type}) — Rp ${amount.toLocaleString('id-ID')}.`
   })
 
+  deleteCache(`community:coop_products:${communityId}`)
   revalidatePath(`/community/${communityId}`)
   return { success: true, product: p }
 }
@@ -968,10 +1070,23 @@ export async function updateCooperativeProductAction(formData: FormData) {
   if (!id) return { error: 'ID Produk wajib diisi.' }
   const existingProduct: any = await DataStore.getCooperativeProductById(id)
   if (!existingProduct) return { error: 'Produk tidak ditemukan.' }
+  let community: any
   try {
-    await requireCommunityManager(user, existingProduct.communityId)
+    community = await requireCommunityManager(user, existingProduct.communityId)
   } catch (e: any) {
     return { error: e.message || 'Anda tidak memiliki wewenang untuk komunitas ini.' }
+  }
+
+  if (type === 'SUKARELA') {
+    let coopTier = 'BASIC'
+    if (community?.landingPageConfig) {
+      try {
+        coopTier = JSON.parse(community.landingPageConfig).coopTier || 'BASIC'
+      } catch (_) {}
+    }
+    if (coopTier === 'BASIC') {
+      return { error: 'Simpanan Sukarela hanya tersedia untuk Koperasi Premium dan Max. Upgrade paket langganan terlebih dahulu.' }
+    }
   }
 
   const updated = await DataStore.updateCooperativeProduct(id, {
@@ -993,6 +1108,7 @@ export async function updateCooperativeProductAction(formData: FormData) {
     targetType: 'COOPERATIVE_PRODUCT'
   })
 
+  deleteCache(`community:coop_products:${communityId}`)
   revalidatePath(`/community/${communityId}`)
   return { success: true, product: updated }
 }
@@ -1019,6 +1135,7 @@ export async function deleteCooperativeProductAction(id: string, communityId: st
     targetId: id,
     targetType: 'COOPERATIVE_PRODUCT'
   })
+  deleteCache(`community:coop_products:${communityId}`)
   revalidatePath(`/community/${communityId}`)
   return { success: true }
 }
@@ -1088,6 +1205,7 @@ export async function createMerchantFundingProjectAction(formData: FormData) {
     detail: `"${title}" — target Rp ${targetAmount.toLocaleString('id-ID')}.`
   })
 
+  deleteCache(`community:funding_projects:${communityId}`)
   revalidatePath(`/community/${communityId}`)
   return { success: true, project: proj }
 }
@@ -1114,6 +1232,7 @@ export async function deleteMerchantFundingProjectAction(id: string, communityId
     targetId: id,
     targetType: 'FUNDING_PROJECT'
   })
+  deleteCache(`community:funding_projects:${communityId}`)
   revalidatePath(`/community/${communityId}`)
   return { success: true }
 }
@@ -1153,6 +1272,24 @@ export async function upgradeCommunityTierAction(communityId: string, targetTier
     detail: `Tier: ${previousTier || '-'} → ${targetTier}.`
   })
 
+  // Only the ketua needs telling when someone else (an admin) actually
+  // changed their tier — a self-service upgrade already has its own
+  // on-screen confirmation, and reselecting the same tier isn't a change.
+  if (user.role === 'ADMIN' && community.ketuaId && community.ketuaId !== user.id && targetTier !== previousTier) {
+    try {
+      await DataStore.createNotification(
+        community.ketuaId,
+        'COMMUNITY_TIER_UPGRADED',
+        'Tier Komunitas Diperbarui',
+        `Tier komunitas "${community.name}" diubah oleh Admin Saloka.id menjadi ${targetTier}.`,
+        `/community/${communityId}`
+      )
+    } catch (err) {
+      console.error('Error creating tier-upgrade notification:', err)
+    }
+  }
+
+  deleteCache(`community:induk:${communityId}`)
   revalidatePath(`/community/${communityId}`)
   revalidatePath('/community')
   return { success: true }

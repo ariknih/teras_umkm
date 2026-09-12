@@ -12,6 +12,7 @@ import {
   getUserCommunitiesWithRolesAction
 } from '@/app/actions/community'
 import { getGlobalKycSettingAction } from '@/app/actions/admin'
+import { getCommunityTierBadge } from '@/lib/community-badge'
 import { getCurrentUser } from '@/app/actions/auth'
 import { Shield, Users, PlusCircle, Search, ChevronRight, X, Loader2, MoreVertical, Star, Check } from 'lucide-react'
 import { goeyToast } from 'goey-toast'
@@ -509,18 +510,7 @@ export default function CommunityDirectoryClient({
           <div id="directory-grid-section" className="space-y-8 mb-12">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCommunities.slice(0, visibleCount).map((c) => {
-                // Parse coopTier
-                let coopTier = 'BASIC'
-                if (c.type === 'KOPERASI') {
-                  if (c.landingPageConfig) {
-                    try {
-                      const cfg = JSON.parse(c.landingPageConfig)
-                      if (cfg.coopTier) coopTier = cfg.coopTier
-                    } catch (_) {}
-                  } else if (c.joinFee > 0 || c.monthlyFee > 0 || c.category === 'PAID') {
-                    coopTier = 'PLUS'
-                  }
-                }
+                const isMemberOfC = myCommunities.some((mc: any) => mc.communityId === c.id)
 
                 return (
                   <div
@@ -573,49 +563,32 @@ export default function CommunityDirectoryClient({
                           <h3 className="font-sora text-sm font-bold text-[#111111] line-clamp-1 group-hover:text-primary transition-colors">{c.name}</h3>
                           <div className="flex items-center gap-1.5 flex-wrap mt-1">
                             {(() => {
-                              const parsedConfig = c.landingPageConfig ? (typeof c.landingPageConfig === 'string' ? (() => { try { return JSON.parse(c.landingPageConfig) } catch(_) { return {} } })() : c.landingPageConfig) : {}
-                              const isPerkumpulanPrem = c.type === 'PERKUMPULAN' && (parsedConfig?.perkumpulanTier === 'PREMIUM' || (parsedConfig?.activationFeePaid ?? 0) > 0 || c.category === 'PAID')
-                              const itemCoopTier = parsedConfig?.coopTier || 'BASIC'
-                              const isKoperasi = c.type === 'KOPERASI'
-                              const rawJoinFee = Number(c.joinFee || 0)
+                              const badge = getCommunityTierBadge(c)
 
-                              const joinFee = isKoperasi
-                                ? (rawJoinFee > 0 ? rawJoinFee : (itemCoopTier === 'PRO' ? 150000 : itemCoopTier === 'PLUS' ? 100000 : 50000))
-                                : isPerkumpulanPrem
-                                  ? (rawJoinFee > 0 ? rawJoinFee : 100000)
-                                  : rawJoinFee
-
-                              const isFree = !isKoperasi && !isPerkumpulanPrem && joinFee === 0
+                              const badgeVariantClass = {
+                                neutral: 'bg-neutral-shade-500/10 border-neutral-shade-500/35 text-neutral-shade-700',
+                                blue: 'bg-bank-blue-500/10 border-bank-blue-500/35 text-bank-blue-700',
+                                yellow: 'bg-bee-yellow-500/10 border-bee-yellow-500/35 text-bee-yellow-500'
+                              }[badge.variant]
 
                               return (
                                 <>
-                                  <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider ${
-                                    c.type === 'KOPERASI'
-                                      ? itemCoopTier === 'PRO'
-                                        ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                                        : itemCoopTier === 'PLUS'
-                                          ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
-                                          : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
-                                      : isPerkumpulanPrem
-                                        ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                                        : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
-                                  }`}>
-                                    {c.type === 'KOPERASI'
-                                      ? `KOPERASI ${itemCoopTier}`
-                                      : isPerkumpulanPrem
-                                        ? 'PERKUMPULAN PREMIUM'
-                                        : 'PERKUMPULAN REGULER'}
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider ${badgeVariantClass}`}>
+                                    {badge.showStar && <Star className="w-2.5 h-2.5 fill-current" />}
+                                    {badge.label}
                                   </span>
 
-                                  {/* Price Badge */}
-                                  {isFree ? (
-                                    <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-emerald-500/10 border-emerald-500/35 text-emerald-600">
-                                      Gratis
-                                    </span>
-                                  ) : (
-                                    <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-amber-500/10 border-amber-500/35 text-amber-700">
-                                      Berbayar • Rp{joinFee.toLocaleString('id-ID')}
-                                    </span>
+                                  {/* Price badge only matters to someone deciding whether to join */}
+                                  {!isMemberOfC && (
+                                    badge.isFree ? (
+                                      <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-safe-green-500/10 border-safe-green-500/35 text-safe-green-600">
+                                        Gratis
+                                      </span>
+                                    ) : (
+                                      <span className="inline-block px-2 py-0.5 rounded text-[9px] font-geist font-extrabold border uppercase tracking-wider bg-royal-purple-500/10 border-royal-purple-500/35 text-royal-purple-700">
+                                        Berbayar • Rp{badge.joinFee.toLocaleString('id-ID')}
+                                      </span>
+                                    )
                                   )}
                                 </>
                               )

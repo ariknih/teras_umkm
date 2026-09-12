@@ -4,7 +4,7 @@ import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
-import { cacheWrap } from '@/lib/cache'
+import { cacheWrap, deleteCache } from '@/lib/cache'
 import { isCommunityManager } from '@/lib/auth-guards'
 
 export async function getCooperativeReportsAction(
@@ -74,6 +74,7 @@ export async function createCooperativeReportAction(formData: FormData) {
       targetType: 'COOPERATIVE_REPORT',
       detail: `"${title}" (${type}, ${year}).`
     })
+    deleteCache(`community:reports:${communityId}`)
     revalidatePath(`/community/${communityId}`)
     return { success: true, report: rep }
   } catch (e: any) {
@@ -127,6 +128,7 @@ export async function updateCooperativeReportAction(id: string, formData: FormDa
       targetType: 'COOPERATIVE_REPORT'
     })
     if (communityId) {
+      deleteCache(`community:reports:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return { success: true, report: rep }
@@ -158,6 +160,7 @@ export async function deleteCooperativeReportAction(id: string, _communityId?: s
       targetType: 'COOPERATIVE_REPORT'
     })
     if (communityId) {
+      deleteCache(`community:reports:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return res
@@ -191,6 +194,7 @@ export async function togglePublishReportAction(id: string, currentStatus: strin
       detail: `Status → ${newStatus}.`
     })
     if (communityId) {
+      deleteCache(`community:reports:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return { success: true, report: rep }

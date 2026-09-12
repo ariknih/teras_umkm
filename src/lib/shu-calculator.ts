@@ -1,18 +1,14 @@
 import { DataStore } from '@/lib/data-store'
 
+// Only Jasa Modal and Jasa Usaha are actually allocated (per user requirement,
+// confirmed still current) — Cadangan/Pengurus/Pengawas/Karyawan/Pendidikan/
+// Sosial/Pembangunan Daerah are always 0 and intentionally not parameters here.
 export interface ShuCalculationParams {
   communityId: string
   year: number
   totalNetProfit: number
-  pctCadangan: number
   pctJasaModal: number
   pctJasaUsaha: number
-  pctPengurus: number
-  pctPengawas: number
-  pctKaryawan: number
-  pctPendidikan: number
-  pctSosial: number
-  pctPembangunanDaerah: number
 }
 
 export interface ShuCalculationResult {
@@ -68,6 +64,13 @@ export async function calculateAndSaveShuDistribution(
     }
   }
 
+  if (pctJasaModal + pctJasaUsaha > 100) {
+    return {
+      success: false,
+      error: 'Total Persen Jasa Modal dan Jasa Usaha tidak boleh melebihi 100%.'
+    }
+  }
+
   if (totalNetProfit < 0) {
     return {
       success: false,
@@ -75,7 +78,7 @@ export async function calculateAndSaveShuDistribution(
     }
   }
 
-  // 2. Compute nominal amounts for each component (others are forced to 0 per user requirement)
+  // 2. Compute nominal amounts for each component (others are always 0, see interface note above)
   const allocations = {
     cadangan: 0,
     jasaModal: (totalNetProfit * pctJasaModal) / 100,

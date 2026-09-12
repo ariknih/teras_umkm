@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
 import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
-import { cacheWrap } from '@/lib/cache'
+import { cacheWrap, deleteCache } from '@/lib/cache'
 
 export async function recordSavingsTransactionAction(formData: FormData) {
   const currentUser = await getCurrentUser()
@@ -13,12 +13,20 @@ export async function recordSavingsTransactionAction(formData: FormData) {
   }
 
   const userId = formData.get('userId') as string
-  const isAdmin = currentUser.role === 'ADMIN' || !!(currentUser as any).isSuperAdmin
-  if (!isAdmin && userId !== currentUser.id) {
-    return { error: 'Anda tidak memiliki hak akses untuk mencatat transaksi simpanan anggota lain.' }
+  const communityId = formData.get('communityId') as string
+
+  // A member may only record their own transaction; recording for someone
+  // else requires being a platform admin or the community's own ketua -
+  // the same manager check used by every other community CRUD action.
+  if (userId !== currentUser.id) {
+    const isPlatformAdmin = currentUser.role === 'ADMIN' || !!(currentUser as any).isSuperAdmin
+    const community = communityId ? await DataStore.getCommunityById(communityId) : null
+    const isKetua = Boolean(community && community.ketuaId === currentUser.id)
+    if (!isPlatformAdmin && !isKetua) {
+      return { error: 'Anda tidak memiliki hak akses untuk mencatat transaksi simpanan anggota lain.' }
+    }
   }
 
-  const communityId = formData.get('communityId') as string
   const type = (formData.get('type') as string) || 'WAJIB' // POKOK, WAJIB, SUKARELA
   const transactionType = (formData.get('transactionType') as string) || 'SETOR' // SETOR, TARIK
   const amount = Number(formData.get('amount') || 0)
@@ -57,10 +65,39 @@ export async function recordSavingsTransactionAction(formData: FormData) {
       detail: `${transactionType} ${type} Rp ${amount.toLocaleString('id-ID')} untuk anggota #${userId}.`
     })
 
+    deleteCache(`community:savings:${communityId}`)
     revalidatePath(`/community/${communityId}`)
     return { success: true, transaction: tx }
   } catch (error: any) {
     return { error: error.message || 'Gagal mencatat transaksi simpanan.' }
+  }
+}
+
+// Pays a savings deposit instantly out of the member's own wallet balance —
+// no gateway needed, unlike QRIS/Bank which go through /api/payment/checkout.
+export async function paySavingsViaWalletAction(communityId: string, type: string, amount: number) {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return { error: 'Anda harus masuk terlebih dahulu.' }
+  if (!communityId || amount <= 0) return { error: 'Data setoran tidak valid.' }
+
+  try {
+    const tx = await DataStore.paySavingsViaWallet({ communityId, userId: currentUser.id, type, amount })
+    await logAudit({
+      actor: 'MEMBER',
+      actorId: currentUser.id,
+      actorName: currentUser.name || currentUser.email,
+      action: 'RECORD_SAVINGS_TRANSACTION',
+      module: 'COOPERATIVE',
+      targetId: currentUser.id,
+      targetType: 'SAVINGS_TRANSACTION',
+      detail: `SETOR ${type} Rp ${amount.toLocaleString('id-ID')} via Saldo Wallet.`
+    })
+    deleteCache(`community:savings:${communityId}`)
+    revalidatePath(`/community/${communityId}`)
+    revalidatePath('/wallet')
+    return { success: true, transaction: tx }
+  } catch (error: any) {
+    return { error: error.message || 'Gagal memproses setoran via Saldo Wallet.' }
   }
 }
 

@@ -4,7 +4,7 @@ import { DataStore } from '@/lib/data-store'
 import { getCurrentUser } from './auth'
 import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
-import { cacheWrap } from '@/lib/cache'
+import { cacheWrap, deleteCache } from '@/lib/cache'
 import { isCommunityManager } from '@/lib/auth-guards'
 
 export async function getAnnouncementsAction(
@@ -59,6 +59,7 @@ export async function createAnnouncementAction(formData: FormData) {
       targetType: 'ANNOUNCEMENT',
       detail: `"${title}".`
     })
+    deleteCache(`community:announcements:${communityId}`)
     revalidatePath(`/community/${communityId}`)
     return { success: true, announcement: ann }
   } catch (e: any) {
@@ -109,6 +110,7 @@ export async function updateAnnouncementAction(id: string, formData: FormData) {
       targetType: 'ANNOUNCEMENT'
     })
     if (communityId) {
+      deleteCache(`community:announcements:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return { success: true, announcement: ann }
@@ -140,6 +142,7 @@ export async function deleteAnnouncementAction(id: string, _communityId?: string
       targetType: 'ANNOUNCEMENT'
     })
     if (communityId) {
+      deleteCache(`community:announcements:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return res
@@ -173,6 +176,7 @@ export async function togglePublishAnnouncementAction(id: string, currentStatus:
       detail: `Status → ${newStatus}.`
     })
     if (communityId) {
+      deleteCache(`community:announcements:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return { success: true, announcement: ann }
@@ -205,6 +209,7 @@ export async function togglePinAnnouncementAction(id: string, currentPinned: boo
       detail: !currentPinned ? 'Disematkan.' : 'Lepas sematan.'
     })
     if (communityId) {
+      deleteCache(`community:announcements:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return { success: true, announcement: ann }

@@ -62,6 +62,7 @@ export async function createCommunityEventAction(formData: FormData) {
       targetType: 'COMMUNITY_EVENT',
       detail: `"${title}" — ${eventDate}.`
     })
+    deleteCache(`community:events:${communityId}`)
     revalidatePath(`/community/${communityId}`)
     return { success: true, event }
   } catch (e: any) {
@@ -118,6 +119,7 @@ export async function updateCommunityEventAction(id: string, formData: FormData)
       targetId: id,
       targetType: 'COMMUNITY_EVENT'
     })
+    deleteCache(`community:events:${existingEvent.communityId}`)
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
@@ -151,6 +153,7 @@ export async function deleteCommunityEventAction(id: string, communityId: string
       targetId: id,
       targetType: 'COMMUNITY_EVENT'
     })
+    deleteCache(`community:events:${existingEvent.communityId}`)
     if (communityId) {
       revalidatePath(`/community/${communityId}`)
     }
@@ -166,7 +169,17 @@ export async function registerCommunityEventAction(eventId: string, communityId:
 
   try {
     const res = await DataStore.registerCommunityEvent(eventId, user.id, user.name || 'Anggota Saloka')
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'REGISTER_COMMUNITY_EVENT',
+      module: 'COOPERATIVE',
+      targetId: eventId,
+      targetType: 'COMMUNITY_EVENT'
+    })
     if (communityId) {
+      deleteCache(`community:events:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return res

@@ -26,13 +26,16 @@ import {
   payCommunityJoinFeeAction
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
+import { getCommunityTierBadge } from '@/lib/community-badge'
+import { PERKUMPULAN_TEMPLATE_DEFAULTS, PERKUMPULAN_TEMPLATE_OPTIONS, detectPerkumpulanTemplate, normalizeTemplateType } from '@/lib/community-templates'
+import { getWalletDetails } from '@/app/actions/wallet-affiliate'
 import { getProducts, getProductsByMerchantIdsAction, createMemberProductAction, updateMemberProductAction, deleteMemberProductAction } from '@/app/actions/products'
 import { getCommunityEventsAction, createCommunityEventAction, updateCommunityEventAction, deleteCommunityEventAction, registerCommunityEventAction } from '@/app/actions/community-events'
 import { getCommunityGalleryAction, createCommunityGalleryItemAction, deleteCommunityGalleryItemAction } from '@/app/actions/community-gallery'
 import { getCommunityOfficialProductsAction, createCommunityOfficialProductAction, updateCommunityOfficialProductAction, deleteCommunityOfficialProductAction } from '@/app/actions/community-products'
 import { createUserNotificationAction } from '@/app/actions/orders'
 import { getCommunityShuDataAction, getUserShuSummaryAction, calculateAndSaveShuAction } from '@/app/actions/shu'
-import { recordSavingsTransactionAction, getCommunitySavingsSummaryAction } from '@/app/actions/savings'
+import { recordSavingsTransactionAction, paySavingsViaWalletAction, getCommunitySavingsSummaryAction } from '@/app/actions/savings'
 import {
   getAnnouncementsAction,
   createAnnouncementAction,
@@ -51,7 +54,8 @@ import {
 import {
   getCommunityReferralConfig,
   updateCommunityReferralConfig,
-  getCommunityReferralHistory
+  getCommunityReferralHistory,
+  getMyCommunityAffiliateSummary
 } from '@/app/actions/community-referral'
 import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -123,7 +127,8 @@ import {
   User,
   ArrowUpCircle,
   HelpCircle,
-  Headphones
+  Headphones,
+  Star
 } from 'lucide-react'
 
 const SailboatIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -157,6 +162,124 @@ export interface CommunityDetailInitialData {
   communitySavingsSummary: any
   communityShuData: any
   viewerCtx: { userId: string | null; role: string | null; isKetua: boolean; isMember: boolean }
+}
+
+// Shared placeholder for sidebar tabs with no real backend yet (was previously
+// hardcoded mock data + fake success toasts, misrepresenting them as working).
+function ComingSoonTab({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description: string }) {
+  return (
+    <div className="max-w-xl mx-auto p-6 py-16 bg-white border border-gray-200/80 rounded-3xl shadow-xs text-center space-y-3">
+      <div className="w-14 h-14 rounded-full bg-[#E8F8EE] text-[#2DB24A] flex items-center justify-center mx-auto">
+        <Icon className="w-7 h-7" />
+      </div>
+      <h2 className="text-lg font-black text-gray-900 font-sora">{title}</h2>
+      <p className="text-xs text-gray-500 font-medium max-w-sm mx-auto leading-relaxed">{description}</p>
+      <span className="inline-block px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-bold rounded-full uppercase tracking-wider">Segera Hadir</span>
+    </div>
+  )
+}
+
+// One node in a member's own community-scoped downline tree ("Afiliasi Saya").
+// Distinct from the platform-wide /affiliate downline tree — this one only
+// follows CommunityMembership.referrerId within a single community.
+function CommunityDownlineNode({ node, depth }: { node: any; depth: number }) {
+  const [isOpen, setIsOpen] = useState(true)
+  return (
+    <div className="pl-4 border-l border-[#2DB24A]/20 mt-2">
+      <div className="flex items-center justify-between gap-3 p-2.5 bg-gray-50 border border-gray-100 rounded-xl">
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-[#E8F8EE] text-[#0F5132]">
+            Tier {depth}
+          </span>
+          <div>
+            <span className="text-xs font-bold text-gray-900 block">{node.name}</span>
+            <span className="text-[10px] text-gray-500 block">
+              {node.joinedAt ? new Date(node.joinedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+              {!node.isPaid ? ' — belum bayar' : ''}
+            </span>
+          </div>
+        </div>
+        {node.children && node.children.length > 0 && (
+          <button onClick={() => setIsOpen(!isOpen)} className="p-1 text-gray-400 hover:text-[#2DB24A] text-xs cursor-pointer">
+            {isOpen ? '▼' : '►'}
+          </button>
+        )}
+      </div>
+      {isOpen && node.children && node.children.length > 0 && (
+        <div>
+          {node.children.map((child: any) => (
+            <CommunityDownlineNode key={child.id} node={child} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Icon/label lookup for the module ids in PERKUMPULAN_TEMPLATE_MODULE_IDS -
+// the ids and default-per-template sets themselves live in
+// community-templates.ts (shared with the server-side creation action) since
+// this file's lucide-react icons aren't importable from a server action.
+const PERKUMPULAN_MODULE_REGISTRY: Record<string, { label: string; icon: any }> = {
+  diskusi: { label: 'Diskusi', icon: MessageSquare },
+  aktivitas: { label: 'Aktivitas', icon: Activity },
+  event: { label: 'Event', icon: Calendar },
+  galeri: { label: 'Galeri', icon: ImageIcon },
+  produk_komunitas: { label: 'Produk Komunitas', icon: Package },
+  marketplace: { label: 'Marketplace / Produk Anggota', icon: Store },
+  pengumuman: { label: 'Pengumuman', icon: Megaphone },
+  business_matching: { label: 'Business Matching', icon: Handshake },
+  pelatihan: { label: 'Pelatihan', icon: GraduationCap },
+  mentor: { label: 'Mentor', icon: Award },
+  kolaborasi: { label: 'Kolaborasi', icon: Users },
+  kelas: { label: 'Kelas', icon: BookOpen },
+  kompetisi: { label: 'Kompetisi', icon: Trophy },
+  startup: { label: 'Startup', icon: Rocket },
+  merchant: { label: 'Merchant', icon: Store },
+  supplier: { label: 'Supplier', icon: Truck },
+  promo: { label: 'Promo', icon: Tag },
+}
+
+// Short blurb per module for the Pengaturan toggle grid, so an admin can tell
+// what a module actually shows before flipping it - "Navigasi aktif di menu"
+// said nothing about the page itself.
+const PERKUMPULAN_MODULE_DESCRIPTIONS: Record<string, string> = {
+  diskusi: 'Forum diskusi antar anggota komunitas.',
+  aktivitas: 'Feed aktivitas terbaru dari anggota komunitas.',
+  event: 'Agenda dan pendaftaran acara komunitas.',
+  galeri: 'Album foto kegiatan komunitas.',
+  produk_komunitas: 'Katalog produk resmi milik komunitas.',
+  marketplace: 'Etalase produk yang dijual masing-masing anggota.',
+  pengumuman: 'Papan pengumuman resmi dari pengurus komunitas.',
+  business_matching: 'Pencocokan mitra bisnis antar anggota.',
+  pelatihan: 'Daftar sesi pelatihan/workshop untuk anggota.',
+  mentor: 'Direktori mentor yang bisa dihubungi anggota.',
+  kolaborasi: 'Ruang mencari rekan kolaborasi proyek.',
+  kelas: 'Materi kelas/kursus untuk anggota.',
+  kompetisi: 'Informasi dan pendaftaran lomba/kompetisi.',
+  startup: 'Etalase startup rintisan anggota komunitas.',
+  merchant: 'Direktori merchant kuliner anggota.',
+  supplier: 'Direktori pemasok bahan baku untuk anggota.',
+  promo: 'Daftar promo yang ditawarkan anggota.',
+}
+
+// Koperasi's module set is fixed (not template-driven), so it gets its own
+// description map instead of a "default template" note.
+const KOPERASI_MODULE_DESCRIPTIONS: Record<string, string> = {
+  diskusi: 'Forum diskusi antar anggota koperasi.',
+  simpanan: 'Simpanan pokok, wajib, dan sukarela anggota.',
+  pendanaan: 'Pengajuan dan pencairan dana usaha anggota.',
+  shu: 'Perhitungan dan pembagian Sisa Hasil Usaha.',
+  produk_komunitas: 'Katalog produk resmi milik koperasi.',
+  marketplace: 'Etalase produk yang dijual masing-masing anggota.',
+  laporan: 'Laporan keuangan dan aktivitas koperasi.',
+  pengumuman: 'Papan pengumuman resmi dari pengurus koperasi.',
+}
+
+// Which Perkumpulan templates enable this module by default, for the toggle
+// grid's "aktif bawaan di template X" hint.
+function getModuleDefaultTemplates(moduleId: string): string[] {
+  return PERKUMPULAN_TEMPLATE_OPTIONS.filter((tpl) => PERKUMPULAN_TEMPLATE_DEFAULTS[tpl]?.includes(moduleId))
 }
 
 export default function CommunityDetailPage({ initialData }: { initialData: CommunityDetailInitialData }) {
@@ -210,11 +333,9 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const [isSavingGallery, setIsSavingGallery] = useState(false)
   const [selectedLightboxImage, setSelectedLightboxImage] = useState<any>(null)
 
-  // State for Member Directory Search & Filters & Detail Modal
+  // State for Member Directory Search & Filters
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
   const [memberRoleFilter, setMemberRoleFilter] = useState<'Semua' | 'Pengurus' | 'Anggota'>('Semua')
-  const [selectedMemberDetail, setSelectedMemberDetail] = useState<any>(null)
-  const [isMemberDetailModalOpen, setIsMemberDetailModalOpen] = useState(false)
 
 
   // State for Member Products (Produk Anggota) CRUD
@@ -603,12 +724,6 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       }
     }
   }, [selectedLightboxImage])
-
-  const handleOpenMemberDetail = (mem: any) => {
-    setSelectedMemberDetail(mem)
-    setIsMemberDetailModalOpen(true)
-  }
-
 
   // Handlers for Member Products CRUD
   const handleOpenCreateMemberProduct = () => {
@@ -1021,11 +1136,6 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const [loanError, setLoanError] = useState<string | null>(null)
   const [copiedProductId, setCopiedProductId] = useState<string | null>(null)
 
-  // Investment Modal State
-  const [investModalOpen, setInvestModalOpen] = useState(false)
-  const [selectedProject, setSelectedProject] = useState<any>(null)
-  const [investAmount, setInvestAmount] = useState('100000')
-  const [investPaymentMethod, setInvestPaymentMethod] = useState<'SALDO' | 'QRIS' | 'BANK'>('QRIS')
   const [disabledModules, setDisabledModules] = useState<string[]>(() => {
     try {
       const cfg = initialData.community?.landingPageConfig ? JSON.parse(initialData.community.landingPageConfig) : null
@@ -1046,10 +1156,19 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const [showUnsavedModal, setShowUnsavedModal] = useState(false)
   const [pendingTargetNav, setPendingTargetNav] = useState<string | null>(null)
 
+  // Template Halaman selection (Perkumpulan only - Koperasi has its own fixed
+  // menu and isn't one of these page templates). Changing it resets the
+  // toggles below to that template's default module set.
+  const [templateTypeInput, setTemplateTypeInput] = useState<string>(
+    normalizeTemplateType(initialData.community?.templateType)
+  )
+  const [savedTemplateType, setSavedTemplateType] = useState<string>(
+    normalizeTemplateType(initialData.community?.templateType)
+  )
+
   // Payment states for Koperasi Upgrade/Join
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'DOKU' | 'QRIS' | 'BANK'>('DOKU')
-  const [currentJoinFee, setCurrentJoinFee] = useState(0)
+  const [paymentMethod, setPaymentMethod] = useState<'DOKU' | 'BANK'>('DOKU')
   const [isVerifying, setIsVerifying] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
 
@@ -1075,16 +1194,11 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const [communityShuData, setCommunityShuData] = useState<any>(initialData.communityShuData)
   const [userShuSummary, setUserShuSummary] = useState<any>(null)
 
-  // SHU Admin Form Config States
+  // SHU Admin Form Config States — only Jasa Modal/Jasa Usaha are configurable,
+  // see ShuCalculationParams in shu-calculator.ts.
   const [shuNetProfit, setShuNetProfit] = useState('0')
-  const [shuPctCadangan, setShuPctCadangan] = useState(0)
   const [shuPctJasaModal, setShuPctJasaModal] = useState(0)
   const [shuPctJasaUsaha, setShuPctJasaUsaha] = useState(0)
-  const [shuPctPengurus, setShuPctPengurus] = useState(0)
-  const [shuPctPengawas, setShuPctPengawas] = useState(0)
-  const [shuPctKaryawan, setShuPctKaryawan] = useState(0)
-  const [shuPctPendidikan, setShuPctPendidikan] = useState(0)
-  const [shuPctSosial, setShuPctSosial] = useState(0)
   const [isCalculatingShu, setIsCalculatingShu] = useState(false)
   const [shuTab, setShuTab] = useState<'preview' | 'final'>('preview')
 
@@ -1098,15 +1212,24 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const [refCommissionMethod, setRefCommissionMethod] = useState<'PERCENTAGE' | 'NOMINAL'>('PERCENTAGE')
   const [refLogs, setRefLogs] = useState<any[]>([])
   const [isSavingRefSettings, setIsSavingRefSettings] = useState(false)
+
+  // Per-member affiliate view ("Afiliasi Saya"): my own downline + earnings
+  // in this community, as opposed to refLogs above (the ketua-only, whole-community table).
+  const [myAffiliateSummary, setMyAffiliateSummary] = useState<{ unit: 'KOIN' | 'RUPIAH'; totalEarned: number; logs: any[]; downline: any[] } | null>(null)
   const [kycWarningModalOpen, setKycWarningModalOpen] = useState(false)
 
-  // Perkumpulan Premium Membership Config States
-  const [communityMembershipType, setCommunityMembershipType] = useState<'FREE' | 'PREMIUM'>('PREMIUM')
-  const [communityMemberFee, setCommunityMemberFee] = useState<number>(50000)
-  const [communityMemberFeePeriod, setCommunityMemberFeePeriod] = useState<'MONTHLY' | 'YEARLY' | 'ONETIME'>('MONTHLY')
+  // Koperasi Harga Masuk (join fee) state - Koperasi has no referral-tier tab
+  // (that section is Perkumpulan Premium-only), so it needs its own plain
+  // join fee editor, saved via the same generic updateIndukCommunity action.
+  const [koperasiJoinFee, setKoperasiJoinFee] = useState<number>(initialData.community?.joinFee || 0)
+  const [isSavingKoperasiJoinFee, setIsSavingKoperasiJoinFee] = useState(false)
 
   const [requireMemberModalOpen, setRequireMemberModalOpen] = useState(false)
   const [requireMemberFeature, setRequireMemberFeature] = useState('Fitur Internal')
+  // Shown when a viewer lands (typically via a shared/guessed link) on a tab
+  // their role isn't allowed to see - e.g. a member opening ?tab=pengaturan,
+  // or a visitor opening a member-only tab.
+  const [accessDeniedModalOpen, setAccessDeniedModalOpen] = useState(false)
   const [openMemberMenuId, setOpenMemberMenuId] = useState<string | null>(null)
   const [kickTargetMember, setKickTargetMember] = useState<{ userId: string; name: string } | null>(null)
   const [isKicking, setIsKicking] = useState<string | null>(null)
@@ -1122,7 +1245,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
     startTransition(async () => {
       try {
-        const res = await kickCommunityMemberAction(target.userId, id)
+        const res = await kickCommunityMemberAction(id, target.userId)
         if (res?.error) {
           goeyToast.error(res.error)
         } else {
@@ -1146,12 +1269,13 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   useEffect(() => {
     if (id) {
       getCommunityReferralConfig(id).then(res => {
-        if (res.success && res.config) {
+        // Koperasi's config is fixed (3/1/1 coins) — no editable form state to hydrate.
+        if (res.success && res.config && !(res.config as any).isFixed) {
           setRefJoinFee(res.config.joinFee)
           setRefReferralBudget(res.config.referralBudget)
           setRefCommunityProfitShare(res.config.communityProfitShare)
           setRefMaxTiers(res.config.maxTiers)
-          setRefTierPercentages(res.config.tierPercentages)
+          setRefTierPercentages(res.config.tierPercentages || [50, 30, 20])
           if (res.config.isKycRequired !== undefined) {
             setRefIsKycRequired(res.config.isKycRequired)
           }
@@ -1167,6 +1291,16 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       })
     }
   }, [id])
+
+  useEffect(() => {
+    if (id && isMember) {
+      getMyCommunityAffiliateSummary(id).then(res => {
+        if (res.success) {
+          setMyAffiliateSummary({ unit: res.unit as 'KOIN' | 'RUPIAH', totalEarned: res.totalEarned, logs: res.logs, downline: res.downline })
+        }
+      })
+    }
+  }, [id, isMember])
 
   const handleSaveReferralSettings = async () => {
     // Validate: only enforce 100% total for PERCENTAGE mode
@@ -1191,9 +1325,89 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     setIsSavingRefSettings(false)
     if (res.success) {
       goeyToast.success('Pengaturan Referral Multi-Tier & KYC berhasil disimpan!')
+      // The community's joinFee was just updated in the DB by this same
+      // action; refresh local state so a later "Simpan Pengaturan" (branding
+      // form) doesn't resend a stale joinFee and trip validateReferralAllocation.
+      await loadData()
     } else {
       goeyToast.error(res.error || 'Gagal menyimpan pengaturan referral.')
     }
+  }
+
+  // Rescale tier shares (percentage->100, nominal->budget) to keep them in sync with their target total.
+  const rescaleTiers = (newTotal: number, count: number) => {
+    setRefTierPercentages(prev => {
+      const arr = prev.slice(0, count)
+      while (arr.length < count) arr.push(0)
+      const oldSum = arr.reduce((a, b) => a + Number(b || 0), 0)
+      const scaled = oldSum > 0
+        ? arr.map(v => Math.round((Number(v || 0) * newTotal) / oldSum))
+        : Array(count).fill(Math.round(newTotal / count))
+      const drift = newTotal - scaled.reduce((a, b) => a + b, 0)
+      scaled[scaled.length - 1] += drift
+      return scaled
+    })
+  }
+
+  // x = y + z: editing join fee keeps profit share fixed and derives referral budget.
+  const handleJoinFeeChange = (v: number) => {
+    const newZ = Math.max(0, v - refCommunityProfitShare)
+    setRefJoinFee(v)
+    setRefReferralBudget(newZ)
+    if (refCommissionMethod === 'NOMINAL') rescaleTiers(newZ, refMaxTiers)
+  }
+
+  // x = y + z: editing profit share derives referral budget (join fee stays fixed).
+  const handleProfitShareChange = (v: number) => {
+    const newZ = Math.max(0, refJoinFee - v)
+    setRefCommunityProfitShare(v)
+    setRefReferralBudget(newZ)
+    if (refCommissionMethod === 'NOMINAL') rescaleTiers(newZ, refMaxTiers)
+  }
+
+  // x = y + z: editing referral budget derives profit share (join fee stays fixed).
+  const handleReferralBudgetChange = (v: number) => {
+    const newY = Math.max(0, refJoinFee - v)
+    setRefReferralBudget(v)
+    setRefCommunityProfitShare(newY)
+    if (refCommissionMethod === 'NOMINAL') rescaleTiers(v, refMaxTiers)
+  }
+
+  // Keep tier shares summing to 100% (percentage mode) or refReferralBudget (nominal mode).
+  // Cascading rule: editing a tier only pushes the remainder onto the tiers AFTER it
+  // (tiers before stay fixed), except the last tier, which has nothing after it and
+  // instead bounces its remainder back onto the single tier right before it.
+  const handleTierChange = (idx: number, v: number) => {
+    const total = refCommissionMethod === 'PERCENTAGE' ? 100 : refReferralBudget
+    setRefTierPercentages(prev => {
+      const arr = prev.slice(0, refMaxTiers)
+      while (arr.length < refMaxTiers) arr.push(0)
+      const clamped = Math.max(0, Math.min(v, total))
+      const newArr = [...arr]
+      newArr[idx] = clamped
+
+      const isLastTier = idx === refMaxTiers - 1
+      const otherIdxs = isLastTier
+        ? (idx > 0 ? [idx - 1] : [])
+        : Array.from({ length: refMaxTiers - idx - 1 }, (_, i) => idx + 1 + i)
+
+      if (otherIdxs.length > 0) {
+        const fixedSum = arr.reduce((s, val, i) => (i === idx || otherIdxs.includes(i) ? s : s + Number(val || 0)), 0)
+        const remaining = Math.max(0, total - clamped - fixedSum)
+        const oldOthersSum = otherIdxs.reduce((s, i) => s + Number(arr[i] || 0), 0)
+        if (oldOthersSum > 0) {
+          otherIdxs.forEach(i => {
+            newArr[i] = Math.round((Number(arr[i] || 0) * remaining) / oldOthersSum)
+          })
+        } else {
+          const share = Math.round(remaining / otherIdxs.length)
+          otherIdxs.forEach(i => { newArr[i] = share })
+        }
+        const drift = remaining - otherIdxs.reduce((a, i) => a + Number(newArr[i] || 0), 0)
+        newArr[otherIdxs[otherIdxs.length - 1]] += drift
+      }
+      return newArr
+    })
   }
 
   const handleShareReferralLink = () => {
@@ -1232,6 +1446,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     | 'laporan'
     | 'pengaturan'
     | 'desain_landing'
+    | 'afiliasi_saya'
   >('beranda')
 
   const [isManualScrolling, setIsManualScrolling] = useState(false)
@@ -1299,27 +1514,41 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       return
     }
 
+    if (depositPaymentMethod !== 'SALDO') {
+      // QRIS / Bank Transfer: redirect to the real gateway checkout — settled
+      // on return via verifySavingsPayment, never marked paid on submit alone.
+      startTransition(async () => {
+        try {
+          const res = await fetch('/api/payment/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              purpose: 'SAVINGS',
+              communityId: id,
+              savingsType: selectedSavingsProduct.type,
+              requestedAmount: amt,
+              returnPath: `/community/${id}`
+            })
+          })
+          const data = await res.json()
+          if (!res.ok || data.error) throw new Error(data.error || 'Gagal memproses pembayaran.')
+          window.location.href = data.redirectUrl
+        } catch (err: any) {
+          goeyToast.error(err.message || 'Gagal terhubung dengan gateway pembayaran.')
+        }
+      })
+      return
+    }
+
+    // SALDO: instant, real atomic wallet debit + savings credit, no gateway needed.
     startTransition(async () => {
       try {
-        const fd = new FormData()
-        fd.append('communityId', id)
-        fd.append('userId', user?.id || '')
-        fd.append('type', selectedSavingsProduct.type)
-        fd.append('transactionType', 'SETOR')
-        fd.append('amount', String(amt))
-        fd.append('date', new Date().toISOString())
-        fd.append('notes', `Setor mandiri via ${depositPaymentMethod === 'SALDO' ? 'Saldo Wallet' : depositPaymentMethod}`)
-
-        const res = await recordSavingsTransactionAction(fd)
+        const res = await paySavingsViaWalletAction(id, selectedSavingsProduct.type, amt)
         if (res.error) {
           goeyToast.error(res.error)
           return
         }
-
-        if (depositPaymentMethod === 'SALDO') {
-          setUserBalance(prev => prev - amt)
-        }
-
+        setUserBalance(prev => prev - amt)
         goeyToast.success(`Setor ${selectedSavingsProduct.name} sebesar Rp ${amt.toLocaleString('id-ID')} berhasil disetor!`)
         setPaySavingsModalOpen(false)
         loadData()
@@ -1328,6 +1557,40 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       }
     })
   }
+
+  // Auto-verify when redirected back from the payment gateway after a
+  // QRIS/Bank savings deposit checkout.
+  const verifySavingsPayment = async (orderId: string) => {
+    startTransition(async () => {
+      try {
+        const res = await fetch('/api/payment/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId })
+        })
+        const data = await res.json()
+        if (!res.ok || data.error) throw new Error(data.error || 'Gagal memverifikasi pembayaran.')
+        if (data.processed) {
+          goeyToast.success(data.message || 'Setoran berhasil diselesaikan!')
+          loadData()
+        } else {
+          goeyToast.error(data.message || 'Pembayaran belum selesai.')
+        }
+      } catch (err: any) {
+        goeyToast.error(err.message || 'Gagal memverifikasi pembayaran setoran.')
+      }
+    })
+  }
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && user) {
+      const orderId = new URLSearchParams(window.location.search).get('payment_order')
+      if (orderId && orderId.startsWith('csav-')) {
+        verifySavingsPayment(orderId)
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
+  }, [user])
 
   const [loading, setLoading] = useState(false)
   const [actionPending, startTransition] = useTransition()
@@ -1442,7 +1705,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         repListRes,
         officialProductsRes,
         commEventsRes,
-        commGalleryRes
+        commGalleryRes,
+        walletRes
       ] = await Promise.all([
         getCurrentUser().catch(() => null),
         getIndukCommunityDetail(id).catch(() => null),
@@ -1458,16 +1722,12 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         getCooperativeReportsAction(id).catch(() => []),
         getCommunityOfficialProductsAction(id).catch(() => []),
         getCommunityEventsAction(id).catch(() => []),
-        getCommunityGalleryAction(id).catch(() => [])
+        getCommunityGalleryAction(id).catch(() => []),
+        getWalletDetails().catch(() => null)
       ])
 
       setUser(currentUser)
-      const userAny = currentUser as any
-      if (userAny?.walletBalance !== undefined) {
-        setUserBalance(userAny.walletBalance)
-      } else if (userAny?.balance !== undefined) {
-        setUserBalance(userAny.balance)
-      }
+      setUserBalance(walletRes?.balance ?? 0)
 
       let commDetail = commDetailRes
       if (!commDetail) {
@@ -1590,6 +1850,16 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         setSavedDisabledModules([])
       }
 
+      if (commDetailRes?.templateType) {
+        const normalized = normalizeTemplateType(commDetailRes.templateType)
+        setTemplateTypeInput(normalized)
+        setSavedTemplateType(normalized)
+      }
+
+      if (commDetailRes?.joinFee !== undefined) {
+        setKoperasiJoinFee(Number(commDetailRes.joinFee) || 0)
+      }
+
       // Apply automated savings summary & SHU data from parallel fetch
       if (savingsRes?.success && savingsRes.summary) {
         setCommunitySavingsSummary(savingsRes.summary)
@@ -1600,14 +1870,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         if (shuRes.config) {
           setShuConfig(shuRes.config)
           setShuNetProfit(String(shuRes.config.totalNetProfit ?? 0))
-          setShuPctCadangan(0)
           setShuPctJasaModal(shuRes.config.pctJasaModal ?? 0)
           setShuPctJasaUsaha(shuRes.config.pctJasaUsaha ?? 0)
-          setShuPctPengurus(0)
-          setShuPctPengawas(0)
-          setShuPctKaryawan(0)
-          setShuPctPendidikan(0)
-          setShuPctSosial(0)
           setShuTab('final')
         }
       }
@@ -2054,15 +2318,9 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       fd.append('communityId', id)
       fd.append('year', String(new Date().getFullYear()))
       fd.append('totalNetProfit', String(profitNum))
-      fd.append('pctCadangan', '0')
+      // Only Jasa Modal and Jasa Usaha are actually allocated — see ShuCalculationParams.
       fd.append('pctJasaModal', String(shuPctJasaModal))
       fd.append('pctJasaUsaha', String(shuPctJasaUsaha))
-      fd.append('pctPengurus', '0')
-      fd.append('pctPengawas', '0')
-      fd.append('pctKaryawan', '0')
-      fd.append('pctPendidikan', '0')
-      fd.append('pctSosial', '0')
-      fd.append('pctPembangunanDaerah', '0')
 
       const res = await calculateAndSaveShuAction(fd)
       if (res.error) {
@@ -2085,18 +2343,9 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       return
     }
 
-    const rawJoinFee = Number(community?.joinFee || 0)
-    const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
-    const effectiveJoinFee = isKoperasi
-      ? (rawJoinFee > 0 ? rawJoinFee : (coopTier === 'PRO' ? 150000 : coopTier === 'PLUS' ? 100000 : 50000))
-      : isPerkumpulanPrem
-        ? (rawJoinFee > 0 ? rawJoinFee : 100000)
-        : rawJoinFee
-
-    const isFree = !isKoperasi && !isPerkumpulanPrem && effectiveJoinFee === 0
+    const isFree = Number(community?.joinFee || 0) === 0
 
     if (!isFree && !isMember) {
-      setCurrentJoinFee(effectiveJoinFee)
       setPaymentModalOpen(true)
       return
     }
@@ -2120,41 +2369,24 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   const handleConfirmPayment = async () => {
     setIsVerifying(true)
-    const joinFeeToPay = currentJoinFee || Number(community?.joinFee || 50000)
     try {
-      if (paymentMethod === 'DOKU' || paymentMethod === 'QRIS') {
-        const res = await fetch('/api/doku/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'community_join',
-            communityId: id,
-            amount: joinFeeToPay,
-          }),
-        })
-        const data = await res.json()
-        if (!res.ok || data.error) {
-          throw new Error(data.error || 'Gagal memproses sesi pembayaran online.')
-        }
-
-        if (data.paymentUrl) {
-          goeyToast.success('Mengalihkan ke halaman pembayaran...')
-          window.location.href = data.paymentUrl
+      // Manual bank transfer stays on the existing server action. The gateway
+      // path goes through /api/payment/checkout (not /api/doku/checkout) so the
+      // join fee is resolved server-side from the community's own joinFee —
+      // never a client-supplied amount.
+      if (paymentMethod === 'BANK') {
+        const res = await payCommunityJoinFeeAction(id, paymentMethod)
+        if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
+          setIsVerifying(false)
+          setPaymentModalOpen(false)
+          setKycWarningModalOpen(true)
           return
         }
-      }
-
-      const res = await payCommunityJoinFeeAction(id, paymentMethod)
-      if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
-        setIsVerifying(false)
-        setPaymentModalOpen(false)
-        setKycWarningModalOpen(true)
-        return
-      }
-      if (res.error) {
-        goeyToast.error(res.error)
-        setIsVerifying(false)
-      } else {
+        if (res.error) {
+          goeyToast.error(res.error)
+          setIsVerifying(false)
+          return
+        }
         setPaymentSuccess(true)
         setIsVerifying(false)
         goeyToast.success(`Pembayaran berhasil! Selamat bergabung di ${community?.name || 'Komunitas'}.`)
@@ -2164,12 +2396,73 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
           setIsMember(true)
           loadData()
         }, 1500)
+        return
       }
+
+      const res = await fetch('/api/payment/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purpose: 'JOIN_FEE', communityId: id, returnPath: `/community/${id}` })
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        if (data.needsKyc) {
+          setIsVerifying(false)
+          setPaymentModalOpen(false)
+          setKycWarningModalOpen(true)
+          return
+        }
+        throw new Error(data.error || 'Gagal memproses pembayaran.')
+      }
+      goeyToast.success('Mengalihkan ke halaman pembayaran...')
+      window.location.href = data.redirectUrl
     } catch (e: any) {
       goeyToast.error(e.message || 'Gagal memproses pembayaran.')
       setIsVerifying(false)
     }
   }
+
+  // Auto-verify when redirected back from the payment gateway after paying
+  // the join fee — never trusts the redirect itself, re-queries the gateway.
+  const verifyJoinPayment = async (orderId: string) => {
+    setIsVerifying(true)
+    try {
+      const res = await fetch('/api/payment/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId })
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || 'Gagal memverifikasi pembayaran.')
+      if (data.processed) {
+        setPaymentSuccess(true)
+        goeyToast.success(`Pembayaran berhasil! Selamat bergabung di ${community?.name || 'Komunitas'}.`)
+        setTimeout(() => {
+          setPaymentModalOpen(false)
+          setPaymentSuccess(false)
+          setIsMember(true)
+          loadData()
+        }, 1500)
+      } else {
+        setPaymentModalOpen(true)
+        goeyToast.error(data.message || 'Pembayaran belum selesai.')
+      }
+    } catch (e: any) {
+      goeyToast.error(e.message || 'Gagal memverifikasi pembayaran.')
+    } finally {
+      setIsVerifying(false)
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && user) {
+      const orderId = new URLSearchParams(window.location.search).get('payment_order')
+      if (orderId && orderId.startsWith('cjoin-')) {
+        verifyJoinPayment(orderId)
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
+  }, [user])
 
 
 
@@ -2188,6 +2481,9 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     return sortedA.every((val, index) => val === sortedB[index])
   }
 
+  const hasUnsavedSettings =
+    !arraysEqual(disabledModules, savedDisabledModules) || templateTypeInput !== savedTemplateType
+
   const handleSidebarClick = (targetId: string) => {
     if (targetId === 'landing_view') {
       setViewMode('landing')
@@ -2199,7 +2495,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       }
       return
     }
-    if (activeSidebarNav === 'pengaturan' && targetId !== 'pengaturan' && !arraysEqual(disabledModules, savedDisabledModules)) {
+    if (activeSidebarNav === 'pengaturan' && targetId !== 'pengaturan' && hasUnsavedSettings) {
       setPendingTargetNav(targetId)
       setShowUnsavedModal(true)
       return
@@ -2217,14 +2513,14 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (activeSidebarNav === 'pengaturan' && !arraysEqual(disabledModules, savedDisabledModules)) {
+      if (activeSidebarNav === 'pengaturan' && hasUnsavedSettings) {
         e.preventDefault()
         e.returnValue = ''
       }
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [disabledModules, savedDisabledModules, activeSidebarNav])
+  }, [hasUnsavedSettings, activeSidebarNav])
 
   // Auto-verify DOKU community join payment callback
   useEffect(() => {
@@ -2269,8 +2565,12 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       formData.append('avatarUrl', settingsAvatarUrl)
       formData.append('coverUrl', settingsCoverUrl)
       if (community.waGroupLink) formData.append('waGroupLink', community.waGroupLink)
-      formData.append('joinFee', String(community.joinFee || 0))
-      formData.append('monthlyFee', String(community.monthlyFee || 0))
+      // joinFee/monthlyFee are intentionally NOT sent here - this form only
+      // edits branding and menu toggles. They're owned by the referral tab
+      // (Perkumpulan Premium) and handleSaveKoperasiJoinFee (Koperasi); this
+      // save used to always resend community.joinFee unchanged, which could
+      // desync from the DB's real value and either trip a spurious
+      // referral-allocation error or silently overwrite it back to 0.
 
       // Update landingPageConfig
       let currentCfg: any = {}
@@ -2281,11 +2581,13 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       }
       currentCfg.disabledModules = disabledModules
       formData.append('landingPageConfig', JSON.stringify(currentCfg))
+      if (!isKoperasi) formData.append('templateType', templateTypeInput)
 
       const res = await updateIndukCommunity(community.id, formData)
       if (res.success) {
         goeyToast.success('Pengaturan fitur komunitas berhasil disimpan!')
         setSavedDisabledModules(disabledModules)
+        setSavedTemplateType(templateTypeInput)
         if (res.community) {
           setCommunity(res.community)
           setSettingsAvatarUrl(res.community.avatarUrl || '')
@@ -2298,6 +2600,34 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       goeyToast.error('Gagal menyimpan pengaturan.')
     } finally {
       setIsSavingSettings(false)
+    }
+  }
+
+  // Koperasi has no referral-tier tab to carry a join fee input (that's
+  // Perkumpulan Premium-only), so its Harga Masuk is saved directly here via
+  // the same generic updateIndukCommunity action.
+  const handleSaveKoperasiJoinFee = async () => {
+    if (!community) return
+    setIsSavingKoperasiJoinFee(true)
+    try {
+      const formData = new FormData()
+      formData.append('name', community.name)
+      formData.append('description', community.description || '')
+      formData.append('joinFee', String(koperasiJoinFee))
+      formData.append('monthlyFee', String(community.monthlyFee || 0))
+      if (community.landingPageConfig) formData.append('landingPageConfig', community.landingPageConfig)
+
+      const res = await updateIndukCommunity(community.id, formData)
+      if (res.success) {
+        goeyToast.success('Harga masuk Koperasi berhasil disimpan!')
+        if (res.community) setCommunity(res.community)
+      } else {
+        goeyToast.error(res.error || 'Gagal menyimpan harga masuk Koperasi.')
+      }
+    } catch (e: any) {
+      goeyToast.error('Gagal menyimpan harga masuk Koperasi.')
+    } finally {
+      setIsSavingKoperasiJoinFee(false)
     }
   }
 
@@ -2406,16 +2736,23 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const catLower = (community?.category || '').toLowerCase()
   const typeLower = (community?.type || '').toLowerCase()
 
-  // Strict templateType check with backward-compatible auto-detection for older communities
-  const activeTemplate = community?.templateType || (
-    typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi') ? 'Koperasi' :
-    catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
-    catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
-    catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
-    'Community'
-  )
+  // isKoperasi comes from the community's actual `type` (KOPERASI/PERKUMPULAN)
+  // - never from templateType. templateType only distinguishes the 4
+  // Perkumpulan page templates (Society/Business/Education/Culinary); it must
+  // never itself decide whether a community IS a Koperasi, or a Koperasi
+  // whose templateType wasn't explicitly set to the literal string 'Koperasi'
+  // would silently render with the wrong (Perkumpulan) menu and features.
+  const isKoperasi = community?.type === 'KOPERASI'
 
-  const isKoperasi = activeTemplate === 'Koperasi'
+  // Strict templateType check with backward-compatible auto-detection for older communities
+  const activeTemplate = isKoperasi ? 'Koperasi' : (
+    (community?.templateType && community.templateType !== 'Koperasi') ? community.templateType : (
+      catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
+      catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
+      catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
+      'Society'
+    )
+  )
 
   let coopTier = 'BASIC'
   if (community?.landingPageConfig) {
@@ -2432,7 +2769,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const isKuliner = activeTemplate === 'Culinary'
   const isBusiness = activeTemplate === 'Business'
   const isEducation = activeTemplate === 'Education'
-  const isPerahu = activeTemplate === 'Community'
+  // 'Community' is the legacy stored value for what's now labeled 'Society'.
+  const isPerahu = activeTemplate === 'Society' || activeTemplate === 'Community'
 
   const sidebarNavList = isKoperasi ? [
     { id: 'beranda', label: 'Beranda', icon: Home },
@@ -2495,19 +2833,47 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     { id: 'tentang', label: 'Tentang', icon: Info },
   ]
 
-  const togglableModules = sidebarNavList.filter(
-    (item) => item.id !== 'beranda' && item.id !== 'tentang' && item.id !== 'anggota'
-  )
+  // Koperasi keeps its own fixed module list (it isn't a page template).
+  // Every other community type gets the full union of modules across all 4
+  // Perkumpulan templates, always - so picking a different template later
+  // never hides a module the admin already toggled on.
+  const togglableModules = isKoperasi
+    ? sidebarNavList.filter((item) => item.id !== 'beranda' && item.id !== 'tentang' && item.id !== 'anggota')
+    : Object.entries(PERKUMPULAN_MODULE_REGISTRY).map(([id, mod]) => ({ id, ...mod }))
+
+  const detectedTemplateType = isKoperasi
+    ? 'Koperasi'
+    : detectPerkumpulanTemplate(togglableModules.map((m) => m.id).filter((id) => !disabledModules.includes(id)))
+
+  const handleSelectTemplateType = (tpl: string) => {
+    setTemplateTypeInput(tpl)
+    const defaults = PERKUMPULAN_TEMPLATE_DEFAULTS[tpl] || []
+    setDisabledModules(Object.keys(PERKUMPULAN_MODULE_REGISTRY).filter((id) => !defaults.includes(id)))
+  }
+
+  // The Pengaturan toggle grid offers the full cross-template module union
+  // (togglableModules), but sidebarNavList only holds the CURRENT template's
+  // own subset - so a module toggled on from a different template (e.g.
+  // enabling "Kompetisi", an Education-only module, on a Society community)
+  // was never reachable here regardless of its saved toggle state. Union the
+  // two so any manually-enabled module actually shows up, keeping the
+  // template's own ordering first.
+  const allPerkumpulanNavList = isKoperasi
+    ? sidebarNavList
+    : [...sidebarNavList, ...togglableModules.filter((m) => !sidebarNavList.some((i) => i.id === m.id))]
 
   // Content tabs visible to this viewer (visitor/member/admin), independent of
   // template - shared by the desktop sidebar, the responsive mobile bar, and
   // the "Lainnya" overflow popup so all three always agree on the same set.
-  const filteredContentTabs = sidebarNavList.filter((item) => {
+  const filteredContentTabs = allPerkumpulanNavList.filter((item) => {
     if (!isCanManageCoop && !isMember) {
       return ['beranda', 'produk_komunitas', 'marketplace', 'tentang'].includes(item.id)
     }
     if (!isCanManageCoop && item.id === 'laporan') return false
-    return !disabledModules.includes(item.id)
+    // Uses savedDisabledModules (not the draft `disabledModules`) so toggling
+    // switches in Pengaturan only affects the real navigation once "Simpan
+    // Pengaturan" is clicked, not live as an admin flips them.
+    return !savedDisabledModules.includes(item.id)
   })
 
     // Synchronized Feed Filter Options: dynamically follows active navigation modules
@@ -2539,10 +2905,15 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     return options
   }, [filteredContentTabs])
 
+  // Affiliate program only exists for Perkumpulan Premium (has a join fee)
+  // and Koperasi (fixed 3/1/1 coin tiers) — Reguler has no referral system.
+  const hasCommunityAffiliateProgram = isKoperasi || Number(community?.joinFee || 0) > 0
+
   const activeSidebarNavList = [
     { id: 'landing_view', label: 'Halaman Landing', icon: ExternalLink },
     ...(isCanManageCoop ? [{ id: 'desain_landing', label: 'Desain Landing', icon: Sparkles, badge: 'EDIT' }] : []),
     ...filteredContentTabs,
+    ...((isMember && hasCommunityAffiliateProgram) ? [{ id: 'afiliasi_saya', label: 'Afiliasi Saya', icon: Handshake }] : []),
     ...(isCanManageCoop ? [{ id: 'pengaturan', label: 'Pengaturan', icon: Sliders }] : [])
   ]
 
@@ -2606,10 +2977,19 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   useEffect(() => {
     const allowedIds = activeSidebarNavList.filter((item) => item.id !== 'landing_view').map((item) => item.id)
     if (!allowedIds.includes(activeSidebarNav)) {
+      if (activeSidebarNav !== 'beranda') {
+        setAccessDeniedModalOpen(true)
+      }
       setActiveSidebarNav('beranda')
+      setViewMode('dashboard')
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        url.searchParams.set('tab', 'beranda')
+        window.history.replaceState(null, '', url.toString())
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disabledModules, activeSidebarNav, isCanManageCoop, isMember])
+  }, [savedDisabledModules, activeSidebarNav, isCanManageCoop, isMember])
 
   const isKetua = Boolean(user && community && community.ketuaId === user.id)
   const isAdmin = Boolean(user && user.role === 'ADMIN')
@@ -2686,14 +3066,10 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   const parsedCommunityConfig = community?.landingPageConfig ? (typeof community.landingPageConfig === 'string' ? JSON.parse(community.landingPageConfig) : community.landingPageConfig) : {}
 
-  const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
+  const communityTierBadge = getCommunityTierBadge(community)
+  const isPerkumpulanPrem = communityTierBadge.isPerkumpulanPremium
+  const bannerBadge = communityTierBadge.label
 
-  const bannerBadge = isKoperasi 
-    ? `KOPERASI (${parsedCommunityConfig?.coopTier || 'PRODUKSI'})`
-    : isPerkumpulanPrem
-      ? 'PERKUMPULAN PREMIUM'
-      : 'PERKUMPULAN REGULER'
-  
   const bannerCover = community?.coverUrl || (
     isKuliner ? 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80' :
     isKoperasi ? 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80' :
@@ -2814,13 +3190,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   }
 
   const renderPaidCommunityModal = () => {
-    const rawJoinFee = Number(community?.joinFee || 0)
-    const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (parsedCommunityConfig?.perkumpulanTier === 'PREMIUM' || (parsedCommunityConfig?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
-    const effectiveJoinFee = isKoperasi
-      ? (rawJoinFee > 0 ? rawJoinFee : (coopTier === 'PRO' ? 150000 : coopTier === 'PLUS' ? 100000 : 50000))
-      : isPerkumpulanPrem
-        ? (rawJoinFee > 0 ? rawJoinFee : 100000)
-        : rawJoinFee
+    const effectiveJoinFee = Number(community?.joinFee || 0)
 
     return (
       <AnimatePresence>
@@ -2883,12 +3253,12 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       type="button"
                       onClick={() => setPaymentMethod('DOKU')}
                       className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                        paymentMethod === 'DOKU' || paymentMethod === 'QRIS'
+                        paymentMethod === 'DOKU'
                           ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132] ring-1 ring-[#2DB24A]'
                           : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
-                      <span className="text-xs font-black block font-sora">DOKU Gateway</span>
+                      <span className="text-xs font-black block font-sora">Pembayaran Online</span>
                       <span className="text-[9px] text-gray-500 block">QRIS, VA Bank, E-Wallet</span>
                     </button>
                     <button
@@ -2906,13 +3276,13 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   </div>
                 </div>
 
-                {paymentMethod === 'DOKU' || paymentMethod === 'QRIS' ? (
+                {paymentMethod === 'DOKU' ? (
                   <div className="flex flex-col items-center py-4 px-3 bg-emerald-50/60 rounded-2xl border border-[#2DB24A]/25 text-center space-y-2">
                     <div className="w-10 h-10 rounded-full bg-[#2DB24A]/15 text-[#2DB24A] flex items-center justify-center font-black text-lg">
                       💳
                     </div>
                     <span className="text-xs font-black text-gray-900 font-sora">
-                      DOKU Payment Gateway Resmi
+                      Pembayaran Online Resmi
                     </span>
                     <p className="text-[10px] text-gray-500 leading-relaxed max-w-xs">
                       Pembayaran instan terverifikasi otomatis via QRIS (BCA, Mandiri, BRI, GoPay, OVO, Dana), Virtual Account, dan Minimarket.
@@ -3070,14 +3440,15 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               <span className="font-extrabold text-sm text-gray-900 font-sora">
                 {community.name}
               </span>
-              <span className={`px-2.5 py-1 text-[9px] font-black rounded-lg border uppercase tracking-wider ${
-                coopTier === 'PRO'
-                  ? 'bg-purple-500/10 border-purple-500/35 text-purple-600'
-                  : coopTier === 'PLUS'
-                    ? 'bg-blue-500/10 border-blue-500/35 text-blue-600'
-                    : 'bg-emerald-500/10 border-emerald-500/35 text-emerald-600'
+              <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-[9px] font-black rounded-lg border uppercase tracking-wider ${
+                {
+                  neutral: 'bg-neutral-shade-500/10 border-neutral-shade-500/35 text-neutral-shade-700',
+                  blue: 'bg-bank-blue-500/10 border-bank-blue-500/35 text-bank-blue-700',
+                  yellow: 'bg-bee-yellow-500/10 border-bee-yellow-500/35 text-bee-yellow-500'
+                }[communityTierBadge.variant]
               }`}>
-                KOPERASI {coopTier}
+                {communityTierBadge.showStar && <Star className="w-2.5 h-2.5 fill-current" />}
+                {communityTierBadge.label}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -3086,7 +3457,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   onClick={() => handleUpgradeTier(coopTier === 'BASIC' ? 'PLUS' : 'PRO')}
                   className="px-4 py-2.5 bg-[#FF9800] hover:bg-[#F57C00] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  <ArrowUpCircle className="w-4 h-4" /> Upgrade ke {coopTier === 'BASIC' ? 'Plus' : 'Pro'}
+                  <ArrowUpCircle className="w-4 h-4" /> Upgrade ke {coopTier === 'BASIC' ? 'Premium' : 'Max'}
                 </button>
               )}
             </div>
@@ -3139,12 +3510,15 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                     {community.name}
                   </h2>
                   <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                    <span className={`px-2 py-0.5 text-[8px] font-black rounded uppercase tracking-wider ${
-                      community.type === 'KOPERASI'
-                        ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                        : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[8px] font-black rounded uppercase tracking-wider border ${
+                      {
+                        neutral: 'bg-neutral-shade-100 text-neutral-shade-700 border-neutral-shade-200',
+                        blue: 'bg-bank-blue-100 text-bank-blue-700 border-bank-blue-200',
+                        yellow: 'bg-bee-yellow-100 text-bee-yellow-500 border-bee-yellow-200'
+                      }[communityTierBadge.variant]
                     }`}>
-                      {community.type === 'KOPERASI' ? `KOPERASI ${coopTier}` : 'PERKUMPULAN'}
+                      {communityTierBadge.showStar && <Star className="w-2 h-2 fill-current" />}
+                      {communityTierBadge.label}
                     </span>
                     <span className="text-[10px] text-gray-500 font-semibold flex items-center gap-1">
                       <Users className="w-3 h-3 text-[#2DB24A]" /> {realStats.activeMembersCount || (members || []).length} Anggota
@@ -3400,9 +3774,30 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   />
                   <div className="relative z-10 inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-black/90 via-[#0F5132]/85 to-[#0F5132]/40 md:to-transparent p-4 sm:p-6 md:p-8 flex flex-col justify-between flex-1 gap-3">
                     <div className="space-y-1.5">
-                      <span className="inline-block px-2.5 py-0.5 bg-white/20 backdrop-blur-md text-white font-extrabold text-[9px] uppercase tracking-wider rounded-full border border-white/30 shadow-xs">
-                        {bannerBadge}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 backdrop-blur-md font-extrabold text-[9px] uppercase tracking-wider rounded-full border shadow-xs ${
+                          {
+                            neutral: 'bg-neutral-shade-600/70 text-white border-white/30',
+                            blue: 'bg-bank-blue-600/80 text-white border-white/30',
+                            yellow: 'bg-neutral-shade-950/60 text-bee-yellow-500 border-white/30'
+                          }[communityTierBadge.variant]
+                        }`}>
+                          {communityTierBadge.showStar && <Star className="w-2.5 h-2.5 fill-current" />}
+                          {bannerBadge}
+                        </span>
+                        {/* Price badge only matters to someone deciding whether to join */}
+                        {!isMember && (
+                          communityTierBadge.isFree ? (
+                            <span className="inline-block px-2.5 py-0.5 backdrop-blur-md font-extrabold text-[9px] uppercase tracking-wider rounded-full border shadow-xs bg-safe-green-600/80 text-white border-white/30">
+                              Gratis
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2.5 py-0.5 backdrop-blur-md font-extrabold text-[9px] uppercase tracking-wider rounded-full border shadow-xs bg-royal-purple-600/80 text-white border-white/30">
+                              Berbayar • Rp{communityTierBadge.joinFee.toLocaleString('id-ID')}
+                            </span>
+                          )
+                        )}
+                      </div>
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shrink-0 overflow-hidden relative">
                           {community.avatarUrl ? (
@@ -3797,7 +4192,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         <div className="flex justify-between items-center">
                           <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5 font-sora">
                             <Landmark className="w-4 h-4 text-purple-600" /> Fitur Pendanaan Merchant
-                            <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase">PRO</span>
+                            <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase">MAX</span>
                           </h3>
                           <span className="text-[10px] text-purple-700 font-bold bg-purple-50 px-2 py-0.5 rounded-md">Investasi & Modal</span>
                         </div>
@@ -4979,7 +5374,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       </p>
                     </div>
                     <button
-                      onClick={() => handleJoin()}
+                      onClick={handleShareReferralLink}
                       className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
                       <Plus className="w-4 h-4" /> Undang Anggota Baru
@@ -5078,8 +5473,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         return (
                           <div
                             key={memberId}
-                            onClick={() => handleOpenMemberDetail(m)}
-                            className="relative p-4 bg-white border border-gray-200/80 rounded-2xl flex items-center justify-between shadow-xs hover:border-[#2DB24A]/50 hover:shadow-md transition-all cursor-pointer group"
+                            className="relative p-4 bg-white border border-gray-200/80 rounded-2xl flex items-center justify-between shadow-xs group"
                           >
                             <div className="flex items-center gap-3.5 min-w-0">
                               <Image
@@ -5087,7 +5481,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                 alt={memberName}
                                 width={48}
                                 height={48}
-                                className="w-12 h-12 rounded-full object-cover shrink-0 border border-gray-100 shadow-xs group-hover:scale-105 transition-transform"
+                                className="w-12 h-12 rounded-full object-cover shrink-0 border border-gray-100 shadow-xs"
                               />
                               <div className="min-w-0">
                                 <span className={`inline-block px-2.5 py-0.5 font-bold text-[9px] rounded-md uppercase tracking-wider ${
@@ -5095,7 +5489,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                 }`}>
                                   {isLeader ? 'Pengurus' : 'Anggota UMKM'}
                                 </span>
-                                <h4 className="text-sm font-extrabold text-gray-900 leading-tight mt-1 font-sora truncate group-hover:text-[#2DB24A] transition-colors">
+                                <h4 className="text-sm font-extrabold text-gray-900 leading-tight mt-1 font-sora truncate">
                                   {memberName}
                                 </h4>
                                 <p className="text-xs text-gray-400 font-medium mt-0.5 truncate">
@@ -5558,354 +5952,45 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               </div>
             )}
 
-            {/* TAB 10: BUSINESS MATCHING ───────────────────────────────────────── */}
+            {/* TABS 10-19: not backed by any real data/actions yet — coming soon */}
             {activeSidebarNav === 'business_matching' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-100 pb-4">
-                    <div>
-                      <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                        <Handshake className="w-6 h-6 text-[#2DB24A]" /> Business Matching & Temu Investor
-                      </h2>
-                      <p className="text-xs text-gray-500 font-medium mt-1">Temukan mitra distributor, investor F&B, dan kerjasama pemasaran skala nasional.</p>
-                    </div>
-                    <button onClick={() => goeyToast.info('Formulir pengajuan business matching telah dibuka!')} className="px-4 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0">
-                      <Plus className="w-4 h-4" /> Ajukan Kolaborasi
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { title: 'Distributor Produk Makanan Olahan Kemasan', partner: 'PT Boga Nusantara Jabar', target: 'Rp 150.000.000', status: 'Terbuka', slots: '3 Kuota Partner' },
-                      { title: 'Kerjasama Pemasaran Export Batik & Fashion', partner: 'ExportHub Asia Singapore', target: 'Rp 300.000.000', status: 'Terbuka', slots: '5 Kuota Partner' },
-                      { title: 'Kemitraan Franchise Outlet Kuliner Jogja', partner: 'Kopjaswara Commercial', target: 'Rp 75.000.000', status: 'Proses Matching', slots: '2 Kuota Partner' },
-                      { title: 'Pendanaan Investor Angel untuk Startup F&B', partner: 'Jogja Ventures Group', target: 'Rp 500.000.000', status: 'Terbuka', slots: '1 Startup Tersisa' },
-                    ].map((bm, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="px-2.5 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[10px] rounded-md">{bm.status}</span>
-                            <span className="text-[10px] text-gray-400 font-semibold">{bm.slots}</span>
-                          </div>
-                          <h4 className="text-xs font-black text-gray-900">{bm.title}</h4>
-                          <p className="text-[11px] text-gray-500 font-semibold">Mitra: {bm.partner}</p>
-                          <span className="text-xs font-black text-[#0F5132] block">Potensi Nilai: {bm.target}</span>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Pengajuan proposal matching untuk "${bm.partner}" dikirim!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer text-center">
-                          Ajukan Matching Proposal
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={Handshake} title="Business Matching & Temu Investor" description="Temukan mitra distributor, investor F&B, dan kerjasama pemasaran skala nasional." />
             )}
 
-            {/* TAB 11: PELATIHAN ───────────────────────────────────────────────── */}
             {activeSidebarNav === 'pelatihan' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <GraduationCap className="w-6 h-6 text-[#2DB24A]" /> Pelatihan & Certification Bootcamps
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Tingkatkan kapabilitas bisnis, literasi keuangan, dan legalitas usaha bersama narasumber ahli.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { title: 'Strategi Digital Marketing & TikTok Live 2026', trainer: 'Siska Putri (Praktisi E-Commerce)', level: 'Semua Level', date: '30 Juli 2026', price: 'Gratis Anggota' },
-                      { title: 'Penyusunan Laporan Keuangan Standar SAK EMKM', trainer: 'Dra. Tri Haryati, Ak.', level: 'Menengah', date: '05 Agustus 2026', price: 'Gratis Anggota' },
-                      { title: 'Pendampingan Sertifikasi Halal Gratis (SEHATI)', trainer: 'LPPOM MUI DIY', level: 'Resmi', date: '12 Agustus 2026', price: 'Gratis Anggota' },
-                    ].map((tc, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{tc.level}</span>
-                          <h4 className="text-xs font-black text-gray-900">{tc.title}</h4>
-                          <p className="text-[10px] text-gray-500 font-semibold">Pemateri: {tc.trainer}</p>
-                          <p className="text-[10px] text-gray-400 font-medium">📅 {tc.date}</p>
-                        </div>
-                        <div className="pt-2 border-t border-gray-200/60 flex justify-between items-center">
-                          <span className="text-xs font-bold text-[#0F5132]">{tc.price}</span>
-                          <button onClick={() => goeyToast.success(`Anda terdaftar di kelas "${tc.title}"!`)} className="px-3 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                            Ikuti Kelas
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={GraduationCap} title="Pelatihan & Certification Bootcamps" description="Tingkatkan kapabilitas bisnis, literasi keuangan, dan legalitas usaha bersama narasumber ahli." />
             )}
 
-            {/* TAB 12: MENTOR ──────────────────────────────────────────────────── */}
             {activeSidebarNav === 'mentor' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Award className="w-6 h-6 text-[#2DB24A]" /> Direktori Mentor Bisnis Terverifikasi
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Dapatkan bimbingan 1-on-1 langsung dari praktisi usaha, akademisi, dan pakar industri.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { name: 'Dr. Irvan Prasetya, M.M.', specialty: 'Branding & Scale-Up Bisnis', rating: '⭐ 4.9 (120 Sesi)', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&q=80' },
-                      { name: 'Hj. Endang Setyowati', specialty: 'Manufaktur & Ekspor Pangan', rating: '⭐ 5.0 (95 Sesi)', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&q=80' },
-                      { name: 'Budi Santoso, S.T.', specialty: 'Perencanaan Keuangan & Startup', rating: '⭐ 4.8 (80 Sesi)', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&q=80' },
-                    ].map((m, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 flex flex-col justify-between hover:border-[#2DB24A]/40 transition-all text-center">
-                        <div className="space-y-2">
-                          <Image src={m.img} alt="" width={64} height={64} className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-xs mx-auto" />
-                          <h4 className="text-xs font-black text-gray-900">{m.name}</h4>
-                          <p className="text-[10px] font-bold text-[#0F5132]">{m.specialty}</p>
-                          <span className="text-[10px] text-amber-600 font-semibold block">{m.rating}</span>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Sesi konsultasi dengan ${m.name} berhasil dijadwalkan!`)} className="w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Jadwalkan Konsultasi
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={Award} title="Direktori Mentor Bisnis Terverifikasi" description="Dapatkan bimbingan 1-on-1 langsung dari praktisi usaha, akademisi, dan pakar industri." />
             )}
 
-            {/* TAB 13: KOLABORASI ──────────────────────────────────────────────── */}
             {activeSidebarNav === 'kolaborasi' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Users className="w-6 h-6 text-[#2DB24A]" /> Proyek Kolaborasi Bersama
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Gabung dalam proyek patungan, kargo bersama, dan pameran kolektif anggota.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { title: 'Pengiriman Kargo Bersama (Hemat 35% Ongkir)', desc: 'Konsolidasi pengiriman bahan baku dari Surabaya ke Jogja.', slots: '12 Merchant Terdaftar' },
-                      { title: 'Pameran Stand Joint Booth Saloka Festival 2026', desc: 'Sewa space booth besar untuk display 10 merchant UMKM.', slots: '8 Merchant Terdaftar' },
-                    ].map((col, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <h4 className="text-xs font-black text-gray-900">{col.title}</h4>
-                          <p className="text-xs text-gray-600 font-medium leading-relaxed">{col.desc}</p>
-                          <span className="text-[10px] text-[#0F5132] font-bold block">Status: {col.slots}</span>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Anda bergabung dalam proyek "${col.title}"!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Bergabung Kolaborasi
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={Users} title="Proyek Kolaborasi Bersama" description="Gabung dalam proyek patungan, kargo bersama, dan pameran kolektif anggota." />
             )}
 
-            {/* TAB 14: KELAS ───────────────────────────────────────────────────── */}
             {activeSidebarNav === 'kelas' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <BookOpen className="w-6 h-6 text-[#2DB24A]" /> Katalog Kelas Pelajar Pengusaha
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Modul pembelajaran interaktif bisnis sejak dini untuk siswa dan mahasiswa.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { title: 'Business Model Canvas (BMC) Pemula', duration: '4 Modul Video', badge: 'Terpopuler' },
-                      { title: 'Digital Marketing & Content Creator', duration: '6 Modul Video', badge: 'Favorit' },
-                      { title: 'Leadership & Public Speaking Mastery', duration: '3 Modul Live', badge: 'Baru' },
-                      { title: 'Financial Literacy untuk Pelajar', duration: '5 Modul Video', badge: 'Dasar' },
-                    ].map((k, idx) => (
-                      <div key={idx} className="p-4 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{k.badge}</span>
-                          <h4 className="text-xs font-extrabold text-gray-900 leading-snug">{k.title}</h4>
-                          <p className="text-[10px] text-gray-400 font-medium">🕒 {k.duration}</p>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Kelas "${k.title}" dimulai!`)} className="w-full py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Mulai Belajar
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={BookOpen} title="Katalog Kelas Pelajar Pengusaha" description="Modul pembelajaran interaktif bisnis sejak dini untuk siswa dan mahasiswa." />
             )}
 
-            {/* TAB 15: KOMPETISI ───────────────────────────────────────────────── */}
             {activeSidebarNav === 'kompetisi' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Trophy className="w-6 h-6 text-[#2DB24A]" /> Kompetisi & Challenge Pengusaha Muda
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Uji ide bisnismu dan menangkan total hadiah puluhan juta rupiah serta fasilitas inkubasi.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { title: 'Saloka Youth Business Plan Competition 2026', prize: 'Rp 25.000.000 Total Hadiah', dl: '15 Agustus 2026', status: 'Pendaftaran Buka' },
-                      { title: 'National EdTech & Eco-Startup Challenge', prize: 'Rp 15.000.000 Total Hadiah', dl: '30 Agustus 2026', status: 'Pendaftaran Buka' },
-                    ].map((comp, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <span className="px-2.5 py-0.5 bg-emerald-100 text-[#0F5132] font-extrabold text-[10px] rounded-md">{comp.status}</span>
-                          <h4 className="text-xs font-black text-gray-900">{comp.title}</h4>
-                          <p className="text-xs font-black text-[#0F5132]">🏆 {comp.prize}</p>
-                          <p className="text-[10px] text-gray-400 font-medium">⏳ Deadline: {comp.dl}</p>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Pendaftaran tim untuk "${comp.title}" dibuka!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Daftar Tim Kompetisi
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={Trophy} title="Kompetisi & Challenge Pengusaha Muda" description="Uji ide bisnismu dan menangkan hadiah serta fasilitas inkubasi." />
             )}
 
-            {/* TAB 16: STARTUP ─────────────────────────────────────────────────── */}
             {activeSidebarNav === 'startup' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Rocket className="w-6 h-6 text-[#2DB24A]" /> Showcase Startup Anggota Pelajar
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Inovasi teknologi dan produk kreatif buatan generasi muda pengusaha.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { title: 'EduForm', desc: 'Platform Pembelajaran Interaktif Pelajar SMR/SMA', founder: 'Rian & Tim', stage: 'Pre-Seed' },
-                      { title: 'GreenPack', desc: 'Kemasan Ramah Lingkungan dari Ampas Tebu', founder: 'Anisa Student', stage: 'Seed Stage' },
-                      { title: 'StudyBox', desc: 'Layanan Subscription Alat Tulis & Buku Edukasi', founder: 'Fajar Youth', stage: 'Early Stage' },
-                    ].map((st, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{st.stage}</span>
-                          <h4 className="text-xs font-black text-gray-900">{st.title}</h4>
-                          <p className="text-xs text-gray-600 font-medium leading-relaxed">{st.desc}</p>
-                          <p className="text-[10px] text-gray-400 font-semibold">Founder: {st.founder}</p>
-                        </div>
-                        <button onClick={() => goeyToast.info(`Pitch deck "${st.title}" sedang diunduh.`)} className="w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Lihat Pitch Deck
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={Rocket} title="Showcase Startup Anggota Pelajar" description="Inovasi teknologi dan produk kreatif buatan generasi muda pengusaha." />
             )}
 
-            {/* TAB 17: MERCHANT ────────────────────────────────────────────────── */}
             {activeSidebarNav === 'merchant' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Store className="w-6 h-6 text-[#2DB24A]" /> Direktori Merchant Kuliner Resmi
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Jelajahi outlet kuliner khas dan restoran unggulan anggota Asosiasi Kuliner Kreatif Jogja.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { name: 'Gudeg Yu Djum Wijilan', menu: 'Gudeg Kendil & Gudeg Kaleng Asli', address: 'Jl. Wijilan No. 167, Kraton, Yogyakarta', status: 'BUKA (06:00 - 21:00)' },
-                      { name: 'Bakmi Jawa Mbah Mo', menu: 'Bakmi Godhog & Bakmi Goreng Nyemek', address: 'Code, Trirenggo, Bantul, DIY', status: 'BUKA (17:00 - 23:00)' },
-                      { name: 'Sate Klatak Pak Bari', menu: 'Sate Kambing Muda Jeruji Besi', address: 'Pasar Jejeran, Imogiri Timur, Bantul', status: 'BUKA (18:00 - 24:00)' },
-                      { name: 'Kopi Joss Lik Man', menu: 'Kopi Arang Arang & Nasi Kucing Joss', address: 'Jl. Pangeran Mangkubumi, Stasiun Tugu', status: 'BUKA (16:00 - 02:00)' },
-                    ].map((merch, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <span className="px-2 py-0.5 bg-emerald-100 text-[#0F5132] font-extrabold text-[9px] rounded uppercase">{merch.status}</span>
-                          <h4 className="text-sm font-black text-gray-900">{merch.name}</h4>
-                          <p className="text-xs font-bold text-[#0F5132]">🍲 Menu Utama: {merch.menu}</p>
-                          <p className="text-xs text-gray-500 font-medium">📍 {merch.address}</p>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Detail lokasi merchant "${merch.name}" dibuka!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Lihat Menu & Lokasi
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={Store} title="Direktori Merchant Kuliner Resmi" description="Jelajahi outlet kuliner khas dan restoran unggulan anggota." />
             )}
 
-            {/* TAB 18: SUPPLIER ────────────────────────────────────────────────── */}
             {activeSidebarNav === 'supplier' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Truck className="w-6 h-6 text-[#2DB24A]" /> Direktori Supplier Bahan Baku Kuliner
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Dapatkan pasokan bahan segar, bumbu rempah, dan kemasan food-grade harga grosir.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { item: 'Suplai Daging Ayam & Sapi Segar', supplier: 'UD Ayam Segar Sleman', moq: 'Min. Order 10 kg', price: 'Harga Grosir' },
-                      { item: 'Sentra Box Kemasan Food Grade Custom', supplier: 'PT Kemasan Pack Jogja', moq: 'Min. Order 500 pcs', price: 'Rp 1.200 / pcs' },
-                      { item: 'Distro Rempah & Bumbu Tradisional', supplier: 'Toko Rempah Merapi', moq: 'Min. Order 5 kg', price: 'Harga Pabrik' },
-                    ].map((sup, idx) => (
-                      <div key={idx} className="p-5 bg-gray-50/70 border border-gray-200/80 rounded-2xl space-y-3 hover:border-[#2DB24A]/40 transition-all flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <h4 className="text-xs font-black text-gray-900">{sup.item}</h4>
-                          <p className="text-[11px] text-gray-500 font-semibold">Supplier: {sup.supplier}</p>
-                          <span className="text-[10px] text-gray-400 font-medium block">📦 {sup.moq}</span>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Permintaan penawaran grosir untuk "${sup.item}" dikirim!`)} className="w-full py-2 bg-white border border-[#2DB24A] text-[#2DB24A] hover:bg-[#2DB24A] hover:text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Minta Penawaran Grosir
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={Truck} title="Direktori Supplier Bahan Baku Kuliner" description="Dapatkan pasokan bahan segar, bumbu rempah, dan kemasan food-grade harga grosir." />
             )}
 
-            {/* TAB 19: PROMO ───────────────────────────────────────────────────── */}
             {activeSidebarNav === 'promo' && (
-              <div className="space-y-6">
-                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-5">
-                  <div>
-                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
-                      <Tag className="w-6 h-6 text-[#2DB24A]" /> Voucher & Promo Khusus Anggota
-                    </h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">Gunakan voucher promo eksklusif untuk menikmati kuliner anggota dengan harga hemat.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { title: 'Diskon 20% Gudeg Kendil Wijilan', code: 'GUDEG20', valid: '31 Agu 2026' },
-                      { title: 'Buy 1 Get 1 Kopi Joss Lik Man', code: 'KOPIJOSS', valid: '15 Agu 2026' },
-                      { title: 'Cashback Rp 15.000 Sate Klatak', code: 'KLATAK15', valid: '31 Agu 2026' },
-                    ].map((pr, idx) => (
-                      <div key={idx} className="p-5 bg-gradient-to-br from-[#E8F8EE] to-emerald-50 border border-[#2DB24A]/30 rounded-2xl space-y-3 text-center flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <h4 className="text-xs font-black text-[#0F5132]">{pr.title}</h4>
-                          <div className="px-3 py-1 bg-white border border-dashed border-[#2DB24A] rounded-lg inline-block font-mono text-xs font-bold text-emerald-800">
-                            {pr.code}
-                          </div>
-                          <p className="text-[10px] text-gray-500 font-medium block">Berlaku s/d {pr.valid}</p>
-                        </div>
-                        <button onClick={() => goeyToast.success(`Voucher "${pr.code}" berhasil diklaim!`)} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
-                          Klaim Voucher
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <ComingSoonTab icon={Tag} title="Voucher & Promo Khusus Anggota" description="Voucher promo eksklusif untuk menikmati produk anggota dengan harga hemat." />
             )}
 
             {/* TAB 20: SIMPANAN KOPERASI ───────────────────────────────────────── */}
@@ -6189,9 +6274,9 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                               </div>
                               <div className="flex flex-col items-end gap-1.5 justify-center mt-2 md:mt-0 shrink-0">
                                 <span className="text-[9px] text-purple-600 font-extrabold uppercase">Tersedia di Paket</span>
-                                <span className="text-xs font-black text-purple-800">PLUS</span>
+                                <span className="text-xs font-black text-purple-800">PREMIUM</span>
                                 <button onClick={() => handleUpgradeTier('PLUS')} className="px-4 py-2 bg-white hover:bg-purple-50 border border-purple-300 text-purple-700 font-extrabold text-[10px] rounded-xl transition-all shadow-xs flex items-center gap-1 cursor-pointer">
-                                  <ArrowUpCircle className="w-3.5 h-3.5" /> Upgrade ke Plus
+                                  <ArrowUpCircle className="w-3.5 h-3.5" /> Upgrade ke Premium
                                 </button>
                               </div>
                             </div>
@@ -6279,21 +6364,37 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50 text-xs font-medium text-gray-700">
-                              {[
-                                { date: '2 Mei 2026, 10:30', name: 'Ahmad Rizki', type: 'Simpanan Wajib', amount: 100000, status: 'Berhasil' },
-                                { date: '1 Mei 2026, 14:15', name: 'Siti Aminah', type: 'Simpanan Pokok', amount: 150000, status: 'Berhasil' },
-                                { date: '28 Apr 2026, 09:00', name: 'Budi Santoso', type: 'Simpanan Wajib', amount: 100000, status: 'Berhasil' },
-                              ].map((tx, i) => (
-                                <tr key={i} className="hover:bg-gray-50/30 transition-colors">
-                                  <td className="py-3 px-2 text-gray-500 font-semibold">{tx.date}</td>
-                                  <td className="py-3 px-2 font-black text-gray-900">{tx.name}</td>
-                                  <td className="py-3 px-2 text-gray-600 font-bold">{tx.type}</td>
-                                  <td className="py-3 px-2 font-black text-[#0F5132]">Rp {tx.amount.toLocaleString('id-ID')}</td>
-                                  <td className="py-3 px-2">
-                                    <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ {tx.status}</span>
+                              {(communitySavingsSummary?.transactions || []).length === 0 ? (
+                                <tr>
+                                  <td colSpan={5} className="py-8 text-center text-gray-400 font-medium">
+                                    Belum ada riwayat transaksi simpanan.
                                   </td>
                                 </tr>
-                              ))}
+                              ) : (
+                                [...communitySavingsSummary.transactions]
+                                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                  .slice(0, 5)
+                                  .map((tx, i: number) => {
+                                    const memberName = members.find((m) => m.user?.id === tx.userId)?.user?.name || 'Anggota'
+                                    const typeLabel = tx.type === 'POKOK' ? 'Simpanan Pokok' : tx.type === 'WAJIB' ? 'Simpanan Wajib' : 'Simpanan Sukarela'
+                                    const isSetor = tx.transactionType === 'SETOR'
+                                    return (
+                                      <tr key={tx.id || i} className="hover:bg-gray-50/30 transition-colors">
+                                        <td className="py-3 px-2 text-gray-500 font-semibold">
+                                          {new Date(tx.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, {new Date(tx.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                        </td>
+                                        <td className="py-3 px-2 font-black text-gray-900">{memberName}</td>
+                                        <td className="py-3 px-2 text-gray-600 font-bold">{typeLabel}</td>
+                                        <td className={`py-3 px-2 font-black ${isSetor ? 'text-[#0F5132]' : 'text-red-600'}`}>
+                                          {isSetor ? '+' : '-'} Rp {Number(tx.amount).toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="py-3 px-2">
+                                          <span className="px-2 py-0.5 bg-emerald-50 text-[#0F5132] font-black text-[9px] rounded-md uppercase">✓ Berhasil</span>
+                                        </td>
+                                      </tr>
+                                    )
+                                  })
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -6312,7 +6413,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                 <Crown className="w-5 h-5" />
                               </div>
                               <div>
-                                <h5 className="font-black text-xs text-gray-900">Upgrade ke {coopTier === 'BASIC' ? 'Plus' : 'Pro'}</h5>
+                                <h5 className="font-black text-xs text-gray-900">Upgrade ke {coopTier === 'BASIC' ? 'Premium' : 'Max'}</h5>
                                 <p className="text-[9px] text-gray-500 font-medium">dan nikmati fitur lengkap untuk mengelola simpanan dengan lebih fleksibel.</p>
                               </div>
                             </div>
@@ -6339,7 +6440,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                               onClick={() => handleUpgradeTier(coopTier === 'BASIC' ? 'PLUS' : 'PRO')}
                               className="w-full py-2.5 bg-[#FF9800] hover:bg-[#F57C00] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
-                              <ArrowUpCircle className="w-4 h-4" /> Upgrade ke {coopTier === 'BASIC' ? 'Plus' : 'Pro'}
+                              <ArrowUpCircle className="w-4 h-4" /> Upgrade ke {coopTier === 'BASIC' ? 'Premium' : 'Max'}
                             </button>
                           </div>
                         </div>
@@ -6349,14 +6450,15 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       <div className="bg-white border border-gray-200/80 rounded-3xl p-5 shadow-xs space-y-4">
                         <div className="flex justify-between items-center border-b border-gray-50 pb-2">
                           <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Paket Anda Saat Ini</h4>
-                          <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider ${
-                            coopTier === 'PRO'
-                              ? 'bg-purple-100 text-purple-600 font-bold'
-                              : coopTier === 'PLUS'
-                                ? 'bg-blue-100 text-blue-600 font-bold'
-                                : 'bg-emerald-100 text-[#0f5132] font-bold'
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider ${
+                            {
+                              neutral: 'bg-neutral-shade-100 text-neutral-shade-700',
+                              blue: 'bg-bank-blue-100 text-bank-blue-700',
+                              yellow: 'bg-bee-yellow-100 text-bee-yellow-500'
+                            }[communityTierBadge.variant]
                           }`}>
-                            {coopTier}
+                            {communityTierBadge.showStar && <Star className="w-2.5 h-2.5 fill-current" />}
+                            {communityTierBadge.label}
                           </span>
                         </div>
 
@@ -6418,14 +6520,14 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       <Lock className="w-8 h-8" />
                     </div>
                     <div className="space-y-2">
-                      <span className="px-2.5 py-1 bg-purple-100 text-purple-600 text-[10px] font-black rounded-full uppercase tracking-wider">FITUR PREMIUM PRO</span>
+                      <span className="px-2.5 py-1 bg-purple-100 text-purple-600 text-[10px] font-black rounded-full uppercase tracking-wider">FITUR MAX</span>
                       <h2 className="text-xl font-black text-gray-900 font-sora">Pendanaan Merchant Terkunci</h2>
                       <p className="text-xs text-gray-500 font-medium max-w-md mx-auto leading-relaxed">
-                        Fitur pendanaan merchant (Pinjaman Permodalan Usaha Koperasi) hanya tersedia bagi komunitas dengan tingkat langganan Koperasi Pro.
+                        Fitur pendanaan merchant (Pinjaman Permodalan Usaha Koperasi) hanya tersedia bagi komunitas dengan tingkat langganan Koperasi Max.
                       </p>
                     </div>
                     <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-5 text-left max-w-md mx-auto space-y-3">
-                      <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider font-sora">Keuntungan Paket Pro:</h4>
+                      <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider font-sora">Keuntungan Paket Max:</h4>
                       <ul className="space-y-2 text-[11px] font-bold text-purple-900">
                         <li className="flex items-center gap-2">✓ Seluruh fitur Simpanan (Pokok, Wajib, Sukarela, dll)</li>
                         <li className="flex items-center gap-2">✓ Penambahan jenis simpanan tanpa batas</li>
@@ -6437,7 +6539,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       onClick={() => handleUpgradeTier('PRO')}
                       className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
                     >
-                      <ArrowUpCircle className="w-4 h-4" /> Upgrade ke Koperasi Pro sekarang
+                      <ArrowUpCircle className="w-4 h-4" /> Upgrade ke Koperasi Max sekarang
                     </button>
                   </div>
                 )
@@ -6474,6 +6576,66 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Daftar pengajuan pinjaman — the real submit/approve/reject actions
+                      already existed server-side with no UI surface at all. */}
+                  <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-4">
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Landmark className="w-4 h-4 text-[#2DB24A]" /> {isCanManageCoop ? 'Daftar Pengajuan Pinjaman' : 'Status Pengajuan Pinjaman Saya'}
+                      </h3>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">
+                        Persetujuan di sini hanya mengubah status pengajuan. Pencairan dana pinjaman masih dilakukan manual oleh pengurus di luar sistem.
+                      </p>
+                    </div>
+                    {loans.length === 0 ? (
+                      <p className="text-xs text-gray-400 text-center py-6">Belum ada pengajuan pinjaman.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {loans.map((loan) => {
+                          const borrower = members.find((m) => m.user?.id === loan.merchantId)?.user
+                          const statusMap: Record<string, { label: string; cls: string }> = {
+                            PENDING: { label: 'Menunggu Persetujuan', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+                            APPROVED_KETUA: { label: 'Disetujui Ketua', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+                            APPROVED_ADMIN: { label: 'Disetujui Admin', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+                            DISBURSED: { label: 'Dicairkan', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                            REJECTED: { label: 'Ditolak', cls: 'bg-red-50 text-red-700 border-red-200' }
+                          }
+                          const st = statusMap[loan.status] || statusMap.PENDING
+                          const canApproveAsKetua = isCanManageCoop && user?.id === community?.ketuaId && !loan.approvedByKetua && loan.status !== 'REJECTED'
+                          const canApproveAsAdmin = isCanManageCoop && user?.role === 'ADMIN' && !loan.approvedByAdmin && loan.status !== 'REJECTED'
+                          const actionRole: 'KETUA' | 'ADMIN' = canApproveAsKetua ? 'KETUA' : 'ADMIN'
+                          return (
+                            <div key={loan.id} className="p-4 border border-gray-200 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-bold text-gray-900">{loan.purpose}</p>
+                                <p className="text-[10px] text-gray-500 mt-0.5">
+                                  {borrower?.name || 'Anggota'} • Rp {Number(loan.amount).toLocaleString('id-ID')} • {new Date(loan.createdAt).toLocaleDateString('id-ID')}
+                                </p>
+                                <div className="flex gap-1.5 mt-1.5">
+                                  {loan.approvedByKetua && <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200 font-bold">✓ Ketua</span>}
+                                  {loan.approvedByAdmin && <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-200 font-bold">✓ Admin</span>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${st.cls}`}>{st.label}</span>
+                                {(canApproveAsKetua || canApproveAsAdmin) && (
+                                  <>
+                                    <button onClick={() => handleApproveLoan(loan.id, actionRole)} className="px-2.5 py-1 bg-[#2DB24A] hover:bg-[#0F5132] text-white rounded-lg text-[10px] font-bold cursor-pointer transition-colors">
+                                      Setujui
+                                    </button>
+                                    <button onClick={() => handleRejectLoan(loan.id, actionRole)} className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-[10px] font-bold cursor-pointer transition-colors">
+                                      Tolak
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -6539,18 +6701,20 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                           </div>
                           <div className="flex items-center gap-2">
                             <div className={`px-3 py-1 rounded text-xs font-bold font-mono ${
-                              (shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
+                              (shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100 && shuPctJasaModal + shuPctJasaUsaha <= 100)
                                 ? 'bg-green-100 text-green-800 border border-green-300'
                                 : 'bg-red-100 text-red-800 border border-red-300'
                             }`}>
-                              {(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)
+                              {(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100 && shuPctJasaModal + shuPctJasaUsaha <= 100)
                                 ? `✓ Persentase Valid (0-100%)`
-                                : `⚠️ Nilai harus di antara 0% s/d 100%`
+                                : shuPctJasaModal + shuPctJasaUsaha > 100
+                                  ? `⚠️ Total Jasa Modal + Jasa Usaha tidak boleh melebihi 100%`
+                                  : `⚠️ Nilai harus di antara 0% s/d 100%`
                               }
                             </div>
                             <button
                               type="submit"
-                              disabled={isCalculatingShu || !(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100)}
+                              disabled={isCalculatingShu || !(shuPctJasaModal >= 0 && shuPctJasaModal <= 100 && shuPctJasaUsaha >= 0 && shuPctJasaUsaha <= 100 && shuPctJasaModal + shuPctJasaUsaha <= 100)}
                               className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer inline-flex items-center gap-2 shrink-0 disabled:opacity-50"
                             >
                               {isCalculatingShu ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Hitung & Simpan SHU Otomatis'}
@@ -6930,7 +7094,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                     Rp {Math.round(totShu).toLocaleString('id-ID')}
                                   </span>
                                   <span className="text-[9px] text-emerald-100/90 block font-medium">
-                                    Transfer otomatis ke Saldo Dompet
+                                    Tercatat di sistem, dicairkan manual oleh pengurus
                                   </span>
                                 </div>
                               </div>
@@ -7084,6 +7248,97 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               </div>
             )}
 
+            {/* TAB: AFILIASI SAYA (per-member downline + earnings in THIS community) */}
+            {activeSidebarNav === 'afiliasi_saya' && (
+              <div className="space-y-6">
+                <div className="p-6 bg-white border border-gray-200/80 rounded-3xl shadow-xs space-y-6">
+                  <div className="border-b border-gray-100 pb-4">
+                    <h2 className="text-xl font-black text-gray-900 font-sora flex items-center gap-2">
+                      <Handshake className="w-6 h-6 text-[#2DB24A]" /> Afiliasi Saya
+                    </h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1">
+                      Jaringan referral dan penghasilan afiliasi Anda khusus di komunitas {community?.name}.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl">
+                      <span className="text-[10px] font-bold text-[#0F5132] uppercase tracking-wider block">Total Penghasilan Afiliasi</span>
+                      <span className="text-2xl font-black text-[#0F5132] font-sora block mt-1">
+                        {myAffiliateSummary?.unit === 'KOIN'
+                          ? `🪙 ${myAffiliateSummary?.totalEarned ?? 0} Koin`
+                          : `Rp ${(myAffiliateSummary?.totalEarned ?? 0).toLocaleString('id-ID')}`}
+                      </span>
+                    </div>
+                    <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex flex-col justify-between">
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Link Referral Anda</span>
+                      <button
+                        onClick={handleShareReferralLink}
+                        className="mt-2 w-full py-2 bg-white border border-[#2DB24A] hover:bg-[#2DB24A] hover:text-white text-[#0F5132] font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Share2 className="w-3.5 h-3.5" /> Salin & Bagikan Link
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 space-y-3">
+                    <h3 className="text-sm font-black text-gray-900 font-sora">Pohon Jaringan Downline Anda</h3>
+                    {myAffiliateSummary?.downline && myAffiliateSummary.downline.length > 0 ? (
+                      <div className="space-y-1">
+                        {myAffiliateSummary.downline.map((node: any) => (
+                          <CommunityDownlineNode key={node.id} node={node} depth={1} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 text-xs text-gray-400 border border-dashed border-gray-200 rounded-2xl">
+                        Belum ada anggota yang bergabung lewat link referral Anda di komunitas ini.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-100 space-y-3">
+                    <h3 className="text-sm font-black text-gray-900 font-sora">Riwayat Penghasilan Tier</h3>
+                    <div className="overflow-x-auto border border-gray-200 rounded-2xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-gray-50 border-b border-gray-200 text-[10px] uppercase font-bold text-gray-500">
+                          <tr>
+                            <th className="p-3">Tanggal</th>
+                            <th className="p-3">Tier</th>
+                            <th className="p-3">Jumlah</th>
+                            <th className="p-3">Keterangan</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 text-gray-700 font-medium">
+                          {myAffiliateSummary?.logs && myAffiliateSummary.logs.filter((l: any) => l.recipientType === 'REFERRER').length > 0 ? (
+                            myAffiliateSummary.logs
+                              .filter((l: any) => l.recipientType === 'REFERRER')
+                              .map((log: any, idx: number) => (
+                                <tr key={log.id || idx} className="hover:bg-gray-50/80">
+                                  <td className="p-3 text-[10px] text-gray-500 font-mono">
+                                    {log.createdAt ? new Date(log.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-bold text-[9px] rounded-full">Tier {log.tierLevel}</span>
+                                  </td>
+                                  <td className="p-3 font-mono font-extrabold text-[#0F5132]">
+                                    {myAffiliateSummary?.unit === 'KOIN' ? `🪙 ${Number(log.amount || 0)} Koin` : `Rp ${Number(log.amount || 0).toLocaleString('id-ID')}`}
+                                  </td>
+                                  <td className="p-3 text-[11px] text-gray-500">{log.description}</td>
+                                </tr>
+                              ))
+                          ) : (
+                            <tr>
+                              <td colSpan={4} className="p-6 text-center text-gray-400">Belum ada penghasilan afiliasi tercatat.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* TAB 24: PENGATURAN FITUR KOMUNITAS (CRUD TOGGLE MODULES) ────────── */}
             {activeSidebarNav === 'pengaturan' && (
               <div className="space-y-6">
@@ -7097,6 +7352,30 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                     </p>
                   </div>
 
+                  {!isKoperasi && (
+                    <div className="space-y-2 pb-2">
+                      <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                        Template Halaman
+                      </h3>
+                      <p className="text-[10px] text-gray-500 font-medium">
+                        Pilih tata letak bawaan komunitas. Mengganti template akan menyesuaikan fitur navigasi di bawah ke bawaan template tersebut.
+                      </p>
+                      <select
+                        value={detectedTemplateType === 'Custom' ? 'Custom' : templateTypeInput}
+                        onChange={(e) => handleSelectTemplateType(e.target.value)}
+                        className="w-full md:w-72 h-10 px-3 bg-gray-50/60 border border-gray-200/80 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#2DB24A]/50 transition-all cursor-pointer"
+                      >
+                        <option value="Society">Society</option>
+                        <option value="Business">Business</option>
+                        <option value="Education">Education</option>
+                        <option value="Culinary">Culinary</option>
+                        {detectedTemplateType === 'Custom' && (
+                          <option value="Custom" disabled>Custom (kombinasi fitur manual)</option>
+                        )}
+                      </select>
+                    </div>
+                  )}
+
                   <div className="space-y-4">
                     <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                       Daftar Fitur Navigasi
@@ -7105,22 +7384,32 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       {togglableModules.map((mod) => {
                         const isEnabled = !disabledModules.includes(mod.id)
                         const ModIcon = mod.icon
+                        const description = isKoperasi
+                          ? (KOPERASI_MODULE_DESCRIPTIONS[mod.id] || '')
+                          : (PERKUMPULAN_MODULE_DESCRIPTIONS[mod.id] || '')
+                        const defaultTemplates = isKoperasi ? [] : getModuleDefaultTemplates(mod.id)
+                        const templateNote = isKoperasi
+                          ? ''
+                          : defaultTemplates.length > 0
+                            ? `Bawaan aktif di template: ${defaultTemplates.join(', ')}.`
+                            : 'Tidak aktif bawaan di template manapun — perlu diaktifkan manual.'
                         return (
                           <div
                             key={mod.id}
                             className="p-4 bg-gray-50/60 border border-gray-200/80 rounded-2xl flex items-center justify-between hover:border-gray-300 transition-all"
                           >
                             <div className="flex items-center gap-3">
-                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold ${
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold shrink-0 ${
                                 isEnabled ? 'bg-[#E8F8EE] text-[#2DB24A]' : 'bg-gray-200 text-gray-400'
                               }`}>
                                 <ModIcon className="w-4 h-4" />
                               </div>
                               <div>
                                 <h4 className="text-xs font-black text-gray-900">{mod.label}</h4>
-                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">
-                                  {isEnabled ? 'Navigasi aktif di menu' : 'Navigasi disembunyikan'}
-                                </p>
+                                <p className="text-[10px] text-gray-500 font-medium mt-0.5">{description}</p>
+                                {templateNote && (
+                                  <p className="text-[10px] text-gray-400 font-medium">{templateNote}</p>
+                                )}
                               </div>
                             </div>
                             <button
@@ -7243,7 +7532,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                     </button>
                   </div>
 
-                  {/* SECTION 2: PENGATURAN REFERRAL MULTI-TIER (3-5 TIER) */}
+                  {/* SECTION 2: PENGATURAN REFERRAL MULTI-TIER (3-5 TIER) — Perkumpulan Premium only */}
+                  {isPerkumpulanPrem && (
                   <div className="pt-6 border-t border-gray-100 space-y-5">
                     <div>
                       <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
@@ -7260,7 +7550,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         <input
                           type="number"
                           value={refJoinFee}
-                          onChange={e => setRefJoinFee(Number(e.target.value))}
+                          onChange={e => handleJoinFeeChange(Number(e.target.value))}
                           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A]"
                         />
                       </div>
@@ -7269,7 +7559,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         <input
                           type="number"
                           value={refCommunityProfitShare}
-                          onChange={e => setRefCommunityProfitShare(Number(e.target.value))}
+                          onChange={e => handleProfitShareChange(Number(e.target.value))}
                           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A]"
                         />
                       </div>
@@ -7278,7 +7568,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         <input
                           type="number"
                           value={refReferralBudget}
-                          onChange={e => setRefReferralBudget(Number(e.target.value))}
+                          onChange={e => handleReferralBudgetChange(Number(e.target.value))}
                           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A]"
                         />
                       </div>
@@ -7405,14 +7695,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                 <input
                                   type="number"
                                   value={val}
-                                  onChange={e => {
-                                    const v = Number(e.target.value)
-                                    setRefTierPercentages(prev => {
-                                      const newArr = [...prev]
-                                      newArr[idx] = v
-                                      return newArr
-                                    })
-                                  }}
+                                  onChange={e => handleTierChange(idx, Number(e.target.value))}
                                   className="w-full border rounded-lg px-2 py-1 text-xs font-bold font-mono focus:outline-none focus:border-[#2DB24A]"
                                 />
                                 {refCommissionMethod === 'PERCENTAGE' && (
@@ -7460,96 +7743,62 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       </button>
                     </div>
                   </div>
+                  )}
 
-                  {/* SECTION 3: PENGATURAN MEMBERSHIP & BENEFIT PERKUMPULAN PREMIUM */}
-                  <div className="pt-6 border-t border-gray-100 space-y-5">
+                  {/* SECTION 2b: HARGA MASUK KOPERASI - Koperasi has no referral-tier tab,
+                      so its join fee (the same field that drives the "Berbayar • Rp..."
+                      badge on the landing page/hub/beranda) needs its own plain editor here. */}
+                  {isKoperasi && (
+                  <div className="pt-6 border-t border-gray-100 space-y-4">
                     <div>
                       <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
-                        <Award className="w-4 h-4 text-purple-600" /> Pengaturan Membership & Benefit Perkumpulan Premium
+                        <Handshake className="w-4 h-4 text-[#2DB24A]" /> Harga Masuk Koperasi
                       </h3>
                       <p className="text-xs text-gray-500 font-medium mt-0.5">
-                        Sebagai Admin Komunitas, Anda dapat menentukan sendiri biaya keanggotaan (membership fee), periode iuran, kit merchandise, dan benefit eksklusif bagi anggota komunitas Anda.
+                        Biaya yang dibayarkan calon anggota saat bergabung. Angka ini yang ditampilkan sebagai badge harga di halaman landing, hub komunitas, dan banner beranda.
                       </p>
                     </div>
-
-                    {/* Notice Alert */}
-                    <div className="p-4 bg-purple-50/80 border border-purple-200 rounded-2xl space-y-1.5">
-                      <div className="flex items-center gap-2 font-extrabold text-xs text-purple-900 font-sora">
-                        <Info className="w-4 h-4 text-purple-600 shrink-0" />
-                        <span>Catatan Transparansi Finansial Kas Komunitas:</span>
-                      </div>
-                      <p className="text-[11px] text-purple-800 font-medium leading-relaxed">
-                        Seluruh dana iuran membership anggota di bawah ini diatur penuh oleh Admin komunitas dan <strong>100% masuk ke Kas/Rekening Komunitas Anda</strong>. Biaya ini sepenuhnya terpisah dari <strong>Biaya Aktivasi Platform Saloka (Rp200.000)</strong> yang dibayarkan satu kali saat pendaftaran awal.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Model Keanggotaan Anggota</label>
-                        <select
-                          value={communityMembershipType}
-                          onChange={e => setCommunityMembershipType(e.target.value as any)}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#2DB24A]"
-                        >
-                          <option value="FREE">Gratis (Semua Anggota Bebas Join)</option>
-                          <option value="PREMIUM">Premium Berbayar (Exclusive Member)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Biaya Membership Anggota (Rp)</label>
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+                      <div className="w-full sm:w-64">
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Harga Masuk Koperasi (Rp)</label>
                         <input
                           type="number"
-                          value={communityMemberFee}
-                          onChange={e => setCommunityMemberFee(Number(e.target.value))}
-                          placeholder="e.g. 50000"
-                          disabled={communityMembershipType === 'FREE'}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A] disabled:bg-gray-100 disabled:opacity-60"
+                          value={koperasiJoinFee}
+                          onChange={e => setKoperasiJoinFee(Math.max(0, Number(e.target.value)))}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-[#2DB24A]"
                         />
                       </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Periode Keanggotaan</label>
-                        <select
-                          value={communityMemberFeePeriod}
-                          onChange={e => setCommunityMemberFeePeriod(e.target.value as any)}
-                          disabled={communityMembershipType === 'FREE'}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#2DB24A] disabled:bg-gray-100 disabled:opacity-60"
-                        >
-                          <option value="MONTHLY">Per Bulan (Bulanan)</option>
-                          <option value="YEARLY">Per Tahun (Tahunan)</option>
-                          <option value="ONETIME">Pembayaran Satu Kali (Selamanya)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Benefit Checklist */}
-                    <div className="space-y-2">
-                      <label className="block text-xs font-bold text-gray-800">Benefit & Fasilitas Anggota Premium:</label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        {[
-                          { id: 'b1', label: '🎽 Kit Merchandise Komunitas (Kaos, Pin & Stiker)' },
-                          { id: 'b2', label: '🎟️ Akses Event VIP & Kopdar Eksklusif Anggota' },
-                          { id: 'b3', label: '🏷️ Voucher Diskon Khusus Produk Anggota Merchant' },
-                          { id: 'b4', label: '🛡️ Lencana Profil Verified & Akses Direktori Kontak' },
-                        ].map((b) => (
-                          <div key={b.id} className="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
-                            <span className="text-xs font-bold text-gray-800">{b.label}</span>
-                            <span className="text-xs font-black text-emerald-600">✓ Aktif</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-2 flex justify-end">
                       <button
-                        onClick={() => {
-                          goeyToast.success('Pengaturan Membership & Benefit Perkumpulan Premium berhasil disimpan!')
-                        }}
-                        className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                        onClick={handleSaveKoperasiJoinFee}
+                        disabled={isSavingKoperasiJoinFee}
+                        className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
                       >
-                        Simpan Pengaturan Membership Premium
+                        {isSavingKoperasiJoinFee ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Harga Masuk'}
                       </button>
                     </div>
                   </div>
+                  )}
+
+                  {/* SECTION 2c: SKEMA AFILIASI KOPERASI (TETAP, TIDAK BISA DIUBAH) */}
+                  {isKoperasi && (
+                  <div className="pt-6 border-t border-gray-100 space-y-3">
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
+                        <Handshake className="w-4 h-4 text-[#2DB24A]" /> Skema Afiliasi Koperasi
+                      </h3>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">
+                        Reward afiliasi Koperasi bersifat tetap dan tidak dapat diubah oleh pengurus — dibayarkan dalam bentuk koin dari kas koin komunitas saat anggota baru bergabung.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {['Tier 1 — 3 Koin', 'Tier 2 — 1 Koin', 'Tier 3 — 1 Koin'].map((label, idx) => (
+                        <div key={idx} className="p-3 bg-[#E8F8EE] border border-[#2DB24A]/25 rounded-2xl text-center">
+                          <span className="text-xs font-extrabold text-[#0F5132]">{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  )}
 
                   {/* SECTION 4: HISTORI REFERRAL DOWNLINE & AUDIT LOG */}
                   <div className="pt-6 border-t border-gray-100 space-y-4">
@@ -7599,7 +7848,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                   </span>
                                 </td>
                                 <td className="p-3 font-mono font-extrabold text-[#0F5132]">
-                                  Rp {Number(log.amount || 0).toLocaleString('id-ID')}
+                                  {isKoperasi ? `🪙 ${Number(log.amount || 0)} Koin` : `Rp ${Number(log.amount || 0).toLocaleString('id-ID')}`}
                                 </td>
                                 <td className="p-3 text-[11px] text-gray-500">
                                   {log.description || '-'}
@@ -7637,227 +7886,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       </div>
 
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* ── MODALS (LOAN, PAYMENT, EDIT, INVESTMENT) ────────────────────── */}
+      {/* ── MODALS (LOAN, PAYMENT, EDIT) ─────────────────────────────────── */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-
-      {/* ── INVESTMENT MODAL ────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {investModalOpen && selectedProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md border border-gray-100 bg-white p-6 rounded-3xl shadow-2xl space-y-4"
-            >
-              <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-                <div>
-                  <h3 className="font-sora text-sm font-bold text-gray-900">
-                    Pendanaan Merchant
-                  </h3>
-                  <span className="text-[10px] text-gray-400">{selectedProject.title || selectedProject.name || 'Proyek Pendanaan'}</span>
-                </div>
-                <button onClick={() => setInvestModalOpen(false)} className="text-gray-400 hover:text-gray-700 text-sm font-bold cursor-pointer">✕</button>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
-                  <span className="text-gray-500">Target Dana:</span>
-                  <span className="font-bold text-gray-900">
-                    Rp {Number(selectedProject.targetAmount ?? selectedProject.target ?? 0).toLocaleString('id-ID')}
-                  </span>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-xl flex items-center justify-between">
-                  <span className="text-gray-500">Minimal Pendanaan:</span>
-                  <span className="font-bold text-[#2DB24A]">
-                    Rp {Number(selectedProject.minInvestment ?? selectedProject.minInvest ?? 50000).toLocaleString('id-ID')}
-                  </span>
-                </div>
-
-                <div className="space-y-1.5 pt-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Masukkan Jumlah Pendanaan (Rp)</label>
-                  <input
-                    type="number"
-                    value={investAmount}
-                    onChange={(e) => setInvestAmount(e.target.value)}
-                    min={Number(selectedProject.minInvestment ?? selectedProject.minInvest ?? 50000)}
-                    className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:outline-none focus:border-[#2DB24A]"
-                  />
-                </div>
-
-                {/* Payment Method Selector */}
-                <div className="space-y-1.5 pt-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pilih Metode Pembayaran</label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setInvestPaymentMethod('SALDO')}
-                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${investPaymentMethod === 'SALDO' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
-                        }`}
-                    >
-                      <Wallet className="w-3.5 h-3.5" /> Saldo Wallet
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInvestPaymentMethod('QRIS')}
-                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${investPaymentMethod === 'QRIS' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
-                        }`}
-                    >
-                      <QrCode className="w-3.5 h-3.5" /> QRIS Instant
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInvestPaymentMethod('BANK')}
-                      className={`p-2 rounded-xl border text-[10px] font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${investPaymentMethod === 'BANK' ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132]' : 'bg-gray-50 border-gray-200 text-gray-600'
-                        }`}
-                    >
-                      <Building2 className="w-3.5 h-3.5" /> Bank Transfer
-                    </button>
-                  </div>
-                </div>
-
-                {/* Details per method */}
-                {investPaymentMethod === 'SALDO' && (
-                  <div className="p-3 bg-white border border-gray-200 rounded-xl space-y-2 text-xs">
-                    <div className="flex justify-between items-center text-gray-700">
-                      <span>Saldo Wallet Anda:</span>
-                      <span className="font-mono font-extrabold text-[#0F5132]">Rp {userBalance.toLocaleString('id-ID')}</span>
-                    </div>
-                    {userBalance < Number(investAmount || 0) ? (
-                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-amber-900">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold">
-                          <Info className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>Saldo Wallet Rp {userBalance.toLocaleString('id-ID')} (Belum mencukupi)</span>
-                        </div>
-                        <p className="text-[10px] text-amber-800 font-medium leading-relaxed">
-                          Saldo Wallet Anda tidak mencukupi untuk investasi sebesar Rp {Number(investAmount || 0).toLocaleString('id-ID')}. Silakan bayar langsung lewat QRIS Instant atau Transfer Bank
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setInvestPaymentMethod('QRIS')}
-                          className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-[10px] rounded-lg shadow-sm transition-colors cursor-pointer text-center"
-                        >
-                          📱 Bayar via QRIS Instant
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-between items-center text-[10px] text-emerald-800 font-medium pt-1 border-t border-[#2DB24A]/20">
-                        <span>Sisa Saldo Setelah Investasi:</span>
-                        <span className="font-bold font-mono">Rp {(userBalance - Number(investAmount || 0)).toLocaleString('id-ID')}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {investPaymentMethod === 'QRIS' && (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-center space-y-2">
-                    <div className="bg-white p-2.5 rounded-xl inline-block shadow-sm border border-gray-200">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=QRIS_INVEST_${selectedProject.id}_${investAmount || 0}`}
-                        alt="QRIS Code"
-                        className="w-28 h-28 mx-auto rounded-lg"
-                      />
-                      <div className="flex items-center justify-center gap-1 mt-1 text-[9px] font-extrabold text-gray-800 uppercase tracking-wider">
-                        <QrCode className="w-3 h-3 text-[#2DB24A]" /> QRIS TERAS INVESTASI
-                      </div>
-                    </div>
-                    <p className="text-[9px] text-gray-500 font-medium">Scan dengan GoPay, OVO, Dana, ShopeePay, atau Mobile Banking.</p>
-                  </div>
-                )}
-
-                {investPaymentMethod === 'BANK' && (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1.5 text-xs">
-                    <span className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider">Nomor Virtual Account</span>
-                    <div className="flex justify-between items-center p-2.5 bg-white rounded-xl border border-gray-200">
-                      <div>
-                        <span className="block text-[9px] text-gray-400 font-bold">BCA Virtual Account</span>
-                        <span className="font-mono font-extrabold text-gray-900 text-xs">8801 9920 3841 002</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => goeyToast.success('Nomor Virtual Account BCA berhasil disalin!')}
-                        className="px-2.5 py-1 bg-[#E8F8EE] hover:bg-[#2DB24A] text-[#0F5132] hover:text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
-                      >
-                        Salin
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  disabled={investPaymentMethod === 'SALDO' && userBalance < Number(investAmount || 0)}
-                  onClick={() => {
-                    const amt = Number(investAmount || 0)
-                    const minAllowed = Number(selectedProject.minInvestment ?? selectedProject.minInvest ?? 50000)
-                    if (amt < minAllowed) {
-                      goeyToast.error(`Minimal investasi adalah Rp ${minAllowed.toLocaleString('id-ID')}`)
-                      return
-                    }
-
-                    if (investPaymentMethod === 'SALDO' && userBalance < amt) {
-                      goeyToast.error('Saldo Wallet Anda tidak mencukupi. Silakan gunakan QRIS Instant atau Transfer Bank.')
-                      return
-                    }
-
-                    if (investPaymentMethod === 'SALDO') {
-                      setUserBalance(prev => prev - amt)
-                    }
-
-                    const titleStr = selectedProject.title || selectedProject.name || 'Proyek Merchant'
-                    const now = new Date()
-                    const timeStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ', ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-
-                    // 1. Update project collected amount progress bar
-                    setFundingProjects(prev =>
-                      prev.map(p => (p.id === selectedProject.id ? { ...p, collectedAmount: (p.collectedAmount || 0) + amt } : p))
-                    )
-
-                    // 2. Record transaction in recentTransactions history
-                    setRecentTransactions(prev => [
-                      {
-                        id: `tx-${Date.now()}`,
-                        date: timeStr,
-                        title: `Investasi ${titleStr}`,
-                        amount: amt,
-                        status: 'Berhasil',
-                        type: 'INVESTMENT',
-                        isIncome: false
-                      },
-                      ...prev
-                    ])
-
-                    // 3. Update personal SHU calculation dynamically
-                    setUserShu((prev: any) => {
-                      const newTxTotal = (prev?.transaksiMember || 3500000) + amt
-                      const netProfit = shuConfig?.totalNetProfit || 500000000
-                      const poolJasaUsaha = (netProfit * (shuConfig?.pctJasaUsaha || 30)) / 100
-                      const newJasaUsaha = Math.round((newTxTotal / 500000000) * poolJasaUsaha)
-                      const jasaModal = prev?.shuJasaModalAmount || 250000
-
-                      return {
-                        ...prev,
-                        transaksiMember: newTxTotal,
-                        shuJasaUsahaAmount: newJasaUsaha,
-                        shuJasaModalAmount: jasaModal,
-                        totalShuAmount: newJasaUsaha + jasaModal
-                      }
-                    })
-
-                    goeyToast.success(`Investasi Rp ${amt.toLocaleString('id-ID')} pada "${titleStr}" berhasil dikonfirmasi!`)
-                    setInvestModalOpen(false)
-                  }}
-                  className={`w-full py-3 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 ${investPaymentMethod === 'SALDO' && userBalance < Number(investAmount || 0)
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-[#2DB24A] hover:bg-[#228e3b] text-white cursor-pointer'
-                    }`}
-                >
-                  Konfirmasi Investasi
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* ── MODAL KOMUNITAS BERBAYAR ──────────────── */}
       {renderPaidCommunityModal()}
@@ -8562,40 +8592,11 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   </div>
                 )}
 
-                {depositPaymentMethod === 'QRIS' && (
-                  <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-3 text-center">
-                    <div className="bg-white p-3 rounded-2xl inline-block shadow-sm border border-gray-200">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=QRIS_SETOR_${selectedSavingsProduct.id}_${depositAmount || 0}`}
-                        alt="QRIS Code"
-                        className="w-36 h-36 mx-auto rounded-lg"
-                      />
-                      <div className="flex items-center justify-center gap-1 mt-2 text-[10px] font-extrabold text-gray-800 uppercase tracking-wider">
-                        <QrCode className="w-3.5 h-3.5 text-[#2DB24A]" /> QRIS TERAS KOPERASI
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
-                      Scan QRIS ini dengan mobile banking atau e-wallet (GoPay, OVO, Dana, ShopeePay, LinkAja).
-                    </p>
-                  </div>
-                )}
-
-                {depositPaymentMethod === 'BANK' && (
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2 text-xs">
-                    <span className="block text-[10px] font-bold text-gray-700 uppercase tracking-wider">Nomor Virtual Account</span>
-                    <div className="flex justify-between items-center p-2.5 bg-white rounded-xl border border-gray-200">
-                      <div>
-                        <span className="block text-[9px] text-gray-400 font-bold">BCA Virtual Account</span>
-                        <span className="font-mono font-extrabold text-gray-900 text-xs">8801 2398 4920 192</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => goeyToast.success('Nomor Virtual Account BCA berhasil disalin!')}
-                        className="px-2.5 py-1 bg-[#E8F8EE] hover:bg-[#2DB24A] text-[#0F5132] hover:text-white font-bold text-[10px] rounded-lg transition-colors cursor-pointer"
-                      >
-                        Salin
-                      </button>
-                    </div>
+                {(depositPaymentMethod === 'QRIS' || depositPaymentMethod === 'BANK') && (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl text-center">
+                    <span className="text-[10px] text-gray-500 font-medium leading-relaxed">
+                      Anda akan diarahkan ke halaman pembayaran {depositPaymentMethod === 'QRIS' ? 'QRIS' : 'Transfer Bank'} untuk menyelesaikan setoran secara aman.
+                    </span>
                   </div>
                 )}
 
@@ -8663,55 +8664,78 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                 </div>
               </div>
 
-              {/* Total Card */}
-              <div className="p-4 bg-gradient-to-br from-[#0F5132] to-emerald-800 text-white rounded-2xl shadow-sm flex items-center justify-between">
-                <div>
-                  <span className="block text-[10px] text-emerald-200 font-bold uppercase tracking-wider">Estimasi Total SHU Diterima</span>
-                  <span className="font-sora font-extrabold text-xl md:text-2xl text-white">
-                    Rp {Math.round(userShu?.totalShuAmount || 670000).toLocaleString('id-ID')}
-                  </span>
-                </div>
-                <div className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold text-emerald-100 font-mono">
-                  RAT 2026
-                </div>
-              </div>
+              {(() => {
+                // userShu is a findMany() result (one row per year), not a single
+                // record - the fields below used to be read straight off the array
+                // and were always undefined, silently falling through to hardcoded
+                // numbers shown as if they were this member's real SHU.
+                const latestShu = Array.isArray(userShu) ? userShu[0] : null
+                if (!latestShu) {
+                  return (
+                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-center space-y-1">
+                      <p className="text-xs font-bold text-gray-600">Belum ada data SHU untuk Anda.</p>
+                      <p className="text-[11px] text-gray-500">
+                        Distribusi SHU akan muncul di sini setelah pengurus menghitung dan menyimpan hasil RAT tahun ini.
+                      </p>
+                    </div>
+                  )
+                }
+                return (
+                  <>
+                    {/* Total Card */}
+                    <div className="p-4 bg-gradient-to-br from-[#0F5132] to-emerald-800 text-white rounded-2xl shadow-sm flex items-center justify-between">
+                      <div>
+                        <span className="block text-[10px] text-emerald-200 font-bold uppercase tracking-wider">Total SHU Diterima</span>
+                        <span className="font-sora font-extrabold text-xl md:text-2xl text-white">
+                          Rp {Math.round(latestShu.totalShuAmount).toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                      <div className="px-3 py-1 bg-white/20 rounded-full text-[10px] font-bold text-emerald-100 font-mono">
+                        RAT {latestShu.year || shuConfig?.year || new Date().getFullYear()}
+                      </div>
+                    </div>
 
-              {/* Breakdown Grid */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Rincian Komponen Pembagian:</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 bg-[#E8F8EE] border border-[#2DB24A]/30 rounded-xl space-y-1">
-                    <span className="block text-[10px] font-bold text-[#0F5132] uppercase">1. SHU Jasa Modal</span>
-                    <span className="block font-mono font-extrabold text-emerald-800 text-sm">
-                      Rp {Math.round(userShu?.shuJasaModalAmount || 250000).toLocaleString('id-ID')}
-                    </span>
-                    <span className="block text-[9px] text-gray-500">
-                      Berdasarkan Simpanan Saya: Rp {(userShu?.simpananMember || 400000).toLocaleString('id-ID')}
-                    </span>
-                  </div>
+                    {/* Breakdown Grid */}
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Rincian Komponen Pembagian:</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div className="p-3 bg-[#E8F8EE] border border-[#2DB24A]/30 rounded-xl space-y-1">
+                          <span className="block text-[10px] font-bold text-[#0F5132] uppercase">1. SHU Jasa Modal</span>
+                          <span className="block font-mono font-extrabold text-emerald-800 text-sm">
+                            Rp {Math.round(latestShu.shuJasaModalAmount).toLocaleString('id-ID')}
+                          </span>
+                          <span className="block text-[9px] text-gray-500">
+                            Berdasarkan Simpanan Saya: Rp {latestShu.simpananMember.toLocaleString('id-ID')}
+                          </span>
+                        </div>
 
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
-                    <span className="block text-[10px] font-bold text-amber-800 uppercase">2. SHU Jasa Usaha</span>
-                    <span className="block font-mono font-extrabold text-amber-900 text-sm">
-                      Rp {Math.round(userShu?.shuJasaUsahaAmount || 420000).toLocaleString('id-ID')}
-                    </span>
-                    <span className="block text-[9px] text-gray-500">
-                      Berdasarkan Transaksi Saya: Rp {(userShu?.transaksiMember || 3500000).toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                          <span className="block text-[10px] font-bold text-amber-800 uppercase">2. SHU Jasa Usaha</span>
+                          <span className="block font-mono font-extrabold text-amber-900 text-sm">
+                            Rp {Math.round(latestShu.shuJasaUsahaAmount).toLocaleString('id-ID')}
+                          </span>
+                          <span className="block text-[9px] text-gray-500">
+                            Berdasarkan Transaksi Saya: Rp {latestShu.transaksiMember.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-              {/* Allocation Config Info */}
-              <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2 text-xs">
-                <span className="block font-bold text-gray-700 text-[11px]">Komposisi Pembagian Hasil Koperasi:</span>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-600 font-medium">
-                  <div className="flex justify-between"><span>Cadangan Koperasi:</span> <span className="font-bold">{shuConfig?.pctCadangan || 25}%</span></div>
-                  <div className="flex justify-between"><span>SHU Jasa Modal:</span> <span className="font-bold">{shuConfig?.pctJasaModal || 20}%</span></div>
-                  <div className="flex justify-between"><span>SHU Jasa Usaha:</span> <span className="font-bold">{shuConfig?.pctJasaUsaha || 30}%</span></div>
-                  <div className="flex justify-between"><span>Dana Diklat Member:</span> <span className="font-bold">{shuConfig?.pctPendidikan || 2.5}%</span></div>
-                </div>
-              </div>
+                    {/* Allocation Config Info */}
+                    {shuConfig && (
+                      <div className="p-3.5 bg-gray-50 border border-gray-200 rounded-xl space-y-2 text-xs">
+                        <span className="block font-bold text-gray-700 text-[11px]">Komposisi Pembagian Hasil Koperasi:</span>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-gray-600 font-medium">
+                          <div className="flex justify-between"><span>Cadangan Koperasi:</span> <span className="font-bold">{shuConfig?.pctCadangan ?? 0}%</span></div>
+                          <div className="flex justify-between"><span>SHU Jasa Modal:</span> <span className="font-bold">{shuConfig?.pctJasaModal ?? 0}%</span></div>
+                          <div className="flex justify-between"><span>SHU Jasa Usaha:</span> <span className="font-bold">{shuConfig?.pctJasaUsaha ?? 0}%</span></div>
+                          <div className="flex justify-between"><span>Dana Diklat Member:</span> <span className="font-bold">{shuConfig?.pctPendidikan ?? 0}%</span></div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
 
               <div className="pt-1">
                 <button
@@ -8884,6 +8908,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               <button
                 onClick={() => {
                   setDisabledModules(savedDisabledModules)
+                  setTemplateTypeInput(savedTemplateType)
                   if (pendingTargetNav) {
                     setActiveSidebarNav(pendingTargetNav as any)
                   }
@@ -8966,6 +8991,43 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   Tutup
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ACCESS DENIED MODAL - shown when a viewer opens a tab their role
+          can't see (e.g. a member hitting ?tab=pengaturan, or a visitor
+          hitting a member-only tab), typically via a shared or guessed link */}
+      <AnimatePresence>
+        {accessDeniedModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-[999] p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5 text-center border border-bank-blue-100"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-bank-blue-100 text-bank-blue-600 border border-bank-blue-200 flex items-center justify-center mx-auto shadow-xs">
+                <Lock className="w-7 h-7" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-base font-black text-gray-900 font-sora">
+                  Akses Ditolak
+                </h3>
+                <p className="text-xs text-gray-600 font-medium leading-relaxed px-2">
+                  Kamu tidak memiliki akses ke halaman ini.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAccessDeniedModalOpen(false)}
+                className="w-full py-3 bg-bank-blue-600 hover:bg-bank-blue-700 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all cursor-pointer"
+              >
+                Mengerti
+              </button>
             </motion.div>
           </div>
         )}

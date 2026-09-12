@@ -100,13 +100,8 @@ export const MENUS: Menu[] = [
     title: 'User Management',
     desc: 'Lihat daftar user, edit data, alamat IP, telepon',
     icon: Users,
-    category: 'PENGGUNA & MERCHANT',
-    // Role filtering stays in the existing dropdown (it covers all five roles);
-    // these tabs switch between two genuinely different views.
-    tabs: [
-      { key: 'daftar', label: 'Daftar User' },
-      { key: 'sertifikasi', label: 'Sertifikasi' }
-    ]
+    category: 'PENGGUNA & MERCHANT'
+    // Role filtering stays in the existing dropdown (it covers all five roles).
   },
   {
     key: 'merchants',

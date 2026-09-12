@@ -157,6 +157,7 @@ model User {
   role         Role          @default(CUSTOMER)
   isSuperAdmin Boolean       @default(false)  // Superadmin flag — hanya 1 akun
   adminPermissions String?   // JSON array string of allowed admin module keys
+  adminType    String?       @default("OPERASIONAL") // "OPERASIONAL" | "FINANCIAL" | "AUDIT_TRANSAKSI" — staff admin sub-role, ignored when isSuperAdmin
   latitude     Float?
   longitude    Float?
   lastIp       String?       // IP address terakhir login
@@ -614,7 +615,7 @@ model Community {
   avatarUrl         String?
   landingPageConfig String?
   waGroupLink       String?
-  templateType      String            @default("Community")
+  templateType      String            @default("Society")
 
   // Iuran (hanya untuk PAID/KOPERASI)
   joinFee           Float             @default(0)
@@ -631,11 +632,15 @@ model Community {
   // KYC Requirements
   isKycRequired     Boolean           @default(false)  // Opsi Admin: Wajibkan verifikasi KYC untuk bergabung
 
+  // Rekrutmen anggota baru dikunci manual/otomatis (mis. kas coin habis)
+  isRecruitmentLocked Boolean         @default(false)
+
   // Multi-Tier Referral System (Customizable 3-5 Tiers)
   referralBudget      Float             @default(40000)  // Dana referral (contoh: 40k dari 100k join fee)
   communityProfitShare Float            @default(60000)  // Keuntungan komunitas (contoh: 60k dari 100k join fee)
   maxTiers            Int               @default(3)      // Jumlah tier (3, 4, atau 5)
   tierPercentages     String            @default("[50,30,20]") // JSON array persentase komisi per tier
+  commissionMethod    String            @default("PERCENTAGE") // PERCENTAGE | NOMINAL
 
   isSuspended       Boolean           @default(false)
   isVerified        Boolean           @default(false)
@@ -678,6 +683,11 @@ model CommunityMembership {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   isInduk         Boolean     @default(false)
   isPaid          Boolean     @default(false)
+  // Who this member joined THIS community through, captured at join time from
+  // the community's own share link — set once, immutable, and scoped to this
+  // community only. Separate from User.parentAffiliateId (the platform-wide
+  // signup referrer), which drives product-sale commissions instead.
+  referrerId      String?
   // Untuk KOPERASI: simpanan
   simpananPokok   Float?      // Rp 100.000 sekali bayar
   simpananWajib   Float?      // Rp 25.000/bulan
@@ -726,6 +736,10 @@ model CoinTransaction {
   // Referensi objek terkait (opsional)
   relatedUserId    String? // user yang diundang / merchant yang diundang
   relatedVoucherId String? // voucher yang diredeem
+
+  // Payment-gateway order id for a real (non-free) coin top-up — unique so a
+  // replayed gateway verify call hits this constraint instead of double-crediting.
+  orderId String? @unique
 }
 
 // Master daftar voucher yang bisa ditukar coin
@@ -922,6 +936,11 @@ model CooperativeSavingsTransaction {
   createdById     String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  // Payment-gateway order id for a gateway-settled deposit (QRIS/Bank) — unique
+  // so a replayed gateway verify call hits this constraint instead of double-crediting.
+  // Null for manually-recorded (admin/SALDO) transactions, which have no gateway order.
+  orderId String? @unique
 
   @@index([communityId])
   @@index([userId])

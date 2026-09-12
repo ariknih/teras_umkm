@@ -5,11 +5,28 @@ import { db } from '@/lib/db'
 import { ensureSuperAdmin } from './admin'
 import { logAudit } from '@/lib/audit-log'
 import { getCurrentUser } from './auth'
+import { validateReferralAllocation, KOPERASI_FIXED_TIER_COINS } from '@/lib/referral-payout'
+import { deleteCache } from '@/lib/cache'
+import { revalidatePath } from 'next/cache'
 
 export async function getCommunityReferralConfig(communityId: string) {
   try {
     const community = await DataStore.getCommunityById(communityId)
     if (!community) return { error: 'Komunitas tidak ditemukan.' }
+
+    // Koperasi's affiliate reward is fixed and non-adjustable — no admin form,
+    // just the read-only 3/1/1 coin schedule.
+    if ((community as any).type === 'KOPERASI') {
+      return {
+        success: true,
+        config: {
+          isFixed: true,
+          maxTiers: KOPERASI_FIXED_TIER_COINS.length,
+          tierCoins: [...KOPERASI_FIXED_TIER_COINS],
+          commissionMethod: 'COIN_FIXED'
+        }
+      }
+    }
 
     let tierPercentages: number[] = [50, 30, 20]
     if (community.tierPercentages) {
@@ -29,7 +46,7 @@ export async function getCommunityReferralConfig(communityId: string) {
         maxTiers: community.maxTiers ?? 3,
         tierPercentages,
         isKycRequired: Boolean(community.isKycRequired),
-        commissionMethod: (community as any).commissionMethod || 'PERCENTAGE'
+        commissionMethod: community.commissionMethod || 'PERCENTAGE'
       }
     }
   } catch (e: any) {
@@ -54,36 +71,42 @@ export async function updateCommunityReferralConfig(data: {
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
   try {
-    // Enforce max 2 tier untuk KOPERASI
     const community = await DataStore.getCommunityById(data.communityId)
     if (!community) return { error: 'Komunitas tidak ditemukan.' }
     if (community.ketuaId !== user.id && user.role !== 'ADMIN') {
       return { error: 'Anda tidak memiliki wewenang untuk mengubah komunitas ini.' }
     }
-    if ((community as any).category === 'KOPERASI') {
-      if (data.maxTiers > 2) {
-        return { error: 'Koperasi hanya bisa memiliki maksimal 2 tier referral.' }
-      }
-      if (data.maxTiers < 1) {
-        return { error: 'Minimal 1 tier diperlukan.' }
-      }
-    } else {
-      if (data.maxTiers < 3 || data.maxTiers > 5) {
-        return { error: 'Jumlah tier harus antara 3 sampai 5.' }
-      }
+    // Koperasi's affiliate reward is fixed (3/1/1 coins) and cannot be
+    // reconfigured — only Perkumpulan Premium's referral tiers are editable.
+    if ((community as any).type === 'KOPERASI') {
+      return { error: 'Skema afiliasi Koperasi bersifat tetap (3/1/1 koin per tier) dan tidak dapat diubah.' }
+    }
+    // Only Perkumpulan Premium (has a join fee) can run affiliate tiers —
+    // Reguler is free-to-join, so there is no fee to split across tiers.
+    if (!community.joinFee || community.joinFee <= 0) {
+      return { error: 'Program afiliasi hanya tersedia untuk Perkumpulan Premium. Aktifkan biaya masuk (join fee) terlebih dahulu.' }
+    }
+    if (data.maxTiers < 3 || data.maxTiers > 5) {
+      return { error: 'Jumlah tier harus antara 3 sampai 5.' }
     }
 
-    // Only enforce 100% for PERCENTAGE mode
+    // PERCENTAGE tiers must sum to 100%; NOMINAL tiers must sum to the budget
+    // itself (computeTierAmount treats a NOMINAL tier value as a raw Rupiah
+    // amount, not a percentage — previously unvalidated server-side).
     if (!data.commissionMethod || data.commissionMethod === 'PERCENTAGE') {
       const totalPct = data.tierPercentages.reduce((sum, p) => sum + p, 0)
       if (Math.abs(totalPct - 100) > 0.1) {
         return { error: 'Total persentase persentase tier harus 100%.' }
       }
+    } else {
+      const totalNominal = data.tierPercentages.reduce((sum, p) => sum + p, 0)
+      if (totalNominal !== data.referralBudget) {
+        return { error: 'Total nominal tier harus sama dengan Total Alokasi Dana Referral.' }
+      }
     }
 
-    if (data.referralBudget + data.communityProfitShare > data.joinFee) {
-      return { error: 'Alokasi dana referral dan kas komunitas melebihi harga masuk.' }
-    }
+    const allocationError = validateReferralAllocation(data.joinFee, data.referralBudget, data.communityProfitShare, true)
+    if (allocationError) return { error: allocationError }
 
     const updated = await DataStore.updateCommunityReferralConfig({
       communityId: data.communityId,
@@ -98,7 +121,7 @@ export async function updateCommunityReferralConfig(data: {
       await DataStore.updateCommunity(data.communityId, {
         name: updated.name,
         ...(data.isKycRequired !== undefined ? { isKycRequired: data.isKycRequired } : {}),
-        ...((data.commissionMethod !== undefined) ? { commissionMethod: data.commissionMethod } as any : {})
+        ...((data.commissionMethod !== undefined) ? { commissionMethod: data.commissionMethod } : {})
       })
     }
     await logAudit({
@@ -111,6 +134,14 @@ export async function updateCommunityReferralConfig(data: {
       targetType: 'COMMUNITY',
       detail: `Join fee Rp ${data.joinFee.toLocaleString('id-ID')}, ${data.maxTiers} tier.`
     })
+
+    // This just changed community.joinFee (the field that decides Perkumpulan
+    // Premium status) in the DB — the cached getIndukCommunityDetail() read
+    // must not keep serving the pre-save value, or the client's next
+    // loadData() resets its local joinFee and a subsequent "Simpan
+    // Pengaturan" resends the stale value, wiping Premium status back out.
+    deleteCache(`community:induk:${data.communityId}`)
+    revalidatePath(`/community/${data.communityId}`)
 
     return { success: true, updated }
   } catch (e: any) {
@@ -127,11 +158,48 @@ export async function getCommunityReferralHistory(communityId: string) {
   }
 }
 
+// A member's own affiliate view for one community: their referral link's
+// downline tree and every tier payout they personally received — the
+// per-member counterpart to the ketua-only getCommunityReferralHistory above.
+export async function getMyCommunityAffiliateSummary(communityId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
+
+  try {
+    const community = await DataStore.getCommunityById(communityId)
+    if (!community) return { error: 'Komunitas tidak ditemukan.' }
+
+    const [logs, downline] = await Promise.all([
+      DataStore.getMyCommunityReferralLogs(communityId, user.id),
+      DataStore.getCommunityAffiliateDownline(communityId, user.id)
+    ])
+
+    const isKoperasi = (community as any).type === 'KOPERASI'
+    const totalEarned = (logs || [])
+      .filter((l: any) => l.recipientType === 'REFERRER')
+      .reduce((sum: number, l: any) => sum + Number(l.amount || 0), 0)
+
+    return {
+      success: true,
+      unit: isKoperasi ? 'KOIN' : 'RUPIAH',
+      totalEarned,
+      logs: logs || [],
+      downline: downline || []
+    }
+  } catch (e: any) {
+    return { error: e.message || 'Gagal mengambil data afiliasi Anda.' }
+  }
+}
+
 // ponytail: was previously exported with no auth check at all — every referral
 // payout in normal flow already happens inside payCommunityJoinFee/createOrder,
 // this manual trigger is for a super admin to reprocess one, not for client use.
-export async function processMultiTierReferralPayout(communityId: string, buyerId: string, totalFee: number) {
+// It bypasses the isPaid compare-and-swap those two paths use, so every call
+// pays out again regardless of prior payouts — `force` must be explicit so a
+// replay is never triggered by accident.
+export async function processMultiTierReferralPayout(communityId: string, buyerId: string, totalFee: number, force: boolean) {
   const admin = await ensureSuperAdmin()
+  if (!force) return { error: 'Konfirmasi force=true diperlukan untuk memproses ulang komisi referral secara manual.' }
   try {
     const res = await DataStore.processMultiTierCommunityReferral({ communityId, buyerId, totalFee })
     await logAudit({
