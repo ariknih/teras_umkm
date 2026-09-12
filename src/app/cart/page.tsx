@@ -95,8 +95,27 @@ export default function CartPage() {
   const cartDetails = cart
     .map((item) => {
       const prod = products.find((p) => p.id === item.productId)
-      if (!prod) return null
       const cartItemId = `${item.productId}${item.variantId ? `__var__${item.variantId}` : ''}`
+      if (!prod) {
+        return {
+          id: cartItemId,
+          originalProductId: item.productId,
+          title: item.variantName ? `Produk (${item.variantName})` : 'Produk Tidak Ditemukan',
+          price: item.variantPrice || 0,
+          category: '',
+          stock: 0,
+          imageUrl: item.variantImage || null,
+          quantity: item.quantity,
+          variantId: item.variantId,
+          variantName: item.variantName,
+          merchantId: 'unavailable',
+          merchant: { id: 'unavailable', name: 'Produk Tidak Tersedia', email: '', role: 'MERCHANT' },
+          isUnavailable: true,
+          unavailableReason: 'Produk sudah tidak aktif atau dihapus'
+        }
+      }
+      const isOutOfStock = prod.stock <= 0
+      const isInactive = (prod as any).status === 'INACTIVE' || (prod as any).isArchived
       return {
         ...prod,
         originalProductId: prod.id,
@@ -105,14 +124,21 @@ export default function CartPage() {
         imageUrl: item.variantImage || prod.imageUrl,
         variantId: item.variantId,
         variantName: item.variantName,
-        quantity: item.quantity
+        quantity: item.quantity,
+        isUnavailable: isOutOfStock || isInactive,
+        unavailableReason: isInactive
+          ? 'Produk sudah tidak aktif'
+          : isOutOfStock
+          ? 'Stok produk habis'
+          : null
       }
-    })
-    .filter(Boolean) as Array<ProductDetails & {
+    }) as Array<ProductDetails & {
       originalProductId: string
       variantId?: string
       variantName?: string
       quantity: number
+      isUnavailable?: boolean
+      unavailableReason?: string | null
     }>
 
   const [viewMode, setViewMode] = useState<'cart' | 'checkout'>(
@@ -189,9 +215,20 @@ export default function CartPage() {
   // Payment Method
   const [paymentMethod, setPaymentMethod] = useState<'DIRECT' | 'WALLET' | 'COD' | 'MANUAL'>('DIRECT')
   const [activePaymentSubId, setActivePaymentSubId] = useState<string>('QRIS')
+  const [isVaDropdownOpen, setIsVaDropdownOpen] = useState(false)
+  const [selectedVaBank, setSelectedVaBank] = useState<string>('VA_BCA')
   const [dynamicPaymentMethods, setDynamicPaymentMethods] = useState<any[]>([])
   const [directPaymentData, setDirectPaymentData] = useState<DokuDirectPaymentData | null>(null)
   const [isDirectModalOpen, setIsDirectModalOpen] = useState(false)
+
+  const VA_BANKS = [
+    { id: 'VA_BCA', label: 'BCA Virtual Account', shortName: 'BCA' },
+    { id: 'VA_MANDIRI', label: 'Mandiri Virtual Account', shortName: 'Mandiri' },
+    { id: 'VA_BRI', label: 'BRI Virtual Account', shortName: 'BRI' },
+    { id: 'VA_BNI', label: 'BNI Virtual Account', shortName: 'BNI' },
+    { id: 'VA_PERMATA', label: 'Permata Virtual Account', shortName: 'Permata' },
+    { id: 'VA_CIMB', label: 'CIMB Niaga Virtual Account', shortName: 'CIMB Niaga' },
+  ]
 
   // Google Maps state
   const [map, setMap] = useState<any>(null)
@@ -484,6 +521,19 @@ export default function CartPage() {
         
         const list = await getProducts()
         setProducts(list as any)
+
+        // Prune any unavailable or out-of-stock items from selectedItemIds
+        setSelectedItemIds(prev => {
+          const next = new Set<string>()
+          prev.forEach(id => {
+            const [pId] = id.split('__var__')
+            const p = (list as any[]).find((item: any) => item.id === pId)
+            if (p && p.stock > 0 && p.status !== 'INACTIVE' && !p.isArchived) {
+              next.add(id)
+            }
+          })
+          return next
+        })
 
         const profile = await getCurrentUserProfile()
         if (profile) {
@@ -782,26 +832,32 @@ export default function CartPage() {
       return
     }
 
-    // Build items payload — merges regular products with real, DB-backed
-    // Snackbox products (boxCount multiplied in here since createOrder has
-    // no concept of "boxes", only per-item quantity).
+    // Build items payload — only include available, active products
     const itemsPayload = [
-      ...selectedCartDetails.map((item) => ({
-        productId: item.originalProductId || item.id.split('__var__')[0],
-        quantity: item.quantity,
-        note: item.variantName 
-          ? `[Varian: ${item.variantName}] ${itemNotes[item.id] || ''}`.trim()
-          : (itemNotes[item.id] || undefined)
-      })),
+      ...selectedCartDetails
+        .filter((item) => !item.isUnavailable)
+        .map((item) => ({
+          productId: item.originalProductId || item.id.split('__var__')[0],
+          quantity: item.quantity,
+          note: item.variantName 
+            ? `[Varian: ${item.variantName}] ${itemNotes[item.id] || ''}`.trim()
+            : (itemNotes[item.id] || undefined)
+        })),
       ...(hasSnackboxSelected
         ? snackboxCart!.items
-            .filter((i: any) => i.selected)
+            .filter((i: any) => i.selected && !isSnackItemUnavailable(i))
             .map((i: any) => ({
-              productId: i.product.id,
-              quantity: i.quantity * (snackboxCart!.boxCount || 1)
+              productId: i.product?.id || i.id,
+              quantity: (i.quantity || 1) * (snackboxCart!.boxCount || 1)
             }))
         : [])
     ]
+
+    if (itemsPayload.length === 0) {
+      setError('Tidak ada produk aktif yang dipilih. Silakan hapus produk yang tidak aktif atau habis dari keranjang.')
+      setIsPendingCheckout(false)
+      return
+    }
 
     const merchantObj = cartDetails[0]?.merchant;
     let merchantAddress = '';
@@ -966,11 +1022,32 @@ export default function CartPage() {
     return basePrice;
   };
 
-  const selectedCartDetails = cartDetails.filter((item) => selectedItemIds.has(item.id));
-  const hasSnackboxSelected = !!(snackboxCart && isSnackboxSelected && snackboxCart.items?.length > 0);
+  const isSnackItemUnavailable = (i: any) => {
+    if (!products || products.length === 0) return false;
+    const prod = products.find(p => p.id === (i.product?.id || i.id));
+    if (!prod) return true;
+    if (prod.stock <= 0) return true;
+    if ((prod as any).status === 'INACTIVE' || (prod as any).isArchived) return true;
+    return false;
+  };
+
+  const getSnackItemUnavailableReason = (i: any) => {
+    if (!products || products.length === 0) return null;
+    const prod = products.find(p => p.id === (i.product?.id || i.id));
+    if (!prod) return 'Kue sudah tidak aktif atau dihapus';
+    if (prod.stock <= 0) return 'Stok kue habis';
+    if ((prod as any).status === 'INACTIVE' || (prod as any).isArchived) return 'Kue sedang tidak aktif';
+    return null;
+  };
+
+  const selectedCartDetails = cartDetails.filter((item) => selectedItemIds.has(item.id) && !item.isUnavailable);
+  const hasAvailableSnackItems = snackboxCart?.items?.some((i: any) => !isSnackItemUnavailable(i));
+  const hasSnackboxSelected = !!(snackboxCart && isSnackboxSelected && hasAvailableSnackItems);
 
   const snackboxItemsTotal = snackboxCart?.items
-    ? snackboxCart.items.reduce((acc: number, item: any) => acc + ((item.product?.price || item.price || 0) * (item.quantity || 1)), 0)
+    ? snackboxCart.items
+        .filter((item: any) => !isSnackItemUnavailable(item))
+        .reduce((acc: number, item: any) => acc + ((item.product?.price || item.price || 0) * (item.quantity || 1)), 0)
     : 0;
   const snackboxSubtotal = snackboxItemsTotal * (snackboxCart?.boxCount || 1);
 
@@ -979,9 +1056,36 @@ export default function CartPage() {
     return sum + price * item.quantity;
   }, 0);
 
-  const subtotal = regularSubtotal + (snackboxCart && isSnackboxSelected ? snackboxSubtotal : 0);
+  const subtotal = regularSubtotal + (hasSnackboxSelected ? snackboxSubtotal : 0);
 
-  const selectedPesananCount = selectedCartDetails.length + (snackboxCart?.items?.length && isSnackboxSelected ? 1 : 0);
+  const hasUnavailableCartItems = cartDetails.some(i => i.isUnavailable);
+  const hasUnavailableSnackItems = snackboxCart?.items?.some((i: any) => isSnackItemUnavailable(i));
+  const hasAnyUnavailableItems = hasUnavailableCartItems || hasUnavailableSnackItems;
+
+  const handleClearUnavailableItems = () => {
+    // 1. Remove unavailable regular cart items
+    const availableRegular = cart.filter(item => {
+      const prod = products.find(p => p.id === item.productId);
+      if (!prod) return false;
+      if (prod.stock <= 0) return false;
+      if ((prod as any).status === 'INACTIVE' || (prod as any).isArchived) return false;
+      return true;
+    });
+    saveCart(availableRegular);
+
+    // 2. Remove unavailable snackbox items
+    if (snackboxCart?.items) {
+      const availableSnackItems = snackboxCart.items.filter((i: any) => !isSnackItemUnavailable(i));
+      const updatedSnack = { ...snackboxCart, items: availableSnackItems };
+      setSnackboxCart(updatedSnack);
+      localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updatedSnack));
+      window.dispatchEvent(new Event('storage'));
+    }
+
+    setError(null);
+  };
+
+  const selectedPesananCount = selectedCartDetails.length + (hasSnackboxSelected ? 1 : 0);
 
   const selectedCourierRate = courierRates.find((r) => r.courier_code === selectedCourier);
   const shippingFee = deliveryMethod === 'PICKUP' ? 0 : (selectedCourierRate ? selectedCourierRate.price : 0);
@@ -1151,15 +1255,39 @@ export default function CartPage() {
               
               {/* Left Column: Items */}
               <div className="lg:col-span-8 space-y-4">
+                {/* Notice if any unavailable items exist */}
+                {hasAnyUnavailableItems && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <div>
+                        <span className="font-bold block">Terdapat produk yang habis atau tidak aktif</span>
+                        <span className="text-slate-600">Produk yang tidak aktif otomatis berwarna abu dan dinonaktifkan dari checkout.</span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleClearUnavailableItems}
+                      className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-colors cursor-pointer shrink-0 text-xs shadow-2xs"
+                    >
+                      Hapus Produk Tidak Aktif
+                    </button>
+                  </div>
+                )}
+
                 {/* Select all bar */}
                 <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3 text-xs text-slate-700 font-medium">
                   <input
                     type="checkbox"
-                    checked={selectedItemIds.size === cartDetails.length && (snackboxCart?.items?.length ? isSnackboxSelected : true)}
+                    checked={
+                      cartDetails.filter(i => !i.isUnavailable).length > 0 &&
+                      cartDetails.filter(i => !i.isUnavailable).every(i => selectedItemIds.has(i.id)) &&
+                      (hasAvailableSnackItems ? isSnackboxSelected : true)
+                    }
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedItemIds(new Set(cartDetails.map(i => i.id)))
-                        setIsSnackboxSelected(true)
+                        setSelectedItemIds(new Set(cartDetails.filter(i => !i.isUnavailable).map(i => i.id)))
+                        if (hasAvailableSnackItems) setIsSnackboxSelected(true)
                       } else {
                         setSelectedItemIds(new Set())
                         setIsSnackboxSelected(false)
@@ -1168,7 +1296,7 @@ export default function CartPage() {
                     className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
                   />
                   <span className="font-bold text-slate-800">
-                    Pilih semua pesanan ({cartDetails.length + (snackboxCart?.items?.length ? 1 : 0)})
+                    Pilih semua pesanan aktif ({cartDetails.filter(i => !i.isUnavailable).length + (hasAvailableSnackItems ? 1 : 0)})
                   </span>
                 </div>
 
@@ -1201,9 +1329,44 @@ export default function CartPage() {
                     {/* Item Rows */}
                     <div className="space-y-4">
                       {snackboxCart.items.map((i: any, idx: number) => {
+                        const isUnavailable = isSnackItemUnavailable(i);
+                        const reason = getSnackItemUnavailableReason(i);
                         const itemPrice = i.product?.price || i.price || 0
                         const itemTitle = i.product?.title || i.title
                         const itemImage = i.product?.imageUrl || i.imageUrl
+
+                        if (isUnavailable) {
+                          return (
+                            <div key={i.product?.id || idx} className="p-3 rounded-xl bg-slate-100/70 border border-slate-200/80 opacity-75 flex items-center gap-3">
+                              <img
+                                src={itemImage}
+                                alt={itemTitle}
+                                className="w-14 h-14 rounded-xl object-cover bg-slate-200 shrink-0 grayscale opacity-60"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm text-slate-500 line-through truncate">{itemTitle}</h4>
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md mt-1">
+                                  <AlertCircle size={12} />
+                                  {reason}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedItems = snackboxCart.items.filter((_: any, iidx: number) => iidx !== idx);
+                                  const updated = { ...snackboxCart, items: updatedItems };
+                                  setSnackboxCart(updated);
+                                  localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated));
+                                  window.dispatchEvent(new Event('storage'));
+                                }}
+                                className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div key={i.product?.id || idx} className="flex items-center gap-3">
                             <img
@@ -1382,30 +1545,94 @@ export default function CartPage() {
 
                   return Object.entries(groups).map(([mId, items]) => {
                     const shopName = items[0]?.merchant?.name || 'Toko Mitra Saloka';
+                    const isAllUnavailable = items.every(i => i.isUnavailable);
+                    const availableItems = items.filter(i => !i.isUnavailable);
+                    const isAllAvailableChecked = availableItems.length > 0 && availableItems.every(i => selectedItemIds.has(i.id));
+
                     return (
-                      <div key={mId} className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+                      <div key={mId} className={`rounded-2xl p-5 border shadow-xs space-y-4 ${
+                        isAllUnavailable ? 'bg-slate-50/80 border-slate-200 opacity-80' : 'bg-white border-slate-200/80'
+                      }`}>
                         <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100">
                           <input
                             type="checkbox"
-                            checked={items.every(i => selectedItemIds.has(i.id))}
+                            disabled={isAllUnavailable}
+                            checked={isAllAvailableChecked}
                             onChange={(e) => {
                               const next = new Set(selectedItemIds)
-                              items.forEach(i => {
+                              availableItems.forEach(i => {
                                 if (e.target.checked) next.add(i.id)
                                 else next.delete(i.id)
                               })
                               setSelectedItemIds(next)
                             }}
-                            className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
+                            className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                           />
                           <Store className="w-4 h-4 text-slate-500 shrink-0" />
                           <span className="font-bold text-sm text-slate-900">{shopName}</span>
+                          {isAllUnavailable && (
+                            <span className="text-[10px] font-bold text-slate-400 bg-slate-200/70 px-2 py-0.5 rounded-full ml-auto">
+                              Produk Tidak Aktif
+                            </span>
+                          )}
                         </div>
 
                         <div className="space-y-4">
                           {items.map(item => {
                             const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
-                            const isChecked = selectedItemIds.has(item.id);
+                            const isChecked = selectedItemIds.has(item.id) && !item.isUnavailable;
+
+                            if (item.isUnavailable) {
+                              return (
+                                <div key={item.id} className="p-3.5 rounded-2xl bg-slate-100/70 border border-slate-200/80 opacity-75 space-y-2">
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="checkbox"
+                                      disabled
+                                      checked={false}
+                                      className="w-4 h-4 rounded opacity-30 cursor-not-allowed shrink-0"
+                                    />
+                                    <div className="w-16 h-16 bg-slate-200/80 border border-slate-200 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center grayscale opacity-60">
+                                      {item.imageUrl ? (
+                                        <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
+                                      ) : (
+                                        <Package className="w-6 h-6 text-slate-400" />
+                                      )}
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div>
+                                          <h4 className="font-bold text-sm text-slate-500 line-through truncate">{item.title}</h4>
+                                          {item.variantName && (
+                                            <span className="inline-block text-[10px] font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded mt-0.5">
+                                              Varian: {item.variantName}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                                          <AlertCircle size={12} />
+                                          {item.unavailableReason}
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center justify-end gap-3 mt-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveItem(item.id)}
+                                          className="text-xs font-bold text-rose-500 hover:text-rose-700 underline transition-colors cursor-pointer"
+                                        >
+                                          Hapus dari Keranjang
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
 
                             return (
                               <div key={item.id} className="pb-4 border-b border-slate-100 last:border-b-0 last:pb-0 space-y-2">
@@ -1591,6 +1818,25 @@ export default function CartPage() {
               </div>
             </div>
 
+            {hasAnyUnavailableItems && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <div>
+                    <span className="font-bold block">Terdapat produk yang habis atau tidak aktif</span>
+                    <span className="text-slate-600">Produk yang tidak aktif otomatis dinonaktifkan dan tidak akan diproses dalam pembayaran.</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearUnavailableItems}
+                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-colors cursor-pointer shrink-0 text-xs shadow-2xs"
+                >
+                  Hapus Produk Tidak Aktif
+                </button>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
               {/* Left Column (Address & Merchant Items) */}
@@ -1638,16 +1884,65 @@ export default function CartPage() {
                 {/* 2. Snackbox Saloka (only if selected in cart) */}
                 {snackboxCart && isSnackboxSelected && snackboxCart.items?.length > 0 && (
                   <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
-                    <div className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2.5 flex items-center gap-2">
-                      <Gift className="w-4 h-4 text-[#006E24]" />
-                      <span>Snackbox Saloka</span>
+                    <div className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2.5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Gift className="w-4 h-4 text-[#006E24]" />
+                        <span>Snackbox Saloka</span>
+                      </div>
+                      {snackboxCart.items.some((i: any) => isSnackItemUnavailable(i)) && (
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                          Ada kue habis/nonaktif
+                        </span>
+                      )}
                     </div>
 
                     <div className="space-y-3">
                       {snackboxCart.items.map((i: any, idx: number) => {
-                        const itemPrice = i.product?.price || i.price || 0
-                        const itemTitle = i.product?.title || i.title
-                        const itemImage = i.product?.imageUrl || i.imageUrl
+                        const isUnavailable = isSnackItemUnavailable(i);
+                        const reason = getSnackItemUnavailableReason(i);
+                        const itemPrice = i.product?.price || i.price || 0;
+                        const itemTitle = i.product?.title || i.title;
+                        const itemImage = i.product?.imageUrl || i.imageUrl;
+
+                        if (isUnavailable) {
+                          return (
+                            <div key={i.product?.id || idx} className="p-3 rounded-xl bg-slate-100/70 border border-slate-200/80 opacity-75 flex items-center justify-between gap-3 text-xs">
+                              <div className="flex gap-3 items-center min-w-0">
+                                <div className="w-14 h-14 bg-slate-200 border border-slate-200 rounded-lg overflow-hidden shrink-0 flex items-center justify-center grayscale opacity-60">
+                                  {itemImage ? (
+                                    <img src={itemImage} alt={itemTitle} className="object-cover w-full h-full" />
+                                  ) : (
+                                    <Package className="w-6 h-6 text-slate-400" />
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="font-bold text-slate-500 line-through text-xs truncate">{itemTitle}</h4>
+                                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                                      <AlertCircle size={10} />
+                                      {reason || 'Kue tidak aktif'}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 italic">Tidak ditagih</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedItems = snackboxCart.items.filter((_: any, iidx: number) => iidx !== idx);
+                                  const updated = { ...snackboxCart, items: updatedItems };
+                                  setSnackboxCart(updated);
+                                  localStorage.setItem('saloka_snackbox_cart_v1', JSON.stringify(updated));
+                                  window.dispatchEvent(new Event('storage'));
+                                }}
+                                className="text-xs font-bold text-rose-500 hover:text-rose-700 underline transition-colors cursor-pointer shrink-0"
+                              >
+                                Hapus
+                              </button>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div key={i.product?.id || idx} className="flex items-center justify-between gap-4 pb-3 border-b border-slate-50 last:border-b-0 text-xs">
                             <div className="flex gap-3 items-center">
@@ -1661,7 +1956,7 @@ export default function CartPage() {
                               <div className="text-[10px] text-slate-400 font-normal">{i.quantity || 1}pcs x Rp{itemPrice.toLocaleString('id-ID')}</div>
                             </div>
                           </div>
-                        )
+                        );
                       })}
                     </div>
 
@@ -1678,8 +1973,9 @@ export default function CartPage() {
 
                 {/* 3. Merchant Store Card & Items */}
                 {(() => {
+                  const checkoutItems = cartDetails.filter(item => selectedItemIds.has(item.id));
                   const groups: Record<string, typeof cartDetails> = {};
-                  selectedCartDetails.forEach(item => {
+                  checkoutItems.forEach(item => {
                     const mId = item.merchantId || 'unknown';
                     if (!groups[mId]) groups[mId] = [];
                     groups[mId].push(item);
@@ -1687,15 +1983,65 @@ export default function CartPage() {
 
                   return Object.entries(groups).map(([mId, items]) => {
                     const shopName = items[0]?.merchant?.name || 'Toko Mitra';
+                    const hasUnavailable = items.some(i => i.isUnavailable);
+                    const hasAvailableInShop = items.some(i => !i.isUnavailable);
+
                     return (
                       <div key={mId} className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-4">
-                        <div className="font-bold text-xs text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-1.5">
-                          <Store className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span>{shopName}</span>
+                        <div className="font-bold text-xs text-slate-800 border-b border-slate-100 pb-2 flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Store className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            <span>{shopName}</span>
+                          </div>
+                          {hasUnavailable && (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                              Ada produk tidak aktif
+                            </span>
+                          )}
                         </div>
 
                         <div className="space-y-3">
                           {items.map(item => {
+                            if (item.isUnavailable) {
+                              return (
+                                <div key={item.id} className="p-3 rounded-xl bg-slate-100/70 border border-slate-200/80 opacity-75 flex items-center justify-between gap-4 text-xs">
+                                  <div className="flex gap-3 items-center min-w-0">
+                                    <div className="w-14 h-14 bg-slate-200/80 border border-slate-200 rounded-lg overflow-hidden shrink-0 flex items-center justify-center grayscale opacity-60">
+                                      {item.imageUrl ? (
+                                        <img src={item.imageUrl} alt={item.title} className="object-cover w-full h-full" />
+                                      ) : (
+                                        <Package className="w-6 h-6 text-slate-400" />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <h4 className="font-bold text-slate-500 line-through text-xs truncate">{item.title}</h4>
+                                      {item.variantName && (
+                                        <span className="inline-block text-[10px] font-bold text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded mt-0.5">
+                                          Varian: {item.variantName}
+                                        </span>
+                                      )}
+                                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                                          <AlertCircle size={10} />
+                                          {item.unavailableReason || 'Produk tidak aktif'}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400 italic">Tidak ditagih</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-right shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveItem(item.id)}
+                                      className="text-xs font-bold text-rose-500 hover:text-rose-700 underline transition-colors cursor-pointer"
+                                    >
+                                      Hapus
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             const wholesalePrice = getProductPriceWithWholesale(item.price, item.quantity);
                             return (
                               <div key={item.id} className="flex items-center justify-between gap-4 pb-3 border-b border-slate-50 last:border-b-0 text-xs">
@@ -1727,84 +2073,86 @@ export default function CartPage() {
                           })}
                         </div>
 
-                        {/* Shipping selector per merchant */}
-                        <div className="pt-2 border-t border-slate-100">
-                          <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden">
-                            {/* Selected Header Row */}
-                            <div 
-                              onClick={() => setIsShippingDropdownOpen(prev => ({ ...prev, [mId]: !prev[mId] }))}
-                              className="p-3.5 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors"
-                            >
-                              <div>
-                                <div className="font-bold text-slate-800 text-xs">
-                                  {selectedCourier === 'instant' ? 'Instant (Rp40.000)' :
-                                   selectedCourier === 'nextday' ? 'Next Day (Rp24.000)' :
-                                   selectedCourier === 'standard' ? 'Standard (Rp12.000)' :
-                                   selectedCourier === 'pickup' ? 'Ambil di lokasi merchant' :
-                                   'Ekonomi (Rp9.000)'}
+                        {/* Shipping selector per merchant (only if merchant has active items) */}
+                        {hasAvailableInShop && (
+                          <div className="pt-2 border-t border-slate-100">
+                            <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden">
+                              {/* Selected Header Row */}
+                              <div 
+                                onClick={() => setIsShippingDropdownOpen(prev => ({ ...prev, [mId]: !prev[mId] }))}
+                                className="p-3.5 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors"
+                              >
+                                <div>
+                                  <div className="font-bold text-slate-800 text-xs">
+                                    {selectedCourier === 'instant' ? 'Instant (Rp40.000)' :
+                                     selectedCourier === 'nextday' ? 'Next Day (Rp24.000)' :
+                                     selectedCourier === 'standard' ? 'Standard (Rp12.000)' :
+                                     selectedCourier === 'pickup' ? 'Ambil di lokasi merchant' :
+                                     'Ekonomi (Rp9.000)'}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 mt-0.5">
+                                    {selectedCourier === 'pickup' ? 'Silakan datang ke lokasi merchant' : 'Estimasi tiba 1 - 3 hari kerja'}
+                                  </div>
                                 </div>
-                                <div className="text-[11px] text-slate-400 mt-0.5">
-                                  {selectedCourier === 'pickup' ? 'Silakan datang ke lokasi merchant' : 'Estimasi tiba 1 - 3 hari kerja'}
-                                </div>
+                                <span className="text-slate-400">
+                                  {isShippingDropdownOpen[mId] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                </span>
                               </div>
-                              <span className="text-slate-400">
-                                {isShippingDropdownOpen[mId] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                              </span>
-                            </div>
 
-                            {/* Expanded Dropdown Panel */}
-                            {isShippingDropdownOpen[mId] && (
-                              <div className="p-3 bg-slate-50 border-t border-slate-100 space-y-2">
-                                <div className="p-2.5 bg-white border border-slate-200/60 rounded-lg text-[11px] text-slate-600 font-medium flex items-center gap-1.5">
-                                  <Store className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                  <span>Pengiriman langsung dari mitra {shopName}</span>
+                              {/* Expanded Dropdown Panel */}
+                              {isShippingDropdownOpen[mId] && (
+                                <div className="p-3 bg-slate-50 border-t border-slate-100 space-y-2">
+                                  <div className="p-2.5 bg-white border border-slate-200/60 rounded-lg text-[11px] text-slate-600 font-medium flex items-center gap-1.5">
+                                    <Store className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>Pengiriman langsung dari mitra {shopName}</span>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {[
+                                      { id: 'ekonomi', name: 'Ekonomi (Rp7.000)', etd: 'Estimasi tiba 2 - 4 hari' },
+                                      { id: 'standard', name: 'Standard (Rp12.000)', etd: 'Estimasi tiba 1 - 2 hari' },
+                                      { id: 'nextday', name: 'Next Day (Rp24.000)', etd: 'Estimasi tiba besok' },
+                                      { id: 'instant', name: 'Instant (Rp40.000)', etd: 'Tiba dalam beberapa jam' },
+                                      { id: 'pickup', name: 'Ambil di lokasi merchant', etd: 'Silakan datang ke lokasi merchant' }
+                                    ].map(opt => (
+                                      <div
+                                        key={opt.id}
+                                        onClick={() => {
+                                          setSelectedCourier(opt.id);
+                                          if (opt.id === 'pickup') setDeliveryMethod('PICKUP');
+                                          else setDeliveryMethod('DELIVERY');
+                                          setIsShippingDropdownOpen(prev => ({ ...prev, [mId]: false }));
+                                        }}
+                                        className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between ${
+                                          selectedCourier === opt.id
+                                            ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24] font-bold'
+                                            : 'bg-white border-slate-200/60 text-slate-700 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        <span className="font-semibold text-slate-800">{opt.name}</span>
+                                        <span className="text-[11px] text-slate-400">{opt.etd}</span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                                <div className="space-y-1">
-                                  {[
-                                    { id: 'ekonomi', name: 'Ekonomi (Rp7.000)', etd: 'Estimasi tiba 2 - 4 hari' },
-                                    { id: 'standard', name: 'Standard (Rp12.000)', etd: 'Estimasi tiba 1 - 2 hari' },
-                                    { id: 'nextday', name: 'Next Day (Rp24.000)', etd: 'Estimasi tiba besok' },
-                                    { id: 'instant', name: 'Instant (Rp40.000)', etd: 'Tiba dalam beberapa jam' },
-                                    { id: 'pickup', name: 'Ambil di lokasi merchant', etd: 'Silakan datang ke lokasi merchant' }
-                                  ].map(opt => (
-                                    <div
-                                      key={opt.id}
-                                      onClick={() => {
-                                        setSelectedCourier(opt.id);
-                                        if (opt.id === 'pickup') setDeliveryMethod('PICKUP');
-                                        else setDeliveryMethod('DELIVERY');
-                                        setIsShippingDropdownOpen(prev => ({ ...prev, [mId]: false }));
-                                      }}
-                                      className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between ${
-                                        selectedCourier === opt.id
-                                          ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24] font-bold'
-                                          : 'bg-white border-slate-200/60 text-slate-700 hover:bg-slate-50'
-                                      }`}
-                                    >
-                                      <span className="font-semibold text-slate-800">{opt.name}</span>
-                                      <span className="text-[11px] text-slate-400">{opt.etd}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                              )}
 
-                            {/* Insurance Checkbox Row */}
-                            <div className="px-3.5 py-2.5 border-t border-slate-100 bg-white flex items-center justify-between text-[11px]">
-                              <div className="flex items-center gap-1.5">
-                                <ShieldCheck className="w-3.5 h-3.5 text-[#006E24]" />
-                                <span className="text-slate-700 font-medium">Asuransi Pengiriman</span>
-                                <span className="text-slate-400">(Rp2.000)</span>
+                              {/* Insurance Checkbox Row */}
+                              <div className="px-3.5 py-2.5 border-t border-slate-100 bg-white flex items-center justify-between text-[11px]">
+                                <div className="flex items-center gap-1.5">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-[#006E24]" />
+                                  <span className="text-slate-700 font-medium">Asuransi Pengiriman</span>
+                                  <span className="text-slate-400">(Rp2.000)</span>
+                                </div>
+                                <input
+                                  type="checkbox"
+                                  checked={useInsurance[mId] !== false}
+                                  onChange={(e) => setUseInsurance(prev => ({ ...prev, [mId]: e.target.checked }))}
+                                  className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
+                                />
                               </div>
-                              <input
-                                type="checkbox"
-                                checked={useInsurance[mId] !== false}
-                                onChange={(e) => setUseInsurance(prev => ({ ...prev, [mId]: e.target.checked }))}
-                                className="w-4 h-4 text-[#006E24] accent-[#006E24] rounded cursor-pointer"
-                              />
                             </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     );
                   });
@@ -1820,47 +2168,130 @@ export default function CartPage() {
                   <h3 className="font-bold text-xs text-slate-800">Metode Pembayaran</h3>
 
                   <div className="space-y-2">
-                    {[
-                      { id: 'QRIS', label: 'QRIS (GoPay, OVO, ShopeePay, Dana, BCA, Livin)', icon: <Smartphone className="w-4 h-4 text-[#006E24]" /> },
-                      { id: 'VA_BRI', label: 'BRI Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
-                      { id: 'VA_BNI', label: 'BNI Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
-                      { id: 'VA_BCA', label: 'BCA Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
-                      { id: 'VA_MANDIRI', label: 'Mandiri Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
-                      { id: 'VA_PERMATA', label: 'Permata Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
-                      { id: 'VA_CIMB', label: 'CIMB Niaga Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
-                      { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, icon: <Zap className="w-4 h-4 text-[#006E24]" /> },
-                      { id: 'COD', label: 'COD (Bayar di Tempat)', icon: <Store className="w-4 h-4 text-slate-500" /> },
-                      ...dynamicPaymentMethods.map(m => ({
-                        id: m.id,
-                        label: m.providerName + (m.accountName ? ` (${m.accountName})` : ''),
-                        isManual: true,
-                        icon: <Building2 className="w-4 h-4 text-slate-500" />,
-                        original: m
-                      }))
-                    ].map(opt => {
-                      const isSelected = 
-                        (opt.id === 'WALLET' && paymentMethod === 'WALLET') ||
-                        (opt.id === 'COD' && paymentMethod === 'COD') ||
-                        ((opt as any).isManual && paymentMethod === 'MANUAL' && activePaymentSubId === opt.id) ||
-                        (paymentMethod === 'DIRECT' && activePaymentSubId === opt.id);
-
+                    {/* QRIS */}
+                    {(() => {
+                      const isQrisSelected = paymentMethod === 'DIRECT' && activePaymentSubId === 'QRIS';
                       return (
                         <div
-                          key={opt.id}
                           onClick={() => {
-                            if (opt.id === 'WALLET') {
-                              setPaymentMethod('WALLET');
-                              setActivePaymentSubId('');
-                            } else if (opt.id === 'COD') {
-                              setPaymentMethod('COD');
-                              setActivePaymentSubId('');
-                            } else if ((opt as any).isManual) {
-                              setPaymentMethod('MANUAL');
-                              setActivePaymentSubId(opt.id);
-                            } else {
-                              setPaymentMethod('DIRECT');
-                              setActivePaymentSubId(opt.id);
-                            }
+                            setPaymentMethod('DIRECT');
+                            setActivePaymentSubId('QRIS');
+                            setIsVaDropdownOpen(false);
+                          }}
+                          className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
+                            isQrisSelected
+                              ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24]'
+                              : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Smartphone className="w-4 h-4 text-[#006E24]" />
+                            <span>QRIS (GoPay, OVO, ShopeePay, Dana, BCA, Livin)</span>
+                          </div>
+                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isQrisSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
+                            {isQrisSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* VIRTUAL ACCOUNT DROPDOWN / ACCORDION */}
+                    {(() => {
+                      const isVaActive = paymentMethod === 'DIRECT' && activePaymentSubId.startsWith('VA_');
+                      const activeVaObj = VA_BANKS.find(b => b.id === activePaymentSubId) || VA_BANKS.find(b => b.id === selectedVaBank) || VA_BANKS[0];
+
+                      return (
+                        <div className={`rounded-xl border transition-all overflow-hidden ${
+                          isVaActive
+                            ? 'bg-emerald-50/20 border-[#006E24]'
+                            : 'bg-white border-slate-200/80 hover:border-slate-300'
+                        }`}>
+                          {/* Header / Trigger */}
+                          <div
+                            onClick={() => {
+                              if (!isVaActive) {
+                                setPaymentMethod('DIRECT');
+                                setActivePaymentSubId(selectedVaBank || 'VA_BCA');
+                                setIsVaDropdownOpen(true);
+                              } else {
+                                setIsVaDropdownOpen(prev => !prev);
+                              }
+                            }}
+                            className="p-3 flex items-center justify-between cursor-pointer select-none text-xs"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <Building2 className={`w-4 h-4 ${isVaActive ? 'text-[#006E24]' : 'text-slate-600'}`} />
+                              <div>
+                                <div className="font-semibold text-slate-800 flex items-center gap-2">
+                                  <span>Virtual Account (Transfer Bank)</span>
+                                </div>
+                                <div className="text-[11px] text-slate-400 mt-0.5">
+                                  {isVaActive ? (
+                                    <span className="text-[#006E24] font-bold">Terpilih: {activeVaObj.label}</span>
+                                  ) : (
+                                    <span>BCA, Mandiri, BRI, BNI, Permata, CIMB</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isVaActive ? 'border-[#006E24]' : 'border-slate-300'}`}>
+                                {isVaActive && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
+                              </div>
+                              <span className="text-slate-400">
+                                {isVaDropdownOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Expanded Bank List */}
+                          {isVaDropdownOpen && (
+                            <div className="px-3 pb-3 pt-1 border-t border-slate-100/80 space-y-1.5 bg-slate-50/50">
+                              <p className="text-[10px] text-slate-400 font-medium px-1 pt-1">Pilih Bank Tujuan:</p>
+                              {VA_BANKS.map(bank => {
+                                const isBankSelected = paymentMethod === 'DIRECT' && activePaymentSubId === bank.id;
+                                return (
+                                  <div
+                                    key={bank.id}
+                                    onClick={() => {
+                                      setPaymentMethod('DIRECT');
+                                      setActivePaymentSubId(bank.id);
+                                      setSelectedVaBank(bank.id);
+                                    }}
+                                    className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between transition-all ${
+                                      isBankSelected
+                                        ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24] font-bold shadow-2xs'
+                                        : 'bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-1.5 h-1.5 rounded-full ${isBankSelected ? 'bg-[#006E24]' : 'bg-slate-300'}`} />
+                                      <span className={isBankSelected ? 'font-bold text-[#006E24]' : 'font-medium text-slate-800'}>
+                                        {bank.label}
+                                      </span>
+                                    </div>
+                                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isBankSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
+                                      {isBankSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* SALDO DOMPET */}
+                    {(() => {
+                      const isSelected = paymentMethod === 'WALLET';
+                      return (
+                        <div
+                          onClick={() => {
+                            setPaymentMethod('WALLET');
+                            setActivePaymentSubId('');
+                            setIsVaDropdownOpen(false);
                           }}
                           className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
@@ -1869,8 +2300,63 @@ export default function CartPage() {
                           }`}
                         >
                           <div className="flex items-center gap-2.5">
-                            {opt.icon}
-                            <span>{opt.label}</span>
+                            <Zap className="w-4 h-4 text-[#006E24]" />
+                            <span>Saldo Dompet (Rp {(walletBalance ?? 0).toLocaleString('id-ID')})</span>
+                          </div>
+                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
+                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* COD */}
+                    {(() => {
+                      const isSelected = paymentMethod === 'COD';
+                      return (
+                        <div
+                          onClick={() => {
+                            setPaymentMethod('COD');
+                            setActivePaymentSubId('');
+                            setIsVaDropdownOpen(false);
+                          }}
+                          className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24]'
+                              : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Store className="w-4 h-4 text-slate-500" />
+                            <span>COD (Bayar di Tempat)</span>
+                          </div>
+                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
+                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Dynamic Manual Payment Methods */}
+                    {dynamicPaymentMethods.map(m => {
+                      const isSelected = paymentMethod === 'MANUAL' && activePaymentSubId === m.id;
+                      return (
+                        <div
+                          key={m.id}
+                          onClick={() => {
+                            setPaymentMethod('MANUAL');
+                            setActivePaymentSubId(m.id);
+                            setIsVaDropdownOpen(false);
+                          }}
+                          className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24]'
+                              : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Building2 className="w-4 h-4 text-slate-500" />
+                            <span>{m.providerName + (m.accountName ? ` (${m.accountName})` : '')}</span>
                           </div>
                           <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
                             {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
@@ -1879,10 +2365,6 @@ export default function CartPage() {
                       );
                     })}
                   </div>
-
-                  <button type="button" className="text-xs font-bold text-primary hover:underline pt-1">
-                    Lihat semua metode pembayaran &gt;
-                  </button>
                 </div>
 
                 {/* 2. State Kode Promo Card */}
