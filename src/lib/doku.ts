@@ -52,10 +52,10 @@ export interface DokuCheckoutResponse {
 
 /**
  * Generate DOKU Jokul SHA-256 Digest of the request body
+ * In DOKU Jokul API, the Digest is the base64-encoded SHA-256 hash of the request body (without "SHA-256=" prefix).
  */
 export function generateDokuDigest(bodyString: string): string {
-  const hash = crypto.createHash('sha256').update(bodyString, 'utf8').digest('base64');
-  return `SHA-256=${hash}`;
+  return crypto.createHash('sha256').update(bodyString, 'utf8').digest('base64');
 }
 
 /**
@@ -94,7 +94,7 @@ export async function createDokuCheckoutPayment(
   } = params;
 
   // Fallback simulator if no credentials configured
-  if (!DOKU_CLIENT_ID && !DOKU_API_KEY) {
+  if (!DOKU_CLIENT_ID || !DOKU_SECRET_KEY) {
     console.warn('[DOKU] Kredensial belum diisi di .env. Menggunakan mode simulasi internal.');
     return {
       success: true,
@@ -105,7 +105,7 @@ export async function createDokuCheckoutPayment(
   }
 
   const targetPath = '/checkout/v1/payment';
-  const requestId = `REQ-${invoiceNumber}-${Date.now().toString(36)}`;
+  const requestId = `REQ-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
   const timestamp = new Date().toISOString().slice(0, 19) + 'Z'; // e.g. 2026-09-12T00:45:00Z
 
   const payload = {
@@ -145,24 +145,14 @@ export async function createDokuCheckoutPayment(
   );
 
   try {
-    // Use API Key (Bearer) if available, otherwise use HMAC-SHA256 signature
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
+      'Client-Id': DOKU_CLIENT_ID,
+      'Request-Id': requestId,
+      'Request-Timestamp': timestamp,
+      'Signature': signature,
+      'Digest': digest,
     };
-
-    if (DOKU_API_KEY) {
-      // Simpler Bearer token auth using doku_key_... from dashboard
-      requestHeaders['Authorization'] = `Bearer ${DOKU_API_KEY}`;
-      console.log('[DOKU] Using Bearer API Key auth');
-    } else {
-      // Legacy HMAC-SHA256 signature auth
-      requestHeaders['Client-Id'] = DOKU_CLIENT_ID;
-      requestHeaders['Request-Id'] = requestId;
-      requestHeaders['Request-Timestamp'] = timestamp;
-      requestHeaders['Signature'] = signature;
-      requestHeaders['Digest'] = digest;
-      console.log('[DOKU] Using HMAC-SHA256 signature auth');
-    }
 
     const resp = await fetch(`${DOKU_BASE_URL}${targetPath}`, {
       method: 'POST',

@@ -53,32 +53,58 @@ export async function POST(req: NextRequest) {
       PaymentRegistry.markTransactionProcessed(invoiceNumber);
 
       const pending = PaymentRegistry.getPendingCheckout(invoiceNumber);
-      if (pending) {
-        if (invoiceNumber.startsWith('dep-')) {
-          const depositAmount =
-            payload?.order?.amount ||
-            pending.shippingDetails?.shippingFee ||
-            50000;
-          await DataStore.depositFunds(pending.userId, depositAmount, 'DOKU Payment Gateway');
-          await DataStore.addXp(pending.userId, 30);
-        } else if (invoiceNumber.startsWith('chk-')) {
-          const order = await DataStore.createOrder(
-            pending.userId,
-            pending.items,
-            pending.affiliateId,
-            'DOKU',
-            pending.shippingDetails
-          );
-          await DataStore.addXp(pending.userId, 30);
+      let targetUserId = pending?.userId || '';
+      let targetCommunityId = '';
+      let targetCoinAmount = 0;
+      let targetAmount = payload?.order?.amount || pending?.shippingDetails?.shippingFee || 0;
 
-          await DataStore.createNotification(
-            pending.userId,
-            'ORDER_CREATED',
-            'Pesanan Berhasil Dibayar (DOKU)',
-            `Pembayaran DOKU untuk pesanan #${order.id} telah terverifikasi.`,
-            `/orders/${order.id}`
-          );
+      if (invoiceNumber.includes('_')) {
+        const parts = invoiceNumber.split('_');
+        if (invoiceNumber.startsWith('dep-doku_')) {
+          targetUserId = parts[1] || targetUserId;
+          targetAmount = parseFloat(parts[2]) || targetAmount;
+        } else if (invoiceNumber.startsWith('join-doku_')) {
+          targetCommunityId = parts[1] || '';
+          targetUserId = parts[2] || targetUserId;
+        } else if (invoiceNumber.startsWith('coin-doku_')) {
+          targetCommunityId = parts[1] || '';
+          targetUserId = parts[2] || targetUserId;
+          targetCoinAmount = parseFloat(parts[3]) || 0;
         }
+      }
+
+      if (invoiceNumber.startsWith('dep-') && targetUserId) {
+        await DataStore.depositFunds(targetUserId, targetAmount, 'DOKU Payment Gateway');
+        await DataStore.addXp(targetUserId, 30);
+      } else if (invoiceNumber.startsWith('join-') && targetUserId && targetCommunityId) {
+        await DataStore.payCommunityJoinFee(targetUserId, targetCommunityId, 'DOKU');
+        await DataStore.addXp(targetUserId, 50);
+      } else if (invoiceNumber.startsWith('coin-') && targetUserId && targetCommunityId && targetCoinAmount > 0) {
+        const totalBiaya = targetCoinAmount * 1500;
+        await DataStore.topupCommunityCoin({
+          communityId: targetCommunityId,
+          ketuaId: targetUserId,
+          jumlahCoin: targetCoinAmount,
+          totalBiaya,
+          description: `Top up ${targetCoinAmount} coin via DOKU Payment Gateway Webhook`,
+        });
+      } else if (invoiceNumber.startsWith('chk-') && pending) {
+        const order = await DataStore.createOrder(
+          pending.userId,
+          pending.items,
+          pending.affiliateId,
+          'DOKU',
+          pending.shippingDetails
+        );
+        await DataStore.addXp(pending.userId, 30);
+
+        await DataStore.createNotification(
+          pending.userId,
+          'ORDER_CREATED',
+          'Pesanan Berhasil Dibayar (DOKU)',
+          `Pembayaran DOKU untuk pesanan #${order.id} telah terverifikasi.`,
+          `/orders/${order.id}`
+        );
       }
     }
 

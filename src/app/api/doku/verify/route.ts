@@ -24,7 +24,29 @@ export async function POST(req: NextRequest) {
     }
 
     const pending = PaymentRegistry.getPendingCheckout(orderId);
-    if (!pending) {
+    
+    // Stateless fallback: parse encoded parameters if pending checkout was evicted from serverless memory
+    let fallbackUserId = pending?.userId || '';
+    let fallbackCommunityId = '';
+    let fallbackAmount = pending?.shippingDetails?.shippingFee || 0;
+    let fallbackCoinAmount = 0;
+
+    if (orderId.includes('_')) {
+      const parts = orderId.split('_');
+      if (orderId.startsWith('dep-doku_')) {
+        fallbackUserId = parts[1] || fallbackUserId;
+        fallbackAmount = parseFloat(parts[2]) || fallbackAmount;
+      } else if (orderId.startsWith('join-doku_')) {
+        fallbackCommunityId = parts[1] || '';
+        fallbackUserId = parts[2] || fallbackUserId;
+      } else if (orderId.startsWith('coin-doku_')) {
+        fallbackCommunityId = parts[1] || '';
+        fallbackUserId = parts[2] || fallbackUserId;
+        fallbackCoinAmount = parseFloat(parts[3]) || 0;
+      }
+    }
+
+    if (!pending && !fallbackUserId) {
       return NextResponse.json({
         error: 'Detail transaksi DOKU tidak ditemukan di server registry.',
       }, { status: 404 });
@@ -33,9 +55,9 @@ export async function POST(req: NextRequest) {
     PaymentRegistry.markTransactionProcessed(orderId);
 
     if (orderId.startsWith('dep-')) {
-      const depositAmount = body.amount ? parseFloat(body.amount) : (pending.shippingDetails?.shippingFee || 50000);
-      await DataStore.depositFunds(pending.userId, depositAmount, 'DOKU Checkout');
-      await DataStore.addXp(pending.userId, 30);
+      const depositAmount = body.amount ? parseFloat(body.amount) : fallbackAmount;
+      await DataStore.depositFunds(fallbackUserId, depositAmount, 'DOKU Checkout');
+      await DataStore.addXp(fallbackUserId, 30);
 
       return NextResponse.json({
         success: true,
@@ -43,7 +65,52 @@ export async function POST(req: NextRequest) {
         message: 'Top-up saldo via DOKU berhasil diverifikasi.',
         processed: true,
       });
+    } else if (orderId.startsWith('join-')) {
+      const communityId = fallbackCommunityId || (pending as any)?.communityId;
+      if (!communityId) {
+        return NextResponse.json({ error: 'ID Komunitas tidak valid.' }, { status: 400 });
+      }
+
+      const res = await DataStore.payCommunityJoinFee(fallbackUserId, communityId, 'DOKU');
+      await DataStore.addXp(fallbackUserId, 50);
+
+      return NextResponse.json({
+        success: true,
+        status: 'SUCCESS',
+        message: 'Biaya pendaftaran komunitas via DOKU berhasil diverifikasi.',
+        communityId,
+        result: res,
+        processed: true,
+      });
+    } else if (orderId.startsWith('coin-')) {
+      const communityId = fallbackCommunityId || (pending as any)?.communityId;
+      const coinCount = fallbackCoinAmount || parseFloat(body.jumlahCoin) || 0;
+      if (!communityId || coinCount <= 0) {
+        return NextResponse.json({ error: 'Data koin komunitas tidak valid.' }, { status: 400 });
+      }
+
+      const totalBiaya = coinCount * 1500;
+      const res = await DataStore.topupCommunityCoin({
+        communityId,
+        ketuaId: fallbackUserId,
+        jumlahCoin: coinCount,
+        totalBiaya,
+        description: `Top up ${coinCount} coin via DOKU Payment Gateway`,
+      });
+
+      return NextResponse.json({
+        success: true,
+        status: 'SUCCESS',
+        message: `Top up ${coinCount} coin via DOKU berhasil diverifikasi.`,
+        communityId,
+        result: res,
+        processed: true,
+      });
     } else {
+      if (!pending) {
+        return NextResponse.json({ error: 'Data pesanan tidak ditemukan di registry.' }, { status: 404 });
+      }
+
       const order = await DataStore.createOrder(
         pending.userId,
         pending.items,

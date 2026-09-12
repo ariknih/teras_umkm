@@ -1048,7 +1048,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   // Payment states for Koperasi Upgrade/Join
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'QRIS' | 'BANK'>('QRIS')
+  const [paymentMethod, setPaymentMethod] = useState<'DOKU' | 'QRIS' | 'BANK'>('DOKU')
+  const [currentJoinFee, setCurrentJoinFee] = useState(0)
   const [isVerifying, setIsVerifying] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
 
@@ -2095,6 +2096,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     const isFree = !isKoperasi && !isPerkumpulanPrem && effectiveJoinFee === 0
 
     if (!isFree && !isMember) {
+      setCurrentJoinFee(effectiveJoinFee)
       setPaymentModalOpen(true)
       return
     }
@@ -2118,7 +2120,30 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   const handleConfirmPayment = async () => {
     setIsVerifying(true)
+    const joinFeeToPay = currentJoinFee || Number(community?.joinFee || 50000)
     try {
+      if (paymentMethod === 'DOKU' || paymentMethod === 'QRIS') {
+        const res = await fetch('/api/doku/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'community_join',
+            communityId: id,
+            amount: joinFeeToPay,
+          }),
+        })
+        const data = await res.json()
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Gagal memproses sesi pembayaran DOKU.')
+        }
+
+        if (data.paymentUrl) {
+          goeyToast.success('Mengalihkan ke gateway pembayaran DOKU...')
+          window.location.href = data.paymentUrl
+          return
+        }
+      }
+
       const res = await payCommunityJoinFeeAction(id, paymentMethod)
       if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
         setIsVerifying(false)
@@ -2200,6 +2225,34 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [disabledModules, savedDisabledModules, activeSidebarNav])
+
+  // Auto-verify DOKU community join payment callback
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const urlParams = new URLSearchParams(window.location.search)
+    const dokuVerifyId = urlParams.get('doku_verify')
+    if (dokuVerifyId && dokuVerifyId.startsWith('join-doku')) {
+      setIsVerifying(true)
+      fetch('/api/doku/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: dokuVerifyId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            goeyToast.success(`Pembayaran berhasil diverifikasi! Selamat bergabung di ${community?.name || 'Komunitas'}.`)
+            setIsMember(true)
+            loadData()
+            window.history.replaceState(null, '', window.location.pathname)
+          } else {
+            goeyToast.error(data.error || 'Gagal memverifikasi pembayaran DOKU.')
+          }
+        })
+        .catch(() => goeyToast.error('Gagal menghubungi server verifikasi DOKU.'))
+        .finally(() => setIsVerifying(false))
+    }
+  }, [id, community?.name])
 
   const handleSaveSettings = async () => {
     if (!community) return
@@ -2828,15 +2881,15 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => setPaymentMethod('QRIS')}
+                      onClick={() => setPaymentMethod('DOKU')}
                       className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                        paymentMethod === 'QRIS'
+                        paymentMethod === 'DOKU' || paymentMethod === 'QRIS'
                           ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132] ring-1 ring-[#2DB24A]'
                           : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
                       }`}
                     >
-                      <span className="text-xs font-black block font-sora">QRIS Instant</span>
-                      <span className="text-[9px] text-gray-500 block">Auto-Verify</span>
+                      <span className="text-xs font-black block font-sora">DOKU Gateway</span>
+                      <span className="text-[9px] text-gray-500 block">QRIS, VA Bank, E-Wallet</span>
                     </button>
                     <button
                       type="button"
@@ -2848,21 +2901,22 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                       }`}
                     >
                       <span className="text-xs font-black block font-sora">Transfer Bank</span>
-                      <span className="text-[9px] text-gray-500 block">BCA / Saloka</span>
+                      <span className="text-[9px] text-gray-500 block">BCA / Saloka Manual</span>
                     </button>
                   </div>
                 </div>
 
-                {paymentMethod === 'QRIS' ? (
-                  <div className="flex flex-col items-center py-4 px-2 bg-slate-50 rounded-2xl border border-gray-150 text-center space-y-2">
-                    <svg width="100" height="100" viewBox="0 0 24 24" fill="none" className="text-gray-900">
-                      <rect width="24" height="24" fill="white" />
-                      <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm1 1h2v2H5V5zm9-3h8v8h-8V2zm2 2v4h4V4h-4zm1 1h2v2h-2V5zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm1 1h2v2H5v-2zm12-3h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm-2-2h2v2h-2v-2zm0 4h2v2h-2v-2zm4 0h2v2h-2v-2zm-8-4h2v2H9v-2zm2 2h2v2h-2v-2zm2-2h2v2h-2v-2z" fill="currentColor" />
-                      <rect x="9.5" y="9.5" width="5" height="5" fill="#2DB24A" />
-                    </svg>
-                    <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">
-                      Scan QRIS untuk verifikasi pembayaran otomatis
+                {paymentMethod === 'DOKU' || paymentMethod === 'QRIS' ? (
+                  <div className="flex flex-col items-center py-4 px-3 bg-emerald-50/60 rounded-2xl border border-[#2DB24A]/25 text-center space-y-2">
+                    <div className="w-10 h-10 rounded-full bg-[#2DB24A]/15 text-[#2DB24A] flex items-center justify-center font-black text-lg">
+                      💳
+                    </div>
+                    <span className="text-xs font-black text-gray-900 font-sora">
+                      DOKU Payment Gateway Resmi
                     </span>
+                    <p className="text-[10px] text-gray-500 leading-relaxed max-w-xs">
+                      Pembayaran instan terverifikasi otomatis via QRIS (BCA, Mandiri, BRI, GoPay, OVO, Dana), Virtual Account, dan Minimarket.
+                    </p>
                   </div>
                 ) : (
                   <div className="p-4 bg-slate-50 border border-gray-150 rounded-2xl space-y-1 text-center">

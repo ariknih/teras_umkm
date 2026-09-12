@@ -37,6 +37,31 @@ export default function CommunityCoinPage() {
 
   useEffect(() => { loadData() }, [communityId])
 
+  // Auto-verify DOKU coin top-up callback
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const urlParams = new URLSearchParams(window.location.search)
+    const dokuVerifyId = urlParams.get('doku_verify')
+    if (dokuVerifyId && dokuVerifyId.startsWith('coin-doku')) {
+      fetch('/api/doku/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: dokuVerifyId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success) {
+            goeyToast.success('Top up koin komunitas via DOKU berhasil diverifikasi!')
+            loadData()
+            window.history.replaceState(null, '', window.location.pathname)
+          } else {
+            goeyToast.error(data.error || 'Gagal memverifikasi pembayaran DOKU.')
+          }
+        })
+        .catch(() => goeyToast.error('Gagal menghubungi server verifikasi DOKU.'))
+    }
+  }, [communityId])
+
   const isKetua = currentUser && community && (currentUser.id === community.ketuaId || currentUser.role === 'ADMIN')
 
   const handleTopup = async () => {
@@ -45,18 +70,33 @@ export default function CommunityCoinPage() {
       goeyToast.error('Masukkan jumlah coin yang valid.')
       return
     }
+    const totalAmount = n * COIN_RATE
     setTopupLoading(true)
-    const form = new FormData()
-    form.set('communityId', communityId)
-    form.set('jumlahCoin', n.toString())
-    const res = await topupCommunityCoin(form)
-    setTopupLoading(false)
-    if ('error' in res) {
-      goeyToast.error(res.error as string)
-    } else {
-      setJumlahCoin('')
-      goeyToast.success(`Berhasil melakukan top up ${n} coin!`)
-      loadData()
+    try {
+      const res = await fetch('/api/doku/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'community_coin',
+          communityId,
+          jumlahCoin: n,
+          amount: totalAmount,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Gagal membuat sesi pembayaran DOKU.')
+      }
+
+      if (data.paymentUrl) {
+        goeyToast.success('Mengalihkan ke gateway pembayaran DOKU...')
+        window.location.href = data.paymentUrl
+      } else {
+        throw new Error('URL pembayaran DOKU tidak ditemukan.')
+      }
+    } catch (err: any) {
+      goeyToast.error(err.message || 'Gagal memproses pembayaran top up coin.')
+      setTopupLoading(false)
     }
   }
 

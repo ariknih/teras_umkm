@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Jumlah pengisian tidak valid.' }, { status: 400 });
       }
 
-      const orderId = `dep-doku-${user.id.slice(0, 8)}-${Date.now().toString(36)}`;
+      const orderId = `dep-doku_${user.id}_${Math.round(depositAmount)}_${Date.now().toString(36)}`;
 
       PaymentRegistry.savePendingCheckout(orderId, {
         userId: user.id,
@@ -52,6 +52,110 @@ export async function POST(req: NextRequest) {
         ],
         callbackUrl: `${baseUrl}/wallet?doku_verify=${orderId}`,
         callbackUrlCancel: `${baseUrl}/wallet`,
+      });
+
+      return NextResponse.json({
+        success: true,
+        orderId,
+        paymentUrl: dokuResult.paymentUrl,
+      });
+    } else if (type === 'community_join') {
+      const { communityId } = body;
+      const joinFee = parseFloat(amount);
+      if (!communityId) {
+        return NextResponse.json({ error: 'ID Komunitas / Koperasi wajib diisi.' }, { status: 400 });
+      }
+      if (isNaN(joinFee) || joinFee <= 0) {
+        return NextResponse.json({ error: 'Nominal biaya pendaftaran tidak valid.' }, { status: 400 });
+      }
+
+      const community = await DataStore.getCommunityById(communityId);
+      if (!community) {
+        return NextResponse.json({ error: 'Komunitas / Koperasi tidak ditemukan.' }, { status: 404 });
+      }
+
+      const orderId = `join-doku_${communityId}_${user.id}_${Date.now().toString(36)}`;
+
+      PaymentRegistry.savePendingCheckout(orderId, {
+        userId: user.id,
+        items: [],
+        shippingDetails: {
+          shippingFee: joinFee,
+          courier: `JOIN_${community.type || 'COMMUNITY'}`,
+        },
+      });
+
+      const dokuResult = await createDokuCheckoutPayment({
+        invoiceNumber: orderId,
+        amount: joinFee,
+        customer: {
+          id: user.id,
+          name: user.name || 'Anggota Komunitas',
+          email: user.email || 'user@saloka.id',
+          phone: (user as any).phone || '081234567890',
+        },
+        lineItems: [
+          {
+            name: `Pendaftaran ${community.name.slice(0, 30)}`,
+            price: joinFee,
+            quantity: 1,
+          },
+        ],
+        callbackUrl: `${baseUrl}/community/${communityId}?doku_verify=${orderId}`,
+        callbackUrlCancel: `${baseUrl}/community/${communityId}`,
+      });
+
+      return NextResponse.json({
+        success: true,
+        orderId,
+        paymentUrl: dokuResult.paymentUrl,
+      });
+    } else if (type === 'community_coin') {
+      const { communityId, jumlahCoin } = body;
+      const coinCount = parseFloat(jumlahCoin);
+      const totalAmount = parseFloat(amount) || (coinCount * 1500);
+
+      if (!communityId) {
+        return NextResponse.json({ error: 'ID Komunitas / Koperasi wajib diisi.' }, { status: 400 });
+      }
+      if (isNaN(coinCount) || coinCount <= 0 || isNaN(totalAmount) || totalAmount <= 0) {
+        return NextResponse.json({ error: 'Jumlah coin atau biaya top up tidak valid.' }, { status: 400 });
+      }
+
+      const community = await DataStore.getCommunityById(communityId);
+      if (!community) {
+        return NextResponse.json({ error: 'Komunitas / Koperasi tidak ditemukan.' }, { status: 404 });
+      }
+
+      const orderId = `coin-doku_${communityId}_${user.id}_${Math.round(coinCount)}_${Date.now().toString(36)}`;
+
+      PaymentRegistry.savePendingCheckout(orderId, {
+        userId: user.id,
+        items: [],
+        shippingDetails: {
+          shippingFee: totalAmount,
+          courier: `COIN_${coinCount}`,
+        },
+      });
+
+      const dokuResult = await createDokuCheckoutPayment({
+        invoiceNumber: orderId,
+        amount: totalAmount,
+        customer: {
+          id: user.id,
+          name: user.name || 'Pengurus Komunitas',
+          email: user.email || 'user@saloka.id',
+          phone: (user as any).phone || '081234567890',
+        },
+        lineItems: [
+          {
+            name: `Top Up ${coinCount} Koin Kas ${community.name.slice(0, 25)}`,
+            price: totalAmount,
+            quantity: 1,
+          },
+        ],
+        callbackUrl: `${baseUrl}/community/${communityId}/coin?doku_verify=${orderId}`,
+        callbackUrlCancel: `${baseUrl}/community/${communityId}/coin`,
       });
 
       return NextResponse.json({
