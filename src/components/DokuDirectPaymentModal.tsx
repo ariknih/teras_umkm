@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   RefreshCw,
 } from 'lucide-react'
+import { goeyToast } from 'goey-toast'
 
 export interface DokuDirectPaymentData {
   orderId: string
@@ -192,7 +193,9 @@ export default function DokuDirectPaymentModal({
         throw new Error(result.error || result.message || 'Gagal memproses simulasi.')
       }
     } catch (err: any) {
-      setPollError(err.message || 'Gagal menjalankan simulasi demo.')
+      const msg = err.message || 'Gagal menjalankan simulasi demo.'
+      setPollError(msg)
+      goeyToast.error(msg)
       setIsSimulating(false)
     }
   }
@@ -251,6 +254,20 @@ export default function DokuDirectPaymentModal({
                   <span>⚡ Simulasi Bayar Berhasil</span>
                 </>
               )}
+            </button>
+          </div>
+        )}
+
+        {/* Error alert banner */}
+        {pollError && (
+          <div className="bg-rose-50 border-b border-rose-200 px-5 py-2.5 text-xs text-rose-700 font-semibold flex items-center justify-between shrink-0 animate-in fade-in">
+            <span>{pollError}</span>
+            <button
+              type="button"
+              onClick={() => setPollError(null)}
+              className="text-rose-400 hover:text-rose-700 font-bold ml-2 cursor-pointer"
+            >
+              ✕
             </button>
           </div>
         )}
@@ -337,24 +354,24 @@ export default function DokuDirectPaymentModal({
                   </div>
 
                   {isSandbox ? (
-                    <div className="w-full max-w-[320px] p-3 rounded-xl bg-amber-50 border border-amber-200 text-center space-y-2">
+                    <div className="w-full max-w-[320px] p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-center space-y-2.5">
                       <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
-                        ⚠️ <strong>Perhatian Mode Sandbox:</strong> Barcode ini dibuat untuk simulasi testing dan tidak terdaftar di switching m-Banking asli. Klik tombol di bawah untuk simulasi bayar instan:
+                        ⚠️ <strong>Mode Sandbox (Dummy):</strong> Barcode QRIS ini tidak bisa discan menggunakan aplikasi m-Banking asli. Klik tombol di bawah untuk langsung mem-bypass dan melunasi pembayaran:
                       </p>
                       <button
                         type="button"
                         onClick={handleSimulatePayment}
                         disabled={isSimulating || isSuccess}
-                        className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors shadow-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#24943E] text-white text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         {isSimulating ? (
                           <>
                             <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Memproses Simulasi...</span>
+                            <span>Memproses Verifikasi...</span>
                           </>
                         ) : (
                           <>
-                            <span>⚡ Klik Simulasi Bayar Lunas</span>
+                            <span>⚡ Klik untuk Bypass / Bayar Lunas</span>
                           </>
                         )}
                       </button>
