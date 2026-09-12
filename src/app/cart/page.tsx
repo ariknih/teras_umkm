@@ -898,17 +898,7 @@ export default function CartPage() {
           throw new Error(data.error || 'Gagal menyiapkan pembayaran langsung.')
         }
 
-        const cartKey = currentUser?.id 
-          ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
-          : 'teras_cart'
-        localStorage.removeItem(cartKey)
-        localStorage.removeItem('teras_affiliate_id')
-        setCart([])
-        window.dispatchEvent(new Event('storage'))
-        setAffiliateId('')
-        clearSnackboxCartIfSelected()
         setIsPendingCheckout(false)
-
         setDirectPaymentData(data)
         setIsDirectModalOpen(true)
         return
@@ -2748,13 +2738,20 @@ export default function CartPage() {
         isOpen={isDirectModalOpen}
         onClose={() => {
           setIsDirectModalOpen(false)
-          if (directPaymentData?.orderId) {
-            router.push(`/orders/${directPaymentData.orderId}`)
-          }
         }}
         data={directPaymentData}
         onSuccess={(orderId, result) => {
           setIsDirectModalOpen(false)
+          const cartKey = currentUser?.id 
+            ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
+            : 'teras_cart'
+          localStorage.removeItem(cartKey)
+          localStorage.removeItem('teras_affiliate_id')
+          setCart([])
+          window.dispatchEvent(new Event('storage'))
+          setAffiliateId('')
+          clearSnackboxCartIfSelected()
+
           const targetId = result?.orderId || result?.order?.id || orderId
           router.push(`/orders/${targetId}`)
         }}

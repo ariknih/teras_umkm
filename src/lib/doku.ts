@@ -14,7 +14,9 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzjWn0sAG4rqk9PuTk9RN6vyDJpj3mAOsl+t1
 -----END PUBLIC KEY-----`;
 
 export function getDokuConfig() {
-  const isProduction = process.env.DOKU_IS_PRODUCTION === 'true';
+  const rawClientId = process.env.DOKU_CLIENT_ID || process.env.DOKU_SANDBOX_CLIENT_ID || '';
+  const isSandboxKey = rawClientId.startsWith('BRN-0236-') || !rawClientId;
+  const isProduction = process.env.DOKU_IS_PRODUCTION === 'true' && !isSandboxKey;
   const clientId = (isProduction ? process.env.DOKU_CLIENT_ID : (process.env.DOKU_SANDBOX_CLIENT_ID || process.env.DOKU_CLIENT_ID)) || '';
   const secretKey = (isProduction ? process.env.DOKU_SECRET_KEY : (process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY)) || '';
   const baseUrl = isProduction ? 'https://api.doku.com' : 'https://api-sandbox.doku.com';
