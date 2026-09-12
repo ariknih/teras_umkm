@@ -192,7 +192,7 @@ export async function calculateBiteshipRates(
     destinationAreaId,
     destinationLat,
     destinationLng,
-    couriers = 'jne,jnt,sicepat,anteraja,tiki,pos',
+    couriers = 'jne,jnt,sicepat,gojek,grab,lalamove,anteraja,tiki,pos',
     items,
   } = params;
 
