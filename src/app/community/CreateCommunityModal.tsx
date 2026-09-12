@@ -1056,7 +1056,7 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                     </div>
                     <div>
                       <h4 className="font-bold text-xs text-slate-900">Transaksi aman dan terenkripsi</h4>
-                      <p className="text-[10px] text-slate-500 font-medium">Saloka.id bekerja sama dengan Midtrans untuk keamanan transaksi Anda.</p>
+                      <p className="text-[10px] text-slate-500 font-medium">Saloka.id melindungi setiap transaksi dengan enkripsi standar perbankan nasional.</p>
                     </div>
                   </div>
 

@@ -5,7 +5,7 @@ import QuantityStepper from '@/components/ui/QuantityStepper'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import Script from 'next/script'
+import DokuDirectPaymentModal, { DokuDirectPaymentData } from '@/components/DokuDirectPaymentModal'
 import { getProducts } from '@/app/actions/products'
 import { checkoutCart, getWalletDetails, getActivePaymentMethods } from '@/app/actions/wallet-affiliate'
 import { getCurrentUser, getCurrentUserProfile } from '@/app/actions/auth'
@@ -187,9 +187,11 @@ export default function CartPage() {
   const [activeNoteInput, setActiveNoteInput] = useState<Record<string, boolean>>({})
 
   // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'DOKU' | 'MIDTRANS' | 'WALLET' | 'COD' | 'MANUAL'>('DOKU')
-  const [activePaymentSubId, setActivePaymentSubId] = useState<string>('DOKU_CHECKOUT')
+  const [paymentMethod, setPaymentMethod] = useState<'DIRECT' | 'WALLET' | 'COD' | 'MANUAL'>('DIRECT')
+  const [activePaymentSubId, setActivePaymentSubId] = useState<string>('QRIS')
   const [dynamicPaymentMethods, setDynamicPaymentMethods] = useState<any[]>([])
+  const [directPaymentData, setDirectPaymentData] = useState<DokuDirectPaymentData | null>(null)
+  const [isDirectModalOpen, setIsDirectModalOpen] = useState(false)
 
   // Google Maps state
   const [map, setMap] = useState<any>(null)
@@ -819,14 +821,16 @@ export default function CartPage() {
       discountAmount: couponDiscount,
     }
 
-    // DOKU Checkout Payment (QRIS, VA Bank, E-Wallet, Card)
-    if (paymentMethod === 'DOKU' || activePaymentSubId === 'DOKU_CHECKOUT') {
+    // Direct In-App Payment (QRIS, VA Bank BRI, BNI, BCA, Mandiri, Permata, CIMB)
+    if (paymentMethod === 'DIRECT') {
       try {
-        const res = await fetch('/api/doku/checkout', {
+        const channel = activePaymentSubId || 'QRIS';
+        const res = await fetch('/api/doku/direct', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'checkout',
+            paymentChannel: channel,
             items: itemsPayload,
             affiliateId: affiliateId || undefined,
             shippingDetails,
@@ -835,7 +839,7 @@ export default function CartPage() {
 
         const data = await res.json()
         if (!res.ok || data.error) {
-          throw new Error(data.error || 'Gagal membuat sesi pembayaran DOKU.')
+          throw new Error(data.error || 'Gagal menyiapkan pembayaran langsung.')
         }
 
         const cartKey = currentUser?.id 
@@ -847,15 +851,13 @@ export default function CartPage() {
         window.dispatchEvent(new Event('storage'))
         setAffiliateId('')
         clearSnackboxCartIfSelected()
+        setIsPendingCheckout(false)
 
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl
-        } else if (data.orderId) {
-          router.push(`/orders/${data.orderId}`)
-        }
+        setDirectPaymentData(data)
+        setIsDirectModalOpen(true)
         return
       } catch (err: any) {
-        setError(err.message || 'Pembayaran DOKU gagal.')
+        setError(err.message || 'Pembayaran gagal diproses.')
         setIsPendingCheckout(false)
         return
       }
@@ -1819,12 +1821,15 @@ export default function CartPage() {
 
                   <div className="space-y-2">
                     {[
-                      { id: 'DOKU_CHECKOUT', label: 'DOKU Checkout (QRIS, All Bank VA, E-Wallet)', icon: <CreditCard className="w-4 h-4 text-[#006E24]" /> },
-                      { id: 'MIDTRANS_BANK', label: 'BRI Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-500" /> },
-                      { id: 'MIDTRANS_BANK_BCA', label: 'BCA Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-500" /> },
-                      { id: 'MIDTRANS_QRIS', label: 'QRIS', icon: <Smartphone className="w-4 h-4 text-slate-500" /> },
-                      { id: 'COD', label: 'Alfamart / Gerai Retail', icon: <Store className="w-4 h-4 text-slate-500" /> },
+                      { id: 'QRIS', label: 'QRIS (GoPay, OVO, ShopeePay, Dana, BCA, Livin)', icon: <Smartphone className="w-4 h-4 text-[#006E24]" /> },
+                      { id: 'VA_BRI', label: 'BRI Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
+                      { id: 'VA_BNI', label: 'BNI Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
+                      { id: 'VA_BCA', label: 'BCA Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
+                      { id: 'VA_MANDIRI', label: 'Mandiri Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
+                      { id: 'VA_PERMATA', label: 'Permata Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
+                      { id: 'VA_CIMB', label: 'CIMB Niaga Virtual Account', icon: <Building2 className="w-4 h-4 text-slate-600" /> },
                       { id: 'WALLET', label: `Saldo Dompet (Rp ${(walletBalance ?? 0).toLocaleString('id-ID')})`, icon: <Zap className="w-4 h-4 text-[#006E24]" /> },
+                      { id: 'COD', label: 'COD (Bayar di Tempat)', icon: <Store className="w-4 h-4 text-slate-500" /> },
                       ...dynamicPaymentMethods.map(m => ({
                         id: m.id,
                         label: m.providerName + (m.accountName ? ` (${m.accountName})` : ''),
@@ -1834,20 +1839,16 @@ export default function CartPage() {
                       }))
                     ].map(opt => {
                       const isSelected = 
-                        (opt.id === 'DOKU_CHECKOUT' && (paymentMethod === 'DOKU' || activePaymentSubId === 'DOKU_CHECKOUT')) ||
                         (opt.id === 'WALLET' && paymentMethod === 'WALLET') ||
                         (opt.id === 'COD' && paymentMethod === 'COD') ||
-                        (['MIDTRANS_QRIS', 'MIDTRANS_BANK', 'MIDTRANS_BANK_BCA', 'MIDTRANS_CARD'].includes(opt.id) && paymentMethod === 'MIDTRANS' && activePaymentSubId === opt.id) ||
-                        ((opt as any).isManual && paymentMethod === 'MANUAL' && activePaymentSubId === opt.id);
+                        ((opt as any).isManual && paymentMethod === 'MANUAL' && activePaymentSubId === opt.id) ||
+                        (paymentMethod === 'DIRECT' && activePaymentSubId === opt.id);
 
                       return (
                         <div
                           key={opt.id}
                           onClick={() => {
-                            if (opt.id === 'DOKU_CHECKOUT') {
-                              setPaymentMethod('DOKU');
-                              setActivePaymentSubId('DOKU_CHECKOUT');
-                            } else if (opt.id === 'WALLET') {
+                            if (opt.id === 'WALLET') {
                               setPaymentMethod('WALLET');
                               setActivePaymentSubId('');
                             } else if (opt.id === 'COD') {
@@ -1857,7 +1858,7 @@ export default function CartPage() {
                               setPaymentMethod('MANUAL');
                               setActivePaymentSubId(opt.id);
                             } else {
-                              setPaymentMethod('MIDTRANS');
+                              setPaymentMethod('DIRECT');
                               setActivePaymentSubId(opt.id);
                             }
                           }}
@@ -2261,13 +2262,20 @@ export default function CartPage() {
           </div>
         </div>
       )}
-      <Script
-        src={process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true' 
-          ? "https://app.midtrans.com/snap/snap.js" 
-          : "https://app.sandbox.midtrans.com/snap/snap.js"
-        }
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-sFQP1v53tr2M3CQd'}
-        strategy="lazyOnload"
+      <DokuDirectPaymentModal
+        isOpen={isDirectModalOpen}
+        onClose={() => {
+          setIsDirectModalOpen(false)
+          if (directPaymentData?.orderId) {
+            router.push(`/orders/${directPaymentData.orderId}`)
+          }
+        }}
+        data={directPaymentData}
+        onSuccess={(orderId, result) => {
+          setIsDirectModalOpen(false)
+          const targetId = result?.orderId || result?.order?.id || orderId
+          router.push(`/orders/${targetId}`)
+        }}
       />
 
       <ConfirmDialog

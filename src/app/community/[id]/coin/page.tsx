@@ -85,14 +85,14 @@ export default function CommunityCoinPage() {
       })
       const data = await res.json()
       if (!res.ok || data.error) {
-        throw new Error(data.error || 'Gagal membuat sesi pembayaran DOKU.')
+        throw new Error(data.error || 'Gagal membuat sesi pembayaran.')
       }
 
       if (data.paymentUrl) {
-        goeyToast.success('Mengalihkan ke gateway pembayaran DOKU...')
+        goeyToast.success('Mengalihkan ke pembayaran online...')
         window.location.href = data.paymentUrl
       } else {
-        throw new Error('URL pembayaran DOKU tidak ditemukan.')
+        throw new Error('URL pembayaran tidak ditemukan.')
       }
     } catch (err: any) {
       goeyToast.error(err.message || 'Gagal memproses pembayaran top up coin.')

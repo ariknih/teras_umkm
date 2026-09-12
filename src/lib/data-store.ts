@@ -2659,7 +2659,7 @@ export const DataStore = {
                   }
         
                   return order
-                })
+                }, { timeout: 25000, maxWait: 15000 })
       },
       async () => {
         // In-memory simulation

@@ -5,7 +5,6 @@ import { getCurrentUser, logout } from "@/app/actions/auth";
 import { getWalletDetails } from "@/app/actions/wallet-affiliate";
 import { DataStore } from "@/lib/data-store";
 import { cacheWrap } from "@/lib/cache";
-import Script from "next/script";
 import GoeyToastProvider from "@/components/GoeyToastProvider";
 import ClientLayoutWrapper from "./components/ClientLayoutWrapper";
 
@@ -135,15 +134,6 @@ export default async function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col text-on-surface font-inter select-none overflow-x-hidden"
       >
-        <Script 
-          id="midtrans-script"
-          src={process.env.MIDTRANS_IS_PRODUCTION === 'true' 
-            ? "https://app.midtrans.com/snap/snap.js" 
-            : "https://app.sandbox.midtrans.com/snap/snap.js"
-          } 
-          strategy="lazyOnload" 
-          suppressHydrationWarning
-        />
         <GoeyToastProvider />
         <ClientLayoutWrapper
           user={clientUser}

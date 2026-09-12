@@ -2134,11 +2134,11 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         })
         const data = await res.json()
         if (!res.ok || data.error) {
-          throw new Error(data.error || 'Gagal memproses sesi pembayaran DOKU.')
+          throw new Error(data.error || 'Gagal memproses sesi pembayaran online.')
         }
 
         if (data.paymentUrl) {
-          goeyToast.success('Mengalihkan ke gateway pembayaran DOKU...')
+          goeyToast.success('Mengalihkan ke halaman pembayaran...')
           window.location.href = data.paymentUrl
           return
         }
