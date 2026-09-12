@@ -3,6 +3,7 @@ import { Inter, Poppins, Geist } from "next/font/google";
 import "./globals.css";
 import { getCurrentUser, logout } from "@/app/actions/auth";
 import { getWalletDetails } from "@/app/actions/wallet-affiliate";
+import { getUserCommunitiesWithRolesAction } from "@/app/actions/community";
 import { DataStore } from "@/lib/data-store";
 import { cacheWrap } from "@/lib/cache";
 import Script from "next/script";
@@ -71,12 +72,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentUser();
-  let [dbUser, wallet] = user
+  let [dbUser, wallet, userCommunities] = user
     ? await Promise.all([
         cacheWrap(`user:db:${user.id}`, () => DataStore.findUserById(user.id), 60),
-        cacheWrap(`user:wallet:${user.id}`, () => getWalletDetails(user), 60)
+        cacheWrap(`user:wallet:${user.id}`, () => getWalletDetails(user), 60),
+        getUserCommunitiesWithRolesAction(user.id)
       ])
-    : [null, null];
+    : [null, null, []];
   if (user && !dbUser) {
     dbUser = await DataStore.recreateMissingUser({
       id: user.id,
@@ -149,6 +151,7 @@ export default async function RootLayout({
           user={clientUser}
           dbUser={clientDbUser}
           wallet={wallet}
+          userCommunities={userCommunities}
           userSetupCompleted={!!userSetupCompleted}
           logoutAction={logout}
         >

@@ -58,6 +58,7 @@ export async function createCommunityOfficialProductAction(formData: FormData) {
       targetType: 'PRODUCT',
       detail: `"${name}" — Rp ${price.toLocaleString('id-ID')}.`
     })
+    deleteCache(`community:products:official:${communityId}`)
     revalidatePath(`/community/${communityId}`)
     return { success: true, product }
   } catch (e: any) {
@@ -108,6 +109,7 @@ export async function updateCommunityOfficialProductAction(id: string, formData:
       targetType: 'PRODUCT'
     })
     if (communityId) {
+      deleteCache(`community:products:official:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return { success: true, product }
@@ -140,6 +142,7 @@ export async function deleteCommunityOfficialProductAction(id: string, community
       targetType: 'PRODUCT'
     })
     if (communityId) {
+      deleteCache(`community:products:official:${communityId}`)
       revalidatePath(`/community/${communityId}`)
     }
     return res

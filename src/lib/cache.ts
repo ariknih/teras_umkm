@@ -145,8 +145,15 @@ export async function invalidateCachePattern(prefix: string): Promise<void> {
     }
   }
 
+  // ponytail: callers pass prefixes like 'foo:*' expecting glob semantics,
+  // but real keys never contain '*' - matching startsWith(prefix) literally
+  // made every wildcard invalidation in the codebase a silent no-op on the
+  // in-memory store (the only backend actually running here since no
+  // Upstash env vars are configured). Strip the trailing '*' so the prefix
+  // before it is what's actually matched.
+  const memPrefix = prefix.endsWith('*') ? prefix.slice(0, -1) : prefix
   for (const key of memoryStore.keys()) {
-    if (key.startsWith(prefix)) {
+    if (key.startsWith(memPrefix)) {
       memoryStore.delete(key)
     }
   }
@@ -154,6 +161,22 @@ export async function invalidateCachePattern(prefix: string): Promise<void> {
 
 /**
  * Cache Wrapper: Returns cached data if available, otherwise executes fetchFn and caches result
+ *
+ * ponytail: recurring bug pattern in this codebase - every server action that
+ * mutates data behind a cacheWrap() key MUST explicitly deleteCache()/
+ * invalidateCachePattern() that exact key. `revalidatePath()` is a DIFFERENT
+ * cache layer (Next's route/router cache) and never touches this one, so a
+ * write that only calls revalidatePath looks like it invalidates the read
+ * but actually leaves it stale for the full TTL (or effectively indefinitely
+ * across separate warm serverless instances, since this falls back to a
+ * process-local Map - no Upstash Redis is configured in this project). This
+ * has already shipped as three separate community-feature bugs: kicked
+ * members still showing as members, a paid "Premium" join fee getting wiped
+ * back to 0 by a later unrelated save, and toggled community menus not
+ * updating on the front page (both from the ketua's own settings save and
+ * from CMS admin edits). When adding a new cacheWrap() read, grep this
+ * codebase for every action that writes the same underlying data and make
+ * sure each one busts this key - don't assume revalidatePath covers it.
  */
 export async function cacheWrap<T>(
   key: string,

@@ -3,17 +3,6 @@
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Sparkles,
-  Activity,
-  MessageSquare,
-  Calendar,
-  ShoppingBag,
-  Image as ImageIcon,
-  Users as UsersIcon,
-  Sliders,
-  Settings
-} from 'lucide-react'
-import {
   createCommunityAdminAction,
   updateCommunityAdminAction,
   deleteCommunityAdminAction,
@@ -25,6 +14,7 @@ import {
   getAllCoinHoldersAction
 } from '@/app/actions/admin'
 import { formatCategoryName } from '@/lib/utils'
+import { getModulePreviewLabels, normalizeTemplateType } from '@/lib/community-templates'
 import { useToast, Toast } from './Toast'
 
 const EMPTY_COMM_FORM = {
@@ -46,7 +36,8 @@ const EMPTY_COMM_FORM = {
   minCoinRequired: '100',
   isVerified: false,
   isSuspended: false,
-  isKycRequired: false
+  isKycRequired: false,
+  templateType: 'Society'
 }
 
 type Props = {
@@ -72,17 +63,6 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
   const [communityCategoryFilter, setCommunityCategoryFilter] = useState('ALL')
 
   const [communityModal, setCommunityModal] = useState<{ open: boolean; mode: 'add' | 'edit'; data?: any }>({ open: false, mode: 'add' })
-  const [selectedTemplate, setSelectedTemplate] = useState('Community')
-  const [moduleSettingsOpen, setModuleSettingsOpen] = useState(false)
-  const [modulesConfig, setModulesConfig] = useState<Record<string, boolean>>({
-    heroBanner: true,
-    aktivitas: true,
-    diskusi: true,
-    event: true,
-    produkAnggota: true,
-    galeri: true,
-    anggota: true
-  })
   const [commForm, setCommForm] = useState(EMPTY_COMM_FORM)
 
   const [memberModal, setMemberModal] = useState<{ open: boolean; community?: any }>({ open: false })
@@ -126,15 +106,21 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
       domisili: comm.domisili || '',
       kontakPj: comm.kontakPj || '',
       description: comm.description || '',
-      joinFee: String(comm.joinFee || 0),
-      monthlyFee: String(comm.monthlyFee || 0),
-      simpananPokok: String(comm.simpananPokok || 100000),
-      simpananWajib: String(comm.simpananWajib || 25000),
-      minCoinForLoan: String(comm.minCoinForLoan || 1000),
-      minCoinRequired: String(comm.minCoinRequired || 100),
+      joinFee: String(comm.joinFee ?? 0),
+      monthlyFee: String(comm.monthlyFee ?? 0),
+      // ?? not || — 0 is a legitimate real value for a koperasi's simpanan
+      // pokok/wajib or min-coin thresholds (e.g. "no minimum"); `||` was
+      // silently swapping a real 0 back to the create-time default the
+      // moment an admin opened the edit modal, and saving (even an unrelated
+      // field) would persist that phantom default over the real value.
+      simpananPokok: String(comm.simpananPokok ?? 100000),
+      simpananWajib: String(comm.simpananWajib ?? 25000),
+      minCoinForLoan: String(comm.minCoinForLoan ?? 1000),
+      minCoinRequired: String(comm.minCoinRequired ?? 100),
       isVerified: Boolean(comm.isVerified),
       isSuspended: Boolean(comm.isSuspended),
-      isKycRequired: Boolean(comm.isKycRequired)
+      isKycRequired: Boolean(comm.isKycRequired),
+      templateType: normalizeTemplateType(comm.templateType)
     })
     setCommunityModal({ open: true, mode: 'edit', data: comm })
   }
@@ -159,9 +145,14 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
       alert('Nama komunitas, Ketua, Tipe Komunitas, dan Kategori Wajib diisi.')
       return
     }
+    // Koperasi has no page template to pick - it's always the literal
+    // 'Koperasi' value regardless of whatever the (hidden, for this type)
+    // Template Halaman dropdown state last held.
+    const submitData = { ...commForm, templateType: commForm.type === 'KOPERASI' ? 'Koperasi' : commForm.templateType }
+
     startTransition(async () => {
       if (communityModal.mode === 'add') {
-        const res = await createCommunityAdminAction(commForm)
+        const res = await createCommunityAdminAction(submitData)
         if (res.success && res.community) {
           setCommunities((prev) => [...prev, res.community])
           showToast(`Komunitas Induk "${commForm.name}" berhasil dibuat.`)
@@ -172,7 +163,7 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
         }
       } else {
         const id = communityModal.data.id
-        const res = await updateCommunityAdminAction(id, commForm)
+        const res = await updateCommunityAdminAction(id, submitData)
         if (res.success && res.community) {
           setCommunities((prev) => prev.map((c) => (c.id === id ? { ...c, ...res.community } : c)))
           showToast(`Komunitas Induk "${commForm.name}" berhasil diperbarui.`)
@@ -489,12 +480,14 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
                         <td className="px-4 py-3 text-right">
                           {isKoperasi ? (
                             <div className="text-right">
-                              <p className="font-bold text-slate-850">Simpanan Pokok: Rp 100.000</p>
-                              <p className="text-[10px] text-slate-500">Simpanan Wajib: Rp 25.000</p>
+                              <p className="font-bold text-slate-850">Simpanan Pokok: Rp {(inv.community?.simpananPokok ?? 0).toLocaleString('id-ID')}</p>
+                              <p className="text-[10px] text-slate-500">Simpanan Wajib: Rp {(inv.community?.simpananWajib ?? 0).toLocaleString('id-ID')}</p>
                             </div>
                           ) : (
                             <div className="text-right">
-                              <p className="font-bold text-[#0F5132]">Biaya Gabung: Free / Standard</p>
+                              <p className="font-bold text-[#0F5132]">
+                                {(inv.community?.joinFee ?? 0) > 0 ? `Biaya Gabung: Rp ${inv.community.joinFee.toLocaleString('id-ID')}` : 'Biaya Gabung: Gratis'}
+                              </p>
                             </div>
                           )}
                         </td>
@@ -511,6 +504,10 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
                         <td className="px-4 py-3 text-right">
                           {inv.invoiceStatus === 'VERIFIED' ? (
                             <span className="text-[10px] text-slate-400 italic">Terverifikasi</span>
+                          ) : inv.invoiceStatus === 'PAID' ? (
+                            // Already confirmed paid automatically (instant checkout) —
+                            // nothing left for an admin to manually verify here.
+                            <span className="text-[10px] text-slate-400 italic">Sudah Bayar Otomatis</span>
                           ) : (
                             <button onClick={() => handleVerifyInvoice(inv.id)} disabled={isPending} className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3a24] text-white rounded text-[10px] font-bold uppercase tracking-wider transition-colors border-none cursor-pointer disabled:opacity-50">
                               {isPending ? 'Proses...' : 'Verifikasi Lunas'}
@@ -641,6 +638,9 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
                   </div>
                 </div>
 
+                {/* Koperasi has its own fixed module set (no page template
+                    to choose), so this only applies to Perkumpulan. */}
+                {commForm.type === 'PERKUMPULAN' && (
                 <div className="space-y-3 pt-2 border-t border-gray-100">
                   <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
                     <span className="w-2 h-2 rounded-full bg-primary"></span>
@@ -649,65 +649,53 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
 
                   <div>
                     <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider mb-1">Pilih Template Halaman</label>
-                    <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value)} className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs font-semibold cursor-pointer">
-                      <option value="Community">▼ Community</option>
+                    <select value={commForm.templateType} onChange={(e) => setCommForm({ ...commForm, templateType: e.target.value })} className="w-full bg-white border border-gray-300 rounded-[8px] px-3 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs font-semibold cursor-pointer">
+                      <option value="Society">▼ Society</option>
                       <option value="Business">▼ Business</option>
                       <option value="Education">▼ Education</option>
                       <option value="Culinary">▼ Culinary</option>
-                      <option value="Koperasi">▼ Koperasi</option>
                     </select>
                   </div>
 
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-[10px] shadow-2xs space-y-2">
-                    <div className="flex justify-between items-center border-b border-gray-200/60 pb-1.5">
-                      <span className="text-[9px] font-extrabold text-gray-700 uppercase tracking-wider flex items-center gap-1">
-                        <Sliders className="w-3 h-3 text-primary" /> Preview Layout ({selectedTemplate})
-                      </span>
-                      <span className="px-2 py-0.5 bg-[#E8F5E9] border border-primary/30 text-primary font-extrabold text-[8px] rounded uppercase">Card Layout Kecil</span>
+                  <div className="p-3 bg-emerald-50/50 border border-primary/20 rounded-[10px] space-y-1">
+                    <span className="block text-[10px] font-extrabold text-gray-900 uppercase tracking-wider">Modul Bawaan</span>
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-gray-700 font-semibold">
+                      {getModulePreviewLabels(commForm.templateType).map((label) => (
+                        <span key={label} className="flex items-center gap-0.5 text-primary">✓ {label}</span>
+                      ))}
                     </div>
+                    <p className="text-[9px] text-gray-500 font-medium pt-0.5">
+                      Modul dapat diaktifkan/nonaktifkan melalui Pengaturan komunitas setelah dibuat.
+                    </p>
+                  </div>
+                </div>
+                )}
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
-                      {[
-                        { title: 'Hero Banner', bg: 'bg-primary text-white', icon: Sparkles },
-                        { title: 'Aktivitas Terbaru', bg: 'bg-white border border-gray-200 text-gray-800', icon: Activity },
-                        { title: 'Diskusi', bg: 'bg-white border border-gray-200 text-gray-800', icon: MessageSquare },
-                        { title: 'Event', bg: 'bg-white border border-gray-200 text-gray-800', icon: Calendar },
-                        { title: 'Produk Anggota', bg: 'bg-white border border-gray-200 text-gray-800', icon: ShoppingBag },
-                        { title: 'Galeri', bg: 'bg-white border border-gray-200 text-gray-800', icon: ImageIcon },
-                        { title: 'Anggota', bg: 'bg-white border border-gray-200 text-gray-800', icon: UsersIcon }
-                      ].map((m, idx) => {
-                        const IconComp = m.icon
-                        return (
-                          <div key={idx} className={`p-1.5 rounded-[6px] flex items-center gap-1.5 text-[10px] font-bold ${m.bg}`}>
-                            <IconComp className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{m.title}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
+                <div className="space-y-3 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-2 border-b border-gray-100 pb-1.5">
+                    <span className="w-2 h-2 rounded-full bg-primary"></span>
+                    <h4 className="text-[10px] font-extrabold text-primary uppercase tracking-wider">PENGATURAN FINANSIAL</h4>
                   </div>
 
-                  <div className="p-3 bg-emerald-50/50 border border-primary/20 rounded-[10px] flex items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <span className="block text-[10px] font-extrabold text-gray-900 uppercase tracking-wider">Modul Bawaan</span>
-                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-gray-700 font-semibold">
-                        <span className="flex items-center gap-0.5 text-primary">✓ Hero Banner</span>
-                        <span className="flex items-center gap-0.5 text-primary">✓ Aktivitas</span>
-                        <span className="flex items-center gap-0.5 text-primary">✓ Diskusi</span>
-                        <span className="flex items-center gap-0.5 text-primary">✓ Event</span>
-                        <span className="flex items-center gap-0.5 text-primary">✓ Produk Anggota</span>
-                        <span className="flex items-center gap-0.5 text-primary">✓ Galeri</span>
-                        <span className="flex items-center gap-0.5 text-primary">✓ Anggota</span>
-                      </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                    <div>
+                      <label className="block text-[9px] font-bold text-gray-600 uppercase mb-1">Harga Masuk (Rp)</label>
+                      <input type="number" min="0" value={commForm.joinFee} onChange={(e) => setCommForm({ ...commForm, joinFee: e.target.value })} placeholder="0" className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs" />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setModuleSettingsOpen(true)}
-                      className="px-3 py-1.5 bg-white border border-primary text-primary hover:bg-primary hover:text-white font-extrabold text-[11px] rounded-[8px] transition-all shadow-2xs flex items-center gap-1 cursor-pointer shrink-0"
-                    >
-                      <Settings className="w-3 h-3" /> Sesuaikan Modul
-                    </button>
+                    <div>
+                      <label className="block text-[9px] font-bold text-gray-600 uppercase mb-1">Iuran Bulanan (Rp)</label>
+                      <input type="number" min="0" value={commForm.monthlyFee} onChange={(e) => setCommForm({ ...commForm, monthlyFee: e.target.value })} placeholder="0" className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-gray-600 uppercase mb-1">Simpanan Pokok (Koperasi)</label>
+                      <input type="number" min="0" value={commForm.simpananPokok} onChange={(e) => setCommForm({ ...commForm, simpananPokok: e.target.value })} placeholder="100000" className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs" />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-gray-600 uppercase mb-1">Simpanan Wajib (Koperasi)</label>
+                      <input type="number" min="0" value={commForm.simpananWajib} onChange={(e) => setCommForm({ ...commForm, simpananWajib: e.target.value })} placeholder="25000" className="w-full bg-white border border-gray-300 rounded-[8px] px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-primary transition-all shadow-2xs" />
+                    </div>
                   </div>
+                  <p className="text-[9px] text-gray-500 font-medium">Untuk Perkumpulan, isi Harga Masuk & Iuran Bulanan. Untuk Koperasi, isi Simpanan Pokok & Simpanan Wajib.</p>
                 </div>
 
                 <div className="space-y-3 pt-2 border-t border-gray-100">
@@ -759,51 +747,6 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {moduleSettingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 font-sans">
-          <div className="bg-white border border-gray-200 rounded-[12px] max-w-md w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150 text-gray-900">
-            <div className="flex justify-between items-center border-b border-gray-100 pb-3">
-              <h3 className="font-sora text-sm font-extrabold text-primary uppercase tracking-wider flex items-center gap-2">
-                <Settings className="w-4 h-4" /> Pengaturan Modul Halaman
-              </h3>
-              <button onClick={() => setModuleSettingsOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
-            </div>
-
-            <p className="text-xs text-gray-600 font-medium leading-relaxed">
-              Pilih modul bawaan yang diizinkan aktif pada template <strong className="text-primary font-bold">{selectedTemplate}</strong>.
-            </p>
-
-            <div className="space-y-2.5 pt-1">
-              {[
-                { key: 'heroBanner', label: 'Hero Banner Dashboard' },
-                { key: 'aktivitas', label: 'Feed Aktivitas Terbaru' },
-                { key: 'diskusi', label: 'Forum Diskusi Anggota' },
-                { key: 'event', label: 'Kalender & Event Komunitas' },
-                { key: 'produkAnggota', label: 'Katalog Produk Anggota' },
-                { key: 'galeri', label: 'Galeri Foto & Dokumen' },
-                { key: 'anggota', label: 'Direktori Anggota Aktif' }
-              ].map((item) => (
-                <label key={item.key} className="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200/80 rounded-[8px] cursor-pointer hover:bg-gray-100 transition-colors">
-                  <span className="text-xs font-bold text-gray-800">{item.label}</span>
-                  <input type="checkbox" checked={!!modulesConfig[item.key]} onChange={(e) => setModulesConfig({ ...modulesConfig, [item.key]: e.target.checked })} className="w-4 h-4 rounded accent-primary cursor-pointer" />
-                </label>
-              ))}
-            </div>
-
-            <div className="pt-3 flex gap-3 border-t border-gray-100">
-              <button type="button" onClick={() => setModuleSettingsOpen(false)} className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-[12px] transition-all cursor-pointer">Batal</button>
-              <button
-                type="button"
-                onClick={() => { setModuleSettingsOpen(false); alert('Konfigurasi modul berhasil disimpan!') }}
-                className="flex-1 py-2 bg-primary hover:bg-[#15803D] text-white font-bold text-xs rounded-[12px] transition-all cursor-pointer shadow-2xs"
-              >
-                Simpan Modul
-              </button>
-            </div>
           </div>
         </div>
       )}

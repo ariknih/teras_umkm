@@ -4,8 +4,18 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, ShoppingBag, Wrench, Users, Wallet, User as UserIcon } from 'lucide-react'
+import CommunityNavLink from '@/app/components/CommunityNavLink'
+import { UserCommunitySummary } from '@/app/components/CommunityPickerModal'
 
-export default function MobileBottomNav({ isLoggedIn, user }: { isLoggedIn?: boolean; user?: any }) {
+export default function MobileBottomNav({
+  isLoggedIn,
+  user,
+  userCommunities = []
+}: {
+  isLoggedIn?: boolean
+  user?: any
+  userCommunities?: UserCommunitySummary[]
+}) {
   const pathname = usePathname() || ''
 
   // Hide on admin routes or chat view
@@ -38,7 +48,8 @@ export default function MobileBottomNav({ isLoggedIn, user }: { isLoggedIn?: boo
       label: 'Komunitas',
       href: '/community',
       icon: Users,
-      isActive: pathname.startsWith('/community')
+      isActive: pathname.startsWith('/community'),
+      isCommunity: true
     },
     {
       label: isUserLogged ? 'Dompet' : 'Masuk',
@@ -53,16 +64,13 @@ export default function MobileBottomNav({ isLoggedIn, user }: { isLoggedIn?: boo
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-150 ${
-                item.isActive
-                  ? 'text-primary font-extrabold scale-105'
-                  : 'text-slate-500 hover:text-slate-800 font-medium'
-              }`}
-            >
+          const className = `flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-150 ${
+            item.isActive
+              ? 'text-primary font-extrabold scale-105'
+              : 'text-slate-500 hover:text-slate-800 font-medium'
+          }`
+          const content = (
+            <>
               <div className="relative">
                 <Icon size={20} strokeWidth={item.isActive ? 2.5 : 2} />
                 {item.isActive && (
@@ -70,6 +78,15 @@ export default function MobileBottomNav({ isLoggedIn, user }: { isLoggedIn?: boo
                 )}
               </div>
               <span className="text-[10px] tracking-tight mt-0.5">{item.label}</span>
+            </>
+          )
+          return item.isCommunity ? (
+            <CommunityNavLink key={item.label} communities={userCommunities} className={className}>
+              {content}
+            </CommunityNavLink>
+          ) : (
+            <Link key={item.label} href={item.href} className={className}>
+              {content}
             </Link>
           )
         })}

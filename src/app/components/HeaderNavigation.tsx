@@ -27,14 +27,17 @@ import {
 } from 'lucide-react'
 import { AuthDialog } from '@/components/AuthDialog'
 import { searchGlobalAction, GlobalSearchResult } from '@/app/actions/search'
+import CommunityNavLink from './CommunityNavLink'
+import { UserCommunitySummary } from './CommunityPickerModal'
 
 interface HeaderNavigationProps {
   user: any
   wallet: any
+  userCommunities?: UserCommunitySummary[]
   logoutAction: () => Promise<any>
 }
 
-export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderNavigationProps) {
+export default function HeaderNavigation({ user, wallet, userCommunities = [], logoutAction }: HeaderNavigationProps) {
   const router = useRouter()
   const pathname = usePathname()
   const communityMatch = pathname?.match(/\/community\/([^/]+)/)
@@ -612,10 +615,10 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
               <img src="/images/affiliate icon.svg" alt="Affiliate" className="w-4 h-4 object-contain" />
               <span>Affiliate</span>
             </Link>
-            <Link href="/community" prefetch={true} className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
+            <CommunityNavLink communities={userCommunities} className="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-[#2DB24A] transition-colors whitespace-nowrap">
               <img src="/images/comunity icon.svg" alt="Community" className="w-4 h-4 object-contain" />
               <span>Community</span>
-            </Link>
+            </CommunityNavLink>
           </div>
 
           {/* Right: Actions */}
@@ -791,14 +794,13 @@ export default function HeaderNavigation({ user, wallet, logoutAction }: HeaderN
             >
               Affiliate Hub
             </Link>
-            <Link
-              href="/community"
-              prefetch={true}
-              onClick={() => setIsOpenMobile(false)}
+            <CommunityNavLink
+              communities={userCommunities}
+              onNavigate={() => setIsOpenMobile(false)}
               className="text-lg font-bold text-text-primary border-b border-border-subtle pb-3 hover:text-primary transition-colors"
             >
               Community
-            </Link>
+            </CommunityNavLink>
 
             {user ? (
               <div className="flex flex-col gap-4 mt-4">

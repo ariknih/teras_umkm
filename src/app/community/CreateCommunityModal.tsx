@@ -4,6 +4,7 @@ import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createIndukCommunity } from '@/app/actions/community'
+import { getModulePreviewLabels } from '@/lib/community-templates'
 import { goeyToast } from 'goey-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -19,7 +20,8 @@ import {
   ChevronLeft,
   Lock,
   Gift,
-  Clock
+  Clock,
+  Star
 } from 'lucide-react'
 
 interface CreateCommunityModalProps {
@@ -53,7 +55,7 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
   const [isKycRequired, setIsKycRequired] = useState(false)
   const [coopTier, setCoopTier] = useState<'BASIC' | 'PLUS' | 'PRO'>('BASIC')
   const [perkumpulanTier, setPerkumpulanTier] = useState<'REGULER' | 'PREMIUM'>('REGULER')
-  const [templateType, setTemplateType] = useState<'Community' | 'Business' | 'Education' | 'Culinary' | 'Koperasi'>('Community')
+  const [templateType, setTemplateType] = useState<'Society' | 'Business' | 'Education' | 'Culinary' | 'Koperasi'>('Society')
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
@@ -108,6 +110,13 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
     return '3.000'
   }
 
+  // Display label only - internal tier values stay BASIC/PLUS/PRO.
+  const getTierLabel = (tier: string) => {
+    if (tier === 'BASIC') return 'Reguler'
+    if (tier === 'PLUS') return 'Premium'
+    return 'Max'
+  }
+
   const handleCreateCommunity = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     setFormError(null)
@@ -147,7 +156,10 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
       formData.append('isKycRequired', String(isKycRequired))
       formData.append('coopTier', coopTier)
       formData.append('perkumpulanTier', perkumpulanTier)
-      formData.append('templateType', templateType)
+      // Koperasi has no page template to pick - it's always the literal
+      // 'Koperasi' value regardless of whatever the (hidden, for this type)
+      // Template Halaman dropdown state last held.
+      formData.append('templateType', type === 'KOPERASI' ? 'Koperasi' : templateType)
 
       const res = await createIndukCommunity(formData)
       if (res.error) {
@@ -178,7 +190,7 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
         setMonthlyFee('')
         setIsKycRequired(false)
         setCoopTier('BASIC')
-        setTemplateType('Community')
+        setTemplateType('Society')
 
         onCreated()
       }
@@ -285,20 +297,20 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                             onClick={() => setPerkumpulanTier('REGULER')}
                             className={`p-3.5 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                               perkumpulanTier === 'REGULER'
-                                ? 'bg-emerald-50/30 border-primary shadow-sm ring-2 ring-primary/20'
+                                ? 'bg-neutral-shade-50 border-neutral-shade-400 shadow-sm ring-2 ring-neutral-shade-400/20'
                                 : 'bg-white border-black/5 hover:border-black/15'
                             }`}
                           >
                             <div className="space-y-2">
                               <div className="flex items-start justify-between gap-1">
                                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                                  perkumpulanTier === 'REGULER' ? 'border-primary' : 'border-gray-300'
+                                  perkumpulanTier === 'REGULER' ? 'border-neutral-shade-500' : 'border-gray-300'
                                 }`}>
-                                  {perkumpulanTier === 'REGULER' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                  {perkumpulanTier === 'REGULER' && <div className="w-2 h-2 rounded-full bg-neutral-shade-500" />}
                                 </div>
                                 <div className="text-right">
-                                  <h5 className="font-black text-xs text-[#0F5132] font-sora">PERKUMPULAN REGULER</h5>
-                                  <span className="text-[10px] text-primary font-extrabold block mt-0.5">Rp 0 (Selamanya Gratis)</span>
+                                  <h5 className="font-black text-xs text-neutral-shade-800 font-sora">PERKUMPULAN REGULER</h5>
+                                  <span className="text-[10px] text-neutral-shade-700 font-extrabold block mt-0.5">Rp 0 (Selamanya Gratis)</span>
                                 </div>
                               </div>
                               <div className="space-y-1 text-left pt-2 border-t border-gray-100 text-[9px] font-semibold text-gray-600">
@@ -313,25 +325,25 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                             onClick={() => setPerkumpulanTier('PREMIUM')}
                             className={`p-3.5 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                               perkumpulanTier === 'PREMIUM'
-                                ? 'bg-purple-50/30 border-purple-500 shadow-sm ring-2 ring-purple-500/20'
+                                ? 'bg-bank-blue-50 border-bank-blue-500 shadow-sm ring-2 ring-bank-blue-500/20'
                                 : 'bg-white border-black/5 hover:border-black/15'
                             }`}
                           >
                             <div className="space-y-2">
                               <div className="flex items-start justify-between gap-1">
                                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                                  perkumpulanTier === 'PREMIUM' ? 'border-purple-500' : 'border-gray-300'
+                                  perkumpulanTier === 'PREMIUM' ? 'border-bank-blue-500' : 'border-gray-300'
                                 }`}>
-                                  {perkumpulanTier === 'PREMIUM' && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+                                  {perkumpulanTier === 'PREMIUM' && <div className="w-2 h-2 rounded-full bg-bank-blue-500" />}
                                 </div>
                                 <div className="text-right">
-                                  <h5 className="font-black text-xs text-purple-800 font-sora flex items-center justify-end gap-1">
-                                    <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0 inline-block" /> PERKUMPULAN PREMIUM
+                                  <h5 className="font-black text-xs text-bank-blue-800 font-sora flex items-center justify-end gap-1">
+                                    <span className="w-2 h-2 rounded-full bg-bank-blue-500 shrink-0 inline-block" /> PERKUMPULAN PREMIUM
                                   </h5>
-                                  <span className="text-[10px] text-purple-600 font-extrabold block mt-0.5">Rp 200.000 <span className="text-[8px] font-normal text-gray-500">(Aktivasi 1x)</span></span>
+                                  <span className="text-[10px] text-bank-blue-600 font-extrabold block mt-0.5">Rp 200.000 <span className="text-[8px] font-normal text-gray-500">(Aktivasi 1x)</span></span>
                                 </div>
                               </div>
-                              <div className="space-y-1 text-left pt-2 border-t border-gray-100 text-[9px] font-bold text-purple-900">
+                              <div className="space-y-1 text-left pt-2 border-t border-gray-100 text-[9px] font-bold text-bank-blue-900">
                                 <div>✓ Modul Membership Anggota Berbayar (Set Sendiri)</div>
                                 <div>✓ Pengaturan Merchandise & Voucher Eksklusif</div>
                                 <div>✓ Fitur Referral Multi-Tier (3-5 Tier)</div>
@@ -353,51 +365,45 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                       />
                     </div>
 
-                    {/* BAGIAN 1B: TEMPLATE HALAMAN */}
-                    <div className="space-y-3 pt-1 border-t border-black/5">
-                      <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#006E24]"></span>
-                        <h4 className="text-[10px] font-extrabold text-[#006E24] uppercase tracking-wider font-sora">Template Halaman</h4>
-                      </div>
+                    {/* BAGIAN 1B: TEMPLATE HALAMAN — Koperasi has its own fixed
+                        module set (no page template to choose), so this only
+                        applies to Perkumpulan. */}
+                    {type === 'PERKUMPULAN' && (
+                      <div className="space-y-3 pt-1 border-t border-black/5">
+                        <div className="flex items-center gap-2 border-b border-black/5 pb-1.5">
+                          <span className="w-2 h-2 rounded-full bg-[#006E24]"></span>
+                          <h4 className="text-[10px] font-extrabold text-[#006E24] uppercase tracking-wider font-sora">Template Halaman</h4>
+                        </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Pilih Template Halaman</label>
-                        <select
-                          value={templateType}
-                          onChange={(e) => setTemplateType(e.target.value as any)}
-                          className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs font-bold text-[#111111] focus:outline-none focus:border-primary/50 transition-all cursor-pointer"
-                        >
-                          <option value="Community">▼ Community</option>
-                          <option value="Business">▼ Business</option>
-                          <option value="Education">▼ Education</option>
-                          <option value="Culinary">▼ Culinary</option>
-                          <option value="Koperasi">▼ Koperasi</option>
-                        </select>
-                      </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[9px] font-bold text-text-secondary uppercase tracking-wider block">Pilih Template Halaman</label>
+                          <select
+                            value={templateType}
+                            onChange={(e) => setTemplateType(e.target.value as any)}
+                            className="w-full h-9 px-3 bg-[#F5F7F9] border border-black/10 rounded-lg text-xs font-bold text-[#111111] focus:outline-none focus:border-primary/50 transition-all cursor-pointer"
+                          >
+                            <option value="Society">▼ Society</option>
+                            <option value="Business">▼ Business</option>
+                            <option value="Education">▼ Education</option>
+                            <option value="Culinary">▼ Culinary</option>
+                          </select>
+                        </div>
 
-                      <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-center justify-between gap-3 mt-2">
-                        <div>
+                        <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl mt-2">
                           <label className="text-[10px] font-black text-emerald-950 uppercase tracking-wider block">
                             Modul Bawaan
                           </label>
                           <div className="flex flex-wrap gap-x-2.5 gap-y-1 text-[9px] text-[#006E24] font-bold mt-1">
-                            <span>✓ Hero Banner</span>
-                            <span>✓ Aktivitas</span>
-                            <span>✓ Diskusi</span>
-                            <span>✓ Event</span>
-                            <span>✓ Produk Anggota</span>
-                            <span>✓ Galeri</span>
-                            <span>✓ Anggota</span>
+                            {getModulePreviewLabels(templateType).map((label) => (
+                              <span key={label}>✓ {label}</span>
+                            ))}
                           </div>
+                          <p className="text-[9px] text-emerald-800/70 font-medium mt-1.5">
+                            Modul dapat diaktifkan/nonaktifkan kapan saja melalui Pengaturan setelah komunitas dibuat.
+                          </p>
                         </div>
-                        <button
-                          type="button"
-                          className="px-2.5 py-1.5 border border-primary text-primary hover:bg-primary/5 text-[9px] font-extrabold rounded-lg flex items-center gap-1 transition-all cursor-pointer bg-white"
-                        >
-                          <span>⚙️</span> Sesuaikan Modul
-                        </button>
                       </div>
-                    </div>
+                    )}
 
                   </div>
 
@@ -516,12 +522,12 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                         <p className="text-[9px] text-gray-500 font-semibold">Pilih salah satu paket langganan yang sesuai dengan kebutuhan komunitas Anda.</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 items-stretch">
-                          {/* Card 1: 🟢 BASIC */}
+                          {/* Card 1: REGULER */}
                           <div
                             onClick={() => setCoopTier('BASIC')}
                             className={`p-4 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                               coopTier === 'BASIC'
-                                ? 'bg-emerald-50/30 border-primary shadow-sm ring-2 ring-primary/20'
+                                ? 'bg-neutral-shade-50 border-neutral-shade-400 shadow-sm ring-2 ring-neutral-shade-400/20'
                                 : 'bg-white border-black/5 hover:border-black/15 hover:shadow-xs'
                             }`}
                           >
@@ -529,34 +535,34 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                               <div className="space-y-2">
                                 <div className="flex items-start justify-between gap-1">
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                                    coopTier === 'BASIC' ? 'border-primary' : 'border-gray-300'
+                                    coopTier === 'BASIC' ? 'border-neutral-shade-500' : 'border-gray-300'
                                   }`}>
-                                    {coopTier === 'BASIC' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                                    {coopTier === 'BASIC' && <div className="w-2 h-2 rounded-full bg-neutral-shade-500" />}
                                   </div>
                                   <div className="text-right">
-                                    <h5 className="font-black text-xs text-[#0F5132] font-sora flex items-center justify-end gap-1">
-                                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 inline-block" /> BASIC
+                                    <h5 className="font-black text-xs text-neutral-shade-800 font-sora flex items-center justify-end gap-1">
+                                      <span className="w-2 h-2 rounded-full bg-neutral-shade-500 shrink-0 inline-block" /> REGULER
                                     </h5>
-                                    <span className="text-[8px] text-emerald-700/80 font-bold block">Paket Dasar</span>
-                                    <span className="text-[10px] text-primary font-extrabold block mt-0.5">Rp 99.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
+                                    <span className="text-[8px] text-neutral-shade-600 font-bold block">Paket Dasar</span>
+                                    <span className="text-[10px] text-neutral-shade-700 font-extrabold block mt-0.5">Rp 99.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
                                     <span className="text-[7px] text-gray-400 font-semibold block">atau Rp 999.000/thn</span>
                                   </div>
                                 </div>
 
                                 <div className="space-y-1 text-left pt-2 border-t border-gray-100">
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-[#E8F8EE] text-primary flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-neutral-shade-800">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-neutral-shade-100 text-neutral-shade-700 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Simpanan Pokok</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#0F5132]">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-[#E8F8EE] text-primary flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-neutral-shade-800">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-neutral-shade-100 text-neutral-shade-700 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Simpanan Wajib</span>
                                   </div>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="pt-3 border-t border-emerald-100/60 mt-3">
+                            <div className="pt-3 border-t border-neutral-shade-200 mt-3">
                               <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1">
                                 <span className="flex items-center gap-1 text-[9px] font-bold text-amber-900 shrink-0 whitespace-nowrap">
                                   <Gift className="w-3 h-3 text-amber-500 shrink-0" /> Bonus Aktivasi
@@ -568,12 +574,12 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                             </div>
                           </div>
 
-                          {/* Card 2: 🔵 PLUS */}
+                          {/* Card 2: PREMIUM */}
                           <div
                             onClick={() => setCoopTier('PLUS')}
                             className={`p-4 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                               coopTier === 'PLUS'
-                                ? 'bg-blue-50/30 border-blue-500 shadow-sm ring-2 ring-blue-500/20'
+                                ? 'bg-bank-blue-50/30 border-bank-blue-500 shadow-sm ring-2 ring-bank-blue-500/20'
                                 : 'bg-white border-black/5 hover:border-black/15 hover:shadow-xs'
                             }`}
                           >
@@ -581,38 +587,38 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                               <div className="space-y-2">
                                 <div className="flex items-start justify-between gap-1">
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                                    coopTier === 'PLUS' ? 'border-blue-500' : 'border-gray-300'
+                                    coopTier === 'PLUS' ? 'border-bank-blue-500' : 'border-gray-300'
                                   }`}>
-                                    {coopTier === 'PLUS' && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                                    {coopTier === 'PLUS' && <div className="w-2 h-2 rounded-full bg-bank-blue-500" />}
                                   </div>
                                   <div className="text-right">
-                                    <h5 className="font-black text-xs text-blue-800 font-sora flex items-center justify-end gap-1">
-                                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 inline-block" /> PLUS
+                                    <h5 className="font-black text-xs text-bank-blue-800 font-sora flex items-center justify-end gap-1">
+                                      <span className="w-2 h-2 rounded-full bg-bank-blue-500 shrink-0 inline-block" /> PREMIUM
                                     </h5>
-                                    <span className="text-[8px] text-blue-600/80 font-bold block">Paket Pengembangan</span>
-                                    <span className="text-[10px] text-blue-600 font-extrabold block mt-0.5">Rp 199.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
+                                    <span className="text-[8px] text-bank-blue-600/80 font-bold block">Paket Pengembangan</span>
+                                    <span className="text-[10px] text-bank-blue-600 font-extrabold block mt-0.5">Rp 199.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
                                     <span className="text-[7px] text-gray-400 font-semibold block">atau Rp 1.999.000/thn</span>
                                   </div>
                                 </div>
 
                                 <div className="space-y-1 text-left pt-2 border-t border-gray-100">
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-bank-blue-800">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-bank-blue-50 text-bank-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Simpanan Pokok</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-bank-blue-800">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-bank-blue-50 text-bank-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Simpanan Wajib</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-blue-800">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-bank-blue-800">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-bank-blue-50 text-bank-blue-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Simpanan Sukarela</span>
                                   </div>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="pt-3 border-t border-blue-100/60 mt-3">
+                            <div className="pt-3 border-t border-bank-blue-100/60 mt-3">
                               <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1">
                                 <span className="flex items-center gap-1 text-[9px] font-bold text-amber-900 shrink-0 whitespace-nowrap">
                                   <Gift className="w-3 h-3 text-amber-500 shrink-0" /> Bonus Aktivasi
@@ -624,12 +630,12 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                             </div>
                           </div>
 
-                          {/* Card 3: 🟣 PRO */}
+                          {/* Card 3: MAX */}
                           <div
                             onClick={() => setCoopTier('PRO')}
                             className={`p-4 rounded-2xl border-2 flex flex-col justify-between cursor-pointer transition-all ${
                               coopTier === 'PRO'
-                                ? 'bg-purple-50/30 border-purple-500 shadow-sm ring-2 ring-purple-500/20'
+                                ? 'bg-bee-yellow-50/30 border-bee-yellow-500 shadow-sm ring-2 ring-bee-yellow-500/20'
                                 : 'bg-white border-black/5 hover:border-black/15 hover:shadow-xs'
                             }`}
                           >
@@ -637,42 +643,42 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                               <div className="space-y-2">
                                 <div className="flex items-start justify-between gap-1">
                                   <div className={`w-4 h-4 rounded-full border flex items-center justify-center mt-0.5 shrink-0 ${
-                                    coopTier === 'PRO' ? 'border-purple-500' : 'border-gray-300'
+                                    coopTier === 'PRO' ? 'border-bee-yellow-500' : 'border-gray-300'
                                   }`}>
-                                    {coopTier === 'PRO' && <div className="w-2 h-2 rounded-full bg-purple-500" />}
+                                    {coopTier === 'PRO' && <div className="w-2 h-2 rounded-full bg-bee-yellow-500" />}
                                   </div>
                                   <div className="text-right">
-                                    <h5 className="font-black text-xs text-purple-800 font-sora flex items-center justify-end gap-1">
-                                      <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0 inline-block" /> PRO
+                                    <h5 className="font-black text-xs text-bee-yellow-500 font-sora flex items-center justify-end gap-1">
+                                      <Star className="w-3 h-3 fill-current shrink-0" /> MAX
                                     </h5>
-                                    <span className="text-[8px] text-purple-600/80 font-bold block">Paket Profesional</span>
-                                    <span className="text-[10px] text-purple-600 font-extrabold block mt-0.5">Rp 399.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
+                                    <span className="text-[8px] text-bee-yellow-500/80 font-bold block">Paket Profesional</span>
+                                    <span className="text-[10px] text-bee-yellow-500 font-extrabold block mt-0.5">Rp 399.000<span className="text-[8px] font-normal text-gray-500">/bln</span></span>
                                     <span className="text-[7px] text-gray-400 font-semibold block">atau Rp 3.999.000/thn</span>
                                   </div>
                                 </div>
 
                                 <div className="space-y-1 text-left pt-2 border-t border-gray-100">
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-bee-yellow-500">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-bee-yellow-50 text-bee-yellow-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Simpanan Pokok</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-bee-yellow-500">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-bee-yellow-50 text-bee-yellow-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Simpanan Wajib</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-bee-yellow-500">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-bee-yellow-50 text-bee-yellow-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Simpanan Sukarela</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-purple-800">
-                                    <span className="w-3.5 h-3.5 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
+                                  <div className="flex items-center gap-1.5 text-[9px] font-bold text-bee-yellow-500">
+                                    <span className="w-3.5 h-3.5 rounded-full bg-bee-yellow-50 text-bee-yellow-500 flex items-center justify-center text-[8px] font-black shrink-0">✓</span>
                                     <span>Pendanaan Merchant</span>
                                   </div>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="pt-3 border-t border-purple-100/60 mt-3">
+                            <div className="pt-3 border-t border-bee-yellow-100 mt-3">
                               <div className="bg-amber-50/80 border border-amber-200/60 rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-1">
                                 <span className="flex items-center gap-1 text-[9px] font-bold text-amber-900 shrink-0 whitespace-nowrap">
                                   <Gift className="w-3 h-3 text-amber-500 shrink-0" /> Bonus Aktivasi
@@ -906,7 +912,7 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                       <div className="flex justify-between items-center">
                         <span className="text-slate-500 font-medium">Paket Komunitas</span>
                         <span className="font-bold text-slate-900">
-                          {type === 'PERKUMPULAN' ? 'Perkumpulan Premium' : `Koperasi ${coopTier}`}
+                          {type === 'PERKUMPULAN' ? 'Perkumpulan Premium' : `Koperasi ${getTierLabel(coopTier)}`}
                         </span>
                       </div>
 
@@ -1112,7 +1118,7 @@ export default function CreateCommunityModal({ open, onClose, user, requiresKycT
                       <span className="font-bold text-slate-900">
                         {type === 'PERKUMPULAN'
                           ? perkumpulanTier === 'PREMIUM' ? 'Perkumpulan Premium' : 'Perkumpulan Reguler'
-                          : `Koperasi ${coopTier}`}
+                          : `Koperasi ${getTierLabel(coopTier)}`}
                       </span>
                     </div>
 

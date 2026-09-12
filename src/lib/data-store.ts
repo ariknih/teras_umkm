@@ -2,6 +2,7 @@
 import { calculateDistance } from './utils'
 import { db } from './db'
 import { PROTECTED_CERTIFICATE_TEMPLATE_NAME } from './lms-rules'
+import { computeTierAmount, resolveTierFallbackRecipient, resolveReferralChain, buildDownlineTree, KOPERASI_FIXED_TIER_COINS } from './referral-payout'
 import crypto from 'crypto'
 import { ProductCategory } from '@prisma/client'
 import fs from 'fs'
@@ -604,7 +605,8 @@ async function withFallback<T = any, M = any>(
  */
 async function withMutationFallback<T = any, M = any>(
   dbMutation: () => Promise<T> | any,
-  mockMutation: () => M | Promise<M> | any
+  mockMutation: () => M | Promise<M> | any,
+  dbOnly = false
 ): Promise<any> {
   syncMockDb()
   if (await isDbConnected()) {
@@ -618,6 +620,11 @@ async function withMutationFallback<T = any, M = any>(
         return res
       }
     } catch (e) {
+      // dbOnly: used by money-mutations gated on a real DB constraint (e.g. a
+      // unique orderId for gateway-settlement idempotency) — falling back to
+      // the mock here would silently re-run (and double-credit) a write that
+      // the real DB just correctly rejected as a duplicate.
+      if (dbOnly) throw e
       // Same reasoning as withFallback above — a swallowed error here means a
       // write that looked like it succeeded never actually reached the real
       // database, only a scratch in-memory copy nothing else reads from.
@@ -1696,6 +1703,37 @@ export const DataStore = {
       lessons: globalMockLessons.filter(l => l.courseId === c.id).sort((a,b) => a.orderIndex - b.orderIndex),
       certificateTemplate: globalMockCertificateTemplates.find(t => t.id === c.certificateTemplateId) || null
     }))
+    )
+  },
+
+  // Same shape as getCourses(), minus the two base64 image fields
+  // (Course.coverImage, CertificateTemplate.backgroundImage). Those alone run
+  // 80-370KB per course — across the CMS-wide 30s cache (getCmsAdminData,
+  // which needs the list for the Kursus table + peserta counts, not the
+  // images) that was enough to blow past Next's 2MB unstable_cache ceiling
+  // and silently stop caching the whole admin dashboard bundle. The academy
+  // detail/edit views that actually render an image fetch the single course
+  // fresh via getCourseById instead of reading it off this list.
+  async getCoursesForAdminList() {
+    return withFallback(
+      () => db.course.findMany({
+          select: {
+            id: true, title: true, description: true, accessRequired: true, price: true,
+            isPublished: true, createdAt: true, updatedAt: true, certificateTemplateId: true,
+            lessons: { orderBy: { orderIndex: 'asc' } },
+            certificateTemplate: { select: { id: true, name: true, type: true } }
+          }
+        }),
+      () => globalMockCourses.map(c => {
+        const { coverImage, ...rest } = c as any
+        void coverImage
+        const t = globalMockCertificateTemplates.find(t => t.id === (c as any).certificateTemplateId)
+        return {
+          ...rest,
+          lessons: globalMockLessons.filter(l => l.courseId === c.id).sort((a, b) => a.orderIndex - b.orderIndex),
+          certificateTemplate: t ? { id: t.id, name: t.name, type: t.type } : null
+        }
+      })
     )
   },
 
@@ -5018,7 +5056,10 @@ export const DataStore = {
       const comm = m.community || allCommunities.find((c: any) => c.id === commId)
       if (comm) {
         const isFree = (comm.joinFee || 0) === 0
-        const hasPaid = m.isPaid === true || m.invoiceStatus === 'PAID' || m.invoiceStatus === 'VERIFIED'
+        // isPaid is the single source of truth (see isCommunityMember) — every
+        // write path keeps it in lockstep with invoiceStatus, so checking only
+        // isPaid here matches that function instead of silently re-diverging.
+        const hasPaid = m.isPaid === true
         if (!isFree && !hasPaid) continue
 
         result.push({
@@ -5051,6 +5092,26 @@ export const DataStore = {
 
     // Sort so the primary community is always first
     return finalResult.sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0))
+  },
+
+  // Strict lookup with NO side effects — unlike getCommunityById below, this
+  // never falls back to matching/creating a seed community for an id that
+  // doesn't exist. That fallback (meant for recovering from stale demo-seed
+  // links) will silently INSERT a brand-new real Community row — with an
+  // arbitrary real user auto-assigned as ketua — for literally any unknown
+  // id, including one supplied by a client over an API route (confirmed live
+  // while reviewing the new payment-checkout endpoint, which passes a
+  // request-body communityId straight into a community lookup). Any call
+  // site that only needs to validate "does this community really exist" from
+  // user/client input should use this instead.
+  async getCommunityByIdStrict(id: string) {
+    return withFallback(
+      async () => db.community.findUnique({ where: { id } }),
+      async () => {
+        const communities = (globalThis as any).__mockCommunities || []
+        return communities.find((c: any) => c.id === id) || null
+      }
+    )
   },
 
   async getCommunityById(id: string) {
@@ -5283,7 +5344,7 @@ export const DataStore = {
                     landingPageConfig: data.landingPageConfig || null,
                     coinBalance: data.coinBalance || 0,
                     ketuaId: data.ketuaId,
-                    templateType: data.templateType || 'Community'
+                    templateType: data.templateType || 'Society'
                   } as any
                 })
                 // Auto-join ketua as member with isInduk & set active indukCommunityId
@@ -5325,7 +5386,7 @@ export const DataStore = {
               monthlyFee: data.monthlyFee || 0,
               isKycRequired: Boolean(data.isKycRequired),
               coinBalance: data.coinBalance || 0,
-              templateType: data.templateType || 'Community',
+              templateType: data.templateType || 'Society',
               isSuspended: false,
               isVerified: false,
               ketuaId: data.ketuaId,
@@ -5369,26 +5430,37 @@ export const DataStore = {
     joinFee?: number
     monthlyFee?: number
     isKycRequired?: boolean
+    commissionMethod?: 'PERCENTAGE' | 'NOMINAL'
+    templateType?: string
   }) {
     return withMutationFallback(
       async () => {
+        // Every field below is only included in the Prisma update when the
+        // caller actually passed it. Several call sites (referral/KYC-only
+        // saves, coopTier upgrades) intentionally send a partial payload
+        // expecting untouched fields to survive — a bare `data.x || default`
+        // here previously reset joinFee/monthlyFee/landingPageConfig to 0/null
+        // on every such partial save, silently wiping the community's chosen
+        // page template (and join fee) whenever an unrelated setting changed.
         const dbUpdated = await db.community.update({
                   where: { id },
                   data: {
                     name: data.name,
-                    description: data.description,
-                    aktaNotaris: data.aktaNotaris || null,
-                    nomorAhu: data.nomorAhu || null,
-                    nomorNpwp: data.nomorNpwp || null,
-                    domisili: data.domisili || null,
-                    kontakPj: data.kontakPj || null,
-                    avatarUrl: data.avatarUrl || null,
-                    coverUrl: data.coverUrl || null,
-                    waGroupLink: data.waGroupLink || null,
-                    landingPageConfig: data.landingPageConfig || null,
-                    joinFee: data.joinFee || 0,
-                    monthlyFee: data.monthlyFee || 0,
+                    ...(data.description !== undefined && { description: data.description }),
+                    ...(data.aktaNotaris !== undefined && { aktaNotaris: data.aktaNotaris || null }),
+                    ...(data.nomorAhu !== undefined && { nomorAhu: data.nomorAhu || null }),
+                    ...(data.nomorNpwp !== undefined && { nomorNpwp: data.nomorNpwp || null }),
+                    ...(data.domisili !== undefined && { domisili: data.domisili || null }),
+                    ...(data.kontakPj !== undefined && { kontakPj: data.kontakPj || null }),
+                    ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl || null }),
+                    ...(data.coverUrl !== undefined && { coverUrl: data.coverUrl || null }),
+                    ...(data.waGroupLink !== undefined && { waGroupLink: data.waGroupLink || null }),
+                    ...(data.landingPageConfig !== undefined && { landingPageConfig: data.landingPageConfig || null }),
+                    ...(data.joinFee !== undefined && { joinFee: data.joinFee || 0 }),
+                    ...(data.monthlyFee !== undefined && { monthlyFee: data.monthlyFee || 0 }),
                     ...(data.isKycRequired !== undefined && { isKycRequired: data.isKycRequired }),
+                    ...(data.commissionMethod !== undefined && { commissionMethod: data.commissionMethod }),
+                    ...(data.templateType !== undefined && { templateType: data.templateType }),
                   }
                 })
                 return dbUpdated
@@ -5414,6 +5486,8 @@ export const DataStore = {
                 joinFee: data.joinFee ?? existing.joinFee,
                 monthlyFee: data.monthlyFee ?? existing.monthlyFee,
                 ...(data.isKycRequired !== undefined && { isKycRequired: data.isKycRequired }),
+                ...(data.commissionMethod !== undefined && { commissionMethod: data.commissionMethod }),
+                ...(data.templateType !== undefined && { templateType: data.templateType }),
                 updatedAt: new Date()
               };
               (globalThis as any).__mockCommunities[idx] = mockUpdated
@@ -5424,38 +5498,34 @@ export const DataStore = {
     )
   },
 
-  async joinCommunity(userId: string, communityId: string, asInduk: boolean = false) {
+  async joinCommunity(userId: string, communityId: string, asInduk: boolean = false, referrerId?: string | null) {
     return withMutationFallback(
       async () => {
         const existing = await db.communityMembership.findUnique({
                   where: { communityId_userId: { communityId, userId } }
                 })
                 if (existing) {
-                  if (existing.invoiceStatus === 'UNPAID') {
-                    await db.communityMembership.update({
-                      where: { id: existing.id },
-                      data: { invoiceStatus: 'PAID' }
-                    })
-                    return { joined: true, statusUpdated: true, invoiceStatus: 'PAID' }
-                  }
-                  return { joined: true, alreadyMember: true }
+                  // ponytail: previously flipped UNPAID -> PAID here with zero payment
+                  // and zero referral trigger, i.e. free paid membership on replay.
+                  // Payment must go through payCommunityJoinFee/the DOKU flow instead.
+                  return { joined: true, alreadyMember: true, needsPayment: existing.invoiceStatus === 'UNPAID', invoiceStatus: existing.invoiceStatus }
                 }
-                
+
                 const community = await db.community.findUnique({ where: { id: communityId } })
                 if (!community) return { error: 'Komunitas tidak ditemukan.' }
                 const userObj = await db.user.findUnique({ where: { id: userId } })
-        
+
                 // KYC check if community requires KYC
-                if ((community as any).isKycRequired) {
+                if (community.isKycRequired) {
                   const isKycOk = userObj && (userObj.kycStatus === 'VERIFIED' || userObj.kycStatus === 'APPROVED')
                   if (!isKycOk) {
                     return { error: 'Komunitas ini mewajibkan verifikasi KYC (KTP/Selfie) untuk bergabung.', needsKyc: true }
                   }
                 }
-                
+
                 // Auto-lock recruitment if coinBalance <= 0 (only for non-free communities) or isRecruitmentLocked
                 const isFree = (community.joinFee || 0) === 0 || community.category === 'FREE';
-                if ((community as any).isRecruitmentLocked) {
+                if (community.isRecruitmentLocked) {
                   return { error: 'Rekrutmen komunitas dikunci. Hubungi ketua komunitas.' }
                 }
                 if (!isFree && community.coinBalance <= 0) {
@@ -5470,7 +5540,8 @@ export const DataStore = {
                     userId,
                     isInduk: asInduk,
                     isPaid: !needsPayment,
-                    invoiceStatus: needsPayment ? 'UNPAID' : 'PAID'
+                    invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
+                    referrerId: (referrerId && referrerId !== userId) ? referrerId : null
                   }
                 })
 
@@ -5481,6 +5552,20 @@ export const DataStore = {
                   })
                 }
 
+                if (!needsPayment && community.ketuaId && community.ketuaId !== userId) {
+                  try {
+                    await this.createNotification(
+                      community.ketuaId,
+                      'NEW_COMMUNITY_MEMBER',
+                      'Anggota Baru Bergabung',
+                      `${userObj?.name || 'Seorang anggota'} baru saja bergabung dengan komunitas "${community.name}".`,
+                      `/community/${communityId}?tab=anggota`
+                    )
+                  } catch (err) {
+                    console.error('Error creating new-member notification:', err)
+                  }
+                }
+
                 return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'PAID' }
       },
       async () => {
@@ -5489,12 +5574,8 @@ export const DataStore = {
             const memberships = (globalThis as any).__mockCommunityMemberships as any[]
             const existing = memberships.find(m => m.communityId === communityId && m.userId === userId)
             if (existing) {
-              if (existing.invoiceStatus === 'UNPAID') {
-                existing.invoiceStatus = 'PAID'
-                existing.isPaid = true
-                return { joined: true, statusUpdated: true, invoiceStatus: 'PAID' }
-              }
-              return { joined: true, alreadyMember: true }
+              // ponytail: mirrors the real-DB branch above — no free UNPAID -> PAID flip.
+              return { joined: true, alreadyMember: true, needsPayment: existing.invoiceStatus === 'UNPAID', invoiceStatus: existing.invoiceStatus }
             }
         
             const communities = (globalThis as any).__mockCommunities || []
@@ -5528,6 +5609,7 @@ export const DataStore = {
               isInduk: asInduk,
               isPaid: !needsPayment,
               invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
+              referrerId: (referrerId && referrerId !== userId) ? referrerId : null,
               joinedAt: new Date()
             }
             memberships.push(newMembership)
@@ -5542,7 +5624,7 @@ export const DataStore = {
     )
   },
 
-  async payCommunityJoinFee(userId: string, communityId: string, paymentMethod: string = 'QRIS') {
+  async payCommunityJoinFee(userId: string, communityId: string, paymentMethod: string = 'QRIS', referrerId?: string | null) {
     return withMutationFallback(
       async () => {
         const community = await db.community.findUnique({ where: { id: communityId } })
@@ -5550,31 +5632,41 @@ export const DataStore = {
         const userObj = await db.user.findUnique({ where: { id: userId } })
         if (!userObj) return { error: 'Pengguna tidak ditemukan.' }
 
-        const existing = await db.communityMembership.findUnique({
-          where: { communityId_userId: { communityId, userId } }
+        // Atomic compare-and-swap on isPaid: only whoever flips false -> true
+        // gets to trigger the referral cascade below. This is what keeps this
+        // path and verifyInvoiceMembership/processMultiTierReferralPayout from
+        // double-paying the same referral chain if they race or both run.
+        const { count } = await db.communityMembership.updateMany({
+          where: { communityId, userId, isPaid: false },
+          data: { isPaid: true, invoiceStatus: 'PAID', invoiceVerifiedAt: new Date() }
         })
-        const alreadyPaid = existing?.isPaid === true
+        let firstTimePaid = count === 1
 
-        if (existing) {
-          await db.communityMembership.update({
-            where: { id: existing.id },
-            data: {
-              isPaid: true,
-              invoiceStatus: 'PAID',
-              invoiceVerifiedAt: new Date()
-            }
+        if (count === 0) {
+          const existing = await db.communityMembership.findUnique({
+            where: { communityId_userId: { communityId, userId } }
           })
-        } else {
-          await db.communityMembership.create({
-            data: {
-              communityId,
-              userId,
-              isInduk: !userObj.indukCommunityId,
-              isPaid: true,
-              invoiceStatus: 'PAID',
-              invoiceVerifiedAt: new Date()
+          if (!existing) {
+            try {
+              await db.communityMembership.create({
+                data: {
+                  communityId,
+                  userId,
+                  isInduk: !userObj.indukCommunityId,
+                  isPaid: true,
+                  invoiceStatus: 'PAID',
+                  invoiceVerifiedAt: new Date(),
+                  referrerId: (referrerId && referrerId !== userId) ? referrerId : null
+                }
+              })
+              firstTimePaid = true
+            } catch (_) {
+              // Lost the create race to a concurrent request; already paid.
+              firstTimePaid = false
             }
-          })
+          } else {
+            firstTimePaid = false
+          }
         }
 
         if (!userObj.indukCommunityId) {
@@ -5584,15 +5676,25 @@ export const DataStore = {
           })
         }
 
-        // Trigger multi-tier referral distribution (was previously only wired
-        // into the admin manual-invoice-verify path, so this instant-pay path
-        // never paid the affiliate tree)
-        if (!alreadyPaid) {
+        if (firstTimePaid) {
           await this.processMultiTierCommunityReferral({
             communityId,
             buyerId: userId,
             totalFee: community.joinFee || 0
           })
+          if (community.ketuaId && community.ketuaId !== userId) {
+            try {
+              await this.createNotification(
+                community.ketuaId,
+                'MEMBERSHIP_PAID',
+                'Pembayaran Keanggotaan Diterima',
+                `${userObj.name || 'Seorang anggota'} telah membayar biaya masuk komunitas "${community.name}" sebesar Rp ${(community.joinFee || 0).toLocaleString('id-ID')}.`,
+                `/community/${communityId}?tab=anggota`
+              )
+            } catch (err) {
+              console.error('Error creating membership-paid notification:', err)
+            }
+          }
         }
 
         return { success: true, isPaid: true, invoiceStatus: 'PAID' }
@@ -5618,6 +5720,7 @@ export const DataStore = {
             isInduk: true,
             isPaid: true,
             invoiceStatus: 'PAID',
+            referrerId: (referrerId && referrerId !== userId) ? referrerId : null,
             joinedAt: new Date()
           }
           memberships.push(m)
@@ -5824,7 +5927,9 @@ export const DataStore = {
                     minCoinForLoan: Number(data.minCoinForLoan || 1000),
                     minCoinRequired: Number(data.minCoinRequired || 100),
                     isVerified: Boolean(data.isVerified),
-                    isSuspended: Boolean(data.isSuspended)
+                    isSuspended: Boolean(data.isSuspended),
+                    templateType: data.templateType || 'Society',
+                    landingPageConfig: data.landingPageConfig || null
                   }
                 })
       },
@@ -5850,6 +5955,8 @@ export const DataStore = {
               minCoinRequired: Number(data.minCoinRequired || 100),
               isVerified: Boolean(data.isVerified),
               isSuspended: Boolean(data.isSuspended),
+              templateType: data.templateType || 'Society',
+              landingPageConfig: data.landingPageConfig || null,
               createdAt: new Date(),
               updatedAt: new Date()
             }
@@ -5865,6 +5972,12 @@ export const DataStore = {
   async updateCommunityAdmin(id: string, data: any) {
     return withMutationFallback(
       async () => {
+        // CommunityTab.tsx's generic edit-save always resubmits the full form,
+        // isVerified/isSuspended included — so `data.isVerified === true` alone
+        // can't tell a real approve action apart from an unrelated edit (name,
+        // joinFee, ...) to an already-verified community. Only notify on an
+        // actual state transition.
+        const before = await db.community.findUnique({ where: { id }, select: { isVerified: true, isSuspended: true } })
         const updated = await db.community.update({
                   where: { id },
                   data: {
@@ -5878,21 +5991,55 @@ export const DataStore = {
                     domisili: data.domisili,
                     kontakPj: data.kontakPj,
                     description: data.description,
-                    joinFee: typeof data.joinFee === 'number' ? data.joinFee : undefined,
-                    monthlyFee: typeof data.monthlyFee === 'number' ? data.monthlyFee : undefined,
-                    simpananPokok: typeof data.simpananPokok === 'number' ? data.simpananPokok : undefined,
-                    simpananWajib: typeof data.simpananWajib === 'number' ? data.simpananWajib : undefined,
-                    minCoinForLoan: typeof data.minCoinForLoan === 'number' ? data.minCoinForLoan : undefined,
-                    minCoinRequired: typeof data.minCoinRequired === 'number' ? data.minCoinRequired : undefined,
+                    // The CMS admin form (CommunityTab.tsx) submits these as
+                    // strings (bound to text-input e.target.value) — a bare
+                    // `typeof === 'number'` guard silently dropped every edit
+                    // to these fields (Prisma treats `undefined` as "don't
+                    // touch"), while `handleApproveCommunity`/`handleRejectCommunity`
+                    // legitimately omit them entirely for a verify/suspend-only
+                    // partial update. Coerce whatever's present; only truly
+                    // absent (undefined) skips the field.
+                    joinFee: data.joinFee !== undefined ? Number(data.joinFee) : undefined,
+                    monthlyFee: data.monthlyFee !== undefined ? Number(data.monthlyFee) : undefined,
+                    simpananPokok: data.simpananPokok !== undefined ? Number(data.simpananPokok) : undefined,
+                    simpananWajib: data.simpananWajib !== undefined ? Number(data.simpananWajib) : undefined,
+                    minCoinForLoan: data.minCoinForLoan !== undefined ? Number(data.minCoinForLoan) : undefined,
+                    minCoinRequired: data.minCoinRequired !== undefined ? Number(data.minCoinRequired) : undefined,
                     isVerified: typeof data.isVerified === 'boolean' ? data.isVerified : undefined,
-                    isSuspended: typeof data.isSuspended === 'boolean' ? data.isSuspended : undefined
+                    isSuspended: typeof data.isSuspended === 'boolean' ? data.isSuspended : undefined,
+                    templateType: data.templateType !== undefined ? data.templateType : undefined,
+                    landingPageConfig: data.landingPageConfig !== undefined ? data.landingPageConfig : undefined
                   }
                 })
+                // Only claim indukCommunityId if the ketua doesn't already have a
+                // different primary community set — this app explicitly supports
+                // multi-community membership, so approving community B must not
+                // silently hijack a ketua's primary community away from A.
                 if (data.isVerified && updated?.ketuaId) {
-                  await db.user.update({
-                    where: { id: updated.ketuaId },
-                    data: { indukCommunityId: id }
-                  })
+                  const ketuaUser = await db.user.findUnique({ where: { id: updated.ketuaId }, select: { indukCommunityId: true } })
+                  if (!ketuaUser?.indukCommunityId) {
+                    await db.user.update({
+                      where: { id: updated.ketuaId },
+                      data: { indukCommunityId: id }
+                    })
+                  }
+                }
+                const justSuspended = data.isSuspended === true && before?.isSuspended !== true
+                const justVerified = data.isVerified === true && before?.isVerified !== true
+                if (updated?.ketuaId && (justSuspended || justVerified)) {
+                  try {
+                    await this.createNotification(
+                      updated.ketuaId,
+                      justSuspended ? 'COMMUNITY_SUSPENDED' : 'COMMUNITY_VERIFIED',
+                      justSuspended ? 'Komunitas Ditangguhkan' : 'Komunitas Diverifikasi!',
+                      justSuspended
+                        ? `Komunitas "${updated.name}" telah ditangguhkan oleh Admin Saloka.id.`
+                        : `Komunitas "${updated.name}" telah diverifikasi dan kini aktif di Direktori Komunitas.`,
+                      `/community/${id}`
+                    )
+                  } catch (err) {
+                    console.error('Error creating community verify/suspend notification:', err)
+                  }
                 }
                 return updated
       },
@@ -5903,7 +6050,7 @@ export const DataStore = {
               Object.assign(comm, data, { updatedAt: new Date() })
               if (data.isVerified && comm.ketuaId) {
                 const ketuaUser = globalMockUsers.find((u: any) => u.id === comm.ketuaId)
-                if (ketuaUser) {
+                if (ketuaUser && !(ketuaUser as any).indukCommunityId) {
                   (ketuaUser as any).indukCommunityId = id
                 }
               }
@@ -5962,7 +6109,9 @@ export const DataStore = {
         })
         if (!m) return false
         if ((community.joinFee || 0) === 0) return true
-        return m.isPaid === true || m.invoiceStatus === 'PAID' || m.invoiceStatus === 'VERIFIED'
+        // isPaid is the single source of truth: the CAS in payCommunityJoinFee /
+        // verifyInvoiceMembership always flips it in lockstep with invoiceStatus.
+        return m.isPaid === true
       },
       async () => {
         const communities = (globalThis as any).__mockCommunities || []
@@ -5973,7 +6122,7 @@ export const DataStore = {
         const m = memberships.find((m: any) => m.communityId === communityId && m.userId === userId)
         if (!m) return false
         if (!community || (community.joinFee || 0) === 0) return true
-        return m.isPaid === true || m.invoiceStatus === 'PAID' || m.invoiceStatus === 'VERIFIED'
+        return m.isPaid === true
       }
     )
   },
@@ -6224,6 +6373,7 @@ export const DataStore = {
     jumlahCoin: number
     totalBiaya: number
     description: string
+    orderId?: string
   }) {
     return withMutationFallback(
       async () => {
@@ -6233,7 +6383,9 @@ export const DataStore = {
                     where: { id: data.communityId },
                     data: { coinBalance: { increment: data.jumlahCoin } }
                   })
-                  // Catat transaksi coin
+                  // Catat transaksi coin — orderId unique constraint is what
+                  // makes a replayed gateway-verify call fail loud here
+                  // instead of silently crediting coin a second time.
                   await tx.coinTransaction.create({
                     data: {
                       type: 'TOPUP',
@@ -6241,6 +6393,7 @@ export const DataStore = {
                       description: data.description,
                       userId: data.ketuaId,
                       communityId: data.communityId,
+                      orderId: data.orderId || null
                     }
                   })
                 })
@@ -6249,6 +6402,9 @@ export const DataStore = {
       async () => {
         // Mock DB
             if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+            if (data.orderId && (globalThis as any).__mockCoinTransactions.some((t: any) => t.orderId === data.orderId)) {
+              throw new Error('Transaksi dengan orderId ini sudah diproses sebelumnya.')
+            }
             const communities = (globalThis as any).__mockCommunities || []
             const community = communities.find((c: any) => c.id === data.communityId)
             if (community) {
@@ -6262,11 +6418,13 @@ export const DataStore = {
               description: data.description,
               userId: data.ketuaId,
               communityId: data.communityId,
+              orderId: data.orderId || null,
               createdAt: new Date()
             }
             ;(globalThis as any).__mockCoinTransactions.push(tx)
             return { newCoinBalance: community?.coinBalance || data.jumlahCoin, tx }
-      }
+      },
+      !!data.orderId
     )
   },
 
@@ -6765,7 +6923,7 @@ export const DataStore = {
                 return await db.communityMembership.findMany({
                   where,
                   include: {
-                    community: { select: { id: true, name: true, type: true } },
+                    community: { select: { id: true, name: true, type: true, joinFee: true, monthlyFee: true, simpananPokok: true, simpananWajib: true } },
                     user: { select: { id: true, name: true, email: true, role: true } }
                   },
                   orderBy: { joinedAt: 'desc' }
@@ -6781,7 +6939,7 @@ export const DataStore = {
               return {
                 ...m,
                 user: user ? { id: user.id, name: user.name, email: user.email, role: user.role } : null,
-                community: community ? { id: community.id, name: community.name, type: community.type } : null
+                community: community ? { id: community.id, name: community.name, type: community.type, joinFee: community.joinFee, monthlyFee: community.monthlyFee, simpananPokok: community.simpananPokok, simpananWajib: community.simpananWajib } : null
               }
             }).sort((a: any, b: any) => b.joinedAt.getTime() - a.joinedAt.getTime())
       }
@@ -6791,79 +6949,86 @@ export const DataStore = {
   async verifyInvoiceMembership(membershipId: string, adminId: string) {
     return withMutationFallback(
       async () => {
-        const membership = await db.communityMembership.update({
-                  where: { id: membershipId },
-                  data: {
-                    isPaid: true,
-                    invoiceStatus: 'VERIFIED',
-                    invoiceVerifiedAt: new Date(),
-                    invoiceVerifiedBy: adminId
-                  },
-                  include: {
-                    community: true,
-                    user: true
-                  }
-                })
-        
-                // Trigger multi-tier community referral distribution
-                if (membership.community.category === 'PAID' || membership.community.type === 'KOPERASI') {
-                  await this.processMultiTierCommunityReferral({
-                    communityId: membership.community.id,
-                    buyerId: membership.user.id,
-                    totalFee: membership.community.joinFee || 100000
-                  })
-                }
-                return { success: true, membership }
+        // Atomic compare-and-swap on isPaid: only whoever flips false -> true
+        // (this call, payCommunityJoinFee, or a manual replay) gets to run the
+        // referral cascade. Admins could previously re-verify an already-paid
+        // (instant-checkout) membership and double-pay the whole referral chain.
+        const { count } = await db.communityMembership.updateMany({
+          where: { id: membershipId, isPaid: false },
+          data: {
+            isPaid: true,
+            invoiceStatus: 'VERIFIED',
+            invoiceVerifiedAt: new Date(),
+            invoiceVerifiedBy: adminId
+          }
+        })
+        const firstTimeVerified = count === 1
+
+        if (!firstTimeVerified) {
+          // Already paid earlier (e.g. instant checkout) - just record this
+          // admin verification, no second cascade.
+          await db.communityMembership.update({
+            where: { id: membershipId },
+            data: { invoiceStatus: 'VERIFIED', invoiceVerifiedAt: new Date(), invoiceVerifiedBy: adminId }
+          })
+        }
+
+        const membership = await db.communityMembership.findUnique({
+          where: { id: membershipId },
+          include: { community: true, user: true }
+        })
+        if (!membership) throw new Error('Keanggotaan tidak ditemukan.')
+
+        // Trigger multi-tier community referral distribution
+        if (firstTimeVerified && (membership.community.category === 'PAID' || membership.community.type === 'KOPERASI')) {
+          await this.processMultiTierCommunityReferral({
+            communityId: membership.community.id,
+            buyerId: membership.user.id,
+            totalFee: membership.community.joinFee || 100000
+          })
+        }
+        if (firstTimeVerified) {
+          try {
+            await this.createNotification(
+              membership.user.id,
+              'MEMBERSHIP_VERIFIED',
+              'Keanggotaan Terverifikasi',
+              `Pembayaran keanggotaan Anda di komunitas "${membership.community.name}" telah diverifikasi oleh Admin. Selamat bergabung!`,
+              `/community/${membership.community.id}`
+            )
+          } catch (err) {
+            console.error('Error creating membership-verified notification:', err)
+          }
+        }
+        return { success: true, membership }
       },
       async () => {
-        // Mock DB
-            const memberships = (globalThis as any).__mockCommunityMemberships || []
-            const m = memberships.find((x: any) => x.id === membershipId)
-            if (!m) throw new Error('Keanggotaan tidak ditemukan.')
-        
-            m.isPaid = true
-            m.invoiceStatus = 'VERIFIED'
-            m.invoiceVerifiedAt = new Date()
-            m.invoiceVerifiedBy = adminId
-        
-            const communities = (globalThis as any).__mockCommunities || []
-            const community = communities.find((c: any) => c.id === m.communityId)
-            const userObj = globalMockUsers.find(u => u.id === m.userId)
-        
-            if (community && (community.type === 'KOPERASI' || community.category === 'PAID') && userObj && userObj.parentAffiliateId) {
-              const referrerId = userObj.parentAffiliateId
-              if ((community.coinBalance || 0) >= 3) {
-                community.coinBalance = (community.coinBalance || 0) - 3
-                if (community.coinBalance <= 0) community.isRecruitmentLocked = true
-                
-                const referrer = globalMockUsers.find(u => u.id === referrerId)
-                if (referrer) {
-                  referrer.coinBalance = (referrer.coinBalance || 0) + 3
-                }
-        
-                if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
-                ;(globalThis as any).__mockCoinTransactions.push({
-                  id: `ctx-${Date.now()}-1`,
-                  type: 'REFERRAL_COMMISSION',
-                  amount: 3,
-                  description: `Komisi referral cross-community dari pendaftaran ${userObj.name} ke ${community.name}`,
-                  userId: referrerId,
-                  relatedUserId: userObj.id,
-                  createdAt: new Date()
-                 }, {
-                  id: `ctx-${Date.now()}-2`,
-                  type: 'REFERRAL_COMMISSION',
-                  amount: -3,
-                  description: `Biaya komisi referral untuk anggota baru ${userObj.name}`,
-                  userId: community.ketuaId,
-                  communityId: community.id,
-                  relatedUserId: userObj.id,
-                  createdAt: new Date()
-                })
-              }
-            }
-        
-            return { success: true, membership: m }
+        // Mock DB — mirrors the real-DB branch's CAS-then-cascade shape so
+        // local testing exercises the same Rupiah-based referral engine as
+        // production, instead of a separate hardcoded coin-based scheme.
+        const memberships = (globalThis as any).__mockCommunityMemberships || []
+        const m = memberships.find((x: any) => x.id === membershipId)
+        if (!m) throw new Error('Keanggotaan tidak ditemukan.')
+
+        const firstTimeVerified = m.isPaid !== true
+        m.isPaid = true
+        m.invoiceStatus = 'VERIFIED'
+        m.invoiceVerifiedAt = new Date()
+        m.invoiceVerifiedBy = adminId
+
+        const communities = (globalThis as any).__mockCommunities || []
+        const community = communities.find((c: any) => c.id === m.communityId)
+        const userObj = globalMockUsers.find(u => u.id === m.userId)
+
+        if (firstTimeVerified && community && userObj && (community.category === 'PAID' || community.type === 'KOPERASI')) {
+          await this.processMultiTierCommunityReferral({
+            communityId: community.id,
+            buyerId: userObj.id,
+            totalFee: community.joinFee || 100000
+          })
+        }
+
+        return { success: true, membership: m }
       }
     )
   },
@@ -6955,10 +7120,10 @@ export const DataStore = {
                 } else {
                   const c = await db.community.update({
                     where: { id: targetId },
-                    data: { 
+                    data: {
                       coinBalance: { increment: amount },
                       isRecruitmentLocked: false
-                    } as any
+                    }
                   })
                   await db.coinTransaction.create({
                     data: {
@@ -7017,7 +7182,7 @@ export const DataStore = {
       async () => {
         const admins = await db.user.findMany({
                   where: { role: 'ADMIN' },
-                  select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, adminPermissions: true, createdAt: true }
+                  select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, adminPermissions: true, adminType: true, createdAt: true }
                 })
                 return admins.map(a => {
                   return {
@@ -7036,6 +7201,7 @@ export const DataStore = {
                 role: u.role,
                 isSuperAdmin: isSuper,
                 adminPermissions: (u as any).adminPermissions || null,
+                adminType: (u as any).adminType || null,
                 createdAt: u.createdAt
               }
             })
@@ -7043,7 +7209,7 @@ export const DataStore = {
     )
   },
 
-  async createAdmin(data: { name: string, email: string, passwordHash: string, isSuperAdmin?: boolean, adminPermissions?: string | null }) {
+  async createAdmin(data: { name: string, email: string, passwordHash: string, isSuperAdmin?: boolean, adminPermissions?: string | null, adminType?: string | null }) {
     return withMutationFallback(
       async () => {
         const u = await db.user.create({
@@ -7054,6 +7220,7 @@ export const DataStore = {
                     role: 'ADMIN',
                     isSuperAdmin: data.isSuperAdmin ?? false,
                     adminPermissions: data.adminPermissions || null,
+                    adminType: data.adminType || 'OPERASIONAL',
                     membershipLevel: 'Staff',
                     membershipAccess: 'Gold'
                   }
@@ -7065,7 +7232,7 @@ export const DataStore = {
         // Mock DB
             const exists = globalMockUsers.some(u => u.email === data.email)
             if (exists) throw new Error('Email sudah terdaftar.')
-        
+
             const newAdmin = {
               id: `admin-${Date.now()}`,
               email: data.email,
@@ -7074,6 +7241,7 @@ export const DataStore = {
               role: 'ADMIN' as const,
               isSuperAdmin: data.isSuperAdmin ?? false,
               adminPermissions: data.adminPermissions || null,
+              adminType: data.adminType || 'OPERASIONAL',
               level: 1, xp: 0,
               landingPageTemplate: null, landingPageConfig: null, landingPageSetup: false,
               parentAffiliateId: null,
@@ -7088,7 +7256,7 @@ export const DataStore = {
     )
   },
 
-  async updateAdmin(id: string, data: { name?: string; email?: string; isSuperAdmin?: boolean; adminPermissions?: string | null; passwordHash?: string }) {
+  async updateAdmin(id: string, data: { name?: string; email?: string; isSuperAdmin?: boolean; adminPermissions?: string | null; adminType?: string | null; passwordHash?: string }) {
     return withMutationFallback(
       async () => {
         const updateData: any = {}
@@ -7096,8 +7264,9 @@ export const DataStore = {
                 if (data.email !== undefined) updateData.email = data.email
                 if (data.isSuperAdmin !== undefined) updateData.isSuperAdmin = data.isSuperAdmin
                 if (data.adminPermissions !== undefined) updateData.adminPermissions = data.adminPermissions
+                if (data.adminType !== undefined) updateData.adminType = data.adminType
                 if (data.passwordHash) updateData.passwordHash = data.passwordHash
-        
+
                 return await db.user.update({
                   where: { id },
                   data: updateData
@@ -7110,6 +7279,7 @@ export const DataStore = {
             if (data.email !== undefined) admin.email = data.email
             if (data.isSuperAdmin !== undefined) (admin as any).isSuperAdmin = data.isSuperAdmin
             if (data.adminPermissions !== undefined) (admin as any).adminPermissions = data.adminPermissions
+            if (data.adminType !== undefined) (admin as any).adminType = data.adminType
             if (data.passwordHash) admin.passwordHash = data.passwordHash
             return admin
       }
@@ -7460,6 +7630,7 @@ export const DataStore = {
     date?: Date
     notes?: string
     createdById?: string
+    orderId?: string
   }) {
     return withMutationFallback(
       async () => {
@@ -7472,12 +7643,16 @@ export const DataStore = {
                     amount: Number(data.amount || 0),
                     date: data.date || new Date(),
                     notes: data.notes || '',
-                    createdById: data.createdById || null
+                    createdById: data.createdById || null,
+                    orderId: data.orderId || null
                   }
                 })
       },
       async () => {
         const txs = (globalThis as any).__mockSavingsTransactions || []
+            if (data.orderId && txs.some((t: any) => t.orderId === data.orderId)) {
+              throw new Error('Transaksi dengan orderId ini sudah diproses sebelumnya.')
+            }
             const newTx = {
               id: `sav-tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
               communityId: data.communityId,
@@ -7488,13 +7663,101 @@ export const DataStore = {
               date: data.date || new Date(),
               notes: data.notes || '',
               createdById: data.createdById || null,
+              orderId: data.orderId || null,
               createdAt: new Date(),
               updatedAt: new Date()
             }
             txs.unshift(newTx)
             ;(globalThis as any).__mockSavingsTransactions = txs
             return newTx
-      }
+      },
+      !!data.orderId
+    )
+  },
+
+  // Pays a savings deposit out of the member's own real wallet balance —
+  // instant, no gateway needed. Mirrors createOrder's WALLET-method debit
+  // (data-store.ts ~line 2251): balance-check-then-decrement in one
+  // transaction, same TransactionType.WITHDRAWAL reuse (no new enum value).
+  async paySavingsViaWallet(data: {
+    communityId: string
+    userId: string
+    type?: string
+    amount: number
+    notes?: string
+  }) {
+    return withMutationFallback(
+      async () => {
+        return await db.$transaction(async (tx) => {
+          const wallet = await tx.wallet.findUnique({ where: { userId: data.userId } })
+          if (!wallet) throw new Error('Saldo Wallet tidak mencukupi.')
+          // Atomic compare-and-swap on balance (mirrors the isPaid CAS elsewhere
+          // in this file): a plain findUnique-then-check-then-decrement has a
+          // race window where two concurrent deposits (e.g. a double-submitted
+          // form) can both read a sufficient balance before either commits,
+          // both decrement, and drive the balance negative. Gating the update's
+          // WHERE clause on the balance itself makes the check-and-debit one
+          // atomic operation — only one concurrent caller can ever win it.
+          const { count } = await tx.wallet.updateMany({
+            where: { userId: data.userId, balance: { gte: data.amount } },
+            data: { balance: { decrement: data.amount } }
+          })
+          if (count === 0) throw new Error('Saldo Wallet tidak mencukupi.')
+          await tx.walletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              amount: data.amount,
+              type: 'WITHDRAWAL',
+              description: `Setor ${data.type || 'SUKARELA'} via Saldo Wallet`
+            }
+          })
+          return await tx.cooperativeSavingsTransaction.create({
+            data: {
+              communityId: data.communityId,
+              userId: data.userId,
+              type: data.type || 'WAJIB',
+              transactionType: 'SETOR',
+              amount: data.amount,
+              date: new Date(),
+              notes: data.notes || 'Setor mandiri via Saldo Wallet',
+              createdById: data.userId
+            }
+          })
+        })
+      },
+      async () => {
+        const wallet = globalMockWallets.find(w => w.userId === data.userId)
+        if (!wallet || wallet.balance < data.amount) {
+          throw new Error('Saldo Wallet tidak mencukupi.')
+        }
+        wallet.balance -= data.amount
+        globalMockWalletTransactions.push({
+          id: `tx-${Date.now()}`,
+          walletId: wallet.id,
+          amount: data.amount,
+          type: 'WITHDRAWAL' as const,
+          description: `Setor ${data.type || 'SUKARELA'} via Saldo Wallet`,
+          createdAt: new Date()
+        })
+        const txs = (globalThis as any).__mockSavingsTransactions || []
+        const newTx = {
+          id: `sav-tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          communityId: data.communityId,
+          userId: data.userId,
+          type: data.type || 'WAJIB',
+          transactionType: 'SETOR',
+          amount: data.amount,
+          date: new Date(),
+          notes: data.notes || 'Setor mandiri via Saldo Wallet',
+          createdById: data.userId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        txs.unshift(newTx)
+        ;(globalThis as any).__mockSavingsTransactions = txs
+        return newTx
+      },
+      true
     )
   },
 
@@ -8021,6 +8284,79 @@ export const DataStore = {
     )
   },
 
+  // A member's own slice of the referral ledger: every tier payout THEY
+  // received in this community (not the ketua-only, community-wide table).
+  async getMyCommunityReferralLogs(communityId: string, userId: string) {
+    return withFallback(
+      async () => {
+        const logs = await (db as any).communityReferralLog?.findMany({
+          where: { communityId, referrerId: userId },
+          orderBy: { createdAt: 'desc' },
+          take: 100
+        })
+        return logs
+      },
+      async () => {
+        const logs = (globalThis as any).__mockCommunityReferralLogs || []
+        return logs.filter((l: any) => l.communityId === communityId && l.referrerId === userId)
+      }
+    )
+  },
+
+  // A member's own downline WITHIN this community — who joined through them
+  // (CommunityMembership.referrerId), and their sub-referrals in turn. Capped
+  // at 5 levels (the highest tier count any community can configure).
+  async getCommunityAffiliateDownline(communityId: string, userId: string) {
+    const dbConnected = await isDbConnected()
+
+    if (!dbConnected) {
+      const memberships = ((globalThis as any).__mockCommunityMemberships || [])
+        .filter((m: any) => m.communityId === communityId)
+        .map((m: any) => ({
+          userId: m.userId,
+          referrerId: m.referrerId || null,
+          name: globalMockUsers.find((u: any) => u.id === m.userId)?.name || 'Anggota',
+          email: globalMockUsers.find((u: any) => u.id === m.userId)?.email || '',
+          joinedAt: m.joinedAt,
+          isPaid: m.isPaid
+        }))
+      // buildDownlineTree only carries id/name/children - re-attach the extra
+      // display fields (email/joinedAt/isPaid) the UI also reads, by id.
+      const byId = new Map(memberships.map((m: any) => [m.userId, m]))
+      const attachExtras = (nodes: any[]): any[] =>
+        nodes.map((n) => ({ ...n, ...(byId.get(n.id) || {}), children: attachExtras(n.children) }))
+      return attachExtras(buildDownlineTree(memberships, userId, 5))
+    }
+
+    const buildTree = async (rootUserId: string, depth: number): Promise<any[]> => {
+      if (depth > 5) return []
+
+      let children: any[] = []
+      try {
+        children = await db.communityMembership.findMany({
+          where: { communityId, referrerId: rootUserId } as any,
+          include: { user: true }
+        })
+      } catch (_) {}
+
+      const nodes = []
+      for (const child of children) {
+        const subTree = await buildTree(child.userId, depth + 1)
+        nodes.push({
+          id: child.userId,
+          name: child.user?.name || 'Anggota',
+          email: child.user?.email || '',
+          joinedAt: child.joinedAt,
+          isPaid: child.isPaid,
+          children: subTree
+        })
+      }
+      return nodes
+    }
+
+    return buildTree(userId, 1)
+  },
+
   async processMultiTierCommunityReferral(data: {
     communityId: string
     buyerId: string
@@ -8031,8 +8367,9 @@ export const DataStore = {
 
     let community: any = null
     let buyer: any = null
+    const dbConnected = await isDbConnected()
 
-    if (await isDbConnected()) {
+    if (dbConnected) {
       try {
         community = await db.community.findUnique({ where: { id: communityId } })
         buyer = await db.user.findUnique({ where: { id: buyerId } })
@@ -8050,6 +8387,13 @@ export const DataStore = {
 
     if (!community || !buyer) return { error: 'Komunitas atau user tidak ditemukan.' }
 
+    // Koperasi's affiliate reward is fixed (3/1/1 coins, non-adjustable) and
+    // paid from the koperasi's own coin balance — a different mechanism from
+    // Perkumpulan Premium's configurable percentage-of-joinFee wallet payout below.
+    if (community.type === 'KOPERASI') {
+      return this.processKoperasiFixedTierReferral({ communityId, buyerId, community, buyer })
+    }
+
     if (community.category === 'FREE' || totalFee <= 0) {
       return { success: true, processed: false, reason: 'Komunitas gratis' }
     }
@@ -8057,6 +8401,8 @@ export const DataStore = {
     const referralBudget = community.referralBudget ?? 40000
     const communityProfitShare = community.communityProfitShare ?? Math.max(0, totalFee - referralBudget)
     const maxTiers = community.maxTiers ?? 3
+    // NOMINAL tiers store raw Rupiah amounts, not percentages of referralBudget.
+    const commissionMethod = community.commissionMethod === 'NOMINAL' ? 'NOMINAL' : 'PERCENTAGE'
 
     let percentages: number[] = [50, 30, 20]
     if (community.tierPercentages) {
@@ -8066,123 +8412,361 @@ export const DataStore = {
     }
 
     const ketuaId = community.ketuaId
-    if (ketuaId && communityProfitShare > 0) {
-      if (await isDbConnected()) {
-        try {
-          const w = await db.wallet.findUnique({ where: { userId: ketuaId } })
-          if (w) {
-            await db.wallet.update({ where: { userId: ketuaId }, data: { balance: { increment: communityProfitShare } } })
-            await db.walletTransaction.create({
+    const logs: any[] = []
+
+    if (dbConnected) {
+      // Single transaction: a mid-loop failure must not leave a partial
+      // payout (some tiers credited, others silently skipped) with no error.
+      await db.$transaction(async (tx) => {
+        if (ketuaId && communityProfitShare > 0) {
+          const w = await tx.wallet.upsert({
+            where: { userId: ketuaId },
+            create: { userId: ketuaId, balance: communityProfitShare },
+            update: { balance: { increment: communityProfitShare } }
+          })
+          await tx.walletTransaction.create({
+            data: {
+              walletId: w.id,
+              amount: communityProfitShare,
+              type: 'COMMISSION',
+              description: `Keuntungan Kas Komunitas ${community.name} dari pendaftaran ${buyer.name}`
+            }
+          })
+        }
+
+        // Community-scoped upline, not the platform-wide signup referrer:
+        // who this buyer joined THIS community through (CommunityMembership.referrerId).
+        const buyerMembership = await tx.communityMembership.findUnique({
+          where: { communityId_userId: { communityId, userId: buyerId } }
+        })
+        let currentReferrerId: string | null = (buyerMembership as any)?.referrerId || null
+
+        for (let tier = 1; tier <= maxTiers; tier++) {
+          const pct = percentages[tier - 1] || 0
+          const tierAmount = computeTierAmount(commissionMethod, referralBudget, pct)
+          if (tierAmount <= 0) continue
+
+          let recipientId: string | null = null
+          let recipientType: 'REFERRER' | 'KOMUNITAS' | 'PLATFORM' = 'PLATFORM'
+          let recipientName = 'Saloka.id Platform'
+
+          if (currentReferrerId) {
+            const refUser = await tx.user.findUnique({ where: { id: currentReferrerId } })
+            if (refUser) {
+              recipientId = refUser.id
+              recipientType = 'REFERRER'
+              recipientName = refUser.name
+              const refMembership = await tx.communityMembership.findUnique({
+                where: { communityId_userId: { communityId, userId: refUser.id } }
+              })
+              currentReferrerId = (refMembership as any)?.referrerId || null
+            } else {
+              currentReferrerId = null
+            }
+          }
+
+          if (!recipientId) {
+            // Chain exhausted (or never had a referrer) — tier 1 falls back to
+            // the community's own kas, any later tier has no natural fallback
+            // and must be logged as an unpaid residual, never a hardcoded seed
+            // user id that doesn't exist in production (previously silently
+            // dropped the money with no log at all).
+            const fallback = resolveTierFallbackRecipient(tier, ketuaId, community.name)
+            recipientId = fallback.recipientId
+            recipientType = fallback.recipientType
+            recipientName = fallback.recipientName
+          }
+
+          if (recipientId) {
+            const rWallet = await tx.wallet.upsert({
+              where: { userId: recipientId },
+              create: { userId: recipientId, balance: tierAmount },
+              update: { balance: { increment: tierAmount } }
+            })
+            await tx.walletTransaction.create({
               data: {
-                walletId: w.id,
-                amount: communityProfitShare,
+                walletId: rWallet.id,
+                amount: tierAmount,
                 type: 'COMMISSION',
-                description: `Keuntungan Kas Komunitas ${community.name} dari pendaftaran ${buyer.name}`
+                description: `Komisi Referral Tier ${tier} (${recipientType}) Komunitas ${community.name} dari pendaftaran ${buyer.name}`
               }
             })
           }
-        } catch (_) {}
-      } else {
+
+          const log = await tx.communityReferralLog.create({
+            data: {
+              communityId,
+              buyerId,
+              referrerId: recipientType === 'REFERRER' ? recipientId : null,
+              tierLevel: tier,
+              amount: tierAmount,
+              recipientType,
+              description: `Komisi Tier ${tier} (${recipientType}: ${recipientName}) sebesar Rp ${tierAmount.toLocaleString('id-ID')}`
+            }
+          })
+          logs.push(log)
+        }
+      })
+    } else {
+      // Mock DB: single-threaded in-memory mutation, no transaction needed.
+      if (ketuaId && communityProfitShare > 0) {
         const kw = globalMockWallets.find(w => w.userId === ketuaId)
         if (kw) kw.balance += communityProfitShare
       }
-    }
 
-    let currentReferrerId: string | null = buyer.parentAffiliateId || null
-    const logs: any[] = []
+      const mockMemberships = ((globalThis as any).__mockCommunityMemberships || [])
+        .filter((m: any) => m.communityId === communityId)
+        .map((m: any) => ({ userId: m.userId, referrerId: m.referrerId || null }))
+      const referralChain = resolveReferralChain(mockMemberships, buyerId, maxTiers)
 
-    for (let tier = 1; tier <= maxTiers; tier++) {
-      const pct = percentages[tier - 1] || 0
-      const tierAmount = (referralBudget * pct) / 100
-      if (tierAmount <= 0) continue
+      for (let tier = 1; tier <= maxTiers; tier++) {
+        const pct = percentages[tier - 1] || 0
+        const tierAmount = computeTierAmount(commissionMethod, referralBudget, pct)
+        if (tierAmount <= 0) continue
 
-      let recipientId: string | null = null
-      let recipientType: 'REFERRER' | 'KOMUNITAS' | 'PLATFORM' = 'PLATFORM'
-      let recipientName = 'Saloka.id Platform'
+        let recipientId: string | null = null
+        let recipientType: 'REFERRER' | 'KOMUNITAS' | 'PLATFORM' = 'PLATFORM'
+        let recipientName = 'Saloka.id Platform'
 
-      if (currentReferrerId) {
-        let refUser: any = null
-        if (await isDbConnected()) {
-          try {
-            refUser = await db.user.findUnique({ where: { id: currentReferrerId } })
-          } catch (_) {}
+        const chainReferrerId = referralChain[tier - 1]
+        if (chainReferrerId) {
+          const refUser = globalMockUsers.find((u: any) => u.id === chainReferrerId)
+          if (refUser) {
+            recipientId = refUser.id
+            recipientType = 'REFERRER'
+            recipientName = refUser.name
+          }
         }
-        if (!refUser) {
-          refUser = globalMockUsers.find((u: any) => u.id === currentReferrerId)
+
+        if (!recipientId) {
+          const fallback = resolveTierFallbackRecipient(tier, ketuaId, community.name)
+          recipientId = fallback.recipientId
+          recipientType = fallback.recipientType
+          recipientName = fallback.recipientName
         }
 
-        if (refUser) {
-          recipientId = refUser.id
-          recipientType = 'REFERRER'
-          recipientName = refUser.name
-          currentReferrerId = refUser.parentAffiliateId || null
-        } else {
-          currentReferrerId = null
-        }
-      }
-
-      if (!recipientId) {
-        if (tier === 1) {
-          recipientId = ketuaId
-          recipientType = 'KOMUNITAS'
-          recipientName = `Kas Komunitas ${community.name}`
-        } else {
-          recipientId = 'user-admin-1'
-          recipientType = 'PLATFORM'
-          recipientName = 'Saloka.id Platform'
-        }
-      }
-
-      if (recipientId && tierAmount > 0) {
-        if (await isDbConnected()) {
-          try {
-            const rWallet = await db.wallet.findUnique({ where: { userId: recipientId } })
-            if (rWallet) {
-              await db.wallet.update({ where: { userId: recipientId }, data: { balance: { increment: tierAmount } } })
-              await db.walletTransaction.create({
-                data: {
-                  walletId: rWallet.id,
-                  amount: tierAmount,
-                  type: 'COMMISSION',
-                  description: `Komisi Referral Tier ${tier} (${recipientType}) Komunitas ${community.name} dari pendaftaran ${buyer.name}`
-                }
-              })
-              await (db as any).communityReferralLog?.create({
-                data: {
-                  communityId,
-                  buyerId,
-                  referrerId: recipientType === 'REFERRER' ? recipientId : null,
-                  tierLevel: tier,
-                  amount: tierAmount,
-                  recipientType,
-                  description: `Komisi Tier ${tier} (${recipientType}: ${recipientName}) sebesar Rp ${tierAmount.toLocaleString('id-ID')}`
-                }
-              })
-            }
-          } catch (_) {}
-        } else {
+        if (recipientId) {
           const rw = globalMockWallets.find(w => w.userId === recipientId)
           if (rw) rw.balance += tierAmount
-
-          if (!(globalThis as any).__mockCommunityReferralLogs) (globalThis as any).__mockCommunityReferralLogs = []
-          const logEntry = {
-            id: `crl-${Date.now()}-${tier}`,
-            communityId,
-            buyerId,
-            referrerId: recipientType === 'REFERRER' ? recipientId : null,
-            tierLevel: tier,
-            amount: tierAmount,
-            recipientType,
-            description: `Komisi Tier ${tier} (${recipientType}: ${recipientName}) sebesar Rp ${tierAmount.toLocaleString('id-ID')}`,
-            createdAt: new Date()
-          }
-          ;(globalThis as any).__mockCommunityReferralLogs.push(logEntry)
-          logs.push(logEntry)
         }
+
+        if (!(globalThis as any).__mockCommunityReferralLogs) (globalThis as any).__mockCommunityReferralLogs = []
+        const logEntry = {
+          id: `crl-${Date.now()}-${tier}`,
+          communityId,
+          buyerId,
+          referrerId: recipientType === 'REFERRER' ? recipientId : null,
+          tierLevel: tier,
+          amount: tierAmount,
+          recipientType,
+          description: `Komisi Tier ${tier} (${recipientType}: ${recipientName}) sebesar Rp ${tierAmount.toLocaleString('id-ID')}`,
+          createdAt: new Date()
+        }
+        ;(globalThis as any).__mockCommunityReferralLogs.push(logEntry)
+        logs.push(logEntry)
       }
     }
 
     saveMockDb()
+
+    // Notify each referrer who actually got paid — after the transaction/mock
+    // mutation above has committed, since createNotification is its own write.
+    for (const log of logs) {
+      if (log.recipientType === 'REFERRER' && log.referrerId) {
+        try {
+          await this.createNotification(
+            log.referrerId,
+            'REFERRAL_COMMISSION_RECEIVED',
+            'Komisi Referral Diterima! 💰',
+            `Anda menerima komisi referral Rp ${Number(log.amount).toLocaleString('id-ID')} (Tier ${log.tierLevel}) dari pendaftaran anggota baru di komunitas "${community.name}".`,
+            '/wallet'
+          )
+        } catch (err) {
+          console.error('Error creating referral-commission notification:', err)
+        }
+      }
+    }
+
+    return { success: true, processed: true, logs }
+  },
+
+  // Fixed, non-adjustable 3-tier coin reward for Koperasi joins: tier 1 = 3
+  // coin, tiers 2-3 = 1 coin each, funded from the koperasi's own coinBalance.
+  // A tier with no upline referrer, or a koperasi kas that can't cover the
+  // amount, is simply skipped (logged at amount 0) — never invented recipient,
+  // never a negative kas balance.
+  async processKoperasiFixedTierReferral(data: {
+    communityId: string
+    buyerId: string
+    community: any
+    buyer: any
+  }) {
+    const { communityId, buyerId, community, buyer } = data
+    const dbConnected = await isDbConnected()
+    const logs: any[] = []
+
+    if (dbConnected) {
+      await db.$transaction(async (tx) => {
+        // Community-scoped upline (who this buyer joined THIS koperasi
+        // through), not the platform-wide signup referrer.
+        const buyerMembership = await tx.communityMembership.findUnique({
+          where: { communityId_userId: { communityId, userId: buyerId } }
+        })
+        let currentReferrerId: string | null = (buyerMembership as any)?.referrerId || null
+        let kasRemaining = community.coinBalance || 0
+
+        for (let tier = 1; tier <= KOPERASI_FIXED_TIER_COINS.length; tier++) {
+          const tierAmount = KOPERASI_FIXED_TIER_COINS[tier - 1]
+          let recipientId: string | null = null
+          let recipientName = ''
+
+          if (currentReferrerId) {
+            const refUser = await tx.user.findUnique({ where: { id: currentReferrerId } })
+            if (refUser) {
+              recipientId = refUser.id
+              recipientName = refUser.name
+              const refMembership = await tx.communityMembership.findUnique({
+                where: { communityId_userId: { communityId, userId: refUser.id } }
+              })
+              currentReferrerId = (refMembership as any)?.referrerId || null
+            } else {
+              currentReferrerId = null
+            }
+          }
+
+          const canPay = recipientId && kasRemaining >= tierAmount
+          if (canPay) {
+            kasRemaining -= tierAmount
+            await tx.community.update({ where: { id: communityId }, data: { coinBalance: { decrement: tierAmount } } })
+            await tx.user.update({ where: { id: recipientId! }, data: { coinBalance: { increment: tierAmount } } })
+            await tx.coinTransaction.create({
+              data: {
+                type: 'REFERRAL_COMMISSION',
+                amount: tierAmount,
+                description: `Reward Afiliasi Koperasi Tier ${tier} (${tierAmount} koin) dari pendaftaran ${buyer.name}`,
+                userId: recipientId!,
+                communityId
+              }
+            })
+            const log = await tx.communityReferralLog.create({
+              data: {
+                communityId,
+                buyerId,
+                referrerId: recipientId,
+                tierLevel: tier,
+                amount: tierAmount,
+                recipientType: 'REFERRER',
+                description: `Reward Tier ${tier} (${tierAmount} koin) untuk ${recipientName}`
+              }
+            })
+            logs.push(log)
+          } else {
+            const reason = recipientId ? 'kas koin koperasi tidak mencukupi' : 'tidak ada referrer di tier ini'
+            const log = await tx.communityReferralLog.create({
+              data: {
+                communityId,
+                buyerId,
+                referrerId: null,
+                tierLevel: tier,
+                amount: 0,
+                recipientType: 'PLATFORM',
+                description: `Tier ${tier} tidak dibayarkan — ${reason}`
+              }
+            })
+            logs.push(log)
+          }
+        }
+      })
+    } else {
+      const communities = (globalThis as any).__mockCommunities || []
+      const targetCommunity = communities.find((c: any) => c.id === communityId) || community
+      const mockMemberships = (globalThis as any).__mockCommunityMemberships || []
+      const buyerMembership = mockMemberships.find((m: any) => m.communityId === communityId && m.userId === buyerId)
+      let currentReferrerId: string | null = buyerMembership?.referrerId || null
+      let kasRemaining = targetCommunity.coinBalance || 0
+
+      if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
+      if (!(globalThis as any).__mockCommunityReferralLogs) (globalThis as any).__mockCommunityReferralLogs = []
+
+      for (let tier = 1; tier <= KOPERASI_FIXED_TIER_COINS.length; tier++) {
+        const tierAmount = KOPERASI_FIXED_TIER_COINS[tier - 1]
+        let recipient: any = null
+
+        if (currentReferrerId) {
+          const refUser = globalMockUsers.find((u: any) => u.id === currentReferrerId)
+          if (refUser) {
+            recipient = refUser
+            const refMembership = mockMemberships.find((m: any) => m.communityId === communityId && m.userId === refUser.id)
+            currentReferrerId = refMembership?.referrerId || null
+          } else {
+            currentReferrerId = null
+          }
+        }
+
+        const canPay = recipient && kasRemaining >= tierAmount
+        if (canPay) {
+          kasRemaining -= tierAmount
+          targetCommunity.coinBalance = kasRemaining
+          recipient.coinBalance = (recipient.coinBalance || 0) + tierAmount
+          ;(globalThis as any).__mockCoinTransactions.push({
+            id: `coin-tx-${Date.now()}-${tier}`,
+            type: 'REFERRAL_COMMISSION',
+            amount: tierAmount,
+            description: `Reward Afiliasi Koperasi Tier ${tier} (${tierAmount} koin) dari pendaftaran ${buyer.name}`,
+            userId: recipient.id,
+            communityId,
+            createdAt: new Date()
+          })
+          const log = {
+            id: `crl-${Date.now()}-${tier}`,
+            communityId,
+            buyerId,
+            referrerId: recipient.id,
+            tierLevel: tier,
+            amount: tierAmount,
+            recipientType: 'REFERRER',
+            description: `Reward Tier ${tier} (${tierAmount} koin) untuk ${recipient.name}`,
+            createdAt: new Date()
+          }
+          ;(globalThis as any).__mockCommunityReferralLogs.push(log)
+          logs.push(log)
+        } else {
+          const reason = recipient ? 'kas koin koperasi tidak mencukupi' : 'tidak ada referrer di tier ini'
+          const log = {
+            id: `crl-${Date.now()}-${tier}`,
+            communityId,
+            buyerId,
+            referrerId: null,
+            tierLevel: tier,
+            amount: 0,
+            recipientType: 'PLATFORM',
+            description: `Tier ${tier} tidak dibayarkan — ${reason}`,
+            createdAt: new Date()
+          }
+          ;(globalThis as any).__mockCommunityReferralLogs.push(log)
+          logs.push(log)
+        }
+      }
+
+      saveMockDb()
+    }
+
+    for (const log of logs) {
+      if (log.recipientType === 'REFERRER' && log.referrerId) {
+        try {
+          await this.createNotification(
+            log.referrerId,
+            'REFERRAL_COMMISSION_RECEIVED',
+            'Reward Afiliasi Koperasi Diterima! 🪙',
+            `Anda menerima ${log.amount} koin (Tier ${log.tierLevel}) dari pendaftaran anggota baru di koperasi "${community.name}".`,
+            '/wallet/coin'
+          )
+        } catch (err) {
+          console.error('Error creating koperasi tier-referral notification:', err)
+        }
+      }
+    }
+
     return { success: true, processed: true, logs }
   },
 

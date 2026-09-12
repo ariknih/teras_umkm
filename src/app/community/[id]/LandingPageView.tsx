@@ -4,6 +4,7 @@ import {
   Users, Wallet, GraduationCap, Building2, Coins, Calendar, PieChart,
   MapPin, Shield, Star, HelpCircle, ArrowRight, Share2, ChevronRight, Award, Plus, Play, Sliders
 } from 'lucide-react'
+import { getCommunityTierBadge } from '@/lib/community-badge'
 
 // Default Kopjaswara config (Koperasi)
 export const DEFAULT_KOPERASI_CONFIG = {
@@ -270,16 +271,20 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
   const catLower = (community?.category || '').toLowerCase()
   const typeLower = (community?.type || '').toLowerCase()
 
+  // isKoperasi comes from the community's actual `type`, never from
+  // templateType - see CommunityDetailClient.tsx for why.
+  const isKoperasi = community?.type === 'KOPERASI'
+
   // Strict templateType check with backward-compatible auto-detection for older communities
-  const templateType = community?.templateType || (
-    typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi') ? 'Koperasi' :
-    catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
-    catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
-    catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
-    'Community'
+  const templateType = isKoperasi ? 'Koperasi' : (
+    (community?.templateType && community.templateType !== 'Koperasi') ? community.templateType : (
+      catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
+      catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
+      catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
+      'Society'
+    )
   )
 
-  const isKoperasi = templateType === 'Koperasi'
   const isKuliner = templateType === 'Culinary'
   const isBusiness = templateType === 'Business'
   const isEducation = templateType === 'Education'
@@ -430,47 +435,30 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({
         <div className="space-y-6">
           <div className="flex items-center gap-2 flex-wrap">
             {(() => {
-              const isPerkumpulanPrem = community?.type === 'PERKUMPULAN' && (config?.perkumpulanTier === 'PREMIUM' || (config?.activationFeePaid ?? 0) > 0 || community?.category === 'PAID')
-              const coopTier = config?.coopTier || (isKoperasi ? 'PRO' : 'BASIC')
-              const rawJoinFee = Number(community?.joinFee || 0)
-
-              const joinFee = isKoperasi
-                ? (rawJoinFee > 0 ? rawJoinFee : (coopTier === 'PRO' ? 150000 : coopTier === 'PLUS' ? 100000 : 50000))
-                : isPerkumpulanPrem
-                  ? (rawJoinFee > 0 ? rawJoinFee : 100000)
-                  : rawJoinFee
-
-              const isFree = !isKoperasi && !isPerkumpulanPrem && joinFee === 0
+              const badge = getCommunityTierBadge(community)
+              const badgeVariantClass = {
+                neutral: 'bg-neutral-shade-100/80 text-neutral-shade-800 border-neutral-shade-200/50',
+                blue: 'bg-bank-blue-100/80 text-bank-blue-800 border-bank-blue-200/50',
+                yellow: 'bg-bee-yellow-100/80 text-bee-yellow-500 border-bee-yellow-200/50'
+              }[badge.variant]
 
               return (
                 <>
-                  <span className={`inline-block px-3 py-1 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border shadow-2xs font-sora ${
-                    isKoperasi
-                      ? coopTier === 'PRO'
-                        ? 'bg-purple-100/80 text-purple-800 border-purple-200/50'
-                        : coopTier === 'PLUS'
-                          ? 'bg-blue-100/80 text-blue-800 border-blue-200/50'
-                          : 'bg-emerald-100/80 text-emerald-800 border-emerald-200/50'
-                      : isPerkumpulanPrem
-                        ? 'bg-purple-100/80 text-purple-800 border-purple-200/50'
-                        : 'bg-emerald-100/80 text-emerald-800 border-emerald-200/50'
-                  }`}>
-                    {hero.badge || (
-                      isKoperasi
-                        ? `KOPERASI ${coopTier}`
-                        : isPerkumpulanPrem
-                          ? 'PERKUMPULAN PREMIUM'
-                          : 'PERKUMPULAN REGULER'
-                    )}
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border shadow-2xs font-sora ${badgeVariantClass}`}>
+                    {badge.showStar && <Star className="w-3 h-3 fill-current" />}
+                    {badge.label}
                   </span>
-                  {isFree ? (
-                    <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-emerald-200/80 shadow-2xs font-sora">
-                      Gratis
-                    </span>
-                  ) : (
-                    <span className="inline-block px-3 py-1 bg-amber-50 text-amber-900 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-amber-300 shadow-2xs font-sora">
-                      Berbayar • Rp{joinFee.toLocaleString('id-ID')}
-                    </span>
+                  {/* Price badge only matters to someone deciding whether to join */}
+                  {!isMember && (
+                    badge.isFree ? (
+                      <span className="inline-block px-3 py-1 bg-safe-green-50 text-safe-green-700 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-safe-green-200/80 shadow-2xs font-sora">
+                        Gratis
+                      </span>
+                    ) : (
+                      <span className="inline-block px-3 py-1 bg-royal-purple-50 text-royal-purple-700 font-extrabold text-[10px] uppercase tracking-wider rounded-lg border border-royal-purple-300 shadow-2xs font-sora">
+                        Berbayar • Rp{badge.joinFee.toLocaleString('id-ID')}
+                      </span>
+                    )
                   )}
                 </>
               )

@@ -16,10 +16,27 @@ import { getCommunitySavingsSummaryAction } from '@/app/actions/savings'
 import { getAnnouncementsAction } from '@/app/actions/announcements'
 import { getCooperativeReportsAction } from '@/app/actions/reports'
 import { DataStore } from '@/lib/data-store'
+import { cookies } from 'next/headers'
 import CommunityDetailClient, { type CommunityDetailInitialData } from './CommunityDetailClient'
 
-export default async function CommunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CommunityDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ref?: string }> }) {
   const { id } = await params
+  const { ref } = await searchParams
+
+  // Community-scoped referral, first-touch (never overwritten) — separate
+  // from the platform-wide signup referral cookie set by /ref/[slug].
+  if (ref) {
+    const cookieStore = await cookies()
+    if (!cookieStore.get(`cref_${id}`)) {
+      cookieStore.set(`cref_${id}`, ref, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      })
+    }
+  }
 
   const [currentUser, commDetailRes] = await Promise.all([
     getCurrentUser().catch(() => null),

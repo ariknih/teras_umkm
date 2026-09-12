@@ -38,68 +38,12 @@ export async function getUserRedemptions() {
   return await DataStore.getUserCoinRedemptions(user.id)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Topup Coin Komunitas (Hanya Ketua)
-// Rate: 1 coin = Rp 1.500
-// ═══════════════════════════════════════════════════════════════════════════
-
-export async function topupCommunityCoin(formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
-
-  const communityId = formData.get('communityId') as string
-  const jumlahCoinStr = formData.get('jumlahCoin') as string
-
-  if (!communityId || !jumlahCoinStr) {
-    return { error: 'Data tidak lengkap.' }
-  }
-
-  const jumlahCoin = parseFloat(jumlahCoinStr)
-  if (isNaN(jumlahCoin) || jumlahCoin <= 0) {
-    return { error: 'Jumlah coin tidak valid.' }
-  }
-
-  // Cek apakah user adalah Ketua komunitas ini
-  const community = await DataStore.getCommunityById(communityId)
-  if (!community) return { error: 'Komunitas tidak ditemukan.' }
-  if (community.ketuaId !== user.id && user.role !== 'ADMIN') {
-    return { error: 'Hanya Ketua Komunitas yang bisa top up coin.' }
-  }
-
-  // Hanya koperasi yang bisa top up coin
-  if ((community as any).category !== 'KOPERASI') {
-    return { error: 'Hanya Koperasi yang bisa melakukan top up coin. Perkumpulan tidak dapat melakukan top up.' }
-  }
-
-  const totalBiaya = jumlahCoin * 1500 // 1 coin = Rp 1.500
-
-  try {
-    const result = await DataStore.topupCommunityCoin({
-      communityId,
-      ketuaId: user.id,
-      jumlahCoin,
-      totalBiaya,
-      description: `Top up ${jumlahCoin} coin oleh Ketua — Biaya Rp ${totalBiaya.toLocaleString('id-ID')}`
-    })
-    await logAudit({
-      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
-      actorId: user.id,
-      actorName: user.name || user.email,
-      action: 'TOPUP_COMMUNITY_COIN',
-      module: 'COINS',
-      targetId: communityId,
-      targetType: 'COMMUNITY',
-      detail: `Top up ${jumlahCoin} coin — biaya Rp ${totalBiaya.toLocaleString('id-ID')}.`
-    })
-
-    revalidatePath(`/community/${communityId}`)
-    revalidatePath('/community')
-    revalidatePath('/cms_admin', 'layout')
-    return { success: true, ...result }
-  } catch (e: any) {
-    return { error: e.message || 'Gagal melakukan top up coin.' }
-  }
-}
+// Real ketua-initiated coin top-up now goes through the gateway-backed
+// /api/payment/checkout + /verify (purpose COIN_TOPUP, src/lib/payment-purposes.ts),
+// which derives the charge server-side and only credits coinBalance once the
+// gateway confirms payment — see DataStore.topupCommunityCoin's orderId param.
+// (Superadmin manual distribution from platform supply is a separate,
+// legitimately-free mechanism: distributeCoinFromSupplyAction below.)
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Reward Merchant Invite — Merchant undang merchant ke komunitas sama

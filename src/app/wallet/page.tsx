@@ -34,6 +34,7 @@ export default function WalletPage() {
   // Deposit State
   const [depositAmount, setDepositAmount] = useState<string>('')
   const [isDepositLoading, setIsDepositLoading] = useState(false)
+  const [isDokuDepositLoading, setIsDokuDepositLoading] = useState(false)
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
 
   // Withdrawal State
@@ -122,6 +123,86 @@ export default function WalletPage() {
       setIsDepositLoading(false)
     }
   }
+
+  const handleDokuDeposit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+
+    const amount = parseFloat(depositAmount)
+    if (isNaN(amount) || amount < 10000) {
+      setError('Minimal pengisian saldo adalah Rp 10.000')
+      return
+    }
+
+    setIsDokuDepositLoading(true)
+    try {
+      const res = await fetch('/api/doku/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'deposit', amount }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Gagal memproses pembayaran DOKU.')
+      }
+
+      // DOKU Checkout is a hosted page redirect, not a JS popup like Snap.
+      window.location.href = data.redirectUrl
+    } catch (err: any) {
+      setError(err.message || 'Gagal terhubung dengan DOKU.')
+      setIsDokuDepositLoading(false)
+    }
+  }
+
+  const verifyDokuTransaction = async (orderId: string, simulate: boolean = false) => {
+    setIsVerifying(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const res = await fetch('/api/doku/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, simulate, amount: depositAmount }),
+      })
+
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Gagal memverifikasi transaksi DOKU.')
+      }
+
+      if (data.processed) {
+        setSuccess(data.message || 'Transaksi berhasil diverifikasi!')
+        setDepositAmount('')
+        setPendingOrderId(null)
+        await loadData()
+        router.refresh()
+      } else {
+        setError(data.message || 'Transaksi belum dibayar atau status pending.')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Gagal memverifikasi status pembayaran DOKU.')
+    } finally {
+      setIsVerifying(false)
+      setIsDokuDepositLoading(false)
+    }
+  }
+
+  // Auto verify deposit when redirected back from DOKU Checkout page.
+  // DOKU's redirect doesn't reliably carry a final status query param, so
+  // we always re-ask /api/doku/verify — it re-queries DOKU's Check Status
+  // API server-side rather than trusting anything from the URL.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && userProfile) {
+      const params = new URLSearchParams(window.location.search)
+      const orderId = params.get('doku_order')
+      if (orderId && orderId.startsWith('ddep-')) {
+        verifyDokuTransaction(orderId, false)
+        window.history.replaceState({}, document.title, window.location.pathname)
+      }
+    }
+  }, [userProfile])
 
   const verifyTransaction = async (orderId: string, simulate: boolean = false) => {
     setIsVerifying(true)
@@ -453,10 +534,18 @@ export default function WalletPage() {
                 </div>
                 <button
                   type="submit"
-                  disabled={isDepositLoading}
+                  disabled={isDepositLoading || isDokuDepositLoading}
                   className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                 >
-                  {isDepositLoading ? 'Menghubungkan Midtrans...' : 'Isi Saldo Sekarang'}
+                  {isDepositLoading ? 'Menghubungkan Midtrans...' : 'Isi Saldo via Midtrans'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDokuDeposit}
+                  disabled={isDepositLoading || isDokuDepositLoading}
+                  className="w-full h-11 bg-white border border-primary text-primary hover:bg-primary/5 font-bold text-xs uppercase tracking-wider rounded transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  {isDokuDepositLoading ? 'Menghubungkan DOKU...' : 'Isi Saldo via DOKU'}
                 </button>
               </form>
             </div>

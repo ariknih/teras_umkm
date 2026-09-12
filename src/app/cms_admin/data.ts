@@ -42,7 +42,7 @@ export const getCmsAdminData = unstable_cache(
       DataStore.getProducts(),
       DataStore.getPosts(),
       DataStore.getAllOrders(),
-      DataStore.getCourses(),
+      DataStore.getCoursesForAdminList(),
       DataStore.getAllWithdrawals(),
       DataStore.getAllCoinVouchers(),
       DataStore.getCoinAdminStats(),

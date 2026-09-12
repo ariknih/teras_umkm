@@ -17,6 +17,7 @@ interface ClientLayoutWrapperProps {
   user: any
   dbUser: any
   wallet: any
+  userCommunities?: any[]
   userSetupCompleted: boolean
   logoutAction: () => Promise<any>
   children: React.ReactNode
@@ -26,6 +27,7 @@ export default function ClientLayoutWrapper({
   user,
   dbUser,
   wallet,
+  userCommunities,
   userSetupCompleted,
   logoutAction,
   children
@@ -53,7 +55,7 @@ export default function ClientLayoutWrapper({
         <OnboardingGuard isLoggedIn={!!user} userSetupCompleted={!!userSetupCompleted} userId={dbUser?.id || ''} />
 
         {/* ── RESPONSIVE NAVIGATION HEADER ──────────────────────────── */}
-        <HeaderNavigation user={dbUser} wallet={wallet} logoutAction={logoutAction} />
+        <HeaderNavigation user={dbUser} wallet={wallet} userCommunities={userCommunities || []} logoutAction={logoutAction} />
 
         {/* Page Content */}
         <main className="flex-grow flex flex-col pt-[100px]">
@@ -143,7 +145,7 @@ export default function ClientLayoutWrapper({
         </div>
       </footer>
 
-      <MobileBottomNav isLoggedIn={!!user} />
+      <MobileBottomNav isLoggedIn={!!user} userCommunities={userCommunities || []} />
       <FloatingChat />
       <PwaInstallPrompt />
       <ConnectivityStatus />

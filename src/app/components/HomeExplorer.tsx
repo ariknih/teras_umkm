@@ -7,9 +7,11 @@ import {
   GraduationCap,
   ChevronRight,
   MapPin,
-  Users
+  Users,
+  Star
 } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
+import { getCommunityTierBadge } from '@/lib/community-badge'
 import { useSnackbox } from '@/context/SnackboxContext'
 import { getSnackboxProducts } from '@/app/actions/products'
 import { SnackboxProduct } from '@/types/snackbox'
@@ -49,6 +51,7 @@ interface HomeExplorerProps {
   products: Product[]
   services: Service[]
   communities?: any[]
+  myCommunityIds?: string[]
 }
 
 const MARKETPLACE_CATEGORIES = [
@@ -79,7 +82,7 @@ const JASA_CATEGORIES = [
   { key: 'Lainnya', label: 'Lainnya', icon: '/images/kategori icon.svg' },
 ]
 
-export default function HomeExplorer({ products = [], services = [], communities = [] }: HomeExplorerProps) {
+export default function HomeExplorer({ products = [], services = [], communities = [], myCommunityIds = [] }: HomeExplorerProps) {
   const [activeTab, setActiveTab] = useState<'MARKETPLACE' | 'JASA'>('MARKETPLACE')
   const [selectedCategory, setSelectedCategory] = useState('')
   const { kelurahan } = useSnackbox()
@@ -130,7 +133,8 @@ export default function HomeExplorer({ products = [], services = [], communities
         .map((c: any) => ({
           id: c.id,
           title: c.name,
-          badge: c.type === 'KOPERASI' ? 'Koperasi Resmi' : 'Perkumpulan UMKM',
+          badge: getCommunityTierBadge(c),
+          isMember: myCommunityIds.includes(c.id),
           desc: c.description || 'Komunitas pelaku UMKM untuk kolaborasi, permodalan, dan promosi bersama.',
           members: `${getMemberCount(c)} Anggota`,
           image: c.avatarUrl || c.coverUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.name)}&background=2DB24A&color=ffffff&bold=true`,
@@ -141,7 +145,8 @@ export default function HomeExplorer({ products = [], services = [], communities
       {
         id: 'comm-dummy-1',
         title: 'Perahu Kita',
-        badge: 'Perkumpulan UMKM',
+        badge: getCommunityTierBadge({ type: 'PERKUMPULAN', joinFee: 0 }),
+        isMember: false,
         desc: 'Wadah bagi pelaku usaha, UMKM, dan masyarakat untuk saling berbagi pengalaman dan peluang bersama.',
         members: '1 Anggota',
         image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=150&h=150&fit=crop&q=80',
@@ -150,7 +155,8 @@ export default function HomeExplorer({ products = [], services = [], communities
       {
         id: 'comm-dummy-2',
         title: 'Koperasi Produksi Maju Bersama',
-        badge: 'Koperasi Resmi',
+        badge: getCommunityTierBadge({ type: 'KOPERASI', joinFee: 0 }),
+        isMember: false,
         desc: 'Koperasi produksi resmi pelaku usaha mikro kecil untuk pengadaan bahan baku bersama dan bagi hasil SHU.',
         members: '1 Anggota',
         image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=150&h=150&fit=crop&q=80',
@@ -159,14 +165,15 @@ export default function HomeExplorer({ products = [], services = [], communities
       {
         id: 'comm-dummy-3',
         title: 'Asosiasi Kuliner Kreatif Jogja',
-        badge: 'Perkumpulan UMKM',
+        badge: getCommunityTierBadge({ type: 'PERKUMPULAN', joinFee: 0 }),
+        isMember: false,
         desc: 'Wadah kolaborasi pemilik usaha kuliner kreatif untuk peningkatan mutu, sertifikasi halal, dan pemasaran.',
         members: '1 Anggota',
         image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&h=150&fit=crop&q=80',
         href: '/community/comm-dummy-3'
       }
     ]
-  }, [communities])
+  }, [communities, myCommunityIds])
 
   return (
     <section className="w-full max-w-[1240px] mx-auto px-3.5 sm:px-6 py-4 sm:py-6">
@@ -329,9 +336,30 @@ export default function HomeExplorer({ products = [], services = [], communities
                 className="w-16 h-16 rounded-xl object-cover shrink-0 border border-slate-100 group-hover:scale-105 transition-transform"
               />
               <div className="space-y-1 flex-1 min-w-0">
-                <span className="bg-white text-[#2DB24A] border border-[#2DB24A]/40 text-[9px] font-bold px-2 py-0.5 rounded shadow-2xs inline-block">
-                  {comm.badge}
-                </span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded border shadow-2xs ${
+                    {
+                      neutral: 'bg-white text-neutral-shade-700 border-neutral-shade-300',
+                      blue: 'bg-white text-bank-blue-600 border-bank-blue-300',
+                      yellow: 'bg-white text-bee-yellow-500 border-bee-yellow-300'
+                    }[comm.badge.variant]
+                  }`}>
+                    {comm.badge.showStar && <Star size={9} className="fill-current" />}
+                    {comm.badge.label}
+                  </span>
+                  {/* Price badge only matters to someone deciding whether to join */}
+                  {!comm.isMember && (
+                    comm.badge.isFree ? (
+                      <span className="inline-block text-[9px] font-bold px-2 py-0.5 rounded border shadow-2xs bg-white text-safe-green-600 border-safe-green-300">
+                        Gratis
+                      </span>
+                    ) : (
+                      <span className="inline-block text-[9px] font-bold px-2 py-0.5 rounded border shadow-2xs bg-white text-royal-purple-600 border-royal-purple-300">
+                        Berbayar • Rp{comm.badge.joinFee.toLocaleString('id-ID')}
+                      </span>
+                    )
+                  )}
+                </div>
                 <h4 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-[#2DB24A] transition-colors">
                   {comm.title}
                 </h4>

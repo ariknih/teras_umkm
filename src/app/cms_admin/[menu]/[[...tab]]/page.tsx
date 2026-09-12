@@ -17,7 +17,6 @@ import SnackboxPayoutTab from '../../components/SnackboxPayoutTab'
 import MerchantVerificationTab from '../../components/MerchantVerificationTab'
 import MerchantLevelTab from '../../components/MerchantLevelTab'
 import UsersTab from '../../components/UsersTab'
-import CertificationTab from '../../components/CertificationTab'
 import CoinsTab from '../../components/CoinsTab'
 import AcademyTab from '../../components/AcademyTab'
 import SertifikatTab from '../../components/SertifikatTab'
@@ -142,7 +141,9 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
     }
 
     const courseId = tabSegments![1]
-    const course = allCourses.find((c: any) => c.id === courseId)
+    // Fetched fresh (not off the lean allCourses list) since this is the one
+    // view that actually needs coverImage + certificateTemplate.backgroundImage.
+    const course = await DataStore.getCourseById(courseId)
     if (!course) notFound()
 
     return (
@@ -179,8 +180,7 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
     'merchants/verifikasi': <MerchantVerificationTab initialUsers={allUsers} />,
     'snackbox-kurasi/merchant': <MerchantVerificationTab initialUsers={allUsers} snackboxOnly />,
     'merchants/level': <MerchantLevelTab initialLevelRequests={allLevelRequests} currentUser={session.user} />,
-    'users/daftar': <UsersTab initialUsers={allUsers} communities={allCommunities} />,
-    'users/sertifikasi': <CertificationTab users={allUsers} />,
+    users: <UsersTab initialUsers={allUsers} communities={allCommunities} currentUser={session.user} />,
     coins: (
       <CoinsTab
         tab={activeTab!}

@@ -17,18 +17,20 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
   const catLower = (community?.category || '').toLowerCase()
   const typeLower = (community?.type || '').toLowerCase()
 
-  const templateType = community?.templateType || (
-    typeLower === 'koperasi' || catLower === 'koperasi' || nameLower.includes('koperasi') ? 'Koperasi' :
-    catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
-    catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
-    catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
-    'Community'
-  )
+  // isKoperasi comes from the community's actual `type`, never from
+  // templateType - see CommunityDetailClient.tsx for why.
+  const isKoperasi = community?.type === 'KOPERASI'
 
-  const isKoperasi = templateType === 'Koperasi'
+  const templateType = isKoperasi ? 'Koperasi' : (
+    (community?.templateType && community.templateType !== 'Koperasi') ? community.templateType : (
+      catLower === 'kuliner' || catLower === 'culinary' || nameLower.includes('kuliner') ? 'Culinary' :
+      catLower === 'business' || nameLower.includes('kopjaswara') || nameLower.includes('bisnis') || nameLower.includes('umkm') ? 'Business' :
+      catLower === 'education' || nameLower.includes('pelajar') || nameLower.includes('pengusaha') || nameLower.includes('pendidikan') ? 'Education' :
+      'Society'
+    )
+  )
   
   // Local form states
-  const [heroBadge, setHeroBadge] = useState(config?.hero?.badge || (isKoperasi ? 'KOPERASI PRO' : 'KOMUNITAS UMKM'))
   const [heroTitle, setHeroTitle] = useState(config?.hero?.title || community?.name || '')
   const [heroSubtitle, setHeroSubtitle] = useState(config?.hero?.subtitle || '')
   const [heroDescription, setHeroDescription] = useState(config?.hero?.description || '')
@@ -172,7 +174,6 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
     
     const newConfig = {
       hero: {
-        badge: heroBadge,
         title: heroTitle,
         subtitle: heroSubtitle,
         description: heroDescription,
@@ -222,10 +223,6 @@ export const LandingPageEditor: React.FC<LandingPageEditorProps> = ({
       <div className="space-y-4">
         <h4 className="font-extrabold text-[#0F5132] uppercase tracking-wider border-l-4 border-emerald-600 pl-2">1. Bagian Hero & Identitas Utama</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Badge Hero</label>
-            <input type="text" value={heroBadge} onChange={e => setHeroBadge(e.target.value)} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none" required />
-          </div>
           <div>
             <label className="block text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Nama Komunitas (Judul)</label>
             <input type="text" value={heroTitle} onChange={e => setHeroTitle(e.target.value)} className="w-full px-3.5 py-2 border border-gray-200 rounded-xl focus:border-primary outline-none" required />

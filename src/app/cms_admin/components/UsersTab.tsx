@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateUserRoleAndLevelAction, updateUserIndukCommunityAction, createUserAction, deleteUserAction } from '@/app/actions/admin'
+import { ADMIN_TYPE_BADGE, DEFAULT_ADMIN_TYPE, type AdminTypeKey } from '../admin-types'
 import { useToast, Toast } from './Toast'
 import ExportCsvButton from './ExportCsvButton'
 
@@ -52,9 +53,10 @@ function IpLocationCell({ u }: { u: any }) {
 type Props = {
   initialUsers: any[]
   communities: any[]
+  currentUser: any
 }
 
-export default function UsersTab({ initialUsers, communities }: Props) {
+export default function UsersTab({ initialUsers, communities, currentUser }: Props) {
   const router = useRouter()
   const [users, setUsers] = useState(initialUsers)
   const [isPending, startTransition] = useTransition()
@@ -205,7 +207,12 @@ export default function UsersTab({ initialUsers, communities }: Props) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {filteredUsers.map((u) => (
+            {filteredUsers.map((u) => {
+              const isAdminRow = u.role === 'ADMIN'
+              const isSuperAdminRow = isAdminRow && !!u.isSuperAdmin
+              const adminType = ADMIN_TYPE_BADGE[(u.adminType as AdminTypeKey) || DEFAULT_ADMIN_TYPE]
+
+              return (
               <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                 <td className="px-4 py-4">
                   <p className="font-bold text-slate-800">{u.name}</p>
@@ -213,21 +220,29 @@ export default function UsersTab({ initialUsers, communities }: Props) {
                 </td>
                 <td className="px-4 py-4 font-mono text-slate-700">{u.phone || '-'}</td>
                 <td className="px-4 py-4">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
-                      u.role === 'ADMIN'
-                        ? 'bg-red-50 text-red-700 border-red-200'
-                        : u.role === 'CUSTOMER_SERVICE'
-                        ? 'bg-teal-50 text-teal-700 border-teal-200'
-                        : u.role === 'MERCHANT'
-                        ? 'bg-amber-50 text-amber-700 border-amber-200'
-                        : u.role === 'AFFILIATE'
-                        ? 'bg-purple-50 text-purple-700 border-purple-200'
-                        : 'bg-blue-50 text-blue-700 border-blue-200'
-                    }`}
-                  >
-                    {u.role}
-                  </span>
+                  {isSuperAdminRow ? (
+                    <span className="px-2.5 py-1 rounded-md text-[9px] font-bold uppercase border tracking-wider bg-purple-50 text-purple-700 border-purple-200">
+                      ⭐ Superadmin
+                    </span>
+                  ) : isAdminRow ? (
+                    <span className={`px-2.5 py-1 rounded-md text-[9px] font-bold uppercase border tracking-wider ${adminType.className}`}>
+                      👤 {adminType.label}
+                    </span>
+                  ) : (
+                    <span
+                      className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
+                        u.role === 'CUSTOMER_SERVICE'
+                          ? 'bg-teal-50 text-teal-700 border-teal-200'
+                          : u.role === 'MERCHANT'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : u.role === 'AFFILIATE'
+                          ? 'bg-purple-50 text-purple-700 border-purple-200'
+                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                      }`}
+                    >
+                      {u.role}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-4 text-center">
                   <p className="font-bold text-slate-700">Level {u.level}</p>
@@ -237,21 +252,50 @@ export default function UsersTab({ initialUsers, communities }: Props) {
                   <IpLocationCell u={u} />
                 </td>
                 <td className="px-4 py-4 text-right space-x-2">
-                  <button
-                    onClick={() => setEditUser({ ...u })}
-                    className="px-3 py-1 bg-[#0F5132]/10 hover:bg-[#0F5132]/20 text-[#0F5132] border border-[#0F5132]/20 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(u.id, u.name)}
-                    className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    Hapus
-                  </button>
+                  {isSuperAdminRow ? (
+                    u.id === currentUser.id ? (
+                      <>
+                        <button
+                          onClick={() => setEditUser({ ...u })}
+                          className="px-3 py-1 bg-[#0F5132]/10 hover:bg-[#0F5132]/20 text-[#0F5132] border border-[#0F5132]/20 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <span className="text-[10px] text-slate-400 italic px-2">Akun Anda</span>
+                      </>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 italic px-2">Superadmin lain</span>
+                    )
+                  ) : isAdminRow ? (
+                    <>
+                      <button
+                        onClick={() => setEditUser({ ...u })}
+                        className="px-3 py-1 bg-[#0F5132]/10 hover:bg-[#0F5132]/20 text-[#0F5132] border border-[#0F5132]/20 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <span className="text-[10px] text-slate-400 italic px-2">Kelola di Admin & Hak Akses</span>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setEditUser({ ...u })}
+                        className="px-3 py-1 bg-[#0F5132]/10 hover:bg-[#0F5132]/20 text-[#0F5132] border border-[#0F5132]/20 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(u.id, u.name)}
+                        className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                      >
+                        Hapus
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>
