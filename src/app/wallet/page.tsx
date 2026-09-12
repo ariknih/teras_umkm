@@ -23,7 +23,7 @@ interface Wallet {
   transactions: Transaction[]
 }
 
-const QUICK_NOMINALS = [10000, 25000, 50000, 100000, 250000, 500000]
+const QUICK_NOMINALS = [20000, 50000, 100000, 150000, 200000, 250000, 500000, 1000000]
 
 export default function WalletPage() {
   const router = useRouter()
@@ -34,13 +34,25 @@ export default function WalletPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // Deposit State - Quick Nominals only (no manual textbox)
-  const [selectedNominal, setSelectedNominal] = useState<number>(50000)
+  // Deposit State - Accumulative quick nominals & manual input
+  const [selectedNominal, setSelectedNominal] = useState<number>(0)
   const [depositChannel, setDepositChannel] = useState<string>('QRIS')
   const [isDepositLoading, setIsDepositLoading] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [directPaymentData, setDirectPaymentData] = useState<DokuDirectPaymentData | null>(null)
   const [isDirectModalOpen, setIsDirectModalOpen] = useState(false)
+
+  const handleAddNominal = (nom: number) => {
+    setSelectedNominal((prev) => (prev || 0) + nom)
+    setError(null)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '')
+    const val = raw ? parseInt(raw, 10) : 0
+    setSelectedNominal(val)
+    setError(null)
+  }
 
   // Withdrawal State
   const [withdrawAmount, setWithdrawAmount] = useState<string>('')
@@ -368,7 +380,7 @@ export default function WalletPage() {
         {/* Dashboard Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12 items-start">
           {/* Left Column: Balance & Deposit */}
-          <div className="lg:col-span-4 space-y-8">
+          <div className="lg:col-span-5 space-y-8">
             {/* Balance Board */}
             <div className="border border-[#E5E7EB] bg-white p-6 rounded-2xl flex flex-col justify-between min-h-[160px] relative overflow-hidden">
               <div>
@@ -401,31 +413,71 @@ export default function WalletPage() {
 
               <form onSubmit={handleDeposit} className="space-y-4">
                 <div>
-                  <label className="block text-[9px] font-bold text-[#6B7280] uppercase tracking-wider mb-2">
-                    Pilih Nominal Saldo
+                  <label className="block text-xs font-semibold text-slate-700 mb-2">
+                    Nominal Deposit :
                   </label>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {QUICK_NOMINALS.map((nom) => {
-                      const isSelected = selectedNominal === nom
-                      return (
-                        <button
-                          key={nom}
-                          type="button"
-                          onClick={() => setSelectedNominal(nom)}
-                          className={`py-3 px-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                            isSelected
-                              ? 'border-primary bg-primary/10 text-[#0F5132] font-bold shadow-xs ring-2 ring-primary/30'
-                              : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-semibold'
-                          }`}
-                        >
-                          <span className="text-[10px] opacity-75">Isi Saldo</span>
-                          <span className="text-xs font-bold mt-0.5 text-[#111111]">
-                            Rp {nom.toLocaleString('id-ID')}
-                          </span>
-                        </button>
-                      )
-                    })}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {QUICK_NOMINALS.map((nom) => (
+                      <button
+                        key={nom}
+                        type="button"
+                        onClick={() => handleAddNominal(nom)}
+                        className="py-3 px-1.5 rounded-lg border border-slate-200 bg-white hover:border-[#2DB24A] hover:bg-[#F0FDF4] text-slate-800 hover:text-[#0F5132] font-semibold text-xs text-center transition-all active:scale-95 cursor-pointer shadow-2xs select-none"
+                      >
+                        {nom.toLocaleString('id-ID')}
+                      </button>
+                    ))}
                   </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-700">
+                      Jumlah Deposit :
+                    </label>
+                    {selectedNominal > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedNominal(0)
+                          setError(null)
+                        }}
+                        className="text-[11px] font-bold text-rose-500 hover:text-rose-700 hover:underline cursor-pointer"
+                      >
+                        Reset (Rp 0)
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center bg-slate-50/70 border border-slate-200 rounded-xl px-4 py-3 focus-within:bg-white focus-within:border-[#2DB24A] focus-within:ring-2 focus-within:ring-[#2DB24A]/20 transition-all">
+                    <span className="text-slate-600 font-semibold text-sm mr-2 select-none">
+                      Rp.
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={selectedNominal ? selectedNominal.toLocaleString('id-ID') : '0'}
+                      onChange={handleInputChange}
+                      className="w-full bg-transparent text-slate-900 font-bold text-base focus:outline-none"
+                      placeholder="0"
+                    />
+                    {selectedNominal > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedNominal(0)
+                          setError(null)
+                        }}
+                        className="text-xs text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200 transition-colors ml-2 cursor-pointer shrink-0"
+                        title="Hapus"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    * Klik nominal di atas berulang kali untuk menambah (misal: 20.000 x 2 = Rp 40.000) atau ketik manual.
+                  </p>
                 </div>
 
                 {/* Pilihan Channel Pembayaran */}
@@ -471,7 +523,7 @@ export default function WalletPage() {
 
                 <button
                   type="submit"
-                  disabled={isDepositLoading}
+                  disabled={isDepositLoading || selectedNominal <= 0}
                   className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
                 >
                   {isDepositLoading ? (
@@ -479,8 +531,10 @@ export default function WalletPage() {
                       <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Menyiapkan Pembayaran...
                     </>
-                  ) : (
+                  ) : selectedNominal > 0 ? (
                     <>Isi Saldo Rp {selectedNominal.toLocaleString('id-ID')}</>
+                  ) : (
+                    <>Pilih Nominal Deposit</>
                   )}
                 </button>
               </form>
@@ -488,7 +542,7 @@ export default function WalletPage() {
           </div>
 
           {/* Right Column: Withdrawal */}
-          <div className="lg:col-span-8 space-y-8">
+          <div className="lg:col-span-7 space-y-8">
             {/* Withdrawal Box */}
             <div className="border border-[#E5E7EB] bg-white p-6 rounded-2xl">
               <span className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-4">
