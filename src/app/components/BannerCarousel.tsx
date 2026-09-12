@@ -81,12 +81,7 @@ export default function BannerCarousel({ banners }: { banners?: Banner[] }) {
 
               {/* Text & CTA overlay (Tokopedia Banner Typography) */}
               {banner.title && (
-                <div className="absolute inset-y-0 left-0 flex flex-col justify-center px-4 sm:px-8 md:px-12 text-white z-20 space-y-1.5 sm:space-y-2.5 max-w-xl">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#006E24] text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-white shadow-xs w-fit">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-ping" />
-                    <span>Promo Saloka</span>
-                  </div>
-
+                <div className="absolute inset-y-0 left-0 flex flex-col justify-center px-4 sm:px-8 md:px-12 text-white z-20 space-y-2 sm:space-y-3 max-w-xl">
                   <h3 className="text-sm sm:text-lg md:text-2xl font-extrabold tracking-tight drop-shadow leading-snug line-clamp-2 text-white">
                     {banner.title}
                   </h3>
