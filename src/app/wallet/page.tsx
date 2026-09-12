@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Script from 'next/script'
 import { getWalletDetails, withdrawFunds } from '@/app/actions/wallet-affiliate'
 import { getCurrentUserProfile, logout } from '@/app/actions/auth'
 import { goeyToast } from 'goey-toast'
@@ -22,6 +21,8 @@ interface Wallet {
   transactions: Transaction[]
 }
 
+const QUICK_NOMINALS = [10000, 25000, 50000, 100000, 250000, 500000]
+
 export default function WalletPage() {
   const router = useRouter()
   const [userProfile, setUserProfile] = useState<any>(null)
@@ -31,21 +32,16 @@ export default function WalletPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // Deposit State
-  const [depositAmount, setDepositAmount] = useState<string>('')
-  const [depositGateway, setDepositGateway] = useState<'DOKU' | 'MIDTRANS'>('DOKU')
+  // Deposit State - Quick Nominals only (no manual textbox)
+  const [selectedNominal, setSelectedNominal] = useState<number>(50000)
   const [isDepositLoading, setIsDepositLoading] = useState(false)
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
+  const [isVerifying, setIsVerifying] = useState(false)
 
   // Withdrawal State
   const [withdrawAmount, setWithdrawAmount] = useState<string>('')
   const [withdrawMethod, setWithdrawMethod] = useState<string>('BCA')
   const [accountNumber, setAccountNumber] = useState<string>('')
   const [accountName, setAccountName] = useState<string>('')
-
-  // Manual verify simulation state
-  const [manualOrderId, setManualOrderId] = useState<string>('')
-  const [isVerifying, setIsVerifying] = useState(false)
 
   async function loadData() {
     try {
@@ -66,7 +62,7 @@ export default function WalletPage() {
     loadData()
   }, [])
 
-  // Auto-verify DOKU deposit callback
+  // Auto-verify payment callback on return
   useEffect(() => {
     if (typeof window === 'undefined') return
     const urlParams = new URLSearchParams(window.location.search)
@@ -81,14 +77,23 @@ export default function WalletPage() {
         .then((r) => r.json())
         .then((data) => {
           if (data.success) {
-            setSuccess('Top-up saldo via DOKU berhasil diverifikasi!')
+            setSuccess('Top-up saldo berhasil diverifikasi! Saldo telah masuk ke akun Anda.')
             loadData()
           } else {
-            setError(data.error || 'Gagal memverifikasi deposit DOKU.')
+            setError(
+              data.message ||
+                data.error ||
+                'Pembayaran belum diselesaikan atau sedang diproses oleh bank/merchant. Saldo belum masuk.'
+            )
           }
         })
-        .catch(() => setError('Gagal menghubungi server verifikasi DOKU.'))
-        .finally(() => setIsVerifying(false))
+        .catch(() => setError('Gagal menghubungi server verifikasi pembayaran.'))
+        .finally(() => {
+          setIsVerifying(false)
+          // Clean query parameters from URL so refresh won't re-trigger
+          const cleanUrl = window.location.pathname
+          window.history.replaceState({}, document.title, cleanUrl)
+        })
     }
   }, [])
 
@@ -97,148 +102,35 @@ export default function WalletPage() {
     setError(null)
     setSuccess(null)
 
-    const amount = parseFloat(depositAmount)
-    if (isNaN(amount) || amount < 10000) {
-      setError('Minimal pengisian saldo adalah Rp 10.000')
+    if (!selectedNominal || selectedNominal < 10000) {
+      setError('Pilih salah satu nominal pengisian saldo minimal Rp 10.000')
       return
     }
 
     setIsDepositLoading(true)
 
-    // 1. DOKU Payment Gateway
-    if (depositGateway === 'DOKU') {
-      try {
-        const res = await fetch('/api/doku/checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'deposit', amount }),
-        })
-        const data = await res.json()
-        if (!res.ok || data.error) {
-          setIsDepositLoading(false)
-          throw new Error(data.error || 'Gagal memproses sesi pembayaran DOKU.')
-        }
-
-        if (data.paymentUrl) {
-          window.location.href = data.paymentUrl
-        } else {
-          setPendingOrderId(data.orderId)
-          setIsDepositLoading(false)
-        }
-        return
-      } catch (err: any) {
-        setError(err.message || 'Gagal terhubung dengan DOKU.')
-        setIsDepositLoading(false)
-        return
-      }
-    }
-
-    // 2. Midtrans Payment Gateway
     try {
-      const res = await fetch('/api/midtrans/snap', {
+      const res = await fetch('/api/doku/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'deposit', amount }),
+        body: JSON.stringify({ type: 'deposit', amount: selectedNominal }),
       })
-
       const data = await res.json()
       if (!res.ok || data.error) {
         setIsDepositLoading(false)
-        throw new Error(data.error || 'Gagal memproses pembayaran.')
+        throw new Error(data.error || 'Gagal menyiapkan sesi pembayaran.')
       }
 
-      setPendingOrderId(data.orderId)
-      
-      const snap = (window as any).snap
-      if (snap) {
-        snap.pay(data.token, {
-          onSuccess: async (result: any) => {
-            setSuccess('Pembayaran berhasil! Memverifikasi...')
-            await verifyTransaction(result.order_id || data.orderId)
-            setIsDepositLoading(false)
-          },
-          onPending: (result: any) => {
-            setPendingOrderId(result.order_id || data.orderId)
-            setSuccess('Menunggu pembayaran diselesaikan. Silakan selesaikan pembayaran Anda.')
-            setIsDepositLoading(false)
-          },
-          onError: (result: any) => {
-            setError('Terjadi kesalahan pada pembayaran Midtrans.')
-            setIsDepositLoading(false)
-          },
-          onClose: () => {
-            setSuccess(`Pembayaran belum selesai. Silakan selesaikan pembayaran atau coba lagi.`)
-            setIsDepositLoading(false)
-          }
-        })
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl
       } else {
-        setSuccess(`Pembayaran sedang diproses. Jika sudah membayar, silakan tunggu beberapa saat.`)
         setIsDepositLoading(false)
       }
     } catch (err: any) {
-      setError(err.message || 'Gagal terhubung dengan Midtrans.')
+      setError(err.message || 'Gagal terhubung dengan gateway pembayaran.')
       setIsDepositLoading(false)
     }
   }
-
-  const verifyTransaction = async (orderId: string, simulate: boolean = false) => {
-    setIsVerifying(true)
-    setError(null)
-    setSuccess(null)
-    try {
-      const res = await fetch('/api/midtrans/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, simulate, amount: depositAmount }),
-      })
-
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Gagal memverifikasi transaksi.')
-      }
-
-      if (data.processed) {
-        setSuccess(data.message || 'Transaksi berhasil diverifikasi!')
-        setDepositAmount('')
-        setPendingOrderId(null)
-        setManualOrderId('')
-        await loadData()
-        router.refresh()
-      } else {
-        setError(data.message || 'Transaksi belum dibayar atau status pending.')
-      }
-    } catch (err: any) {
-      setError(err.message || 'Gagal memverifikasi status pembayaran.')
-    } finally {
-      setIsVerifying(false)
-    }
-  }
-
-  // Auto verify deposit when redirected back from Midtrans payment page
-  useEffect(() => {
-    if (typeof window !== 'undefined' && userProfile) {
-      const params = new URLSearchParams(window.location.search)
-      const orderId = params.get('order_id')
-      const status = params.get('transaction_status')
-      
-      if (orderId && (orderId.startsWith('dep-') || orderId.startsWith('deposit-'))) {
-        if (status === 'settlement' || status === 'capture') {
-          verifyTransaction(orderId, false)
-          const newUrl = window.location.pathname
-          window.history.replaceState({}, document.title, newUrl)
-        } else if (status === 'pending') {
-          setSuccess('Menunggu pembayaran diselesaikan. Selesaikan pembayaran atau gunakan panel di bawah.')
-          setPendingOrderId(orderId)
-          const newUrl = window.location.pathname
-          window.history.replaceState({}, document.title, newUrl)
-        } else if (status === 'deny' || status === 'expire' || status === 'cancel') {
-          setError('Pembayaran deposit gagal atau dibatalkan.')
-          const newUrl = window.location.pathname
-          window.history.replaceState({}, document.title, newUrl)
-        }
-      }
-    }
-  }, [userProfile])
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault()
@@ -487,65 +379,68 @@ export default function WalletPage() {
             </div>
 
             {/* Deposit Box */}
-            <div className="border border-[#E5E7EB] bg-white p-6 rounded-2xl">
-              <span className="block text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-2">
-                Top Up / Isi Saldo
-              </span>
-              <p className="text-[11px] text-[#6B7280] mb-4 leading-relaxed">
-                Isi saldo instan menggunakan DOKU Payment Gateway atau Midtrans (QRIS, VA Bank, E-Wallet).
-              </p>
-
-              {/* Gateway Selector Tabs */}
-              <div className="grid grid-cols-2 gap-2 mb-4 p-1 bg-slate-100 rounded-lg text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setDepositGateway('DOKU')}
-                  className={`py-2 px-3 rounded-md transition-all text-center cursor-pointer ${
-                    depositGateway === 'DOKU'
-                      ? 'bg-white text-primary shadow-xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  DOKU Checkout
-                  <span className="block text-[9px] font-normal text-emerald-600">Rekomendasi</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDepositGateway('MIDTRANS')}
-                  className={`py-2 px-3 rounded-md transition-all text-center cursor-pointer ${
-                    depositGateway === 'MIDTRANS'
-                      ? 'bg-white text-primary shadow-xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Midtrans Snap
-                  <span className="block text-[9px] font-normal text-slate-400">Alternatif</span>
-                </button>
+            <div className="border border-[#E5E7EB] bg-white p-6 rounded-2xl shadow-xs">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">
+                  Top Up / Isi Saldo
+                </span>
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Instan & Otomatis
+                </span>
               </div>
+              <p className="text-[11px] text-[#6B7280] mb-4 leading-relaxed">
+                Pilih nominal isi saldo di bawah ini. Pembayaran diproses secara instan dan otomatis masuk ke saldo Anda.
+              </p>
 
               <form onSubmit={handleDeposit} className="space-y-4">
                 <div>
-                  <label className="block text-[9px] font-bold text-[#6B7280] uppercase tracking-wider mb-1">
-                    Jumlah Pengisian (Rp)
+                  <label className="block text-[9px] font-bold text-[#6B7280] uppercase tracking-wider mb-2">
+                    Pilih Nominal Saldo
                   </label>
-                  <input
-                    type="number"
-                    min="10000"
-                    required
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    placeholder="Minimal Rp 10.000"
-                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded text-xs text-[#111111] placeholder:text-[#6B7280]/40 focus:outline-none focus:border-primary/50 transition-colors"
-                  />
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {QUICK_NOMINALS.map((nom) => {
+                      const isSelected = selectedNominal === nom
+                      return (
+                        <button
+                          key={nom}
+                          type="button"
+                          onClick={() => setSelectedNominal(nom)}
+                          className={`py-3 px-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'border-primary bg-primary/10 text-[#0F5132] font-bold shadow-xs ring-2 ring-primary/30'
+                              : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-semibold'
+                          }`}
+                        >
+                          <span className="text-[10px] opacity-75">Isi Saldo</span>
+                          <span className="text-xs font-bold mt-0.5 text-[#111111]">
+                            Rp {nom.toLocaleString('id-ID')}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                  <span className="text-slate-500 text-[11px]">Total Pembayaran:</span>
+                  <span className="font-extrabold text-[#0F5132] text-sm">
+                    Rp {selectedNominal.toLocaleString('id-ID')}
+                  </span>
+                </div>
+
                 <button
                   type="submit"
                   disabled={isDepositLoading}
-                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider rounded transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+                  className="w-full h-11 bg-primary hover:bg-primary/90 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
                 >
-                  {isDepositLoading
-                    ? `Menghubungkan ${depositGateway === 'DOKU' ? 'DOKU' : 'Midtrans'}...`
-                    : `Isi Saldo via ${depositGateway === 'DOKU' ? 'DOKU' : 'Midtrans'}`}
+                  {isDepositLoading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Menyiapkan Pembayaran...
+                    </>
+                  ) : (
+                    <>Isi Saldo Rp {selectedNominal.toLocaleString('id-ID')}</>
+                  )}
                 </button>
               </form>
             </div>
@@ -643,44 +538,6 @@ export default function WalletPage() {
           </div>
         </div>
 
-        {/* MIDTRANS TRANSACTION SIMULATION PANEL */}
-        {process.env.NODE_ENV !== 'production' && (pendingOrderId || manualOrderId || pendingOrderId === null) && (
-          <div className="border border-amber-200 bg-amber-50 p-6 rounded-2xl mb-12">
-            <span className="block text-[10px] font-bold text-amber-800 uppercase tracking-wider mb-2">
-              🛠️ Panel Simulasi & Verifikasi Midtrans Sandbox / Offline
-            </span>
-            <p className="text-xs text-amber-700 mb-4 leading-relaxed">
-              Karena server development lokal tidak bisa menerima webhook langsung dari Midtrans, Anda dapat menggunakan formulir di bawah untuk memverifikasi transaksi secara manual. Anda juga dapat memilih <strong>Simulasikan Berhasil</strong> untuk memverifikasi transaksi tanpa bayar kartu kredit (offline testing).
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                value={manualOrderId || pendingOrderId || ''}
-                onChange={(e) => setManualOrderId(e.target.value)}
-                placeholder="Masukkan Order ID (dep-user-...)"
-                className="flex-grow h-11 px-4 bg-white border border-slate-200 rounded text-xs text-[#111111] focus:outline-none focus:border-primary/50"
-              />
-              <button
-                type="button"
-                disabled={isVerifying || (!manualOrderId && !pendingOrderId)}
-                onClick={() => verifyTransaction(manualOrderId || pendingOrderId || '', false)}
-                className="h-11 px-5 bg-white hover:bg-slate-50 border border-slate-200 text-[#111111] font-bold text-xs uppercase tracking-wider rounded transition-colors cursor-pointer"
-              >
-                Cek Status API
-              </button>
-              <button
-                type="button"
-                disabled={isVerifying || (!manualOrderId && !pendingOrderId)}
-                onClick={() => verifyTransaction(manualOrderId || pendingOrderId || '', true)}
-                className="h-11 px-5 bg-amber-600 hover:bg-amber-500 text-black font-bold text-xs uppercase tracking-wider rounded transition-colors cursor-pointer"
-              >
-                Simulasikan Berhasil (Lulus Instan)
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Transaction History Table */}
         <div className="border border-[#E5E7EB] bg-white rounded-2xl overflow-hidden">
           <div className="px-6 py-5 border-b border-[#E5E7EB] bg-slate-50 flex justify-between items-center">
@@ -746,15 +603,6 @@ export default function WalletPage() {
           </div>
         </div>
       </div>
-      {/* Load Midtrans Snap dynamically */}
-      <Script
-        src={process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === 'true' 
-          ? "https://app.midtrans.com/snap/snap.js" 
-          : "https://app.sandbox.midtrans.com/snap/snap.js"
-        }
-        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-sFQP1v53tr2M3CQd'}
-        strategy="lazyOnload"
-      />
     </div>
   )
 }

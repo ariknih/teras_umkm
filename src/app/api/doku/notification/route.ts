@@ -74,10 +74,10 @@ export async function POST(req: NextRequest) {
       }
 
       if (invoiceNumber.startsWith('dep-') && targetUserId) {
-        await DataStore.depositFunds(targetUserId, targetAmount, 'DOKU Payment Gateway');
+        await DataStore.depositFunds(targetUserId, targetAmount, 'Pembayaran Online');
         await DataStore.addXp(targetUserId, 30);
       } else if (invoiceNumber.startsWith('join-') && targetUserId && targetCommunityId) {
-        await DataStore.payCommunityJoinFee(targetUserId, targetCommunityId, 'DOKU');
+        await DataStore.payCommunityJoinFee(targetUserId, targetCommunityId, 'Online Payment');
         await DataStore.addXp(targetUserId, 50);
       } else if (invoiceNumber.startsWith('coin-') && targetUserId && targetCommunityId && targetCoinAmount > 0) {
         const totalBiaya = targetCoinAmount * 1500;
@@ -86,14 +86,14 @@ export async function POST(req: NextRequest) {
           ketuaId: targetUserId,
           jumlahCoin: targetCoinAmount,
           totalBiaya,
-          description: `Top up ${targetCoinAmount} coin via DOKU Payment Gateway Webhook`,
+          description: `Top up ${targetCoinAmount} coin via Pembayaran Online`,
         });
-      } else if (invoiceNumber.startsWith('chk-') && pending) {
+      } else if (pending) {
         const order = await DataStore.createOrder(
           pending.userId,
           pending.items,
           pending.affiliateId,
-          'DOKU',
+          'Online Payment',
           pending.shippingDetails
         );
         await DataStore.addXp(pending.userId, 30);
@@ -101,8 +101,8 @@ export async function POST(req: NextRequest) {
         await DataStore.createNotification(
           pending.userId,
           'ORDER_CREATED',
-          'Pesanan Berhasil Dibayar (DOKU)',
-          `Pembayaran DOKU untuk pesanan #${order.id} telah terverifikasi.`,
+          'Pesanan Berhasil Dibayar',
+          `Pembayaran untuk pesanan #${order.id} telah sukses diverifikasi.`,
           `/orders/${order.id}`
         );
       }

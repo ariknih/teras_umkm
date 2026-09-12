@@ -204,6 +204,86 @@ export async function createDokuCheckoutPayment(
   }
 }
 
+// ─── Check Order / Payment Status ─────────────────────────────────────────────
+
+export interface DokuOrderStatusResponse {
+  success: boolean;
+  status: 'SUCCESS' | 'PENDING' | 'FAILED' | 'EXPIRED' | 'NOT_FOUND';
+  orderId: string;
+  amount?: number;
+  raw?: any;
+}
+
+/**
+ * Check payment status directly with DOKU Jokul API: GET /orders/v1/status/{invoiceNumber}
+ */
+export async function checkDokuOrderStatus(
+  invoiceNumber: string
+): Promise<DokuOrderStatusResponse> {
+  if (!DOKU_CLIENT_ID || !DOKU_SECRET_KEY) {
+    return {
+      success: false,
+      status: 'PENDING',
+      orderId: invoiceNumber,
+      raw: { simulated: true },
+    };
+  }
+
+  const targetPath = `/orders/v1/status/${invoiceNumber}`;
+  const requestId = `REQ-STAT-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+  const timestamp = new Date().toISOString().slice(0, 19) + 'Z';
+
+  // For GET requests in DOKU Jokul, signature does not contain Digest
+  const component = `Client-Id:${DOKU_CLIENT_ID}\nRequest-Id:${requestId}\nRequest-Timestamp:${timestamp}\nRequest-Target:${targetPath}`;
+  const hmac = crypto.createHmac('sha256', DOKU_SECRET_KEY).update(component).digest('base64');
+  const signature = `HMACSHA256=${hmac}`;
+
+  try {
+    const resp = await fetch(`${DOKU_BASE_URL}${targetPath}`, {
+      method: 'GET',
+      headers: {
+        'Client-Id': DOKU_CLIENT_ID,
+        'Request-Id': requestId,
+        'Request-Timestamp': timestamp,
+        'Signature': signature,
+      },
+      cache: 'no-store',
+    });
+
+    if (resp.status === 404) {
+      return { success: false, status: 'NOT_FOUND', orderId: invoiceNumber };
+    }
+
+    const data = await resp.json();
+    const trxStatus = (data?.transaction?.status || data?.order?.status || '').toUpperCase();
+
+    if (trxStatus === 'SUCCESS') {
+      return {
+        success: true,
+        status: 'SUCCESS',
+        orderId: invoiceNumber,
+        amount: data?.order?.amount || data?.transaction?.amount,
+        raw: data,
+      };
+    }
+
+    return {
+      success: false,
+      status: trxStatus === 'FAILED' ? 'FAILED' : trxStatus === 'EXPIRED' ? 'EXPIRED' : 'PENDING',
+      orderId: invoiceNumber,
+      raw: data,
+    };
+  } catch (err: any) {
+    console.error('[DOKU] checkDokuOrderStatus failed:', err);
+    return {
+      success: false,
+      status: 'PENDING',
+      orderId: invoiceNumber,
+      raw: { error: err.message },
+    };
+  }
+}
+
 // ─── Webhook Signature Verification ───────────────────────────────────────────
 
 /**

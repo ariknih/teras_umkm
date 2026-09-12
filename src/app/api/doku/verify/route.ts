@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DataStore, PaymentRegistry } from '@/lib/data-store';
+import { checkDokuOrderStatus } from '@/lib/doku';
 
 /**
  * Endpoint to verify or auto-settle DOKU transactions when redirected back to platform
@@ -21,6 +22,22 @@ export async function POST(req: NextRequest) {
         message: 'Transaksi sudah diproses sebelumnya.',
         processed: true,
       });
+    }
+
+    // Verify real transaction status directly with DOKU Jokul API
+    if (!simulate) {
+      const statusCheck = await checkDokuOrderStatus(orderId);
+      if (statusCheck.status !== 'SUCCESS') {
+        return NextResponse.json({
+          success: false,
+          status: statusCheck.status,
+          message:
+            statusCheck.status === 'PENDING'
+              ? 'Pembayaran belum diselesaikan atau masih menunggu konfirmasi.'
+              : `Status transaksi: ${statusCheck.status}.`,
+          processed: false,
+        }, { status: 400 });
+      }
     }
 
     const pending = PaymentRegistry.getPendingCheckout(orderId);
@@ -48,7 +65,7 @@ export async function POST(req: NextRequest) {
 
     if (!pending && !fallbackUserId) {
       return NextResponse.json({
-        error: 'Detail transaksi DOKU tidak ditemukan di server registry.',
+        error: 'Detail transaksi tidak ditemukan di server registry.',
       }, { status: 404 });
     }
 
@@ -56,13 +73,13 @@ export async function POST(req: NextRequest) {
 
     if (orderId.startsWith('dep-')) {
       const depositAmount = body.amount ? parseFloat(body.amount) : fallbackAmount;
-      await DataStore.depositFunds(fallbackUserId, depositAmount, 'DOKU Checkout');
+      await DataStore.depositFunds(fallbackUserId, depositAmount, 'Pembayaran Online');
       await DataStore.addXp(fallbackUserId, 30);
 
       return NextResponse.json({
         success: true,
         status: 'SUCCESS',
-        message: 'Top-up saldo via DOKU berhasil diverifikasi.',
+        message: 'Top-up saldo berhasil diverifikasi.',
         processed: true,
       });
     } else if (orderId.startsWith('join-')) {
@@ -71,13 +88,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'ID Komunitas tidak valid.' }, { status: 400 });
       }
 
-      const res = await DataStore.payCommunityJoinFee(fallbackUserId, communityId, 'DOKU');
+      const res = await DataStore.payCommunityJoinFee(fallbackUserId, communityId, 'Online Payment');
       await DataStore.addXp(fallbackUserId, 50);
 
       return NextResponse.json({
         success: true,
         status: 'SUCCESS',
-        message: 'Biaya pendaftaran komunitas via DOKU berhasil diverifikasi.',
+        message: 'Biaya pendaftaran komunitas berhasil diverifikasi.',
         communityId,
         result: res,
         processed: true,
@@ -95,13 +112,13 @@ export async function POST(req: NextRequest) {
         ketuaId: fallbackUserId,
         jumlahCoin: coinCount,
         totalBiaya,
-        description: `Top up ${coinCount} coin via DOKU Payment Gateway`,
+        description: `Top up ${coinCount} coin via Pembayaran Online`,
       });
 
       return NextResponse.json({
         success: true,
         status: 'SUCCESS',
-        message: `Top up ${coinCount} coin via DOKU berhasil diverifikasi.`,
+        message: `Top up ${coinCount} coin berhasil diverifikasi.`,
         communityId,
         result: res,
         processed: true,
@@ -115,7 +132,7 @@ export async function POST(req: NextRequest) {
         pending.userId,
         pending.items,
         pending.affiliateId,
-        'DOKU',
+        'Online Payment',
         pending.shippingDetails
       );
       await DataStore.addXp(pending.userId, 30);
@@ -123,8 +140,8 @@ export async function POST(req: NextRequest) {
       await DataStore.createNotification(
         pending.userId,
         'ORDER_CREATED',
-        'Pesanan Berhasil Dibayar (DOKU)',
-        `Pembayaran DOKU untuk pesanan #${order.id} telah sukses diverifikasi.`,
+        'Pesanan Berhasil Dibayar',
+        `Pembayaran untuk pesanan #${order.id} telah sukses diverifikasi.`,
         `/orders/${order.id}`
       );
 
@@ -133,12 +150,12 @@ export async function POST(req: NextRequest) {
         status: 'SUCCESS',
         order,
         orderId: order.id,
-        message: 'Pesanan berhasil diselesaikan via DOKU.',
+        message: 'Pesanan berhasil diselesaikan.',
         processed: true,
       });
     }
   } catch (err: any) {
     console.error('[API] /api/doku/verify error:', err);
-    return NextResponse.json({ error: err.message || 'Gagal memverifikasi DOKU.' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Gagal memverifikasi status pembayaran.' }, { status: 500 });
   }
 }
