@@ -147,12 +147,14 @@ export async function POST(req: NextRequest) {
       totalAmount = Math.max(1000, subtotal + shippingFee + bumpSalesTotal - computedDiscount);
       orderId = `chk-doku-${user.id.slice(0, 8)}-${Date.now().toString(36)}`;
 
-      PaymentRegistry.savePendingCheckout(orderId, {
+      const checkoutPayload = {
         userId: user.id,
         items,
         affiliateId: affiliateId || undefined,
         shippingDetails: shippingDetails || undefined,
-      });
+      };
+
+      PaymentRegistry.savePendingCheckout(orderId, checkoutPayload);
     } else {
       return NextResponse.json({ error: 'Tipe transaksi tidak didukung.' }, { status: 400 });
     }
@@ -176,6 +178,7 @@ export async function POST(req: NextRequest) {
         qrString: qrisData.qrString,
         expiredAt: qrisData.expiredDate,
         isProduction,
+        checkoutPayload: type === 'checkout' ? (PaymentRegistry.getPendingCheckout(orderId) || undefined) : undefined,
       });
     } else if (paymentChannel.startsWith('VA_')) {
       const bankRaw = paymentChannel.replace('VA_', '') as DokuVaBank;
@@ -218,6 +221,7 @@ export async function POST(req: NextRequest) {
         howToPayUrl: vaData.howToPayUrl,
         instructions,
         isProduction,
+        checkoutPayload: type === 'checkout' ? (PaymentRegistry.getPendingCheckout(orderId) || undefined) : undefined,
       });
     }
 

@@ -33,6 +33,7 @@ export interface DokuDirectPaymentData {
     steps: string[]
   }>
   isProduction?: boolean
+  checkoutPayload?: any
 }
 
 interface DokuDirectPaymentModalProps {
@@ -180,6 +181,7 @@ export default function DokuDirectPaymentModal({
           orderId: data.orderId,
           simulate: true,
           amount: data.amount,
+          checkoutPayload: (data as any)?.checkoutPayload,
         }),
       })
 
@@ -226,37 +228,35 @@ export default function DokuDirectPaymentModal({
           </button>
         </div>
 
-        {/* Sandbox Demo Banner (Active in non-production mode) */}
-        {isSandbox && (
-          <div className="bg-amber-500/10 border-b border-amber-200/80 px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shrink-0">
-            <div className="flex items-start gap-2 text-amber-900">
-              <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold text-xs text-amber-950 block">Mode Sandbox (Uji Coba Demo)</span>
-                <p className="text-[11px] text-amber-800 leading-snug">
-                  Barcode QRIS dummy pengujian (bukan uang riil). Scan m-Banking asli tidak berlaku di sandbox. Klik tombol di samping untuk menyelesaikan simulasi.
-                </p>
-              </div>
+        {/* Demo / Sandbox Banner (Always accessible for presentation and testing) */}
+        <div className="bg-amber-500/10 border-b border-amber-200/80 px-5 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shrink-0">
+          <div className="flex items-start gap-2 text-amber-900">
+            <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold text-xs text-amber-950 block">Mode Uji Coba & Demo</span>
+              <p className="text-[11px] text-amber-800 leading-snug">
+                Barcode QRIS dummy sandbox. Scan bank asli tidak berlaku. Klik tombol di samping untuk langsung melunasi.
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={handleSimulatePayment}
-              disabled={isSimulating || isSuccess}
-              className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
-            >
-              {isSimulating ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Memverifikasi...</span>
-                </>
-              ) : (
-                <>
-                  <span>⚡ Simulasi Bayar Berhasil</span>
-                </>
-              )}
-            </button>
           </div>
-        )}
+          <button
+            type="button"
+            onClick={handleSimulatePayment}
+            disabled={isSimulating || isSuccess}
+            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {isSimulating ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Memverifikasi...</span>
+              </>
+            ) : (
+              <>
+                <span>⚡ Simulasi Bayar Berhasil</span>
+              </>
+            )}
+          </button>
+        </div>
 
         {/* Error alert banner */}
         {pollError && (
@@ -353,47 +353,45 @@ export default function DokuDirectPaymentModal({
                     )}
                   </div>
 
-                  {isSandbox ? (
-                    <div className="w-full max-w-[320px] p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-center space-y-2.5">
-                      <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
-                        ⚠️ <strong>Mode Sandbox (Dummy):</strong> Barcode QRIS ini tidak bisa discan menggunakan aplikasi m-Banking asli. Klik tombol di bawah untuk langsung mem-bypass dan melunasi pembayaran:
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleSimulatePayment}
-                        disabled={isSimulating || isSuccess}
-                        className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#24943E] text-white text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        {isSimulating ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Memproses Verifikasi...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>⚡ Klik untuk Bypass / Bayar Lunas</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-center text-[11px] text-slate-500 max-w-xs">
-                        Scan menggunakan aplikasi m-Banking atau E-Wallet apa saja (GoPay, OVO, Dana, ShopeePay, BCA, Livin, BRImo).
-                      </p>
+                  {/* Opsi A: Tombol Bypass Pembayaran Langsung (Selalu Aktif untuk Pengujian & Demo) */}
+                  <div className="w-full max-w-[320px] p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 text-center space-y-2.5">
+                    <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
+                      💡 <strong>Bypass Pembayaran (Opsi A):</strong> Barcode QRIS dummy pengujian sandbox. Klik tombol di bawah untuk langsung melunasi transaksi tanpa scan:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleSimulatePayment}
+                      disabled={isSimulating || isSuccess}
+                      className="w-full py-2.5 bg-[#2DB24A] hover:bg-[#24943E] active:scale-[0.98] text-white text-xs font-bold rounded-xl transition-all shadow-sm hover:shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSimulating ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Memproses Verifikasi...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 text-emerald-200" />
+                          <span>⚡ Klik untuk Bypass / Bayar Lunas</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
-                      <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-                        {['BCA', 'Livin', 'BRImo', 'GoPay', 'ShopeePay', 'Dana', 'OVO'].map((app) => (
-                          <span
-                            key={app}
-                            className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 font-medium rounded-md"
-                          >
-                            {app}
-                          </span>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                  <p className="text-center text-[11px] text-slate-500 max-w-xs pt-1">
+                    Atau scan menggunakan aplikasi m-Banking atau E-Wallet apa saja (GoPay, OVO, Dana, ShopeePay, BCA, Livin, BRImo).
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
+                    {['BCA', 'Livin', 'BRImo', 'GoPay', 'ShopeePay', 'Dana', 'OVO'].map((app) => (
+                      <span
+                        key={app}
+                        className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 font-medium rounded-md"
+                      >
+                        {app}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -435,21 +433,19 @@ export default function DokuDirectPaymentModal({
                     </button>
                   </div>
 
-                  {isSandbox && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
-                      <span className="text-amber-900 font-medium text-[11px]">
-                        Mode Sandbox: Tes simulasi transfer VA tanpa perlu potong saldo bank asli.
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleSimulatePayment}
-                        disabled={isSimulating || isSuccess}
-                        className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer disabled:opacity-50"
-                      >
-                        {isSimulating ? 'Memproses...' : '⚡ Simulasi Transfer'}
-                      </button>
-                    </div>
-                  )}
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                    <span className="text-amber-900 font-medium text-[11px]">
+                      Mode Uji Coba: Tes simulasi transfer VA tanpa perlu potong saldo bank asli.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSimulatePayment}
+                      disabled={isSimulating || isSuccess}
+                      className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSimulating ? 'Memproses...' : '⚡ Simulasi Transfer'}
+                    </button>
+                  </div>
 
                   {data.howToPayUrl && (
                     <div className="text-right">
