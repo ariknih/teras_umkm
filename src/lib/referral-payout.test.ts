@@ -5,7 +5,7 @@
  * Run with:  npx tsx src/lib/referral-payout.test.ts
  */
 import assert from 'node:assert/strict'
-import { computeTierAmount, resolveTierFallbackRecipient, validateReferralAllocation, resolveReferralChain, buildDownlineTree, KOPERASI_FIXED_TIER_COINS } from './referral-payout'
+import { computeTierAmount, resolveTierFallbackRecipient, validateReferralAllocation, resolveReferralChain, resolveReferralChainAsync, validateReferrerId, buildDownlineTree, KOPERASI_FIXED_TIER_COINS, type UplineMembership } from './referral-payout'
 
 // ── PERCENTAGE mode: tierValue is a % of referralBudget ─────────────────────
 assert.equal(computeTierAmount('PERCENTAGE', 40000, 50), 20000, '50% of a 40k budget is 20k')
@@ -94,7 +94,183 @@ assert.deepEqual(
   'a buyer with no membership record on file (unknown user) is treated as having no referrer, not a crash'
 )
 
+// ── Dynamic compression: a removed (isActive: false) member never occupies a
+// tier slot — the walk passes through them to their own upline, which rolls
+// up into the vacated tier instead of the chain treating that position as
+// exhausted. Buyer D -> C (removed) -> B -> A (root).
+const compressedMemberships = [
+  { userId: 'A', referrerId: null },
+  { userId: 'B', referrerId: 'A' },
+  { userId: 'C', referrerId: 'B', isActive: false },
+  { userId: 'D', referrerId: 'C' }
+]
+assert.deepEqual(
+  resolveReferralChain(compressedMemberships, 'D', 3),
+  ['B', 'A', null],
+  "removed C is skipped entirely - tier 1 rolls up to B (C's upline), tier 2 to A, tier 3 is exhausted"
+)
+
+// Two consecutive removed members in a row must both be skipped in one tier.
+const doubleRemoved = [
+  { userId: 'A', referrerId: null },
+  { userId: 'B', referrerId: 'A', isActive: false },
+  { userId: 'C', referrerId: 'B', isActive: false },
+  { userId: 'D', referrerId: 'C' }
+]
+assert.deepEqual(
+  resolveReferralChain(doubleRemoved, 'D', 2),
+  ['A', null],
+  'two removed members in a row both get skipped - tier 1 rolls all the way up to A'
+)
+
+// A referrer cycle entirely among removed members must never loop forever -
+// the hop cap (maxTiers * 5) has to cut it off deterministically.
+const cyclicRemoved = [
+  { userId: 'X', referrerId: 'Y', isActive: false },
+  { userId: 'Y', referrerId: 'X', isActive: false },
+  { userId: 'D', referrerId: 'X' }
+]
+assert.deepEqual(
+  resolveReferralChain(cyclicRemoved, 'D', 2),
+  [null, null],
+  'a cycle of removed members resolves to no recipient instead of hanging'
+)
+
 console.log('referral-payout.test.ts: resolveReferralChain assertions passed')
+
+// ── resolveReferralChainAsync: same walk (and same dynamic-compression
+// behavior) as resolveReferralChain, but via a caller-supplied async lookup
+// (a Prisma tx in production) instead of a preloaded array — this is what
+// the live-checkout DB path uses so it never has to load a community's full
+// membership list into memory. It also has no amount parameter at all, so
+// it can never be coupled to a tier's commission value the way the old
+// inline DB-branch walk was (the actual bug: a 0-value NOMINAL tier used to
+// freeze the pointer and shift every later tier's recipient by one).
+;(async () => {
+  const chain: Record<string, UplineMembership> = {
+    D: { referrerId: 'C', isActive: true },
+    C: { referrerId: 'B', isActive: true },
+    B: { referrerId: 'A', isActive: true },
+    A: { referrerId: null, isActive: true }
+  }
+  let calls = 0
+  const lookup = async (userId: string): Promise<UplineMembership | null> => {
+    calls++
+    return chain[userId] ?? { referrerId: null, isActive: true }
+  }
+
+  assert.deepEqual(
+    await resolveReferralChainAsync('D', 3, lookup),
+    ['C', 'B', 'A'],
+    'async walk matches the sync resolveReferralChain result for the same chain'
+  )
+  assert.equal(calls, 4, 'one lookup for the buyer plus one per hop - never a full-table scan')
+
+  calls = 0
+  assert.deepEqual(
+    await resolveReferralChainAsync('D', 5, lookup),
+    ['C', 'B', 'A', null, null],
+    'once the chain reaches the root, every further tier is null without extra lookups'
+  )
+  assert.equal(calls, 4, 'the walk stops issuing lookups the instant it reaches a user with no referrer, never all 5 tiers worth')
+
+  calls = 0
+  assert.deepEqual(
+    await resolveReferralChainAsync('ghost', 3, lookup),
+    [null, null, null],
+    'an unknown buyer (no membership) is treated as having no referrer, not a crash'
+  )
+  assert.equal(calls, 1, 'a buyer with no upline at all needs exactly one lookup, not three')
+
+  // Dynamic compression, async version: C is removed (isActive: false) - its
+  // tier slot is skipped and the commission rolls up to B instead.
+  const compressedChain: Record<string, UplineMembership> = {
+    D: { referrerId: 'C', isActive: true },
+    C: { referrerId: 'B', isActive: false },
+    B: { referrerId: 'A', isActive: true },
+    A: { referrerId: null, isActive: true }
+  }
+  const compressedLookup = async (userId: string): Promise<UplineMembership | null> => compressedChain[userId] ?? null
+  assert.deepEqual(
+    await resolveReferralChainAsync('D', 3, compressedLookup),
+    ['B', 'A', null],
+    'removed C is skipped - tier 1 rolls up to B, tier 2 to A, tier 3 is exhausted'
+  )
+
+  // A referrer cycle entirely among removed members must terminate via the
+  // hop cap / visited-set instead of awaiting forever.
+  const cyclicChain: Record<string, UplineMembership> = {
+    D: { referrerId: 'X', isActive: true },
+    X: { referrerId: 'Y', isActive: false },
+    Y: { referrerId: 'X', isActive: false }
+  }
+  const cyclicLookup = async (userId: string): Promise<UplineMembership | null> => cyclicChain[userId] ?? null
+  assert.deepEqual(
+    await resolveReferralChainAsync('D', 2, cyclicLookup),
+    [null, null],
+    'a cycle of removed members resolves to no recipient instead of hanging'
+  )
+
+  console.log('referral-payout.test.ts: resolveReferralChainAsync assertions passed')
+})().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})
+
+// ── validateReferrerId: block a rejoin from closing a referral loop ────────
+// Chain: A -> B -> C -> D (D.referrerId=C, C.referrerId=B, B.referrerId=A).
+// A quits and tries to rejoin under D's link - accepting D as A's referrer
+// would close A -> D -> C -> B -> A with no root.
+;(async () => {
+  const chain: Record<string, string | null> = { A: null, B: 'A', C: 'B', D: 'C' }
+  const lookup = async (userId: string): Promise<string | null> => chain[userId] ?? null
+
+  assert.equal(
+    await validateReferrerId('A', 'D', lookup),
+    null,
+    "A rejoining under D's link is rejected - D's own chain climbs back to A"
+  )
+  assert.equal(
+    await validateReferrerId('A', 'C', lookup),
+    null,
+    "same for C - C's chain (C -> B -> A) also reaches back to A"
+  )
+  assert.equal(
+    await validateReferrerId('A', 'B', lookup),
+    null,
+    "same for B directly (B -> A)"
+  )
+  assert.equal(
+    await validateReferrerId('D', 'B', lookup),
+    'B',
+    "D referring under B is fine - B's own chain (B -> A) never reaches D"
+  )
+  assert.equal(
+    await validateReferrerId('A', 'A', lookup),
+    null,
+    'direct self-referral is rejected without even needing to walk'
+  )
+  assert.equal(
+    await validateReferrerId('A', null, lookup),
+    null,
+    'no proposed referrer at all is a no-op, not an error'
+  )
+
+  // The validation walk itself must not hang on a cycle that already exists
+  // in the data (e.g. from before this guard was added).
+  const alreadyCyclic: Record<string, string | null> = { X: 'Y', Y: 'X' }
+  const cyclicLookup = async (userId: string): Promise<string | null> => alreadyCyclic[userId] ?? null
+  assert.equal(
+    await validateReferrerId('Z', 'X', cyclicLookup),
+    'X',
+    "an unrelated user (Z) proposing X as referrer is unaffected by X/Y's pre-existing cycle, and the walk still terminates"
+  )
+
+  console.log('referral-payout.test.ts: validateReferrerId assertions passed')
+})().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})
 
 // ── buildDownlineTree: mirrors the "Afiliasi Saya" tree - who joined through
 // whom, recursively, capped at depth 5 ───────────────────────────────────────

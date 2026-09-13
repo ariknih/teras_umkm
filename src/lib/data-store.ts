@@ -2,7 +2,7 @@
 import { calculateDistance } from './utils'
 import { db } from './db'
 import { PROTECTED_CERTIFICATE_TEMPLATE_NAME } from './lms-rules'
-import { computeTierAmount, resolveTierFallbackRecipient, resolveReferralChain, buildDownlineTree, KOPERASI_FIXED_TIER_COINS } from './referral-payout'
+import { computeTierAmount, resolveTierFallbackRecipient, resolveReferralChain, resolveReferralChainAsync, validateReferrerId, buildDownlineTree, KOPERASI_FIXED_TIER_COINS } from './referral-payout'
 import crypto from 'crypto'
 import { ProductCategory } from '@prisma/client'
 import fs from 'fs'
@@ -5087,12 +5087,12 @@ export const DataStore = {
     if (await isDbConnected()) {
       try {
         memberships = await db.communityMembership.findMany({
-          where: { userId },
+          where: { userId, removedAt: null },
           include: { community: true }
         })
       } catch (_) {}
     } else {
-      memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.userId === userId)
+      memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.userId === userId && !m.removedAt)
     }
 
     for (const m of memberships) {
@@ -5551,7 +5551,7 @@ export const DataStore = {
         const existing = await db.communityMembership.findUnique({
                   where: { communityId_userId: { communityId, userId } }
                 })
-                if (existing) {
+                if (existing && !existing.removedAt) {
                   // ponytail: previously flipped UNPAID -> PAID here with zero payment
                   // and zero referral trigger, i.e. free paid membership on replay.
                   // Payment must go through payCommunityJoinFee/the DOKU flow instead.
@@ -5578,19 +5578,46 @@ export const DataStore = {
                 if (community.category === 'KOPERASI' && community.coinBalance <= 0) {
                   return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
                 }
-        
-                const needsPayment = (community.joinFee || 0) > 0
 
-                const membership = await db.communityMembership.create({
-                  data: {
-                    communityId,
-                    userId,
-                    isInduk: asInduk,
-                    isPaid: !needsPayment,
-                    invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
-                    referrerId: (referrerId && referrerId !== userId) ? referrerId : null
-                  }
+                const needsPayment = (community.joinFee || 0) > 0
+                const safeReferrerId = await validateReferrerId(userId, referrerId, async (uid) => {
+                  const m = await db.communityMembership.findUnique({
+                    where: { communityId_userId: { communityId, userId: uid } },
+                    select: { referrerId: true }
+                  })
+                  return m?.referrerId ?? null
                 })
+
+                // A previously-removed member rejoining reactivates their existing
+                // row instead of creating a new one — the (communityId, userId)
+                // unique constraint makes a second row impossible. Their original
+                // referrerId/upline position is kept unless this rejoin explicitly
+                // passes a new (cycle-checked) one; isPaid/invoiceStatus reset
+                // since removal means they're out until they pay again.
+                const membership = existing
+                  ? await db.communityMembership.update({
+                      where: { communityId_userId: { communityId, userId } },
+                      data: {
+                        removedAt: null,
+                        isInduk: asInduk,
+                        isPaid: !needsPayment,
+                        invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
+                        invoiceVerifiedAt: null,
+                        invoiceVerifiedBy: null,
+                        joinedAt: new Date(),
+                        referrerId: safeReferrerId || existing.referrerId
+                      }
+                    })
+                  : await db.communityMembership.create({
+                      data: {
+                        communityId,
+                        userId,
+                        isInduk: asInduk,
+                        isPaid: !needsPayment,
+                        invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
+                        referrerId: safeReferrerId
+                      }
+                    })
 
                 if (!needsPayment && !userObj?.indukCommunityId) {
                   await db.user.update({
@@ -5620,7 +5647,7 @@ export const DataStore = {
             if (!(globalThis as any).__mockCommunityMemberships) (globalThis as any).__mockCommunityMemberships = []
             const memberships = (globalThis as any).__mockCommunityMemberships as any[]
             const existing = memberships.find(m => m.communityId === communityId && m.userId === userId)
-            if (existing) {
+            if (existing && !existing.removedAt) {
               // ponytail: mirrors the real-DB branch above — no free UNPAID -> PAID flip.
               return { joined: true, alreadyMember: true, needsPayment: existing.invoiceStatus === 'UNPAID', invoiceStatus: existing.invoiceStatus }
             }
@@ -5648,18 +5675,34 @@ export const DataStore = {
             }
         
             const needsPayment = (community.joinFee || 0) > 0
-        
-            const newMembership = {
-              id: `cm-${Date.now()}`,
-              communityId,
-              userId,
-              isInduk: asInduk,
-              isPaid: !needsPayment,
-              invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
-              referrerId: (referrerId && referrerId !== userId) ? referrerId : null,
-              joinedAt: new Date()
+            const safeReferrerId = await validateReferrerId(userId, referrerId, async (uid) =>
+              memberships.find(mm => mm.communityId === communityId && mm.userId === uid)?.referrerId ?? null
+            )
+
+            let newMembership: any
+            if (existing) {
+              existing.removedAt = null
+              existing.isInduk = asInduk
+              existing.isPaid = !needsPayment
+              existing.invoiceStatus = needsPayment ? 'UNPAID' : 'PAID'
+              existing.invoiceVerifiedAt = null
+              existing.invoiceVerifiedBy = null
+              existing.joinedAt = new Date()
+              existing.referrerId = safeReferrerId || existing.referrerId
+              newMembership = existing
+            } else {
+              newMembership = {
+                id: `cm-${Date.now()}`,
+                communityId,
+                userId,
+                isInduk: asInduk,
+                isPaid: !needsPayment,
+                invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
+                referrerId: safeReferrerId,
+                joinedAt: new Date()
+              }
+              memberships.push(newMembership)
             }
-            memberships.push(newMembership)
         
             const user = globalMockUsers.find(u => u.id === userId)
             if (user && !needsPayment && !(user as any).indukCommunityId) {
@@ -5684,7 +5727,7 @@ export const DataStore = {
         // path and verifyInvoiceMembership/processMultiTierReferralPayout from
         // double-paying the same referral chain if they race or both run.
         const { count } = await db.communityMembership.updateMany({
-          where: { communityId, userId, isPaid: false },
+          where: { communityId, userId, isPaid: false, removedAt: null },
           data: { isPaid: true, invoiceStatus: 'PAID', invoiceVerifiedAt: new Date() }
         })
         let firstTimePaid = count === 1
@@ -5695,6 +5738,13 @@ export const DataStore = {
           })
           if (!existing) {
             try {
+              const safeReferrerId = await validateReferrerId(userId, referrerId, async (uid) => {
+                const m = await db.communityMembership.findUnique({
+                  where: { communityId_userId: { communityId, userId: uid } },
+                  select: { referrerId: true }
+                })
+                return m?.referrerId ?? null
+              })
               await db.communityMembership.create({
                 data: {
                   communityId,
@@ -5703,7 +5753,7 @@ export const DataStore = {
                   isPaid: true,
                   invoiceStatus: 'PAID',
                   invoiceVerifiedAt: new Date(),
-                  referrerId: (referrerId && referrerId !== userId) ? referrerId : null
+                  referrerId: safeReferrerId
                 }
               })
               firstTimePaid = true
@@ -5760,6 +5810,9 @@ export const DataStore = {
           m.invoiceStatus = 'PAID'
           m.invoiceVerifiedAt = new Date()
         } else {
+          const safeReferrerId = await validateReferrerId(userId, referrerId, async (uid) =>
+            memberships.find(mm => mm.communityId === communityId && mm.userId === uid)?.referrerId ?? null
+          )
           m = {
             id: `cm-${Date.now()}`,
             communityId,
@@ -5767,7 +5820,7 @@ export const DataStore = {
             isInduk: true,
             isPaid: true,
             invoiceStatus: 'PAID',
-            referrerId: (referrerId && referrerId !== userId) ? referrerId : null,
+            referrerId: safeReferrerId,
             joinedAt: new Date()
           }
           memberships.push(m)
@@ -5813,14 +5866,22 @@ export const DataStore = {
   },
 
   // ─── REMOVE SPECIFIC COMMUNITY MEMBERSHIP ───────────────────────────────────
-  // Directly deletes a membership record by (userId, communityId).
+  // Soft-delete (removedAt), never a hard delete: this row's referrerId is
+  // load-bearing for every buyer BELOW this member in the tree — hard-deleting
+  // it would permanently sever their upline from every tier above this
+  // position. resolveReferralChain/Async treats a removedAt row as
+  // transparent (skips its own payout, keeps walking through it), so leaving
+  // the row in place is what lets commission still "roll up" to whoever is
+  // above a removed member. Every other membership read that means "is this
+  // someone the community currently counts as a member" must filter
+  // removedAt: null, or a removed member reappears in rosters/gating/SHU.
   // Also clears user.indukCommunityId if it matches the kicked community.
   async removeCommunityMembership(userId: string, communityId: string) {
     return withMutationFallback(
       async () => {
-        // Delete the specific membership record
-                await db.communityMembership.deleteMany({
-                  where: { userId, communityId }
+        await db.communityMembership.updateMany({
+                  where: { userId, communityId },
+                  data: { removedAt: new Date() }
                 })
                 // Clear indukCommunityId if it matches
                 const existingUser = await db.user.findUnique({
@@ -5837,13 +5898,9 @@ export const DataStore = {
       },
       async () => {
         // Mock DB fallback
-            if ((globalThis as any).__mockCommunityMemberships) {
-              ;(globalThis as any).__mockCommunityMemberships = (
-                globalThis as any
-              ).__mockCommunityMemberships.filter(
-                (m: any) => !(m.userId === userId && m.communityId === communityId)
-              )
-            }
+            const memberships = (globalThis as any).__mockCommunityMemberships || []
+            const m = memberships.find((m: any) => m.userId === userId && m.communityId === communityId)
+            if (m) m.removedAt = new Date()
             const user = globalMockUsers.find(u => u.id === userId)
             if (user && (user as any).indukCommunityId === communityId) {
               ;(user as any).indukCommunityId = null
@@ -5878,6 +5935,15 @@ export const DataStore = {
                   isPaid: true,
                   invoiceStatus: 'VERIFIED'
                 }
+              })
+            } else if (membershipExists.removedAt) {
+              // A removed row can't be silently treated as "already exists" —
+              // that would point indukCommunityId at a community the user has
+              // no active membership row in. Reactivate it instead of leaving
+              // it dangling (the unique constraint rules out a second row).
+              await db.communityMembership.update({
+                where: { communityId_userId: { communityId: targetCommunityId, userId } },
+                data: { removedAt: null, isInduk: true, isPaid: true, invoiceStatus: 'VERIFIED' }
               })
             }
           } catch (err) {
@@ -6127,12 +6193,12 @@ export const DataStore = {
     return withFallback(
       async () => {
         return await db.communityMembership.findMany({
-                  where: { communityId },
+                  where: { communityId, removedAt: null },
                   include: { user: { select: { id: true, name: true, role: true, email: true, level: true, xp: true, image: true } } }
                 })
       },
       async () => {
-        const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === communityId)
+        const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === communityId && !m.removedAt)
             return memberships.map((m: any) => {
               const user = globalMockUsers.find(u => u.id === m.userId)
               return {
@@ -6152,7 +6218,7 @@ export const DataStore = {
         if (community.ketuaId === userId) return true
 
         const m = await db.communityMembership.findFirst({
-          where: { communityId, userId }
+          where: { communityId, userId, removedAt: null }
         })
         if (!m) return false
         if ((community.joinFee || 0) === 0) return true
@@ -6166,7 +6232,7 @@ export const DataStore = {
         if (community && community.ketuaId === userId) return true
 
         const memberships = (globalThis as any).__mockCommunityMemberships || []
-        const m = memberships.find((m: any) => m.communityId === communityId && m.userId === userId)
+        const m = memberships.find((m: any) => m.communityId === communityId && m.userId === userId && !m.removedAt)
         if (!m) return false
         if (!community || (community.joinFee || 0) === 0) return true
         return m.isPaid === true
@@ -6579,7 +6645,7 @@ export const DataStore = {
                   const inviteeMembership = await tx.communityMembership.findUnique({
                     where: { communityId_userId: { communityId: data.communityId, userId: data.inviteeId } }
                   })
-                  if (!inviteeMembership) throw new Error('Merchant yang diundang belum bergabung ke komunitas ini.')
+                  if (!inviteeMembership || inviteeMembership.removedAt) throw new Error('Merchant yang diundang belum bergabung ke komunitas ini.')
         
                   if (isKoperasi) {
                     // Reward saldo wallet dari kas koperasi
@@ -7860,9 +7926,16 @@ export const DataStore = {
 
     if (await isDbConnected()) {
       try {
+        // TODO(product/legal): removedAt: null excludes a member who left
+        // mid-year from this count entirely, and shuDist below is never
+        // filtered or adjusted for that either. Open policy question for the
+        // koperasi's legal/product owner: does a member who leaves mid-year
+        // forfeit 100% of that year's SHU, or does Indonesian cooperative
+        // law require a prorated distribution for their active months? No
+        // distribution logic should change here until that's decided.
         const [memberships, shuDist, shuCfg] = await Promise.all([
           db.communityMembership.findMany({
-            where: { communityId },
+            where: { communityId, removedAt: null },
             include: { user: { select: { id: true, role: true } } }
           }),
           db.shuMemberDistribution.findMany({
@@ -8319,12 +8392,24 @@ export const DataStore = {
     )
   },
 
+  // recipientName is frozen on every row at payout time (see
+  // processMultiTierCommunityReferral/processKoperasiFixedTierReferral) and
+  // every pre-existing row was one-time backfilled by
+  // scripts/backfill-referral-recipient-names.ts, so this is a strictly
+  // read-only, zero-join display path — no live lookup against User.
   async getCommunityReferralLogs(communityId: string) {
     return withFallback(
       async () => {
+        // All tiers from one purchase are written inside a single
+        // $transaction, so Postgres gives them an identical createdAt —
+        // tierLevel is the tiebreaker so Tier 1/2/3 don't shuffle randomly.
+        // `id` is a final tiebreaker so the order is fully deterministic
+        // even across two different buyers whose transactions land in the
+        // same millisecond (also required if this ever grows cursor
+        // pagination — Prisma needs a unique sort key for that).
         const logs = await (db as any).communityReferralLog?.findMany({
                   where: { communityId },
-                  orderBy: { createdAt: 'desc' },
+                  orderBy: [{ createdAt: 'desc' }, { tierLevel: 'asc' }, { id: 'asc' }],
                   take: 100
                 })
                 return logs
@@ -8343,7 +8428,7 @@ export const DataStore = {
       async () => {
         const logs = await (db as any).communityReferralLog?.findMany({
           where: { communityId, referrerId: userId },
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { tierLevel: 'asc' }, { id: 'asc' }],
           take: 100
         })
         return logs
@@ -8361,19 +8446,27 @@ export const DataStore = {
   async getCommunityAffiliateDownline(communityId: string, userId: string) {
     const dbConnected = await isDbConnected()
 
+    // A removed member is NOT excluded here (unlike the roster/gating/SHU
+    // filters elsewhere) — resolveReferralChain/Async already treats them as
+    // a transparent pass-through in the payout math, and hiding their node
+    // from this tree would visually sever it, orphaning their still-active
+    // children in the UI even though the ledger keeps paying through them.
+    // A removed node renders as a "(Mantan Anggota)" passthrough instead, so
+    // the visual graph matches the compression math underneath it.
     if (!dbConnected) {
       const memberships = ((globalThis as any).__mockCommunityMemberships || [])
         .filter((m: any) => m.communityId === communityId)
         .map((m: any) => ({
           userId: m.userId,
           referrerId: m.referrerId || null,
-          name: globalMockUsers.find((u: any) => u.id === m.userId)?.name || 'Anggota',
-          email: globalMockUsers.find((u: any) => u.id === m.userId)?.email || '',
+          name: m.removedAt ? '(Mantan Anggota)' : (globalMockUsers.find((u: any) => u.id === m.userId)?.name || 'Anggota'),
+          email: m.removedAt ? '' : (globalMockUsers.find((u: any) => u.id === m.userId)?.email || ''),
           joinedAt: m.joinedAt,
-          isPaid: m.isPaid
+          isPaid: m.isPaid,
+          isActive: !m.removedAt
         }))
       // buildDownlineTree only carries id/name/children - re-attach the extra
-      // display fields (email/joinedAt/isPaid) the UI also reads, by id.
+      // display fields (email/joinedAt/isPaid/isActive) the UI also reads, by id.
       const byId = new Map(memberships.map((m: any) => [m.userId, m]))
       const attachExtras = (nodes: any[]): any[] =>
         nodes.map((n) => ({ ...n, ...(byId.get(n.id) || {}), children: attachExtras(n.children) }))
@@ -8396,10 +8489,11 @@ export const DataStore = {
         const subTree = await buildTree(child.userId, depth + 1)
         nodes.push({
           id: child.userId,
-          name: child.user?.name || 'Anggota',
-          email: child.user?.email || '',
+          name: child.removedAt ? '(Mantan Anggota)' : (child.user?.name || 'Anggota'),
+          email: child.removedAt ? '' : (child.user?.email || ''),
           joinedAt: child.joinedAt,
           isPaid: child.isPaid,
+          isActive: !child.removedAt,
           children: subTree
         })
       }
@@ -8466,6 +8560,19 @@ export const DataStore = {
     const ketuaId = community.ketuaId
     const logs: any[] = []
 
+    // A trailing run of zero-amount tiers (e.g. a NOMINAL-mode admin only
+    // funds 2 of 5 configured tiers) can never produce a log or wallet
+    // credit no matter who occupies that chain position, so there's no
+    // point resolving — or querying for — a recipient past the LAST tier
+    // that actually has money attached. A zero in the *middle* (tier 2 = 0,
+    // tier 3 funded) still needs its position resolved, since a funded tier
+    // after it still has to know who's there — only a fully-zero tail is
+    // skippable.
+    let lastFundedTier = 0
+    for (let t = 1; t <= maxTiers; t++) {
+      if (computeTierAmount(commissionMethod, referralBudget, percentages[t - 1] || 0) > 0) lastFundedTier = t
+    }
+
     if (dbConnected) {
       // Single transaction: a mid-loop failure must not leave a partial
       // payout (some tiers credited, others silently skipped) with no error.
@@ -8488,32 +8595,47 @@ export const DataStore = {
 
         // Community-scoped upline, not the platform-wide signup referrer:
         // who this buyer joined THIS community through (CommunityMembership.referrerId).
-        const buyerMembership = await tx.communityMembership.findUnique({
-          where: { communityId_userId: { communityId, userId: buyerId } }
-        })
-        let currentReferrerId: string | null = (buyerMembership as any)?.referrerId || null
+        // Resolved as one chain up front via resolveReferralChainAsync (at
+        // most lastFundedTier, never more than maxTiers i.e. 3-5, targeted
+        // lookups — never a full-table findMany, which would load every
+        // membership in the community into memory on every checkout)
+        // instead of walking it inline: the old inline walk only advanced
+        // its pointer inside the `tierAmount > 0` branch, so a zero-value
+        // tier (routine in NOMINAL mode, where an admin can leave a tier's
+        // Rupiah field at 0) froze the pointer and shifted every later
+        // tier's recipient by one position. Resolving the chain independently
+        // of amount — and only skipping the *ledger write* for a zero tier —
+        // keeps recipient resolution correct no matter how commissionMethod
+        // or maxTiers is reconfigured afterwards. A removed member
+        // (CommunityMembership.removedAt set) is transparent to the walk —
+        // it rolls the vacated tier up to their own upline instead of
+        // treating the chain as exhausted at their position.
+        const referralChain = lastFundedTier > 0
+          ? await resolveReferralChainAsync(buyerId, lastFundedTier, async (userId) => {
+              const m = await tx.communityMembership.findUnique({
+                where: { communityId_userId: { communityId, userId } },
+                select: { referrerId: true, removedAt: true }
+              })
+              if (!m) return null
+              return { referrerId: m.referrerId ?? null, isActive: m.removedAt == null }
+            })
+          : []
 
-        for (let tier = 1; tier <= maxTiers; tier++) {
+        for (let tier = 1; tier <= lastFundedTier; tier++) {
           const pct = percentages[tier - 1] || 0
           const tierAmount = computeTierAmount(commissionMethod, referralBudget, pct)
-          if (tierAmount <= 0) continue
 
           let recipientId: string | null = null
           let recipientType: 'REFERRER' | 'KOMUNITAS' | 'PLATFORM' = 'PLATFORM'
           let recipientName = 'Saloka.id Platform'
 
-          if (currentReferrerId) {
-            const refUser = await tx.user.findUnique({ where: { id: currentReferrerId } })
+          const chainReferrerId = referralChain[tier - 1]
+          if (chainReferrerId) {
+            const refUser = await tx.user.findUnique({ where: { id: chainReferrerId } })
             if (refUser) {
               recipientId = refUser.id
               recipientType = 'REFERRER'
               recipientName = refUser.name
-              const refMembership = await tx.communityMembership.findUnique({
-                where: { communityId_userId: { communityId, userId: refUser.id } }
-              })
-              currentReferrerId = (refMembership as any)?.referrerId || null
-            } else {
-              currentReferrerId = null
             }
           }
 
@@ -8528,6 +8650,8 @@ export const DataStore = {
             recipientType = fallback.recipientType
             recipientName = fallback.recipientName
           }
+
+          if (tierAmount <= 0) continue
 
           if (recipientId) {
             const rWallet = await tx.wallet.upsert({
@@ -8553,6 +8677,10 @@ export const DataStore = {
               tierLevel: tier,
               amount: tierAmount,
               recipientType,
+              // Frozen at payout time — never re-derived from the User table
+              // on read, so a later name change or account deletion can't
+              // rewrite this row's history.
+              recipientName,
               description: `Komisi Tier ${tier} (${recipientType}: ${recipientName}) sebesar Rp ${tierAmount.toLocaleString('id-ID')}`
             }
           })
@@ -8568,10 +8696,10 @@ export const DataStore = {
 
       const mockMemberships = ((globalThis as any).__mockCommunityMemberships || [])
         .filter((m: any) => m.communityId === communityId)
-        .map((m: any) => ({ userId: m.userId, referrerId: m.referrerId || null }))
-      const referralChain = resolveReferralChain(mockMemberships, buyerId, maxTiers)
+        .map((m: any) => ({ userId: m.userId, referrerId: m.referrerId || null, isActive: !m.removedAt }))
+      const referralChain = lastFundedTier > 0 ? resolveReferralChain(mockMemberships, buyerId, lastFundedTier) : []
 
-      for (let tier = 1; tier <= maxTiers; tier++) {
+      for (let tier = 1; tier <= lastFundedTier; tier++) {
         const pct = percentages[tier - 1] || 0
         const tierAmount = computeTierAmount(commissionMethod, referralBudget, pct)
         if (tierAmount <= 0) continue
@@ -8611,6 +8739,7 @@ export const DataStore = {
           tierLevel: tier,
           amount: tierAmount,
           recipientType,
+          recipientName,
           description: `Komisi Tier ${tier} (${recipientType}: ${recipientName}) sebesar Rp ${tierAmount.toLocaleString('id-ID')}`,
           createdAt: new Date()
         }
@@ -8656,15 +8785,41 @@ export const DataStore = {
     const { communityId, buyerId, community, buyer } = data
     const dbConnected = await isDbConnected()
     const logs: any[] = []
+    let alreadyRewarded = false
 
     if (dbConnected) {
       await db.$transaction(async (tx) => {
-        // Community-scoped upline (who this buyer joined THIS koperasi
-        // through), not the platform-wide signup referrer.
-        const buyerMembership = await tx.communityMembership.findUnique({
-          where: { communityId_userId: { communityId, userId: buyerId } }
+        // Koperasi's fixed reward is a lifetime-once thing per buyer, not
+        // per-payment: removeCommunityMembership is now a soft-delete, so a
+        // member can leave and rejoin (paying the join fee again) any number
+        // of times. Without this guard, every rejoin would re-trigger this
+        // same fixed 3/1/1 payout to their upline — an infinite farm. Any
+        // prior log row for this buyer in this community (paid or not) means
+        // the lifetime reward already ran once; a rejoin still legitimately
+        // triggers Perkumpulan's ordinary percentage/nominal cash commission
+        // (a real new fee was paid), just never this fixed coin reward again.
+        const existingReward = await tx.communityReferralLog.findFirst({
+          where: { buyerId, communityId }
         })
-        let currentReferrerId: string | null = (buyerMembership as any)?.referrerId || null
+        if (existingReward) {
+          alreadyRewarded = true
+          return
+        }
+
+        // Community-scoped upline (who this buyer joined THIS koperasi
+        // through), not the platform-wide signup referrer. Shares the same
+        // compression-aware walker as the Perkumpulan path above instead of
+        // reimplementing it inline — that inline duplication is exactly what
+        // let the Perkumpulan bug (chain pointer coupled to a per-tier
+        // condition) exist in one branch but not the other in the first place.
+        const referralChain = await resolveReferralChainAsync(buyerId, KOPERASI_FIXED_TIER_COINS.length, async (userId) => {
+          const m = await tx.communityMembership.findUnique({
+            where: { communityId_userId: { communityId, userId } },
+            select: { referrerId: true, removedAt: true }
+          })
+          if (!m) return null
+          return { referrerId: m.referrerId ?? null, isActive: m.removedAt == null }
+        })
         let kasRemaining = community.coinBalance || 0
 
         for (let tier = 1; tier <= KOPERASI_FIXED_TIER_COINS.length; tier++) {
@@ -8672,17 +8827,12 @@ export const DataStore = {
           let recipientId: string | null = null
           let recipientName = ''
 
-          if (currentReferrerId) {
-            const refUser = await tx.user.findUnique({ where: { id: currentReferrerId } })
+          const chainReferrerId = referralChain[tier - 1]
+          if (chainReferrerId) {
+            const refUser = await tx.user.findUnique({ where: { id: chainReferrerId } })
             if (refUser) {
               recipientId = refUser.id
               recipientName = refUser.name
-              const refMembership = await tx.communityMembership.findUnique({
-                where: { communityId_userId: { communityId, userId: refUser.id } }
-              })
-              currentReferrerId = (refMembership as any)?.referrerId || null
-            } else {
-              currentReferrerId = null
             }
           }
 
@@ -8730,11 +8880,18 @@ export const DataStore = {
         }
       })
     } else {
+      // Same lifetime-once guard as the DB branch above.
+      const existingRewardLogs = (globalThis as any).__mockCommunityReferralLogs || []
+      alreadyRewarded = existingRewardLogs.some((l: any) => l.buyerId === buyerId && l.communityId === communityId)
+
+      if (!alreadyRewarded) {
       const communities = (globalThis as any).__mockCommunities || []
       const targetCommunity = communities.find((c: any) => c.id === communityId) || community
       const mockMemberships = (globalThis as any).__mockCommunityMemberships || []
-      const buyerMembership = mockMemberships.find((m: any) => m.communityId === communityId && m.userId === buyerId)
-      let currentReferrerId: string | null = buyerMembership?.referrerId || null
+      const mockMembershipLinks = mockMemberships
+        .filter((m: any) => m.communityId === communityId)
+        .map((m: any) => ({ userId: m.userId, referrerId: m.referrerId || null, isActive: !m.removedAt }))
+      const referralChain = resolveReferralChain(mockMembershipLinks, buyerId, KOPERASI_FIXED_TIER_COINS.length)
       let kasRemaining = targetCommunity.coinBalance || 0
 
       if (!(globalThis as any).__mockCoinTransactions) (globalThis as any).__mockCoinTransactions = []
@@ -8744,15 +8901,9 @@ export const DataStore = {
         const tierAmount = KOPERASI_FIXED_TIER_COINS[tier - 1]
         let recipient: any = null
 
-        if (currentReferrerId) {
-          const refUser = globalMockUsers.find((u: any) => u.id === currentReferrerId)
-          if (refUser) {
-            recipient = refUser
-            const refMembership = mockMemberships.find((m: any) => m.communityId === communityId && m.userId === refUser.id)
-            currentReferrerId = refMembership?.referrerId || null
-          } else {
-            currentReferrerId = null
-          }
+        const chainReferrerId = referralChain[tier - 1]
+        if (chainReferrerId) {
+          recipient = globalMockUsers.find((u: any) => u.id === chainReferrerId) || null
         }
 
         const canPay = recipient && kasRemaining >= tierAmount
@@ -8801,6 +8952,7 @@ export const DataStore = {
       }
 
       saveMockDb()
+      }
     }
 
     for (const log of logs) {
@@ -8819,7 +8971,7 @@ export const DataStore = {
       }
     }
 
-    return { success: true, processed: true, logs }
+    return { success: true, processed: !alreadyRewarded, reason: alreadyRewarded ? 'Reward afiliasi koperasi sudah pernah dibayarkan untuk pengguna ini.' : undefined, logs }
   },
 
   // ═══════════════════════════════════════════════════════════════════════════

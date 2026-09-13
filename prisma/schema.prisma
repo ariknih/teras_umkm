@@ -671,6 +671,13 @@ model CommunityReferralLog {
   tierLevel     Int       // 1, 2, 3, 4, atau 5
   amount        Float     // Nominal komisi (Rupiah)
   recipientType String    // 'REFERRER' | 'KOMUNITAS' | 'PLATFORM'
+  // Frozen at payout time, same as `description` — an audit ledger must show
+  // who was paid *as they were named when paid*, not whatever their account
+  // is named today (a later rename/account-transfer, or even deletion, must
+  // never rewrite history). Nullable only because rows written before this
+  // column existed don't have it; the read path backfills those from
+  // referrerId as a one-time best-effort lookup, never live for new rows.
+  recipientName String?
   description   String
   createdAt     DateTime  @default(now())
 }
@@ -694,6 +701,17 @@ model CommunityMembership {
   invoiceStatus   String      @default("UNPAID") // UNPAID | PAID | VERIFIED
   invoiceVerifiedAt DateTime?
   invoiceVerifiedBy String?   // ID Admin yang verifikasi
+  // Soft-delete for removeCommunityMembership: a kicked/left member's row is
+  // kept (never hard-deleted) so their referrerId stays on record. Without
+  // this, removing a mid-chain member would permanently sever every upline
+  // tier above them from every buyer below them — resolveReferralChainAsync
+  // (referral-payout.ts) walks straight past a row with removedAt set,
+  // "rolling up" that tier's commission to the next still-active ancestor
+  // instead. Every other membership read that means "is this someone the
+  // community currently counts as a member" (rosters, join gating, SHU
+  // distribution, downline display) must filter removedAt: null, or a
+  // removed member reappears everywhere except the payout chain.
+  removedAt       DateTime?
   joinedAt        DateTime    @default(now())
 
   @@unique([communityId, userId])

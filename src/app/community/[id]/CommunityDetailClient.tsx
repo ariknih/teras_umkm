@@ -7817,7 +7817,9 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                   </span>
                                 </td>
                                 <td className="p-3 font-bold text-gray-900">
-                                  {log.recipientType === 'REFERRER' ? 'Merchant (Referrer)' : log.recipientType === 'KOMUNITAS' ? 'Kas Komunitas' : 'Saloka.id Platform'}
+                                  {log.recipientName
+                                    ? log.recipientName
+                                    : log.recipientType === 'REFERRER' ? 'Merchant (Referrer)' : log.recipientType === 'KOMUNITAS' ? 'Kas Komunitas' : 'Saloka.id Platform'}
                                 </td>
                                 <td className="p-3">
                                   <span className={`px-2 py-0.5 font-bold text-[9px] rounded-full ${
