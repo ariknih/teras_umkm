@@ -1,5 +1,22 @@
 export type CommissionMethod = 'PERCENTAGE' | 'NOMINAL'
 
+// The community-scoped referral cookie is written by proxy.ts as
+// `cref_${communityId}_${userId-or-'anon'}` — scoped per logged-in user (not
+// just per community) so two different accounts sharing one browser (a QA
+// tester switching test users, or a shared/public device) never clobber each
+// other's first-touch attribution. Read it the same way everywhere a join
+// resolves a referrer: the buyer's own scope first, falling back to the
+// anonymous slot for someone who clicked the link before logging in.
+export function readCommunityReferralCookie(
+  cookieJar: { get(name: string): { value: string } | undefined },
+  communityId: string,
+  userId: string
+): string | null {
+  return cookieJar.get(`cref_${communityId}_${userId}`)?.value
+    ?? cookieJar.get(`cref_${communityId}_anon`)?.value
+    ?? null
+}
+
 export interface CommunityMembershipLink {
   userId: string
   referrerId: string | null

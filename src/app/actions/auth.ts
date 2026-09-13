@@ -8,7 +8,7 @@ import { db } from '@/lib/db'
 import { getCookieDomain } from '@/lib/cookie-domain'
 import { logAudit } from '@/lib/audit-log'
 import { hashPassword, verifyPassword, isLegacyHash } from '@/lib/password'
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { checkRateLimit, getClientIp, resetRateLimit } from '@/lib/rate-limit'
 
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required')
@@ -24,7 +24,11 @@ export async function login(formData: FormData) {
   }
 
   const loginIp = await getClientIp()
-  if (!checkRateLimit(`login:${loginIp}`, 5, 5 * 60 * 1000)) {
+  const loginAccountKey = `login:acct:${emailOrUsername.toLowerCase()}`
+  if (loginIp && !(await checkRateLimit(`login:ip:${loginIp}`, 20, 5 * 60 * 1000))) {
+    return { error: 'Terlalu banyak percobaan login. Silakan coba lagi dalam beberapa menit.' }
+  }
+  if (!(await checkRateLimit(loginAccountKey, 5, 10 * 60 * 1000))) {
     return { error: 'Terlalu banyak percobaan login. Silakan coba lagi dalam beberapa menit.' }
   }
 
@@ -64,6 +68,11 @@ export async function login(formData: FormData) {
     })
     return { error: 'Email/username atau password salah' }
   }
+
+  // Successful login clears this account's/IP's failed-attempt history so it
+  // doesn't carry into the next window if the user logs out and back in.
+  await resetRateLimit(loginAccountKey)
+  if (loginIp) await resetRateLimit(`login:ip:${loginIp}`)
 
   // Lazy migration: a successful login against a legacy SHA-256 hash
   // upgrades it to bcrypt in place. Non-blocking — a write failure here
@@ -190,6 +199,17 @@ export async function register(formData: FormData) {
     parentAffiliateId,
     username: finalUsername,
   })
+
+  // The first-touch affiliate_ref cookie is consumed by this signup — clear it
+  // so it doesn't silently leak into a second signup on the same browser (a
+  // QA tester registering multiple test accounts back-to-back, or two
+  // different people signing up from a shared/public device would otherwise
+  // have every registration after the first attributed to whoever's link was
+  // clicked first, the same class of bug fixed for the community-scoped
+  // referral cookie).
+  if (affiliateRefCookie) {
+    cookieStore.delete('affiliate_ref')
+  }
 
   // If merchant selected an induk community during registration, join it
   if (communityId && (role === 'MERCHANT' || role === 'AFFILIATE')) {
@@ -410,7 +430,7 @@ export async function requestPasswordReset(phone: string) {
   }
 
   const resetIp = await getClientIp()
-  if (!checkRateLimit(`pwreset-req:${resetIp}`, 3, 10 * 60 * 1000)) {
+  if (resetIp && !(await checkRateLimit(`pwreset-req:${resetIp}`, 3, 10 * 60 * 1000))) {
     return { error: 'Terlalu banyak permintaan OTP. Silakan coba lagi dalam beberapa menit.' }
   }
 
@@ -456,7 +476,7 @@ export async function resetPasswordWithOtp(phone: string, otp: string, newPasswo
   }
 
   const resetVerifyIp = await getClientIp()
-  if (!checkRateLimit(`pwreset-verify:${resetVerifyIp}`, 10, 10 * 60 * 1000)) {
+  if (resetVerifyIp && !(await checkRateLimit(`pwreset-verify:${resetVerifyIp}`, 10, 10 * 60 * 1000))) {
     return { error: 'Terlalu banyak percobaan. Silakan coba lagi dalam beberapa menit.' }
   }
 
@@ -510,7 +530,7 @@ export async function sendPhoneVerificationOtp(phone: string) {
   const cleanPhone = (phone || '').trim()
   if (!cleanPhone) return { error: 'Nomor WhatsApp wajib diisi.' }
 
-  if (!checkRateLimit(`otp-send:${user.id}`, 3, 10 * 60 * 1000)) {
+  if (!(await checkRateLimit(`otp-send:${user.id}`, 3, 10 * 60 * 1000))) {
     return { error: 'Terlalu banyak permintaan OTP. Silakan coba lagi dalam beberapa menit.' }
   }
 
@@ -550,7 +570,7 @@ export async function verifyPhoneOtp(phone: string, otp: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
-  if (!checkRateLimit(`otp-verify:${user.id}`, 10, 10 * 60 * 1000)) {
+  if (!(await checkRateLimit(`otp-verify:${user.id}`, 10, 10 * 60 * 1000))) {
     return { error: 'Terlalu banyak percobaan. Silakan coba lagi dalam beberapa menit.' }
   }
 
@@ -580,7 +600,7 @@ export async function sendEmailVerificationOtp() {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
-  if (!checkRateLimit(`otp-send:${user.id}`, 3, 10 * 60 * 1000)) {
+  if (!(await checkRateLimit(`otp-send:${user.id}`, 3, 10 * 60 * 1000))) {
     return { error: 'Terlalu banyak permintaan OTP. Silakan coba lagi dalam beberapa menit.' }
   }
 
@@ -614,7 +634,7 @@ export async function verifyEmailOtp(otp: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
-  if (!checkRateLimit(`otp-verify:${user.id}`, 10, 10 * 60 * 1000)) {
+  if (!(await checkRateLimit(`otp-verify:${user.id}`, 10, 10 * 60 * 1000))) {
     return { error: 'Terlalu banyak percobaan. Silakan coba lagi dalam beberapa menit.' }
   }
 

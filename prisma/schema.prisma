@@ -1009,6 +1009,18 @@ model CoinSupplyLog {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Rate Limiting (login, OTP) — multi-instance-safe counter backing src/lib/rate-limit.ts
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model RateLimitAttempt {
+  id        String   @id @default(uuid())
+  key       String   // e.g. "login:ip:1.2.3.4" or "login:acct:user@example.com"
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Audit Log (2 pilihan actor: MEMBER dan ADMIN)
 // ═══════════════════════════════════════════════════════════════════════════════
 

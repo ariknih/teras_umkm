@@ -1,7 +1,28 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { jwtVerify } from 'jose'
 
-export function proxy(request: NextRequest) {
+// The community-scoped referral cookie's "first touch, never overwritten"
+// rule is meant to protect one prospective member's attribution from being
+// clobbered by a later, unrelated link click on their own device — not to
+// merge every different logged-in account that happens to share a browser
+// into a single slot. Scoping the cookie by the CURRENTLY logged-in user
+// (falling back to a shared "anon" slot pre-login) means two different
+// accounts on the same browser (a QA tester switching test users, or a
+// shared/public device) each get independently tracked attribution instead
+// of the second visit silently inheriting the first visitor's referrer.
+async function referralCookieScope(request: NextRequest): Promise<string> {
+  const token = request.cookies.get('session')?.value
+  if (!token || !process.env.JWT_SECRET) return 'anon'
+  try {
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET))
+    return (payload.id as string) || 'anon'
+  } catch {
+    return 'anon'
+  }
+}
+
+export async function proxy(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
   const { pathname } = request.nextUrl
 
@@ -48,11 +69,34 @@ export function proxy(request: NextRequest) {
 
   const isGlobalPath = globalPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))
   if (isGlobalPath) {
-    return NextResponse.next({
+    const response = NextResponse.next({
       request: {
         headers: requestHeaders,
       },
     })
+
+    // Community-scoped referral, first-touch per (community, visiting user)
+    // — never overwritten within that scope — separate from the
+    // platform-wide signup referral cookie set by /ref/[slug]. Must be set
+    // here: cookies() can't be mutated from a Server Component's render
+    // body, only from a Server Action, Route Handler, or proxy/middleware.
+    const communityMatch = pathname.match(/^\/community\/([^/]+)/)
+    const ref = request.nextUrl.searchParams.get('ref')
+    if (communityMatch && ref) {
+      const scope = await referralCookieScope(request)
+      const cookieName = `cref_${communityMatch[1]}_${scope}`
+      if (!request.cookies.get(cookieName)) {
+        response.cookies.set(cookieName, ref, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+        })
+      }
+    }
+
+    return response
   }
 
   // 3. Subdomain extraction logic

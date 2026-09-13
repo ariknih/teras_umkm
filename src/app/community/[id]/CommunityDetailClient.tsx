@@ -1411,9 +1411,18 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   }
 
   const handleShareReferralLink = () => {
-    const code = user?.referralCode || user?.username || 'REF001'
-    const shortCommId = id && id.length > 12 ? id.slice(0, 8) : id
-    const shareUrl = `${window.location.origin}/community/${shortCommId}?ref=${code}`
+    // `referralCode` is never actually assigned to any user (dead field) and
+    // getCurrentUser() doesn't carry `username` (it only decodes the session
+    // JWT's id/email/role/name) — falling back to the literal string 'REF001'
+    // meant every single share link carried the same non-existent code, so
+    // findUserByReferralCode never resolved a real referrer. user.id is
+    // always present and always resolvable.
+    if (!user?.id) {
+      goeyToast.error('Anda harus masuk untuk membagikan link referral.')
+      return
+    }
+    const code = user.username || user.id
+    const shareUrl = `${window.location.origin}/community/${community?.id || id}?ref=${code}`
     navigator.clipboard.writeText(shareUrl)
     goeyToast.success(`Link referral disalin: ${shareUrl}`)
   }
@@ -3815,7 +3824,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                           onClick={handleShareReferralLink}
                           className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 hover:bg-white/35 text-white font-extrabold text-[10px] sm:text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer border border-white/30 backdrop-blur-md"
                         >
-                          <Share2 className="w-3.5 h-3.5 text-emerald-200" /> Share Link ({user?.referralCode || user?.username || 'REF001'})
+                          <Share2 className="w-3.5 h-3.5 text-emerald-200" /> Share Link ({user?.username || user?.id?.slice(0, 8) || '-'})
                         </button>
                       </div>
                     </div>

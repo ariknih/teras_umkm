@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
 import { getPrimaryGateway } from '@/lib/payment-gateway'
 import { PurposeKey, prefixForPurpose, resolveCheckoutAmount, savePendingContext } from '@/lib/payment-purposes'
+import { readCommunityReferralCookie } from '@/lib/referral-payout'
 
 const VALID_PURPOSES: PurposeKey[] = ['JOIN_FEE', 'SAVINGS', 'COIN_TOPUP']
 
@@ -48,7 +49,9 @@ export async function POST(req: NextRequest) {
       if ((community as any).isRecruitmentLocked) {
         return NextResponse.json({ error: 'Rekrutmen komunitas dikunci. Hubungi ketua komunitas.' }, { status: 400 })
       }
-      if ((community.joinFee || 0) > 0 && (community as any).category !== 'FREE' && (community as any).coinBalance <= 0) {
+      // Coin kas is a KOPERASI-only mechanic — Perkumpulan (FREE or PAID/Premium)
+      // has no coin system, so it must never be gated on coinBalance.
+      if ((community as any).category === 'KOPERASI' && (community as any).coinBalance <= 0) {
         return NextResponse.json({ error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }, { status: 400 })
       }
       // The UI already hides the "pay to join" button once isMember is true,
@@ -84,7 +87,7 @@ export async function POST(req: NextRequest) {
     // this is the only place a paid join actually creates its membership row.
     let referrerId: string | null = null
     if (purpose === 'JOIN_FEE') {
-      const communityRefCookie = (await cookies()).get(`cref_${communityId}`)?.value
+      const communityRefCookie = readCommunityReferralCookie(await cookies(), communityId, user.id)
       if (communityRefCookie) {
         const referrer = await DataStore.findUserByReferralCode(communityRefCookie)
         if (referrer) referrerId = referrer.id

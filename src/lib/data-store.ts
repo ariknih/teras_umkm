@@ -5570,12 +5570,12 @@ export const DataStore = {
                   }
                 }
 
-                // Auto-lock recruitment if coinBalance <= 0 (only for non-free communities) or isRecruitmentLocked
-                const isFree = (community.joinFee || 0) === 0 || community.category === 'FREE';
                 if (community.isRecruitmentLocked) {
                   return { error: 'Rekrutmen komunitas dikunci. Hubungi ketua komunitas.' }
                 }
-                if (!isFree && community.coinBalance <= 0) {
+                // Coin kas is a KOPERASI-only mechanic — Perkumpulan (FREE or PAID/Premium)
+                // has no coin system, so it must never be gated on coinBalance.
+                if (community.category === 'KOPERASI' && community.coinBalance <= 0) {
                   return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
                 }
         
@@ -5638,12 +5638,12 @@ export const DataStore = {
               }
             }
         
-            // Auto-lock check for mock
-            const isFree = (community.joinFee || 0) === 0 || community.category === 'FREE';
             if (community.isRecruitmentLocked) {
               return { error: 'Rekrutmen komunitas dikunci. Hubungi ketua komunitas.' }
             }
-            if (!isFree && (community.coinBalance || 0) <= 0) {
+            // Coin kas is a KOPERASI-only mechanic — Perkumpulan (FREE or PAID/Premium)
+            // has no coin system, so it must never be gated on coinBalance.
+            if (community.category === 'KOPERASI' && (community.coinBalance || 0) <= 0) {
               return { error: 'Rekrutmen komunitas dikunci karena kas koin kosong. Hubungi ketua komunitas.' }
             }
         
@@ -8248,13 +8248,18 @@ export const DataStore = {
         const cleanCode = code.trim().toUpperCase()
     return withFallback(
       async () => {
+        // `username` is always stored lowercase (see updateUsernameAction /
+        // registration) but a share link's ?ref= code is whatever case the
+        // browser URL preserves, so this must match case-insensitively —
+        // an exact-case `username: cleanCode` compare never matched a real
+        // username and silently dropped every referral attributed by username.
         const u = await db.user.findFirst({
                   where: {
                     OR: [
                       { referralCode: cleanCode } as any,
-                      { username: cleanCode },
+                      { username: { equals: code.trim(), mode: 'insensitive' } },
                       { id: code },
-                      { email: code }
+                      { email: { equals: code.trim(), mode: 'insensitive' } }
                     ]
                   }
                 })

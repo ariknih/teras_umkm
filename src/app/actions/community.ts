@@ -6,7 +6,7 @@ import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
 import { cacheWrap, invalidateCachePattern, deleteCache } from '@/lib/cache'
 import { requireCommunityManager } from '@/lib/auth-guards'
-import { validateReferralAllocation } from '@/lib/referral-payout'
+import { validateReferralAllocation, readCommunityReferralCookie } from '@/lib/referral-payout'
 import { getDisabledModulesForTemplate } from '@/lib/community-templates'
 import { cookies } from 'next/headers'
 
@@ -439,7 +439,7 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
   // referrer): who this member joined THIS community through, captured via
   // the community's own share link (?ref=) as a first-touch cookie.
   let referrerId: string | null = null
-  const communityRefCookie = (await cookies()).get(`cref_${communityId}`)?.value
+  const communityRefCookie = readCommunityReferralCookie(await cookies(), communityId, user.id)
   if (communityRefCookie) {
     // findUserByReferralCode already matches referralCode, username, id, or
     // email — covers however handleShareReferralLink encoded the link.
@@ -482,8 +482,18 @@ export async function payCommunityJoinFeeAction(communityId: string, paymentMeth
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
+  // Community-scoped referral (same first-touch cookie the online-payment
+  // checkout route reads) — without this, a bank-transfer join always
+  // recorded referrerId as null even when the buyer came through a ?ref= link.
+  let referrerId: string | null = null
+  const communityRefCookie = readCommunityReferralCookie(await cookies(), communityId, user.id)
+  if (communityRefCookie) {
+    const referrer = await DataStore.findUserByReferralCode(communityRefCookie)
+    if (referrer) referrerId = referrer.id
+  }
+
   try {
-    const result: any = await DataStore.payCommunityJoinFee(user.id, communityId, paymentMethod)
+    const result: any = await DataStore.payCommunityJoinFee(user.id, communityId, paymentMethod, referrerId)
     if (result?.success) {
       await logAudit({
         actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
