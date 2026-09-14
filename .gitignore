@@ -46,6 +46,9 @@ next-env.d.ts
 # Mock DB persistence (local dev only)
 .mock-db.json
 
+# CodeGraph local index (machine-specific, rebuilt via `codegraph init`)
+/.codegraph/
+
 # local binaries and configs
 /cloudflared.exe
 /config.yml
@@ -58,3 +61,5 @@ next-env.d.ts
 
 # operational logs (never commit — can accumulate stack traces/internal paths)
 db_error_log.txt
+Saloka_Feature_Tracker_2026-09-13.xlsx
+Saloka_Biaya_Infrastruktur_2026-2027.xlsx
