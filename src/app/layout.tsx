@@ -70,7 +70,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUser();
+  const [user, org] = await Promise.all([getCurrentUser(), DataStore.getOrgPublic()]);
   let [dbUser, wallet, userCommunities] = user
     ? await Promise.all([
         cacheWrap(`user:db:${user.id}`, () => DataStore.findUserById(user.id), 60),
@@ -144,6 +144,7 @@ export default async function RootLayout({
           userCommunities={userCommunities}
           userSetupCompleted={!!userSetupCompleted}
           logoutAction={logout}
+          socials={org.socials}
         >
           {children}
         </ClientLayoutWrapper>

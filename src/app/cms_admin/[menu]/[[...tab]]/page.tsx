@@ -31,6 +31,11 @@ import AnnouncementsTab from '../../components/AnnouncementsTab'
 import CooperativeReportsTab from '../../components/CooperativeReportsTab'
 import KelurahanTab from '../../components/KelurahanTab'
 import PaymentMethodsTab from '../../components/PaymentMethodsTab'
+import FeatureControlTab from '../../components/FeatureControlTab'
+import SocialsTab from '../../components/SocialsTab'
+import ContactSupportTab from '../../components/ContactSupportTab'
+import LegalEditorTab from '../../components/LegalEditorTab'
+import { CONTACT_KEY, LEGAL_DOCS, SOCIALS_KEY, parseContact, parseLegal, parseSocials } from '@/lib/organization'
 
 /**
  * Menus (or individual tabs) that exist in the IA but have no admin UI yet.
@@ -116,6 +121,18 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
   // announcements/reports fan out one query per community, which is too
   // expensive to run on every navigation just for two tabs.
   const supportTickets = menu.key === 'support' ? await DataStore.getSupportTickets() : []
+  // Read fresh (not cached): its `version` drives optimistic concurrency on save.
+  const featureControl = menu.key === 'features' ? await DataStore.getFeatureControl() : null
+  // Organization menus read their SystemSetting row fresh for the same reason.
+  const orgSettingKey = (
+    {
+      'org-socials': SOCIALS_KEY,
+      'org-contact': CONTACT_KEY,
+      'org-privacy': LEGAL_DOCS.privacy.key,
+      'org-terms': LEGAL_DOCS.terms.key
+    } as Record<string, string | undefined>
+  )[menu.key]
+  const orgSetting = orgSettingKey ? await DataStore.getSetting(orgSettingKey) : null
   const allAnnouncements = menu.key === 'content' && activeTab === 'pengumuman' ? await getAllAnnouncements(allCommunities) : []
   const allCooperativeReports = menu.key === 'communities' && activeTab === 'laporan' ? await getAllCooperativeReports(allCommunities) : []
 
@@ -204,7 +221,20 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
     support: <CsDashboardClient currentUser={session.user} initialTickets={supportTickets} embedded />,
     services: <ServicesTab tab={activeTab!} services={allServices} bookings={allServiceBookings} />,
     'snackbox-coverage': <KelurahanTab />,
-    'payment-methods': <PaymentMethodsTab />
+    'payment-methods': <PaymentMethodsTab />,
+    features: featureControl && <FeatureControlTab initial={featureControl} />,
+    'org-socials': menu.key === 'org-socials' && orgSetting && (
+      <SocialsTab initial={{ socials: parseSocials(orgSetting.value), version: orgSetting.version }} />
+    ),
+    'org-contact': menu.key === 'org-contact' && orgSetting && (
+      <ContactSupportTab initial={{ contact: parseContact(orgSetting.value), version: orgSetting.version }} />
+    ),
+    'org-privacy': menu.key === 'org-privacy' && orgSetting && (
+      <LegalEditorTab slug="privacy" initial={{ state: parseLegal(orgSetting.value), version: orgSetting.version }} />
+    ),
+    'org-terms': menu.key === 'org-terms' && orgSetting && (
+      <LegalEditorTab slug="terms" initial={{ state: parseLegal(orgSetting.value), version: orgSetting.version }} />
+    )
   }
 
   const mockBanner = menu.mock && (
