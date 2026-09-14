@@ -1,6 +1,22 @@
 
 import { calculateDistance } from './utils'
 import { db } from './db'
+import { FEATURE_CONTROL_KEY, parseFeatureControl, type FeatureControl } from './features'
+import {
+  CONTACT_KEY,
+  LEGAL_DOCS,
+  ORG_PUBLIC_CACHE_KEY,
+  SOCIALS_KEY,
+  legalCacheKey,
+  parseContact,
+  parseLegal,
+  parseSocials,
+  type Contact,
+  type DocNode,
+  type LegalSlug,
+  type Socials
+} from './organization'
+import { cacheWrap } from './cache'
 import { PROTECTED_CERTIFICATE_TEMPLATE_NAME } from './lms-rules'
 import { computeTierAmount, resolveTierFallbackRecipient, resolveReferralChain, resolveReferralChainAsync, validateReferrerId, buildDownlineTree, KOPERASI_FIXED_TIER_COINS } from './referral-payout'
 import crypto from 'crypto'
@@ -546,7 +562,14 @@ let globalMockPaymentMethods: any[] = (_persistedDb as any).paymentMethods && (_
 let lastDbCheckTime = 0;
 let cachedDbConnected = false;
 
+// The mock store is a local-dev convenience only. In production a DB failure
+// must surface as an error — falling back used to "succeed" into a
+// per-instance in-memory copy (fake signups, joins, payments) that no other
+// request or instance ever sees again.
+const MOCK_FALLBACK = process.env.NODE_ENV !== 'production'
+
 export async function isDbConnected(): Promise<boolean> {
+  if (!MOCK_FALLBACK) return true;
   const now = Date.now();
   if (now - lastDbCheckTime < 60000 && cachedDbConnected) {
     return cachedDbConnected;
@@ -586,6 +609,9 @@ async function withFallback<T = any, M = any>(
   dbQuery: () => Promise<T> | any,
   mockFallback: () => M | Promise<M> | any
 ): Promise<any> {
+  // Production: the DB is the only source of truth — a null result is null and
+  // an error is an error, never mock seed data.
+  if (!MOCK_FALLBACK) return (await dbQuery()) ?? null
   syncMockDb()
   if (await isDbConnected()) {
     try {
@@ -611,6 +637,8 @@ async function withMutationFallback<T = any, M = any>(
   mockMutation: () => M | Promise<M> | any,
   dbOnly = false
 ): Promise<any> {
+  // Production: a failed write must fail loudly, never "succeed" into mock.
+  if (!MOCK_FALLBACK) return await dbMutation()
   syncMockDb()
   if (await isDbConnected()) {
     try {
@@ -649,8 +677,10 @@ export const DataStore = {
   // These stay fallback-resilient for the ~30 other (non-auth) callers.
   async findUserByEmail(email: string) {
     return withFallback(
-      () => db.user.findUnique({ where: { email } }),
-      () => globalMockUsers.find(u => u.email === email) || null
+      // Case-insensitive so a "Budi@gmail.com" signup and a later
+      // "budi@gmail.com" (e.g. Google login) resolve to the same account.
+      () => db.user.findFirst({ where: { email: { equals: email.trim(), mode: 'insensitive' } } }),
+      () => globalMockUsers.find(u => u.email.toLowerCase() === email.trim().toLowerCase()) || null
     )
   },
 
@@ -5012,7 +5042,10 @@ export const DataStore = {
         return await db.community.findMany({
           include: {
             ketua: { select: { id: true, name: true, role: true } },
-            _count: { select: { members: true } }
+            // Same removedAt exclusion as getCommunityById - this feeds the
+            // CMS admin's community list (allCommunities), which must never
+            // count a kicked/removed member the front page already excludes.
+            _count: { select: { members: { where: { removedAt: null } } } }
           },
           orderBy: { createdAt: 'desc' }
         })
@@ -5039,7 +5072,7 @@ export const DataStore = {
             const communities = (globalThis as any).__mockCommunities || []
             return communities.map((c: any) => {
               const ketua = globalMockUsers.find(u => u.id === c.ketuaId)
-              const memberCount = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === c.id).length
+              const memberCount = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === c.id && !m.removedAt).length
               return {
                 ...c,
                 ketua: ketua ? { id: ketua.id, name: ketua.name, role: ketua.role } : null,
@@ -5212,10 +5245,16 @@ export const DataStore = {
           where: { id },
           include: {
             ketua: { select: { id: true, name: true, role: true, email: true } },
+            // Excludes removed (soft-deleted) members - without this filter, a
+            // kicked-then-rejoined member's still-present row would double
+            // count them (or a kicked member never rejoining would still
+            // count forever), diverging from getCommunityRealStats's
+            // correctly-filtered activeMembersCount shown on the front page.
             members: {
+              where: { removedAt: null },
               include: { user: { select: { id: true, name: true, role: true, email: true } } }
             },
-            _count: { select: { members: true } }
+            _count: { select: { members: { where: { removedAt: null } } } }
           }
         });
         if (community) return community;
@@ -5226,9 +5265,10 @@ export const DataStore = {
                     include: {
                       ketua: { select: { id: true, name: true, role: true, email: true } },
                       members: {
+                        where: { removedAt: null },
                         include: { user: { select: { id: true, name: true, role: true, email: true } } }
                       },
-                      _count: { select: { members: true } }
+                      _count: { select: { members: { where: { removedAt: null } } } }
                     }
                   });
                   const cleanId = id.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -5268,9 +5308,10 @@ export const DataStore = {
                       include: {
                         ketua: { select: { id: true, name: true, role: true, email: true } },
                         members: {
+                          where: { removedAt: null },
                           include: { user: { select: { id: true, name: true, role: true, email: true } } }
                         },
-                        _count: { select: { members: true } }
+                        _count: { select: { members: { where: { removedAt: null } } } }
                       }
                     });
                   } catch (_) {}
@@ -5292,7 +5333,7 @@ export const DataStore = {
               community = seedCommunities.find(s => s.id === id || s.id.startsWith(id)) || { ...seedCommunities[1], id }
             }
             const ketua = globalMockUsers.find(u => u.id === community.ketuaId) || { id: 'user-admin-1', name: 'Super Admin Saloka', role: 'ADMIN', email: 'admin@saloka.com' }
-            const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === id)
+            const memberships = ((globalThis as any).__mockCommunityMemberships || []).filter((m: any) => m.communityId === id && !m.removedAt)
             const members = memberships.map((m: any) => {
               const user = globalMockUsers.find(u => u.id === m.userId)
               return { ...m, user: user ? { id: user.id, name: user.name, role: user.role, email: user.email } : null }
@@ -5304,6 +5345,82 @@ export const DataStore = {
               _count: { members: members.length || 3 }
             }
       }
+    )
+  },
+
+  // ─── SYSTEM SETTINGS (versioned SystemSetting rows) ─────────────────────────
+  // DB-only on purpose: src/proxy.ts reads Feature Control straight from
+  // Postgres and the Organization settings feed public pages, so a mock-mode
+  // value would never take effect anyway. `version` is the row's updatedAt;
+  // a missing row (or an unreachable DB) reads as null.
+  async getSetting(key: string): Promise<{ value: string | null; version: string | null }> {
+    try {
+      const row = await db.systemSetting.findUnique({ where: { key } })
+      return { value: row?.value ?? null, version: row ? row.updatedAt.toISOString() : null }
+    } catch {
+      return { value: null, version: null }
+    }
+  },
+
+  /**
+   * Optimistic-concurrency write: lands only if the row is still at
+   * `lastKnownVersion` (null = no row yet). Returns the new version, or null
+   * when another admin saved first.
+   */
+  async setSettingVersioned(key: string, value: string, lastKnownVersion: string | null): Promise<string | null> {
+    if (lastKnownVersion === null) {
+      try {
+        const row = await db.systemSetting.create({ data: { key, value } })
+        return row.updatedAt.toISOString()
+      } catch (e: any) {
+        if (e?.code === 'P2002') return null
+        throw e
+      }
+    }
+    const updatedAt = new Date()
+    const { count } = await db.systemSetting.updateMany({
+      where: { key, updatedAt: new Date(lastKnownVersion) },
+      data: { value, updatedAt }
+    })
+    return count === 1 ? updatedAt.toISOString() : null
+  },
+
+  // ─── FEATURE CONTROL (public feature kill switch, see lib/features.ts) ──────
+  async getFeatureControl(): Promise<{ config: FeatureControl; version: string | null }> {
+    const { value, version } = await DataStore.getSetting(FEATURE_CONTROL_KEY)
+    return { config: parseFeatureControl(value), version }
+  },
+
+  async setFeatureControl(config: FeatureControl, lastKnownVersion: string | null): Promise<string | null> {
+    return DataStore.setSettingVersioned(FEATURE_CONTROL_KEY, JSON.stringify(config), lastKnownVersion)
+  },
+
+  // ─── ORGANIZATION (socials, support contact, legal docs; see lib/organization.ts) ──
+  // Public reads only; the CMS reads rows fresh via getSetting because their
+  // version drives concurrency. Actions in app/actions/organization.ts bust
+  // these cache keys on write.
+  // ponytail: without UPSTASH_REDIS_* the cache is per instance, so other
+  // instances can serve the old value for up to 60s.
+  async getOrgPublic(): Promise<{ socials: Socials; contact: Contact }> {
+    return cacheWrap(
+      ORG_PUBLIC_CACHE_KEY,
+      async () => {
+        const [socials, contact] = await Promise.all([DataStore.getSetting(SOCIALS_KEY), DataStore.getSetting(CONTACT_KEY)])
+        return { socials: parseSocials(socials.value), contact: parseContact(contact.value) }
+      },
+      60
+    )
+  },
+
+  /** The live document for /privacy or /terms. Drafts never leave the CMS. */
+  async getPublishedLegal(slug: LegalSlug): Promise<{ doc: DocNode | null; publishedAt: string | null }> {
+    return cacheWrap(
+      legalCacheKey(slug),
+      async () => {
+        const { published, publishedAt } = parseLegal((await DataStore.getSetting(LEGAL_DOCS[slug].key)).value)
+        return { doc: published, publishedAt }
+      },
+      60
     )
   },
 
@@ -7092,12 +7209,15 @@ export const DataStore = {
         })
         if (!membership) throw new Error('Keanggotaan tidak ditemukan.')
 
-        // Trigger multi-tier community referral distribution
-        if (firstTimeVerified && (membership.community.category === 'PAID' || membership.community.type === 'KOPERASI')) {
+        // Trigger multi-tier community referral distribution. The engine itself
+        // skips FREE / zero-fee communities and routes Koperasi to its coin
+        // path — a category gate here missed Perkumpulan Premium rows, and the
+        // old 100000 default invented a fee for communities that charge none.
+        if (firstTimeVerified) {
           await this.processMultiTierCommunityReferral({
             communityId: membership.community.id,
             buyerId: membership.user.id,
-            totalFee: membership.community.joinFee || 100000
+            totalFee: membership.community.joinFee || 0
           })
         }
         if (firstTimeVerified) {
@@ -8407,10 +8527,20 @@ export const DataStore = {
         // even across two different buyers whose transactions land in the
         // same millisecond (also required if this ever grows cursor
         // pagination — Prisma needs a unique sort key for that).
+        // ponytail: no retention/archiving policy exists yet, so admins need
+        // the full history rather than an arbitrary 100-row business cutoff.
+        // 5000 is a technical safety valve, not a business rule — it just
+        // keeps a pathological (years-old, very active) community from
+        // pulling an unbounded row set into a low-end admin's browser. The
+        // UI already slices this client-side into 10/25/50-row pages, so
+        // only the initial fetch size is bounded here. Once a real retention/
+        // backup policy lands, replace this with cursor pagination (the
+        // createdAt/tierLevel/id sort above is already cursor-ready) instead
+        // of raising the number further.
         const logs = await (db as any).communityReferralLog?.findMany({
                   where: { communityId },
                   orderBy: [{ createdAt: 'desc' }, { tierLevel: 'asc' }, { id: 'asc' }],
-                  take: 100
+                  take: 5000
                 })
                 return logs
       },
@@ -8820,8 +8950,6 @@ export const DataStore = {
           if (!m) return null
           return { referrerId: m.referrerId ?? null, isActive: m.removedAt == null }
         })
-        let kasRemaining = community.coinBalance || 0
-
         for (let tier = 1; tier <= KOPERASI_FIXED_TIER_COINS.length; tier++) {
           const tierAmount = KOPERASI_FIXED_TIER_COINS[tier - 1]
           let recipientId: string | null = null
@@ -8836,10 +8964,14 @@ export const DataStore = {
             }
           }
 
-          const canPay = recipientId && kasRemaining >= tierAmount
+          // Conditional decrement in the DB, not a check against the
+          // pre-transaction coinBalance snapshot: concurrent joins each saw
+          // the same stale balance and could drive the kas negative.
+          const canPay = !!recipientId && (await tx.community.updateMany({
+            where: { id: communityId, coinBalance: { gte: tierAmount } },
+            data: { coinBalance: { decrement: tierAmount } }
+          })).count === 1
           if (canPay) {
-            kasRemaining -= tierAmount
-            await tx.community.update({ where: { id: communityId }, data: { coinBalance: { decrement: tierAmount } } })
             await tx.user.update({ where: { id: recipientId! }, data: { coinBalance: { increment: tierAmount } } })
             await tx.coinTransaction.create({
               data: {

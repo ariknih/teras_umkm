@@ -25,7 +25,9 @@ export async function login(formData: FormData) {
 
   const loginIp = await getClientIp()
   const loginAccountKey = `login:acct:${emailOrUsername.toLowerCase()}`
-  if (loginIp && !(await checkRateLimit(`login:ip:${loginIp}`, 20, 5 * 60 * 1000))) {
+  // IP cap is loose on purpose: event venues / campus WiFi / mobile CGNAT put
+  // many real users behind one IP. The per-account limit below is the real guard.
+  if (loginIp && !(await checkRateLimit(`login:ip:${loginIp}`, 100, 5 * 60 * 1000))) {
     return { error: 'Terlalu banyak percobaan login. Silakan coba lagi dalam beberapa menit.' }
   }
   if (!(await checkRateLimit(loginAccountKey, 5, 10 * 60 * 1000))) {
@@ -37,7 +39,9 @@ export async function login(formData: FormData) {
   // hardcoded seeded credentials.
   let user
   try {
-    user = await db.user.findUnique({ where: { email: emailOrUsername } })
+    // Case-insensitive: older accounts were stored with whatever casing the
+    // signup keyboard produced (register now lowercases new ones).
+    user = await db.user.findFirst({ where: { email: { equals: emailOrUsername, mode: 'insensitive' } } })
     if (!user) {
       user = await db.user.findFirst({ where: { username: emailOrUsername.toLowerCase() } as any })
     }
@@ -128,14 +132,19 @@ export async function login(formData: FormData) {
 }
 
 export async function register(formData: FormData) {
-  const name = formData.get('name') as string
-  const email = formData.get('email') as string
+  const name = ((formData.get('name') as string) || '').trim()
+  // Stored lowercase: phone keyboards auto-capitalize, and a mixed-case row
+  // otherwise can't be found again by an exact-match login lookup.
+  const email = ((formData.get('email') as string) || '').trim().toLowerCase()
   const password = formData.get('password') as string
   const roleStr = formData.get('role') as string // 'CUSTOMER' | 'MERCHANT' | 'AFFILIATE'
   const usernameRaw = formData.get('username') as string
-  
+
   if (!name || !email || !password || !roleStr) {
     return { error: 'Semua kolom wajib diisi' }
+  }
+  if (password.length < 6) {
+    return { error: 'Password minimal 6 karakter.' }
   }
   
   const role = roleStr as 'CUSTOMER' | 'MERCHANT' | 'AFFILIATE'
@@ -191,14 +200,23 @@ export async function register(formData: FormData) {
   const communityId = formData.get('communityId') as string || undefined
 
   const passwordHash = await hashPassword(password)
-  const user = await DataStore.createUser({
-    email,
-    name,
-    passwordHash,
-    role,
-    parentAffiliateId,
-    username: finalUsername,
-  })
+  let user
+  try {
+    user = await DataStore.createUser({
+      email,
+      name,
+      passwordHash,
+      role,
+      parentAffiliateId,
+      username: finalUsername,
+    })
+  } catch (e: any) {
+    // Unique email/username lost to a concurrent signup (double-tap submit,
+    // or two people picking the same username at the same moment).
+    if (e?.code === 'P2002') return { error: 'Email atau username sudah terdaftar.' }
+    console.error('[auth] register createUser failed:', e)
+    return { error: 'Gagal membuat akun, silakan coba lagi.' }
+  }
 
   // The first-touch affiliate_ref cookie is consumed by this signup — clear it
   // so it doesn't silently leak into a second signup on the same browser (a
@@ -429,8 +447,11 @@ export async function requestPasswordReset(phone: string) {
     return { error: 'Nomor WhatsApp wajib diisi.' }
   }
 
+  // Per phone (stops OTP spam at one number) plus a loose per-IP cap — a flat
+  // 3-per-IP limit locked out a whole venue's shared WiFi after 3 resets.
   const resetIp = await getClientIp()
-  if (resetIp && !(await checkRateLimit(`pwreset-req:${resetIp}`, 3, 10 * 60 * 1000))) {
+  if (!(await checkRateLimit(`pwreset-req:phone:${cleanPhone}`, 3, 10 * 60 * 1000)) ||
+      (resetIp && !(await checkRateLimit(`pwreset-req:${resetIp}`, 30, 10 * 60 * 1000)))) {
     return { error: 'Terlalu banyak permintaan OTP. Silakan coba lagi dalam beberapa menit.' }
   }
 

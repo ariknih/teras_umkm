@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     const gateway = getPrimaryGateway()
     const orderId = `${prefixForPurpose(purpose)}-${gateway.encodeUserId(user.id)}-${Date.now().toString(36)}`
 
-    savePendingContext(orderId, {
+    await savePendingContext(orderId, {
       purpose,
       gatewayId: gateway.id,
       communityId,

@@ -17,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching products for sitemap:', e)
   }
 
-  const routes = ['', '/market', '/academy', '/affiliate', '/community', '/privacy', '/terms'].map((route) => ({
+  const routes = ['', '/market', '/academy', '/affiliate', '/community', '/privacy', '/terms', '/bantuan'].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,

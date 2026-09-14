@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { purgeExpiredAuditLogsAction } from '@/app/actions/audit'
 import { purgeExpiredRateLimitAttempts } from '@/lib/rate-limit'
+import { purgeStalePendingContexts } from '@/lib/payment-purposes'
 
 // Vercel Cron calls this with `Authorization: Bearer $CRON_SECRET` — see
 // vercel.json for the schedule. Enforces the audit log retention policy
@@ -14,11 +15,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const [auditResult, rateLimitResult] = await Promise.all([
+  const [auditResult, rateLimitResult, paymentCtxResult] = await Promise.all([
     purgeExpiredAuditLogsAction(),
     // Table may not exist yet on a deploy that ran before `prisma db push` —
     // don't let that discard the audit purge result that already succeeded.
-    purgeExpiredRateLimitAttempts(60 * 60 * 1000).catch(() => ({ count: 0 }))
+    purgeExpiredRateLimitAttempts(60 * 60 * 1000).catch(() => ({ count: 0 })),
+    // Abandoned gateway checkouts' pending payment context (older than 24h).
+    purgeStalePendingContexts().catch(() => ({ count: 0 }))
   ])
-  return NextResponse.json({ ...auditResult, rateLimitDeletedCount: rateLimitResult.count })
+  return NextResponse.json({ ...auditResult, rateLimitDeletedCount: rateLimitResult.count, paymentCtxDeletedCount: paymentCtxResult.count })
 }

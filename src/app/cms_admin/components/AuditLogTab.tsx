@@ -13,8 +13,13 @@ type CategoryKey = 'semua' | 'cms' | 'feature'
 
 const ACTOR_BY_TAB: Record<string, string> = { member: 'MEMBER', admin: 'ADMIN' }
 
-/** Actions logged by admin content-management screens (banner, pengumuman, academy CMS). */
+/**
+ * Actions logged by admin content-management screens (banner, pengumuman,
+ * academy CMS, feature control). FEATURE_CONTROL_REJECTED is deliberately
+ * absent: a rejected/tampered save is a security event, not a content change.
+ */
 const FRONTPAGE_CMS_ACTIONS = new Set([
+  'FEATURE_DISABLED', 'FEATURE_ENABLED', 'FEATURE_REDIRECT_UPDATED', 'FEATURE_REDIRECT_BULK_REASSIGNED',
   'CREATE_BANNER', 'UPDATE_BANNER', 'DELETE_BANNER', 'TOGGLE_BANNER_ACTIVE',
   'CREATE_ANNOUNCEMENT', 'UPDATE_ANNOUNCEMENT', 'DELETE_ANNOUNCEMENT',
   'TOGGLE_PUBLISH_ANNOUNCEMENT', 'TOGGLE_PIN_ANNOUNCEMENT',
@@ -37,6 +42,7 @@ const MODULE_LABELS: Record<string, string> = {
   COMMUNITY: 'Komunitas',
   COOPERATIVE: 'Koperasi',
   DEBUG: 'Debug',
+  FEATURE_CONTROL: 'Feature Control',
   JASA: 'Jasa & Layanan',
   KYC: 'KYC',
   MERCHANTS: 'Merchant',

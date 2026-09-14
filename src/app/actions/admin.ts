@@ -10,6 +10,7 @@ import { hashPassword, verifyPassword } from '@/lib/password'
 import { deleteUploadedFile } from '@/lib/delete-upload'
 import { getDisabledModulesForTemplate, normalizeTemplateType } from '@/lib/community-templates'
 import { isValidAdminType, DEFAULT_ADMIN_TYPE } from '@/app/cms_admin/admin-types'
+import { validateConfig, diffConfig, type FeatureControl } from '@/lib/features'
 
 // Logs a denied privilege check. Fires only on the throw path — access that
 // succeeds is not logged here, only the specific mutations that matter are
@@ -595,7 +596,11 @@ export async function verifyInvoiceMembershipAction(membershipId: string) {
       // verified member stays invisible on the front page for the cache's
       // full TTL.
       const membership = res.membership
-      if (membership?.community?.id) deleteCache(`community:members:${membership.community.id}`)
+      if (membership?.community?.id) {
+        deleteCache(`community:members:${membership.community.id}`)
+        deleteCache(`community:stats:${membership.community.id}`)
+        revalidatePath(`/community/${membership.community.id}`)
+      }
       if (membership?.user?.id) deleteCache(`user:communities:roles:${membership.user.id}`)
     }
     revalidatePath('/cms_admin', 'layout')
@@ -762,6 +767,69 @@ export async function ensureAdminPermission(permissionKey: string) {
     throw new Error(`Unauthorized: Anda tidak memiliki akses ke modul ${permissionKey}.`)
   }
   return dbUser
+}
+
+// ─── FEATURE CONTROL ACTIONS ───────────────────────────────────────────────
+const FEATURE_CONTROL_STALE = 'Konfigurasi telah diubah oleh admin lain. Silakan muat ulang halaman.'
+
+// One entry point for every change made in FeatureControlTab (toggle on/off,
+// CTA/destination edit, dependency-modal bulk reassignment), so every change
+// is validated, concurrency-checked and audited the same way.
+export async function updateFeatureControlAction(
+  next: unknown,
+  lastKnownVersion: string | null
+): Promise<{ ok: true; config: FeatureControl; version: string } | { ok: false; error: string; stale?: boolean }> {
+  const admin = await ensureAdminPermission('features')
+  const audit = (action: string, targetId: string | undefined, detail: object) =>
+    logAudit({
+      actor: 'ADMIN',
+      actorId: admin.id,
+      actorName: admin.name || admin.email,
+      action,
+      module: 'FEATURE_CONTROL',
+      targetType: 'FEATURE',
+      targetId,
+      detail: JSON.stringify(detail)
+    })
+
+  const result = validateConfig(next)
+  if (!result.ok) {
+    // The CMS UI can't produce an invalid config, so this is tamper evidence.
+    await audit('FEATURE_CONTROL_REJECTED', undefined, {
+      reason: result.error,
+      submitted: JSON.stringify(next)?.slice(0, 1000)
+    })
+    return { ok: false, error: result.error }
+  }
+  if (lastKnownVersion !== null && (typeof lastKnownVersion !== 'string' || Number.isNaN(Date.parse(lastKnownVersion)))) {
+    return { ok: false, error: FEATURE_CONTROL_STALE, stale: true }
+  }
+
+  try {
+    const { config: before } = await DataStore.getFeatureControl()
+    const version = await DataStore.setFeatureControl(result.config, lastKnownVersion)
+    // Nothing was written, so nothing is audited.
+    if (!version) return { ok: false, error: FEATURE_CONTROL_STALE, stale: true }
+
+    // Diffed server-side against the stored state, never from client labels.
+    // A retarget whose old destination got disabled in this same save is the
+    // dependency modal's bulk reassignment.
+    const changes = diffConfig(before, result.config)
+    const disabledNow = new Set(changes.filter((c) => c.change === 'DISABLED').map((c) => c.key))
+    for (const c of changes) {
+      const bulk = c.change === 'REDIRECT_UPDATED' && disabledNow.has(c.before!.target)
+      await audit(bulk ? 'FEATURE_REDIRECT_BULK_REASSIGNED' : `FEATURE_${c.change}`, c.key, {
+        before: c.before,
+        after: c.after,
+        ...(bulk ? { triggeredBy: c.before!.target } : {})
+      })
+    }
+
+    revalidatePath('/cms_admin', 'layout')
+    return { ok: true, config: result.config, version }
+  } catch (e: any) {
+    return { ok: false, error: e?.message || 'Gagal menyimpan Feature Control.' }
+  }
 }
 
 // ─── GLOBAL KYC SETTINGS ACTIONS ───────────────────────────────────────────
@@ -968,6 +1036,7 @@ export async function kickMemberFromCommunityAdminAction(userId: string, communi
     }
     deleteCache(`community:members:${communityId}`)
     invalidateCachePattern(`community:members:${communityId}*`)
+    deleteCache(`community:stats:${communityId}`)
     deleteCache(`user:communities:roles:${userId}`)
     invalidateCachePattern('user:communities:roles:*')
     deleteCache('community:induk:all')

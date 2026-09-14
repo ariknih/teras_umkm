@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    const ctx = getPendingContext(orderId)
+    const ctx = await getPendingContext(orderId)
     if (!ctx) {
       return NextResponse.json(
         { error: 'Konteks transaksi tidak ditemukan (server mungkin baru saja restart). Silakan buat pembayaran baru.' },
@@ -85,14 +85,18 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      await settlePurpose(purpose, orderUserId, amount, orderId, ctx)
+      // payCommunityJoinFee reports some failures (community/user not found) as
+      // a returned { error } rather than a throw — treat it as one, so the
+      // pending context isn't deleted for an order that never settled.
+      const res: any = await settlePurpose(purpose, orderUserId, amount, orderId, ctx)
+      if (res?.error) throw new Error(res.error)
     } catch (e: any) {
       // Unique orderId constraint violation (SAVINGS/COIN_TOPUP) means a
       // concurrent or earlier verify call already settled this order —
       // idempotent no-op, not an error to surface to the user.
       if (e.code === 'P2002' || /sudah diproses sebelumnya/.test(e.message || '')) {
         MidtransRegistry.markTransactionProcessed(orderId)
-        deletePendingContext(orderId)
+        await deletePendingContext(orderId)
         return NextResponse.json({
           success: true,
           status: 'SUCCESS',
@@ -104,7 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     MidtransRegistry.markTransactionProcessed(orderId)
-    deletePendingContext(orderId)
+    await deletePendingContext(orderId)
     await logAudit({
       actor: 'MEMBER',
       actorId: orderUserId,
@@ -118,10 +122,12 @@ export async function POST(req: NextRequest) {
     if (purpose === 'JOIN_FEE') {
       deleteCache('community:induk:all')
       deleteCache(`community:members:${ctx.communityId}`)
+      deleteCache(`community:stats:${ctx.communityId}`)
       invalidateCachePattern('community:induk:*')
       invalidateCachePattern('user:communities:roles:*')
       revalidatePath('/community')
       revalidatePath('/merchant/dashboard')
+      revalidatePath('/cms_admin', 'layout')
     }
     revalidatePath(`/community/${ctx.communityId}`)
     if (purpose === 'COIN_TOPUP') revalidatePath('/cms_admin', 'layout')

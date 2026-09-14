@@ -114,7 +114,9 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
   const products = memberIds.length > 0 ? await getProductsByMerchantIdsAction(memberIds).catch(() => []) : []
 
   const mem = currentUser ? memberList.find((m: any) => m.userId === currentUser.id) : null
-  const isMember = !!(currentUser && (mem || currentUser.id === commDetail?.ketuaId))
+  // An UNPAID row (bank transfer awaiting admin verification) is on the roster
+  // but isn't a member yet of a paid community.
+  const isMember = !!(currentUser && ((mem && (mem.isPaid || !(Number(commDetail?.joinFee) > 0))) || currentUser.id === commDetail?.ketuaId))
   const isIndukMember = !!mem?.isInduk
   const membershipDetails = mem || null
 

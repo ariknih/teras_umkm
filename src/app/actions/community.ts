@@ -1,6 +1,7 @@
 'use server'
 
 import { DataStore } from '@/lib/data-store'
+import { db } from '@/lib/db'
 import { getCurrentUser } from './auth'
 import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
@@ -277,14 +278,19 @@ export async function getIndukCommunities() {
   return await cacheWrap('community:induk:all', () => DataStore.getCommunities(), 60)
 }
 
+// ponytail: no cacheWrap on per-community detail / roster / user-role reads.
+// lib/cache.ts is a per-instance Map (no Upstash), so on Vercel a write's
+// deleteCache only clears one instance and the rest keep serving pre-join
+// rosters and pre-save joinFee for the TTL. These are single indexed queries;
+// re-add caching behind Upstash if DB load ever demands it.
 export async function getIndukCommunityDetail(id: string) {
-  return await cacheWrap(`community:induk:${id}`, () => DataStore.getCommunityById(id), 60)
+  return await DataStore.getCommunityById(id)
 }
 
 export async function getUserCommunitiesWithRolesAction(userId?: string, preloadedCommunities?: any[]) {
   const targetUserId = userId || (await getCurrentUser())?.id
   if (!targetUserId) return []
-  return await cacheWrap(`user:communities:roles:${targetUserId}`, () => DataStore.getUserCommunitiesWithRoles(targetUserId, preloadedCommunities), 60)
+  return await DataStore.getUserCommunitiesWithRoles(targetUserId, preloadedCommunities)
 }
 
 export async function switchActiveIndukCommunityAction(communityId: string) {
@@ -338,7 +344,9 @@ export async function createIndukCommunity(formData: FormData) {
   // Check global Superadmin setting: Is KYC required to create a community?
   const globalKycRequired = await DataStore.getGlobalKycRequirementToCreateCommunity()
   if (globalKycRequired) {
-    const isUserKycVerified = (user as any).kycStatus === 'VERIFIED' || (user as any).kycStatus === 'APPROVED'
+    // kycStatus isn't in the session JWT — read it from the DB row.
+    const kycStatus = (await DataStore.findUserById(user.id))?.kycStatus
+    const isUserKycVerified = kycStatus === 'VERIFIED' || kycStatus === 'APPROVED'
     if (!isUserKycVerified) {
       return { 
         error: 'Syarat verifikasi KYC (KTP/Selfie) aktif. Anda harus memverifikasi akun Anda sebelum membuat Komunitas Induk.',
@@ -416,6 +424,7 @@ export async function createIndukCommunity(formData: FormData) {
     invalidateCachePattern('community:induk:*')
     invalidateCachePattern('user:communities:roles:*')
     revalidatePath('/community')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, community }
   } catch (e: any) {
     return { error: e.message || 'Gagal membuat komunitas.' }
@@ -461,11 +470,13 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
     })
     deleteCache('community:induk:all')
     deleteCache(`community:members:${communityId}`)
+    deleteCache(`community:stats:${communityId}`)
     invalidateCachePattern('community:induk:*')
     invalidateCachePattern('user:communities:roles:*')
     revalidatePath(`/community/${communityId}`)
     revalidatePath('/community')
     revalidatePath('/merchant/dashboard')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, ...result }
   } catch (e: any) {
     return { error: e.message || 'Gagal bergabung ke komunitas.' }
@@ -492,26 +503,54 @@ export async function payCommunityJoinFeeAction(communityId: string, paymentMeth
     if (referrer) referrerId = referrer.id
   }
 
+  if (paymentMethod !== 'BANK') {
+    return { error: 'Metode pembayaran tidak valid.' }
+  }
+
   try {
-    const result: any = await DataStore.payCommunityJoinFee(user.id, communityId, paymentMethod, referrerId)
-    if (result?.success) {
-      await logAudit({
-        actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
-        actorId: user.id,
-        actorName: user.name || user.email,
-        action: 'PAY_COMMUNITY_JOIN_FEE',
-        module: 'COOPERATIVE',
-        targetId: communityId,
-        targetType: 'COMMUNITY',
-        detail: `Bayar biaya keanggotaan via ${paymentMethod}.`
-      })
+    // A bank transfer is only a CLAIM until an admin sees the money: record
+    // the (UNPAID, referrer cycle-checked) membership and flag it
+    // invoiceStatus PAID = "Sudah Bayar (Pending)" in the CMS invoice queue.
+    // isPaid and the referral payout only flip in verifyInvoiceMembership.
+    // Previously this settled instantly, granting paid membership and paying
+    // real commissions with no money received.
+    const joined: any = await DataStore.joinCommunity(user.id, communityId, false, referrerId)
+    if (joined?.error) return joined
+    if (joined?.alreadyMember && joined.invoiceStatus !== 'UNPAID') {
+      return { error: 'Pembayaran Anda sudah tercatat. Mohon tunggu verifikasi admin.' }
     }
+    if (!joined?.needsPayment) return { error: 'Komunitas ini tidak memerlukan pembayaran.' }
+    await db.communityMembership.updateMany({
+      where: { communityId, userId: user.id, isPaid: false, removedAt: null },
+      data: { invoiceStatus: 'PAID' }
+    })
+    const result = { success: true, pendingVerification: true, invoiceStatus: 'PAID' }
+    await logAudit({
+      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+      actorId: user.id,
+      actorName: user.name || user.email,
+      action: 'PAY_COMMUNITY_JOIN_FEE',
+      module: 'COOPERATIVE',
+      targetId: communityId,
+      targetType: 'COMMUNITY',
+      detail: `Konfirmasi transfer bank biaya keanggotaan, menunggu verifikasi admin.`
+    })
+    // A rejoin reactivates a soft-deleted row (or a fresh join creates a new
+    // one) — either way the member LIST cache (separate from community:induk:*
+    // above) must also drop, or a viewer who warmed it in the last 60s makes
+    // the client's post-payment loadData() see the pre-payment roster and
+    // immediately reset isMember back to false right after payment succeeded.
+    // Mirrors what kickCommunityMemberAction and joinIndukCommunity already do.
+    deleteCache(`community:members:${communityId}`)
+    invalidateCachePattern(`community:members:${communityId}*`)
+    deleteCache(`community:stats:${communityId}`)
     deleteCache('community:induk:all')
     invalidateCachePattern('community:induk:*')
     invalidateCachePattern('user:communities:roles:*')
     revalidatePath(`/community/${communityId}`)
     revalidatePath('/community')
     revalidatePath('/merchant/dashboard')
+    revalidatePath('/cms_admin', 'layout')
     return result
   } catch (e: any) {
     return { error: e.message || 'Gagal memproses pembayaran keanggotaan.' }
@@ -542,7 +581,8 @@ export async function getIndukCommunityMembersAction(
     }
   }
   if (!authorized) return []
-  return await cacheWrap(`community:members:${communityId}`, () => DataStore.getIndukCommunityMembers(communityId), 60)
+  // Uncached on purpose — see the ponytail note above getIndukCommunityDetail.
+  return await DataStore.getIndukCommunityMembers(communityId)
 }
 
 export async function kickCommunityMemberAction(communityId: string, targetUserId: string) {
@@ -593,6 +633,7 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
     // Clear server-side caches so all members and the kicked user see the change immediately
     deleteCache(`community:members:${actualCommunityId}`)
     invalidateCachePattern(`community:members:${actualCommunityId}*`)
+    deleteCache(`community:stats:${actualCommunityId}`)
     deleteCache(`user:communities:roles:${actualTargetUserId}`)
     invalidateCachePattern('user:communities:roles:*')
     deleteCache('community:induk:all')
@@ -981,10 +1022,16 @@ export async function updateIndukCommunity(id: string, formData: FormData) {
     // touch (it only clears Next's route cache, not this app-level cache) -
     // without this, every field changed here (menu toggles, join fee,
     // branding) keeps serving pre-save values to the next reader for up to
-    // the cache's TTL.
+    // the cache's TTL. community:induk:all is the LIST version of the same
+    // cache (the /community hub page), and /cms_admin has its own separate
+    // unstable_cache (allCommunities) that only revalidatePath('/cms_admin')
+    // reaches — without all three, a ketua's own edit here shows correctly
+    // on their own page but keeps showing the old values everywhere else.
     deleteCache(`community:induk:${id}`)
+    deleteCache('community:induk:all')
     revalidatePath(`/community/${id}`)
     revalidatePath('/community')
+    revalidatePath('/cms_admin', 'layout')
     return { success: true, community: updated }
   } catch (e: any) {
     return { error: e.message || 'Gagal memperbarui komunitas.' }
@@ -1300,8 +1347,10 @@ export async function upgradeCommunityTierAction(communityId: string, targetTier
   }
 
   deleteCache(`community:induk:${communityId}`)
+  deleteCache('community:induk:all')
   revalidatePath(`/community/${communityId}`)
   revalidatePath('/community')
+  revalidatePath('/cms_admin', 'layout')
   return { success: true }
 }
 

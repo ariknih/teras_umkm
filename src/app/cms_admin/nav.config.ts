@@ -23,6 +23,11 @@ import {
   LayoutGrid,
   FolderOpen,
   MonitorCheck,
+  ToggleRight,
+  Landmark,
+  AtSign,
+  FileText,
+  Headset,
   type LucideIcon
 } from 'lucide-react'
 
@@ -69,6 +74,7 @@ export const CATEGORIES = [
   'KEUANGAN',
   'KOMUNITAS',
   'KONTEN & EDUKASI',
+  'ORGANIZATION',
   'SISTEM'
 ] as const
 
@@ -80,6 +86,7 @@ export const CATEGORY_ICONS: Record<(typeof CATEGORIES)[number], LucideIcon> = {
   KEUANGAN: Coins,
   KOMUNITAS: Building2,
   'KONTEN & EDUKASI': FolderOpen,
+  ORGANIZATION: Landmark,
   SISTEM: MonitorCheck
 }
 
@@ -288,6 +295,42 @@ export const MENUS: Menu[] = [
     ]
   },
 
+  // ─── ORGANIZATION ─────────────────────────────────────────────────────
+  // Single source of truth for organization-wide content on the public site.
+  // Rules live in lib/organization.ts; every save busts the public cache.
+  {
+    key: 'org-socials',
+    label: 'Socials',
+    title: 'Socials',
+    desc: 'Tampilkan/sembunyikan dan atur URL Instagram, TikTok, YouTube, dan Facebook di footer',
+    icon: AtSign,
+    category: 'ORGANIZATION'
+  },
+  {
+    key: 'org-privacy',
+    label: 'Kebijakan Privasi',
+    title: 'Kebijakan Privasi',
+    desc: 'Sunting, simpan draf, dan terbitkan halaman /privacy',
+    icon: ShieldCheck,
+    category: 'ORGANIZATION'
+  },
+  {
+    key: 'org-terms',
+    label: 'Syarat & Ketentuan',
+    title: 'Syarat & Ketentuan',
+    desc: 'Sunting, simpan draf, dan terbitkan halaman /terms',
+    icon: FileText,
+    category: 'ORGANIZATION'
+  },
+  {
+    key: 'org-contact',
+    label: 'Contact Support',
+    title: 'Contact Support',
+    desc: 'Email dan nomor WhatsApp dukungan di halaman legal dan Pusat Bantuan',
+    icon: Headset,
+    category: 'ORGANIZATION'
+  },
+
   // ─── SISTEM ───────────────────────────────────────────────────────────
   {
     key: 'support',
@@ -312,6 +355,15 @@ export const MENUS: Menu[] = [
       { key: 'member', label: 'Member' },
       { key: 'admin', label: 'Admin' }
     ]
+  },
+  {
+    key: 'features',
+    label: 'Feature Control',
+    title: 'Feature Control',
+    desc: 'Nonaktifkan akses publik fitur dan atur tombol pengalihan',
+    icon: ToggleRight,
+    category: 'SISTEM'
+    // Front-side only: blocks public pages via src/proxy.ts; CMS and APIs keep running.
   }
 ]
 

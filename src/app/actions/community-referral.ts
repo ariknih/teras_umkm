@@ -140,8 +140,14 @@ export async function updateCommunityReferralConfig(data: {
     // must not keep serving the pre-save value, or the client's next
     // loadData() resets its local joinFee and a subsequent "Simpan
     // Pengaturan" resends the stale value, wiping Premium status back out.
+    // Also busts the induk LIST cache and the CMS admin's separate
+    // unstable_cache (allCommunities) — without the latter, a referral
+    // config edited from the front page keeps showing its old values in the
+    // CMS for up to that cache's TTL, exactly the "not 1:1" gap this closes.
     deleteCache(`community:induk:${data.communityId}`)
+    deleteCache('community:induk:all')
     revalidatePath(`/community/${data.communityId}`)
+    revalidatePath('/cms_admin', 'layout')
 
     return { success: true, updated }
   } catch (e: any) {

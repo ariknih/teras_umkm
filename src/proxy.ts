@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { jwtVerify } from 'jose'
+import { jwtVerify, type JWTPayload } from 'jose'
+import { db } from '@/lib/db'
+import { merchantSubdomain } from '@/lib/cookie-domain'
+import {
+  matchFeature,
+  findFeature,
+  parseFeatureControl,
+  FEATURE_CONTROL_KEY,
+  type FeatureControl,
+  type FeatureEntry
+} from '@/lib/features'
 
 // The community-scoped referral cookie's "first touch, never overwritten"
 // rule is meant to protect one prospective member's attribution from being
@@ -12,14 +22,91 @@ import { jwtVerify } from 'jose'
 // shared/public device) each get independently tracked attribution instead
 // of the second visit silently inheriting the first visitor's referrer.
 async function referralCookieScope(request: NextRequest): Promise<string> {
+  return ((await sessionPayload(request))?.id as string) || 'anon'
+}
+
+async function sessionPayload(request: NextRequest): Promise<JWTPayload | null> {
   const token = request.cookies.get('session')?.value
-  if (!token || !process.env.JWT_SECRET) return 'anon'
+  if (!token || !process.env.JWT_SECRET) return null
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET))
-    return (payload.id as string) || 'anon'
+    return (await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET))).payload
   } catch {
-    return 'anon'
+    return null
   }
+}
+
+// ─── Feature Control (/cms_admin/features) ──────────────────────────────────
+// ponytail: 30s per-instance TTL, so a toggle takes up to 30s to reach every
+// instance; move to Redis via lib/cache if instant propagation matters.
+const FEATURE_TTL_MS = 30_000
+let featureControlMemo: { at: number; value: FeatureControl } | null = null
+const placeholderMemo = new Map<string, { at: number; html: string }>()
+
+// No x-robots-tag here on purpose. A bare 503 + Retry-After means "temporarily
+// down, keep the ranking"; Google ignores 5xx content anyway, while a noindex
+// that ever leaked onto a 200 (e.g. Beranda) would de-index the real page.
+// Note: Google still drops URLs that return 5xx persistently, so keep
+// outages of high-value pages short.
+const PLACEHOLDER_HEADERS = {
+  'retry-after': '3600',
+  'cache-control': 'no-store'
+}
+
+async function getFeatureControl(): Promise<FeatureControl> {
+  if (featureControlMemo && Date.now() - featureControlMemo.at < FEATURE_TTL_MS) return featureControlMemo.value
+  let value: FeatureControl = {}
+  try {
+    const row = await db.systemSetting.findUnique({ where: { key: FEATURE_CONTROL_KEY } })
+    value = parseFeatureControl(row?.value)
+  } catch (e) {
+    // Fail open: a DB hiccup must never take every public feature offline.
+    console.error('[feature-control] config read failed, serving all features:', e)
+  }
+  featureControlMemo = { at: Date.now(), value }
+  return value
+}
+
+const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+
+// ponytail: bare-bones page for when the real placeholder can't be rendered;
+// it can't reach the hashed design-system CSS, so the CTA is an unstyled link.
+// Still a 503, so neither users nor crawlers ever get the disabled feature
+// or a 200 in its place.
+function fallbackPlaceholderHtml(entry: FeatureEntry): string {
+  const href = findFeature(entry.target)?.href ?? '/'
+  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Saloka.id</title></head><body style="font-family:system-ui,sans-serif;text-align:center;padding:4rem 1rem"><h1 style="font-size:1.25rem">Fitur ini sedang dalam tahap penyempurnaan untuk pengalaman yang lebih baik.</h1><p><a href="${escapeHtml(href)}">${escapeHtml(entry.cta)}</a></p></body></html>`
+}
+
+// A rewrite can't carry a 503 — Next resets the status to 200 before a page
+// renders (base-server.js `res.statusCode = 200` ahead of run()). So the
+// placeholder page is rendered via an internal fetch and re-served as a body
+// response, whose status the router does keep.
+//
+// Anonymous visitors share one cookie-less render per TTL. Logged-in visitors
+// get a fresh render with their own cookies and it is never cached: after
+// login the app pushes to '/', and if Beranda is off the header must show
+// they are signed in — a logged-out header there reads as "login failed".
+async function featureDisabledResponse(request: NextRequest, key: string, entry: FeatureEntry, loggedIn: boolean) {
+  const cached = placeholderMemo.get(key)
+  let html = !loggedIn && cached && Date.now() - cached.at < FEATURE_TTL_MS ? cached.html : null
+  if (!html) {
+    try {
+      const res = await fetch(new URL(`/fitur-nonaktif?f=${key}`, request.nextUrl.origin), {
+        cache: 'no-store',
+        headers: loggedIn ? { cookie: request.headers.get('cookie') ?? '' } : undefined
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      html = await res.text()
+      if (!loggedIn) placeholderMemo.set(key, { at: Date.now(), html })
+    } catch (e) {
+      console.error('[feature-control] placeholder render failed, serving fallback page:', e)
+      html = fallbackPlaceholderHtml(entry)
+    }
+  }
+  return new NextResponse(html, {
+    status: 503,
+    headers: { ...PLACEHOLDER_HEADERS, 'content-type': 'text/html; charset=utf-8' }
+  })
 }
 
 export async function proxy(request: NextRequest) {
@@ -44,6 +131,22 @@ export async function proxy(request: NextRequest) {
     })
   }
 
+  // 1b. Feature Control: a disabled public feature (and every nested route)
+  // gets the 503 placeholder before anything renders. GET/HEAD only, so a
+  // server action or form POST already in flight still lands. The catalog in
+  // lib/features.ts never contains CMS or API prefixes.
+  const feature = request.method === 'GET' || request.method === 'HEAD' ? matchFeature(pathname) : null
+  // A merchant subdomain's root ('tokorijal.saloka.id/') is that store's
+  // storefront, not Beranda, so disabling Beranda must not touch it.
+  const isStorefrontRoot = feature?.key === 'home' && !!merchantSubdomain(hostname)
+  if (feature && !isStorefrontRoot) {
+    const entry = (await getFeatureControl())[feature.key]
+    const session = entry ? await sessionPayload(request) : null
+    if (entry && session?.role !== 'ADMIN') {
+      return featureDisabledResponse(request, feature.key, entry, !!session)
+    }
+  }
+
   // 2. Skip global platform routes so they function correctly under subdomains if accessed directly
   const globalPaths = [
     '/market',
@@ -60,11 +163,15 @@ export async function proxy(request: NextRequest) {
     '/affiliate',
     '/privacy',
     '/terms',
+    '/bantuan',
     '/onboarding',
     '/ref',
     '/setup-landing',
     '/merchant/dashboard',
-    '/merchant/builder'
+    '/merchant/builder',
+    // Must not be rewritten into a merchant store when the proxy fetches it
+    // from a subdomain host.
+    '/fitur-nonaktif'
   ]
 
   const isGlobalPath = globalPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))
@@ -74,6 +181,10 @@ export async function proxy(request: NextRequest) {
         headers: requestHeaders,
       },
     })
+
+    // The placeholder is only meant to be seen through the proxy's 503. A
+    // direct visit returns 200, so keep that URL out of search results.
+    if (pathname === '/fitur-nonaktif') response.headers.set('x-robots-tag', 'noindex')
 
     // Community-scoped referral, first-touch per (community, visiting user)
     // — never overwritten within that scope — separate from the
@@ -100,46 +211,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // 3. Subdomain extraction logic
-  let subdomain = ''
-  const cleanHost = hostname.split(':')[0]
-  const hostParts = cleanHost.split('.')
-
-  // Subdomains to ignore (system/reserved)
-  const reservedSubdomains = ['www', 'admin', 'affiliate', 'api', 'localhost', 'prev', 'rev', 'dev', 'stage', 'staging', 'preprod', 'preview', 'test', 'app']
-
-  if (cleanHost.endsWith('localhost') || cleanHost.endsWith('127.0.0.1')) {
-    // Local development (e.g. tokorijal.localhost:3000)
-    if (hostParts.length > 1) {
-      const firstPart = hostParts[0].toLowerCase()
-      if (!reservedSubdomains.includes(firstPart)) {
-        subdomain = firstPart
-      }
-    }
-  } else if (cleanHost.endsWith('saloka.varro.my.id')) {
-    // Cloudflare Tunnel testing (e.g. tokorijal.saloka.varro.my.id)
-    if (hostParts.length > 4) {
-      const firstPart = hostParts[0].toLowerCase()
-      if (!reservedSubdomains.includes(firstPart)) {
-        subdomain = firstPart
-      }
-    }
-  } else if (cleanHost.endsWith('vercel.app')) {
-    // Vercel deployment (e.g. tokorijal.terasumkm.vercel.app)
-    if (hostParts.length > 3) {
-      const firstPart = hostParts[0].toLowerCase()
-      if (!reservedSubdomains.includes(firstPart)) {
-        subdomain = firstPart
-      }
-    }
-  } else {
-    // Production (e.g. tokorijal.saloka.id)
-    if (hostParts.length > 2) {
-      const firstPart = hostParts[0].toLowerCase()
-      if (!reservedSubdomains.includes(firstPart)) {
-        subdomain = firstPart
-      }
-    }
-  }
+  const subdomain = merchantSubdomain(hostname)
 
   // 4. Rewrite logic for merchant subdomain
   if (subdomain) {

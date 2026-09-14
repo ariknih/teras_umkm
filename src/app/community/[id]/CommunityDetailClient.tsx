@@ -282,6 +282,20 @@ function getModuleDefaultTemplates(moduleId: string): string[] {
   return PERKUMPULAN_TEMPLATE_OPTIONS.filter((tpl) => PERKUMPULAN_TEMPLATE_DEFAULTS[tpl]?.includes(moduleId))
 }
 
+const REF_LOGS_PAGE_SIZE_OPTIONS = [10, 25, 50] as const
+
+/** Windowed page list: first, last, current±1, and '...' for gaps. */
+function getPageList(current: number, total: number): (number | '...')[] {
+  const pages = new Set([1, total, current - 1, current, current + 1])
+  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b)
+  const result: (number | '...')[] = []
+  sorted.forEach((p, i) => {
+    if (i > 0 && p - sorted[i - 1] > 1) result.push('...')
+    result.push(p)
+  })
+  return result
+}
+
 export default function CommunityDetailPage({ initialData }: { initialData: CommunityDetailInitialData }) {
   const router = useRouter()
   const params = useParams()
@@ -1211,6 +1225,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const [refIsKycRequired, setRefIsKycRequired] = useState<boolean>(false)
   const [refCommissionMethod, setRefCommissionMethod] = useState<'PERCENTAGE' | 'NOMINAL'>('PERCENTAGE')
   const [refLogs, setRefLogs] = useState<any[]>([])
+  const [refLogsPage, setRefLogsPage] = useState(1)
+  const [refLogsPageSize, setRefLogsPageSize] = useState(10)
   const [isSavingRefSettings, setIsSavingRefSettings] = useState(false)
 
   // Per-member affiliate view ("Afiliasi Saya"): my own downline + earnings
@@ -1791,7 +1807,10 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
       // Check if logged in user is a member
       if (currentUser) {
         const mem = memberList.find((m: any) => m.userId === currentUser.id)
-        if (mem || currentUser.id === commDetail?.ketuaId) {
+        // An UNPAID row (bank transfer awaiting admin verification) isn't a
+        // member of a paid community yet.
+        const memActive = mem && (mem.isPaid || !(Number(commDetail?.joinFee) > 0))
+        if (memActive || currentUser.id === commDetail?.ketuaId) {
           setIsMember(true)
           if (mem) {
             setIsIndukMember(mem.isInduk)
@@ -1915,7 +1934,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
             coopProducts: cProductsRes || [],
             fundingProjects: fProjectsRes || [],
             loans: loanListRes || [],
-            isMember: Boolean(currentUser && (memberList.some((m: any) => m.userId === currentUser.id) || currentUser.id === commDetail?.ketuaId))
+            isMember: Boolean(currentUser && (memberList.some((m: any) => m.userId === currentUser.id && (m.isPaid || !(Number(commDetail?.joinFee) > 0))) || currentUser.id === commDetail?.ketuaId))
           }))
         }
       } catch (_) {}
@@ -2396,15 +2415,12 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
           setIsVerifying(false)
           return
         }
-        setPaymentSuccess(true)
+        // Bank transfer is a claim, not a settlement — membership activates
+        // once an admin verifies the transfer in the CMS.
         setIsVerifying(false)
-        goeyToast.success(`Pembayaran berhasil! Selamat bergabung di ${community?.name || 'Komunitas'}.`)
-        setTimeout(() => {
-          setPaymentModalOpen(false)
-          setPaymentSuccess(false)
-          setIsMember(true)
-          loadData()
-        }, 1500)
+        setPaymentModalOpen(false)
+        goeyToast.success('Konfirmasi transfer diterima. Keanggotaan aktif setelah diverifikasi admin.')
+        loadData()
         return
       }
 
@@ -7806,7 +7822,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-gray-700 font-medium">
                           {refLogs && refLogs.length > 0 ? (
-                            refLogs.map((log: any, idx: number) => (
+                            refLogs.slice((refLogsPage - 1) * refLogsPageSize, refLogsPage * refLogsPageSize).map((log: any, idx: number) => (
                               <tr key={log.id || idx} className="hover:bg-gray-50/80">
                                 <td className="p-3 text-[10px] text-gray-500 font-mono">
                                   {log.createdAt ? new Date(log.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Baru saja'}
@@ -7848,6 +7864,70 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         </tbody>
                       </table>
                     </div>
+
+                    {refLogs && refLogs.length > 0 && (() => {
+                      const totalPages = Math.max(1, Math.ceil(refLogs.length / refLogsPageSize))
+                      const currentPage = Math.min(refLogsPage, totalPages)
+                      return (
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-1 text-xs">
+                          <label className="flex items-center gap-2 text-gray-500">
+                            Tampilkan
+                            <select
+                              value={refLogsPageSize}
+                              onChange={(e) => { setRefLogsPageSize(Number(e.target.value)); setRefLogsPage(1) }}
+                              className="border border-gray-200 rounded-lg px-2 py-1 text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-[#2DB24A]"
+                            >
+                              {REF_LOGS_PAGE_SIZE_OPTIONS.map((n) => (
+                                <option key={n} value={n}>{n}</option>
+                              ))}
+                            </select>
+                            entri
+                          </label>
+
+                          <div className="flex items-center gap-3">
+                            <span className="text-gray-500">
+                              Halaman {currentPage} dari {totalPages} ({refLogs.length} entri)
+                            </span>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setRefLogsPage((p) => Math.max(1, p - 1))}
+                                disabled={currentPage <= 1}
+                                className="px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                              >
+                                ‹
+                              </button>
+                              {getPageList(currentPage, totalPages).map((p, i) =>
+                                p === '...' ? (
+                                  <span key={`ellipsis-${i}`} className="px-2 py-1 text-gray-300">…</span>
+                                ) : (
+                                  <button
+                                    key={p}
+                                    type="button"
+                                    onClick={() => setRefLogsPage(p)}
+                                    className={`px-2.5 py-1 rounded-lg border font-bold ${
+                                      p === currentPage
+                                        ? 'bg-[#2DB24A] text-white border-[#2DB24A]'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    {p}
+                                  </button>
+                                )
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setRefLogsPage((p) => Math.min(totalPages, p + 1))}
+                                disabled={currentPage >= totalPages}
+                                className="px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+                              >
+                                ›
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
 
