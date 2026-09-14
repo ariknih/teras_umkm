@@ -95,12 +95,18 @@ export async function GET(request: NextRequest) {
         counter++
       }
 
+      // Saloka referral: same first-touch affiliate_ref cookie register()
+      // consumes — Google signups previously dropped the attribution entirely.
+      const refCode = request.cookies.get('affiliate_ref')?.value
+      const referrer = refCode ? await DataStore.findUserByReferralCode(refCode) : null
+
       user = await DataStore.createUser({
-        email,
+        email: email.toLowerCase(),
         name: name || email.split('@')[0],
         username,
         passwordHash,
-        role
+        role,
+        parentAffiliateId: referrer?.id
       })
       if (!user) {
         return NextResponse.redirect(new URL('/auth?error=Gagal+membuat+akun', request.url))
@@ -116,33 +122,17 @@ export async function GET(request: NextRequest) {
         detail: `Daftar via Google OAuth sebagai ${role} (@${username}).`
       })
     } else {
-      // If user exists, but has a different role and the selected role is valid, update it!
-      // This allows existing sandbox Google accounts to switch roles during Google Login.
-      if (user.role !== role && user.role !== 'ADMIN' && user.role !== 'CUSTOMER_SERVICE') {
-        const updated = await DataStore.updateUserRole(user.id, role)
-        if (updated) {
-          user = updated
-          await logAudit({
-            actor: 'MEMBER',
-            actorId: updated.id,
-            actorName: updated.name || updated.email,
-            action: 'SELECT_USER_ROLE',
-            module: 'AUTH',
-            targetId: updated.id,
-            targetType: 'USER',
-            detail: `Ganti peran menjadi ${role} via Google login.`
-          })
-        }
-      } else {
-        await logAudit({
-          actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
-          actorId: user.id,
-          actorName: user.name || user.email,
-          action: 'LOGIN_SUCCESS',
-          module: 'AUTH',
-          detail: 'Login via Google OAuth.'
-        })
-      }
+      // Existing users keep their role. The Login tab has no role picker, so
+      // `role` there is always the CUSTOMER default — applying it silently
+      // downgraded every Merchant who signed in with Google.
+      await logAudit({
+        actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+        actorId: user.id,
+        actorName: user.name || user.email,
+        action: 'LOGIN_SUCCESS',
+        module: 'AUTH',
+        detail: 'Login via Google OAuth.'
+      })
     }
 
     if (!user) {
@@ -162,6 +152,8 @@ export async function GET(request: NextRequest) {
       : (user.role === 'ADMIN' ? '/cms_admin/overview' : user.role === 'CUSTOMER_SERVICE' ? '/cs' : '/')
       
     const response = NextResponse.redirect(new URL(destinationUrl, request.url))
+    // Consumed by this signup — don't let it leak into another signup on this browser.
+    if (isNewUser) response.cookies.delete('affiliate_ref')
     const cookieDomain = getCookieDomain(requestUrl.host)
 
     response.cookies.set('session', token, {

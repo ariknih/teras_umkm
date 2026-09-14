@@ -1,4 +1,5 @@
 import { DataStore } from './data-store'
+import { db } from './db'
 
 /**
  * Business logic for what a gateway-backed checkout actually pays for.
@@ -35,46 +36,42 @@ export interface PendingPurposeContext {
   referrerId?: string | null
 }
 
-// In-memory only — same accepted cold-start caveat as the existing
-// MidtransRegistry.pendingCheckouts this mirrors (data-store.ts). Worst case
-// on a cold start between checkout and verify: verify fails and the user
-// retries: fails safe, never silently double-credits or credits the wrong thing.
-const pendingContexts: Record<string, PendingPurposeContext> = {}
-const pendingCreatedAt: Record<string, number> = {}
+// Persisted in SystemSetting (key `payctx:<orderId>`), not process memory: on
+// Vercel the checkout, the user's return-from-gateway verify, and DOKU's
+// webhook each land on arbitrary instances — an in-memory map made a paid join
+// fail verify with "konteks transaksi tidak ditemukan".
+// ponytail: reuses the generic key/value table instead of a dedicated
+// PaymentContext model; abandoned checkouts linger until the daily cron purge
+// (purgeStalePendingContexts). Add a real table if payment volume grows.
+const PENDING_CONTEXT_PREFIX = 'payctx:'
 const PENDING_CONTEXT_TTL_MS = 24 * 60 * 60 * 1000
 
-export function savePendingContext(orderId: string, ctx: PendingPurposeContext) {
-  pendingContexts[orderId] = ctx
-  pendingCreatedAt[orderId] = Date.now()
-  sweepStalePendingContexts()
+export async function savePendingContext(orderId: string, ctx: PendingPurposeContext) {
+  const key = PENDING_CONTEXT_PREFIX + orderId
+  const value = JSON.stringify(ctx)
+  await db.systemSetting.upsert({ where: { key }, create: { key, value }, update: { value } })
 }
 
-// A completed checkout is deleted explicitly by /api/payment/verify; this
-// covers the far more common case — an abandoned/cancelled/expired checkout
-// that never gets verified at all, which would otherwise sit in this
-// process-lifetime map forever. Runs opportunistically on every new checkout
-// rather than on a timer, so it costs nothing when checkout traffic is idle.
-function sweepStalePendingContexts() {
-  const cutoff = Date.now() - PENDING_CONTEXT_TTL_MS
-  for (const orderId in pendingCreatedAt) {
-    if (pendingCreatedAt[orderId] < cutoff) {
-      delete pendingContexts[orderId]
-      delete pendingCreatedAt[orderId]
-    }
+export async function getPendingContext(orderId: string): Promise<PendingPurposeContext | null> {
+  const row = await db.systemSetting.findUnique({ where: { key: PENDING_CONTEXT_PREFIX + orderId } })
+  if (!row) return null
+  try {
+    return JSON.parse(row.value) as PendingPurposeContext
+  } catch {
+    return null
   }
 }
 
-export function getPendingContext(orderId: string): PendingPurposeContext | null {
-  return pendingContexts[orderId] || null
+// Best-effort: a leftover row is harmless (settlement is idempotent) and the
+// cron purge removes it anyway, so a delete failure must not fail a settlement.
+export async function deletePendingContext(orderId: string) {
+  await db.systemSetting.deleteMany({ where: { key: PENDING_CONTEXT_PREFIX + orderId } }).catch(() => {})
 }
 
-// Called once an order is settled (or confirmed already-settled) so this
-// process-lifetime map doesn't grow unbounded for the life of a long-running
-// server — a no-op on a serverless/cold-start deploy where the entry never
-// existed here in the first place.
-export function deletePendingContext(orderId: string) {
-  delete pendingContexts[orderId]
-  delete pendingCreatedAt[orderId]
+export async function purgeStalePendingContexts() {
+  return db.systemSetting.deleteMany({
+    where: { key: { startsWith: PENDING_CONTEXT_PREFIX }, updatedAt: { lt: new Date(Date.now() - PENDING_CONTEXT_TTL_MS) } }
+  })
 }
 
 /**
