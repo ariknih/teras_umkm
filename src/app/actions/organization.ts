@@ -43,6 +43,11 @@ const stale = (): Fail => ({ ok: false, error: STALE, stale: true })
 const isVersion = (v: unknown): v is string | null => v === null || (typeof v === 'string' && !Number.isNaN(Date.parse(v)))
 const errorMessage = (e: unknown, fallback: string) => (e instanceof Error && e.message) || fallback
 
+/** Public read for pages that need the support contact outside DataStore.getOrgPublic() (e.g. client components). */
+export async function getPublicContact(): Promise<Contact> {
+  return (await DataStore.getOrgPublic()).contact
+}
+
 async function adminFor(menu: string) {
   const admin: any = await ensureAdminPermission(menu)
   const name: string = admin.name || admin.email

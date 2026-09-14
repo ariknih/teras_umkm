@@ -11,6 +11,8 @@ import {
   sendEmailVerificationOtp,
   verifyEmailOtp
 } from '@/app/actions/auth'
+import { getPublicContact } from '@/app/actions/organization'
+import { toWhatsAppHref, type Contact } from '@/lib/organization'
 import { 
   MapPin, 
   ArrowLeft, 
@@ -79,6 +81,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [loadingUser, setLoadingUser] = useState(true)
+  const [contact, setContact] = useState<Contact>({ email: '', phone: '' })
   const [isPending, startTransition] = useTransition()
 
   // Onboarding Wizard Steps: 1 = WA Verify, 2 = Address Info, 3 = Subdomain, 4 = Welcome Success
@@ -150,6 +153,11 @@ export default function OnboardingPage() {
     }
     loadUser()
   }, [router])
+
+  // CS contact from /cms_admin/org-contact, same source as /bantuan.
+  useEffect(() => {
+    getPublicContact().then(setContact).catch(() => {})
+  }, [])
 
   // WA Countdown timer
   useEffect(() => {
@@ -488,17 +496,19 @@ export default function OnboardingPage() {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-white/10 text-[10px] text-white/40 font-medium space-y-1">
-            <p>Layanan bantuan merchant (CS Saloka):</p>
-            <a 
-              href="https://wa.me/6285223061670" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-[#FFC107] font-bold hover:underline inline-flex items-center gap-1"
-            >
-              💬 WhatsApp CS: 085223061670
-            </a>
-          </div>
+          {contact.phone && (
+            <div className="mt-8 pt-6 border-t border-white/10 text-[10px] text-white/40 font-medium space-y-1">
+              <p>Layanan bantuan merchant (CS Saloka):</p>
+              <a
+                href={toWhatsAppHref(contact.phone)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#FFC107] font-bold hover:underline inline-flex items-center gap-1"
+              >
+                💬 WhatsApp CS: {contact.phone}
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Right Content Panel */}
@@ -532,18 +542,18 @@ export default function OnboardingPage() {
                   className="mb-6 p-4 rounded-xl bg-red-50 text-xs text-red-600 font-semibold border-l-4 border-red-500 shadow-sm"
                 >
                   <div>{error}</div>
-                  {isDuplicateWa && (
+                  {isDuplicateWa && contact.phone && (
                     <div className="mt-3 pt-3 border-t border-red-200/50 flex flex-wrap gap-3">
-                      <a 
-                        href={`https://wa.me/6285223061670?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20password%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
+                      <a
+                        href={`${toWhatsAppHref(contact.phone)}?text=${encodeURIComponent(`Halo CS Saloka, saya lupa password akun Teras UMKM yang terhubung ke nomor WA ini: ${whatsapp}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-[10px] font-bold"
                       >
                         Lupa Password? Hubungi CS
                       </a>
-                      <a 
-                        href={`https://wa.me/6285223061670?text=Halo%20CS%20Saloka%2C%20saya%20lupa%20email%20atau%20informasi%20akun%20Teras%20UMKM%20yang%20terhubung%20ke%20nomor%20WA%20ini%3A%20${whatsapp}`}
+                      <a
+                        href={`${toWhatsAppHref(contact.phone)}?text=${encodeURIComponent(`Halo CS Saloka, saya lupa email atau informasi akun Teras UMKM yang terhubung ke nomor WA ini: ${whatsapp}`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white text-red-600 border border-red-200 hover:bg-red-50 transition-colors text-[10px] font-bold"
@@ -704,10 +714,12 @@ export default function OnboardingPage() {
                         Verifikasi Kode
                       </motion.button>
 
-                      <div className="text-[10px] text-text-secondary pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5">
-                        Ada kendala? <span>Hubungi CS Saloka:</span> 
-                        <a href="https://wa.me/6285223061670" target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline">0852-2306-1670</a>
-                      </div>
+                      {contact.phone && (
+                        <div className="text-[10px] text-text-secondary pt-3 border-t border-slate-100 flex items-center justify-center gap-1.5">
+                          Ada kendala? <span>Hubungi CS Saloka:</span>
+                          <a href={toWhatsAppHref(contact.phone)} target="_blank" rel="noopener noreferrer" className="text-emerald-600 font-bold hover:underline">{contact.phone}</a>
+                        </div>
+                      )}
                     </div>
                   )}
                 </motion.div>
