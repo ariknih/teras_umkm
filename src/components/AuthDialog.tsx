@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AuthForm } from "@/components/AuthForm";
 
@@ -11,6 +12,19 @@ interface AuthDialogProps {
 
 export function AuthDialog({ trigger, defaultTab = "login" }: AuthDialogProps) {
   const [open, setOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const hasAutoOpenedRef = useRef(false);
+
+  useEffect(() => {
+    const authParam = searchParams?.get("auth")?.toLowerCase();
+    if (authParam === "register" && defaultTab === "register" && !hasAutoOpenedRef.current) {
+      hasAutoOpenedRef.current = true;
+      setOpen(true);
+    } else if (authParam === "login" && defaultTab === "login" && !hasAutoOpenedRef.current) {
+      hasAutoOpenedRef.current = true;
+      setOpen(true);
+    }
+  }, [searchParams, defaultTab]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
