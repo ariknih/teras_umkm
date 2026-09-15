@@ -92,6 +92,7 @@ export async function createServiceAction(formData: FormData) {
       sessionDurationMinutes,
       maxWorkHoursPerDay,
       images,
+      imageUrl: images && images.length > 0 ? images[0] : null,
       location,
       isActive: true
     })
@@ -146,6 +147,7 @@ export async function updateServiceAction(id: string, formData: FormData) {
       sessionDurationMinutes,
       maxWorkHoursPerDay,
       images,
+      ...(images !== undefined ? { imageUrl: images.length > 0 ? images[0] : null } : {}),
       location
     })
     await logAudit({

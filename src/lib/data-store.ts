@@ -9485,6 +9485,10 @@ export const DataStore = {
                   pricePerSession: s.pricePerSession,
                   pricePerDay: s.pricePerDay,
                   imageUrl: s.imageUrl,
+                  images: s.images || (s.imageUrl ? [s.imageUrl] : []),
+                  location: s.location || 'Indonesia',
+                  sessionDurationMinutes: s.sessionDurationMinutes || 60,
+                  maxWorkHoursPerDay: s.maxWorkHoursPerDay || 8,
                   isActive: s.isActive
                 },
                 update: {}
@@ -9508,7 +9512,7 @@ export const DataStore = {
           const matchingMock = mockServices.find(m => m.id === s.id)
           return {
             ...s,
-            images: (s as any).images || matchingMock?.images || (s.imageUrl ? [s.imageUrl] : []),
+            images: (s as any).images && (s as any).images.length > 0 ? (s as any).images : (matchingMock?.images || (s.imageUrl ? [s.imageUrl] : [])),
             location: (s as any).location || matchingMock?.location || 'Indonesia',
             sessionDurationMinutes: (s as any).sessionDurationMinutes || matchingMock?.sessionDurationMinutes || 60,
             maxWorkHoursPerDay: (s as any).maxWorkHoursPerDay || matchingMock?.maxWorkHoursPerDay || 8
@@ -9529,13 +9533,21 @@ export const DataStore = {
   },
 
   async createService(data: any) {
+    const payload = {
+      ...data,
+      imageUrl: data.imageUrl || (Array.isArray(data.images) && data.images.length > 0 ? data.images[0] : null),
+      images: Array.isArray(data.images) ? data.images : (data.imageUrl ? [data.imageUrl] : []),
+      location: data.location || 'Indonesia',
+      sessionDurationMinutes: Number(data.sessionDurationMinutes) || 60,
+      maxWorkHoursPerDay: Number(data.maxWorkHoursPerDay) || 8
+    }
     return withMutationFallback(
       async () => {
-        return await db.service.create({ data })
+        return await db.service.create({ data: payload })
       },
       async () => {
         if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
-        const service = { id: `svc-${Date.now()}`, ...data, isActive: true, createdAt: new Date(), updatedAt: new Date() }
+        const service = { id: `svc-${Date.now()}`, ...payload, isActive: true, createdAt: new Date(), updatedAt: new Date() }
         ;(globalThis as any).__mockServices.push(service)
         return service
       }
@@ -9544,7 +9556,18 @@ export const DataStore = {
 
   async getServiceById(id: string) {
     return withFallback(
-      async () => await db.service.findUnique({ where: { id } }),
+      async () => {
+        const s = await db.service.findUnique({ where: { id } })
+        if (!s) return null
+        const matchingMock = mockServices.find(m => m.id === s.id)
+        return {
+          ...s,
+          images: (s as any).images && (s as any).images.length > 0 ? (s as any).images : (matchingMock?.images || (s.imageUrl ? [s.imageUrl] : [])),
+          location: (s as any).location || matchingMock?.location || 'Indonesia',
+          sessionDurationMinutes: (s as any).sessionDurationMinutes || matchingMock?.sessionDurationMinutes || 60,
+          maxWorkHoursPerDay: (s as any).maxWorkHoursPerDay || matchingMock?.maxWorkHoursPerDay || 8
+        }
+      },
       async () => {
         if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
         const services = (globalThis as any).__mockServices || []
@@ -9556,15 +9579,28 @@ export const DataStore = {
   // merchantId scopes the write at the DB layer too — matches the products
   // pattern, since this is independently reachable via a 'use server' export.
   async updateService(id: string, merchantId: string, data: any) {
+    const payload = { ...data }
+    if (data.images !== undefined) {
+      payload.images = Array.isArray(data.images) ? data.images : (data.imageUrl ? [data.imageUrl] : [])
+      if (!payload.imageUrl && payload.images.length > 0) {
+        payload.imageUrl = payload.images[0]
+      }
+    }
+    if (data.sessionDurationMinutes !== undefined) {
+      payload.sessionDurationMinutes = Number(data.sessionDurationMinutes) || 60
+    }
+    if (data.maxWorkHoursPerDay !== undefined) {
+      payload.maxWorkHoursPerDay = Number(data.maxWorkHoursPerDay) || 8
+    }
     return withMutationFallback(
       async () => {
-        return await db.service.update({ where: { id, merchantId }, data })
+        return await db.service.update({ where: { id, merchantId }, data: payload })
       },
       async () => {
         if (!(globalThis as any).__mockServices) (globalThis as any).__mockServices = [...mockServices]
         const services = (globalThis as any).__mockServices || []
         const s = services.find((x: any) => x.id === id && x.merchantId === merchantId)
-        if (s) Object.assign(s, data, { updatedAt: new Date() })
+        if (s) Object.assign(s, payload, { updatedAt: new Date() })
         return s
       }
     )

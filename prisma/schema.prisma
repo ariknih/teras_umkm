@@ -1086,17 +1086,21 @@ model LandingBanner {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 model Service {
-  id              String   @id @default(uuid())
-  merchantId      String
-  title           String
-  description     String
-  pricePerSession Float         // Harga per sesi
-  pricePerDay     Float?        // Harga per hari (max 8 jam kerja)
-  category        String
-  imageUrl        String?
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                     String   @id @default(uuid())
+  merchantId             String
+  title                  String
+  description            String
+  pricePerSession        Float         // Harga per sesi
+  pricePerDay            Float?        // Harga per hari (max 8 jam kerja)
+  category               String
+  imageUrl               String?
+  images                 String[] @default([])
+  location               String?  @default("Indonesia")
+  sessionDurationMinutes Int      @default(60)
+  maxWorkHoursPerDay     Int      @default(8)
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   availability    ServiceAvailability[]
   bookings        ServiceBooking[]
