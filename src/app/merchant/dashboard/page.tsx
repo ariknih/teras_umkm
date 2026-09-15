@@ -19,7 +19,7 @@ import {
   getMerchantServiceBookingsAction, 
   updateServiceBookingStatusAction 
 } from '@/app/actions/services'
-import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info, Briefcase, Wrench, CalendarCheck, Clock, MapPin, CheckCircle2, UserCheck, Download } from 'lucide-react'
+import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info, Briefcase, Wrench, CalendarCheck, Clock, MapPin, CheckCircle2, UserCheck, Download, Upload } from 'lucide-react'
 import { formatCategoryName } from '@/lib/utils'
 import { parseProductVariants, cleanProductDescription } from '@/lib/product-variants'
 
@@ -131,6 +131,8 @@ export default function MerchantDashboardPage() {
   const [serviceBookingFilter, setServiceBookingFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('ALL')
   const [createServiceImageUrl, setCreateServiceImageUrl] = useState<string>('')
   const [editServiceImageUrl, setEditServiceImageUrl] = useState<string>('')
+  const [uploadingServiceImage, setUploadingServiceImage] = useState(false)
+  const [uploadingEditServiceImage, setUploadingEditServiceImage] = useState(false)
 
   // Promotional Poster Generator State (with Saloka Watermark)
   const [showPosterModal, setShowPosterModal] = useState(false)
@@ -294,6 +296,48 @@ export default function MerchantDashboardPage() {
     const file = e.dataTransfer.files?.[0]
     if (file && (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg')) {
       handleImageUpload(file, callback)
+    }
+  }
+
+  const handleServiceImageFile = async (
+    file: File,
+    callback: (url: string) => void,
+    setLoading: (v: boolean) => void
+  ) => {
+    if (!file) return
+    setLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('folder', 'services')
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: fd
+      })
+      const data = await res.json()
+      if (res.ok && data.url) {
+        callback(data.url)
+        return
+      }
+    } catch (e) {
+      console.warn('Upload via /api/upload failed, using fallback:', e)
+    } finally {
+      setLoading(false)
+    }
+    // Fallback: local compressed data URL
+    handleImageUpload(file, callback)
+  }
+
+  const handleServiceDrop = (
+    e: React.DragEvent,
+    callback: (url: string) => void,
+    setLoading: (v: boolean) => void
+  ) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const file = e.dataTransfer.files?.[0]
+    if (file && (file.type.startsWith('image/'))) {
+      handleServiceImageFile(file, callback, setLoading)
     }
   }
 
@@ -971,9 +1015,8 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 
     if (!editingService) return
     const formData = new FormData(e.currentTarget)
-    if (editServiceImageUrl) {
-      formData.set('images', JSON.stringify([editServiceImageUrl]))
-    }
+    const effectiveImageUrl = editServiceImageUrl || (editingService.images && editingService.images[0]) || ''
+    formData.set('images', JSON.stringify(effectiveImageUrl ? [effectiveImageUrl] : []))
 
     startTransition(async () => {
       const res = await updateServiceAction(editingService.id, formData)
@@ -2954,17 +2997,73 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                       />
                     </div>
                     <div>
-                      <label htmlFor="edit-service-image-url" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
-                        URL Foto / Banner Jasa (Opsional)
+                      <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                        Foto / Banner Jasa (Pilih File)
                       </label>
                       <input
-                        id="edit-service-image-url"
-                        type="text"
-                        placeholder="https://..."
-                        value={editServiceImageUrl || (editingService.images && editingService.images[0]) || ''}
-                        onChange={(e) => setEditServiceImageUrl(e.target.value)}
-                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleServiceImageFile(file, setEditServiceImageUrl, setUploadingEditServiceImage)
+                        }}
+                        className="hidden"
+                        id="edit-service-upload"
                       />
+
+                      {uploadingEditServiceImage ? (
+                        <div className="flex flex-col items-center justify-center border-2 border-dashed border-primary/40 bg-emerald-50/50 rounded-xl p-3 h-28">
+                          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1.5" />
+                          <p className="text-[11px] font-bold text-primary">Mengunggah gambar jasa...</p>
+                        </div>
+                      ) : (editServiceImageUrl || (editingService.images && editingService.images[0])) ? (
+                        <div className="relative group border border-slate-200 bg-slate-50 rounded-xl overflow-hidden h-28 flex items-center justify-center">
+                          <img
+                            src={editServiceImageUrl || (editingService.images && editingService.images[0])}
+                            alt="Service Preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200">
+                            <label
+                              htmlFor="edit-service-upload"
+                              className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 rounded-lg text-[10px] font-bold transition-colors cursor-pointer shadow-sm uppercase tracking-wider"
+                            >
+                              Ganti File
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditServiceImageUrl('')
+                                if (editingService) editingService.images = []
+                              }}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold transition-colors cursor-pointer shadow-sm uppercase tracking-wider"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <label
+                          htmlFor="edit-service-upload"
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleServiceDrop(e, setEditServiceImageUrl, setUploadingEditServiceImage)}
+                          className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-primary/60 bg-slate-50 hover:bg-emerald-50/30 rounded-xl p-3 h-28 cursor-pointer transition-all group"
+                        >
+                          <div className="flex flex-col items-center gap-1 text-center">
+                            <div className="p-1.5 bg-white rounded-full border border-slate-200 shadow-xs group-hover:border-primary/40 group-hover:text-primary transition-all text-slate-400">
+                              <Upload size={16} />
+                            </div>
+                            <div>
+                              <p className="text-[11px] font-bold text-slate-700 group-hover:text-primary transition-colors">
+                                Pilih File Gambar
+                              </p>
+                              <p className="text-[9px] text-slate-400">
+                                JPG, PNG, WEBP (Maks. 5MB)
+                              </p>
+                            </div>
+                          </div>
+                        </label>
+                      )}
                     </div>
                   </div>
 
@@ -5522,17 +5621,70 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                 </div>
 
                 <div>
-                  <label htmlFor="create-service-image" className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
-                    URL Foto / Banner Jasa (Opsional)
+                  <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">
+                    Foto / Banner Jasa (Pilih File)
                   </label>
                   <input
-                    id="create-service-image"
-                    type="text"
-                    placeholder="https://..."
-                    value={createServiceImageUrl}
-                    onChange={(e) => setCreateServiceImageUrl(e.target.value)}
-                    className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-xs text-text-primary focus:outline-none focus:border-primary"
+                    type="file"
+                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleServiceImageFile(file, setCreateServiceImageUrl, setUploadingServiceImage)
+                    }}
+                    className="hidden"
+                    id="create-service-upload"
                   />
+
+                  {uploadingServiceImage ? (
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-primary/40 bg-emerald-50/50 rounded-xl p-3 h-28">
+                      <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mb-1.5" />
+                      <p className="text-[11px] font-bold text-primary">Mengunggah gambar jasa...</p>
+                    </div>
+                  ) : createServiceImageUrl ? (
+                    <div className="relative group border border-slate-200 bg-slate-50 rounded-xl overflow-hidden h-28 flex items-center justify-center">
+                      <img
+                        src={createServiceImageUrl}
+                        alt="Service Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200">
+                        <label
+                          htmlFor="create-service-upload"
+                          className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 rounded-lg text-[10px] font-bold transition-colors cursor-pointer shadow-sm uppercase tracking-wider"
+                        >
+                          Ganti File
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setCreateServiceImageUrl('')}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[10px] font-bold transition-colors cursor-pointer shadow-sm uppercase tracking-wider"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label
+                      htmlFor="create-service-upload"
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleServiceDrop(e, setCreateServiceImageUrl, setUploadingServiceImage)}
+                      className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-primary/60 bg-slate-50 hover:bg-emerald-50/30 rounded-xl p-3 h-28 cursor-pointer transition-all group"
+                    >
+                      <div className="flex flex-col items-center gap-1 text-center">
+                        <div className="p-1.5 bg-white rounded-full border border-slate-200 shadow-xs group-hover:border-primary/40 group-hover:text-primary transition-all text-slate-400">
+                          <Upload size={16} />
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold text-slate-700 group-hover:text-primary transition-colors">
+                            Pilih File Gambar
+                          </p>
+                          <p className="text-[9px] text-slate-400">
+                            JPG, PNG, WEBP (Maks. 5MB)
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  )}
                 </div>
               </div>
 
