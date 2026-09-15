@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { updateProductSnackboxAction } from '@/app/actions/admin'
 import { formatCategoryName } from '@/lib/utils'
 import { useToast, Toast } from './Toast'
+import { FilterPopover, SearchInput, TableCard, TablePagination, usePagination, type FilterField, type FilterValues } from './TableControls'
 
 const SNACK_KEYWORDS = ['snack', 'makanan', 'kue', 'kudapan', 'kuliner', 'cemilan', 'jajanan', 'roti', 'bolu', 'lemper', 'risoles', 'pastel', 'pie', 'lapis', 'tahu', 'bakwan']
 
@@ -24,16 +25,42 @@ type Props = {
 export default function ProductsTab({ initialProducts, snackboxOnly = false }: Props) {
   const [products, setProducts] = useState(initialProducts)
   const [search, setSearch] = useState('')
-  const [catFilter, setCatFilter] = useState('ALL')
+  const [filters, setFilters] = useState<FilterValues>({})
   const [isPending, startTransition] = useTransition()
   const { toast, showToast } = useToast()
 
+  const categoryOptions = useMemo(
+    () => [...new Set(products.map((p) => p.category).filter(Boolean))].sort().map((c) => ({ value: c, label: formatCategoryName(c) })),
+    [products]
+  )
+  const fields: FilterField[] = [
+    { key: 'category', label: 'Kategori', allLabel: 'Semua kategori', options: categoryOptions },
+    // The Snackbox tab is already narrowed to eligible items, so this filter would be a no-op there.
+    ...(snackboxOnly
+      ? []
+      : [
+          {
+            key: 'snackbox',
+            label: 'Masuk Snackbox',
+            allLabel: 'Semua',
+            options: [
+              { value: 'ya', label: 'Ya (Snackbox)' },
+              { value: 'tidak', label: 'Tidak' }
+            ]
+          }
+        ])
+  ]
+
+  const q = search.toLowerCase()
   const filtered = products.filter((p) => {
-    const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase())
-    const matchCat = catFilter === 'ALL' || p.category === catFilter
-    const matchSnackbox = !snackboxOnly || isSnackEligible(p)
-    return matchSearch && matchCat && matchSnackbox
+    const eligible = isSnackEligible(p)
+    if (snackboxOnly && !eligible) return false
+    if (q && ![p.title, p.id, p.kelurahanName || 'Menteng'].some((v) => (v || '').toLowerCase().includes(q))) return false
+    if (filters.category && p.category !== filters.category) return false
+    if (filters.snackbox && eligible !== (filters.snackbox === 'ya')) return false
+    return true
   })
+  const { paged, resetPage, footer } = usePagination(filtered)
 
   const toggleSnackbox = (p: any) => {
     const nextState = !isSnackEligible(p)
@@ -53,107 +80,119 @@ export default function ProductsTab({ initialProducts, snackboxOnly = false }: P
     <div className="space-y-6">
       <Toast toast={toast} />
 
-      {/* Product catalog filters */}
-      <div className="flex flex-col md:flex-row gap-4 bg-white border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)] shadow-sm">
-        <input
-          type="text"
-          placeholder="Cari produk berdasarkan nama, SKU, atau kelurahan..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-grow bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
-        />
-        <select
-          value={catFilter}
-          onChange={(e) => setCatFilter(e.target.value)}
-          className="bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
-        >
-          <option value="ALL">Semua Kategori</option>
-          <option value="PRODUCT">PRODUCT (Fisik / Digital)</option>
-          <option value="JASA">JASA (Jasa / Service)</option>
-        </select>
-      </div>
-
-      {/* Products table */}
-      <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-x-auto shadow-sm">
-        <table className="w-full min-w-[950px] text-xs text-left">
-          <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
-            <tr>
-              <th className="px-5 py-3.5">ID & Gambar</th>
-              <th className="px-5 py-3.5">Nama Produk</th>
-              <th className="px-5 py-3.5">Kategori</th>
-              <th className="px-5 py-3.5 text-center">Masuk Snackbox</th>
-              <th className="px-5 py-3.5">Kelurahan Toko</th>
-              <th className="px-5 py-3.5 text-right">Harga Satuan</th>
-              <th className="px-5 py-3.5 text-center">Stok</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-slate-400 italic">
-                  Tidak ada produk yang cocok dengan filter yang dipilih.
-                </td>
+      <TableCard
+        title={snackboxOnly ? 'Produk Snackbox' : 'Katalog Produk'}
+        description={
+          snackboxOnly
+            ? 'Produk kue & kudapan yang lolos kurasi masuk Snackbox.'
+            : 'Moderasi produk fisik dan digital di katalog UMKM, lintas-merchant.'
+        }
+        actions={
+          <>
+            <SearchInput
+              placeholder="Cari nama, ID, atau kelurahan..."
+              value={search}
+              onChange={(v) => {
+                setSearch(v)
+                resetPage()
+              }}
+            />
+            <FilterPopover
+              fields={fields}
+              value={filters}
+              onApply={(next) => {
+                setFilters(next)
+                resetPage()
+              }}
+            />
+          </>
+        }
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left whitespace-nowrap">
+            <thead>
+              <tr className="bg-neutral-shade-25 border-b border-neutral-shade-50 text-neutral-shade-500 uppercase tracking-wider text-[10px] font-bold">
+                <th className="px-4 py-3">ID & Gambar</th>
+                <th className="px-4 py-3">Nama Produk</th>
+                <th className="px-4 py-3">Kategori</th>
+                <th className="px-4 py-3 text-center">Masuk Snackbox</th>
+                <th className="px-4 py-3">Kelurahan Toko</th>
+                <th className="px-4 py-3 text-right">Harga Satuan</th>
+                <th className="px-4 py-3 text-center">Stok</th>
               </tr>
-            ) : (
-              filtered.map((p) => {
-                const eligible = isSnackEligible(p)
-                const kelurahan = (p as any).kelurahanName || 'Menteng'
-                return (
-                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-5 py-3 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-slate-50 overflow-hidden border border-[#e2e8f0] flex-shrink-0">
-                        {p.image ? (
-                          <img src={p.image} alt={p.title} className="object-cover w-full h-full" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">UMKM</div>
-                        )}
-                      </div>
-                      <span className="font-mono text-[10px] text-[#64748b]">{p.id}</span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <p className="font-bold text-slate-900">{p.title}</p>
-                      <p className="text-[10px] text-slate-400 font-mono">Merchant: {p.merchantId || 'Mitra Saloka'}</p>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
-                          p.category === 'JASA' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-600 border-slate-200'
-                        }`}
-                      >
-                        {formatCategoryName(p.category)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <div className="flex flex-col items-center gap-1">
+            </thead>
+            <tbody className="divide-y divide-neutral-shade-50">
+              {paged.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-neutral-shade-300 italic">
+                    Tidak ada produk yang cocok dengan filter yang dipilih.
+                  </td>
+                </tr>
+              ) : (
+                paged.map((p) => {
+                  const eligible = isSnackEligible(p)
+                  const kelurahan = (p as any).kelurahanName || 'Menteng'
+                  return (
+                    <tr key={p.id} className="hover:bg-neutral-shade-25 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-lg bg-neutral-shade-25 overflow-hidden border border-neutral-shade-50 shrink-0">
+                            {p.image ? (
+                              <img src={p.image} alt={p.title} className="object-cover w-full h-full" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-neutral-shade-300 font-bold">UMKM</div>
+                            )}
+                          </div>
+                          <span className="font-mono text-[10px] text-neutral-shade-500">{p.id}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-bold text-neutral-shade-800">{p.title}</p>
+                        <p className="text-[10px] text-neutral-shade-500 font-mono">Merchant: {p.merchantId || 'Mitra Saloka'}</p>
+                      </td>
+                      <td className="px-4 py-3">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${
-                            eligible ? 'bg-emerald-50 text-[#006E24] border-[#006E24]/30' : 'bg-slate-100 text-slate-500 border-slate-200'
+                          className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase tracking-wider ${
+                            p.category === 'JASA' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-600 border-slate-200'
                           }`}
                         >
-                          {eligible ? '✓ Ya (Snackbox)' : 'Tidak'}
+                          {formatCategoryName(p.category)}
                         </span>
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() => toggleSnackbox(p)}
-                          className="text-[9px] font-bold text-[#006E24] hover:underline cursor-pointer bg-transparent border-none p-0 disabled:opacity-50"
-                        >
-                          {eligible ? 'Nonaktifkan' : 'Aktifkan Masuk Box'}
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="text-[11px] font-medium text-slate-700 flex items-center gap-1">📍 Kel. {kelurahan}</span>
-                    </td>
-                    <td className="px-5 py-3 text-right font-bold text-slate-900">Rp {p.price.toLocaleString('id-ID')}</td>
-                    <td className="px-5 py-3 text-center text-[#64748b] font-bold">{p.stock} pcs</td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-bold border uppercase tracking-wider ${
+                              eligible ? 'bg-primary-container text-on-primary-container border-on-primary-container/30' : 'bg-slate-100 text-slate-500 border-slate-200'
+                            }`}
+                          >
+                            {eligible ? '✓ Ya (Snackbox)' : 'Tidak'}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => toggleSnackbox(p)}
+                            className="text-[9px] font-bold text-on-primary-container hover:underline cursor-pointer bg-transparent border-none p-0 disabled:opacity-50"
+                          >
+                            {eligible ? 'Nonaktifkan' : 'Aktifkan Masuk Box'}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-[11px] font-medium text-neutral-shade-700">📍 Kel. {kelurahan}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-neutral-shade-800">Rp {p.price.toLocaleString('id-ID')}</td>
+                      <td className="px-4 py-3 text-center text-neutral-shade-500 font-bold">{p.stock} pcs</td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <TablePagination {...footer} />
+      </TableCard>
     </div>
   )
 }

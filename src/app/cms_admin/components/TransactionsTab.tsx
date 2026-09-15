@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { updateSnackboxRelayStatusAction } from '@/app/actions/admin'
 import { useToast, Toast } from './Toast'
 import ExportCsvButton from './ExportCsvButton'
+import { FilterPopover, SearchInput, TableCard, TablePagination, usePagination, type FilterField, type FilterValues } from './TableControls'
 
 const RELAY_TAB_STATUS: Record<string, string> = {
   pending: 'PENDING',
@@ -35,25 +36,50 @@ export default function TransactionsTab({ orders, users, snackboxOnly = false, r
   const [isPending, startTransition] = useTransition()
   const { toast, showToast } = useToast()
   const [txSearch, setTxSearch] = useState('')
+  const [filters, setFilters] = useState<FilterValues>({})
   const [selectedTx, setSelectedTx] = useState<any>(null)
   const [snackboxRelayMap, setSnackboxRelayMap] = useState<Record<string, { status: string; contactedAt?: string }>>({
     'ord-sb-01': { status: 'PENDING' },
     'ord-sb-02': { status: 'CONFIRMED' }
   })
 
-  const searchedOrders = orders.filter((o) => {
-    if (!txSearch) return true
-    return o.id.toLowerCase().includes(txSearch.toLowerCase()) || o.buyerId.toLowerCase().includes(txSearch.toLowerCase())
-  })
+  const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users])
 
-  const displayedOrders = searchedOrders.filter((o) => {
+  const statusOptions = useMemo(
+    () => [...new Set(orders.map((o) => o.status || 'COMPLETED'))].sort().map((s) => ({ value: s, label: s })),
+    [orders]
+  )
+  const fields: FilterField[] = [
+    { key: 'status', label: 'Status Pesanan', allLabel: 'Semua status', options: statusOptions },
+    // Snackbox Order History is already Snackbox-only; its relay status comes from the URL tab.
+    ...(snackboxOnly
+      ? []
+      : [
+          {
+            key: 'type',
+            label: 'Tipe Transaksi',
+            allLabel: 'Semua tipe',
+            options: [
+              { value: 'snackbox', label: 'Snackbox' },
+              { value: 'reguler', label: 'Reguler' }
+            ]
+          }
+        ])
+  ]
+
+  const q = txSearch.toLowerCase()
+  const displayedOrders = orders.filter((o) => {
+    if (q && ![o.id, o.buyerId, userById.get(o.buyerId)?.name].some((v) => (v || '').toLowerCase().includes(q))) return false
+    if (filters.status && (o.status || 'COMPLETED') !== filters.status) return false
     const isSb = isSnackboxOrder(o)
+    if (filters.type && isSb !== (filters.type === 'snackbox')) return false
     if (!snackboxOnly) return true
     if (!isSb) return false
     const relayStatus = snackboxRelayMap[o.id]?.status || 'PENDING'
     const wanted = RELAY_TAB_STATUS[relayTab || '']
     return !wanted || relayStatus === wanted
   })
+  const { paged, resetPage, footer } = usePagination(displayedOrders)
 
   const updateRelay = (orderId: string, status: string, note: string) => {
     startTransition(async () => {
@@ -76,99 +102,125 @@ export default function TransactionsTab({ orders, users, snackboxOnly = false, r
         />
       )}
 
-      <div className="bg-white border border-[#e2e8f0] p-5 rounded-[var(--radius-brand)] shadow-sm flex flex-col md:flex-row gap-4">
-        <div className="flex-grow">
-          <h3 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider mb-1">Pelacakan Transaksi & Relay Snackbox</h3>
-          <p className="text-[11px] text-[#64748b] mb-3">Lacak alokasi pembagian laba, komisi afliasi, serta relay pesanan Snackbox ke mitra UMKM kue lokal.</p>
-          <input
-            type="text"
-            placeholder="Masukkan ID Transaksi, e.g. order-1779515200000"
-            value={txSearch}
-            onChange={(e) => setTxSearch(e.target.value)}
-            className="w-full bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-850 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132] font-mono"
-          />
-        </div>
-      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+        <div className="xl:col-span-2 min-w-0">
+          <TableCard
+            title={snackboxOnly ? 'Order Snackbox' : 'Daftar Transaksi'}
+            description="Lacak alokasi pembagian laba, komisi afiliasi, serta relay pesanan Snackbox ke mitra UMKM kue lokal. Klik baris untuk melihat rincian."
+            actions={
+              <>
+                <SearchInput
+                  placeholder="Cari ID transaksi atau pembeli..."
+                  value={txSearch}
+                  onChange={(v) => {
+                    setTxSearch(v)
+                    resetPage()
+                  }}
+                />
+                <FilterPopover
+                  fields={fields}
+                  value={filters}
+                  onApply={(next) => {
+                    setFilters(next)
+                    resetPage()
+                  }}
+                />
+              </>
+            }
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs whitespace-nowrap">
+                <thead>
+                  <tr className="bg-neutral-shade-25 border-b border-neutral-shade-50 text-neutral-shade-500 uppercase tracking-wider text-[10px] font-bold">
+                    <th className="px-4 py-3">Order ID</th>
+                    <th className="px-4 py-3">Tanggal</th>
+                    <th className="px-4 py-3">Pembeli</th>
+                    <th className="px-4 py-3">Item</th>
+                    <th className="px-4 py-3 text-right">Total</th>
+                    <th className="px-4 py-3 text-center">Status</th>
+                    <th className="px-4 py-3">Relay</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-shade-50">
+                  {paged.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-8 text-neutral-shade-300 italic">
+                        Tidak ada transaksi ditemukan pada filter ini.
+                      </td>
+                    </tr>
+                  ) : (
+                    paged.map((o) => {
+                      const buyer = userById.get(o.buyerId)
+                      const isSb = isSnackboxOrder(o)
+                      const relayInfo = snackboxRelayMap[o.id] || { status: isSb ? 'PENDING' : 'CONFIRMED' }
+                      const isSlaBreached = isSb && relayInfo.status === 'PENDING'
+                      const select = () => setSelectedTx({ ...o, isSnackbox: isSb, relayInfo })
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-hidden shadow-sm h-[520px] overflow-y-auto">
-          <div className="px-5 py-3.5 border-b border-[#e2e8f0] bg-[#f8f9fa] sticky top-0 z-10 flex justify-between items-center">
-            <h4 className="font-sora text-xs font-bold text-[#0F5132] uppercase tracking-wider">Daftar Transaksi</h4>
-            <span className="text-[10px] font-mono text-[#64748b]">{displayedOrders.length} transaksi</span>
-          </div>
-          <div className="divide-y divide-slate-100">
-            {displayedOrders.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs italic">Tidak ada transaksi ditemukan pada filter ini.</div>
-            ) : (
-              displayedOrders.map((o) => {
-                const buyer = users.find((u) => u.id === o.buyerId)
-                const isSb = isSnackboxOrder(o)
-                const relayInfo = snackboxRelayMap[o.id] || { status: isSb ? 'PENDING' : 'CONFIRMED' }
-                const isSlaBreached = isSb && relayInfo.status === 'PENDING'
-
-                return (
-                  <div
-                    key={o.id}
-                    onClick={() => setSelectedTx({ ...o, isSnackbox: isSb, relayInfo })}
-                    className={`p-4 transition-all duration-150 cursor-pointer ${selectedTx?.id === o.id ? 'bg-[#E8F5E9] border-l-4 border-[#0F5132]' : 'hover:bg-slate-50'}`}
-                  >
-                    <div className="flex justify-between items-center text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-[#0F5132]">{o.id}</span>
-                        {isSb && (
-                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[#E8F5E9] text-[#006E24] border border-[#C8E6C9] uppercase">
-                            🧁 Snackbox ({o.boxType || 'Reguler'})
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-[#64748b] font-mono">{new Date(o.createdAt).toLocaleDateString('id-ID')}</span>
-                    </div>
-
-                    <div className="flex justify-between items-end mt-2">
-                      <div>
-                        <p className="text-[11px] text-slate-700">Pembeli: <b>{buyer?.name || 'Customer'}</b></p>
-                        <p className="text-[10px] text-[#64748b] mt-0.5 max-w-[320px] truncate">
-                          Item: {o.items?.map((item: any) => `${item.productTitle || 'Produk'} (x${item.quantity})`).join(', ') || '1x Snackbox Menu'}
-                        </p>
-                        {isSb && (
-                          <div className="mt-1.5 flex items-center gap-2">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase ${
-                                relayInfo.status === 'CONFIRMED'
-                                  ? 'bg-green-50 text-green-700 border-green-200'
-                                  : relayInfo.status === 'CONTACTED'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                  : relayInfo.status === 'REJECTED'
-                                  ? 'bg-red-50 text-red-700 border-red-200'
-                                  : 'bg-amber-50 text-amber-800 border-amber-300 animate-pulse'
-                              }`}
-                            >
-                              Relay: {
-                                relayInfo.status === 'CONFIRMED' ? '✓ Dikonfirmasi Toko' :
-                                relayInfo.status === 'CONTACTED' ? 'Sudah Dihubungi' :
-                                relayInfo.status === 'REJECTED' ? 'Stok Habis / Ditolak' :
-                                'Belum Dihubungi'
-                              }
-                            </span>
-                            {isSlaBreached && (
-                              <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">⚠️ SLA Alert: Escrow Aktif</span>
+                      return (
+                        <tr
+                          key={o.id}
+                          onClick={select}
+                          className={`cursor-pointer transition-colors ${selectedTx?.id === o.id ? 'bg-market-green-50' : 'hover:bg-neutral-shade-25'}`}
+                        >
+                          <td className="px-4 py-3">
+                            <button type="button" onClick={select} className="font-mono font-bold text-market-green-600 hover:underline">
+                              {o.id}
+                            </button>
+                            {isSb && (
+                              <span className="ml-2 px-2 py-0.5 rounded text-[9px] font-bold bg-primary-container text-on-primary-container border border-on-primary-container/20 uppercase">
+                                🧁 Snackbox ({o.boxType || 'Reguler'})
+                              </span>
                             )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-black text-slate-800">Rp {o.totalAmount.toLocaleString('id-ID')}</p>
-                        <span className="text-[8px] bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.2 rounded font-bold uppercase mt-1 inline-block">{o.status || 'COMPLETED'}</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
+                          </td>
+                          <td className="px-4 py-3 text-neutral-shade-500 font-mono">{new Date(o.createdAt).toLocaleDateString('id-ID')}</td>
+                          <td className="px-4 py-3 font-semibold text-neutral-shade-800">{buyer?.name || 'Customer'}</td>
+                          <td className="px-4 py-3 text-neutral-shade-600 max-w-[220px] truncate">
+                            {o.items?.map((item: any) => `${item.productTitle || 'Produk'} (x${item.quantity})`).join(', ') || '1x Snackbox Menu'}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-neutral-shade-800">Rp {o.totalAmount.toLocaleString('id-ID')}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-[9px] bg-green-50 text-green-700 border border-green-200 px-1.5 py-0.5 rounded font-bold uppercase">{o.status || 'COMPLETED'}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            {isSb ? (
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[9px] font-bold border uppercase ${
+                                    relayInfo.status === 'CONFIRMED'
+                                      ? 'bg-green-50 text-green-700 border-green-200'
+                                      : relayInfo.status === 'CONTACTED'
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                      : relayInfo.status === 'REJECTED'
+                                      ? 'bg-red-50 text-red-700 border-red-200'
+                                      : 'bg-amber-50 text-amber-800 border-amber-300 animate-pulse'
+                                  }`}
+                                >
+                                  {relayInfo.status === 'CONFIRMED' ? '✓ Dikonfirmasi Toko' :
+                                    relayInfo.status === 'CONTACTED' ? 'Sudah Dihubungi' :
+                                    relayInfo.status === 'REJECTED' ? 'Stok Habis / Ditolak' :
+                                    'Belum Dihubungi'}
+                                </span>
+                                {isSlaBreached && (
+                                  <span className="text-[9px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">⚠️ SLA</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-neutral-shade-300">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <TablePagination {...footer} />
+          </TableCard>
         </div>
 
-        <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] p-6 shadow-sm overflow-y-auto max-h-[520px]">
+        <div className="bg-white border border-neutral-shade-50 rounded-[var(--radius-brand)] p-6 shadow-sm overflow-y-auto max-h-[calc(100vh-8rem)] xl:sticky xl:top-6">
           {selectedTx ? (
             <div className="space-y-5 text-xs">
               <div className="border-b border-[#e2e8f0] pb-3 text-center">
@@ -286,7 +338,7 @@ export default function TransactionsTab({ orders, users, snackboxOnly = false, r
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mb-2">
                 <circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" />
               </svg>
-              <span>Pilih salah satu transaksi di sebelah kiri untuk melihat rincian relay WhatsApp & aliran dana.</span>
+              <span>Pilih salah satu transaksi pada tabel untuk melihat rincian relay WhatsApp & aliran dana.</span>
             </div>
           )}
         </div>

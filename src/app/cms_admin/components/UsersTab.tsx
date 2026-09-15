@@ -6,6 +6,16 @@ import { updateUserRoleAndLevelAction, updateUserIndukCommunityAction, createUse
 import { ADMIN_TYPE_BADGE, DEFAULT_ADMIN_TYPE, type AdminTypeKey } from '../admin-types'
 import { useToast, Toast } from './Toast'
 import ExportCsvButton from './ExportCsvButton'
+import { FilterPopover, SearchInput, TableCard, TablePagination, usePagination, type FilterField, type FilterValues } from './TableControls'
+
+const ROLE_FILTER: FilterField[] = [
+  {
+    key: 'role',
+    label: 'Role',
+    allLabel: 'Semua role',
+    options: ['ADMIN', 'MERCHANT', 'AFFILIATE', 'CUSTOMER', 'CUSTOMER_SERVICE'].map((r) => ({ value: r, label: r }))
+  }
+]
 
 const IP_LOCATION_POOL = [
   { ip: '180.252.164.22', loc: 'Jakarta Pusat, Indonesia' },
@@ -63,7 +73,7 @@ export default function UsersTab({ initialUsers, communities, currentUser }: Pro
   const { toast, showToast } = useToast()
 
   const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState('ALL')
+  const [filters, setFilters] = useState<FilterValues>({})
   const [editUser, setEditUser] = useState<any>(null)
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -73,11 +83,13 @@ export default function UsersTab({ initialUsers, communities, currentUser }: Pro
   const [newPhone, setNewPhone] = useState('')
   const [newRole, setNewRole] = useState('CUSTOMER')
 
+  const q = search.toLowerCase()
   const filteredUsers = users.filter((u) => {
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase())
-    const matchRole = roleFilter === 'ALL' || u.role === roleFilter
+    const matchSearch = (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+    const matchRole = !filters.role || u.role === filters.role
     return matchSearch && matchRole
   })
+  const { paged, resetPage, footer } = usePagination(filteredUsers)
 
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -162,52 +174,58 @@ export default function UsersTab({ initialUsers, communities, currentUser }: Pro
         ]}
       />
 
-      {/* Filter controls */}
-      <div className="flex flex-col md:flex-row gap-4 bg-white border border-[#e2e8f0] p-4 rounded-[var(--radius-brand)] shadow-sm justify-between items-center">
-        <div className="flex flex-col md:flex-row gap-4 flex-grow w-full">
-          <input
-            type="text"
-            placeholder="Cari user berdasarkan nama atau email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-grow bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 placeholder-[#94a3b8] focus:outline-none focus:border-[#0F5132] focus:ring-1 focus:ring-[#0F5132]"
-          />
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="bg-white border border-[#cbd5e1] rounded-[var(--radius-brand)] px-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-[#0F5132]"
-          >
-            <option value="ALL">Semua Role</option>
-            <option value="ADMIN">ADMIN</option>
-            <option value="MERCHANT">MERCHANT</option>
-            <option value="AFFILIATE">AFFILIATE</option>
-            <option value="CUSTOMER">CUSTOMER</option>
-            <option value="CUSTOMER_SERVICE">CUSTOMER_SERVICE</option>
-          </select>
-        </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2.5 bg-[#0F5132] hover:bg-[#0a3822] text-white text-xs font-bold uppercase tracking-widest rounded transition-colors shadow shrink-0 cursor-pointer"
-        >
-          + Tambah User Baru
-        </button>
-      </div>
-
-      {/* Users table */}
-      <div className="bg-white border border-[#e2e8f0] rounded-[var(--radius-brand)] overflow-x-auto shadow-sm">
-        <table className="w-full min-w-[900px] text-xs text-left">
-          <thead className="bg-[#f8f9fa] border-b border-[#e2e8f0] text-[#64748b] uppercase tracking-wider text-[10px]">
-            <tr>
-              <th className="px-4 py-3.5">Nama & Email</th>
-              <th className="px-4 py-3.5">No. Telp</th>
-              <th className="px-4 py-3.5">Role</th>
-              <th className="px-4 py-3.5 text-center">Level / XP</th>
-              <th className="px-4 py-3.5">IP & Lokasi Login</th>
-              <th className="px-4 py-3.5 text-right">Aksi</th>
+      <TableCard
+        title="Daftar User"
+        description="Lihat daftar user, edit data, alamat IP, dan nomor telepon."
+        actions={
+          <>
+            <SearchInput
+              placeholder="Cari nama atau email..."
+              value={search}
+              onChange={(v) => {
+                setSearch(v)
+                resetPage()
+              }}
+            />
+            <FilterPopover
+              fields={ROLE_FILTER}
+              value={filters}
+              onApply={(next) => {
+                setFilters(next)
+                resetPage()
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-4 py-2 rounded-[var(--radius-brand)] text-xs font-bold bg-market-green-600 text-white hover:bg-market-green-700 transition-colors shrink-0 cursor-pointer"
+            >
+              + Tambah User
+            </button>
+          </>
+        }
+      >
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs text-left whitespace-nowrap">
+          <thead>
+            <tr className="bg-neutral-shade-25 border-b border-neutral-shade-50 text-neutral-shade-500 uppercase tracking-wider text-[10px] font-bold">
+              <th className="px-4 py-3">Nama & Email</th>
+              <th className="px-4 py-3">No. Telp</th>
+              <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3 text-center">Level / XP</th>
+              <th className="px-4 py-3">IP & Lokasi Login</th>
+              <th className="px-4 py-3 text-right">Aksi</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredUsers.map((u) => {
+          <tbody className="divide-y divide-neutral-shade-50">
+            {paged.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-neutral-shade-300 italic">
+                  Tidak ada user yang cocok dengan pencarian atau filter.
+                </td>
+              </tr>
+            )}
+            {paged.map((u) => {
               const isAdminRow = u.role === 'ADMIN'
               const isSuperAdminRow = isAdminRow && !!u.isSuperAdmin
               const adminType = ADMIN_TYPE_BADGE[(u.adminType as AdminTypeKey) || DEFAULT_ADMIN_TYPE]
@@ -299,6 +317,9 @@ export default function UsersTab({ initialUsers, communities, currentUser }: Pro
           </tbody>
         </table>
       </div>
+
+      <TablePagination {...footer} />
+      </TableCard>
 
       {editUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

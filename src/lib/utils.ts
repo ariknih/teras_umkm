@@ -70,3 +70,15 @@ export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2
 export function formatRupiah(amount: number | null | undefined): string {
   return `Rp ${(amount ?? 0).toLocaleString('id-ID')}`
 }
+
+/** Windowed page list: first, last, current±1, and '...' for gaps. */
+export function getPageList(current: number, total: number): (number | '...')[] {
+  const pages = new Set([1, total, current - 1, current, current + 1])
+  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b)
+  const result: (number | '...')[] = []
+  sorted.forEach((p, i) => {
+    if (i > 0 && p - sorted[i - 1] > 1) result.push('...')
+    result.push(p)
+  })
+  return result
+}

@@ -27,6 +27,7 @@ import {
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getCommunityTierBadge } from '@/lib/community-badge'
+import { getPageList } from '@/lib/utils'
 import { PERKUMPULAN_TEMPLATE_DEFAULTS, PERKUMPULAN_TEMPLATE_OPTIONS, detectPerkumpulanTemplate, normalizeTemplateType } from '@/lib/community-templates'
 import { getWalletDetails } from '@/app/actions/wallet-affiliate'
 import { getProducts, getProductsByMerchantIdsAction, createMemberProductAction, updateMemberProductAction, deleteMemberProductAction } from '@/app/actions/products'
@@ -283,18 +284,6 @@ function getModuleDefaultTemplates(moduleId: string): string[] {
 }
 
 const REF_LOGS_PAGE_SIZE_OPTIONS = [10, 25, 50] as const
-
-/** Windowed page list: first, last, current±1, and '...' for gaps. */
-function getPageList(current: number, total: number): (number | '...')[] {
-  const pages = new Set([1, total, current - 1, current, current + 1])
-  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b)
-  const result: (number | '...')[] = []
-  sorted.forEach((p, i) => {
-    if (i > 0 && p - sorted[i - 1] > 1) result.push('...')
-    result.push(p)
-  })
-  return result
-}
 
 export default function CommunityDetailPage({ initialData }: { initialData: CommunityDetailInitialData }) {
   const router = useRouter()

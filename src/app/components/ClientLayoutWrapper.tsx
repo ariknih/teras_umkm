@@ -6,7 +6,6 @@ import Link from 'next/link'
 import HeaderNavigation from './HeaderNavigation'
 import MobileBottomNav from '@/components/MobileBottomNav'
 import FloatingChat from '@/components/FloatingChat'
-import PwaInstallPrompt from './PwaInstallPrompt'
 import ConnectivityStatus from './ConnectivityStatus'
 import ProductCompareModal from './ProductCompareModal'
 import { GsapScrollTrigger } from '@/components/GsapScrollTrigger'
@@ -158,7 +157,6 @@ export default function ClientLayoutWrapper({
 
       <MobileBottomNav isLoggedIn={!!user} userCommunities={userCommunities || []} />
       <FloatingChat />
-      <PwaInstallPrompt />
       <ConnectivityStatus />
       <ProductCompareModal />
     </div>
