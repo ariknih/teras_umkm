@@ -38,3 +38,22 @@ export const ADMIN_TYPE_BADGE: Record<AdminTypeKey, { label: string; className: 
 export function isValidAdminType(value: unknown): value is AdminTypeKey {
   return typeof value === 'string' && (ADMIN_TYPE_KEYS as string[]).includes(value)
 }
+
+/**
+ * Community finance (Kas Komunitas withdrawals, platform revenue ledger) is
+ * gated by admin *type*, not by the module checklist: only a FINANCIAL staff
+ * admin may act. The superadmin may view (oversight/audit) but never act —
+ * separation of duties on money movement. Enforced server-side in
+ * actions/community-finance.ts; the CMS only mirrors it.
+ */
+export const COMMUNITY_FINANCE_MENU_KEY = 'community-finance'
+
+type AdminLike = { role?: string | null; isSuperAdmin?: boolean | null; adminType?: string | null } | null | undefined
+
+export function canActCommunityFinance(user: AdminLike): boolean {
+  return !!user && user.role === 'ADMIN' && user.isSuperAdmin !== true && user.adminType === 'FINANCIAL'
+}
+
+export function canViewCommunityFinance(user: AdminLike): boolean {
+  return !!user && user.role === 'ADMIN' && (user.isSuperAdmin === true || user.adminType === 'FINANCIAL')
+}

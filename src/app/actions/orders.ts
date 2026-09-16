@@ -101,7 +101,7 @@ export async function updateOrderTracking(orderId: string, status: string, note?
   }
 
   try {
-    const updatedOrder = await DataStore.updateOrderTracking(orderId, status, defaultNote)
+    const updatedOrder = await DataStore.updateOrderTracking(orderId, status, defaultNote, isAdmin)
     await logAudit({
       actor: isAdmin ? 'ADMIN' : 'MEMBER',
       actorId: user.id,

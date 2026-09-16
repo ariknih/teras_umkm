@@ -64,20 +64,19 @@ export function computeTierAmount(
 /**
  * Who a tier's commission goes to once the upline referrer chain has been
  * walked and found empty for this tier (no referrer, or the chain never had
- * one to begin with). Tier 1 always falls back to the community's own kas
- * (ketua's wallet); any later tier has no natural fallback recipient, so it
- * must be logged as an unpaid platform residual — never a hardcoded user id
- * that may not exist in production.
+ * one to begin with). Tier 1 falls back to the community's own wallet (Kas
+ * Komunitas — never the ketua's personal wallet); any later tier is Saloka's
+ * platform share, which is ledger-only (the money already sits in Saloka's
+ * payment-gateway balance, so no wallet is credited).
  */
 export function resolveTierFallbackRecipient(
   tier: number,
-  ketuaId: string,
   communityName: string
-): { recipientId: string | null; recipientType: 'KOMUNITAS' | 'PLATFORM'; recipientName: string } {
+): { recipientType: 'KOMUNITAS' | 'PLATFORM'; recipientName: string } {
   if (tier === 1) {
-    return { recipientId: ketuaId, recipientType: 'KOMUNITAS', recipientName: `Kas Komunitas ${communityName}` }
+    return { recipientType: 'KOMUNITAS', recipientName: `Kas Komunitas ${communityName}` }
   }
-  return { recipientId: null, recipientType: 'PLATFORM', recipientName: 'Saloka.id Platform (belum ada penerima)' }
+  return { recipientType: 'PLATFORM', recipientName: 'Saloka.id Platform' }
 }
 
 /**

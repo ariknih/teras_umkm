@@ -18,6 +18,7 @@ import {
 } from './organization'
 import { cacheWrap } from './cache'
 import { PROTECTED_CERTIFICATE_TEMPLATE_NAME } from './lms-rules'
+import { splitAffiliateCommission, computeOrderTotal, wholesaleUnitPrice, summarizeMemberSavings } from './money'
 import { computeTierAmount, resolveTierFallbackRecipient, resolveReferralChain, resolveReferralChainAsync, validateReferrerId, buildDownlineTree, KOPERASI_FIXED_TIER_COINS } from './referral-payout'
 import crypto from 'crypto'
 import { ProductCategory } from '@prisma/client'
@@ -665,6 +666,226 @@ async function withMutationFallback<T = any, M = any>(
   const result = await mockMutation()
   saveMockDb()
   return result
+}
+
+// Credits a community's own wallet (Kas Komunitas / Kas Koperasi) inside the
+// caller's transaction, creating the wallet on first use. Community money must
+// never land in the ketua's personal wallet — the ketua can change, and a
+// personal wallet can't tell community funds apart from their own earnings.
+async function creditCommunityWallet(
+  tx: any,
+  communityId: string,
+  amount: number,
+  description: string,
+  type: 'COMMISSION' | 'DEPOSIT' = 'COMMISSION'
+) {
+  amount = Math.round(amount)
+  if (amount <= 0) return
+  const w = await tx.wallet.upsert({
+    where: { communityId },
+    create: { communityId, balance: amount },
+    update: { balance: { increment: amount } }
+  })
+  await tx.walletTransaction.create({ data: { walletId: w.id, amount, type, description } })
+}
+
+// Mock-DB twin of creditCommunityWallet.
+function creditMockCommunityWallet(
+  communityId: string,
+  amount: number,
+  description: string,
+  type: 'COMMISSION' | 'DEPOSIT' = 'COMMISSION'
+) {
+  amount = Math.round(amount)
+  if (amount <= 0) return
+  let w = globalMockWallets.find((x: any) => x.communityId === communityId)
+  if (!w) {
+    w = { id: `wallet-community-${communityId}`, userId: null, communityId, balance: 0, createdAt: new Date(), updatedAt: new Date() }
+    globalMockWallets.push(w)
+  }
+  w.balance += amount
+  w.updatedAt = new Date()
+  globalMockWalletTransactions.push({
+    id: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    walletId: w.id,
+    amount,
+    type,
+    description,
+    createdAt: new Date()
+  })
+}
+
+// Mock-DB twin of settleOrderPayouts' platformRevenue.
+function pushMockPlatformRevenue(source: 'MARKETPLACE_COMMISSION' | 'MARKETPLACE_ORGANIC_TAX', amount: number, orderId: string, description: string) {
+  amount = Math.round(amount)
+  if (amount <= 0) return
+  const entries = ((globalThis as any).__mockPlatformRevenueEntries ||= [])
+  entries.push({ id: `pre-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, source, amount, orderId, description, createdAt: new Date() })
+}
+
+function mergePlatformRevenue(referralLogs: any[], coinTopups: any[], marketplace: any[] = []) {
+  const rows = [
+    ...marketplace.map((e) => ({
+      id: `mkt-${e.id}`,
+      source: 'MARKETPLACE' as const,
+      createdAt: e.createdAt,
+      amount: Number(e.amount) || 0,
+      community: null,
+      description: e.description
+    })),
+    ...referralLogs.map((l) => ({
+      id: `ref-${l.id}`,
+      source: 'JOIN_FEE_TIER' as const,
+      createdAt: l.createdAt,
+      amount: Number(l.amount) || 0,
+      community: l.community || null,
+      description: l.description
+    })),
+    ...coinTopups.map((t) => ({
+      id: `coin-${t.id}`,
+      source: 'COIN_TOPUP' as const,
+      createdAt: t.createdAt,
+      amount: Number(t.rupiahAmount) || 0,
+      community: t.community || null,
+      description: t.description
+    }))
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  const sum = (src?: string) => rows.filter((r) => !src || r.source === src).reduce((s, r) => s + r.amount, 0)
+  return {
+    rows,
+    totals: { all: sum(), joinFeeTier: sum('JOIN_FEE_TIER'), coinTopup: sum('COIN_TOPUP'), marketplace: sum('MARKETPLACE') }
+  }
+}
+
+// Pays out everything an order earns once its payment is confirmed: buyer
+// points + 5% cashback, digital membership activation, affiliate split, JV share
+// and merchant earnings. Runs inside the caller's transaction and at most once
+// per order (payoutsPending compare-and-swap). Every share lands in a real
+// wallet (created when missing); a share whose recipient doesn't exist is added to
+// Saloka's ledger-only platform revenue (PlatformRevenueEntry) instead of vanishing.
+async function settleOrderPayouts(tx: any, orderId: string) {
+  const { count } = await tx.order.updateMany({
+    where: { id: orderId, payoutsPending: true },
+    data: { payoutsPending: false }
+  })
+  if (count === 0) return
+
+  const order = await tx.order.findUnique({
+    where: { id: orderId },
+    include: { items: { include: { product: true } } }
+  })
+  const buyerId: string = order.buyerId
+  const buyerObj = await tx.user.findUnique({ where: { id: buyerId } })
+
+  const userExists = async (id?: string | null) =>
+    !!id && !!(await tx.user.findUnique({ where: { id }, select: { id: true } }))
+  const credit = async (userId: string, amount: number, type: 'SALE' | 'COMMISSION' | 'DEPOSIT', description: string) => {
+    amount = Math.round(amount)
+    if (amount === 0) return
+    const w = await tx.wallet.upsert({
+      where: { userId },
+      create: { userId, balance: amount },
+      update: { balance: { increment: amount } }
+    })
+    await tx.walletTransaction.create({ data: { walletId: w.id, amount, type, description } })
+  }
+  const addXp = async (userId: string, xp: number) => {
+    const u = await tx.user.findUnique({ where: { id: userId } })
+    if (u) await tx.user.update({ where: { id: userId }, data: { xp: u.xp + xp, level: Math.floor((u.xp + xp) / 100) + 1 } })
+  }
+  // Saloka's share is ledger-only (no wallet): the money already sits in
+  // Saloka's payment-gateway balance, and a user-owned "platform wallet" could
+  // be withdrawn by whichever admin owns it.
+  const platformRevenue = async (source: 'MARKETPLACE_COMMISSION' | 'MARKETPLACE_ORGANIC_TAX', amount: number, description: string) => {
+    amount = Math.round(amount)
+    if (amount <= 0) return
+    await tx.platformRevenueEntry.create({ data: { source, amount, orderId, description } })
+  }
+
+  // Buyer points and cashback
+  await tx.user.update({ where: { id: buyerId }, data: { points: { increment: order.totalAmount * 0.01 } } })
+  await credit(buyerId, order.totalAmount * 0.05, 'DEPOSIT', `Cashback 5% Pembelian Order ${orderId}`)
+
+  const activeAffiliateId: string | null = order.affiliateId || buyerObj?.parentAffiliateId || null
+  const buyerParentId: string | null = buyerObj?.parentAffiliateId || null
+
+  for (const item of order.items) {
+    const product = item.product
+    const itemPrice = item.price * item.quantity
+    let merchantEarnings = itemPrice
+
+    // Digital product auto-activation
+    if (product.category === 'JASA' || product.category === 'KERJAAN') {
+      const targetAccess = product.category === 'KERJAAN' ? 'Diamond' : 'Platinum'
+      const targetLevel = product.category === 'KERJAAN' ? 'Distributor' : 'Agen'
+      const levelsMap: Record<string, number> = { Gold: 1, Platinum: 2, Diamond: 3 }
+      const currentRank = levelsMap[buyerObj?.membershipAccess || 'Gold'] || 1
+      if (currentRank < (levelsMap[targetAccess] || 1)) {
+        await tx.user.update({ where: { id: buyerId }, data: { membershipAccess: targetAccess, membershipLevel: targetLevel } })
+      }
+    }
+
+    // 1. Affiliate commission split (60/10/10/20 — Revisi Pert Keempat)
+    if (product.isAffiliateEnabled) {
+      const hasPromoter = !!activeAffiliateId && activeAffiliateId !== product.merchantId
+      const hasParent = !!buyerParentId && buyerParentId !== product.merchantId
+
+      if (hasPromoter || hasParent) {
+        const split = splitAffiliateCommission(
+          product.affiliateCommissionType === 'PERCENT'
+            ? itemPrice * ((product.affiliateCommissionValue || 0) / 100)
+            : (product.affiliateCommissionValue || 0) * item.quantity
+        )
+        if (split.total > 0) {
+          merchantEarnings -= split.total
+          let adminComm = split.admin
+
+          // Promoter (Tier 1) - 60%
+          if (hasPromoter && (await userExists(activeAffiliateId))) {
+            await credit(activeAffiliateId!, split.promoter, 'COMMISSION', `Komisi Affiliate Tier 1 dari penjualan ${product.title}`)
+            await tx.affiliateReferral.create({ data: { affiliateId: activeAffiliateId, buyerId, amount: split.promoter, status: 'PAID' } })
+            await addXp(activeAffiliateId!, 30)
+          } else adminComm += split.promoter
+
+          // Komunitas induk merchant (into the community's own wallet, all
+          // types/tiers) - 10%
+          const merchantObj = await tx.user.findUnique({ where: { id: product.merchantId } })
+          const community = merchantObj?.indukCommunityId
+            ? await tx.community.findUnique({ where: { id: merchantObj.indukCommunityId }, select: { id: true } })
+            : null
+          if (community) {
+            await creditCommunityWallet(tx, community.id, split.community, `Komisi Komunitas Induk (10%) dari penjualan ${product.title}`)
+          } else adminComm += split.community
+
+          // Pengundang / parent - 10%
+          if (hasParent && (await userExists(buyerParentId))) {
+            await credit(buyerParentId!, split.parent, 'COMMISSION', `Komisi Pengundang (10%) dari penjualan ${product.title}`)
+            await tx.affiliateReferral.create({ data: { affiliateId: buyerParentId, buyerId, amount: split.parent, status: 'PAID' } })
+            await addXp(buyerParentId!, 15)
+          } else adminComm += split.parent
+
+          // Platform - 20% + unclaimed shares
+          await platformRevenue('MARKETPLACE_COMMISSION', adminComm, `Komisi Admin (20%) dari penjualan ${product.title}`)
+        }
+      } else {
+        // Orphan sale: no affiliates, 1% platform tax instead
+        const adminTax = Math.round(itemPrice * 0.01)
+        merchantEarnings -= adminTax
+        await platformRevenue('MARKETPLACE_ORGANIC_TAX', adminTax, `Admin Tax 1% (Organik) dari penjualan ${product.title}`)
+      }
+    }
+
+    // 2. JV partner split — stays with the merchant if the partner account is gone
+    if (product.jvPartnerId && product.jvSharePercent && product.jvSharePercent > 0 && (await userExists(product.jvPartnerId))) {
+      const jvShare = Math.round(itemPrice * (product.jvSharePercent / 100))
+      merchantEarnings -= jvShare
+      await credit(product.jvPartnerId, jvShare, 'SALE', `Bagi hasil JV Partner (${product.jvSharePercent}%) untuk produk ${product.title}`)
+    }
+
+    // 3. Merchant earnings
+    await credit(product.merchantId, merchantEarnings, 'SALE', `Penjualan produk: ${product.title} (x${item.quantity})`)
+    await addXp(product.merchantId, 100)
+  }
 }
 
 
@@ -2283,13 +2504,6 @@ export const DataStore = {
       bumpSales?: string
     }
   ) {
-    const getProductPriceWithWholesale = (basePrice: number, qty: number) => {
-          if (qty >= 10) return basePrice * 0.80
-          if (qty >= 5) return basePrice * 0.90
-          if (qty >= 3) return basePrice * 0.95
-          return basePrice
-        }
-    
         const pickWaKey = (merchantWaKeys: string | null | undefined): string => {
           if (!merchantWaKeys) return 'TERAS_DEFAULT_GATEWAY_KEY'
           const keys = merchantWaKeys.split(',').map(k => k.trim()).filter(Boolean)
@@ -2316,7 +2530,7 @@ export const DataStore = {
                       data: { stock: { decrement: item.quantity } }
                     })
         
-                    const finalPrice = getProductPriceWithWholesale(product.price, item.quantity)
+                    const finalPrice = wholesaleUnitPrice(product.price, item.quantity)
                     const itemPrice = finalPrice * item.quantity
                     subtotal += itemPrice
         
@@ -2331,35 +2545,15 @@ export const DataStore = {
                     productsWithQuantities.push({ product, quantity: item.quantity, itemPrice })
                   }
         
-                  // Bump sales
-                  let bumpSalesTotal = 0
-                  if (shippingDetails?.bumpSales) {
-                    const activeBumps = shippingDetails.bumpSales.split(',')
-                    activeBumps.forEach(bump => {
-                      if (bump === 'GARANSI_PREMIUM') bumpSalesTotal += 25000
-                      if (bump === 'BOX_KAYU') bumpSalesTotal += 15000
-                      if (bump === 'KERTAS_KADO') bumpSalesTotal += 5000
-                    })
-                  }
-        
-                  // Coupon discount
-                  let computedDiscount = 0
-                  if (shippingDetails?.couponCode) {
-                    const code = shippingDetails.couponCode.toUpperCase()
-                    if (code === 'DISKON10') {
-                      computedDiscount = subtotal * 0.1
-                    } else if (code === 'Saloka.id') {
-                      computedDiscount = Math.min(20000, subtotal)
-                    } else if (code === 'GRATISONGKIR') {
-                      computedDiscount = shippingDetails.shippingFee || 0
-                    }
-                  }
-        
+                  // Shared with the DOKU checkout route, so the order records exactly what DOKU charged
                   const shippingFee = shippingDetails?.shippingFee || 0
-                  const serviceFee = subtotal > 0 ? 1000 : 0 // Biaya Layanan Aplikasi
-                  const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0) // Biaya Jasa Pembayaran
-                  const adminFee = serviceFee + paymentFee
-                  const finalTotal = Math.max(0, subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount)
+                  const { discount: computedDiscount, total: finalTotal } = computeOrderTotal({
+                    lines: [{ name: 'subtotal', price: subtotal, quantity: 1 }],
+                    shippingFee,
+                    bumpSales: shippingDetails?.bumpSales,
+                    couponCode: shippingDetails?.couponCode,
+                    paymentMethod
+                  })
         
                   // Wallet payment deduction
                   if (paymentMethod === 'WALLET') {
@@ -2381,39 +2575,12 @@ export const DataStore = {
                     })
                   }
         
-                  // Points and Cashback
-                  const pointsToAdd = finalTotal * 0.01
-                  const cashbackToAdd = finalTotal * 0.05
-        
-                  // Update buyer points
-                  await tx.user.update({
-                    where: { id: buyerId },
-                    data: { points: { increment: pointsToAdd } }
-                  })
-        
-                  // Update buyer wallet for cashback
-                  const buyerWallet = await tx.wallet.findUnique({ where: { userId: buyerId } })
-                  if (buyerWallet) {
-                    await tx.wallet.update({
-                      where: { userId: buyerId },
-                      data: { balance: { increment: cashbackToAdd } }
-                    })
-                    await tx.walletTransaction.create({
-                      data: {
-                        walletId: buyerWallet.id,
-                        amount: cashbackToAdd,
-                        type: 'DEPOSIT',
-                        description: `Cashback 5% Pembelian Order ${orderId}`
-                      }
-                    })
-                  }
-        
                   // Order status: only WALLET (deducted synchronously above) and
                   // 'Online Payment' (the label the DOKU routes pass, and they only
                   // reach here after DOKU's own status check or a signature-verified
                   // webhook confirms settlement) represent a payment that's actually
                   // confirmed by this point. Everything else (MANUAL_*, COD) is
-                  // unconfirmed and stays PENDING until a human marks it paid.
+                  // unconfirmed and stays PENDING until it is marked DELIVERED.
                   const CONFIRMED_PAYMENT_METHODS = ['WALLET', 'Online Payment']
                   const orderStatus = CONFIRMED_PAYMENT_METHODS.includes(paymentMethod) ? 'COMPLETED' : 'PENDING'
 
@@ -2431,251 +2598,24 @@ export const DataStore = {
                       discountAmount: computedDiscount,
                       bumpSales: shippingDetails?.bumpSales || null,
                       adminFee: 2500,
+                      paymentMethod,
+                      affiliateId: affiliateId || null,
+                      payoutsPending: true,
                       items: {
                         create: orderItemsData
                       }
                     }
                   })
-        
-                  // Process affiliate commissions and JV splits
+
                   const buyerObj = await tx.user.findUnique({ where: { id: buyerId } })
-                  const activeAffiliateId = affiliateId || buyerObj?.parentAffiliateId || null
-        
+
+                  // Payouts (commissions, merchant earnings, cashback, membership
+                  // activation) only once payment is confirmed. COD / manual orders
+                  // settle later, when they are marked DELIVERED (updateOrderTracking).
+                  if (orderStatus === 'COMPLETED') await settleOrderPayouts(tx, order.id)
+
                   for (const item of productsWithQuantities) {
-                    const { product, itemPrice } = item
-                    let merchantEarnings = itemPrice
-        
-                    // Check product category for digital product auto-activation
-                    if (product.category === 'JASA' || product.category === 'KERJAAN') {
-                      const targetAccess = product.category === 'KERJAAN' ? 'Diamond' : 'Platinum';
-                      const targetLevel = product.category === 'KERJAAN' ? 'Distributor' : 'Agen';
-                      const levelsMap: Record<string, number> = { Gold: 1, Platinum: 2, Diamond: 3 };
-                      const currentRank = levelsMap[buyerObj?.membershipAccess || 'Gold'] || 1;
-                      const targetRank = levelsMap[targetAccess] || 1;
-                      if (currentRank < targetRank) {
-                        await tx.user.update({
-                          where: { id: buyerId },
-                          data: {
-                            membershipAccess: targetAccess,
-                            membershipLevel: targetLevel
-                          }
-                        });
-                      }
-                    }
-        
-                    // 1. Handle Affiliate Commission Splits (60/10/10/20 — Revisi Pert Keempat)
-                    // 60% affiliate, 10% komunitas induk merchant, 10% pengundang, 20% admin
-                    if (product.isAffiliateEnabled) {
-                      const hasPromoter = activeAffiliateId && activeAffiliateId !== product.merchantId;
-                      const hasParent = buyerObj?.parentAffiliateId && buyerObj?.parentAffiliateId !== product.merchantId;
-        
-                      if (hasPromoter || hasParent) {
-                        let totalComm = 0
-                        if (product.affiliateCommissionType === 'PERCENT') {
-                          totalComm = itemPrice * ((product.affiliateCommissionValue || 0) / 100)
-                        } else {
-                          totalComm = (product.affiliateCommissionValue || 0) * item.quantity
-                        }
-        
-                        if (totalComm > 0) {
-                          merchantEarnings -= totalComm
-        
-                        const promoterComm = totalComm * 0.60
-                        const communityComm = totalComm * 0.10  // Komunitas induk merchant
-                        const parentComm = totalComm * 0.10     // Pengundang
-                        let adminComm = totalComm * 0.20
-        
-                        // Promoter (Tier 1) - 60%
-                        let promoterPaid = false
-                        if (activeAffiliateId && activeAffiliateId !== product.merchantId) {
-                          const promoterWallet = await tx.wallet.findUnique({ where: { userId: activeAffiliateId } })
-                          if (promoterWallet) {
-                            await tx.wallet.update({
-                              where: { userId: activeAffiliateId },
-                              data: { balance: { increment: promoterComm } }
-                            })
-                            await tx.walletTransaction.create({
-                              data: {
-                                walletId: promoterWallet.id,
-                                amount: promoterComm,
-                                type: 'COMMISSION',
-                                description: `Komisi Affiliate Tier 1 dari penjualan ${product.title}`
-                              }
-                            })
-                            await tx.affiliateReferral.create({
-                              data: {
-                                affiliateId: activeAffiliateId,
-                                buyerId,
-                                amount: promoterComm,
-                                status: 'PAID'
-                              }
-                            })
-                            // Award XP (+30 XP)
-                            const affUser = await tx.user.findUnique({ where: { id: activeAffiliateId } })
-                            if (affUser) {
-                              await tx.user.update({
-                                where: { id: activeAffiliateId },
-                                data: { xp: affUser.xp + 30, level: Math.floor((affUser.xp + 30) / 100) + 1 }
-                              })
-                            }
-                            promoterPaid = true
-                          }
-                        }
-                        if (!promoterPaid) adminComm += promoterComm
-        
-                        // Komunitas Induk Merchant - 10%
-                        let communityPaid = false
-                        const merchantObj = await tx.user.findUnique({ where: { id: product.merchantId } })
-                        const indukCommunityId = (merchantObj as any)?.indukCommunityId
-                        if (indukCommunityId) {
-                          // Find ketua komunitas to pay the community share
-                          const community = await tx.community.findUnique({ where: { id: indukCommunityId } })
-                          if (community) {
-                            const ketuaWallet = await tx.wallet.findUnique({ where: { userId: community.ketuaId } })
-                            if (ketuaWallet) {
-                              await tx.wallet.update({
-                                where: { userId: community.ketuaId },
-                                data: { balance: { increment: communityComm } }
-                              })
-                              await tx.walletTransaction.create({
-                                data: {
-                                  walletId: ketuaWallet.id,
-                                  amount: communityComm,
-                                  type: 'COMMISSION',
-                                  description: `Komisi Komunitas Induk (10%) dari penjualan ${product.title}`
-                                }
-                              })
-                              communityPaid = true
-                            }
-                          }
-                        }
-                        if (!communityPaid) adminComm += communityComm
-        
-                        // Pengundang / Parent - 10%
-                        let parentPaid = false
-                        const buyerParentId = buyerObj?.parentAffiliateId
-                        if (buyerParentId && buyerParentId !== product.merchantId) {
-                          const parentWallet = await tx.wallet.findUnique({ where: { userId: buyerParentId } })
-                          if (parentWallet) {
-                            await tx.wallet.update({
-                              where: { userId: buyerParentId },
-                              data: { balance: { increment: parentComm } }
-                            })
-                            await tx.walletTransaction.create({
-                              data: {
-                                walletId: parentWallet.id,
-                                amount: parentComm,
-                                type: 'COMMISSION',
-                                description: `Komisi Pengundang (10%) dari penjualan ${product.title}`
-                              }
-                            })
-                            await tx.affiliateReferral.create({
-                              data: {
-                                affiliateId: buyerParentId,
-                                buyerId,
-                                amount: parentComm,
-                                status: 'PAID'
-                              }
-                            })
-                            // Award XP (+15 XP)
-                            const parentUser = await tx.user.findUnique({ where: { id: buyerParentId } })
-                            if (parentUser) {
-                              await tx.user.update({
-                                where: { id: buyerParentId },
-                                data: { xp: parentUser.xp + 15, level: Math.floor((parentUser.xp + 15) / 100) + 1 }
-                              })
-                            }
-                            parentPaid = true
-                          }
-                        }
-                        if (!parentPaid) adminComm += parentComm
-        
-                        // Admin/Perusahaan - 20% + Absorbed
-                        const adminWallet = await tx.wallet.findUnique({ where: { userId: 'user-admin-1' } })
-                        if (adminWallet) {
-                          await tx.wallet.update({
-                            where: { userId: 'user-admin-1' },
-                            data: { balance: { increment: adminComm } }
-                          })
-                          await tx.walletTransaction.create({
-                            data: {
-                              walletId: adminWallet.id,
-                              amount: adminComm,
-                              type: 'COMMISSION',
-                              description: `Komisi Admin (20%) dari penjualan ${product.title}`
-                            }
-                          })
-                        }
-                      }
-                      } else {
-                        // Orphan Sale: No affiliates. Just charge 1% admin tax instead.
-                        const adminTax = itemPrice * 0.01;
-                        merchantEarnings -= adminTax;
-                        const adminWallet = await tx.wallet.findUnique({ where: { userId: 'user-admin-1' } })
-                        if (adminWallet) {
-                          await tx.wallet.update({
-                            where: { userId: 'user-admin-1' },
-                            data: { balance: { increment: adminTax } }
-                          })
-                          await tx.walletTransaction.create({
-                            data: {
-                              walletId: adminWallet.id,
-                              amount: adminTax,
-                              type: 'COMMISSION',
-                              description: `Admin Tax 1% (Organik) dari penjualan ${product.title}`
-                            }
-                          })
-                        }
-                      }
-                    }
-        
-                    // 2. Handle JV Partner splits
-                    if (product.jvPartnerId && product.jvSharePercent && product.jvSharePercent > 0) {
-                      const jvShare = itemPrice * (product.jvSharePercent / 100)
-                      merchantEarnings -= jvShare
-        
-                      const jvWallet = await tx.wallet.findUnique({ where: { userId: product.jvPartnerId } })
-                      if (jvWallet) {
-                        await tx.wallet.update({
-                          where: { userId: product.jvPartnerId },
-                          data: { balance: { increment: jvShare } }
-                        })
-                        await tx.walletTransaction.create({
-                          data: {
-                            walletId: jvWallet.id,
-                            amount: jvShare,
-                            type: 'SALE',
-                            description: `Bagi hasil JV Partner (${product.jvSharePercent}%) untuk produk ${product.title}`
-                          }
-                        })
-                      }
-                    }
-        
-                    // Update Merchant balance
-                    const merchantWallet = await tx.wallet.findUnique({ where: { userId: product.merchantId } })
-                    if (merchantWallet) {
-                      await tx.wallet.update({
-                        where: { userId: product.merchantId },
-                        data: { balance: { increment: merchantEarnings } }
-                      })
-                      await tx.walletTransaction.create({
-                        data: {
-                          walletId: merchantWallet.id,
-                          amount: merchantEarnings,
-                          type: 'SALE',
-                          description: `Penjualan produk: ${product.title} (x${item.quantity})`
-                        }
-                      })
-                      // Add XP to merchant (+100 XP)
-                      const merch = await tx.user.findUnique({ where: { id: product.merchantId } })
-                      if (merch) {
-                        await tx.user.update({
-                          where: { id: product.merchantId },
-                          data: { xp: merch.xp + 100, level: Math.floor((merch.xp + 100) / 100) + 1 }
-                        })
-                      }
-                    }
-        
+                    const { product } = item
                     // WhatsApp Notification simulation
                     const merchantUser = await tx.user.findUnique({ where: { id: product.merchantId } })
                     const waKey = pickWaKey(merchantUser?.waGatewayKeys || '')
@@ -2744,42 +2684,22 @@ export const DataStore = {
               if (product.stock < item.quantity) throw new Error('Stok produk tidak mencukupi')
               product.stock -= item.quantity
         
-              const finalPrice = getProductPriceWithWholesale(product.price, item.quantity)
+              const finalPrice = wholesaleUnitPrice(product.price, item.quantity)
               const itemPrice = finalPrice * item.quantity
               subtotal += itemPrice
         
               productsWithQuantities.push({ product, quantity: item.quantity, itemPrice })
             }
         
-            // Bump sales
-            let bumpSalesTotal = 0
-            if (shippingDetails?.bumpSales) {
-              const activeBumps = shippingDetails.bumpSales.split(',')
-              activeBumps.forEach(bump => {
-                if (bump === 'GARANSI_PREMIUM') bumpSalesTotal += 25000
-                if (bump === 'BOX_KAYU') bumpSalesTotal += 15000
-                if (bump === 'KERTAS_KADO') bumpSalesTotal += 5000
-              })
-            }
-        
-            // Coupon discount
-            let computedDiscount = 0
-            if (shippingDetails?.couponCode) {
-              const code = shippingDetails.couponCode.toUpperCase()
-              if (code === 'DISKON10') {
-                computedDiscount = subtotal * 0.1
-              } else if (code === 'Saloka.id') {
-                computedDiscount = Math.min(20000, subtotal)
-              } else if (code === 'GRATISONGKIR') {
-                computedDiscount = shippingDetails.shippingFee || 0
-              }
-            }
-        
+            // Shared with the DOKU checkout route, so the order records exactly what DOKU charged
             const shippingFee = shippingDetails?.shippingFee || 0
-            const serviceFee = subtotal > 0 ? 1000 : 0 // Biaya Layanan Aplikasi
-            const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0) // Biaya Jasa Pembayaran
-            const adminFee = serviceFee + paymentFee
-            const finalTotal = Math.max(0, subtotal + shippingFee + bumpSalesTotal + adminFee - computedDiscount)
+            const { discount: computedDiscount, total: finalTotal } = computeOrderTotal({
+              lines: [{ name: 'subtotal', price: subtotal, quantity: 1 }],
+              shippingFee,
+              bumpSales: shippingDetails?.bumpSales,
+              couponCode: shippingDetails?.couponCode,
+              paymentMethod
+            })
         
             // Wallet deduction
             if (paymentMethod === 'WALLET') {
@@ -2904,19 +2824,8 @@ export const DataStore = {
                   if (indukId) {
                     const community = (globalThis as any).__mockCommunities?.find((c: any) => c.id === indukId)
                     if (community) {
-                      const ketuaWallet = globalMockWallets.find(w => w.userId === community.ketuaId)
-                      if (ketuaWallet) {
-                        ketuaWallet.balance += communityComm
-                        globalMockWalletTransactions.push({
-                          id: `tx-${Date.now()}-comm-induk`,
-                          walletId: ketuaWallet.id,
-                          amount: communityComm,
-                          type: 'COMMISSION' as const,
-                          description: `Komisi Komunitas Induk (10%) dari penjualan ${product.title}`,
-                          createdAt: new Date()
-                        })
-                        communityPaid = true
-                      }
+                      creditMockCommunityWallet(community.id, communityComm, `Komisi Komunitas Induk (10%) dari penjualan ${product.title}`)
+                      communityPaid = true
                     }
                   }
                   if (!communityPaid) adminComm += communityComm
@@ -2955,36 +2864,14 @@ export const DataStore = {
                   }
                   if (!parentPaid) adminComm += parentComm
         
-                  // Admin/Perusahaan - 20%
-                  const adminWallet = globalMockWallets.find(w => w.userId === 'user-admin-1')
-                  if (adminWallet) {
-                    adminWallet.balance += adminComm
-                    globalMockWalletTransactions.push({
-                      id: `tx-${Date.now()}-aff-admin`,
-                      walletId: adminWallet.id,
-                      amount: adminComm,
-                      type: 'COMMISSION' as const,
-                      description: `Komisi Admin (20%) dari penjualan ${product.title}`,
-                      createdAt: new Date()
-                    })
-                  }
+                  // Admin/Perusahaan - 20% (ledger-only platform revenue)
+                  pushMockPlatformRevenue('MARKETPLACE_COMMISSION', adminComm, orderId, `Komisi Admin (20%) dari penjualan ${product.title}`)
                 }
                 } else {
                   // Orphan Sale: No affiliates. Just charge 1% admin tax.
                   const adminTax = itemPrice * 0.01;
                   merchantEarnings -= adminTax;
-                  const adminWallet = globalMockWallets.find(w => w.userId === 'user-admin-1')
-                  if (adminWallet) {
-                    adminWallet.balance += adminTax
-                    globalMockWalletTransactions.push({
-                      id: `tx-${Date.now()}-aff-admin-tax`,
-                      walletId: adminWallet.id,
-                      amount: adminTax,
-                      type: 'COMMISSION' as const,
-                      description: `Admin Tax 1% (Organik) dari penjualan ${product.title}`,
-                      createdAt: new Date()
-                    })
-                  }
+                  pushMockPlatformRevenue('MARKETPLACE_ORGANIC_TAX', adminTax, orderId, `Admin Tax 1% (Organik) dari penjualan ${product.title}`)
                 }
               }
         
@@ -4912,14 +4799,34 @@ export const DataStore = {
     )
   },
 
-  async updateOrderTracking(orderId: string, status: string, note?: string) {
+  async updateOrderTracking(orderId: string, status: string, note?: string, isAdmin = false) {
     return withMutationFallback(
       async () => {
         let orderStatus: any = undefined;
                 if (status === 'DELIVERED') orderStatus = 'COMPLETED';
                 if (status === 'CANCELLED') orderStatus = 'CANCELLED';
-                
+
                 await db.$transaction(async (tx) => {
+                  if (orderStatus) {
+                    const current = await tx.order.findUnique({
+                      where: { id: orderId },
+                      select: { status: true, payoutsPending: true, items: { select: { productId: true, quantity: true } } }
+                    })
+                    if (current?.status === 'CANCELLED') throw new Error('Pesanan sudah dibatalkan.')
+                    if (orderStatus === 'CANCELLED' && current) {
+                      // ponytail: paid orders (payouts already credited) can only be
+                      // cancelled by an admin, and nothing is reversed or refunded
+                      // automatically — the admin refunds via DOKU back office / a
+                      // manual wallet adjustment. Automate once WalletTransaction is
+                      // linked to its order.
+                      if (!current.payoutsPending && !isAdmin) {
+                        throw new Error('Pesanan yang sudah dibayar tidak bisa dibatalkan. Hubungi admin untuk pengembalian dana.')
+                      }
+                      for (const item of current.items) {
+                        await tx.product.update({ where: { id: item.productId }, data: { stock: { increment: item.quantity } } })
+                      }
+                    }
+                  }
                   await tx.orderTracking.create({
                     data: {
                       orderId,
@@ -4933,7 +4840,10 @@ export const DataStore = {
                       data: { status: orderStatus }
                     });
                   }
-                });
+                  // COD / manual orders are paid out on delivery; a no-op for
+                  // orders already settled at checkout (WALLET / DOKU).
+                  if (orderStatus === 'COMPLETED') await settleOrderPayouts(tx, orderId)
+                }, { timeout: 25000, maxWait: 15000 });
                 
                 return await db.order.findUnique({
                   where: { id: orderId },
@@ -5596,6 +5506,7 @@ export const DataStore = {
     landingPageConfig?: string
     joinFee?: number
     monthlyFee?: number
+    simpananPokok?: number
     isKycRequired?: boolean
     commissionMethod?: 'PERCENTAGE' | 'NOMINAL'
     templateType?: string
@@ -5625,6 +5536,7 @@ export const DataStore = {
                     ...(data.landingPageConfig !== undefined && { landingPageConfig: data.landingPageConfig || null }),
                     ...(data.joinFee !== undefined && { joinFee: data.joinFee || 0 }),
                     ...(data.monthlyFee !== undefined && { monthlyFee: data.monthlyFee || 0 }),
+                    ...(data.simpananPokok !== undefined && { simpananPokok: Math.round(data.simpananPokok) }),
                     ...(data.isKycRequired !== undefined && { isKycRequired: data.isKycRequired }),
                     ...(data.commissionMethod !== undefined && { commissionMethod: data.commissionMethod }),
                     ...(data.templateType !== undefined && { templateType: data.templateType }),
@@ -5652,6 +5564,7 @@ export const DataStore = {
                 landingPageConfig: data.landingPageConfig ?? existing.landingPageConfig,
                 joinFee: data.joinFee ?? existing.joinFee,
                 monthlyFee: data.monthlyFee ?? existing.monthlyFee,
+                simpananPokok: data.simpananPokok ?? existing.simpananPokok,
                 ...(data.isKycRequired !== undefined && { isKycRequired: data.isKycRequired }),
                 ...(data.commissionMethod !== undefined && { commissionMethod: data.commissionMethod }),
                 ...(data.templateType !== undefined && { templateType: data.templateType }),
@@ -5721,7 +5634,7 @@ export const DataStore = {
                         removedAt: null,
                         isInduk: asInduk,
                         isPaid: !needsPayment,
-                        invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
+                        invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED',
                         invoiceVerifiedAt: null,
                         invoiceVerifiedBy: null,
                         joinedAt: new Date(),
@@ -5734,7 +5647,7 @@ export const DataStore = {
                         userId,
                         isInduk: asInduk,
                         isPaid: !needsPayment,
-                        invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
+                        invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED',
                         referrerId: safeReferrerId
                       }
                     })
@@ -5760,7 +5673,7 @@ export const DataStore = {
                   }
                 }
 
-                return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'PAID' }
+                return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED' }
       },
       async () => {
         // Mock DB
@@ -5804,7 +5717,7 @@ export const DataStore = {
               existing.removedAt = null
               existing.isInduk = asInduk
               existing.isPaid = !needsPayment
-              existing.invoiceStatus = needsPayment ? 'UNPAID' : 'PAID'
+              existing.invoiceStatus = needsPayment ? 'UNPAID' : 'VERIFIED'
               existing.invoiceVerifiedAt = null
               existing.invoiceVerifiedBy = null
               existing.joinedAt = new Date()
@@ -5817,7 +5730,7 @@ export const DataStore = {
                 userId,
                 isInduk: asInduk,
                 isPaid: !needsPayment,
-                invoiceStatus: needsPayment ? 'UNPAID' : 'PAID',
+                invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED',
                 referrerId: safeReferrerId,
                 joinedAt: new Date()
               }
@@ -5829,7 +5742,7 @@ export const DataStore = {
               (user as any).indukCommunityId = communityId
             }
         
-            return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'PAID' }
+            return { joined: true, needsPayment, invoiceStatus: needsPayment ? 'UNPAID' : 'VERIFIED' }
       }
     )
   },
@@ -5848,7 +5761,7 @@ export const DataStore = {
         // double-paying the same referral chain if they race or both run.
         const { count } = await db.communityMembership.updateMany({
           where: { communityId, userId, isPaid: false, removedAt: null },
-          data: { isPaid: true, invoiceStatus: 'PAID', invoiceVerifiedAt: new Date() }
+          data: { isPaid: true, invoiceStatus: 'VERIFIED', invoiceVerifiedAt: new Date() }
         })
         let firstTimePaid = count === 1
 
@@ -5871,7 +5784,7 @@ export const DataStore = {
                   userId,
                   isInduk: !userObj.indukCommunityId,
                   isPaid: true,
-                  invoiceStatus: 'PAID',
+                  invoiceStatus: 'VERIFIED',
                   invoiceVerifiedAt: new Date(),
                   referrerId: safeReferrerId
                 }
@@ -5914,7 +5827,7 @@ export const DataStore = {
           }
         }
 
-        return { success: true, isPaid: true, invoiceStatus: 'PAID' }
+        return { success: true, isPaid: true, invoiceStatus: 'VERIFIED' }
       },
       async () => {
         if (!(globalThis as any).__mockCommunityMemberships) (globalThis as any).__mockCommunityMemberships = []
@@ -5927,7 +5840,7 @@ export const DataStore = {
         const alreadyPaid = m?.isPaid === true
         if (m) {
           m.isPaid = true
-          m.invoiceStatus = 'PAID'
+          m.invoiceStatus = 'VERIFIED'
           m.invoiceVerifiedAt = new Date()
         } else {
           const safeReferrerId = await validateReferrerId(userId, referrerId, async (uid) =>
@@ -5939,7 +5852,7 @@ export const DataStore = {
             userId,
             isInduk: true,
             isPaid: true,
-            invoiceStatus: 'PAID',
+            invoiceStatus: 'VERIFIED',
             referrerId: safeReferrerId,
             joinedAt: new Date()
           }
@@ -5957,7 +5870,7 @@ export const DataStore = {
           })
         }
 
-        return { success: true, isPaid: true, invoiceStatus: 'PAID' }
+        return { success: true, isPaid: true, invoiceStatus: 'VERIFIED' }
       }
     )
   },
@@ -5996,28 +5909,107 @@ export const DataStore = {
   // someone the community currently counts as a member" must filter
   // removedAt: null, or a removed member reappears in rosters/gating/SHU.
   // Also clears user.indukCommunityId if it matches the kicked community.
+  // Koperasi (all tiers — BASIC/PLUS/PRO): leaving membership returns ALL of
+  // the member's savings (Pokok + Wajib + Sukarela) from Kas Koperasi into
+  // their personal Saloka wallet — Pokok/Wajib can't be withdrawn while a
+  // member (UU 25/1992, Penjelasan Pasal 41), so exit is when they come back.
+  // One transaction: if Kas can't cover it, nothing happens and the member
+  // stays. Perkumpulan (Reguler/Premium) has no savings, so no refund.
+  // ponytail: refunds the full ledger balance; netting outstanding loans or
+  // losses charged to members (per AD/ART) isn't modelled — CooperativeLoan
+  // is status-only today.
   async removeCommunityMembership(userId: string, communityId: string) {
+    const refundNotes = 'Pengembalian simpanan saat keluar dari keanggotaan'
+    const shortfall = (total: number) =>
+      new Error(`Kas Koperasi tidak mencukupi untuk mengembalikan simpanan anggota (Rp ${total.toLocaleString('id-ID')}). Anggota belum dikeluarkan.`)
     return withMutationFallback(
       async () => {
-        await db.communityMembership.updateMany({
-                  where: { userId, communityId },
-                  data: { removedAt: new Date() }
-                })
-                // Clear indukCommunityId if it matches
-                const existingUser = await db.user.findUnique({
-                  where: { id: userId },
-                  select: { indukCommunityId: true }
-                })
-                if (existingUser?.indukCommunityId === communityId) {
-                  await db.user.update({
-                    where: { id: userId },
-                    data: { indukCommunityId: null }
+        return await db.$transaction(async (tx) => {
+          let refunded = 0
+          const community = await tx.community.findUnique({ where: { id: communityId }, select: { type: true, name: true } })
+          if (community?.type === 'KOPERASI') {
+            const rows = await tx.cooperativeSavingsTransaction.findMany({
+              where: { communityId, userId },
+              select: { type: true, transactionType: true, amount: true }
+            })
+            const bal = summarizeMemberSavings(rows)
+            if (bal.total > 0) {
+              const { count } = await tx.wallet.updateMany({
+                where: { communityId, balance: { gte: bal.total } },
+                data: { balance: { decrement: bal.total } }
+              })
+              if (count === 0) throw shortfall(bal.total)
+              const [kas, member] = await Promise.all([
+                tx.wallet.findUnique({ where: { communityId } }),
+                tx.user.findUnique({ where: { id: userId }, select: { name: true } })
+              ])
+              await tx.walletTransaction.create({
+                data: { walletId: kas!.id, amount: bal.total, type: 'WITHDRAWAL', description: `Pengembalian simpanan ${member?.name || 'anggota'} (keluar dari keanggotaan)` }
+              })
+              const refundRows = [['POKOK', bal.pokok], ['WAJIB', bal.wajib], ['SUKARELA', bal.sukarela]] as const
+              for (const [type, amount] of refundRows) {
+                if (amount > 0) {
+                  await tx.cooperativeSavingsTransaction.create({
+                    data: { communityId, userId, type, transactionType: 'TARIK', amount, notes: refundNotes }
                   })
                 }
-                return { success: true }
+              }
+              const w = await tx.wallet.upsert({
+                where: { userId },
+                create: { userId, balance: bal.total },
+                update: { balance: { increment: bal.total } }
+              })
+              await tx.walletTransaction.create({
+                data: { walletId: w.id, amount: bal.total, type: 'DEPOSIT', description: `Pengembalian simpanan Koperasi ${community.name}` }
+              })
+              refunded = bal.total
+            }
+          }
+
+          await tx.communityMembership.updateMany({
+            where: { userId, communityId },
+            data: { removedAt: new Date() }
+          })
+          // Clear indukCommunityId if it matches
+          const existingUser = await tx.user.findUnique({
+            where: { id: userId },
+            select: { indukCommunityId: true }
+          })
+          if (existingUser?.indukCommunityId === communityId) {
+            await tx.user.update({
+              where: { id: userId },
+              data: { indukCommunityId: null }
+            })
+          }
+          return { success: true, refunded }
+        })
       },
       async () => {
         // Mock DB fallback
+            let refunded = 0
+            const community = ((globalThis as any).__mockCommunities || []).find((c: any) => c.id === communityId)
+            if (community?.type === 'KOPERASI') {
+              const savings = (globalThis as any).__mockSavingsTransactions || []
+              const bal = summarizeMemberSavings(savings.filter((t: any) => t.communityId === communityId && t.userId === userId))
+              if (bal.total > 0) {
+                const kas = globalMockWallets.find((w: any) => w.communityId === communityId)
+                if (!kas || kas.balance < bal.total) throw shortfall(bal.total)
+                kas.balance -= bal.total
+                globalMockWalletTransactions.push({ id: `tx-${Date.now()}-refund-kas`, walletId: kas.id, amount: bal.total, type: 'WITHDRAWAL', description: 'Pengembalian simpanan anggota (keluar dari keanggotaan)', createdAt: new Date() })
+                for (const [type, amount] of [['POKOK', bal.pokok], ['WAJIB', bal.wajib], ['SUKARELA', bal.sukarela]] as const) {
+                  if (amount > 0) savings.unshift({ id: `sav-tx-${Date.now()}-${type}`, communityId, userId, type, transactionType: 'TARIK', amount, date: new Date(), notes: refundNotes, createdById: null, orderId: null, createdAt: new Date(), updatedAt: new Date() })
+                }
+                ;(globalThis as any).__mockSavingsTransactions = savings
+                let w = globalMockWallets.find((x: any) => x.userId === userId)
+                if (!w) {
+                  w = { id: `wallet-${userId}`, userId, balance: 0, createdAt: new Date(), updatedAt: new Date() }
+                  globalMockWallets.push(w)
+                }
+                w.balance += bal.total
+                globalMockWalletTransactions.push({ id: `tx-${Date.now()}-refund-member`, walletId: w.id, amount: bal.total, type: 'DEPOSIT', description: `Pengembalian simpanan Koperasi ${community.name}`, createdAt: new Date() })
+                refunded = bal.total
+              }
+            }
             const memberships = (globalThis as any).__mockCommunityMemberships || []
             const m = memberships.find((m: any) => m.userId === userId && m.communityId === communityId)
             if (m) m.removedAt = new Date()
@@ -6026,8 +6018,9 @@ export const DataStore = {
               ;(user as any).indukCommunityId = null
               user.updatedAt = new Date()
             }
-            return { success: true }
-      }
+            return { success: true, refunded }
+      },
+      true // dbOnly: a rejected money write must not "succeed" into mock
     )
   },
 
@@ -6297,6 +6290,16 @@ export const DataStore = {
   async deleteCommunityAdmin(id: string) {
     return withMutationFallback(
       async () => {
+        // Kas Komunitas + its withdrawals are financial records (onDelete:
+        // Restrict) — refuse with a readable reason instead of a raw FK error.
+        const [wallet, withdrawals] = await Promise.all([
+          db.wallet.findUnique({ where: { communityId: id }, select: { balance: true, _count: { select: { transactions: true } } } }),
+          db.communityWithdrawal.count({ where: { communityId: id } })
+        ])
+        if ((wallet && (wallet.balance !== 0 || wallet._count.transactions > 0)) || withdrawals > 0) {
+          throw new Error('Komunitas ini memiliki saldo atau riwayat Kas Komunitas, sehingga tidak dapat dihapus. Tangguhkan (suspend) komunitas sebagai gantinya.')
+        }
+        if (wallet) await db.wallet.delete({ where: { communityId: id } })
         await db.community.delete({ where: { id } })
                 return { success: true }
       },
@@ -6305,7 +6308,8 @@ export const DataStore = {
               (globalThis as any).__mockCommunities = (globalThis as any).__mockCommunities.filter((c: any) => c.id !== id)
               }
             return { success: true }
-      }
+      },
+      true // dbOnly: a rejected money write must not "succeed" into mock
     )
   },
 
@@ -6626,7 +6630,9 @@ export const DataStore = {
                       description: data.description,
                       userId: data.ketuaId,
                       communityId: data.communityId,
-                      orderId: data.orderId || null
+                      orderId: data.orderId || null,
+                      // Only a gateway top-up charged real Rupiah (platform revenue).
+                      rupiahAmount: data.orderId ? Math.round(data.totalBiaya) : null
                     }
                   })
                 })
@@ -6652,6 +6658,7 @@ export const DataStore = {
               userId: data.ketuaId,
               communityId: data.communityId,
               orderId: data.orderId || null,
+              rupiahAmount: data.orderId ? Math.round(data.totalBiaya) : null,
               createdAt: new Date()
             }
             ;(globalThis as any).__mockCoinTransactions.push(tx)
@@ -7256,11 +7263,13 @@ export const DataStore = {
         const community = communities.find((c: any) => c.id === m.communityId)
         const userObj = globalMockUsers.find(u => u.id === m.userId)
 
-        if (firstTimeVerified && community && userObj && (community.category === 'PAID' || community.type === 'KOPERASI')) {
+        // Same as the DB branch: the engine gates FREE/zero-fee itself. A
+        // defaulted fee here would now also credit Kas money nobody paid.
+        if (firstTimeVerified && community && userObj) {
           await this.processMultiTierCommunityReferral({
             communityId: community.id,
             buyerId: userObj.id,
-            totalFee: community.joinFee || 100000
+            totalFee: community.joinFee || 0
           })
         }
 
@@ -7870,19 +7879,30 @@ export const DataStore = {
   }) {
     return withMutationFallback(
       async () => {
-        return await (db as any).cooperativeSavingsTransaction.create({
-                  data: {
-                    communityId: data.communityId,
-                    userId: data.userId,
-                    type: data.type || 'WAJIB',
-                    transactionType: data.transactionType || 'SETOR',
-                    amount: Number(data.amount || 0),
-                    date: data.date || new Date(),
-                    notes: data.notes || '',
-                    createdById: data.createdById || null,
-                    orderId: data.orderId || null
-                  }
-                })
+        const savingsData = {
+          communityId: data.communityId,
+          userId: data.userId,
+          type: data.type || 'WAJIB',
+          transactionType: data.transactionType || 'SETOR',
+          amount: Number(data.amount || 0),
+          date: data.date || new Date(),
+          notes: data.notes || '',
+          createdById: data.createdById || null,
+          orderId: data.orderId || null
+        }
+        // Only a gateway-settled deposit (orderId set) is real money that
+        // passed through Saloka, so only it credits Kas Koperasi. A manually
+        // recorded row (cash handled outside the app) stays ledger-only.
+        // Same transaction as the orderId-unique insert, so a replayed verify
+        // fails on the constraint before Kas is credited a second time.
+        if (!data.orderId || savingsData.transactionType !== 'SETOR') {
+          return await (db as any).cooperativeSavingsTransaction.create({ data: savingsData })
+        }
+        return await db.$transaction(async (tx) => {
+          const row = await tx.cooperativeSavingsTransaction.create({ data: savingsData })
+          await creditCommunityWallet(tx, data.communityId, savingsData.amount, `Setor Simpanan ${savingsData.type} (pembayaran online)`, 'DEPOSIT')
+          return row
+        })
       },
       async () => {
         const txs = (globalThis as any).__mockSavingsTransactions || []
@@ -7947,6 +7967,9 @@ export const DataStore = {
               description: `Setor ${data.type || 'SUKARELA'} via Saldo Wallet`
             }
           })
+          // The debited money has to land somewhere — previously it left the
+          // member's wallet and was credited nowhere.
+          await creditCommunityWallet(tx, data.communityId, data.amount, `Setor Simpanan ${data.type || 'WAJIB'} via Saldo Wallet`, 'DEPOSIT')
           return await tx.cooperativeSavingsTransaction.create({
             data: {
               communityId: data.communityId,
@@ -7975,6 +7998,7 @@ export const DataStore = {
           description: `Setor ${data.type || 'SUKARELA'} via Saldo Wallet`,
           createdAt: new Date()
         })
+        creditMockCommunityWallet(data.communityId, data.amount, `Setor Simpanan ${data.type || 'WAJIB'} via Saldo Wallet`, 'DEPOSIT')
         const txs = (globalThis as any).__mockSavingsTransactions || []
         const newTx = {
           id: `sav-tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -8670,6 +8694,35 @@ export const DataStore = {
     // paid from the koperasi's own coin balance — a different mechanism from
     // Perkumpulan Premium's configurable percentage-of-joinFee wallet payout below.
     if (community.type === 'KOPERASI') {
+      // Koperasi (all tiers — BASIC/PLUS/PRO): the join payment IS the
+      // member's Simpanan Pokok (UU 25/1992, Penjelasan Pasal 41 — paid on
+      // entry, member equity, not withdrawable while still a member), so it is
+      // recorded on their savings ledger and held in Kas Koperasi. Deliberately
+      // NOT a CommunityReferralLog row: processKoperasiFixedTierReferral's
+      // lifetime-once guard treats any log row for this buyer as "already
+      // rewarded" and would skip the coin reward.
+      if (totalFee > 0) {
+        const notes = 'Simpanan Pokok saat bergabung (pembayaran online)'
+        const description = `Simpanan Pokok ${buyer.name} saat bergabung`
+        if (dbConnected) {
+          await db.$transaction(async (tx) => {
+            await tx.cooperativeSavingsTransaction.create({
+              data: { communityId, userId: buyerId, type: 'POKOK', transactionType: 'SETOR', amount: Math.round(totalFee), notes, createdById: buyerId }
+            })
+            await creditCommunityWallet(tx, communityId, totalFee, description, 'DEPOSIT')
+          })
+        } else {
+          const txs = (globalThis as any).__mockSavingsTransactions || []
+          txs.unshift({
+            id: `sav-tx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            communityId, userId: buyerId, type: 'POKOK', transactionType: 'SETOR', amount: Math.round(totalFee),
+            date: new Date(), notes, createdById: buyerId, orderId: null, createdAt: new Date(), updatedAt: new Date()
+          })
+          ;(globalThis as any).__mockSavingsTransactions = txs
+          creditMockCommunityWallet(communityId, totalFee, description, 'DEPOSIT')
+          saveMockDb()
+        }
+      }
       return this.processKoperasiFixedTierReferral({ communityId, buyerId, community, buyer })
     }
 
@@ -8690,7 +8743,6 @@ export const DataStore = {
       } catch (_) {}
     }
 
-    const ketuaId = community.ketuaId
     const logs: any[] = []
 
     // A trailing run of zero-amount tiers (e.g. a NOMINAL-mode admin only
@@ -8710,20 +8762,22 @@ export const DataStore = {
       // Single transaction: a mid-loop failure must not leave a partial
       // payout (some tiers credited, others silently skipped) with no error.
       await db.$transaction(async (tx) => {
-        if (ketuaId && communityProfitShare > 0) {
-          const w = await tx.wallet.upsert({
-            where: { userId: ketuaId },
-            create: { userId: ketuaId, balance: communityProfitShare },
-            update: { balance: { increment: communityProfitShare } }
-          })
-          await tx.walletTransaction.create({
+        if (communityProfitShare > 0) {
+          await creditCommunityWallet(tx, communityId, communityProfitShare, `Keuntungan Kas Komunitas ${community.name} dari pendaftaran ${buyer.name}`)
+          // Logged as tier 0 so the community's audit ledger shows the full
+          // split of the join fee, not just the referral tiers.
+          logs.push(await tx.communityReferralLog.create({
             data: {
-              walletId: w.id,
-              amount: communityProfitShare,
-              type: 'COMMISSION',
-              description: `Keuntungan Kas Komunitas ${community.name} dari pendaftaran ${buyer.name}`
+              communityId,
+              buyerId,
+              referrerId: null,
+              tierLevel: 0,
+              amount: Math.round(communityProfitShare),
+              recipientType: 'KOMUNITAS',
+              recipientName: `Kas Komunitas ${community.name}`,
+              description: `Keuntungan Kas Komunitas sebesar Rp ${Math.round(communityProfitShare).toLocaleString('id-ID')}`
             }
-          })
+          }))
         }
 
         // Community-scoped upline, not the platform-wide signup referrer:
@@ -8774,19 +8828,19 @@ export const DataStore = {
 
           if (!recipientId) {
             // Chain exhausted (or never had a referrer) — tier 1 falls back to
-            // the community's own kas, any later tier has no natural fallback
-            // and must be logged as an unpaid residual, never a hardcoded seed
-            // user id that doesn't exist in production (previously silently
-            // dropped the money with no log at all).
-            const fallback = resolveTierFallbackRecipient(tier, ketuaId, community.name)
-            recipientId = fallback.recipientId
+            // the community's own wallet (Kas Komunitas), any later tier is
+            // Saloka's platform share: logged only, no wallet credited (the
+            // money already sits in Saloka's payment-gateway balance).
+            const fallback = resolveTierFallbackRecipient(tier, community.name)
             recipientType = fallback.recipientType
             recipientName = fallback.recipientName
           }
 
           if (tierAmount <= 0) continue
 
-          if (recipientId) {
+          if (recipientType === 'KOMUNITAS') {
+            await creditCommunityWallet(tx, communityId, tierAmount, `Komisi Referral Tier ${tier} (KOMUNITAS) Komunitas ${community.name} dari pendaftaran ${buyer.name}`)
+          } else if (recipientId) {
             const rWallet = await tx.wallet.upsert({
               where: { userId: recipientId },
               create: { userId: recipientId, balance: tierAmount },
@@ -8822,9 +8876,23 @@ export const DataStore = {
       })
     } else {
       // Mock DB: single-threaded in-memory mutation, no transaction needed.
-      if (ketuaId && communityProfitShare > 0) {
-        const kw = globalMockWallets.find(w => w.userId === ketuaId)
-        if (kw) kw.balance += communityProfitShare
+      if (!(globalThis as any).__mockCommunityReferralLogs) (globalThis as any).__mockCommunityReferralLogs = []
+      if (communityProfitShare > 0) {
+        creditMockCommunityWallet(communityId, communityProfitShare, `Keuntungan Kas Komunitas ${community.name} dari pendaftaran ${buyer.name}`)
+        const profitLog = {
+          id: `crl-${Date.now()}-0`,
+          communityId,
+          buyerId,
+          referrerId: null,
+          tierLevel: 0,
+          amount: Math.round(communityProfitShare),
+          recipientType: 'KOMUNITAS',
+          recipientName: `Kas Komunitas ${community.name}`,
+          description: `Keuntungan Kas Komunitas sebesar Rp ${Math.round(communityProfitShare).toLocaleString('id-ID')}`,
+          createdAt: new Date()
+        }
+        ;(globalThis as any).__mockCommunityReferralLogs.push(profitLog)
+        logs.push(profitLog)
       }
 
       const mockMemberships = ((globalThis as any).__mockCommunityMemberships || [])
@@ -8852,18 +8920,18 @@ export const DataStore = {
         }
 
         if (!recipientId) {
-          const fallback = resolveTierFallbackRecipient(tier, ketuaId, community.name)
-          recipientId = fallback.recipientId
+          const fallback = resolveTierFallbackRecipient(tier, community.name)
           recipientType = fallback.recipientType
           recipientName = fallback.recipientName
         }
 
-        if (recipientId) {
+        if (recipientType === 'KOMUNITAS') {
+          creditMockCommunityWallet(communityId, tierAmount, `Komisi Referral Tier ${tier} (KOMUNITAS) Komunitas ${community.name} dari pendaftaran ${buyer.name}`)
+        } else if (recipientId) {
           const rw = globalMockWallets.find(w => w.userId === recipientId)
           if (rw) rw.balance += tierAmount
         }
 
-        if (!(globalThis as any).__mockCommunityReferralLogs) (globalThis as any).__mockCommunityReferralLogs = []
         const logEntry = {
           id: `crl-${Date.now()}-${tier}`,
           communityId,
@@ -9775,6 +9843,208 @@ export const DataStore = {
             const b = bookings.find((x: any) => x.id === id)
             if (b) { b.status = status; b.updatedAt = new Date() }
             return b
+      }
+    )
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COMMUNITY WALLET (Kas Komunitas / Kas Koperasi) & PLATFORM REVENUE LEDGER
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  async getCommunityWallet(communityId: string, txLimit = 50) {
+    return withFallback(
+      async () => {
+        const w = await db.wallet.findUnique({
+          where: { communityId },
+          include: { transactions: { orderBy: { createdAt: 'desc' }, take: txLimit } }
+        })
+        return w || { id: null, communityId, balance: 0, transactions: [] }
+      },
+      async () => {
+        const w = globalMockWallets.find((x: any) => x.communityId === communityId)
+        if (!w) return { id: null, communityId, balance: 0, transactions: [] }
+        const transactions = globalMockWalletTransactions
+          .filter((t: any) => t.walletId === w.id)
+          .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, txLimit)
+        return { ...w, transactions }
+      }
+    )
+  },
+
+  async getAllCommunityWalletBalances() {
+    return withFallback(
+      async () => {
+        const [communities, wallets, pending] = await Promise.all([
+          db.community.findMany({ select: { id: true, name: true, type: true, joinFee: true, monthlyFee: true, category: true, landingPageConfig: true, ketua: { select: { name: true, email: true } } }, orderBy: { name: 'asc' } }),
+          db.wallet.findMany({ where: { communityId: { not: null } }, select: { communityId: true, balance: true, updatedAt: true } }),
+          db.communityWithdrawal.groupBy({ by: ['communityId'], where: { status: 'PENDING' }, _sum: { amount: true } })
+        ])
+        const byCommunity = new Map(wallets.map((w) => [w.communityId, w]))
+        const pendingBy = new Map(pending.map((p) => [p.communityId, p._sum.amount || 0]))
+        return communities.map((c) => ({
+          ...c,
+          balance: byCommunity.get(c.id)?.balance || 0,
+          pendingWithdrawal: pendingBy.get(c.id) || 0,
+          walletUpdatedAt: byCommunity.get(c.id)?.updatedAt || null
+        }))
+      },
+      async () => {
+        const communities = (globalThis as any).__mockCommunities || []
+        const withdrawals = (globalThis as any).__mockCommunityWithdrawals || []
+        return communities.map((c: any) => ({
+          id: c.id, name: c.name, type: c.type, joinFee: c.joinFee, monthlyFee: c.monthlyFee, category: c.category, landingPageConfig: c.landingPageConfig,
+          ketua: (() => { const k = globalMockUsers.find(u => u.id === c.ketuaId); return k ? { name: k.name, email: k.email } : null })(),
+          balance: globalMockWallets.find((w: any) => w.communityId === c.id)?.balance || 0,
+          pendingWithdrawal: withdrawals.filter((w: any) => w.communityId === c.id && w.status === 'PENDING').reduce((s: number, w: any) => s + w.amount, 0),
+          walletUpdatedAt: null
+        }))
+      }
+    )
+  },
+
+  // Holds the amount at request time with a balance-gated conditional
+  // decrement (same CAS as withdrawFunds/paySavingsViaWallet), so two
+  // concurrent requests can never overdraw Kas.
+  async requestCommunityWithdrawal(data: {
+    communityId: string
+    requestedById: string
+    amount: number
+    bankName: string
+    accountNumber: string
+    accountName: string
+  }) {
+    const amount = Math.round(data.amount)
+    // Deliberately NOT prefixed "Tarik ke": getAllWithdrawals keys the
+    // personal-wallet withdrawal queue off that prefix.
+    const description = `Penarikan Kas ke ${data.bankName} (${data.accountNumber} a/n ${data.accountName}) — menunggu verifikasi`
+    return withMutationFallback(
+      async () => {
+        return await db.$transaction(async (tx) => {
+          const { count } = await tx.wallet.updateMany({
+            where: { communityId: data.communityId, balance: { gte: amount } },
+            data: { balance: { decrement: amount } }
+          })
+          if (count === 0) throw new Error('Saldo Kas tidak mencukupi.')
+          const wallet = await tx.wallet.findUnique({ where: { communityId: data.communityId } })
+          await tx.walletTransaction.create({ data: { walletId: wallet!.id, amount, type: 'WITHDRAWAL', description } })
+          return await tx.communityWithdrawal.create({
+            data: {
+              communityId: data.communityId,
+              requestedById: data.requestedById,
+              amount,
+              bankName: data.bankName,
+              accountNumber: data.accountNumber,
+              accountName: data.accountName
+            }
+          })
+        })
+      },
+      async () => {
+        const w = globalMockWallets.find((x: any) => x.communityId === data.communityId)
+        if (!w || w.balance < amount) throw new Error('Saldo Kas tidak mencukupi.')
+        w.balance -= amount
+        globalMockWalletTransactions.push({ id: `tx-${Date.now()}`, walletId: w.id, amount, type: 'WITHDRAWAL', description, createdAt: new Date() })
+        const row = {
+          id: `cw-${Date.now()}`, ...data, amount, status: 'PENDING', note: null, transferRef: null,
+          processedById: null, processedAt: null, createdAt: new Date()
+        }
+        ;(globalThis as any).__mockCommunityWithdrawals = [row, ...((globalThis as any).__mockCommunityWithdrawals || [])]
+        return row
+      },
+      true // dbOnly: a rejected money write must not "succeed" into mock
+    )
+  },
+
+  // Finance-admin decision on a PENDING request. Compare-and-swap on status so
+  // a double-click or two admins can't process (or refund) the same request
+  // twice. REJECTED returns the held amount to Kas.
+  async processCommunityWithdrawal(id: string, adminId: string, decision: 'PAID' | 'REJECTED', note?: string, transferRef?: string) {
+    return withMutationFallback(
+      async () => {
+        return await db.$transaction(async (tx) => {
+          const { count } = await tx.communityWithdrawal.updateMany({
+            where: { id, status: 'PENDING' },
+            data: { status: decision, processedById: adminId, processedAt: new Date(), note: note || null, transferRef: transferRef || null }
+          })
+          if (count === 0) throw new Error('Permintaan penarikan tidak ditemukan atau sudah diproses.')
+          const row = await tx.communityWithdrawal.findUnique({ where: { id }, include: { community: { select: { id: true, name: true, ketuaId: true } } } })
+          if (decision === 'REJECTED') {
+            await creditCommunityWallet(tx, row!.communityId, row!.amount, `Pengembalian penarikan Kas ditolak${note ? `: ${note}` : ''}`, 'DEPOSIT')
+          }
+          return row
+        })
+      },
+      async () => {
+        const rows = (globalThis as any).__mockCommunityWithdrawals || []
+        const row = rows.find((r: any) => r.id === id && r.status === 'PENDING')
+        if (!row) throw new Error('Permintaan penarikan tidak ditemukan atau sudah diproses.')
+        Object.assign(row, { status: decision, processedById: adminId, processedAt: new Date(), note: note || null, transferRef: transferRef || null })
+        if (decision === 'REJECTED') creditMockCommunityWallet(row.communityId, row.amount, `Pengembalian penarikan Kas ditolak${note ? `: ${note}` : ''}`, 'DEPOSIT')
+        const c = ((globalThis as any).__mockCommunities || []).find((x: any) => x.id === row.communityId)
+        return { ...row, community: c ? { id: c.id, name: c.name, ketuaId: c.ketuaId } : null }
+      },
+      true // dbOnly: a rejected money write must not "succeed" into mock
+    )
+  },
+
+  async getCommunityWithdrawals(filter: { communityId?: string; status?: string } = {}) {
+    return withFallback(
+      async () => {
+        return await db.communityWithdrawal.findMany({
+          where: { ...(filter.communityId ? { communityId: filter.communityId } : {}), ...(filter.status ? { status: filter.status } : {}) },
+          include: { community: { select: { id: true, name: true, type: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 1000
+        })
+      },
+      async () => {
+        const communities = (globalThis as any).__mockCommunities || []
+        return ((globalThis as any).__mockCommunityWithdrawals || [])
+          .filter((r: any) => (!filter.communityId || r.communityId === filter.communityId) && (!filter.status || r.status === filter.status))
+          .map((r: any) => {
+            const c = communities.find((x: any) => x.id === r.communityId)
+            return { ...r, community: c ? { id: c.id, name: c.name, type: c.type } : null }
+          })
+      }
+    )
+  },
+
+  // Saloka platform revenue ledger (read-only, no wallet): join-fee PLATFORM
+  // tiers (Perkumpulan Premium), Rupiah paid for gateway coin top-ups
+  // (Koperasi, all tiers), and marketplace commission / organic tax
+  // (PlatformRevenueEntry, written by settleOrderPayouts).
+  async getPlatformRevenue() {
+    return withFallback(
+      async () => {
+        // ponytail: capped at 5000 rows per source, same safety valve as
+        // getCommunityReferralLogs; switch to cursor pagination when needed.
+        const [referral, coin, marketplace] = await Promise.all([
+          db.communityReferralLog.findMany({
+            where: { recipientType: 'PLATFORM', amount: { gt: 0 } },
+            include: { community: { select: { id: true, name: true, type: true } } },
+            orderBy: { createdAt: 'desc' },
+            take: 5000
+          }),
+          db.coinTransaction.findMany({
+            where: { type: 'TOPUP', orderId: { not: null }, rupiahAmount: { not: null } },
+            include: { community: { select: { id: true, name: true, type: true } } },
+            orderBy: { createdAt: 'desc' },
+            take: 5000
+          }),
+          db.platformRevenueEntry.findMany({ orderBy: { createdAt: 'desc' }, take: 5000 })
+        ])
+        return mergePlatformRevenue(referral, coin, marketplace)
+      },
+      async () => {
+        const communities = (globalThis as any).__mockCommunities || []
+        const withCommunity = (r: any) => {
+          const c = communities.find((x: any) => x.id === r.communityId)
+          return { ...r, community: c ? { id: c.id, name: c.name, type: c.type } : null }
+        }
+        const referral = ((globalThis as any).__mockCommunityReferralLogs || []).filter((l: any) => l.recipientType === 'PLATFORM' && l.amount > 0).map(withCommunity)
+        const coin = ((globalThis as any).__mockCoinTransactions || []).filter((t: any) => t.type === 'TOPUP' && t.orderId && t.rupiahAmount != null).map(withCommunity)
+        return mergePlatformRevenue(referral, coin, (globalThis as any).__mockPlatformRevenueEntries || [])
       }
     )
   },

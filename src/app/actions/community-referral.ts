@@ -8,6 +8,7 @@ import { getCurrentUser } from './auth'
 import { validateReferralAllocation, KOPERASI_FIXED_TIER_COINS } from '@/lib/referral-payout'
 import { deleteCache } from '@/lib/cache'
 import { revalidatePath } from 'next/cache'
+import { requireCommunityManager } from '@/lib/auth-guards'
 
 export async function getCommunityReferralConfig(communityId: string) {
   try {
@@ -156,7 +157,13 @@ export async function updateCommunityReferralConfig(data: {
 }
 
 export async function getCommunityReferralHistory(communityId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
   try {
+    // The community-wide payout ledger (incl. Kas Komunitas amounts) is
+    // ketua/admin-only; members read their own slice via
+    // getMyCommunityAffiliateSummary. Previously this had no check at all.
+    await requireCommunityManager(user as any, communityId)
     const logs = await DataStore.getCommunityReferralLogs(communityId)
     return { success: true, logs }
   } catch (e: any) {

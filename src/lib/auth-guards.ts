@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
+import { summarizeMemberSavings } from '@/lib/money'
 
 export async function requireUser() {
   const user = await getCurrentUser()
@@ -26,4 +27,22 @@ export async function isCommunityManager(user: { id: string; role: string } | nu
   if (user.role === 'ADMIN') return true
   const community = await DataStore.getCommunityById(communityId)
   return community?.ketuaId === user.id
+}
+
+// Trust-boundary check for any member savings deposit (DOKU checkout or Saldo
+// Wallet) — every one now credits Kas Koperasi. Koperasi only (all tiers), the
+// payer must be an active paid member, and Simpanan Pokok is paid once: the
+// paid join already records it, so a second Pokok deposit is refused.
+// Returns an error message, or null when the deposit is allowed.
+export async function checkSavingsDeposit(userId: string, communityId: string, savingsType?: string | null): Promise<string | null> {
+  const community: any = await DataStore.getCommunityById(communityId)
+  if (!community) return 'Komunitas tidak ditemukan.'
+  if (community.type !== 'KOPERASI') return 'Hanya Koperasi yang memiliki fitur simpanan.'
+  if (!(await DataStore.isCommunityMember(userId, communityId))) return 'Hanya anggota aktif Koperasi yang dapat menyetor simpanan.'
+  if (savingsType === 'POKOK') {
+    const rows = await DataStore.getSavingsTransactions(communityId, userId)
+    const required = Number(community.simpananPokok) || 0
+    if (summarizeMemberSavings(rows || []).pokok >= required && required > 0) return 'Simpanan Pokok Anda sudah lunas.'
+  }
+  return null
 }
