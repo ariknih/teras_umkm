@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { calculateBiteshipRates, haversineKm, getMockShippingRates } from '@/lib/biteship';
-import { calculateShipping as calculateKomerceShipping } from '@/lib/komerce';
+
+/**
+ * Mock rates are a Haversine distance estimate, not a real courier quote. They
+ * are fine locally, but in production the shipping fee is charged for real and
+ * the merchant has to actually ship at that price — so a quote we invented is
+ * worse than no quote. Refuse instead, and let the buyer pick pickup/COD.
+ */
+const ALLOW_MOCK_RATES = process.env.NODE_ENV !== 'production';
+
+function ratesUnavailable() {
+  return NextResponse.json(
+    {
+      error:
+        'Tarif pengiriman sedang tidak tersedia. Silakan coba lagi sebentar lagi, atau pilih ambil di toko (pickup).',
+      data: [],
+    },
+    { status: 503 }
+  );
+}
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
@@ -44,30 +62,22 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 2. Fallback to Komerce if available
-    if (shipperDestId && receiverDestId) {
-      const komerceResults = await calculateKomerceShipping(shipperDestId, receiverDestId, weight, itemValue);
-      if (komerceResults.length > 0) {
-        return NextResponse.json({
-          data: komerceResults,
-          source: 'komerce',
-          distance_km: Math.round(distKm * 10) / 10,
-        });
-      }
-    }
+    // Komerce/RajaOngkir used to be the second-choice aggregator here. It was
+    // dropped as a vendor and its default base URL still pointed at sandbox, so
+    // it is no longer consulted — Biteship is the only rate source.
 
-    // 3. Haversine mock fallback
-    const mockRates = getMockShippingRates(distKm, weight);
+    // Haversine estimate: development only.
+    if (!ALLOW_MOCK_RATES) return ratesUnavailable();
     return NextResponse.json({
-      data: mockRates,
+      data: getMockShippingRates(distKm, weight),
       source: 'mock',
       distance_km: Math.round(distKm * 10) / 10,
     });
   } catch (err: any) {
     console.error('[API] /api/shipping/calculate error:', err);
-    const mockRates = getMockShippingRates(distKm, weight);
+    if (!ALLOW_MOCK_RATES) return ratesUnavailable();
     return NextResponse.json({
-      data: mockRates,
+      data: getMockShippingRates(distKm, weight),
       source: 'mock_fallback',
       distance_km: Math.round(distKm * 10) / 10,
     });

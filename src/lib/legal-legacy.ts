@@ -36,7 +36,7 @@ export const LEGACY_LEGAL: Record<LegalSlug, DocNode> = {
       [b('Data Bisnis:'), ' Nama merchant, kategori usaha, detail produk, stok, harga, dan koordinat geolokasi toko.'],
       [
         b('Data Pembayaran:'),
-        ' Riwayat transaksi, saldo dompet, informasi rekening bank untuk penarikan dana, serta status pembayaran melalui gateway pembayaran Midtrans.'
+        ' Riwayat transaksi, saldo dompet, informasi rekening bank untuk penarikan dana, serta status pembayaran melalui gateway pembayaran DOKU.'
       ],
       [
         b('Data Penggunaan:'),
@@ -62,7 +62,7 @@ export const LEGACY_LEGAL: Record<LegalSlug, DocNode> = {
     ),
     ul(
       [
-        b('Penyedia Gateway Pembayaran (Midtrans):'),
+        b('Penyedia Gateway Pembayaran (DOKU):'),
         ' Untuk memproses transaksi pembayaran kartu kredit, bank transfer, dan e-wallet.'
       ],
       [b('Layanan Kurir & Logistik:'), ' Untuk menghitung biaya pengiriman dan mengatur pengiriman barang belanjaan Anda.'],
@@ -100,7 +100,7 @@ export const LEGACY_LEGAL: Record<LegalSlug, DocNode> = {
       ],
       [
         b('Penyelesaian Pembayaran:'),
-        ' Semua transaksi diproses secara real-time melalui gateway pembayaran Midtrans atau saldo Dompet Saloka. Transaksi dinyatakan sah setelah pembayaran terverifikasi sukses di sistem audit kas platform.'
+        ' Semua transaksi diproses secara real-time melalui gateway pembayaran DOKU atau saldo Dompet Saloka. Transaksi dinyatakan sah setelah pembayaran terverifikasi sukses di sistem audit kas platform.'
       ]
     ),
     h('4. Batasan Tanggung Jawab'),

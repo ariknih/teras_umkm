@@ -54,7 +54,7 @@ export async function getAffiliateStats() {
 export async function checkoutCart(
   items: Array<{ productId: string; quantity: number }>,
   affiliateId?: string,
-  paymentMethod: string = 'MIDTRANS',
+  paymentMethod: string = 'DOKU',
   shippingDetails?: {
     shippingFee?: number
     courier?: string

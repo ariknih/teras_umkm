@@ -1,19 +1,38 @@
 import { createDokuCheckoutPayment, checkDokuOrderStatus } from './doku'
-import * as midtrans from './midtrans'
 
-// Both gateways embed the user id in the orderId with the same 32-hex <->
-// hyphenated-UUID trick, so the Midtrans helpers serve both rather than
-// keeping a byte-identical DOKU copy around.
-const encodeUserId = midtrans.encodeUserIdForMidtrans
-const decodeUserId = midtrans.decodeUserIdFromMidtrans
+/**
+ * A gateway orderId embeds the payer's user id, but only in a form that
+ * survives the vendor's allowed character set — a hyphenated UUID does not, so
+ * it travels as 32 hex characters and is rehydrated on the way back. This
+ * codec used to live in lib/midtrans.ts; it moved here when Midtrans was
+ * removed, because decodeOrderUserId below is what attributes a community
+ * join-fee webhook to its payer.
+ */
+export function encodeUserId(userId: string): string {
+  if (userId.length === 36 && userId.includes('-')) {
+    return userId.replace(/-/g, '')
+  }
+  return userId
+}
+
+export function decodeUserId(encodedId: string): string {
+  if (encodedId.length === 32 && /^[0-9a-fA-F]{32}$/.test(encodedId)) {
+    return [
+      encodedId.slice(0, 8),
+      encodedId.slice(8, 12),
+      encodedId.slice(12, 16),
+      encodedId.slice(16, 20),
+      encodedId.slice(20)
+    ].join('-')
+  }
+  return encodedId
+}
 
 /**
  * Vendor-agnostic payment gateway contract. src/app/api/payment/checkout and
- * /verify only ever talk to this interface, never to lib/doku.ts or
- * lib/midtrans.ts directly — swapping the active gateway (once the DOKU
- * account is verified, or to a different vendor entirely) means adding one
- * adapter below and flipping PAYMENT_GATEWAY_PRIMARY, with zero changes to
- * routes, purpose logic, or UI.
+ * /verify only ever talk to this interface, never to lib/doku.ts directly —
+ * moving to a different vendor means adding one adapter below and flipping
+ * PAYMENT_GATEWAY_PRIMARY, with zero changes to routes, purpose logic, or UI.
  */
 export interface GatewayCheckoutParams {
   orderId: string
@@ -27,7 +46,7 @@ export interface GatewayCheckoutParams {
 export type GatewayStatus = 'SUCCESS' | 'PENDING' | 'FAILED'
 
 export interface PaymentGateway {
-  id: 'DOKU' | 'MIDTRANS'
+  id: 'DOKU'
   createCheckout(params: GatewayCheckoutParams): Promise<{ redirectUrl: string }>
   getStatus(orderId: string): Promise<{ status: GatewayStatus; amount: number }>
   encodeUserId(userId: string): string
@@ -62,40 +81,16 @@ const dokuGateway: PaymentGateway = {
   decodeUserId
 }
 
-const midtransGateway: PaymentGateway = {
-  id: 'MIDTRANS',
-  async createCheckout(p) {
-    const { redirectUrl } = await midtrans.createSnapTransaction({
-      orderId: p.orderId,
-      grossAmount: p.amount,
-      customerDetails: { first_name: p.customerName, email: p.customerEmail },
-      itemDetails: [{ id: p.orderId, name: p.itemName, quantity: 1, price: p.amount }],
-      callbacks: { finish: p.callbackUrl }
-    })
-    return { redirectUrl }
-  },
-  async getStatus(orderId) {
-    const s = await midtrans.getTransactionStatus(orderId)
-    const status: GatewayStatus =
-      s.transactionStatus === 'settlement' || s.transactionStatus === 'capture' ? 'SUCCESS'
-        : s.transactionStatus === 'pending' ? 'PENDING'
-          : 'FAILED'
-    return { status, amount: s.grossAmount }
-  },
-  encodeUserId: midtrans.encodeUserIdForMidtrans,
-  decodeUserId: midtrans.decodeUserIdFromMidtrans
-}
-
-const GATEWAYS: Record<string, PaymentGateway> = { DOKU: dokuGateway, MIDTRANS: midtransGateway }
+const GATEWAYS: Record<string, PaymentGateway> = { DOKU: dokuGateway }
 
 /**
- * The one line that needs to change to switch vendors. Defaults to Midtrans
- * (already-verified account) since DOKU's account isn't verified yet — flip
- * PAYMENT_GATEWAY_PRIMARY=DOKU once it is.
+ * The one line that needs to change to switch vendors. DOKU is the only
+ * gateway; an unrecognised PAYMENT_GATEWAY_PRIMARY falls back to it rather
+ * than throwing, so a stale env value cannot take checkout down.
  */
 export function getPrimaryGateway(): PaymentGateway {
-  const configured = (process.env.PAYMENT_GATEWAY_PRIMARY || 'MIDTRANS').toUpperCase()
-  return GATEWAYS[configured] || midtransGateway
+  const configured = (process.env.PAYMENT_GATEWAY_PRIMARY || 'DOKU').toUpperCase()
+  return GATEWAYS[configured] || dokuGateway
 }
 
 export function getGatewayById(id: string): PaymentGateway | null {

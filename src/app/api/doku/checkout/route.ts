@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/app/actions/auth';
-import { DataStore, PaymentRegistry } from '@/lib/data-store';
+import { DataStore } from '@/lib/data-store';
 import { createDokuCheckoutPayment, validateDepositAmount } from '@/lib/doku';
+import { savePendingCheckout } from '@/lib/payment-purposes';
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
 
       const orderId = `dep-doku_${user.id}_${Math.round(depositAmount)}_${Date.now().toString(36)}`;
 
-      PaymentRegistry.savePendingCheckout(orderId, {
+      await savePendingCheckout(orderId, {
         userId: user.id,
         items: [],
         shippingDetails: {
@@ -141,8 +142,10 @@ export async function POST(req: NextRequest) {
       const totalAmount = Math.max(1000, subtotal + shippingFee + bumpSalesTotal - computedDiscount);
       const orderId = `chk-doku-${user.id.slice(0, 8)}-${Date.now().toString(36)}`;
 
-      // Save to registry for settlement verification
-      PaymentRegistry.savePendingCheckout(orderId, {
+      // Persist for settlement — this is the only record of what the buyer is
+      // paying for until DOKU confirms, and the webhook that confirms it may
+      // land on a different instance.
+      await savePendingCheckout(orderId, {
         userId: user.id,
         items,
         affiliateId: affiliateId || undefined,

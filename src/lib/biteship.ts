@@ -111,8 +111,11 @@ export function getMockShippingRates(distKm: number, weightGram: number = 1000):
 export async function searchBiteshipAreas(keyword: string): Promise<BiteshipArea[]> {
   if (!keyword || keyword.trim().length < 2) return [];
 
-  // If no API key is configured, return smart mock matching major Indonesian areas
+  // If no API key is configured, return smart mock matching major Indonesian areas.
+  // Development only: these ids are invented, so in production they would let a
+  // buyer pick an address that no courier can then be asked to price.
   if (!BITESHIP_API_KEY) {
+    if (process.env.NODE_ENV === 'production') return [];
     const lower = keyword.toLowerCase();
     const mockDb: BiteshipArea[] = [
       { id: 'IDnp3171', name: 'Kebayoran Baru, Jakarta Selatan, DKI Jakarta', administrative_division_level_1_name: 'DKI Jakarta', administrative_division_level_2_name: 'Jakarta Selatan', administrative_division_level_3_name: 'Kebayoran Baru', postal_code: 12110 },

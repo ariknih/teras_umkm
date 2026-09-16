@@ -26,14 +26,15 @@ const securityHeaders = [
     value: 'camera=(), microphone=(), geolocation=()',
   },
   {
-    // Report-Only for now: the app loads Midtrans Snap.js, merchant-configured
-    // iframe embeds, and images from several allowlisted hosts (see
-    // remotePatterns above) — start by observing violations in the browser
-    // console before switching this to an enforcing Content-Security-Policy.
+    // Report-Only for now: the app loads merchant-configured iframe embeds and
+    // images from several allowlisted hosts (see remotePatterns above) — start
+    // by observing violations in the browser console before switching this to
+    // an enforcing Content-Security-Policy. DOKU needs no entry here: payment
+    // is a full-page redirect to DOKU's hosted checkout, not an embedded SDK.
     key: 'Content-Security-Policy-Report-Only',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",

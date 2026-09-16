@@ -364,6 +364,16 @@ export const MENUS: Menu[] = [
     icon: ToggleRight,
     category: 'SISTEM'
     // Front-side only: blocks public pages via src/proxy.ts; CMS and APIs keep running.
+  },
+  {
+    key: 'payment-gateway',
+    label: 'Payment Gateway',
+    title: 'Payment Gateway (DOKU)',
+    desc: 'Kredensial DOKU dan sakelar mode Sandbox/Live',
+    icon: Landmark,
+    category: 'SISTEM'
+    // Deliberately NOT granted to non-superadmins by default: this menu decides
+    // which merchant account real money lands in.
   }
 ]
 
