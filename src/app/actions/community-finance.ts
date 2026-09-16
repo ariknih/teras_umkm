@@ -55,9 +55,18 @@ async function ensureKetua(communityId: string) {
 
 // ─── Ketua (front page) ────────────────────────────────────────────────────
 
+// Read: the community's ketua, or the platform superadmin (oversight of every
+// community). Requesting a withdrawal stays ketua-only.
 export async function getCommunityWalletAction(communityId: string) {
   try {
-    await ensureKetua(communityId)
+    const user = await getCurrentUser()
+    if (!user) throw new Error('Anda harus masuk terlebih dahulu.')
+    const community = await DataStore.getCommunityById(communityId)
+    if (!community) throw new Error('Komunitas tidak ditemukan.')
+    if (community.ketuaId !== user.id) {
+      const admin = await loadAdmin()
+      if (admin?.isSuperAdmin !== true) throw new Error('Hanya Ketua Komunitas atau Superadmin yang dapat melihat Kas Komunitas.')
+    }
     const [wallet, withdrawals] = await Promise.all([
       DataStore.getCommunityWallet(communityId),
       DataStore.getCommunityWithdrawals({ communityId })

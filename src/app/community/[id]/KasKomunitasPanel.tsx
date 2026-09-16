@@ -13,11 +13,12 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   REJECTED: { label: 'Ditolak', cls: 'bg-red-50 text-red-700 border-red-200' }
 }
 
-// Ketua-only view of the community's own wallet. Applies to every type/tier:
+// Community wallet view for the ketua (can request withdrawals) and the
+// superadmin (read-only oversight). Applies to every type/tier:
 // Perkumpulan Reguler/Premium (marketplace 10%, Premium join-fee kas share)
 // and Koperasi Reguler/Premium/Max (Simpanan Pokok on join, online simpanan,
 // marketplace 10%).
-export default function KasKomunitasPanel({ communityId, isKoperasi }: { communityId: string; isKoperasi: boolean }) {
+export default function KasKomunitasPanel({ communityId, isKoperasi, canRequestWithdrawal = true }: { communityId: string; isKoperasi: boolean; canRequestWithdrawal?: boolean }) {
   const kasLabel = isKoperasi ? 'Kas Koperasi' : 'Kas Komunitas'
   const [loading, setLoading] = useState(true)
   const [wallet, setWallet] = useState<any>(null)
@@ -79,6 +80,13 @@ export default function KasKomunitasPanel({ communityId, isKoperasi }: { communi
         </p>
       )}
 
+      {!canRequestWithdrawal && (
+        <p className="text-[10px] text-blue-800 bg-blue-50 border border-blue-200 rounded-xl p-3 font-medium" role="note">
+          Mode lihat saja (Superadmin). Penarikan Kas hanya dapat diajukan oleh Ketua Komunitas dan diproses oleh Admin Financial.
+        </p>
+      )}
+
+      {canRequestWithdrawal && (
       <form onSubmit={submit} className="space-y-3">
         <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Ajukan Penarikan</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -105,6 +113,7 @@ export default function KasKomunitasPanel({ communityId, isKoperasi }: { communi
           </button>
         </div>
       </form>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="space-y-2">

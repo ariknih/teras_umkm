@@ -2960,6 +2960,12 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   const isKetua = Boolean(user && community && community.ketuaId === user.id)
   const isAdmin = Boolean(user && user.role === 'ADMIN')
+  // DB-verified (getCurrentUser re-reads isSuperAdmin), not the email heuristic.
+  const isSuperAdmin = Boolean(user && user.role === 'ADMIN' && user.isSuperAdmin === true)
+  // The member directory is members-only, but the ketua and the platform
+  // superadmin oversee every community. getIndukCommunityMembersAction
+  // already authorizes ADMIN server-side; this only stops hiding it in the UI.
+  const canViewMemberDirectory = isMember || isKetua || isSuperAdmin
 
   const activeMode: 'FREE' | 'PREMIUM' =
     previewMode === 'FREE' ? 'FREE' :
@@ -5319,7 +5325,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   </div>
 
                   {/* Search & Role Filter Pills */}
-                  {isMember && (
+                  {canViewMemberDirectory && (
                     <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pb-1">
                       <div className="relative w-full sm:w-80">
                         <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -5350,7 +5356,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {!isMember ? (
+                    {!canViewMemberDirectory ? (
                       <div className="col-span-full p-10 bg-gradient-to-b from-emerald-50/50 via-white to-gray-50 border border-emerald-200/70 rounded-3xl text-center space-y-4 shadow-xs">
                         <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#007A3D] border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
                           <Lock className="w-7 h-7" />
@@ -7876,7 +7882,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                 </div>
 
                 {/* KAS KOMUNITAS / KAS KOPERASI — ketua only, every type & tier */}
-                {isKetua && <KasKomunitasPanel communityId={id} isKoperasi={isKoperasi} />}
+                {(isKetua || isSuperAdmin) && <KasKomunitasPanel communityId={id} isKoperasi={isKoperasi} canRequestWithdrawal={isKetua} />}
               </div>
             )}
 
