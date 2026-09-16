@@ -1,7 +1,6 @@
 'use server'
 
 import { DataStore } from '@/lib/data-store'
-import { db } from '@/lib/db'
 import { getCurrentUser } from './auth'
 import { logAudit } from '@/lib/audit-log'
 import { revalidatePath } from 'next/cache'
@@ -297,6 +296,15 @@ export async function switchActiveIndukCommunityAction(communityId: string) {
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
 
+  // setIndukCommunity CREATES a paid, VERIFIED membership when none exists
+  // (intended for the CMS admin path). Self-service switching must only move
+  // between communities the user already actively belongs to — otherwise any
+  // communityId sent here skips the join fee / Simpanan Pokok, KYC and the
+  // recruitment lock.
+  if (!communityId || !(await DataStore.isCommunityMember(user.id, communityId))) {
+    return { error: 'Anda hanya dapat memilih komunitas tempat Anda sudah menjadi anggota aktif.' }
+  }
+
   try {
     await DataStore.setIndukCommunity(user.id, communityId)
     revalidatePath('/community')
@@ -483,80 +491,6 @@ export async function joinIndukCommunity(communityId: string, asInduk: boolean =
   }
 }
 
-/**
- * Manual (offline) join-fee settlement — bank transfer only. Gateway-backed
- * payments do NOT go through here: they run through /api/payment/checkout so
- * the amount is resolved server-side and confirmed against the gateway before
- * anything is credited.
- */
-export async function payCommunityJoinFeeAction(communityId: string, paymentMethod: string = 'BANK') {
-  const user = await getCurrentUser()
-  if (!user) return { error: 'Anda harus masuk terlebih dahulu.' }
-
-  // Community-scoped referral (same first-touch cookie the online-payment
-  // checkout route reads) — without this, a bank-transfer join always
-  // recorded referrerId as null even when the buyer came through a ?ref= link.
-  let referrerId: string | null = null
-  const communityRefCookie = readCommunityReferralCookie(await cookies(), communityId, user.id)
-  if (communityRefCookie) {
-    const referrer = await DataStore.findUserByReferralCode(communityRefCookie)
-    if (referrer) referrerId = referrer.id
-  }
-
-  if (paymentMethod !== 'BANK') {
-    return { error: 'Metode pembayaran tidak valid.' }
-  }
-
-  try {
-    // A bank transfer is only a CLAIM until an admin sees the money: record
-    // the (UNPAID, referrer cycle-checked) membership and flag it
-    // invoiceStatus PAID = "Sudah Bayar (Pending)" in the CMS invoice queue.
-    // isPaid and the referral payout only flip in verifyInvoiceMembership.
-    // Previously this settled instantly, granting paid membership and paying
-    // real commissions with no money received.
-    const joined: any = await DataStore.joinCommunity(user.id, communityId, false, referrerId)
-    if (joined?.error) return joined
-    if (joined?.alreadyMember && joined.invoiceStatus !== 'UNPAID') {
-      return { error: 'Pembayaran Anda sudah tercatat. Mohon tunggu verifikasi admin.' }
-    }
-    if (!joined?.needsPayment) return { error: 'Komunitas ini tidak memerlukan pembayaran.' }
-    await db.communityMembership.updateMany({
-      where: { communityId, userId: user.id, isPaid: false, removedAt: null },
-      data: { invoiceStatus: 'PAID' }
-    })
-    const result = { success: true, pendingVerification: true, invoiceStatus: 'PAID' }
-    await logAudit({
-      actor: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
-      actorId: user.id,
-      actorName: user.name || user.email,
-      action: 'PAY_COMMUNITY_JOIN_FEE',
-      module: 'COOPERATIVE',
-      targetId: communityId,
-      targetType: 'COMMUNITY',
-      detail: `Konfirmasi transfer bank biaya keanggotaan, menunggu verifikasi admin.`
-    })
-    // A rejoin reactivates a soft-deleted row (or a fresh join creates a new
-    // one) — either way the member LIST cache (separate from community:induk:*
-    // above) must also drop, or a viewer who warmed it in the last 60s makes
-    // the client's post-payment loadData() see the pre-payment roster and
-    // immediately reset isMember back to false right after payment succeeded.
-    // Mirrors what kickCommunityMemberAction and joinIndukCommunity already do.
-    deleteCache(`community:members:${communityId}`)
-    invalidateCachePattern(`community:members:${communityId}*`)
-    deleteCache(`community:stats:${communityId}`)
-    deleteCache('community:induk:all')
-    invalidateCachePattern('community:induk:*')
-    invalidateCachePattern('user:communities:roles:*')
-    revalidatePath(`/community/${communityId}`)
-    revalidatePath('/community')
-    revalidatePath('/merchant/dashboard')
-    revalidatePath('/cms_admin', 'layout')
-    return result
-  } catch (e: any) {
-    return { error: e.message || 'Gagal memproses pembayaran keanggotaan.' }
-  }
-}
-
 export async function getUserIndukCommunityAction() {
   const user = await getCurrentUser()
   if (!user) return null
@@ -607,7 +541,9 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
       return { error: 'Ketua komunitas tidak dapat dikeluarkan.' }
     }
 
-    await DataStore.removeCommunityMembership(actualTargetUserId, actualCommunityId)
+    // Koperasi: also refunds the member's savings from Kas (throws, member
+    // untouched, if Kas can't cover it — surfaced via the catch below).
+    const res: any = await DataStore.removeCommunityMembership(actualTargetUserId, actualCommunityId)
     await logAudit({
       actor: isSuperAdmin ? 'ADMIN' : 'MEMBER',
       actorId: user.id,
@@ -623,7 +559,7 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
         actualTargetUserId,
         'KICKED_FROM_COMMUNITY',
         'Dikeluarkan dari Komunitas',
-        `Anda telah dikeluarkan dari komunitas "${community.name}" oleh pengurus.`,
+        `Anda telah dikeluarkan dari komunitas "${community.name}" oleh pengurus.${res?.refunded > 0 ? ` Simpanan Anda sebesar Rp ${Number(res.refunded).toLocaleString('id-ID')} telah dikembalikan ke Saldo Dompet Saloka.` : ''}`,
         '/community'
       )
     } catch (err) {
@@ -638,6 +574,11 @@ export async function kickCommunityMemberAction(communityId: string, targetUserI
     invalidateCachePattern('user:communities:roles:*')
     deleteCache('community:induk:all')
     invalidateCachePattern('community:induk:*')
+    if (res?.refunded > 0) {
+      deleteCache(`user:wallet:${actualTargetUserId}`)
+      deleteCache(`community:savings:${actualCommunityId}`)
+      revalidatePath('/wallet')
+    }
 
     revalidatePath(`/community/${actualCommunityId}`)
     revalidatePath(`/community/${actualCommunityId}?view=dashboard&tab=anggota`)
@@ -1006,6 +947,11 @@ export async function updateIndukCommunity(id: string, formData: FormData) {
       landingPageConfig,
       joinFee,
       monthlyFee,
+      // Koperasi (all tiers): the paid join IS the member's Simpanan Pokok
+      // (UU 25/1992, Penjelasan Pasal 41), so both fields stay one value. A
+      // free join (0) leaves simpananPokok alone — the member then pays Pokok
+      // separately through Setor Simpanan.
+      ...((community as any).type === 'KOPERASI' && joinFee !== undefined && joinFee > 0 && { simpananPokok: joinFee }),
       templateType
     })
     await logAudit({

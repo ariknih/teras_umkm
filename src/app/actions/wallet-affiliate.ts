@@ -67,7 +67,13 @@ export async function checkoutCart(
   const user = await getCurrentUser()
   if (!user) return { error: 'Anda harus masuk terlebih dahulu untuk berbelanja.' }
   if (!items || items.length === 0) return { error: 'Keranjang belanja kosong.' }
-  
+  // Client-callable: only methods whose payment is either deducted right here
+  // (WALLET) or settled on delivery (COD / MANUAL_*). 'Online Payment' marks an
+  // order paid and is reserved for the DOKU verify/notification routes.
+  if (!(paymentMethod === 'WALLET' || paymentMethod === 'COD' || paymentMethod.startsWith('MANUAL_'))) {
+    return { error: 'Metode pembayaran tidak valid.' }
+  }
+
   try {
     const order = await DataStore.createOrder(user.id, items, affiliateId, paymentMethod, shippingDetails)
     await logAudit({

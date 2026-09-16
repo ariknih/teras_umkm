@@ -22,8 +22,7 @@ import {
   deleteMerchantFundingProjectAction,
   upgradeCommunityTierAction,
   kickCommunityMemberAction,
-  updateIndukCommunity,
-  payCommunityJoinFeeAction
+  updateIndukCommunity
 } from '@/app/actions/community'
 import { getCurrentUser } from '@/app/actions/auth'
 import { getCommunityTierBadge } from '@/lib/community-badge'
@@ -63,6 +62,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { CommunityDashboardSkeleton } from '@/components/ui/GhostSkeleton'
 import { LandingPageView } from './LandingPageView'
 import { LandingPageEditor } from './LandingPageEditor'
+import KasKomunitasPanel from './KasKomunitasPanel'
 import DiscussionForum from '@/components/community/DiscussionForum'
 import {
   Shield,
@@ -1171,7 +1171,6 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   // Payment states for Koperasi Upgrade/Join
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'DOKU' | 'BANK'>('DOKU')
   const [isVerifying, setIsVerifying] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
 
@@ -2387,32 +2386,10 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   const handleConfirmPayment = async () => {
     setIsVerifying(true)
     try {
-      // Manual bank transfer stays on the existing server action. The gateway
-      // path goes through /api/payment/checkout (not /api/doku/checkout) so the
-      // join fee is resolved server-side from the community's own joinFee —
-      // never a client-supplied amount.
-      if (paymentMethod === 'BANK') {
-        const res = await payCommunityJoinFeeAction(id, paymentMethod)
-        if ((res as any).needsKyc || (res.error && res.error.includes('KYC'))) {
-          setIsVerifying(false)
-          setPaymentModalOpen(false)
-          setKycWarningModalOpen(true)
-          return
-        }
-        if (res.error) {
-          goeyToast.error(res.error)
-          setIsVerifying(false)
-          return
-        }
-        // Bank transfer is a claim, not a settlement — membership activates
-        // once an admin verifies the transfer in the CMS.
-        setIsVerifying(false)
-        setPaymentModalOpen(false)
-        goeyToast.success('Konfirmasi transfer diterima. Keanggotaan aktif setelah diverifikasi admin.')
-        loadData()
-        return
-      }
-
+      // DOKU is the only join-fee path (manual bank transfer was removed). Goes
+      // through /api/payment/checkout (not /api/doku/checkout) so the join fee
+      // is resolved server-side from the community's own joinFee — never a
+      // client-supplied amount.
       const res = await fetch('/api/payment/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2608,10 +2585,10 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
         goeyToast.success('Harga masuk Koperasi berhasil disimpan!')
         if (res.community) setCommunity(res.community)
       } else {
-        goeyToast.error(res.error || 'Gagal menyimpan harga masuk Koperasi.')
+        goeyToast.error(res.error || 'Gagal menyimpan Simpanan Pokok Koperasi.')
       }
     } catch (e: any) {
-      goeyToast.error('Gagal menyimpan harga masuk Koperasi.')
+      goeyToast.error('Gagal menyimpan Simpanan Pokok Koperasi.')
     } finally {
       setIsSavingKoperasiJoinFee(false)
     }
@@ -2729,6 +2706,10 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   // whose templateType wasn't explicitly set to the literal string 'Koperasi'
   // would silently render with the wrong (Perkumpulan) menu and features.
   const isKoperasi = community?.type === 'KOPERASI'
+  // Simpanan Pokok is paid once (the paid join records it); the server also
+  // refuses a second Pokok deposit (checkSavingsDeposit). Same numbers as the
+  // "Simpanan Pokok" summary card.
+  const isMyPokokLunas = (communitySavingsSummary?.memberBalances?.[user?.id]?.pokok || 0) >= (community?.simpananPokok || 100000)
 
   // Strict templateType check with backward-compatible auto-detection for older communities
   const activeTemplate = isKoperasi ? 'Koperasi' : (
@@ -2979,6 +2960,12 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
 
   const isKetua = Boolean(user && community && community.ketuaId === user.id)
   const isAdmin = Boolean(user && user.role === 'ADMIN')
+  // DB-verified (getCurrentUser re-reads isSuperAdmin), not the email heuristic.
+  const isSuperAdmin = Boolean(user && user.role === 'ADMIN' && user.isSuperAdmin === true)
+  // The member directory is members-only, but the ketua and the platform
+  // superadmin oversee every community. getIndukCommunityMembersAction
+  // already authorizes ADMIN server-side; this only stops hiding it in the UI.
+  const canViewMemberDirectory = isMember || isKetua || isSuperAdmin
 
   const activeMode: 'FREE' | 'PREMIUM' =
     previewMode === 'FREE' ? 'FREE' :
@@ -3220,67 +3207,33 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                 <div className="space-y-4">
                   <div className="p-4 bg-emerald-50/70 rounded-2xl border border-[#2DB24A]/25 space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold text-gray-700">Harga Masuk Komunitas</span>
+                      <span className="text-xs font-bold text-gray-700">{isKoperasi ? 'Simpanan Pokok Koperasi' : 'Harga Masuk Komunitas'}</span>
                       <span className="text-base font-black text-[#0F5132] font-sora">
                         Rp {effectiveJoinFee.toLocaleString('id-ID')}
                       </span>
                     </div>
                     <p className="text-[10px] text-gray-500 font-medium">
-                      Biaya keanggotaan resmi yang ditentukan oleh pengurus {community?.name}.
+                      {isKoperasi
+                        ? 'Dicatat sebagai Simpanan Pokok Anda (tidak dapat diambil selama masih menjadi anggota) dan masuk ke Kas Koperasi.'
+                        : `Biaya keanggotaan resmi yang ditentukan oleh pengurus ${community?.name}.`}
                     </p>
                   </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-gray-500 block font-sora">
-                    Pilih Metode Pembayaran:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('DOKU')}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                        paymentMethod === 'DOKU'
-                          ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132] ring-1 ring-[#2DB24A]'
-                          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
-                      }`}
-                    >
-                      <span className="text-xs font-black block font-sora">Pembayaran Online</span>
-                      <span className="text-[9px] text-gray-500 block">QRIS, VA Bank, E-Wallet</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('BANK')}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                        paymentMethod === 'BANK'
-                          ? 'bg-[#E8F8EE] border-[#2DB24A] text-[#0F5132] ring-1 ring-[#2DB24A]'
-                          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
-                      }`}
-                    >
-                      <span className="text-xs font-black block font-sora">Transfer Bank</span>
-                      <span className="text-[9px] text-gray-500 block">BCA / Saloka Manual</span>
-                    </button>
+                {/* ponytail: DOKU's hosted page picks the channel. Planned: a Saloka-side
+                    channel picker passing payment.payment_method_types (only VA BCA /
+                    Mandiri / BRI / BNI are active on the DOKU account now) for join fee,
+                    Setor Simpanan and coin top-up via /api/payment/checkout. */}
+                <div className="flex flex-col items-center py-4 px-3 bg-emerald-50/60 rounded-2xl border border-[#2DB24A]/25 text-center space-y-2">
+                  <div className="w-10 h-10 rounded-full bg-[#2DB24A]/15 text-[#2DB24A] flex items-center justify-center font-black text-lg">
+                    💳
                   </div>
+                  <span className="text-xs font-black text-gray-900 font-sora">
+                    Pembayaran Online Resmi
+                  </span>
+                  <p className="text-[10px] text-gray-500 leading-relaxed max-w-xs">
+                    Pembayaran terverifikasi otomatis via Virtual Account BCA, Mandiri, BRI, dan BNI. Anda akan diarahkan ke halaman pembayaran DOKU.
+                  </p>
                 </div>
-
-                {paymentMethod === 'DOKU' ? (
-                  <div className="flex flex-col items-center py-4 px-3 bg-emerald-50/60 rounded-2xl border border-[#2DB24A]/25 text-center space-y-2">
-                    <div className="w-10 h-10 rounded-full bg-[#2DB24A]/15 text-[#2DB24A] flex items-center justify-center font-black text-lg">
-                      💳
-                    </div>
-                    <span className="text-xs font-black text-gray-900 font-sora">
-                      Pembayaran Online Resmi
-                    </span>
-                    <p className="text-[10px] text-gray-500 leading-relaxed max-w-xs">
-                      Pembayaran instan terverifikasi otomatis via QRIS (BCA, Mandiri, BRI, GoPay, OVO, Dana), Virtual Account, dan Minimarket.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-4 bg-slate-50 border border-gray-150 rounded-2xl space-y-1 text-center">
-                    <span className="text-[10px] text-gray-400 block font-bold uppercase">Rekening Transfer Saloka:</span>
-                    <span className="text-sm font-black text-gray-900 block font-mono">BCA: 712-094-1182</span>
-                    <span className="text-[10px] text-gray-500 block font-semibold">a/n PT Saloka Digital Indonesia</span>
-                  </div>
-                )}
 
                 <div className="flex gap-2 pt-1">
                   <button
@@ -4152,12 +4105,16 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                 )}
                               </div>
                               <div className="pt-2 border-t border-gray-200/60 flex justify-end">
+                                {p.type === 'POKOK' && isMyPokokLunas ? (
+                                  <span className="px-3 py-1.5 bg-emerald-50 border border-emerald-100 text-[#0F5132] text-[10px] font-black rounded-xl shrink-0">✓ Sudah Lunas</span>
+                                ) : (
                                 <button
                                   onClick={() => handleOpenPaySavings({ name: p.name, amount: p.amount || 50000, type: p.type })}
                                   className="px-3.5 py-1.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
                                 >
                                   Setor
                                 </button>
+                                )}
                               </div>
                             </div>
                           )
@@ -5368,7 +5325,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   </div>
 
                   {/* Search & Role Filter Pills */}
-                  {isMember && (
+                  {canViewMemberDirectory && (
                     <div className="flex flex-col sm:flex-row gap-3 items-center justify-between pb-1">
                       <div className="relative w-full sm:w-80">
                         <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -5399,7 +5356,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   )}
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {!isMember ? (
+                    {!canViewMemberDirectory ? (
                       <div className="col-span-full p-10 bg-gradient-to-b from-emerald-50/50 via-white to-gray-50 border border-emerald-200/70 rounded-3xl text-center space-y-4 shadow-xs">
                         <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-[#007A3D] border border-emerald-200 flex items-center justify-center mx-auto shadow-xs">
                           <Lock className="w-7 h-7" />
@@ -6073,9 +6030,13 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                               <p className="text-[10px] text-gray-500 font-medium">{p.description || '-'}</p>
                               <span className="text-sm font-black text-[#0F5132] block">{priceText}</span>
                             </div>
+                            {p.type === 'POKOK' && isMyPokokLunas ? (
+                              <span className="w-full py-2 bg-emerald-50 border border-emerald-100 text-[#0F5132] font-black text-xs rounded-xl text-center block">✓ {p.name} Sudah Lunas</span>
+                            ) : (
                             <button onClick={() => handleOpenPaySavings({ name: p.name, amount: p.amount || 50000, type: p.type })} className="w-full py-2 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer">
                               Setor {p.name}
                             </button>
+                            )}
                           </div>
                         )
                       })}
@@ -7541,7 +7502,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Keuntungan Kas Komunitas (Rp)</label>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1" title="Masuk ke Kas Komunitas (dompet komunitas), bukan dompet pribadi Ketua.">Keuntungan Kas Komunitas (Rp) — masuk ke Kas Komunitas</label>
                         <input
                           type="number"
                           value={refCommunityProfitShare}
@@ -7738,15 +7699,15 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   <div className="pt-6 border-t border-gray-100 space-y-4">
                     <div>
                       <h3 className="text-sm font-black text-gray-900 font-sora flex items-center gap-2">
-                        <Handshake className="w-4 h-4 text-[#2DB24A]" /> Harga Masuk Koperasi
+                        <Handshake className="w-4 h-4 text-[#2DB24A]" /> Simpanan Pokok (Dibayar Saat Bergabung)
                       </h3>
                       <p className="text-xs text-gray-500 font-medium mt-0.5">
-                        Biaya yang dibayarkan calon anggota saat bergabung. Angka ini yang ditampilkan sebagai badge harga di halaman landing, hub komunitas, dan banner beranda.
+                        Sesuai UU No. 25/1992 tentang Perkoperasian, Simpanan Pokok dibayar sekali saat calon anggota bergabung, tercatat sebagai simpanan anggota, dan tidak dapat diambil selama masih menjadi anggota. Pembayaran online masuk ke Kas Koperasi. Angka ini juga ditampilkan sebagai badge harga di halaman landing, hub komunitas, dan banner beranda.
                       </p>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-end gap-3">
                       <div className="w-full sm:w-64">
-                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Harga Masuk Koperasi (Rp)</label>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Simpanan Pokok (Rp)</label>
                         <input
                           type="number"
                           value={koperasiJoinFee}
@@ -7759,7 +7720,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         disabled={isSavingKoperasiJoinFee}
                         className="px-5 py-2.5 bg-[#2DB24A] hover:bg-[#0F5132] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
                       >
-                        {isSavingKoperasiJoinFee ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Harga Masuk'}
+                        {isSavingKoperasiJoinFee ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan Simpanan Pokok'}
                       </button>
                     </div>
                   </div>
@@ -7818,7 +7779,7 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                                 </td>
                                 <td className="p-3">
                                   <span className="px-2 py-0.5 bg-[#E8F8EE] text-[#0F5132] font-bold text-[9px] rounded-full">
-                                    Tier {log.tierLevel}
+                                    {log.tierLevel === 0 ? 'Kas' : `Tier ${log.tierLevel}`}
                                   </span>
                                 </td>
                                 <td className="p-3 font-bold text-gray-900">
@@ -7920,6 +7881,8 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                   </div>
                 </div>
 
+                {/* KAS KOMUNITAS / KAS KOPERASI — ketua only, every type & tier */}
+                {(isKetua || isSuperAdmin) && <KasKomunitasPanel communityId={id} isKoperasi={isKoperasi} canRequestWithdrawal={isKetua} />}
               </div>
             )}
 

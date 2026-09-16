@@ -1,5 +1,6 @@
 'use server'
 
+import { checkSavingsDeposit } from '@/lib/auth-guards'
 import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
 import { logAudit } from '@/lib/audit-log'
@@ -18,12 +19,17 @@ export async function recordSavingsTransactionAction(formData: FormData) {
   // A member may only record their own transaction; recording for someone
   // else requires being a platform admin or the community's own ketua -
   // the same manager check used by every other community CRUD action.
-  if (userId !== currentUser.id) {
-    const isPlatformAdmin = currentUser.role === 'ADMIN' || !!(currentUser as any).isSuperAdmin
+  // Manual recording (cash handled outside the app) is ketua/admin only — for
+  // every member, including the caller. A member recording their OWN
+  // setoran/tarik needed no payment at all, inflating their savings (and so
+  // their SHU Jasa Modal share and exit refund). Members deposit via DOKU or
+  // Saldo Wallet instead.
+  {
+    const isPlatformAdmin = currentUser.role === 'ADMIN'
     const community = communityId ? await DataStore.getCommunityById(communityId) : null
     const isKetua = Boolean(community && community.ketuaId === currentUser.id)
     if (!isPlatformAdmin && !isKetua) {
-      return { error: 'Anda tidak memiliki hak akses untuk mencatat transaksi simpanan anggota lain.' }
+      return { error: 'Hanya Ketua Koperasi atau Admin yang dapat mencatat transaksi simpanan secara manual.' }
     }
   }
 
@@ -78,7 +84,9 @@ export async function recordSavingsTransactionAction(formData: FormData) {
 export async function paySavingsViaWalletAction(communityId: string, type: string, amount: number) {
   const currentUser = await getCurrentUser()
   if (!currentUser) return { error: 'Anda harus masuk terlebih dahulu.' }
-  if (!communityId || amount <= 0) return { error: 'Data setoran tidak valid.' }
+  if (!communityId || !Number.isInteger(amount) || amount <= 0) return { error: 'Data setoran tidak valid.' }
+  const depositError = await checkSavingsDeposit(currentUser.id, communityId, type)
+  if (depositError) return { error: depositError }
 
   try {
     const tx = await DataStore.paySavingsViaWallet({ communityId, userId: currentUser.id, type, amount })

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/app/actions/auth';
 import { DataStore } from '@/lib/data-store';
 import { createDokuCheckoutPayment, validateDepositAmount } from '@/lib/doku';
 import { savePendingCheckout } from '@/lib/payment-purposes';
+import { computeOrderTotal, wholesaleUnitPrice, type OrderLineItem } from '@/lib/money';
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,15 +67,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Keranjang belanja kosong.' }, { status: 400 });
       }
 
-      const getProductPriceWithWholesale = (basePrice: number, qty: number) => {
-        if (qty >= 10) return basePrice * 0.8;
-        if (qty >= 5) return basePrice * 0.9;
-        if (qty >= 3) return basePrice * 0.95;
-        return basePrice;
-      };
-
-      let subtotal = 0;
-      const lineItems = [];
+      const lines: OrderLineItem[] = [];
 
       for (const item of items) {
         const product = await DataStore.getProductById(item.productId);
@@ -91,55 +84,26 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        const price = getProductPriceWithWholesale(product.price, item.quantity);
-        subtotal += price * item.quantity;
-
-        lineItems.push({
+        lines.push({
           name: product.title.slice(0, 45),
-          price,
+          price: wholesaleUnitPrice(product.price, item.quantity),
           quantity: item.quantity,
         });
       }
 
-      const shippingFee = shippingDetails?.shippingFee || 0;
-      if (shippingFee > 0) {
-        lineItems.push({
-          name: `Ongkir (${(shippingDetails?.courier || 'Kurir').slice(0, 25)})`,
-          price: shippingFee,
-          quantity: 1,
-        });
+      // Same calculation createOrder records ('Online Payment' is the method the
+      // DOKU settlement routes pass), so DOKU charges exactly Order.totalAmount.
+      const { total: totalAmount, lineItems } = computeOrderTotal({
+        lines,
+        shippingFee: shippingDetails?.shippingFee,
+        courier: shippingDetails?.courier,
+        bumpSales: shippingDetails?.bumpSales,
+        couponCode: shippingDetails?.couponCode,
+        paymentMethod: 'Online Payment',
+      });
+      if (totalAmount < 1000) {
+        return NextResponse.json({ error: 'Minimal pembayaran online adalah Rp 1.000.' }, { status: 400 });
       }
-
-      let bumpSalesTotal = 0;
-      if (shippingDetails?.bumpSales) {
-        const activeBumps = shippingDetails.bumpSales.split(',');
-        activeBumps.forEach((bump: string) => {
-          if (bump === 'GARANSI_PREMIUM') {
-            bumpSalesTotal += 25000;
-            lineItems.push({ name: 'Garansi Premium 1 Thn', price: 25000, quantity: 1 });
-          } else if (bump === 'BOX_KAYU') {
-            bumpSalesTotal += 15000;
-            lineItems.push({ name: 'Packaging Box Kayu', price: 15000, quantity: 1 });
-          } else if (bump === 'KERTAS_KADO') {
-            bumpSalesTotal += 5000;
-            lineItems.push({ name: 'Bungkus Kado', price: 5000, quantity: 1 });
-          }
-        });
-      }
-
-      let computedDiscount = 0;
-      if (shippingDetails?.couponCode) {
-        const code = shippingDetails.couponCode.toUpperCase();
-        if (code === 'DISKON10') {
-          computedDiscount = subtotal * 0.1;
-        } else if (code === 'Saloka.id') {
-          computedDiscount = Math.min(20000, subtotal);
-        } else if (code === 'GRATISONGKIR') {
-          computedDiscount = shippingFee;
-        }
-      }
-
-      const totalAmount = Math.max(1000, subtotal + shippingFee + bumpSalesTotal - computedDiscount);
       const orderId = `chk-doku-${user.id.slice(0, 8)}-${Date.now().toString(36)}`;
 
       // Persist for settlement — this is the only record of what the buyer is

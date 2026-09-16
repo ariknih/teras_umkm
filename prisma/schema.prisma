@@ -247,7 +247,7 @@ model Product {
   id          String          @id @default(uuid())
   title       String
   description String
-  price       Float
+  price       Int  
   category    ProductCategory @default(TOKO)
   stock       Int             @default(0)
   imageUrl    String?
@@ -276,19 +276,25 @@ model Product {
 
 model Order {
   id              String      @id @default(uuid())
-  totalAmount     Float
-  adminFee        Float       @default(2500) // Biaya admin per transaksi Rp 2.500
+  totalAmount     Int  
+  adminFee        Int         @default(2500) // Biaya admin per transaksi Rp 2.500
   status          OrderStatus @default(PENDING)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-  shippingFee     Float?
+  shippingFee     Int?  
   courier         String?
   shippingAddress String?
   shippingLabel   String?
   couponCode      String?
-  discountAmount  Float?
+  discountAmount  Int?  
   bumpSales       String?
-  
+  paymentMethod   String?     // WALLET | Online Payment (DOKU) | COD | MANUAL_<id>
+  affiliateId     String?     // promoter captured at checkout, used when payouts settle later
+  // True while commissions / merchant earnings / cashback have not been paid out.
+  // Defaults false so rows created before this column existed (already paid out
+  // at creation) are never paid a second time.
+  payoutsPending  Boolean     @default(false)
+
   // Relations
   buyerId     String
   buyer       User        @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
@@ -299,7 +305,7 @@ model Order {
 model OrderItem {
   id        String   @id @default(uuid())
   quantity  Int
-  price     Float
+  price     Int  
   isSnackboxItem              Boolean @default(false)
   snackboxRevenueSharePercent Float?
 
@@ -472,7 +478,7 @@ model Comment {
 
 model AffiliateReferral {
   id          String       @id @default(uuid())
-  amount      Float
+  amount      Int  
   status      PayoutStatus @default(PENDING)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -486,19 +492,62 @@ model AffiliateReferral {
 
 model Wallet {
   id           String              @id @default(uuid())
-  balance      Float               @default(0.0)
+  balance      Int                 @default(0)
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   
-  // Relations
-  userId       String              @unique
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Relations — a wallet belongs to exactly one owner: a user (personal
+  // wallet) OR a community (Kas Komunitas / Kas Koperasi). Both nullable
+  // uniques; Postgres allows many NULLs, so each owner still has at most one.
+  userId       String?             @unique
+  user         User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId  String?             @unique
+  community    Community?          @relation(fields: [communityId], references: [id], onDelete: Restrict)
   transactions WalletTransaction[]
+}
+
+// Saloka's own revenue that isn't credited to any wallet (the money already
+// sits in Saloka's payment-gateway balance). Marketplace commission today;
+// community join-fee PLATFORM tiers and coin top-ups are read from their own
+// source tables (CommunityReferralLog, CoinTransaction).
+model PlatformRevenueEntry {
+  id          String   @id @default(uuid())
+  source      String   // MARKETPLACE_COMMISSION | MARKETPLACE_ORGANIC_TAX
+  amount      Int
+  orderId     String?
+  description String
+  createdAt   DateTime @default(now())
+
+  @@index([source])
+  @@index([createdAt])
+}
+
+// Ketua-requested withdrawal from a community wallet. The amount is held
+// (debited) at request time; a Finance Admin marks it PAID after the manual
+// bank transfer, or REJECTED, which refunds the hold.
+model CommunityWithdrawal {
+  id            String    @id @default(uuid())
+  communityId   String
+  community     Community @relation(fields: [communityId], references: [id], onDelete: Restrict)
+  amount        Int
+  bankName      String
+  accountNumber String
+  accountName   String
+  status        String    @default("PENDING") // PENDING | PAID | REJECTED
+  note          String?
+  transferRef   String?
+  requestedById String
+  processedById String?
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([communityId])
+  @@index([status])
 }
 
 model WalletTransaction {
   id          String          @id @default(uuid())
-  amount      Float
+  amount      Int  
   type        TransactionType
   description String
   createdAt   DateTime        @default(now())
@@ -618,12 +667,12 @@ model Community {
   templateType      String            @default("Society")
 
   // Iuran (hanya untuk PAID/KOPERASI)
-  joinFee           Float             @default(0)
-  monthlyFee        Float             @default(0)
+  joinFee           Int               @default(0)
+  monthlyFee        Int               @default(0)
 
   // Koperasi: simpanan
-  simpananPokok     Float             @default(100000) // Rp 100.000
-  simpananWajib     Float             @default(25000)  // Rp 25.000/bulan
+  simpananPokok     Int               @default(100000) // Rp 100.000
+  simpananWajib     Int               @default(25000)  // Rp 25.000/bulan
 
   // Coin komunitas
   coinBalance       Float             @default(0.0)    // Kas coin komunitas
@@ -636,8 +685,8 @@ model Community {
   isRecruitmentLocked Boolean         @default(false)
 
   // Multi-Tier Referral System (Customizable 3-5 Tiers)
-  referralBudget      Float             @default(40000)  // Dana referral (contoh: 40k dari 100k join fee)
-  communityProfitShare Float            @default(60000)  // Keuntungan komunitas (contoh: 60k dari 100k join fee)
+  referralBudget      Int               @default(40000)  // Dana referral (contoh: 40k dari 100k join fee)
+  communityProfitShare Int              @default(60000)  // Keuntungan komunitas (contoh: 60k dari 100k join fee)
   maxTiers            Int               @default(3)      // Jumlah tier (3, 4, atau 5)
   tierPercentages     String            @default("[50,30,20]") // JSON array persentase komisi per tier
   commissionMethod    String            @default("PERCENTAGE") // PERCENTAGE | NOMINAL
@@ -660,6 +709,10 @@ model Community {
   // Coin komunitas
   coinTransactions  CoinTransaction[] @relation("CommunityCoinTx")
   referralLogs      CommunityReferralLog[]
+
+  // Kas Komunitas / Kas Koperasi
+  wallet            Wallet?
+  withdrawals       CommunityWithdrawal[]
 }
 
 model CommunityReferralLog {
@@ -669,7 +722,7 @@ model CommunityReferralLog {
   buyerId       String
   referrerId    String?   // null jika recipientType = 'KOMUNITAS' atau 'PLATFORM'
   tierLevel     Int       // 1, 2, 3, 4, atau 5
-  amount        Float     // Nominal komisi (Rupiah)
+  amount        Int       // Nominal komisi (Rupiah)
   recipientType String    // 'REFERRER' | 'KOMUNITAS' | 'PLATFORM'
   // Frozen at payout time, same as `description` — an audit ledger must show
   // who was paid *as they were named when paid*, not whatever their account
@@ -696,8 +749,8 @@ model CommunityMembership {
   // signup referrer), which drives product-sale commissions instead.
   referrerId      String?
   // Untuk KOPERASI: simpanan
-  simpananPokok   Float?      // Rp 100.000 sekali bayar
-  simpananWajib   Float?      // Rp 25.000/bulan
+  simpananPokok   Int?        // Rp 100.000 sekali bayar
+  simpananWajib   Int?        // Rp 25.000/bulan
   invoiceStatus   String      @default("UNPAID") // UNPAID | PAID | VERIFIED
   invoiceVerifiedAt DateTime?
   invoiceVerifiedBy String?   // ID Admin yang verifikasi
@@ -722,7 +775,7 @@ model CooperativeLoan {
   communityId     String
   community       Community   @relation(fields: [communityId], references: [id], onDelete: Cascade)
   merchantId      String
-  amount          Float
+  amount          Int  
   purpose         String
   status          LoanStatus  @default(PENDING)
   approvedByKetua Boolean     @default(false)
@@ -758,6 +811,9 @@ model CoinTransaction {
   // Payment-gateway order id for a real (non-free) coin top-up — unique so a
   // replayed gateway verify call hits this constraint instead of double-crediting.
   orderId String? @unique
+  // Rupiah the payer was charged for a gateway top-up (Saloka platform
+  // revenue). Null on free/injected coin movements and on pre-existing rows.
+  rupiahAmount Int?
 }
 
 // Master daftar voucher yang bisa ditukar coin
@@ -767,7 +823,7 @@ model CoinVoucher {
   description   String
   type          VoucherType   @default(INTERNAL)
   coinCost      Float         // berapa coin yang dibutuhkan
-  value         Float         // nilai voucher dalam rupiah
+  value         Int           // nilai voucher dalam rupiah
   code          String?       // untuk EXTERNAL: kode voucher yang sudah ada
   maxRedemption Int           @default(0) // 0 = unlimited
   totalRedeemed Int           @default(0)
@@ -837,7 +893,7 @@ model MerchantInvite {
 
 model CoinSystemConfig {
   id                  String   @id @default("singleton")
-  coinRateRupiah      Float    @default(1500.0) // Nilai 1 koin dalam Rupiah (dinamis)
+  coinRateRupiah      Int      @default(1500) // Nilai 1 koin dalam Rupiah (dinamis)
   totalSupply         Float    @default(100000.0) // Total coin supply platform
   circulatingSupply   Float    @default(0.0)      // Coin yang sudah beredar
   minTopupFree        Int      @default(100)    // Min topup awal komunitas FREE
@@ -860,7 +916,7 @@ model MerchantLevelRequest {
 
   // Kriteria yang perlu dipenuhi
   radiusKm        Float?              // Jangkauan area KM (L1=5, L2=10, L3=35, L4=beyond)
-  omsetBulan      Float?              // Omset bulanan (requirement: >= 10.000.000)
+  omsetBulan      Int?                // Omset bulanan (requirement: >= 10.000.000)
   hasLegalitas    Boolean             @default(false)
   hasSertifikat   Boolean             @default(false)
   hasDesain       Boolean             @default(false)
@@ -883,7 +939,7 @@ model ShuConfig {
   id                    String                 @id @default(cuid())
   communityId           String
   year                  Int
-  totalNetProfit        Float
+  totalNetProfit        Int  
   pctCadangan           Float                  @default(25.0)
   pctJasaModal          Float                  @default(20.0)
   pctJasaUsaha          Float                  @default(30.0)
@@ -906,13 +962,13 @@ model ShuMemberDistribution {
   communityId             String
   userId                  String
   year                    Int
-  simpananMember          Float
-  simpananTotalCommunity  Float
-  shuJasaModalAmount      Float
-  transaksiMember         Float
-  transaksiTotalCommunity Float
-  shuJasaUsahaAmount      Float
-  totalShuAmount          Float
+  simpananMember          Int  
+  simpananTotalCommunity  Int  
+  shuJasaModalAmount      Int  
+  transaksiMember         Int  
+  transaksiTotalCommunity Int  
+  shuJasaUsahaAmount      Int  
+  totalShuAmount          Int  
   createdAt               DateTime  @default(now())
 
   shuConfig               ShuConfig @relation(fields: [shuConfigId], references: [id], onDelete: Cascade)
@@ -929,7 +985,7 @@ model CooperativeProduct {
   communityId String
   name        String
   type        String   @default("POKOK") // POKOK, WAJIB, SUKARELA, UMROH, QURBAN, OTHER
-  amount      Float    @default(0)
+  amount      Int      @default(0)
   periodText  String?  // e.g. "Sekali Bayar", "Per Bulan", "Mulai Rp 10.000"
   isMandatory Boolean  @default(false)
   isPremium   Boolean  @default(false)
@@ -948,7 +1004,7 @@ model CooperativeSavingsTransaction {
   userId          String
   type            String   @default("WAJIB") // POKOK, WAJIB, SUKARELA
   transactionType String   @default("SETOR") // SETOR, TARIK
-  amount          Float    @default(0)
+  amount          Int      @default(0)
   date            DateTime @default(now())
   notes           String?
   createdById     String?
@@ -974,9 +1030,9 @@ model MerchantFundingProject {
   merchantId      String?
   title           String
   description     String?
-  targetAmount    Float
-  collectedAmount Float    @default(0)
-  minInvestment   Float    @default(50000)
+  targetAmount    Int  
+  collectedAmount Int      @default(0)
+  minInvestment   Int      @default(50000)
   estimatedReturn Float    @default(12.0) // Estimasi bagi hasil % p.a.
   durationMonths  Int      @default(6)
   status          String   @default("OPEN") // OPEN, FUNDED, COMPLETED
@@ -1090,8 +1146,8 @@ model Service {
   merchantId             String
   title                  String
   description            String
-  pricePerSession        Float         // Harga per sesi
-  pricePerDay            Float?        // Harga per hari (max 8 jam kerja)
+  pricePerSession        Int           // Harga per sesi
+  pricePerDay            Int?          // Harga per hari (max 8 jam kerja)
   category               String
   imageUrl               String?
   images                 String[] @default([])
@@ -1125,8 +1181,8 @@ model ServiceBooking {
   merchantId    String
   bookingDate   DateTime
   sessionType   String   @default("PER_SESI") // "PER_SESI" | "PER_HARI"
-  totalAmount   Float
-  adminFee      Float    @default(2500)
+  totalAmount   Int  
+  adminFee      Int      @default(2500)
   status        String   @default("PENDING") // PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
   notes         String?
   createdAt     DateTime @default(now())

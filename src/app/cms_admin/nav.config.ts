@@ -222,6 +222,21 @@ export const MENUS: Menu[] = [
     category: 'KEUANGAN'
   },
   {
+    // Gated by admin type (Superadmin view-only, Admin Financial acts) — see
+    // canAccess in rbac.ts, not the module checklist.
+    key: 'community-finance',
+    label: 'Keuangan Komunitas',
+    title: 'Keuangan Komunitas & Pendapatan Platform',
+    desc: 'Kas Komunitas/Koperasi, penarikan Kas, dan pendapatan platform Saloka',
+    icon: Landmark,
+    category: 'KEUANGAN',
+    tabs: [
+      { key: 'penarikan-kas', label: 'Penarikan Kas' },
+      { key: 'kas-komunitas', label: 'Saldo Kas' },
+      { key: 'pendapatan-platform', label: 'Pendapatan Platform' }
+    ]
+  },
+  {
     key: 'coins',
     label: 'Koin & Voucher',
     title: 'Kelola Koin & Voucher',

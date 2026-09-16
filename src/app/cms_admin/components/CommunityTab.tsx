@@ -494,20 +494,20 @@ export default function CommunityTab({ tab, users, posts, initialCommunities, in
                         <td className="px-4 py-3 text-center">
                           <span
                             className={`px-2 py-0.5 rounded text-[8px] font-bold uppercase border tracking-wider ${
-                              inv.invoiceStatus === 'VERIFIED' ? 'bg-green-50 text-green-700 border-green-200' : inv.invoiceStatus === 'PAID' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-yellow-50 text-yellow-750 border-yellow-200'
+                              inv.isPaid ? 'bg-green-50 text-green-700 border-green-200' : inv.invoiceStatus === 'PAID' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-yellow-50 text-yellow-750 border-yellow-200'
                             }`}
                           >
-                            {inv.invoiceStatus === 'VERIFIED' ? 'Terverifikasi' : inv.invoiceStatus === 'PAID' ? 'Sudah Bayar (Pending)' : 'Belum Bayar'}
+                            {inv.isPaid ? 'Terverifikasi' : inv.invoiceStatus === 'PAID' ? 'Sudah Bayar (Pending)' : 'Belum Bayar'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center text-slate-500">{new Date(inv.joinedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                         <td className="px-4 py-3 text-right">
-                          {inv.invoiceStatus === 'VERIFIED' ? (
+                          {/* isPaid is the source of truth: DOKU checkout / free joins settle it
+                              instantly. invoiceStatus PAID + isPaid false only exists on legacy
+                              claims from the removed manual bank-transfer option — kept so an
+                              admin can still clear them; drop the "Pending" branch once none remain. */}
+                          {inv.isPaid ? (
                             <span className="text-[10px] text-slate-400 italic">Terverifikasi</span>
-                          ) : inv.invoiceStatus === 'PAID' ? (
-                            // Already confirmed paid automatically (instant checkout) —
-                            // nothing left for an admin to manually verify here.
-                            <span className="text-[10px] text-slate-400 italic">Sudah Bayar Otomatis</span>
                           ) : (
                             <button onClick={() => handleVerifyInvoice(inv.id)} disabled={isPending} className="px-3 py-1 bg-[#0F5132] hover:bg-[#0a3a24] text-white rounded text-[10px] font-bold uppercase tracking-wider transition-colors border-none cursor-pointer disabled:opacity-50">
                               {isPending ? 'Proses...' : 'Verifikasi Lunas'}

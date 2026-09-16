@@ -4,10 +4,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createAdminAction, updateAdminAction, deleteAdminAction } from '@/app/actions/admin'
 import { MENUS } from '../nav.config'
-import { ADMIN_TYPES, ADMIN_TYPE_DEFAULT_PERMISSIONS, ADMIN_TYPE_BADGE, DEFAULT_ADMIN_TYPE, type AdminTypeKey } from '../admin-types'
+import { ADMIN_TYPES, ADMIN_TYPE_DEFAULT_PERMISSIONS, ADMIN_TYPE_BADGE, DEFAULT_ADMIN_TYPE, COMMUNITY_FINANCE_MENU_KEY, type AdminTypeKey } from '../admin-types'
 import { useToast, Toast } from './Toast'
 
-const ALL_ADMIN_PERMISSIONS = MENUS.map((m) => ({ key: m.key, label: m.label, desc: m.desc, icon: m.icon }))
+// community-finance is granted by admin type (Admin Financial), not the
+// checklist — rbac.canAccess ignores this key, so don't offer it here.
+const ALL_ADMIN_PERMISSIONS = MENUS.filter((m) => m.key !== COMMUNITY_FINANCE_MENU_KEY).map((m) => ({ key: m.key, label: m.label, desc: m.desc, icon: m.icon }))
 const ALL_PERMISSION_KEYS = ALL_ADMIN_PERMISSIONS.map((p) => p.key)
 
 function parseAdminPermissions(adm: any): string[] {
@@ -366,6 +368,9 @@ export default function AdminsTab({ initialAdmins, currentUser }: Props) {
                     </select>
                     {!canManageRbac && (
                       <p className="text-[10px] text-slate-400 mt-1">Hanya superadmin yang dapat mengubah tipe admin dan hak akses modul.</p>
+                    )}
+                    {selectedAdminType === 'FINANCIAL' && (
+                      <p className="text-[10px] text-slate-500 mt-1">Admin Financial otomatis mendapat menu Keuangan Komunitas dan satu-satunya yang dapat memproses penarikan Kas (Superadmin hanya dapat melihat).</p>
                     )}
                   </div>
 

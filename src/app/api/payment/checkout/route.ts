@@ -5,6 +5,7 @@ import { DataStore } from '@/lib/data-store'
 import { getPrimaryGateway } from '@/lib/payment-gateway'
 import { PurposeKey, prefixForPurpose, resolveCheckoutAmount, savePendingContext } from '@/lib/payment-purposes'
 import { readCommunityReferralCookie } from '@/lib/referral-payout'
+import { checkSavingsDeposit } from '@/lib/auth-guards'
 
 const VALID_PURPOSES: PurposeKey[] = ['JOIN_FEE', 'SAVINGS', 'COIN_TOPUP']
 
@@ -62,6 +63,11 @@ export async function POST(req: NextRequest) {
       if (await DataStore.isCommunityMember(user.id, communityId)) {
         return NextResponse.json({ error: 'Anda sudah menjadi anggota komunitas ini.' }, { status: 400 })
       }
+    }
+
+    if (purpose === 'SAVINGS') {
+      const depositError = await checkSavingsDeposit(user.id, communityId, savingsType)
+      if (depositError) return NextResponse.json({ error: depositError }, { status: 400 })
     }
 
     // Coin top-up was ketua/admin-only in the original free-topup action —

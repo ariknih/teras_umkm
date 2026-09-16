@@ -10,6 +10,7 @@ import { checkoutCart, getWalletDetails, getActivePaymentMethods } from '@/app/a
 import { getCurrentUser, getCurrentUserProfile } from '@/app/actions/auth'
 import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api'
 import { calculateDistance as getDistance } from '@/lib/utils'
+import { wholesaleUnitPrice } from '@/lib/money'
 import {
   Package,
   Store,
@@ -215,7 +216,6 @@ export default function CartPage() {
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null)
 
   // Coins redemption
-  const [useCoins, setUseCoins] = useState(false)
 
   // Item Notes to Seller
   const [itemNotes, setItemNotes] = useState<Record<string, string>>({})
@@ -695,7 +695,7 @@ export default function CartPage() {
     const cleaned = code.toUpperCase().trim()
 
     if (cleaned === 'DISKON10') {
-      const disc = subtotal * 0.1
+      const disc = Math.round(subtotal * 0.1)
       setCouponDiscount(disc)
       setCouponSuccess(`Kupon DISKON10 berhasil dipasang! Potongan Rp ${disc.toLocaleString('id-ID')}`)
     } else if (cleaned === 'SALOKA.ID') {
@@ -976,12 +976,7 @@ export default function CartPage() {
   }
 
   // Calculations
-  const getProductPriceWithWholesale = (basePrice: number, qty: number) => {
-    if (qty >= 10) return basePrice * 0.80;
-    if (qty >= 5) return basePrice * 0.90;
-    if (qty >= 3) return basePrice * 0.95;
-    return basePrice;
-  };
+  const getProductPriceWithWholesale = wholesaleUnitPrice;
 
   const isSnackItemUnavailable = (i: any) => {
     if (!products || products.length === 0) return false;
@@ -1050,16 +1045,12 @@ export default function CartPage() {
 
   const selectedCourierRate = courierRates.find((r) => r.courier_code === selectedCourier);
   const shippingFee = deliveryMethod === 'PICKUP' ? 0 : (selectedCourierRate ? selectedCourierRate.price : 0);
-  
-  // Coin calculation (Redeem: 1 coin = Rp 1.500)
-  const userCoins = currentUserProfile?.coinBalance || 0;
-  const maxCoinsVal = userCoins * 1500;
-  const coinRedemptionValue = useCoins ? Math.min(subtotal * 0.5, maxCoinsVal) : 0; // limit coin to max 50% subtotal
+
   // Service and Payment Admin Fees
   const serviceFee = subtotal > 0 ? 1000 : 0; // Biaya Layanan Aplikasi
   const paymentFee = paymentMethod === 'WALLET' ? 0 : (subtotal > 0 ? 1000 : 0); // Biaya Transaksi / Admin Pembayaran
 
-  const total = Math.max(0, subtotal + shippingFee + serviceFee + paymentFee - couponDiscount - coinRedemptionValue);
+  const total = Math.max(0, subtotal + shippingFee + serviceFee + paymentFee - couponDiscount);
 
   // Check if cart contains user's own products
   const hasOwnProduct = currentUser && cartDetails.some(item => item.merchantId === currentUser.id);
@@ -2307,12 +2298,6 @@ export default function CartPage() {
                       <div className="flex justify-between items-center text-[#006E24] font-bold">
                         <span>Diskon Voucher</span>
                         <span>-Rp {couponDiscount.toLocaleString('id-ID')}</span>
-                      </div>
-                    )}
-                    {coinRedemptionValue > 0 && (
-                      <div className="flex justify-between items-center text-amber-700 font-bold">
-                        <span>Potongan Koin Saloka</span>
-                        <span>-Rp {coinRedemptionValue.toLocaleString('id-ID')}</span>
                       </div>
                     )}
 

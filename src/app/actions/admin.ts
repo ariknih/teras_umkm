@@ -1011,7 +1011,9 @@ export async function kickMemberFromCommunityAdminAction(userId: string, communi
   const admin = await ensureAdminPermission('users')
   if (!userId || !communityId) return { error: 'userId dan communityId wajib diisi.' }
   try {
-    await DataStore.removeCommunityMembership(userId, communityId)
+    // Koperasi: also refunds the member's savings from Kas (throws, member
+    // untouched, if Kas can't cover it).
+    const res: any = await DataStore.removeCommunityMembership(userId, communityId)
     await logAudit({
       actor: 'ADMIN',
       actorId: admin.id,
@@ -1028,7 +1030,7 @@ export async function kickMemberFromCommunityAdminAction(userId: string, communi
         userId,
         'KICKED_FROM_COMMUNITY',
         'Dikeluarkan dari Komunitas',
-        `Anda telah dikeluarkan dari komunitas "${community?.name || communityId}" oleh Admin Saloka.id.`,
+        `Anda telah dikeluarkan dari komunitas "${community?.name || communityId}" oleh Admin Saloka.id.${res?.refunded > 0 ? ` Simpanan Anda sebesar Rp ${Number(res.refunded).toLocaleString('id-ID')} telah dikembalikan ke Saldo Dompet Saloka.` : ''}`,
         '/community'
       )
     } catch (err) {
@@ -1041,6 +1043,11 @@ export async function kickMemberFromCommunityAdminAction(userId: string, communi
     invalidateCachePattern('user:communities:roles:*')
     deleteCache('community:induk:all')
     invalidateCachePattern('community:induk:*')
+    if (res?.refunded > 0) {
+      deleteCache(`user:wallet:${userId}`)
+      deleteCache(`community:savings:${communityId}`)
+      revalidatePath('/wallet')
+    }
     revalidatePath('/cms_admin', 'layout')
     revalidatePath(`/community/${communityId}`)
     return { success: true }

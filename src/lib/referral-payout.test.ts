@@ -24,23 +24,16 @@ assert.notEqual(
 )
 
 // ── Short referral chain: tier 1 falls back to the community kas ───────────
-const tier1Fallback = resolveTierFallbackRecipient(1, 'ketua-1', 'Komunitas UMKM Jaya')
-assert.equal(tier1Fallback.recipientId, 'ketua-1', 'tier 1 with no referrer pays the ketua')
-assert.equal(tier1Fallback.recipientType, 'KOMUNITAS')
+const tier1Fallback = resolveTierFallbackRecipient(1, 'Komunitas UMKM Jaya')
+assert.equal(tier1Fallback.recipientType, 'KOMUNITAS', 'tier 1 with no referrer goes to the community wallet')
+assert.ok(!('recipientId' in tier1Fallback), 'never names a person (the old ketua-wallet payout)')
 
-// ── Short referral chain: tier > 1 has no fallback recipient at all ────────
-// This is the other bug the hotfix closes: a hardcoded 'user-admin-1' seed id
-// (nonexistent in production) used to be assigned here, so the wallet lookup
-// silently failed and the money vanished with no log. It must now come back
-// with recipientId: null so the caller logs an unpaid PLATFORM residual
-// instead of trying (and failing) to credit a made-up account.
-const tier2Fallback = resolveTierFallbackRecipient(2, 'ketua-1', 'Komunitas UMKM Jaya')
-assert.equal(tier2Fallback.recipientId, null, 'tier 2+ with an exhausted chain has no recipient to credit')
+// ── Short referral chain: tier > 1 is Saloka's ledger-only platform share ──
+// Must never resolve to a user id (the old hardcoded 'user-admin-1' seed id
+// silently dropped money); the caller logs a PLATFORM row and credits nothing.
+const tier2Fallback = resolveTierFallbackRecipient(2, 'Komunitas UMKM Jaya')
 assert.equal(tier2Fallback.recipientType, 'PLATFORM')
-assert.notEqual(tier2Fallback.recipientId, 'user-admin-1', 'must never fall back to the old hardcoded seed id')
-
-const tier5Fallback = resolveTierFallbackRecipient(5, 'ketua-1', 'Komunitas UMKM Jaya')
-assert.equal(tier5Fallback.recipientId, null, 'same for any tier beyond 1')
+assert.equal(resolveTierFallbackRecipient(5, 'Komunitas UMKM Jaya').recipientType, 'PLATFORM', 'same for any tier beyond 1')
 
 console.log('referral-payout.test.ts: tier arithmetic + fallback assertions passed')
 

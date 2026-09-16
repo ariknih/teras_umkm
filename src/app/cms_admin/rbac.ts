@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { getCurrentUser } from '@/app/actions/auth'
 import { DataStore } from '@/lib/data-store'
 import { MENUS, menuByKey, type Menu } from './nav.config'
+import { COMMUNITY_FINANCE_MENU_KEY, canViewCommunityFinance } from './admin-types'
 
 /**
  * Access control for the admin CMS.
@@ -98,10 +99,12 @@ export const getAdminSession = cache(async (): Promise<AdminSession | null> => {
 })
 
 export function visibleMenus(session: AdminSession): Menu[] {
-  if (session.isSuperAdmin) return MENUS
-  return MENUS.filter((m) => session.allowedKeys.has(m.key))
+  return MENUS.filter((m) => canAccess(session, m.key))
 }
 
 export function canAccess(session: AdminSession, menuKey: string): boolean {
+  // Gated by admin type, not the module checklist: a grant of this key to a
+  // non-financial admin must not open it (see admin-types.ts).
+  if (menuKey === COMMUNITY_FINANCE_MENU_KEY) return canViewCommunityFinance({ ...session.user, isSuperAdmin: session.isSuperAdmin })
   return session.isSuperAdmin || session.allowedKeys.has(menuKey)
 }

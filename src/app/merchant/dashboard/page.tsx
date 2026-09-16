@@ -3510,7 +3510,10 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
                   <div>
                     <h4 className="font-sora text-xs font-bold text-text-primary mb-4 uppercase tracking-wider">Pilih Status Baru</h4>
                     <div className="space-y-3">
-                      {(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const).map((status) => {
+                      {(['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'] as const)
+                        // Paid orders can only be cancelled (and refunded) by an admin
+                        .filter((status) => status !== 'CANCELLED' || selectedOrder.payoutsPending !== false)
+                        .map((status) => {
                         const labels = {
                           PROCESSING: 'Proses Pesanan',
                           SHIPPED: 'Kirim Barang (Kurir)',

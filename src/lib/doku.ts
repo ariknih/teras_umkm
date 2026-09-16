@@ -207,6 +207,9 @@ export async function createDokuCheckoutPayment(
         quantity: it.quantity,
       })),
     },
+    // ponytail: no payment_method_types, so DOKU lists every active channel
+    // and the payer picks there. Add it here when the Saloka-side channel
+    // picker lands (only VA BCA/Mandiri/BRI/BNI are active right now).
     payment: {
       payment_due_date: paymentDueDateMinutes,
     },

@@ -37,6 +37,8 @@ import { getDokuConfigViewAction } from '@/app/actions/payment-config'
 import SocialsTab from '../../components/SocialsTab'
 import ContactSupportTab from '../../components/ContactSupportTab'
 import LegalEditorTab from '../../components/LegalEditorTab'
+import CommunityFinanceTab from '../../components/CommunityFinanceTab'
+import { canActCommunityFinance } from '../../admin-types'
 import { CONTACT_KEY, LEGAL_DOCS, SOCIALS_KEY, parseContact, parseLegal, parseSocials } from '@/lib/organization'
 
 /**
@@ -139,6 +141,16 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
   const dokuConfig = menu.key === 'payment-gateway' ? await getDokuConfigViewAction() : null
   const allAnnouncements = menu.key === 'content' && activeTab === 'pengumuman' ? await getAllAnnouncements(allCommunities) : []
   const allCooperativeReports = menu.key === 'communities' && activeTab === 'laporan' ? await getAllCooperativeReports(allCommunities) : []
+  // Only the active tab's data; canAccess above already limited this menu to
+  // Superadmin / Admin Financial.
+  const isFinance = menu.key === 'community-finance'
+  const communityFinanceData = isFinance
+    ? activeTab === 'pendapatan-platform'
+      ? { revenue: await DataStore.getPlatformRevenue() }
+      : activeTab === 'kas-komunitas'
+        ? { balances: await DataStore.getAllCommunityWalletBalances() }
+        : { withdrawals: await DataStore.getCommunityWithdrawals() }
+    : null
 
   // One query across every progress row, independent of how many courses
   // exist — computeCourseParticipation buckets it into Berjalan/Selesai per
@@ -197,6 +209,9 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
     'content/banner': <ContentBannerTab initialLandingBanners={landingBanners} />,
     'content/pengumuman': <AnnouncementsTab announcements={allAnnouncements} communities={allCommunities} />,
     withdrawals: <WithdrawalsTab withdrawals={allWithdrawals} />,
+    'community-finance': communityFinanceData && (
+      <CommunityFinanceTab tab={activeTab!} data={communityFinanceData} canAct={canActCommunityFinance(session.user)} />
+    ),
     'snackbox-payout': <SnackboxPayoutTab />,
     'merchants/verifikasi': <MerchantVerificationTab initialUsers={allUsers} />,
     'snackbox-kurasi/merchant': <MerchantVerificationTab initialUsers={allUsers} snackboxOnly />,
