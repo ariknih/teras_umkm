@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { MidtransRegistry } from '@/lib/data-store'
 import { getGatewayById, decodeOrderUserId } from '@/lib/payment-gateway'
-import { getPendingContext, deletePendingContext, purposeFromOrderId, settlePurpose } from '@/lib/payment-purposes'
+import {
+  getPendingContext,
+  deletePendingContext,
+  purposeFromOrderId,
+  settlePurpose,
+  claimTransaction,
+  releaseTransaction,
+  isTransactionClaimed
+} from '@/lib/payment-purposes'
 import { logAudit } from '@/lib/audit-log'
 import { getCurrentUser } from '@/app/actions/auth'
 import { revalidatePath } from 'next/cache'
@@ -42,17 +49,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order ini bukan milik sesi Anda.' }, { status: 403 })
     }
 
-    if (MidtransRegistry.isTransactionProcessed(orderId)) {
-      return NextResponse.json({
-        success: true,
-        status: 'SUCCESS',
-        message: 'Transaksi sudah diproses sebelumnya.',
-        processed: true
-      })
-    }
-
     const ctx = await getPendingContext(orderId)
     if (!ctx) {
+      // Settlement deletes the context, so "no context" usually just means the
+      // webhook got here first and the user is reloading the return page.
+      if (await isTransactionClaimed(orderId)) {
+        return NextResponse.json({
+          success: true,
+          status: 'SUCCESS',
+          message: 'Transaksi sudah diproses sebelumnya.',
+          processed: true
+        })
+      }
       return NextResponse.json(
         { error: 'Konteks transaksi tidak ditemukan (server mungkin baru saja restart). Silakan buat pembayaran baru.' },
         { status: 410 }
@@ -84,6 +92,17 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Claim before settling. The webhook may be settling this same order on
+    // another instance right now; whoever loses the claim must not also credit.
+    if (!(await claimTransaction(orderId))) {
+      return NextResponse.json({
+        success: true,
+        status: 'SUCCESS',
+        message: 'Transaksi sudah diproses sebelumnya.',
+        processed: true
+      })
+    }
+
     try {
       // payCommunityJoinFee reports some failures (community/user not found) as
       // a returned { error } rather than a throw — treat it as one, so the
@@ -91,11 +110,10 @@ export async function POST(req: NextRequest) {
       const res: any = await settlePurpose(purpose, orderUserId, amount, orderId, ctx)
       if (res?.error) throw new Error(res.error)
     } catch (e: any) {
-      // Unique orderId constraint violation (SAVINGS/COIN_TOPUP) means a
-      // concurrent or earlier verify call already settled this order —
-      // idempotent no-op, not an error to surface to the user.
+      // Unique orderId constraint violation (SAVINGS/COIN_TOPUP) means an
+      // earlier call already settled this order — idempotent no-op, not an
+      // error to surface to the user. The claim stays.
       if (e.code === 'P2002' || /sudah diproses sebelumnya/.test(e.message || '')) {
-        MidtransRegistry.markTransactionProcessed(orderId)
         await deletePendingContext(orderId)
         return NextResponse.json({
           success: true,
@@ -104,10 +122,12 @@ export async function POST(req: NextRequest) {
           processed: true
         })
       }
+      // Genuine failure: give the claim back so the gateway's retry can settle
+      // it. Holding the claim here would strand a paid order permanently.
+      await releaseTransaction(orderId)
       throw e
     }
 
-    MidtransRegistry.markTransactionProcessed(orderId)
     await deletePendingContext(orderId)
     await logAudit({
       actor: 'MEMBER',

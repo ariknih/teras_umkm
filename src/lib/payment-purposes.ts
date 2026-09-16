@@ -45,6 +45,8 @@ export interface PendingPurposeContext {
 // (purgeStalePendingContexts). Add a real table if payment volume grows.
 const PENDING_CONTEXT_PREFIX = 'payctx:'
 const PENDING_CONTEXT_TTL_MS = 24 * 60 * 60 * 1000
+// 90 days: long enough to outlive any plausible gateway webhook replay.
+const PAID_CLAIM_TTL_MS = 90 * 24 * 60 * 60 * 1000
 
 export async function savePendingContext(orderId: string, ctx: PendingPurposeContext) {
   const key = PENDING_CONTEXT_PREFIX + orderId
@@ -68,9 +70,99 @@ export async function deletePendingContext(orderId: string) {
   await db.systemSetting.deleteMany({ where: { key: PENDING_CONTEXT_PREFIX + orderId } }).catch(() => {})
 }
 
+// ─── Pending cart / deposit checkouts ────────────────────────────────────────
+//
+// Same problem, same fix, one flow later. A cart order's item list exists
+// nowhere but here between "payer left for DOKU" and "payment confirmed", and
+// it used to live in a plain object on globalThis — invisible to the Vercel
+// instance handling DOKU's webhook, so a genuinely paid cart came back as
+// "Detail keranjang tidak ditemukan di server."
+//
+// Wallet deposits do not strictly need this (their payer and amount are both
+// recoverable from the order id) but they go through the same store so there
+// is one code path to reason about.
+export interface PendingCheckout {
+  userId: string
+  items: Array<{ productId: string; quantity: number }>
+  affiliateId?: string
+  shippingDetails?: {
+    shippingFee?: number
+    courier?: string
+    shippingAddress?: string
+    couponCode?: string
+    discountAmount?: number
+    bumpSales?: string
+  }
+}
+
+const PENDING_CHECKOUT_PREFIX = 'paypend:'
+
+export async function savePendingCheckout(orderId: string, data: PendingCheckout) {
+  const key = PENDING_CHECKOUT_PREFIX + orderId
+  const value = JSON.stringify(data)
+  await db.systemSetting.upsert({ where: { key }, create: { key, value }, update: { value } })
+}
+
+export async function getPendingCheckout(orderId: string): Promise<PendingCheckout | null> {
+  const row = await db.systemSetting.findUnique({ where: { key: PENDING_CHECKOUT_PREFIX + orderId } })
+  if (!row) return null
+  try {
+    return JSON.parse(row.value) as PendingCheckout
+  } catch {
+    return null
+  }
+}
+
+// Best-effort, like deletePendingContext: a leftover row is harmless because
+// settlement is claim-guarded, and the cron purge sweeps it anyway.
+export async function deletePendingCheckout(orderId: string) {
+  await db.systemSetting.deleteMany({ where: { key: PENDING_CHECKOUT_PREFIX + orderId } }).catch(() => {})
+}
+
+// Settlement idempotency, shared by every gateway-backed flow.
+//
+// SystemSetting.key is the primary key, so `create` either inserts or throws
+// P2002 — that IS the compare-and-set. It replaces an in-memory
+// `processedTransactions` map that could not see writes from another Vercel
+// instance, which meant DOKU's webhook and the browser's return-verify could
+// both decide they were first and credit the same payment twice.
+//
+// Claim BEFORE settling and release on failure: the reverse order marked an
+// order processed and then lost the money if settlement threw, with the
+// gateway's retry refused as a duplicate.
+const PAID_CLAIM_PREFIX = 'paypaid:'
+
+export async function claimTransaction(orderId: string): Promise<boolean> {
+  try {
+    await db.systemSetting.create({
+      data: { key: PAID_CLAIM_PREFIX + orderId, value: new Date().toISOString() }
+    })
+    return true
+  } catch {
+    return false // already claimed — someone else is settling or has settled it
+  }
+}
+
+export async function isTransactionClaimed(orderId: string): Promise<boolean> {
+  return !!(await db.systemSetting.findUnique({ where: { key: PAID_CLAIM_PREFIX + orderId } }))
+}
+
+export async function releaseTransaction(orderId: string) {
+  await db.systemSetting.deleteMany({ where: { key: PAID_CLAIM_PREFIX + orderId } }).catch(() => {})
+}
+
 export async function purgeStalePendingContexts() {
+  const cutoff = new Date(Date.now() - PENDING_CONTEXT_TTL_MS)
   return db.systemSetting.deleteMany({
-    where: { key: { startsWith: PENDING_CONTEXT_PREFIX }, updatedAt: { lt: new Date(Date.now() - PENDING_CONTEXT_TTL_MS) } }
+    where: {
+      // Claims are kept far longer than pending contexts: a claim row is the
+      // only thing preventing a re-credit if a gateway replays an old webhook.
+      OR: [
+        { key: { startsWith: PENDING_CONTEXT_PREFIX }, updatedAt: { lt: cutoff } },
+        { key: { startsWith: PENDING_CHECKOUT_PREFIX }, updatedAt: { lt: cutoff } },
+        { key: { startsWith: PAID_CLAIM_PREFIX }, updatedAt: { lt: new Date(Date.now() - PAID_CLAIM_TTL_MS) } }
+      ]
+    }
   })
 }
 

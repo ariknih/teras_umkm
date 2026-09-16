@@ -1,17 +1,10 @@
 import * as crypto from 'crypto';
+import { readStoredDokuConfig } from './payment-config';
 
 /**
  * DOKU Checkout / Jokul Payment Gateway Integration
  * Docs: https://jokul.doku.com/docs
  */
-
-const DOKU_IS_PRODUCTION = process.env.DOKU_IS_PRODUCTION === 'true';
-const DOKU_CLIENT_ID = process.env.DOKU_CLIENT_ID || '';
-const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY || '';
-const DOKU_API_KEY = process.env.DOKU_API_KEY || ''; // doku_key_... from dashboard API Keys
-const DOKU_PUBLIC_KEY = (process.env.DOKU_PUBLIC_KEY || '').replace(/\\n/g, '\n') || `-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzjWn0sAG4rqk9PuTk9RN6vyDJpj3mAOsl+t1k/WAj30ZqPGAjrXrH60brPrkWNCCM4lVWqP28CYYE79G6YdeZLiobhyTeYQPcakduhmIfpjAqTiGZgB/C2Z9ylUcg1FAwzc7ovgOfkwKTAZtF1obOcuoWCYfbuPNONiQEBmqGGErswVbLarKz8j6qNqmX3s9I0wvsQ6Ue6GGTvxc+Pv15tHI8sDjycdP1kDx4taLvR4DjNpg5gVDu3RgArxdPBOgEf+yCL0ZUgPTLrkRVGj2mBXfUqAfCm4M8wpsQnu9ZCSjU96JqLVT8nROgD5/5/ryfjoMvIGqwDIA+diX7Xw2iwIDAQAB
------END PUBLIC KEY-----`;
 
 // Wallet deposit bounds — the wallet UI's own quick-nominal buttons top out at
 // Rp 1.000.000 and its floor is Rp 10.000; these are the server-side backstop
@@ -35,14 +28,70 @@ export function validateDepositAmount(amount: unknown): { amount: number } | { e
   return { amount: depositAmount };
 }
 
-export function getDokuConfig() {
-  const rawClientId = process.env.DOKU_CLIENT_ID || process.env.DOKU_SANDBOX_CLIENT_ID || '';
-  const isSandboxKey = rawClientId.startsWith('BRN-0236-') || !rawClientId;
-  const isProduction = process.env.DOKU_IS_PRODUCTION === 'true' && !isSandboxKey;
-  const clientId = (isProduction ? process.env.DOKU_CLIENT_ID : (process.env.DOKU_SANDBOX_CLIENT_ID || process.env.DOKU_CLIENT_ID)) || '';
-  const secretKey = (isProduction ? process.env.DOKU_SECRET_KEY : (process.env.DOKU_SANDBOX_SECRET_KEY || process.env.DOKU_SECRET_KEY)) || '';
-  const baseUrl = isProduction ? 'https://api.doku.com' : 'https://api-sandbox.doku.com';
-  return { isProduction, clientId, secretKey, baseUrl };
+function appOrigin(): string {
+  return (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+}
+
+export interface DokuResolvedConfig {
+  isProduction: boolean;
+  clientId: string;
+  secretKey: string;
+  publicKey: string;
+  baseUrl: string;
+  /** Where the credentials came from — surfaced in the CMS so the active source is never a guess. */
+  source: 'database' | 'environment';
+}
+
+/**
+ * Resolves the active DOKU credentials and the sandbox/live switch.
+ *
+ * The CMS-managed database row wins when present; environment variables are
+ * the fallback, which is what local development and any deployment configured
+ * the old way keep using. Precedence is deliberately all-or-nothing rather
+ * than per-field: a half-database, half-environment credential set would pair
+ * a live client id with a sandbox secret and fail in a way nobody could read
+ * off the config screen.
+ *
+ * `isProduction` alone decides sandbox vs live — there is deliberately no
+ * heuristic on the shape of the client id. An earlier version inferred "this
+ * looks like a sandbox key" from a `BRN-0236-` prefix, which did not match the
+ * credential actually in use, so the guard it was supposed to provide was
+ * inert while looking like it worked.
+ *
+ * Going live with missing credentials throws rather than quietly falling back
+ * to an empty client id, because every caller downstream reads empty
+ * credentials as "unconfigured, simulate something" — exactly the behaviour
+ * that must not survive into production.
+ */
+export async function getDokuConfig(): Promise<DokuResolvedConfig> {
+  const stored = await readStoredDokuConfig();
+
+  const resolved = stored
+    ? {
+        isProduction: stored.isProduction,
+        clientId: stored.clientId,
+        secretKey: stored.secretKey,
+        publicKey: stored.publicKey,
+        source: 'database' as const
+      }
+    : {
+        isProduction: process.env.DOKU_IS_PRODUCTION === 'true',
+        clientId: process.env.DOKU_CLIENT_ID || '',
+        secretKey: process.env.DOKU_SECRET_KEY || '',
+        publicKey: (process.env.DOKU_PUBLIC_KEY || '').replace(/\\n/g, '\n'),
+        source: 'environment' as const
+      };
+
+  if (resolved.isProduction && (!resolved.clientId || !resolved.secretKey)) {
+    throw new Error(
+      `DOKU is set to production (source: ${resolved.source}) but the Client ID / Secret Key are missing. Refusing to start a live payment with incomplete credentials.`
+    );
+  }
+
+  return {
+    ...resolved,
+    baseUrl: resolved.isProduction ? 'https://api.doku.com' : 'https://api-sandbox.doku.com'
+  };
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -61,44 +110,6 @@ export interface DokuCustomer {
   address?: string;
 }
 
-export type DokuVaBank = 'BRI' | 'BNI' | 'PERMATA' | 'CIMB' | 'DANAMON' | 'BCA' | 'MANDIRI' | 'DOKU';
-
-export interface CreateDokuDirectVaParams {
-  invoiceNumber: string;
-  amount: number;
-  bank: DokuVaBank;
-  customer: DokuCustomer;
-  expiryMinutes?: number;
-}
-
-export interface DokuDirectVaResponse {
-  success: boolean;
-  invoiceNumber: string;
-  bank: DokuVaBank;
-  bankName: string;
-  virtualAccountNumber: string;
-  howToPayUrl?: string;
-  expiredDate?: string;
-  amount: number;
-  raw?: any;
-}
-
-export interface CreateDokuDirectQrisParams {
-  invoiceNumber: string;
-  amount: number;
-  customer?: DokuCustomer;
-  expiryMinutes?: number;
-}
-
-export interface DokuDirectQrisResponse {
-  success: boolean;
-  invoiceNumber: string;
-  qrString: string;
-  amount: number;
-  expiredDate: string;
-  raw?: any;
-}
-
 export interface CreateDokuCheckoutParams {
   invoiceNumber: string;
   amount: number;
@@ -115,50 +126,6 @@ export interface DokuCheckoutResponse {
   paymentUrl: string;
   token?: string;
   raw?: any;
-}
-
-// ─── CRC16 & QRIS Helpers ─────────────────────────────────────────────────────
-
-function calculateCrc16(str: string): string {
-  let crc = 0xffff;
-  for (let i = 0; i < str.length; i++) {
-    crc ^= str.charCodeAt(i) << 8;
-    for (let j = 0; j < 8; j++) {
-      if ((crc & 0x8000) !== 0) {
-        crc = ((crc << 1) ^ 0x1021) & 0xffff;
-      } else {
-        crc = (crc << 1) & 0xffff;
-      }
-    }
-  }
-  return (crc & 0xffff).toString(16).toUpperCase().padStart(4, '0');
-}
-
-export function buildStandardQrisPayload(invoiceNumber: string, amount: number): string {
-  const amtStr = Math.round(amount).toString();
-  const tagAmt = `54${amtStr.length.toString().padStart(2, '0')}${amtStr}`;
-  const invStr = invoiceNumber.slice(0, 20);
-  const tagInv = `01${invStr.length.toString().padStart(2, '0')}${invStr}`;
-  const tag62 = `62${tagInv.length.toString().padStart(2, '0')}${tagInv}`;
-  
-  // Standard EMVCo QRIS structure
-  const rawWithoutCrc =
-    '000201' + // Format Indicator
-    '010212' + // Dynamic QR
-    '26590014ID.DOKU.WWW0118936009110022013844021000000220130303UMI' + // Merchant Account Info
-    '51440014ID.CO.QRIS.WWW0215ID10200210000010303UMI' + // National QRIS Tag
-    '52045999' + // Merchant Category Code
-    '5303360' + // IDR Currency
-    tagAmt + // Dynamic Amount
-    '5802ID' + // Country Code
-    '5916SALOKA INDONESIA' + // Merchant Name
-    '6007JAKARTA' + // City
-    '610512340' + // Postal Code
-    tag62 + // Additional Data (Invoice)
-    '6304'; // CRC placeholder
-
-  const crc = calculateCrc16(rawWithoutCrc);
-  return rawWithoutCrc + crc;
 }
 
 // ─── Signature Helpers ────────────────────────────────────────────────────────
@@ -187,317 +154,6 @@ export function generateDokuSignature(
   return `HMACSHA256=${hmac}`;
 }
 
-// ─── Bank Info & Instruction Helpers ──────────────────────────────────────────
-
-export function getBankInfo(bank: DokuVaBank): { name: string; endpoint: string; prefix: string } {
-  switch (bank) {
-    case 'BRI':
-      return { name: 'Bank Rakyat Indonesia (BRI)', endpoint: '/bri-virtual-account/v2/payment-code', prefix: '12362' };
-    case 'BNI':
-      return { name: 'Bank Negara Indonesia (BNI)', endpoint: '/bni-virtual-account/v2/payment-code', prefix: '82913' };
-    case 'PERMATA':
-      return { name: 'Bank Permata', endpoint: '/permata-virtual-account/v2/payment-code', prefix: '89656' };
-    case 'CIMB':
-      return { name: 'CIMB Niaga', endpoint: '/cimb-virtual-account/v2/payment-code', prefix: '18990' };
-    case 'DANAMON':
-      return { name: 'Bank Danamon', endpoint: '/danamon-virtual-account/v2/payment-code', prefix: '89220' };
-    case 'BCA':
-      return { name: 'Bank Central Asia (BCA)', endpoint: '/bca-virtual-account/v2/payment-code', prefix: '88880' };
-    case 'MANDIRI':
-      return { name: 'Bank Mandiri', endpoint: '/mandiri-virtual-account/v2/payment-code', prefix: '88881' };
-    case 'DOKU':
-    default:
-      return { name: 'Semua Bank (ATM Bersama / Prima)', endpoint: '/doku-virtual-account/v2/payment-code', prefix: '80000' };
-  }
-}
-
-export function getBankPaymentInstructions(bank: DokuVaBank, vaNumber: string, amount: number) {
-  const formattedAmt = `Rp ${Math.round(amount).toLocaleString('id-ID')}`;
-  switch (bank) {
-    case 'BRI':
-      return [
-        {
-          title: 'BRImo (Mobile Banking)',
-          steps: [
-            'Buka aplikasi BRImo dan lakukan login.',
-            'Pilih menu Tagihan > Pembayaran > BRIVA.',
-            'Pilih Tambah Transaksi Baru / Pembayaran Baru.',
-            `Masukkan Nomor BRIVA: ${vaNumber}.`,
-            `Pastikan nominal tagihan sesuai (${formattedAmt}) dan nama merchant SALOKA.`,
-            'Masukkan PIN BRImo Anda dan simpan bukti transaksi.'
-          ]
-        },
-        {
-          title: 'ATM BRI',
-          steps: [
-            'Masukkan kartu ATM BRI dan PIN Anda.',
-            'Pilih Transaksi Lain > Pembayaran > Lainnya > BRIVA.',
-            `Masukkan Nomor Virtual Account: ${vaNumber}.`,
-            'Periksa konfirmasi pembayaran, lalu pilih YA.',
-            'Ambil struk transaksi sebagai bukti pembayaran.'
-          ]
-        },
-        {
-          title: 'Internet Banking BRI',
-          steps: [
-            'Buka situs ib.bri.co.id dan login.',
-            'Pilih menu Pembayaran Tagihan > Pembayaran > BRIVA.',
-            `Masukkan Nomor BRIVA: ${vaNumber}.`,
-            'Masukkan kata sandi dan mToken untuk menyelesaikan pembayaran.'
-          ]
-        }
-      ];
-    case 'BNI':
-      return [
-        {
-          title: 'BNI Mobile Banking',
-          steps: [
-            'Buka aplikasi BNI Mobile Banking dan login.',
-            'Pilih menu Pembayaran > Virtual Account Billing.',
-            'Pilih Rekening Debet, lalu pilih tab Input Baru.',
-            `Masukkan Nomor VA BNI: ${vaNumber}.`,
-            `Pastikan nominal tagihan ${formattedAmt} sudah benar.`,
-            'Masukkan Password Transaksi dan selesaikan transaksi.'
-          ]
-        },
-        {
-          title: 'ATM BNI',
-          steps: [
-            'Masukkan kartu ATM dan PIN BNI Anda.',
-            'Pilih Menu Lain > Transfer > Jenis Rekening > Virtual Account Billing.',
-            `Masukkan Nomor VA BNI: ${vaNumber}.`,
-            'Tagihan akan tampil di layar, pilih YA untuk membayar.'
-          ]
-        }
-      ];
-    case 'BCA':
-      return [
-        {
-          title: 'BCA mobile (m-BCA)',
-          steps: [
-            'Buka aplikasi BCA mobile, pilih m-BCA dan masukkan Kode Akses.',
-            'Pilih menu m-Transfer > BCA Virtual Account.',
-            `Masukkan Nomor Virtual Account: ${vaNumber}.`,
-            `Pastikan nama merchant dan nominal ${formattedAmt} sudah benar.`,
-            'Masukkan PIN m-BCA untuk memproses transaksi.'
-          ]
-        },
-        {
-          title: 'KlikBCA / ATM BCA',
-          steps: [
-            'Masukkan kartu ATM BCA dan PIN.',
-            'Pilih menu Transaksi Lainnya > Transfer > Ke Rek BCA Virtual Account.',
-            `Ketikkan Nomor Virtual Account: ${vaNumber} lalu tekan Benar.`,
-            'Cek rincian pembayaran lalu pilih YA.'
-          ]
-        }
-      ];
-    case 'MANDIRI':
-      return [
-        {
-          title: 'Livin\' by Mandiri',
-          steps: [
-            'Buka aplikasi Livin\' by Mandiri dan login.',
-            'Pilih menu Bayar > Buat Pembayaran Baru > Multipayment / Virtual Account.',
-            `Pilih Penyedia Jasa DOKU dan masukkan Nomor VA: ${vaNumber}.`,
-            `Periksa nominal (${formattedAmt}) dan konfirmasi dengan PIN Livin'.`
-          ]
-        },
-        {
-          title: 'ATM Mandiri',
-          steps: [
-            'Masukkan kartu ATM Mandiri dan PIN.',
-            'Pilih menu Bayar / Beli > Lainnya > Multi Payment.',
-            `Masukkan kode perusahaan dan Nomor Virtual Account: ${vaNumber}.`,
-            'Konfirmasi pembayaran dan tekan YA.'
-          ]
-        }
-      ];
-    case 'PERMATA':
-    case 'CIMB':
-    case 'DANAMON':
-    default:
-      return [
-        {
-          title: 'Mobile Banking (Semua Bank / ATM Bersama / Prima)',
-          steps: [
-            'Buka aplikasi Mobile Banking bank pilihan Anda.',
-            'Pilih menu Transfer > Antar Bank / Virtual Account.',
-            'Pilih Bank Tujuan atau gunakan jaringan ATM Bersama / Prima.',
-            `Masukkan Nomor Rekening / Virtual Account: ${vaNumber}.`,
-            `Masukkan nominal transfer sesuai tagihan: ${formattedAmt}.`,
-            'Konfirmasi dan selesaikan pembayaran.'
-          ]
-        },
-        {
-          title: 'ATM Bersama / Prima / Alto',
-          steps: [
-            'Masukkan kartu ATM dan PIN Anda di mesin ATM berlogo ATM Bersama / Prima.',
-            'Pilih menu Transfer > Ke Rek Bank Lain.',
-            `Masukkan kode bank tujuan + Nomor VA: ${vaNumber}.`,
-            `Masukkan jumlah pembayaran tepat sebesar ${formattedAmt}.`,
-            'Ikuti instruksi di layar dan selesaikan pembayaran.'
-          ]
-        }
-      ];
-  }
-}
-
-// ─── Direct Virtual Account Payment ───────────────────────────────────────────
-
-export async function createDokuDirectVa(
-  params: CreateDokuDirectVaParams
-): Promise<DokuDirectVaResponse> {
-  const { invoiceNumber, amount, bank, customer, expiryMinutes = 1440 } = params;
-  const config = getDokuConfig();
-  const bankInfo = getBankInfo(bank);
-
-  const fallbackVaNumber = `${bankInfo.prefix}${Date.now().toString().slice(-6)}${Math.floor(1000 + Math.random() * 9000)}`;
-  const expiryDateObj = new Date(Date.now() + expiryMinutes * 60 * 1000);
-  const expiryIso = expiryDateObj.toISOString();
-
-  // If no credentials configured
-  if (!config.clientId || !config.secretKey) {
-    return {
-      success: true,
-      invoiceNumber,
-      bank,
-      bankName: bankInfo.name,
-      virtualAccountNumber: fallbackVaNumber,
-      expiredDate: expiryIso,
-      amount,
-      raw: { simulated: true },
-    };
-  }
-
-  const requestId = `REQ-VA-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-  const timestamp = new Date().toISOString().slice(0, 19) + 'Z';
-  const targetPath = bankInfo.endpoint;
-
-  const vaPayload: any = {
-    order: {
-      invoice_number: invoiceNumber,
-      amount: Math.round(amount),
-    },
-    virtual_account_info: {
-      expired_time: expiryMinutes,
-      reusable_status: false,
-      info1: 'Saloka Marketplace',
-      info2: invoiceNumber.slice(0, 30),
-    },
-    customer: {
-      name: customer.name || 'Pelanggan Saloka',
-      email: customer.email || 'customer@saloka.id',
-    },
-  };
-
-  // Specific bank nuances (BNI requires merchant_unique_reference < 13 chars)
-  if (bank === 'BNI') {
-    vaPayload.virtual_account_info.merchant_unique_reference =
-      invoiceNumber.replace(/\D/g, '').slice(-10) || Math.floor(10000000 + Math.random() * 90000000).toString();
-  }
-
-  const bodyString = JSON.stringify(vaPayload);
-  const digest = generateDokuDigest(bodyString);
-  const signature = generateDokuSignature(
-    config.clientId,
-    requestId,
-    timestamp,
-    targetPath,
-    digest,
-    config.secretKey
-  );
-
-  try {
-    const resp = await fetch(`${config.baseUrl}${targetPath}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Client-Id': config.clientId,
-        'Request-Id': requestId,
-        'Request-Timestamp': timestamp,
-        'Signature': signature,
-        'Digest': digest,
-      },
-      body: bodyString,
-    });
-
-    const respText = await resp.text();
-    let data: any = {};
-    try {
-      data = JSON.parse(respText);
-    } catch {
-      data = { raw: respText };
-    }
-
-    const vaNumber = data?.virtual_account_info?.virtual_account_number;
-    if (resp.ok && vaNumber) {
-      return {
-        success: true,
-        invoiceNumber,
-        bank,
-        bankName: bankInfo.name,
-        virtualAccountNumber: vaNumber,
-        howToPayUrl: data?.virtual_account_info?.how_to_pay_page,
-        expiredDate: data?.virtual_account_info?.expired_date_utc || expiryIso,
-        amount,
-        raw: data,
-      };
-    }
-
-    // Graceful fallback for banks without direct contract (e.g. BCA/Mandiri fallback to DOKU VA)
-    if (bank !== 'DOKU') {
-      try {
-        console.warn(`[DOKU] Direct VA ${bank} fallback to DOKU VA...`);
-        return await createDokuDirectVa({ ...params, bank: 'DOKU' });
-      } catch (e) {}
-    }
-
-    // High-fidelity fallback in Sandbox / Demo
-    return {
-      success: true,
-      invoiceNumber,
-      bank,
-      bankName: bankInfo.name,
-      virtualAccountNumber: fallbackVaNumber,
-      expiredDate: expiryIso,
-      amount,
-      raw: { simulated: true, fallback: true, original: data },
-    };
-  } catch (err: any) {
-    console.error(`[DOKU] createDokuDirectVa failed for ${bank}:`, err);
-    return {
-      success: true,
-      invoiceNumber,
-      bank,
-      bankName: bankInfo.name,
-      virtualAccountNumber: fallbackVaNumber,
-      expiredDate: expiryIso,
-      amount,
-      raw: { simulated: true, error: err.message },
-    };
-  }
-}
-
-// ─── Direct QRIS Payment ──────────────────────────────────────────────────────
-
-export async function createDokuDirectQris(
-  params: CreateDokuDirectQrisParams
-): Promise<DokuDirectQrisResponse> {
-  const { invoiceNumber, amount, customer, expiryMinutes = 15 } = params;
-  const qrString = buildStandardQrisPayload(invoiceNumber, amount);
-  const expiryDate = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
-
-  return {
-    success: true,
-    invoiceNumber,
-    qrString,
-    amount,
-    expiredDate: expiryDate,
-    raw: { generated: true, standard: 'QRIS_INDONESIA' },
-  };
-}
-
 // ─── Create Checkout Payment ──────────────────────────────────────────────────
 
 /**
@@ -516,9 +172,12 @@ export async function createDokuCheckoutPayment(
     callbackUrlCancel,
     paymentDueDateMinutes = 60,
   } = params;
-  const config = getDokuConfig();
+  const config = await getDokuConfig();
 
-  // Fallback simulator if no credentials configured
+  // Dev convenience only. getDokuConfig() already throws when production is on
+  // with credentials missing, so reaching this branch means we are in sandbox
+  // with nothing configured — return a local stand-in rather than a network
+  // error, so the rest of the flow stays walkable offline.
   if (!config.clientId || !config.secretKey) {
     console.warn('[DOKU] Kredensial belum diisi di .env. Menggunakan mode simulasi internal.');
     return {
@@ -537,8 +196,10 @@ export async function createDokuCheckoutPayment(
     order: {
       invoice_number: invoiceNumber,
       amount: Math.round(amount),
-      callback_url: callbackUrl || `https://saloka.id/orders/${invoiceNumber}`,
-      callback_url_cancel: callbackUrlCancel || `https://saloka.id/cart`,
+      // Fall back to this deployment's own origin, never a hardcoded
+      // saloka.id — a preview deploy must not bounce its payer to production.
+      callback_url: callbackUrl || `${appOrigin()}/orders/${invoiceNumber}`,
+      callback_url_cancel: callbackUrlCancel || `${appOrigin()}/cart`,
       auto_redirect: true,
       line_items: lineItems.map((it) => ({
         name: it.name.slice(0, 50),
@@ -642,7 +303,10 @@ export interface DokuOrderStatusResponse {
 export async function checkDokuOrderStatus(
   invoiceNumber: string
 ): Promise<DokuOrderStatusResponse> {
-  const config = getDokuConfig();
+  const config = await getDokuConfig();
+  // Same as createDokuCheckoutPayment: unreachable in production because
+  // getDokuConfig() throws first. PENDING is the safe sandbox answer — it never
+  // credits anyone.
   if (!config.clientId || !config.secretKey) {
     return {
       success: false,
@@ -712,7 +376,7 @@ export async function checkDokuOrderStatus(
 /**
  * Verify incoming DOKU notification signature to prevent spoofing
  */
-export function verifyDokuNotification(
+export async function verifyDokuNotification(
   headers: {
     clientId?: string | null;
     requestId?: string | null;
@@ -721,8 +385,21 @@ export function verifyDokuNotification(
   },
   targetPath: string,
   rawBody: string
-): boolean {
-  if (!DOKU_SECRET_KEY && !DOKU_PUBLIC_KEY) return true; // In dev/unconfigured environment
+): Promise<boolean> {
+  // Verify against whichever credentials are actually live — the CMS-managed
+  // row if one exists, environment variables otherwise. Reading the same
+  // resolved config the outbound calls use means a gateway switch can never
+  // leave the webhook verifying against the previous account's keys.
+  const { secretKey, publicKey } = await getDokuConfig();
+
+  // No keys means no way to tell a real DOKU callback from a forged one. This
+  // used to return true "for dev convenience", which made the endpoint that
+  // credits wallets and activates memberships open to anyone who could POST to
+  // it the moment the keys went missing.
+  if (!secretKey && !publicKey) {
+    console.error('[DOKU] Webhook rejected: no DOKU secret key or public key is configured.');
+    return false;
+  }
 
   const { clientId, requestId, timestamp, signature } = headers;
   if (!clientId || !requestId || !timestamp || !signature) {
@@ -734,11 +411,11 @@ export function verifyDokuNotification(
     const component = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${timestamp}\nRequest-Target:${targetPath}\nDigest:${digest}`;
 
     // 1. RSA-SHA256 Verification using DOKU Public Key (Standard for DOKU Notifications)
-    if (DOKU_PUBLIC_KEY) {
+    if (publicKey) {
       try {
-        const cleanPublicKey = DOKU_PUBLIC_KEY.includes('\\n')
-          ? DOKU_PUBLIC_KEY.replace(/\\n/g, '\n')
-          : DOKU_PUBLIC_KEY;
+        const cleanPublicKey = publicKey.includes('\\n')
+          ? publicKey.replace(/\\n/g, '\n')
+          : publicKey;
         const cleanSig = signature.replace(/^RSA=/i, '').replace(/^SHA256withRSA=/i, '').trim();
         const verifier = crypto.createVerify('RSA-SHA256');
         verifier.update(component);
@@ -751,15 +428,15 @@ export function verifyDokuNotification(
       }
     }
 
-    // 2. Fallback to HMAC-SHA256 Verification with DOKU_SECRET_KEY
-    if (DOKU_SECRET_KEY) {
+    // 2. Fallback to HMAC-SHA256 Verification with the secret key
+    if (secretKey) {
       const expectedSig = generateDokuSignature(
         clientId,
         requestId,
         timestamp,
         targetPath,
         digest,
-        DOKU_SECRET_KEY
+        secretKey
       );
 
       const cleanSig = signature.trim();

@@ -2273,7 +2273,7 @@ export const DataStore = {
     buyerId: string,
     items: Array<{ productId: string; quantity: number }>,
     affiliateId?: string,
-    paymentMethod: string = 'MIDTRANS',
+    paymentMethod: string = 'Online Payment',
     shippingDetails?: {
       shippingFee?: number
       courier?: string
@@ -2408,11 +2408,14 @@ export const DataStore = {
                     })
                   }
         
-                  // Order status: only WALLET (deducted synchronously above) and MIDTRANS
-                  // (this function is only called from /api/midtrans/verify after Midtrans
-                  // confirms settlement/capture) represent a payment that's actually confirmed
-                  // by this point. Everything else (MANUAL_*, COD, direct-bypass) is unconfirmed.
-                  const orderStatus = (paymentMethod === 'WALLET' || paymentMethod === 'MIDTRANS') ? 'COMPLETED' : 'PENDING'
+                  // Order status: only WALLET (deducted synchronously above) and
+                  // 'Online Payment' (the label the DOKU routes pass, and they only
+                  // reach here after DOKU's own status check or a signature-verified
+                  // webhook confirms settlement) represent a payment that's actually
+                  // confirmed by this point. Everything else (MANUAL_*, COD) is
+                  // unconfirmed and stays PENDING until a human marks it paid.
+                  const CONFIRMED_PAYMENT_METHODS = ['WALLET', 'Online Payment']
+                  const orderStatus = CONFIRMED_PAYMENT_METHODS.includes(paymentMethod) ? 'COMPLETED' : 'PENDING'
 
                   // Create order
                   const order = await tx.order.create({
@@ -11785,45 +11788,4 @@ export const DataStore = {
     )
   }
 }
-
-
-// Global Registry for Midtrans transactions to handle polling/webhooks on local server
-const pendingCheckouts: Record<string, any> = (globalThis as any).pendingCheckouts || {};
-if (process.env.NODE_ENV !== 'production') {
-  (globalThis as any).pendingCheckouts = pendingCheckouts;
-}
-
-const processedTransactions: Record<string, boolean> = (globalThis as any).processedTransactions || {};
-if (process.env.NODE_ENV !== 'production') {
-  (globalThis as any).processedTransactions = processedTransactions;
-}
-
-export const MidtransRegistry = {
-  savePendingCheckout(orderId: string, data: {
-    userId: string,
-    items: Array<{ productId: string, quantity: number }>,
-    affiliateId?: string,
-    shippingDetails?: {
-      shippingFee?: number
-      courier?: string
-      shippingAddress?: string
-      couponCode?: string
-      discountAmount?: number
-      bumpSales?: string
-    }
-  }) {
-    pendingCheckouts[orderId] = data;
-  },
-  getPendingCheckout(orderId: string) {
-    return pendingCheckouts[orderId] || null;
-  },
-  isTransactionProcessed(orderId: string) {
-    return !!processedTransactions[orderId];
-  },
-  markTransactionProcessed(orderId: string) {
-    processedTransactions[orderId] = true;
-  }
-};
-
-export const PaymentRegistry = MidtransRegistry;
 

@@ -5,7 +5,6 @@ import QuantityStepper from '@/components/ui/QuantityStepper'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import DokuDirectPaymentModal, { DokuDirectPaymentData } from '@/components/DokuDirectPaymentModal'
 import { getProducts } from '@/app/actions/products'
 import { checkoutCart, getWalletDetails, getActivePaymentMethods } from '@/app/actions/wallet-affiliate'
 import { getCurrentUser, getCurrentUserProfile } from '@/app/actions/auth'
@@ -81,6 +80,16 @@ interface SavedAddress {
   longitude: number
 }
 
+// ponytail: cart online payment is gated off while BITESHIP_API_KEY is unset.
+// A cart total includes a real shipping fee, and with no Biteship key
+// /api/shipping/calculate refuses in production rather than inventing a rate —
+// so a delivery checkout would take the buyer to DOKU and then dead-end. The
+// community flows (join fee, savings, coin top-up) and wallet top-up carry no
+// shipping and are unaffected, which is why they go live first.
+//
+// Flip this to true once the live Biteship key is set. Buyers keep Saldo
+// Dompet, COD and manual bank transfer meanwhile.
+const ONLINE_CART_PAYMENT_ENABLED = false
 
 export default function CartPage() {
   const router = useRouter()
@@ -171,7 +180,7 @@ export default function CartPage() {
   const [shippingDistKm, setShippingDistKm] = useState(0)
   const [courierRates, setCourierRates] = useState<CourierRate[]>([])
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false)
-  const [shippingSource, setShippingSource] = useState<'biteship' | 'komerce' | 'mock'>('mock')
+  const [shippingSource, setShippingSource] = useState<'biteship' | 'mock'>('mock')
 
   // Address Modals & Lists (Shopee-Style)
   const [addresses, setAddresses] = useState<SavedAddress[]>([])
@@ -213,22 +222,9 @@ export default function CartPage() {
   const [activeNoteInput, setActiveNoteInput] = useState<Record<string, boolean>>({})
 
   // Payment Method
-  const [paymentMethod, setPaymentMethod] = useState<'DIRECT' | 'WALLET' | 'COD' | 'MANUAL'>('DIRECT')
-  const [activePaymentSubId, setActivePaymentSubId] = useState<string>('QRIS')
-  const [isVaDropdownOpen, setIsVaDropdownOpen] = useState(false)
-  const [selectedVaBank, setSelectedVaBank] = useState<string>('VA_BCA')
+  const [paymentMethod, setPaymentMethod] = useState<'DIRECT' | 'WALLET' | 'COD' | 'MANUAL'>('WALLET')
+  const [activePaymentSubId, setActivePaymentSubId] = useState<string>('')
   const [dynamicPaymentMethods, setDynamicPaymentMethods] = useState<any[]>([])
-  const [directPaymentData, setDirectPaymentData] = useState<DokuDirectPaymentData | null>(null)
-  const [isDirectModalOpen, setIsDirectModalOpen] = useState(false)
-
-  const VA_BANKS = [
-    { id: 'VA_BCA', label: 'BCA Virtual Account', shortName: 'BCA' },
-    { id: 'VA_MANDIRI', label: 'Mandiri Virtual Account', shortName: 'Mandiri' },
-    { id: 'VA_BRI', label: 'BRI Virtual Account', shortName: 'BRI' },
-    { id: 'VA_BNI', label: 'BNI Virtual Account', shortName: 'BNI' },
-    { id: 'VA_PERMATA', label: 'Permata Virtual Account', shortName: 'Permata' },
-    { id: 'VA_CIMB', label: 'CIMB Niaga Virtual Account', shortName: 'CIMB Niaga' },
-  ]
 
   // Google Maps state
   const [map, setMap] = useState<any>(null)
@@ -403,7 +399,7 @@ export default function CartPage() {
     }
   }
 
-  // Search destination via Komerce API
+  // Search destination via Biteship area search
   const handleDestinationSearch = async (keyword: string) => {
     setDestinationSearch(keyword)
     if (keyword.trim().length < 2) {
@@ -471,7 +467,7 @@ export default function CartPage() {
 
       if (data.data && data.data.length > 0) {
         setCourierRates(data.data)
-        setShippingSource(data.source === 'biteship' ? 'biteship' : data.source === 'komerce' ? 'komerce' : 'mock')
+        setShippingSource(data.source === 'biteship' ? 'biteship' : 'mock')
         setShippingDistKm(data.distance_km || 0)
         if (!selectedCourier || !data.data.find((r: CourierRate) => r.courier_code === selectedCourier)) {
           setSelectedCourier(data.data[0].courier_code)
@@ -642,6 +638,20 @@ export default function CartPage() {
     saveCart(updated)
   }
 
+  // Everything a successful payment has to clear locally, regardless of which
+  // payment method settled it.
+  const clearCartAfterPayment = () => {
+    const cartKey = currentUser?.id
+      ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`)
+      : 'teras_cart'
+    localStorage.removeItem(cartKey)
+    localStorage.removeItem('teras_affiliate_id')
+    setCart([])
+    window.dispatchEvent(new Event('storage'))
+    setAffiliateId('')
+    setPendingOrderId(null)
+  }
+
   const verifyDokuCheckout = async (orderId: string) => {
     setIsVerifying(true)
     setError(null)
@@ -656,15 +666,7 @@ export default function CartPage() {
       if (!res.ok || data.error) throw new Error(data.error || 'Gagal memverifikasi checkout DOKU.')
 
       if (data.processed || data.success) {
-        const cartKey = currentUser?.id 
-          ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
-          : 'teras_cart'
-        localStorage.removeItem(cartKey)
-        localStorage.removeItem('teras_affiliate_id')
-        setCart([])
-        window.dispatchEvent(new Event('storage'))
-        setAffiliateId('')
-        setPendingOrderId(null)
+        clearCartAfterPayment()
         setCheckoutSuccess(true)
         if (data.order?.id) {
           router.push(`/orders/${data.order.id}`)
@@ -679,50 +681,13 @@ export default function CartPage() {
     }
   }
 
-  // Check for returning DOKU or Midtrans payment callback from URL
+  // Check for returning DOKU payment callback from URL
   useEffect(() => {
     const dokuVerifyId = searchParams?.get('doku_verify')
     if (dokuVerifyId) {
       verifyDokuCheckout(dokuVerifyId)
     }
   }, [searchParams])
-
-  const verifyCheckout = async (orderId: string, simulate: boolean = false) => {
-    setIsVerifying(true)
-    setError(null)
-    setSuccessMessage(null)
-    try {
-      const res = await fetch('/api/midtrans/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, simulate }),
-      })
-
-      const data = await res.json()
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Gagal memverifikasi checkout.')
-      }
-
-      if (data.processed) {
-        const cartKey = currentUser?.id 
-          ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
-          : 'teras_cart'
-        localStorage.removeItem(cartKey)
-        localStorage.removeItem('teras_affiliate_id')
-        setCart([])
-        window.dispatchEvent(new Event('storage'))
-        setAffiliateId('')
-        setPendingOrderId(null)
-        router.push(`/orders/${orderId}`)
-      } else {
-        setError(data.message || 'Transaksi belum dibayar atau status pending.')
-      }
-    } catch (err: any) {
-      setError(err.message || 'Gagal memverifikasi status pembayaran.')
-    } finally {
-      setIsVerifying(false)
-    }
-  }
 
   const handleApplyCoupon = (code: string) => {
     setCouponError(null)
@@ -877,16 +842,20 @@ export default function CartPage() {
       discountAmount: couponDiscount,
     }
 
-    // Direct In-App Payment (QRIS, VA Bank BRI, BNI, BCA, Mandiri, Permata, CIMB)
+    // Online payment via DOKU's hosted checkout page, where the buyer picks
+    // QRIS / Virtual Account / e-wallet / card.
     if (paymentMethod === 'DIRECT') {
+      if (!ONLINE_CART_PAYMENT_ENABLED) {
+        setError('Pembayaran online untuk keranjang sedang tidak tersedia. Silakan gunakan Saldo Dompet, COD, atau transfer bank manual.')
+        setIsPendingCheckout(false)
+        return
+      }
       try {
-        const channel = activePaymentSubId || 'QRIS';
-        const res = await fetch('/api/doku/direct', {
+        const res = await fetch('/api/doku/checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'checkout',
-            paymentChannel: channel,
             items: itemsPayload,
             affiliateId: affiliateId || undefined,
             shippingDetails,
@@ -894,13 +863,12 @@ export default function CartPage() {
         })
 
         const data = await res.json()
-        if (!res.ok || data.error) {
-          throw new Error(data.error || 'Gagal menyiapkan pembayaran langsung.')
+        if (!res.ok || data.error || !data.paymentUrl) {
+          throw new Error(data.error || 'Gagal menyiapkan pembayaran.')
         }
 
-        setIsPendingCheckout(false)
-        setDirectPaymentData(data)
-        setIsDirectModalOpen(true)
+        // DOKU returns the payer to /cart?doku_verify=<orderId>.
+        window.location.href = data.paymentUrl
         return
       } catch (err: any) {
         setError(err.message || 'Pembayaran gagal diproses.')
@@ -915,10 +883,13 @@ export default function CartPage() {
         const res = await checkoutCart(itemsPayload, affiliateId || undefined, 'WALLET', shippingDetails)
         if (res.error || !res.order) throw new Error(res.error || 'Gagal melakukan checkout via dompet.')
         
-        // Success
+        // Success. The wallet balance was deducted inside checkoutCart and the
+        // order is already COMPLETED, so there is no gateway to verify against —
+        // just clear the cart and show the order.
         clearSnackboxCartIfSelected()
         setSuccessMessage('Pembayaran dengan Saldo Dompet berhasil.')
-        await verifyCheckout(res.order!.id, false)
+        clearCartAfterPayment()
+        router.push(`/orders/${res.order!.id}`)
         setIsPendingCheckout(false)
       } catch (err: any) {
         setError(err.message || 'Pembayaran gagal.')
@@ -2158,117 +2129,34 @@ export default function CartPage() {
                   <h3 className="font-bold text-xs text-slate-800">Metode Pembayaran</h3>
 
                   <div className="space-y-2">
-                    {/* QRIS */}
-                    {(() => {
-                      const isQrisSelected = paymentMethod === 'DIRECT' && activePaymentSubId === 'QRIS';
+                    {/* PEMBAYARAN ONLINE — channel dipilih di halaman DOKU */}
+                    {ONLINE_CART_PAYMENT_ENABLED && (() => {
+                      const isSelected = paymentMethod === 'DIRECT';
                       return (
                         <div
                           onClick={() => {
                             setPaymentMethod('DIRECT');
-                            setActivePaymentSubId('QRIS');
-                            setIsVaDropdownOpen(false);
+                            setActivePaymentSubId('');
+
                           }}
-                          className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
-                            isQrisSelected
+                          className={`p-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                            isSelected
                               ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24]'
                               : 'bg-white border-slate-200/80 text-slate-700 hover:border-slate-300'
                           }`}
                         >
-                          <div className="flex items-center gap-2.5">
-                            <Smartphone className="w-4 h-4 text-[#006E24]" />
-                            <span>QRIS (GoPay, OVO, ShopeePay, Dana, BCA, Livin)</span>
-                          </div>
-                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isQrisSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
-                            {isQrisSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
-                          </div>
-                        </div>
-                      );
-                    })()}
-
-                    {/* VIRTUAL ACCOUNT DROPDOWN / ACCORDION */}
-                    {(() => {
-                      const isVaActive = paymentMethod === 'DIRECT' && activePaymentSubId.startsWith('VA_');
-                      const activeVaObj = VA_BANKS.find(b => b.id === activePaymentSubId) || VA_BANKS.find(b => b.id === selectedVaBank) || VA_BANKS[0];
-
-                      return (
-                        <div className={`rounded-xl border transition-all overflow-hidden ${
-                          isVaActive
-                            ? 'bg-emerald-50/20 border-[#006E24]'
-                            : 'bg-white border-slate-200/80 hover:border-slate-300'
-                        }`}>
-                          {/* Header / Trigger */}
-                          <div
-                            onClick={() => {
-                              if (!isVaActive) {
-                                setPaymentMethod('DIRECT');
-                                setActivePaymentSubId(selectedVaBank || 'VA_BCA');
-                                setIsVaDropdownOpen(true);
-                              } else {
-                                setIsVaDropdownOpen(prev => !prev);
-                              }
-                            }}
-                            className="p-3 flex items-center justify-between cursor-pointer select-none text-xs"
-                          >
+                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
-                              <Building2 className={`w-4 h-4 ${isVaActive ? 'text-[#006E24]' : 'text-slate-600'}`} />
-                              <div>
-                                <div className="font-semibold text-slate-800 flex items-center gap-2">
-                                  <span>Virtual Account (Transfer Bank)</span>
-                                </div>
-                                <div className="text-[11px] text-slate-400 mt-0.5">
-                                  {isVaActive ? (
-                                    <span className="text-[#006E24] font-bold">Terpilih: {activeVaObj.label}</span>
-                                  ) : (
-                                    <span>BCA, Mandiri, BRI, BNI, Permata, CIMB</span>
-                                  )}
-                                </div>
-                              </div>
+                              <Smartphone className="w-4 h-4 text-[#006E24]" />
+                              <span>Pembayaran Online</span>
                             </div>
-
-                            <div className="flex items-center gap-2">
-                              <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isVaActive ? 'border-[#006E24]' : 'border-slate-300'}`}>
-                                {isVaActive && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
-                              </div>
-                              <span className="text-slate-400">
-                                {isVaDropdownOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                              </span>
+                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
+                              {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
                             </div>
                           </div>
-
-                          {/* Expanded Bank List */}
-                          {isVaDropdownOpen && (
-                            <div className="px-3 pb-3 pt-1 border-t border-slate-100/80 space-y-1.5 bg-slate-50/50">
-                              <p className="text-[10px] text-slate-400 font-medium px-1 pt-1">Pilih Bank Tujuan:</p>
-                              {VA_BANKS.map(bank => {
-                                const isBankSelected = paymentMethod === 'DIRECT' && activePaymentSubId === bank.id;
-                                return (
-                                  <div
-                                    key={bank.id}
-                                    onClick={() => {
-                                      setPaymentMethod('DIRECT');
-                                      setActivePaymentSubId(bank.id);
-                                      setSelectedVaBank(bank.id);
-                                    }}
-                                    className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between transition-all ${
-                                      isBankSelected
-                                        ? 'bg-[#F0FDF4] border-[#006E24] text-[#006E24] font-bold shadow-2xs'
-                                        : 'bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50'
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <div className={`w-1.5 h-1.5 rounded-full ${isBankSelected ? 'bg-[#006E24]' : 'bg-slate-300'}`} />
-                                      <span className={isBankSelected ? 'font-bold text-[#006E24]' : 'font-medium text-slate-800'}>
-                                        {bank.label}
-                                      </span>
-                                    </div>
-                                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isBankSelected ? 'border-[#006E24]' : 'border-slate-300'}`}>
-                                      {isBankSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#006E24]" />}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
+                          <p className="text-[10px] font-normal text-slate-500 mt-1 pl-6.5 leading-snug">
+                            QRIS, Virtual Account, e-wallet, atau kartu — dipilih di halaman pembayaran DOKU.
+                          </p>
                         </div>
                       );
                     })()}
@@ -2281,7 +2169,7 @@ export default function CartPage() {
                           onClick={() => {
                             setPaymentMethod('WALLET');
                             setActivePaymentSubId('');
-                            setIsVaDropdownOpen(false);
+
                           }}
                           className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
@@ -2308,7 +2196,7 @@ export default function CartPage() {
                           onClick={() => {
                             setPaymentMethod('COD');
                             setActivePaymentSubId('');
-                            setIsVaDropdownOpen(false);
+
                           }}
                           className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
@@ -2336,7 +2224,7 @@ export default function CartPage() {
                           onClick={() => {
                             setPaymentMethod('MANUAL');
                             setActivePaymentSubId(m.id);
-                            setIsVaDropdownOpen(false);
+
                           }}
                           className={`p-3 rounded-xl border text-xs font-semibold transition-all flex items-center justify-between cursor-pointer ${
                             isSelected
@@ -2734,29 +2622,6 @@ export default function CartPage() {
           </div>
         </div>
       )}
-      <DokuDirectPaymentModal
-        isOpen={isDirectModalOpen}
-        onClose={() => {
-          setIsDirectModalOpen(false)
-        }}
-        data={directPaymentData}
-        onSuccess={(orderId, result) => {
-          setIsDirectModalOpen(false)
-          const cartKey = currentUser?.id 
-            ? (communityId ? `teras_cart_${currentUser.id}_${communityId}` : `teras_cart_${currentUser.id}`) 
-            : 'teras_cart'
-          localStorage.removeItem(cartKey)
-          localStorage.removeItem('teras_affiliate_id')
-          setCart([])
-          window.dispatchEvent(new Event('storage'))
-          setAffiliateId('')
-          clearSnackboxCartIfSelected()
-
-          const targetId = result?.orderId || result?.order?.id || orderId
-          router.push(`/orders/${targetId}`)
-        }}
-      />
-
       <ConfirmDialog
         open={!!pendingRemove}
         title={`Hapus ${pendingRemove?.title}?`}

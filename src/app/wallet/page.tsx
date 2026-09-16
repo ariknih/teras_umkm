@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { getWalletDetails, withdrawFunds } from '@/app/actions/wallet-affiliate'
 import { getCurrentUserProfile, logout } from '@/app/actions/auth'
 import { goeyToast } from 'goey-toast'
-import DokuDirectPaymentModal, { DokuDirectPaymentData } from '@/components/DokuDirectPaymentModal'
-import { Smartphone, Building2 } from 'lucide-react'
+import { Smartphone } from 'lucide-react'
 
 interface Transaction {
   id: string
@@ -36,11 +35,8 @@ export default function WalletPage() {
 
   // Deposit State - Accumulative quick nominals & manual input
   const [selectedNominal, setSelectedNominal] = useState<number>(0)
-  const [depositChannel, setDepositChannel] = useState<string>('QRIS')
   const [isDepositLoading, setIsDepositLoading] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
-  const [directPaymentData, setDirectPaymentData] = useState<DokuDirectPaymentData | null>(null)
-  const [isDirectModalOpen, setIsDirectModalOpen] = useState(false)
 
   const handleAddNominal = (nom: number) => {
     setSelectedNominal((prev) => (prev || 0) + nom)
@@ -127,24 +123,25 @@ export default function WalletPage() {
     setIsDepositLoading(true)
 
     try {
-      const res = await fetch('/api/doku/direct', {
+      // DOKU's hosted checkout page is the channel picker — QRIS, VA, e-wallet
+      // and card all live there, so we no longer choose a channel up front.
+      const res = await fetch('/api/doku/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'deposit',
           amount: selectedNominal,
-          paymentChannel: depositChannel || 'QRIS',
         }),
       })
       const data = await res.json()
-      setIsDepositLoading(false)
 
-      if (!res.ok || data.error) {
+      if (!res.ok || data.error || !data.paymentUrl) {
         throw new Error(data.error || 'Gagal menyiapkan sesi pembayaran.')
       }
 
-      setDirectPaymentData(data)
-      setIsDirectModalOpen(true)
+      // Full-page redirect. DOKU sends the payer back to
+      // /wallet?doku_verify=<orderId>, which the effect above settles.
+      window.location.href = data.paymentUrl
     } catch (err: any) {
       setError(err.message || 'Gagal terhubung dengan layanan pembayaran.')
       setIsDepositLoading(false)
@@ -480,38 +477,14 @@ export default function WalletPage() {
                   </p>
                 </div>
 
-                {/* Pilihan Channel Pembayaran */}
-                <div>
-                  <label className="block text-[9px] font-bold text-[#6B7280] uppercase tracking-wider mb-2">
-                    Metode Pembayaran
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: 'QRIS', label: 'QRIS', icon: <Smartphone className="w-3.5 h-3.5 text-[#2DB24A]" /> },
-                      { id: 'VA_BRI', label: 'BRI VA', icon: <Building2 className="w-3.5 h-3.5 text-slate-500" /> },
-                      { id: 'VA_BNI', label: 'BNI VA', icon: <Building2 className="w-3.5 h-3.5 text-slate-500" /> },
-                      { id: 'VA_BCA', label: 'BCA VA', icon: <Building2 className="w-3.5 h-3.5 text-slate-500" /> },
-                      { id: 'VA_MANDIRI', label: 'Mandiri VA', icon: <Building2 className="w-3.5 h-3.5 text-slate-500" /> },
-                      { id: 'VA_PERMATA', label: 'Permata VA', icon: <Building2 className="w-3.5 h-3.5 text-slate-500" /> },
-                    ].map((m) => {
-                      const isSelected = depositChannel === m.id
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setDepositChannel(m.id)}
-                          className={`py-2 px-2.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-[#2DB24A] bg-[#F0FDF4] text-[#2DB24A]'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                          }`}
-                        >
-                          {m.icon}
-                          <span className="truncate">{m.label}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                {/* Channel (QRIS, Virtual Account, e-wallet, kartu) dipilih di
+                    halaman pembayaran DOKU, bukan di sini. */}
+                <div className="flex items-start gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5">
+                  <Smartphone className="w-3.5 h-3.5 text-[#2DB24A] shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-slate-600 leading-snug">
+                    Metode pembayaran (QRIS, Virtual Account, e-wallet, atau kartu) dipilih
+                    pada halaman pembayaran DOKU setelah Anda menekan tombol di bawah.
+                  </p>
                 </div>
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
@@ -699,19 +672,6 @@ export default function WalletPage() {
         </div>
       </div>
 
-      <DokuDirectPaymentModal
-        isOpen={isDirectModalOpen}
-        onClose={() => setIsDirectModalOpen(false)}
-        data={directPaymentData}
-        onSuccess={async () => {
-          setIsDirectModalOpen(false)
-          setSuccess('Top-up saldo berhasil! Saldo dompet Anda telah diperbarui.')
-          try {
-            const data = await getWalletDetails()
-            if (data.wallet) setWallet(data.wallet)
-          } catch (e) {}
-        }}
-      />
     </div>
   )
 }

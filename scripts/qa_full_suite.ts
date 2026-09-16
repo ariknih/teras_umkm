@@ -1,8 +1,16 @@
 import 'dotenv/config';
-import { DataStore, PaymentRegistry } from '../src/lib/data-store';
+import { DataStore } from '../src/lib/data-store';
 import { db } from '../src/lib/db';
 import { verifyPassword } from '../src/lib/password';
 import { generateDokuDigest, generateDokuSignature, checkDokuOrderStatus } from '../src/lib/doku';
+import {
+  claimTransaction,
+  releaseTransaction,
+  isTransactionClaimed,
+  savePendingCheckout,
+  getPendingCheckout,
+  deletePendingCheckout
+} from '../src/lib/payment-purposes';
 import { parseProductVariants, cleanProductDescription } from '../src/lib/product-variants';
 import { canAccess, visibleMenus, type AdminSession } from '../src/app/cms_admin/rbac';
 import { MENUS } from '../src/app/cms_admin/nav.config';
@@ -201,7 +209,18 @@ async function startQaAudit() {
     // Saloka pricing rule: subtotal + shippingFee + serviceFee (Rp 1.000) + paymentGatewayFee (Rp 1.000)
     const expectedTotal = realProduct.price + 15000 + 2000;
     assertEqual(order.totalAmount, expectedTotal, 'Total amount must equal product price + shipping fee + service/admin fees');
-    assertEqual(order.status, 'PENDING', 'External gateway order must correctly initialize with status PENDING waiting for settlement');
+    // 'Online Payment' is only ever passed by /api/doku/verify and the DOKU
+    // webhook, and both run AFTER DOKU confirms settlement — so the order is
+    // paid on arrival. (It used to be created PENDING with nothing to promote
+    // it, leaving every gateway-paid order stuck unpaid.)
+    assertEqual(order.status, 'COMPLETED', 'Gateway-settled order must be created COMPLETED');
+
+    const codOrder = await DataStore.createOrder(customer.id, items, undefined, 'COD', {
+      shippingFee: 15000,
+      courier: 'JNE Reguler',
+      shippingAddress: 'Jl. Sudirman No. 12, Jakarta',
+    });
+    assertEqual(codOrder.status, 'PENDING', 'Unconfirmed payment methods (COD/MANUAL) must stay PENDING');
   });
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -231,11 +250,17 @@ async function startQaAudit() {
     assert(signature.startsWith('HMACSHA256='), 'Signature header must start with HMACSHA256=');
   });
 
-  await runTest('PAYMENT', 'checkDokuOrderStatus queries real DOKU API and returns PENDING for unpaid invoice', async () => {
-    const res = await checkDokuOrderStatus('dep-doku_user-admin-1_10000_mtxt0j3r');
-    assert(res.orderId === 'dep-doku_user-admin-1_10000_mtxt0j3r', 'Returns requested invoice number');
-    // Must be PENDING because it was not actually paid by user
-    assertEqual(res.status, 'PENDING', 'Unpaid transaction must return PENDING status');
+  await runTest('PAYMENT', 'checkDokuOrderStatus never reports SUCCESS for an invoice nobody paid', async () => {
+    // A freshly-minted id DOKU has never seen. The assertion is deliberately
+    // "not SUCCESS" rather than a specific status: an unknown invoice may come
+    // back NOT_FOUND, and an unpaid one PENDING, but the only answer that
+    // matters for settlement is that neither credits anybody. Pinning this to
+    // one exact status made it fail whenever DOKU's sandbox expired the
+    // hardcoded invoice it used to name.
+    const invoice = `dep-doku_qa-nonexistent_10000_${Date.now().toString(36)}`;
+    const res = await checkDokuOrderStatus(invoice);
+    assertEqual(res.orderId, invoice, 'Returns requested invoice number');
+    assert(res.status !== 'SUCCESS', 'CRITICAL SECURITY: an unpaid/unknown invoice must never report SUCCESS');
   });
 
   await runTest('PAYMENT', 'Anti-Premature Settlement: PENDING invoice is BLOCKED from crediting wallet', async () => {
@@ -251,16 +276,98 @@ async function startQaAudit() {
     assert(!fundsCredited, 'CRITICAL SECURITY: Funds must NOT be credited when status is PENDING');
   });
 
-  await runTest('PAYMENT', 'PaymentRegistry prevents double spending via idempotency tracking', () => {
-    const uniqueInvoice = `idemp-test-${Date.now()}`;
-    assert(!PaymentRegistry.isTransactionProcessed(uniqueInvoice), 'New transaction should not be processed yet');
-    
-    PaymentRegistry.markTransactionProcessed(uniqueInvoice);
-    assert(PaymentRegistry.isTransactionProcessed(uniqueInvoice), 'Transaction must now be marked processed');
+  // Gateway credentials moved from environment variables into the database so
+  // they can be managed from the CMS without Vercel access. That is only
+  // acceptable if a database copy on its own is useless to an attacker.
+  await runTest('PAYMENT', 'Stored DOKU credentials are encrypted at rest and tamper-evident', async () => {
+    const { readStoredDokuConfig, writeStoredDokuConfig, clearStoredDokuConfig, maskSecret } = await import(
+      '../src/lib/payment-config'
+    );
+    const before = await readStoredDokuConfig();
+    const SECRET = 'SK-qa-never-in-plaintext-WXYZ';
+    try {
+      await writeStoredDokuConfig({
+        clientId: 'BRN-QA-0001',
+        secretKey: SECRET,
+        publicKey: '-----BEGIN PUBLIC KEY-----\nQA\n-----END PUBLIC KEY-----',
+        isProduction: false,
+      });
 
-    // Duplicate check
-    const isDuplicate = PaymentRegistry.isTransactionProcessed(uniqueInvoice);
-    assert(isDuplicate, 'Second attempt must be flagged as already processed to prevent double spending');
+      const row = await db.systemSetting.findUnique({ where: { key: 'payment_gateway_doku' } });
+      assert(!!row, 'Config row must exist after write');
+      assert(!row!.value.includes(SECRET), 'CRITICAL: secret key must never be stored in plaintext');
+      assert(!row!.value.includes('BRN-QA-0001'), 'CRITICAL: client id must never be stored in plaintext');
+
+      const back = await readStoredDokuConfig();
+      assertEqual(back!.clientId, 'BRN-QA-0001', 'Client id must round-trip');
+      assertEqual(back!.secretKey, SECRET, 'Secret key must round-trip');
+      assertEqual(back!.isProduction, false, 'Mode must round-trip');
+      assertEqual(maskSecret(SECRET), '••••WXYZ', 'Mask must expose only the last 4 characters');
+
+      // Flipping one byte of ciphertext must fail the GCM auth tag rather than
+      // yielding usable-looking credentials.
+      await db.systemSetting.update({
+        where: { key: 'payment_gateway_doku' },
+        data: { value: row!.value.slice(0, -4) + 'AAAA' },
+      });
+      assertEqual(await readStoredDokuConfig(), null, 'Tampered ciphertext must not decrypt');
+    } finally {
+      await clearStoredDokuConfig();
+      if (before) await writeStoredDokuConfig(before);
+    }
+  });
+
+  // A cart order's items exist nowhere else between "payer left for DOKU" and
+  // "webhook confirms payment", and the webhook usually lands on a different
+  // Vercel instance than the checkout did — so this store has to be durable and
+  // shared, not process memory.
+  await runTest('PAYMENT', 'Pending checkout survives as shared state and round-trips intact', async () => {
+    const orderId = `chk-doku-qa-${Date.now().toString(36)}`;
+    try {
+      assert((await getPendingCheckout(orderId)) === null, 'Unknown order must have no pending checkout');
+
+      await savePendingCheckout(orderId, {
+        userId: 'user-qa-1',
+        items: [{ productId: 'prod-qa-1', quantity: 3 }],
+        affiliateId: 'aff-qa-1',
+        shippingDetails: { shippingFee: 15000, courier: 'JNE Reguler', couponCode: 'DISKON10' },
+      });
+
+      const loaded = await getPendingCheckout(orderId);
+      assert(!!loaded, 'Saved pending checkout must be readable back');
+      assertEqual(loaded!.userId, 'user-qa-1', 'Payer identity must survive the round trip');
+      assertEqual(loaded!.items.length, 1, 'Item list must survive the round trip');
+      assertEqual(loaded!.items[0].quantity, 3, 'Quantities must survive the round trip');
+      assertEqual(loaded!.shippingDetails?.shippingFee, 15000, 'Shipping fee must survive the round trip');
+
+      await deletePendingCheckout(orderId);
+      assert((await getPendingCheckout(orderId)) === null, 'Settled checkout must be cleaned up');
+    } finally {
+      await deletePendingCheckout(orderId);
+    }
+  });
+
+  // The single check standing between us and double-crediting a real payment.
+  // claimTransaction is a DB-backed compare-and-set (SystemSetting.key is the
+  // primary key), so unlike the in-memory map it replaced, it is visible to
+  // every Vercel instance — which is what stops DOKU's webhook and the
+  // browser's return-verify from both deciding they were first.
+  await runTest('PAYMENT', 'claimTransaction is an atomic single-winner guard against double settlement', async () => {
+    const uniqueInvoice = `idemp-test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    try {
+      assert(!(await isTransactionClaimed(uniqueInvoice)), 'New transaction must not be claimed yet');
+
+      assert(await claimTransaction(uniqueInvoice), 'First claim must win');
+      assert(await isTransactionClaimed(uniqueInvoice), 'Transaction must read back as claimed');
+      assert(!(await claimTransaction(uniqueInvoice)), 'CRITICAL: second claim must lose, or the payment is credited twice');
+
+      // A failed settlement hands the claim back so the gateway's retry can settle.
+      await releaseTransaction(uniqueInvoice);
+      assert(!(await isTransactionClaimed(uniqueInvoice)), 'Released claim must be re-claimable');
+      assert(await claimTransaction(uniqueInvoice), 'Retry after release must be able to claim');
+    } finally {
+      await releaseTransaction(uniqueInvoice);
+    }
   });
 
   // ────────────────────────────────────────────────────────────────────────────

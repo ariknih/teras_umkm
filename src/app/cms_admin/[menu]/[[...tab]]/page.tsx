@@ -32,6 +32,8 @@ import CooperativeReportsTab from '../../components/CooperativeReportsTab'
 import KelurahanTab from '../../components/KelurahanTab'
 import PaymentMethodsTab from '../../components/PaymentMethodsTab'
 import FeatureControlTab from '../../components/FeatureControlTab'
+import PaymentGatewayTab from '../../components/PaymentGatewayTab'
+import { getDokuConfigViewAction } from '@/app/actions/payment-config'
 import SocialsTab from '../../components/SocialsTab'
 import ContactSupportTab from '../../components/ContactSupportTab'
 import LegalEditorTab from '../../components/LegalEditorTab'
@@ -133,6 +135,8 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
     } as Record<string, string | undefined>
   )[menu.key]
   const orgSetting = orgSettingKey ? await DataStore.getSetting(orgSettingKey) : null
+  // Read fresh, and only for this menu: it decrypts payment credentials.
+  const dokuConfig = menu.key === 'payment-gateway' ? await getDokuConfigViewAction() : null
   const allAnnouncements = menu.key === 'content' && activeTab === 'pengumuman' ? await getAllAnnouncements(allCommunities) : []
   const allCooperativeReports = menu.key === 'communities' && activeTab === 'laporan' ? await getAllCooperativeReports(allCommunities) : []
 
@@ -223,6 +227,7 @@ export default async function CmsAdminMenuPage({ params }: { params: Promise<Par
     'snackbox-coverage': <KelurahanTab />,
     'payment-methods': <PaymentMethodsTab />,
     features: featureControl && <FeatureControlTab initial={featureControl} />,
+    'payment-gateway': dokuConfig?.ok && <PaymentGatewayTab initial={dokuConfig.view} />,
     'org-socials': menu.key === 'org-socials' && orgSetting && (
       <SocialsTab initial={{ socials: parseSocials(orgSetting.value), version: orgSetting.version }} />
     ),
