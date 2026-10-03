@@ -13,6 +13,8 @@ up without explicit user instruction**. When asked to proceed, start a new
 session in this repo and say "continue with Phase 6" (or similar) — this file
 is the entry point.
 
+> **Diverifikasi ulang 30 Sep 2026:** pencairan pinjaman (`DISBURSED` tidak mengkredit dompet), transfer SHU otomatis ke wallet, dan penagihan tier (`upgradeCommunityTierAction` masih gratis/instan) semuanya masih terbuka. Kas Komunitas/Koperasi (`Wallet.communityId`, dirilis 16 Sep) sudah ada, sehingga butir unifikasi coin/wallet/kas bisa dibangun di atasnya. 10 dari 17 modul Perkumpulan masih placeholder "Segera Hadir".
+
 ## Phase 6 — Deferred items
 
 - **Real loan disbursement.** `LoanStatus.DISBURSED` is dead code today —
