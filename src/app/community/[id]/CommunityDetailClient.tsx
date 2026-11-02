@@ -64,6 +64,11 @@ import { LandingPageView } from './LandingPageView'
 import { LandingPageEditor } from './LandingPageEditor'
 import KasKomunitasPanel from './KasKomunitasPanel'
 import DiscussionForum from '@/components/community/DiscussionForum'
+import BusinessMatchingTab from './tabs/BusinessMatchingTab'
+import KolaborasiTab from './tabs/KolaborasiTab'
+import MentorTab from './tabs/MentorTab'
+import KompetisiTab from './tabs/KompetisiTab'
+import SupplierTab from './tabs/SupplierTab'
 import {
   Shield,
   Users,
@@ -2876,10 +2881,25 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
   // and Koperasi (fixed 3/1/1 coin tiers) — Reguler has no referral system.
   const hasCommunityAffiliateProgram = isKoperasi || Number(community?.joinFee || 0) > 0
 
+  const communityFeatureNavItems = [
+    { id: 'business_matching', label: 'Business Matching', icon: Handshake },
+    { id: 'kolaborasi', label: 'Kolaborasi', icon: Users },
+    { id: 'mentor', label: 'Mentor', icon: GraduationCap },
+    { id: 'kompetisi', label: 'Kompetisi', icon: Trophy },
+    { id: 'supplier', label: 'Supplier', icon: Truck },
+  ]
+
+  const berandaTab = filteredContentTabs.find((t) => t.id === 'beranda') || { id: 'beranda', label: 'Beranda', icon: Home }
+  const otherContentTabs = filteredContentTabs.filter(
+    (t) => !['beranda', 'business_matching', 'kolaborasi', 'mentor', 'kompetisi', 'supplier'].includes(t.id)
+  )
+
   const activeSidebarNavList = [
     { id: 'landing_view', label: 'Halaman Landing', icon: ExternalLink },
+    berandaTab,
     ...(isCanManageCoop ? [{ id: 'desain_landing', label: 'Desain Landing', icon: Sparkles, badge: 'EDIT' }] : []),
-    ...filteredContentTabs,
+    ...communityFeatureNavItems,
+    ...otherContentTabs,
     ...((isMember && hasCommunityAffiliateProgram) ? [{ id: 'afiliasi_saya', label: 'Afiliasi Saya', icon: Handshake }] : []),
     ...(isCanManageCoop ? [{ id: 'pengaturan', label: 'Pengaturan', icon: Sliders }] : [])
   ]
@@ -3627,26 +3647,39 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               {activeSidebarNavList.map((item) => {
                 const Icon = item.icon
                 const isActive = activeSidebarNav === item.id
+                const isFirstFeature = item.id === 'business_matching'
+                const isFirstOther = otherContentTabs.length > 0 && item.id === otherContentTabs[0].id
                 return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleSidebarClick(item.id)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all text-left cursor-pointer ${
-                      isActive
-                        ? 'bg-[#E8F8EE] text-[#0F5132] font-black shadow-xs'
-                        : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
-                      <span className="font-extrabold">{item.label}</span>
-                    </div>
-                    {(item as any).badge && (
-                      <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase tracking-wider shrink-0">
-                        {(item as any).badge}
-                      </span>
+                  <React.Fragment key={item.id}>
+                    {isFirstFeature && (
+                      <div className="pt-3 pb-1 px-4 text-[10px] font-black uppercase tracking-wider text-slate-400 font-sora">
+                        FITUR KOMUNITAS
+                      </div>
                     )}
-                  </button>
+                    {isFirstOther && (
+                      <div className="pt-3 pb-1 px-4 text-[10px] font-black uppercase tracking-wider text-slate-400 font-sora">
+                        MENU KOMUNITAS
+                      </div>
+                    )}
+                    <button
+                      onClick={() => handleSidebarClick(item.id)}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold transition-all text-left cursor-pointer ${
+                        isActive
+                          ? 'bg-[#E8F8EE] text-[#0F5132] font-black shadow-xs'
+                          : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#2DB24A]' : 'text-gray-400'}`} />
+                        <span className="font-extrabold">{item.label}</span>
+                      </div>
+                      {(item as any).badge && (
+                        <span className="px-2 py-0.5 bg-purple-100 text-purple-600 text-[8px] font-extrabold rounded-md uppercase tracking-wider shrink-0">
+                          {(item as any).badge}
+                        </span>
+                      )}
+                    </button>
+                  </React.Fragment>
                 )
               })}
             </div>
@@ -3801,6 +3834,78 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
                         <div>
                           <span className="text-sm font-black text-gray-900 block leading-tight">{stat.value}</span>
                           <span className="text-[11px] text-gray-500 font-semibold block mt-0.5">{stat.label}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* ── KARTU AKSES CEPAT FITUR KOMUNITAS (COMMUNITY FEATURE CARDS) ── */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                  {[
+                    {
+                      id: 'business_matching',
+                      title: 'Business Matching',
+                      desc: 'Temukan mitra bisnis, reseller, dan peluang pasar yang sesuai.',
+                      icon: Handshake,
+                      iconColor: 'text-[#2DB24A]',
+                      tabId: 'business_matching'
+                    },
+                    {
+                      id: 'kolaborasi',
+                      title: 'Kolaborasi',
+                      desc: 'Cari partner untuk proyek dan kegiatan bersama.',
+                      icon: Users,
+                      iconColor: 'text-[#0284C7]',
+                      tabId: 'kolaborasi'
+                    },
+                    {
+                      id: 'mentor',
+                      title: 'Mentor',
+                      desc: 'Dapatkan bimbingan dari para ahli dan praktisi.',
+                      icon: GraduationCap,
+                      iconColor: 'text-[#8B5CF6]',
+                      tabId: 'mentor'
+                    },
+                    {
+                      id: 'kompetisi',
+                      title: 'Kompetisi',
+                      desc: 'Ikuti berbagai lomba dan program pengembangan.',
+                      icon: Trophy,
+                      iconColor: 'text-[#F59E0B]',
+                      tabId: 'kompetisi'
+                    },
+                    {
+                      id: 'supplier',
+                      title: 'Supplier',
+                      desc: 'Temukan pemasok bahan baku dan produk berkualitas.',
+                      icon: Truck,
+                      iconColor: 'text-[#EF4444]',
+                      tabId: 'supplier'
+                    }
+                  ].map((card) => {
+                    const CardIcon = card.icon
+                    return (
+                      <div
+                        key={card.id}
+                        onClick={() => handleSidebarClick(card.tabId)}
+                        className="group p-5 bg-white border border-gray-200/80 hover:border-[#2DB24A]/40 rounded-3xl shadow-xs hover:shadow-md transition-all flex flex-col items-center justify-between text-center cursor-pointer min-h-[190px]"
+                      >
+                        <div className="flex flex-col items-center flex-1 w-full">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 mb-2.5 group-hover:scale-110 transition-transform ${card.iconColor}`}>
+                            <CardIcon className="w-8 h-8" />
+                          </div>
+                          <h4 className="font-sora text-sm font-black text-gray-900 group-hover:text-[#2DB24A] transition-colors leading-tight">
+                            {card.title}
+                          </h4>
+                          <p className="text-[11px] text-gray-500 font-medium leading-relaxed mt-2 line-clamp-3">
+                            {card.desc}
+                          </p>
+                        </div>
+                        <div className="pt-3 w-full flex justify-center">
+                          <div className="w-14 h-8 rounded-xl bg-[#E8F8EE] group-hover:bg-[#2DB24A] text-[#2DB24A] group-hover:text-white flex items-center justify-center transition-all shadow-2xs">
+                            <ArrowRight className="w-4 h-4" />
+                          </div>
                         </div>
                       </div>
                     )
@@ -5895,9 +6000,13 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
               </div>
             )}
 
-            {/* TABS 10-19: not backed by any real data/actions yet — coming soon */}
+            {/* TABS 10-19: Community Feature Tabs */}
             {activeSidebarNav === 'business_matching' && (
-              <ComingSoonTab icon={Handshake} title="Business Matching & Temu Investor" description="Temukan mitra distributor, investor F&B, dan kerjasama pemasaran skala nasional." />
+              <BusinessMatchingTab
+                communityId={community.id}
+                communityName={community.name}
+                isCanManage={isCanManageCoop}
+              />
             )}
 
             {activeSidebarNav === 'pelatihan' && (
@@ -5905,11 +6014,19 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
             )}
 
             {activeSidebarNav === 'mentor' && (
-              <ComingSoonTab icon={Award} title="Direktori Mentor Bisnis Terverifikasi" description="Dapatkan bimbingan 1-on-1 langsung dari praktisi usaha, akademisi, dan pakar industri." />
+              <MentorTab
+                communityId={community.id}
+                communityName={community.name}
+                isCanManage={isCanManageCoop}
+              />
             )}
 
             {activeSidebarNav === 'kolaborasi' && (
-              <ComingSoonTab icon={Users} title="Proyek Kolaborasi Bersama" description="Gabung dalam proyek patungan, kargo bersama, dan pameran kolektif anggota." />
+              <KolaborasiTab
+                communityId={community.id}
+                communityName={community.name}
+                isCanManage={isCanManageCoop}
+              />
             )}
 
             {activeSidebarNav === 'kelas' && (
@@ -5917,7 +6034,11 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
             )}
 
             {activeSidebarNav === 'kompetisi' && (
-              <ComingSoonTab icon={Trophy} title="Kompetisi & Challenge Pengusaha Muda" description="Uji ide bisnismu dan menangkan hadiah serta fasilitas inkubasi." />
+              <KompetisiTab
+                communityId={community.id}
+                communityName={community.name}
+                isCanManage={isCanManageCoop}
+              />
             )}
 
             {activeSidebarNav === 'startup' && (
@@ -5929,7 +6050,11 @@ export default function CommunityDetailPage({ initialData }: { initialData: Comm
             )}
 
             {activeSidebarNav === 'supplier' && (
-              <ComingSoonTab icon={Truck} title="Direktori Supplier Bahan Baku Kuliner" description="Dapatkan pasokan bahan segar, bumbu rempah, dan kemasan food-grade harga grosir." />
+              <SupplierTab
+                communityId={community.id}
+                communityName={community.name}
+                isCanManage={isCanManageCoop}
+              />
             )}
 
             {activeSidebarNav === 'promo' && (
