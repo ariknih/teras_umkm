@@ -1,7 +1,12 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
+import InteractiveWizardBuilder from '../components/InteractiveWizardBuilder'
+import InteractiveGuidedEditor from '../components/InteractiveGuidedEditor'
+import LandingPageReviewModal from '../components/LandingPageReviewModal'
+import { generateLandingPageFromAnswers, extractAnswersFromComponents } from '../components/generateLandingPageFromAnswers'
+import { WizardAnswers, DEFAULT_WIZARD_ANSWERS } from '../components/wizardTypes'
 import { getCurrentUserProfile, updateUserLandingPage } from '@/app/actions/auth'
 import { getProducts } from '@/app/actions/products'
 import { getServicesAction } from '@/app/actions/services'
@@ -23,7 +28,11 @@ import {
   RotateCcw,
   FileText,
   CheckSquare,
-  Minimize2
+  Minimize2,
+  Eye,
+  Send,
+  Layers,
+  Wand2
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -1664,6 +1673,10 @@ export default function BuilderPage() {
   const [merchantProducts, setMerchantProducts] = useState<any[]>([])
   const [merchantServices, setMerchantServices] = useState<any[]>([])
   const [mobileTab, setMobileTab] = useState<'canvas' | 'components' | 'settings'>('canvas')
+  const searchParams = useSearchParams()
+  const [builderMode, setBuilderMode] = useState<'guided' | 'manual'>('guided')
+  const [showWizardModal, setShowWizardModal] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
 
   // Style & AI Theme States
   const [canvasBg, setCanvasBg] = useState('#FFFFFF')
@@ -1924,6 +1937,12 @@ export default function BuilderPage() {
           const pg=(cfg.pages||[]).find((x:any)=>x.id===pageId)
           if(pg){
             setPageName(pg.name||'Halaman')
+            if (searchParams?.get('mode') === 'wizard' || (!pg.builderComponents || pg.builderComponents.length === 0)) {
+              setShowWizardModal(true)
+              setBuilderMode('guided')
+            } else if (searchParams?.get('mode') === 'manual') {
+              setBuilderMode('manual')
+            }
             if(pg.builderComponents?.length){
               setComps(pg.builderComponents)
               setHist([pg.builderComponents])
@@ -1978,6 +1997,53 @@ export default function BuilderPage() {
   }
   const moveUp=(id:string)=>{const i=comps.findIndex(c=>c.id===id);if(i<=0)return;const n=[...comps];[n[i-1],n[i]]=[n[i],n[i-1]];setComps(n);push(n)}
   const moveDown=(id:string)=>{const i=comps.findIndex(c=>c.id===id);if(i>=comps.length-1)return;const n=[...comps];[n[i],n[i+1]]=[n[i+1],n[i]];setComps(n);push(n)}
+
+  const handleWizardComplete = (answers: WizardAnswers) => {
+    const generated = generateLandingPageFromAnswers(answers, merchantProducts, merchantServices)
+    setComps(generated.builderComponents)
+    setHist([generated.builderComponents])
+    setCanvasBg(generated.canvasBg)
+    setShowWizardModal(false)
+    setShowReviewModal(true)
+  }
+
+  const handlePublishFromModal = async (): Promise<boolean> => {
+    if (!profile) return false
+    setSaving(true)
+    try {
+      const cfg = JSON.parse(profile.landingPageConfig || '{}')
+      cfg.subdomain = cfg.subdomain || profile.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'mitra'
+      const pages = (cfg.pages && Array.isArray(cfg.pages) ? [...cfg.pages] : [{ id: 'page-main', name: 'Main' }])
+      const i = pages.findIndex((p: any) => p.id === pageId)
+      if (i !== -1) {
+        pages[i] = {
+          ...pages[i],
+          status: 'PUBLISHED',
+          builderComponents: comps,
+          canvasBg: canvasBg,
+          lastModified: new Date().toISOString()
+        }
+      }
+      cfg.pages = pages
+      const r = await updateUserLandingPage(
+        profile.landingPageTemplate || 'template1',
+        JSON.stringify(cfg),
+        profile.latitude || -6.2088,
+        profile.longitude || 106.8456
+      )
+      if (!r.error) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error(e)
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleSave=async()=>{
     if(!profile)return;setSaving(true)
@@ -2048,6 +2114,36 @@ export default function BuilderPage() {
       <header className="h-[52px] bg-white border-b border-[#e4e6ea] flex items-center justify-between px-3 sm:px-4 gap-2 flex-shrink-0 z-50 shadow-sm">
         {/* Left */}
         <div className="flex items-center gap-2 min-w-0">
+          {/* Dual Mode Switcher: Panduan vs Manual */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-[#e4e6ea]">
+            <button
+              onClick={() => setBuilderMode('guided')}
+              className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                builderMode === 'guided'
+                  ? 'bg-white text-[#2DB24A] shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+              title="Mode Panduan Sederhana (Tanya-Jawab Ramah)"
+            >
+              <Sparkles size={12} className="text-[#2DB24A]" />
+              <span className="hidden xs:inline">Mode Panduan</span>
+              <span className="xs:hidden">Panduan</span>
+            </button>
+            <button
+              onClick={() => setBuilderMode('manual')}
+              className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                builderMode === 'manual'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+              title="Editor Manual Drag & Drop"
+            >
+              <Layers size={12} />
+              <span className="hidden sm:inline">Editor Manual</span>
+              <span className="sm:hidden">Manual</span>
+            </button>
+          </div>
+  
           <button onClick={()=>router.push('/merchant/dashboard')} className="flex items-center gap-1.5 text-[11px] sm:text-[12px] font-medium text-gray-500 hover:text-gray-900 border border-[#e4e6ea] rounded-lg px-2.5 sm:px-3 h-8 transition-colors hover:bg-gray-50 flex-shrink-0">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
             <span className="hidden xs:inline sm:inline">Daftar Halaman</span>
@@ -2318,6 +2414,24 @@ export default function BuilderPage() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <button
+            onClick={() => setShowWizardModal(true)}
+            className="h-8 px-2.5 sm:px-3 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+            title="Jalankan Ulang Panduan Pertanyaan"
+          >
+            <Wand2 size={12} className="text-amber-600" />
+            <span className="hidden md:inline">Ulangi Panduan</span>
+          </button>
+
+          <button
+            onClick={() => setShowReviewModal(true)}
+            className="h-8 px-3 sm:px-4 bg-emerald-50 hover:bg-emerald-100 text-[#0F5132] border border-emerald-200 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            title="Lihat Pratinjau & Publikasikan"
+          >
+            <Eye size={13} className="text-[#2DB24A]" />
+            <span className="hidden xs:inline">Preview & Publikasi</span>
+          </button>
+  
           <button onClick={doUndo} disabled={histIdx<=0} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 transition-all" title="Undo (Ctrl+Z)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 010 16H3"/><path strokeLinecap="round" strokeLinejoin="round" d="M3 10l4-4-4-4"/></svg>
           </button>
@@ -2783,6 +2897,44 @@ export default function BuilderPage() {
           <span>{selComp ? `Edit (${selComp.type})` : 'Pengaturan'}</span>
         </button>
       </div>
+
+      {/* 9-Step Interactive Wizard Modal */}
+      {showWizardModal && (
+        <InteractiveWizardBuilder
+          initialAnswers={extractAnswersFromComponents(comps, {
+            ...DEFAULT_WIZARD_ANSWERS,
+            businessName: pageName,
+            whatsappNumber: profile?.phone || '',
+            headline: pageName ? `Selamat Datang di ${pageName}` : ''
+          })}
+          merchantProducts={merchantProducts}
+          merchantServices={merchantServices}
+          merchantProfileName={profile?.name}
+          merchantProfilePhone={profile?.phone}
+          onComplete={handleWizardComplete}
+          onCancel={() => setShowWizardModal(false)}
+        />
+      )}
+
+      {/* Review & Publish Modal */}
+      {showReviewModal && (
+        <LandingPageReviewModal
+          pageName={pageName}
+          pageSlug={pageId}
+          merchantSubdomain={
+            profile?.landingPageConfig
+              ? (JSON.parse(profile.landingPageConfig).subdomain || profile.name?.toLowerCase().replace(/[^a-z0-9]/g, ''))
+              : 'toko'
+          }
+          merchantName={profile?.name || 'Toko Saya'}
+          components={resolvedComps}
+          canvasBg={canvasBg}
+          renderComp={(comp) => <RenderComp comp={comp} />}
+          onEdit={() => setShowReviewModal(false)}
+          onPublish={handlePublishFromModal}
+          onClose={() => setShowReviewModal(false)}
+        />
+      )}
     </div>
   )
 }

@@ -20,6 +20,8 @@ import {
   updateServiceBookingStatusAction 
 } from '@/app/actions/services'
 import { Sparkles, Calendar, Package, TrendingUp, DollarSign, Award, ArrowUpRight, MessageSquare, Clipboard, Globe, Copy, Plus, Trash2, Settings as SettingsIcon, ChevronDown, Check, ArrowLeft, Search, Eye, Layers, X, Info, Briefcase, Wrench, CalendarCheck, Clock, MapPin, CheckCircle2, UserCheck, Download, Upload } from 'lucide-react'
+import InteractiveWizardBuilder from '../builder/components/InteractiveWizardBuilder'
+import { generateLandingPageFromAnswers } from '../builder/components/generateLandingPageFromAnswers'
 import { formatCategoryName } from '@/lib/utils'
 import { parseProductVariants, cleanProductDescription } from '@/lib/product-variants'
 
@@ -118,6 +120,7 @@ export default function MerchantDashboardPage() {
   // Create page states
   const [createPageName, setCreatePageName] = useState('')
   const [createPageTemplate, setCreatePageTemplate] = useState('template1')
+  const [createPageMethod, setCreatePageMethod] = useState<'wizard' | 'template'>('wizard')
   const [createPagePreview, setCreatePagePreview] = useState<'mobile' | 'desktop'>('mobile')
   
   // Tabs: 'overview' | 'catalog' | 'add' | 'services' | 'bookings' | 'orders' | 'analytics' | 'pages' | 'customization' | 'academy' | 'leveling'
@@ -628,6 +631,73 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
 }
 
   // Page management helper actions
+  const handleCreatePageWithWizard = (pageName: string, generated: any) => {
+    if (!profile) return
+    try {
+      const config = JSON.parse(profile.landingPageConfig || '{}')
+      const currentPages = config.pages && Array.isArray(config.pages) ? [...config.pages] : [
+        {
+          id: 'page-main',
+          name: 'Main Storefront',
+          slug: '',
+          template: profile.landingPageTemplate || 'template1',
+          status: 'PUBLISHED',
+          customDomain: config.customDomain || '',
+          headDesktop: '',
+          headMobile: '',
+          footerAny: '',
+          footerDesktop: '',
+          footerMobile: '',
+          allowSearch: 'Yes',
+          followLinks: 'Yes',
+          lastModified: new Date().toISOString()
+        }
+      ]
+
+      const slug = pageName.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-') || `page-${Date.now()}`
+      
+      const newPage = {
+        id: `page-${Date.now()}`,
+        name: pageName,
+        slug: slug,
+        template: 'template1',
+        status: 'PUBLISHED',
+        customDomain: '',
+        headDesktop: '',
+        headMobile: '',
+        footerAny: '',
+        footerDesktop: '',
+        footerMobile: '',
+        allowSearch: 'Yes',
+        followLinks: 'Yes',
+        lastModified: new Date().toISOString(),
+        canvasBg: generated.canvasBg || '#FFFFFF',
+        builderComponents: generated.builderComponents || []
+      }
+
+      config.pages = [...currentPages, newPage]
+
+      startTransition(async () => {
+        const res = await updateUserLandingPage(
+          profile.landingPageTemplate || 'template1',
+          JSON.stringify(config),
+          profile.latitude || -6.2088,
+          profile.longitude || 106.8456
+        )
+        if (res.error) {
+          setError(res.error)
+        } else {
+          setSuccess('Halaman baru berhasil dibuat!')
+          setShowCreateModal(false)
+          await loadData()
+          router.push(`/merchant/builder/${newPage.id}`)
+        }
+      })
+    } catch (e: any) {
+      setError(e.message || 'Gagal membuat halaman.')
+    }
+  }
+
   const handleCreatePage = (pageName: string, templateId: string) => {
     if (!profile) return
     try {
@@ -687,6 +757,7 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
           setShowCreateModal(false)
           setCreatePageName('')
           await loadData()
+          router.push(`/merchant/builder/${newPage.id}${createPageMethod === 'wizard' ? '?mode=wizard' : ''}`)
         }
       })
     } catch (e: any) {
@@ -4874,168 +4945,28 @@ const getDefaultComponents = (templateId: string, pageName: string, profileName:
           </div>
         )}
 
-        {/* Create Page Modal Overlay */}
+        {/* Create Page - Interactive Question Wizard (Direct 9-Step Flow) */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[99] flex items-center justify-center p-6">
-            <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden text-text-primary">
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
-                <div>
-                  <h3 className="font-sora text-base font-bold text-text-primary">Buat Halaman Baru</h3>
-                  <p className="text-[11px] text-text-secondary">Pilih template awal dan tentukan nama halaman Anda</p>
-                </div>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="p-1.5 hover:bg-slate-50 rounded-full transition-colors flex items-center justify-center cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 flex flex-col md:flex-row gap-6 bg-slate-50/50">
-                {/* Left side settings */}
-                <div className="flex-grow space-y-5">
-                  <div>
-                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-2">Nama Halaman</label>
-                    <input
-                      type="text"
-                      placeholder="Landing Page Promo Domestik"
-                      value={createPageName}
-                      onChange={(e) => setCreatePageName(e.target.value)}
-                      className="w-full h-11 px-4 bg-white border border-slate-100 rounded-xl text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-text-secondary uppercase tracking-wider mb-3">Pilih Template Awal</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        { id: 'template1', title: 'Blank Template', desc: 'Mulai dari halaman kosong' },
-                        { id: 'template2', title: 'Simple Storefront', desc: 'Layout minimalis bersih' },
-                        { id: 'template3', title: 'Product Solution', desc: 'Fokus konversi promosi tunggal' },
-                        { id: 'template4', title: 'Product Fisik', desc: 'Katalog grid produk beruntun' },
-                      ].map(tpl => (
-                        <div
-                          key={tpl.id}
-                          onClick={() => setCreatePageTemplate(tpl.id)}
-                          className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                            createPageTemplate === tpl.id
-                              ? 'border-primary bg-primary/5'
-                              : 'border-slate-100 bg-white hover:border-slate-200'
-                          }`}
-                        >
-                          <p className="font-bold text-xs text-text-primary">{tpl.title}</p>
-                          <p className="text-[10px] text-text-secondary mt-1">{tpl.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side preview block */}
-                <div className="w-full md:w-80 shrink-0 flex flex-col">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Preview Layout</span>
-                    <div className="flex bg-white rounded-lg p-0.5 border border-slate-100 text-[9px] font-bold">
-                      <button
-                        onClick={() => setCreatePagePreview('mobile')}
-                        className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'mobile' ? 'bg-primary text-white' : 'text-text-secondary'}`}
-                      >
-                        Mobile
-                      </button>
-                      <button
-                        onClick={() => setCreatePagePreview('desktop')}
-                        className={`px-2 py-1 rounded transition-colors cursor-pointer ${createPagePreview === 'desktop' ? 'bg-primary text-white' : 'text-text-secondary'}`}
-                      >
-                        Desktop
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-grow bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-center min-h-[300px] max-h-[320px] relative overflow-hidden shadow-inner">
-                    <div 
-                      className={`transition-all duration-300 bg-white border border-slate-200 shadow-sm flex flex-col justify-between overflow-y-auto overflow-x-hidden ${
-                        createPagePreview === 'mobile' 
-                          ? 'w-[160px] h-[260px] rounded-[24px] border-4 border-slate-800 p-2.5 relative' 
-                          : 'w-full h-full p-4 rounded-lg'
-                      }`}
-                    >
-                      {createPagePreview === 'mobile' && (
-                        <div className="absolute top-1 left-1/2 -translate-x-1/2 w-12 h-3 bg-slate-800 rounded-full z-10 flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 rounded-full bg-slate-900 absolute right-2" />
-                        </div>
-                      )}
-                      <div className={`w-full h-full flex flex-col justify-between ${createPagePreview === 'mobile' ? 'pt-2' : ''}`}>
-                        {createPageTemplate === 'template1' && (
-                          <div className="text-center space-y-2 my-auto flex flex-col items-center justify-center h-full">
-                            <Layers className="mx-auto text-slate-300 animate-pulse" size={24} />
-                            <p className="font-bold text-[10px]">Blank Template</p>
-                            <p className="text-[8px] text-text-secondary max-w-[120px]">Halaman kosong tanpa bagian default.</p>
-                          </div>
-                        )}
-                        {createPageTemplate === 'template2' && (
-                          <div className="w-full h-full flex flex-col justify-between py-1 space-y-1.5">
-                            <div className="h-3 bg-slate-100 rounded-sm w-1/3"></div>
-                            <div className="h-10 bg-slate-50 border border-dashed border-slate-200 rounded flex items-center justify-center text-[7px] text-text-secondary">Hero Banner</div>
-                            <div className="grid grid-cols-2 gap-1">
-                              <div className="h-8 bg-slate-50 rounded"></div>
-                              <div className="h-8 bg-slate-50 rounded"></div>
-                            </div>
-                          </div>
-                        )}
-                        {createPageTemplate === 'template3' && (
-                          <div className="w-full h-full flex flex-col justify-between py-1 space-y-1.5">
-                            <div className="h-3 bg-slate-100 rounded-sm w-1/3"></div>
-                            <div className="flex gap-1 items-center">
-                              <div className="w-1/2 h-12 bg-slate-50 rounded"></div>
-                              <div className="w-1/2 space-y-1">
-                                <div className="h-2 bg-slate-100 rounded"></div>
-                                <div className="h-1.5 bg-slate-100 rounded w-5/6"></div>
-                                <div className="btn-primary bg-primary/20"></div>
-                              </div>
-                            </div>
-                            <div className="h-6 bg-slate-50 rounded flex items-center justify-center text-[7px] text-text-secondary">Testimonial</div>
-                          </div>
-                        )}
-                        {createPageTemplate === 'template4' && (
-                          <div className="w-full h-full flex flex-col justify-between py-1 space-y-1.5">
-                            <div className="h-3 bg-slate-100 rounded-sm w-full"></div>
-                            <div className="grid grid-cols-3 gap-1 flex-1 items-center">
-                              <div className="h-10 bg-slate-50 rounded border border-slate-100"></div>
-                              <div className="h-10 bg-slate-50 rounded border border-slate-100"></div>
-                              <div className="h-10 bg-slate-50 rounded border border-slate-100"></div>
-                            </div>
-                            <div className="h-3 bg-slate-100 rounded w-1/2 mx-auto"></div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-6 border-t border-slate-100 flex justify-end gap-3 bg-white">
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-5 py-2.5 text-text-secondary hover:text-text-primary font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={() => {
-                    if (!createPageName.trim()) {
-                      alert('Masukkan nama halaman terlebih dahulu.')
-                      return
-                    }
-                    handleCreatePage(createPageName, createPageTemplate)
-                  }}
-                  disabled={isPending}
-                  className="px-6 py-2.5 bg-primary hover:bg-primary/95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer shadow-sm disabled:opacity-50"
-                >
-                  {isPending ? 'Memproses...' : 'Buat Halaman'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <InteractiveWizardBuilder
+            initialAnswers={{
+              businessName: profile?.name || '',
+              whatsappNumber: profile?.phone || '',
+            }}
+            merchantProducts={products.filter((p: any) => p.merchantId === profile?.id)}
+            merchantServices={services || []}
+            merchantProfileName={profile?.name}
+            merchantProfilePhone={profile?.phone}
+            onComplete={async (answers) => {
+              const pageName = answers.businessName || 'Landing Page'
+              const generated = generateLandingPageFromAnswers(
+                answers,
+                products.filter((p: any) => p.merchantId === profile?.id),
+                services || []
+              )
+              handleCreatePageWithWizard(pageName, generated)
+            }}
+            onCancel={() => setShowCreateModal(false)}
+          />
         )}
 
         {/* Custom Domain Modal Overlay */}
